@@ -56,7 +56,9 @@ func TestFetch(t *testing.T) {
 	// success cases - block and outputBlockPath
 	blocksToFetch := []string{"oldest", "newest", "config", "1"}
 	for _, block := range blocksToFetch {
+		fmt.Println("block",block)
 		outputBlockPath := filepath.Join(tempDir, block+".block")
+		fmt.Println("outputBlockPath",outputBlockPath)
 		args := []string{"-c", mockchain, block, outputBlockPath}
 		cmd.SetArgs(args)
 

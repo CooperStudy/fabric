@@ -49,25 +49,35 @@ func insensitiviseMap(m map[string]interface{}) {
 }
 
 func absPathify(inPath string) string {
+	fmt.Println("inPath:",inPath)
 	jww.INFO.Println("Trying to resolve absolute path to", inPath)
-
+	
 	if strings.HasPrefix(inPath, "$HOME") {
 		inPath = userHomeDir() + inPath[5:]
 	}
+	fmt.Println("inPath",inPath)
 
 	if strings.HasPrefix(inPath, "$") {
 		end := strings.Index(inPath, string(os.PathSeparator))
 		inPath = os.Getenv(inPath[1:end]) + inPath[end:]
 	}
+	
 
 	if filepath.IsAbs(inPath) {
-		return filepath.Clean(inPath)
+		fmt.Println("isAbs")
+		a := filepath.Clean(inPath)
+		fmt.Println("a",a)
+		return a
 	}
+	
+	
 
 	p, err := filepath.Abs(inPath)
 	if err == nil {
+		fmt.Println("p",p)
 		return filepath.Clean(p)
 	} else {
+		fmt.Println("====================1==============")
 		jww.ERROR.Println("Couldn't discover absolute path")
 		jww.ERROR.Println(err)
 	}
@@ -87,6 +97,8 @@ func exists(path string) (bool, error) {
 }
 
 func stringInSlice(a string, list []string) bool {
+	fmt.Println("a",a)
+	fmt.Println("list",list)
 	for _, b := range list {
 		if b == a {
 			return true

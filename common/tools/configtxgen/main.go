@@ -9,11 +9,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"strings"
-
-	"github.com/hyperledger/fabric/bccsp/factory"
 	"github.com/hyperledger/fabric/common/channelconfig"
 	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/common/tools/configtxgen/encoder"
@@ -24,6 +19,8 @@ import (
 	pb "github.com/hyperledger/fabric/protos/peer"
 	"github.com/hyperledger/fabric/protos/utils"
 	"github.com/pkg/errors"
+	"io/ioutil"
+	"os"
 )
 
 var exitCode = 0
@@ -31,6 +28,7 @@ var exitCode = 0
 var logger = flogging.MustGetLogger("common.tools.configtxgen")
 
 func doOutputBlock(config *genesisconfig.Profile, channelID string, outputBlock string) error {
+	fmt.Println("==channelID==", channelID)
 	pgen := encoder.New(config)
 	logger.Info("Generating genesis block")
 	if config.Consortiums == nil {
@@ -205,104 +203,65 @@ func doPrintOrg(t *genesisconfig.TopLevel, printOrg string) error {
 
 func main() {
 	var outputBlock, outputChannelCreateTx, profile, configPath, channelID, inspectBlock, inspectChannelCreateTx, outputAnchorPeersUpdate, asOrg, printOrg string
-
 	flag.StringVar(&outputBlock, "outputBlock", "", "The path to write the genesis block to (if set)")
-	flag.StringVar(&channelID, "channelID", "", "The channel ID to use in the configtx")
-	flag.StringVar(&outputChannelCreateTx, "outputCreateChannelTx", "", "The path to write a channel creation configtx to (if set)")
 	flag.StringVar(&profile, "profile", genesisconfig.SampleInsecureSoloProfile, "The profile from configtx.yaml to use for generation.")
 	flag.StringVar(&configPath, "configPath", "", "The path containing the configuration to use (if set)")
+	flag.StringVar(&channelID, "channelID", "", "The channel ID to use in the configtx")
+	flag.StringVar(&outputChannelCreateTx, "outputCreateChannelTx", "", "The path to write a channel creation configtx to (if set)")
 	flag.StringVar(&inspectBlock, "inspectBlock", "", "Prints the configuration contained in the block at the specified path")
 	flag.StringVar(&inspectChannelCreateTx, "inspectChannelCreateTx", "", "Prints the configuration contained in the transaction at the specified path")
 	flag.StringVar(&outputAnchorPeersUpdate, "outputAnchorPeersUpdate", "", "Creates an config update to update an anchor peer (works only with the default channel creation, and only for the first update)")
 	flag.StringVar(&asOrg, "asOrg", "", "Performs the config generation as a particular organization (by name), only including values in the write set that org (likely) has privilege to set")
 	flag.StringVar(&printOrg, "printOrg", "", "Prints the definition of an organization as JSON. (useful for adding an org to a channel manually)")
-
-	version := flag.Bool("version", false, "Show version information")
-
 	flag.Parse()
-
-	if channelID == "" && (outputBlock != "" || outputChannelCreateTx != "" || outputAnchorPeersUpdate != "") {
-		channelID = genesisconfig.TestChainID
-		logger.Warningf("Omitting the channel ID for configtxgen for output operations is deprecated.  Explicitly passing the channel ID will be required in the future, defaulting to '%s'.", channelID)
-	}
-
-	// show version
-	if *version {
-		printVersion()
-		os.Exit(exitCode)
-	}
-
-	// don't need to panic when running via command line
-	defer func() {
-		if err := recover(); err != nil {
-			if strings.Contains(fmt.Sprint(err), "Error reading configuration: Unsupported Config Type") {
-				logger.Error("Could not find configtx.yaml. " +
-					"Please make sure that FABRIC_CFG_PATH or -configPath is set to a path " +
-					"which contains configtx.yaml")
-				os.Exit(1)
-			}
-			if strings.Contains(fmt.Sprint(err), "Could not find profile") {
-				logger.Error(fmt.Sprint(err) + ". " +
-					"Please make sure that FABRIC_CFG_PATH or -configPath is set to a path " +
-					"which contains configtx.yaml with the specified profile")
-				os.Exit(1)
-			}
-			logger.Panic(err)
-		}
-	}()
-
-	logger.Info("Loading configuration")
-	factory.InitFactories(nil)
+	fmt.Println("outputBlock", outputBlock)
+	fmt.Println("profile", profile)
+	fmt.Println("configPath", configPath)
+	fmt.Println("channelID", channelID)
 	var profileConfig *genesisconfig.Profile
-	if outputBlock != "" || outputChannelCreateTx != "" || outputAnchorPeersUpdate != "" {
-		if configPath != "" {
-			profileConfig = genesisconfig.Load(profile, configPath)
-		} else {
-			profileConfig = genesisconfig.Load(profile)
-		}
-	}
+	//
+	////导入
+	profileConfig = genesisconfig.Load(profile, configPath)
+
 	var topLevelConfig *genesisconfig.TopLevel
-	if configPath != "" {
-		topLevelConfig = genesisconfig.LoadTopLevel(configPath)
-	} else {
-		topLevelConfig = genesisconfig.LoadTopLevel()
-	}
+	topLevelConfig = genesisconfig.LoadTopLevel(configPath)
+	fmt.Println("===topLevelConfig", topLevelConfig)
 
 	if outputBlock != "" {
 		if err := doOutputBlock(profileConfig, channelID, outputBlock); err != nil {
 			logger.Fatalf("Error on outputBlock: %s", err)
 		}
 	}
-
+	//
 	if outputChannelCreateTx != "" {
 		if err := doOutputChannelCreateTx(profileConfig, channelID, outputChannelCreateTx); err != nil {
 			logger.Fatalf("Error on outputChannelCreateTx: %s", err)
 		}
 	}
-
-	if inspectBlock != "" {
-		if err := doInspectBlock(inspectBlock); err != nil {
-			logger.Fatalf("Error on inspectBlock: %s", err)
-		}
-	}
-
-	if inspectChannelCreateTx != "" {
-		if err := doInspectChannelCreateTx(inspectChannelCreateTx); err != nil {
-			logger.Fatalf("Error on inspectChannelCreateTx: %s", err)
-		}
-	}
-
+	//
+	//if inspectBlock != "" {
+	//	if err := doInspectBlock(inspectBlock); err != nil {
+	//		logger.Fatalf("Error on inspectBlock: %s", err)
+	//	}
+	//}
+	//
+	//if inspectChannelCreateTx != "" {
+	//	if err := doInspectChannelCreateTx(inspectChannelCreateTx); err != nil {
+	//		logger.Fatalf("Error on inspectChannelCreateTx: %s", err)
+	//	}
+	//}
+	//
 	if outputAnchorPeersUpdate != "" {
 		if err := doOutputAnchorPeersUpdate(profileConfig, channelID, outputAnchorPeersUpdate, asOrg); err != nil {
 			logger.Fatalf("Error on inspectChannelCreateTx: %s", err)
 		}
 	}
-
-	if printOrg != "" {
-		if err := doPrintOrg(topLevelConfig, printOrg); err != nil {
-			logger.Fatalf("Error on printOrg: %s", err)
-		}
-	}
+	//
+	//if printOrg != "" {
+	//	if err := doPrintOrg(topLevelConfig, printOrg); err != nil {
+	//		logger.Fatalf("Error on printOrg: %s", err)
+	//	}
+	//}
 }
 
 func printVersion() {

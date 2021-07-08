@@ -37,6 +37,7 @@ func fetchCmd(cf *ChannelCmdFactory) *cobra.Command {
 }
 
 func fetch(cmd *cobra.Command, args []string, cf *ChannelCmdFactory) error {
+	fmt.Println("============fetch")
 	if len(args) == 0 {
 		return fmt.Errorf("fetch target required, oldest, newest, config, or a number")
 	}
@@ -70,6 +71,7 @@ func fetch(cmd *cobra.Command, args []string, cf *ChannelCmdFactory) error {
 	case "newest":
 		block, err = cf.DeliverClient.GetNewestBlock()
 	case "config":
+		fmt.Println("=============getConfig==========")
 		iBlock, err2 := cf.DeliverClient.GetNewestBlock()
 		if err2 != nil {
 			return err2

@@ -1,0 +1,174 @@
+Organizations:
+  - &Orderer				
+    Name: Orderer			
+    ID: itcast.cn	# 该字段在设置背书测策略时需要使用		
+    MSPDir: crypto-config/ordererOrganizations/itcast.cn/msp
+  - &Ofgj					
+    Name: OfgjMSP			
+    ID: ofgj.itcast.cn		
+    MSPDir: crypto-config/peerOrganizations/ofgj.itcast.cn/msp	
+    AnchorPeers:			
+      - Host: peer0.ofgj.itcast.cn
+        Port: 7051
+  - &Otgj
+    Name: OtgjMSP
+    ID: otgj.itcast.cn
+    MSPDir: crypto-config/peerOrganizations/otgj.itcast.cn/msp
+    AnchorPeers:
+      - Host: peer0.otgj.itcast.cn
+        Port: 7051
+  - &Ozfpt
+    Name: OzfptMSP
+    ID: ozfpt.itcast.cn
+    MSPDir: crypto-config/peerOrganizations/ozfpt.itcast.cn/msp
+    AnchorPeers:
+      - Host: peer0.ozfpt.itcast.cn
+        Port: 7051
+Orderer: &OrdererDefaults
+  OrdererType: solo	  
+  Addresses:         
+    - orderer.itcast.cn:7050
+  BatchTimeout: 5s    
+  BatchSize:
+    MaxMessageCount: 10		
+    AbsoluteMaxBytes: 98 MB 
+    PreferredMaxBytes: 512 KB
+  Kafka:			 
+    Brokers:
+      - 127.0.0.1:9092   	
+  MaxChannels: 0
+  Organizations:
+Application: &ApplicationDefaults
+  Organizations:
+Capabilities:
+    Global: &ChannelCapabilities
+        V1_1: true
+    Orderer: &OrdererCapabilities
+        V1_1: true
+    Application: &ApplicationCapabilities
+        V1_1: true
+Profiles:
+  ThreeOrgsOrdererGenesis:
+    Capabilities:
+      V1_1: true
+    Orderer:
+      OrdererType: solo
+      Addresses:
+        - orderer.itcast.cn:7050
+      BatchTimeout: 5s
+      BatchSize:
+        MaxMessageCount: 10
+        AbsoluteMaxBytes: 98 MB
+        PreferredMaxBytes: 512 KB
+      Kafka:
+        Brokers:
+          - 127.0.0.1:9092
+      MaxChannels: 0
+      Organizations:
+        Name: Orderer
+          ID: itcast.cn    # 该字段在设置背书测策略时需要使用
+          MSPDir: crypto-config/ordererOrganizations/itcast.cn/msp
+      Capabilities:
+        V1_1: true
+    Consortiums:
+      ThreeOrgsConsortium:
+        Organizations:
+          -
+            Name: OfgjMSP
+            ID: ofgj.itcast.cn
+            MSPDir: crypto-config/peerOrganizations/ofgj.itcast.cn/msp
+            AnchorPeers:
+              - Host: peer0.ofgj.itcast.cn
+                Port: 7051
+          -
+            Name: OtgjMSP
+            ID: otgj.itcast.cn
+            MSPDir: crypto-config/peerOrganizations/otgj.itcast.cn/msp
+            AnchorPeers:
+              - Host: peer0.otgj.itcast.cn
+                Port: 7051
+          -
+            Name: OzfptMSP
+            ID: ozfpt.itcast.cn
+            MSPDir: crypto-config/peerOrganizations/ozfpt.itcast.cn/msp
+            AnchorPeers:
+              - Host: peer0.ozfpt.itcast.cn
+                Port: 7051
+      OfgjConsortium:
+        Organizations:
+          Name: OfgjMSP
+            ID: ofgj.itcast.cn
+            MSPDir: crypto-config/peerOrganizations/ofgj.itcast.cn/msp
+            AnchorPeers:
+              - Host: peer0.ofgj.itcast.cn
+                Port: 7051
+      OtgjConsortium:
+        Organizations:
+          Name: OtgjMSP
+            ID: otgj.itcast.cn
+            MSPDir: crypto-config/peerOrganizations/otgj.itcast.cn/msp
+            AnchorPeers:
+              - Host: peer0.otgj.itcast.cn
+                Port: 7051
+
+      OzfptConsortium:
+        Organizations:
+          Name: OzfptMSP
+            ID: ozfpt.itcast.cn
+            MSPDir: crypto-config/peerOrganizations/ozfpt.itcast.cn/msp
+            AnchorPeers:
+              - Host: peer0.ozfpt.itcast.cn
+                Port: 7051
+
+  unionOrgschannel:
+    Consortium: ThreeOrgsConsortium
+    Application:
+      Organizations:
+      -
+        Name: OfgjMSP
+          ID: ofgj.itcast.cn
+          MSPDir: crypto-config/peerOrganizations/ofgj.itcast.cn/msp
+          AnchorPeers:
+            - Host: peer0.ofgj.itcast.cn
+              Port: 7051
+      -
+        Name: OtgjMSP
+          ID: otgj.itcast.cn
+          MSPDir: crypto-config/peerOrganizations/otgj.itcast.cn/msp
+          AnchorPeers:
+            - Host: peer0.otgj.itcast.cn
+              Port: 7051
+        - *Ozfpt
+      Capabilities:
+        V1_1: true
+
+
+  fgjOrgchannel:
+    Consortium: OfgjConsortium
+    Application:
+      Organizations:
+        Name: OfgjMSP
+          ID: ofgj.itcast.cn
+          MSPDir: crypto-config/peerOrganizations/ofgj.itcast.cn/msp
+          AnchorPeers:
+            - Host: peer0.ofgj.itcast.cn
+              Port: 7051
+      Capabilities:
+          V1_1: true
+
+
+  tgjOrgchannel:
+    Consortium: OtgjConsortium
+    Application:
+      Organizations:
+        - *Otgj
+      Capabilities:
+        V1_1: true
+
+  zfptOrgchannel:
+    Consortium: OzfptConsortium
+    Application:
+      Organizations:
+        - *Ozfpt
+      Capabilities:
+        V1_1: true

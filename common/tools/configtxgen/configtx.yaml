@@ -1,0 +1,116 @@
+Organizations:
+  - &Orderer				
+    Name: Orderer			
+    ID: itcast.cn	# 该字段在设置背书测策略时需要使用		
+    MSPDir: crypto-config/ordererOrganizations/itcast.cn/msp
+  - &Ofgj					
+    Name: OfgjMSP			
+    ID: ofgj.itcast.cn		
+    MSPDir: crypto-config/peerOrganizations/ofgj.itcast.cn/msp	
+    AnchorPeers:			
+      - Host: peer0.ofgj.itcast.cn
+        Port: 7051
+  - &Otgj
+    Name: OtgjMSP
+    ID: otgj.itcast.cn
+    MSPDir: crypto-config/peerOrganizations/otgj.itcast.cn/msp
+    AnchorPeers:
+      - Host: peer0.otgj.itcast.cn
+        Port: 7051
+  - &Ozfpt
+    Name: OzfptMSP
+    ID: ozfpt.itcast.cn
+    MSPDir: crypto-config/peerOrganizations/ozfpt.itcast.cn/msp
+    AnchorPeers:
+      - Host: peer0.ozfpt.itcast.cn
+        Port: 7051
+Orderer: &OrdererDefaults
+  OrdererType: solo	  
+  Addresses:         
+    - orderer.itcast.cn:7050
+  BatchTimeout: 5s    
+  BatchSize:
+    MaxMessageCount: 10		
+    AbsoluteMaxBytes: 98 MB 
+    PreferredMaxBytes: 512 KB
+  Kafka:			 
+    Brokers:
+      - 127.0.0.1:9092   	
+  MaxChannels: 0
+  Organizations:
+Application: &ApplicationDefaults
+  Organizations:
+
+Capabilities:
+    Global: &ChannelCapabilities
+        V1_1: true
+    Orderer: &OrdererCapabilities
+        V1_1: true
+    Application: &ApplicationCapabilities
+        V1_1: true
+Profiles:
+  ThreeOrgsOrdererGenesis:
+    Capabilities:
+      <<: *ChannelCapabilities
+    Orderer:
+      <<: *OrdererDefaults
+      Organizations:
+        - *Orderer
+      Capabilities:
+        <<: *OrdererCapabilities
+    Consortiums:
+      ThreeOrgsConsortium:
+        Organizations:
+          - *Ofgj
+          - *Otgj
+          - *Ozfpt
+      OfgjConsortium:
+        Organizations:
+          - *Ofgj
+      OtgjConsortium:
+        Organizations:
+          - *Otgj
+
+      OzfptConsortium:
+        Organizations:
+          - *Ozfpt
+
+  unionOrgschannel:
+    Consortium: ThreeOrgsConsortium
+    Application:
+      <<: *ApplicationDefaults
+      Organizations:
+        - *Ofgj
+        - *Otgj
+        - *Ozfpt
+      Capabilities:
+        <<: *ApplicationCapabilities
+
+
+  fgjOrgchannel:
+    Consortium: OfgjConsortium
+    Application:
+      <<: *ApplicationDefaults
+      Organizations:
+        - *Ofgj
+      Capabilities:
+        <<: *ApplicationCapabilities
+
+
+  tgjOrgchannel:
+    Consortium: OtgjConsortium
+    Application:
+      <<: *ApplicationDefaults
+      Organizations:
+        - *Otgj
+      Capabilities:
+        <<: *ApplicationCapabilities
+
+  zfptOrgchannel:
+    Consortium: OzfptConsortium
+    Application:
+      <<: *ApplicationDefaults
+      Organizations:
+        - *Ozfpt
+      Capabilities:
+        <<: *ApplicationCapabilities

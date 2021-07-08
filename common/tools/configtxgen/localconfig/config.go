@@ -134,15 +134,7 @@ type Organization struct {
 	MSPDir   string             `yaml:"MSPDir"`
 	MSPType  string             `yaml:"MSPType"`
 	Policies map[string]*Policy `yaml:"Policies"`
-
-	// Note: Viper deserialization does not seem to care for
-	// embedding of types, so we use one organization struct
-	// for both orderers and applications.
 	AnchorPeers []*AnchorPeer `yaml:"AnchorPeers"`
-
-	// AdminPrincipal is deprecated and may be removed in a future release
-	// it was used for modifying the default policy generation, but policies
-	// may now be specified explicitly so it is redundant and unnecessary
 	AdminPrincipal string `yaml:"AdminPrincipal"`
 }
 
@@ -252,6 +244,7 @@ func LoadTopLevel(configPaths ...string) *TopLevel {
 // in place of the FABRIC_CFG_PATH env variable.
 func Load(profile string, configPaths ...string) *Profile {
 	config := viper.New()
+	fmt.Println("==configPath",configPaths)
 	if len(configPaths) > 0 {
 		for _, p := range configPaths {
 			config.AddConfigPath(p)
@@ -260,6 +253,7 @@ func Load(profile string, configPaths ...string) *Profile {
 	} else {
 		cf.InitViper(config, configName)
 	}
+
 
 	// For environment variables
 	config.SetEnvPrefix(Prefix)
@@ -276,12 +270,15 @@ func Load(profile string, configPaths ...string) *Profile {
 	}
 	logger.Debugf("Using config file: %s", config.ConfigFileUsed())
 
+	fmt.Println("文件读取成功")
+
 	var uconf TopLevel
 	err = viperutil.EnhancedExactUnmarshal(config, &uconf)
 	if err != nil {
 		logger.Panic("Error unmarshaling config into struct: ", err)
 	}
 
+	fmt.Println("====profile",profile)
 	result, ok := uconf.Profiles[profile]
 	if !ok {
 		logger.Panic("Could not find profile: ", profile)

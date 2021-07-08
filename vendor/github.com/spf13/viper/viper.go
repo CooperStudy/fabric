@@ -269,11 +269,16 @@ func (v *Viper) ConfigFileUsed() string { return v.configFile }
 func AddConfigPath(in string) { v.AddConfigPath(in) }
 func (v *Viper) AddConfigPath(in string) {
 	if in != "" {
-		absin := absPathify(in)
+		fmt.Println("in",in) //
+		absin := absPathify(in) //configtx
+		fmt.Println("absin",absin)// /home/cooper/go/src/github.com/hyperledger/fabric/common/tools/configtxgen/configtx.yaml
 		jww.INFO.Println("adding", absin, "to paths to search")
 		if !stringInSlice(absin, v.configPaths) {
-			v.configPaths = append(v.configPaths, absin)
+			fmt.Println("absin",absin) 
+			fmt.Println("configPaths",v.configPaths)//[]
+			v.configPaths = append(v.configPaths, absin) //[/home/cooper/go/src/github.com/hyperledger/fabric/common/tools/configtxgen/configtx.yaml]
 		}
+		fmt.Println("v.configPahts",v.configPaths)
 	}
 }
 
@@ -776,16 +781,21 @@ func (v *Viper) Set(key string, value interface{}) {
 // and key/value stores, searching in one of the defined paths.
 func ReadInConfig() error { return v.ReadInConfig() }
 func (v *Viper) ReadInConfig() error {
+	fmt.Println("=============================1==============")
 	jww.INFO.Println("Attempting to read in config file")
+	fmt.Println("===v.getConfigType",v.getConfigType())
 	if !stringInSlice(v.getConfigType(), SupportedExts) {
 		return UnsupportedConfigError(v.getConfigType())
 	}
-
+	
+	fmt.Println("==============================v.getConfigFile()",v.getConfigFile())
 	file, err := ioutil.ReadFile(v.getConfigFile())
 	if err != nil {
 		return err
 	}
 
+	
+	
 	v.config = make(map[string]interface{})
 
 	return v.unmarshalReader(bytes.NewReader(file), v.config)
@@ -933,6 +943,7 @@ func (v *Viper) AllSettings() map[string]interface{} {
 // Does not include extension.
 func SetConfigName(in string) { v.SetConfigName(in) }
 func (v *Viper) SetConfigName(in string) {
+	fmt.Println("==in",in)
 	if in != "" {
 		v.configName = in
 	}
