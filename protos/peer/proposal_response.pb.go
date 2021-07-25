@@ -28,15 +28,21 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 // endorsers agree on the same action and produce signature to that effect, a
 // transaction can be generated and sent for ordering.
 type ProposalResponse struct {
+	// 返回状态码，应该与HTTP状态码一致
 	// Version indicates message protocol version
 	Version int32 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`
+	//返回与状态码相关联的信息
 	// Timestamp is the time that the message
 	// was created as  defined by the sender
+	//
 	Timestamp *timestamp.Timestamp `protobuf:"bytes,2,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	//
 	// A response message indicating whether the
 	// endorsement of the action was successful
+	//说明这个字段是protobuf的varint类型，index为1 name为id，使用proto3协议
 	Response *Response `protobuf:"bytes,4,opt,name=response,proto3" json:"response,omitempty"`
 	// The payload of response. It is the bytes of ProposalResponsePayload
+	//返回相关的元数据
 	Payload []byte `protobuf:"bytes,5,opt,name=payload,proto3" json:"payload,omitempty"`
 	// The endorsement of the proposal, basically
 	// the endorser's signature over the payload
