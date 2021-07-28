@@ -31,32 +31,46 @@ type Chaincode interface {
 type ChaincodeStubInterface interface {
 	// GetArgs returns the arguments intended for the chaincode Init and Invoke
 	// as an array of byte arrays.
+	/*
+	peer chancode invode -o orderer.example.com:7050 -C mychannel  -n  mycc
+	--peerAddresses peer0.org1.example.com:7051 -c '{"Args":["invoke","move","a","b","10"]}'
+	返回invoke mvoe a b 10 的ascii码
+	[[105 110 118 111 107 101] [109 111 118 101] [97] [98] [49 48]]
+	 */
 	GetArgs() [][]byte
+
 
 	// GetStringArgs returns the arguments intended for the chaincode Init and
 	// Invoke as a string array. Only use GetStringArgs if the client passes
 	// arguments intended to be used as strings.
+	//[invoke a b 10]
 	GetStringArgs() []string
+
 
 	// GetFunctionAndParameters returns the first argument as the function
 	// name and the rest of the arguments as parameters in a string array.
 	// Only use GetFunctionAndParameters if the client passes arguments intended
 	// to be used as strings.
+	//返回 invoke [move a b 10]
 	GetFunctionAndParameters() (string, []string)
 
 	// GetArgsSlice returns the arguments intended for the chaincode Init and
 	// Invoke as a byte array
+	//返回[105 110 118 111 107 101 109 111 118 101 97 98 49 48]
 	GetArgsSlice() ([]byte, error)
+
 
 	// GetTxID returns the tx_id of the transaction proposal, which is unique per
 	// transaction and per client. See ChannelHeader in protos/common/common.proto
 	// for further details.
+	//返回bbd905
 	GetTxID() string
 
 	// GetChannelID returns the channel the proposal is sent to for chaincode to process.
 	// This would be the channel_id of the transaction proposal (see ChannelHeader
 	// in protos/common/common.proto) except where the chaincode is calling another on
 	// a different channel
+	//mychannel
 	GetChannelID() string
 
 	// InvokeChaincode locally calls the specified chaincode `Invoke` using the
@@ -73,6 +87,9 @@ type ChaincodeStubInterface interface {
 	// the called chaincode on a different channel is a `Query`, which does not
 	// participate in state validation checks in subsequent commit phase.
 	// If `channel` is empty, the caller's channel is assumed.
+	/*
+	//TODO cooper 2021 07 05
+	 */
 	InvokeChaincode(chaincodeName string, args [][]byte, channel string) pb.Response
 
 	// GetState returns the value of the specified `key` from the
@@ -80,6 +97,7 @@ type ChaincodeStubInterface interface {
 	// has not been committed to the ledger. In other words, GetState doesn't
 	// consider data modified by PutState that has not been committed.
 	// If the key does not exist in the state database, (nil, nil) is returned.
+	//返回账本中制定的key值
 	GetState(key string) ([]byte, error)
 
 	// PutState puts the specified `key` and `value` into the transaction's
@@ -89,19 +107,28 @@ type ChaincodeStubInterface interface {
 	// character (0x00), in order to avoid range query collisions with
 	// composite keys, which internally get prefixed with 0x00 as composite
 	// key namespace.
+	//key一定为空字符或者由空字符0x00开始
 	PutState(key string, value []byte) error
 
 	// DelState records the specified `key` to be deleted in the writeset of
 	// the transaction proposal. The `key` and its value will be deleted from
 	// the ledger when the transaction is validated and successfully committed.
+	/*
+	在提交提案的写集中记录被删除的制定key，当交易通过验证并且成功提交时，这个key和他的value值会
+	从账本中删除
+	 */
 	DelState(key string) error
 
 	// SetStateValidationParameter sets the key-level endorsement policy for `key`.
+	/*
+	设置状态验证参数，根据键如("PUB")保存背书策略
+	 */
 	SetStateValidationParameter(key string, ep []byte) error
 
 	// GetStateValidationParameter retrieves the key-level endorsement policy
 	// for `key`. Note that this will introduce a read dependency on `key` in
 	// the transaction's readset.
+
 	GetStateValidationParameter(key string) ([]byte, error)
 
 	// GetStateByRange returns a range iterator over a set of keys in the
@@ -116,6 +143,13 @@ type ChaincodeStubInterface interface {
 	// Call Close() on the returned StateQueryIteratorInterface object when done.
 	// The query is re-executed during validation phase to ensure result set
 	// has not changed since transaction endorsement (phantom reads detected).
+	/*
+	 返回一个状态查询迭代器，调用该迭器的Next（）返回一个包含Namespace，key，value的结构KV{}
+     从[startKey,endKey)小于10万的数量
+
+	resultsIterator,_:=  stub.GetStateByRange('CAR0','CAR999')
+	def resultsIterator.Close() #使用完毕后关闭
+	*/
 	GetStateByRange(startKey, endKey string) (StateQueryIteratorInterface, error)
 
 	// GetStateByRangeWithPagination returns a range iterator over a set of keys in the
