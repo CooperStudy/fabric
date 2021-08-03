@@ -1,19 +1,3 @@
-/*
-Copyright IBM Corp. 2017 All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-		 http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package flogging
 
 import (
@@ -28,26 +12,33 @@ import (
 
 const (
 	pkgLogID      = "flogging"
+	//默认日志输出
 	defaultFormat = "%{color}%{time:2006-01-02 15:04:05.000 MST} [%{module}] %{shortfunc} -> %{level:.4s} %{id:03x}%{color:reset} %{message}"
+	//等级
 	defaultLevel  = logging.INFO
 )
 
 var (
+	//自带一个名为flogging的日志记录者logger，规定默认的日志输出和等级，
 	logger *logging.Logger
 
-	defaultOutput *os.File
+	defaultOutput *os.File //默认输出端
 
-	modules          map[string]string // Holds the map of all modules and their respective log level
-	peerStartModules map[string]string
-
+	//日志级别映射
+	modules          map[string]string //存放素有fabric模块日志级别
+	peerStartModules map[string]string //存放每个peer启动之时日志级别映射,每个peer启动完成之时调用setPeerStartup初始化
+    //并且可以通过调用revertToPeerStartupLever()恢复初始值
 	lock sync.RWMutex
 	once sync.Once
 )
-
+/*
+   通过代用reset函数初始化一系列默认值
+ */
 func init() {
+	//创建一个名字的日志对象
 	logger = logging.MustGetLogger(pkgLogID)
 	Reset()
-	initgrpclogger()
+	initgrpclogger()//初始化grpc的日志对象
 }
 
 // Reset sets to logging to the defaults defined in this package.
@@ -65,14 +56,19 @@ func SetFormat(formatSpec string) logging.Formatter {
 	if formatSpec == "" {
 		formatSpec = defaultFormat
 	}
+	//创建一个日志输出对象format，确定输入出格式
 	return logging.MustStringFormatter(formatSpec)
 }
 
 // InitBackend sets up the logging backend based on
 // the provided logging formatter and I/O writer.
 func InitBackend(formatter logging.Formatter, output io.Writer) {
+	//创建一个日志输出对象backend,也就打印的位置,
 	backend := logging.NewLogBackend(output, "", 0)
+	//将输出格式和输出对象绑定
 	backendFormatter := logging.NewBackendFormatter(backend, formatter)
+	//将绑定了格式的输出对象设置为日志的输出对象
+	//log打印会按格式输出到backendFormatter所代表的对象里
 	logging.SetBackend(backendFormatter).SetLevel(defaultLevel, "")
 }
 

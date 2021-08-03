@@ -1,26 +1,12 @@
-/*
-Copyright IBM Corp. 2017 All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-		 http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package flogging
 
 import (
 	"github.com/op/go-logging"
 	"google.golang.org/grpc/grpclog"
 )
-
+//设grpc的日志,grpc默认只用go语言的标准日志接口,
+//因此需要将logging封装成标准日志性追的接口,type grpclogger struct{ logger *logging.Logger() }
+//然后通过initgrpclogger（）生成对象供rpc使用从而实现grpc也使用floging的效果
 const GRPCModuleID = "grpc"
 
 func initgrpclogger() {
