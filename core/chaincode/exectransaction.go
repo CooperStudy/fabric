@@ -27,6 +27,8 @@ import (
 )
 
 //Execute - execute proposal, return original response of chaincode
+//chaincode的执行代码，其中使用了ChaincodeSupport服务(服务支持各个peer之间的通信交流,这也就是所谓垫片的地址,核心逻辑有主题代码实现,而各个peer之间的通信)
+//去实现主题代码的功能,则用该服务支撑
 func Execute(ctxt context.Context, cccid *ccprovider.CCContext, spec interface{}) (*pb.Response, *pb.ChaincodeEvent, error) {
 	var err error
 	var cds *pb.ChaincodeDeploymentSpec

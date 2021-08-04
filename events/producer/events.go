@@ -200,15 +200,25 @@ func (hl *genericHandlerList) foreach(e *pb.Event, action func(h *handler)) {
 //
 type eventProcessor struct {
 	sync.RWMutex
+	//按照事件分类的事件处理链条,处理链handlerList接口有两种具体的是实现：一般为处理链generiicHandleList和chaincode
+	//专用处理链chaincodeHandleList。在此一般处理链为例，其实现了对handlers的三个操作，add del，foreach，
+	//foreach则对handlers中的每个handler执行了由参数指定的动作，handlers映射了handler与bool值，bool值起到了类似开关的作用
 	eventConsumers map[pb.EventType]handlerList
 
 	//we could generalize this with mutiple channels each with its own size
+	//为带有缓存且专门处理Evnet类型数据的事件频道，所有的事件都是通过此频道发出去，缓存大小core。yaml定义为100，
+	//由initializeEvents的参数带进来并设置
+	/*
+	events:
+	        buffersize: 100
+	 */
 	eventChannel chan *pb.Event
 
 	//timeout duration for producer to send an event.
 	//if < 0, if buffer full, unblocks immediately and not send
 	//if 0, if buffer full, will block and guarantee the event will be sent out
 	//if > 0, if buffer full, blocks till timeout
+	//
 	timeout time.Duration
 }
 
@@ -221,10 +231,11 @@ func (ep *eventProcessor) start() {
 	for {
 		//wait for event
 		e := <-ep.eventChannel
-
+		//获取一个事件
 		var hl handlerList
 		eType := getMessageType(e)
 		ep.Lock()
+		//根据事件的类型获取处理链，如果不存在则continue
 		if hl, _ = ep.eventConsumers[eType]; hl == nil {
 			logger.Errorf("Event of type %s does not exist", eType)
 			ep.Unlock()
@@ -233,8 +244,11 @@ func (ep *eventProcessor) start() {
 		//lock the handler map lock
 		ep.Unlock()
 
+		//调用hl的foreach函数，foreach遍历了hl.handles中每个handler，并对每个handler执行第二个参数指定的动作
 		hl.foreach(e, func(h *handler) {
 			if e.Event != nil {
+				//调用每个handler的sendMessage发送事件e。SendMessage则是使用handler中自有的ChatStream这个生成额
+				//的grpc流服务发送事件
 				h.SendMessage(e)
 			}
 		})
@@ -244,15 +258,19 @@ func (ep *eventProcessor) start() {
 
 //initialize and start
 func initializeEvents(bufferSize uint, tout time.Duration) {
+	//保证gEventProcessor是单例事件
 	if gEventProcessor != nil {
 		panic("should not be called twice")
 	}
 
+	//创建对象实例，分配内存空间
 	gEventProcessor = &eventProcessor{eventConsumers: make(map[pb.EventType]handlerList), eventChannel: make(chan *pb.Event, bufferSize), timeout: tout}
 
+	//调用4次AddEventType，且为添加内部事件类型并相应分配了这些类型各自的处理链
 	addInternalEventTypes()
 
 	//start the event processor
+	//启动一个goroutine运行全局单例
 	go gEventProcessor.start()
 }
 

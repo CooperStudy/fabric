@@ -100,7 +100,6 @@ message QueryResponse {
 // Interface that provides support to chaincode execution. ChaincodeContext
 // provides the context necessary for the server to respond appropriately.
 service ChaincodeSupport {
-
     rpc Register(stream ChaincodeMessage) returns (stream ChaincodeMessage) {}
 
 

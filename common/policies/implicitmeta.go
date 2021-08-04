@@ -24,6 +24,8 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
+
+//策略实现2
 type implicitMetaPolicy struct {
 	conf        *cb.ImplicitMetaPolicy
 	threshold   int
@@ -66,6 +68,7 @@ func (imp *implicitMetaPolicy) initialize(config *policyConfig) {
 }
 
 // Evaluate takes a set of SignedData and evaluates whether this set of signatures satisfies the policy
+//实现了之指定生成指定策略的评估函数，即策略的Evaluate接口 compoile函数
 func (imp *implicitMetaPolicy) Evaluate(signatureSet []*cb.SignedData) error {
 	remaining := imp.threshold
 	for _, policy := range imp.subPolicies {

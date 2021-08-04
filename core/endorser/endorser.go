@@ -218,6 +218,7 @@ func (e *Endorser) simulateProposal(ctx context.Context, chainID string, txid st
 	}
 
 	//---1. check ESCC and VSCC for the chaincode
+	//在目前版本直接返回nil，自带TODO标签
 	if err = e.checkEsccAndVscc(prop); err != nil {
 		return nil, nil, nil, nil, err
 	}
@@ -226,6 +227,9 @@ func (e *Endorser) simulateProposal(ctx context.Context, chainID string, txid st
 	var version string
 
 	if !syscc.IsSysCC(cid.Name) {
+		/*
+		若前面获得的交易模拟器不为空，则将其也加入context，然后开始调用chaincode有关执行的代码，也是从LSCC中获取制定名字chaincode的数据
+		 */
 		cdLedger, err = e.getCDSFromLSCC(ctx, chainID, txid, signedProp, prop, cid.Name, txsim)
 		if err != nil {
 			return nil, nil, nil, nil, fmt.Errorf("%s - make sure the chaincode %s has been successfully instantiated and try again", err, cid.Name)
@@ -244,6 +248,8 @@ func (e *Endorser) simulateProposal(ctx context.Context, chainID string, txid st
 	var simResult []byte
 	var res *pb.Response
 	var ccevent *pb.ChaincodeEvent
+	//真正执行了chaincode并且返回了HTTP状态应答和执行chaincode事件.这里调用了chaincode关于执行的代码,HTTP状态应原型定义在
+	//fabric/protos/common/common.proto
 	res, ccevent, err = e.callChaincode(ctx, chainID, version, txid, signedProp, prop, cis, cid, txsim)
 	if err != nil {
 		endorserLogger.Errorf("failed to invoke chaincode %s on transaction %s, error: %s", cid, txid, err)
@@ -251,6 +257,7 @@ func (e *Endorser) simulateProposal(ctx context.Context, chainID string, txid st
 	}
 
 	if txsim != nil {
+		//获取chaincode的读写集
 		if simResult, err = txsim.GetTxSimulationResults(); err != nil {
 			return nil, nil, nil, nil, err
 		}
@@ -332,11 +339,16 @@ func (e *Endorser) endorseProposal(ctx context.Context, chainID string, txid str
 	args := [][]byte{[]byte(""), proposal.Header, proposal.Payload, ccidBytes, resBytes, simRes, eventBytes, visibility}
 	version := util.GetSysCCVersion()
 	ecccis := &pb.ChaincodeInvocationSpec{ChaincodeSpec: &pb.ChaincodeSpec{Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: escc}, Input: &pb.ChaincodeInput{Args: args}}}
+	//主要调用的也是背书者的内调函数，其上是为它准备数据,模拟交易和背书都调用了callChaincode而实现不同的功能，主要区别是传入的倒数第三个参数
+	//该参数是chaincode的执行详细说明书chaincodeInvocationSpec,说明书不同的内容，指导chaincode执行的代码实现不同的功能，如背书功能，使用说明书
+	//使用的说明书中ChaincodeID指定的就是系统chaincode中用于背书的escc，而chaincode有关执行chaincode代码也就根据所给定的ChaincodeID，找到指定的
+	//chaincode执行
 	res, _, err := e.callChaincode(ctx, chainID, version, txid, signedProp, proposal, ecccis, &pb.ChaincodeID{Name: escc}, txsim)
 	if err != nil {
 		return nil, err
 	}
 
+	//返回的是数据背书返回的数组组装申请应答信息ProposalResponse,
 	if res.Status >= shim.ERRORTHRESHOLD {
 		return &pb.ProposalResponse{Response: res}, nil
 	}
@@ -361,10 +373,13 @@ func (e *Endorser) endorseProposal(ctx context.Context, chainID string, txid str
 }
 
 // ProcessProposal process the Proposal
+//处理客户端发来的SignedProposal,返回ProposalResponse数据，完成最终的任务
 func (e *Endorser) ProcessProposal(ctx context.Context, signedProp *pb.SignedProposal) (*pb.ProposalResponse, error) {
 	endorserLogger.Debugf("Entry")
 	defer endorserLogger.Debugf("Exit")
-	// at first, we check whether the message is valid
+
+	//第一步，ProcessProposal函数使用ValidateProposalMessage对所接收的signedProp数据进行验证，
+	//并且返回signedProp中一些Unmarshal后的字段
 	prop, hdr, hdrExt, err := validation.ValidateProposalMessage(signedProp)
 	if err != nil {
 		return &pb.ProposalResponse{Response: &pb.Response{Status: 500, Message: err.Error()}}, err
@@ -381,6 +396,7 @@ func (e *Endorser) ProcessProposal(ctx context.Context, signedProp *pb.SignedPro
 	}
 
 	// block invocations to security-sensitive system chaincodes
+	//验证目前处理的signedProposal涉及的chaincode的ID是否是系统chancode
 	if syscc.IsSysCCAndNotInvokableExternal(hdrExt.ChaincodeId.Name) {
 		endorserLogger.Errorf("Error: an attempt was made by %#v to invoke system chaincode %s",
 			shdr.Creator, hdrExt.ChaincodeId.Name)
@@ -400,11 +416,13 @@ func (e *Endorser) ProcessProposal(ctx context.Context, signedProp *pb.SignedPro
 	}
 	endorserLogger.Debugf("processing txid: %s", txid)
 	if chainID != "" {
+		//如果频道不为空时，程序根据频道ID调用GetLedger获取peer本地的账本peerLedger
 		// here we handle uniqueness check and ACLs for proposals targeting a chain
 		lgr := peer.GetLedger(chainID)
 		if lgr == nil {
 			return nil, fmt.Errorf("failure while looking up the ledger %s", chainID)
 		}
+		//根据交易ID调用账本对象自身函数，查看该交易ID是否已经存在与账本，即交易的唯一性检查
 		if _, err := lgr.GetTransactionByID(txid); err == nil {
 			return nil, fmt.Errorf("Duplicate transaction found [%s]. Creator [%x]. [%s]", txid, shdr.Creator, err)
 		}
@@ -430,15 +448,18 @@ func (e *Endorser) ProcessProposal(ctx context.Context, signedProp *pb.SignedPro
 	var txsim ledger.TxSimulator
 	var historyQueryExecutor ledger.HistoryQueryExecutor
 	if chainID != "" {
+		//获取交易对象模拟器
 		if txsim, err = e.getTxSimulator(chainID); err != nil {
 			return &pb.ProposalResponse{Response: &pb.Response{Status: 500, Message: err.Error()}}, err
 		}
+		//账本历史查询对象
 		if historyQueryExecutor, err = e.getHistoryQueryExecutor(chainID); err != nil {
 			return &pb.ProposalResponse{Response: &pb.Response{Status: 500, Message: err.Error()}}, err
 		}
 		// Add the historyQueryExecutor to context
 		// TODO shouldn't we also add txsim to context here as well? Rather than passing txsim parameter
 		// around separately, since eventually it gets added to context anyways
+		//将账本历史查询器对象添加到了context中
 		ctx = context.WithValue(ctx, chaincode.HistoryQueryExecutorKey, historyQueryExecutor)
 
 		defer txsim.Done()
@@ -451,7 +472,9 @@ func (e *Endorser) ProcessProposal(ctx context.Context, signedProp *pb.SignedPro
 	//       to validate the supplied action before endorsing it
 
 	//1 -- simulate
+	//进行模拟交易
 	cd, res, simulationResult, ccevent, err := e.simulateProposal(ctx, chainID, txid, signedProp, prop, hdrExt.ChaincodeId, txsim)
+	//返回chaincode数据,执行chaincode应答信息,模拟结果集合以及chaincode的执行事件,供下一步使用
 	if err != nil {
 		return &pb.ProposalResponse{Response: &pb.Response{Status: 500, Message: err.Error()}}, err
 	}
@@ -482,6 +505,7 @@ func (e *Endorser) ProcessProposal(ctx context.Context, signedProp *pb.SignedPro
 	if chainID == "" {
 		pResp = &pb.ProposalResponse{Response: res}
 	} else {
+		//背书着对象使用自身函数对模拟交易进行背书,并且得到结交易申请应答数据pResp pb.ProposalResponse
 		pResp, err = e.endorseProposal(ctx, chainID, txid, signedProp, prop, res, simulationResult, ccevent, hdrExt.PayloadVisibility, hdrExt.ChaincodeId, txsim, cd)
 		if err != nil {
 			return &pb.ProposalResponse{Response: &pb.Response{Status: 500, Message: err.Error()}}, err

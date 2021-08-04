@@ -142,6 +142,7 @@ func InitViper(v *viper.Viper, configName string) error {
 		// we will consider
 		addConfigPath(v, altPath)
 	} else {
+		//没有值按照3个路径
 		// If we get here, we should use the default paths in priority order:
 		//
 		// *) CWD

@@ -577,6 +577,7 @@ func _Events_Chat_Handler(srv interface{}, stream grpc.ServerStream) error {
 	return srv.(EventsServer).Chat(&eventsChatServer{stream})
 }
 
+
 type Events_ChatServer interface {
 	Send(*Event) error
 	Recv() (*SignedEvent, error)

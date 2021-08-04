@@ -38,6 +38,7 @@ import (
 
 var peerLogger = flogging.MustGetLogger("peer")
 
+//定义peerServer
 var peerServer comm.GRPCServer
 
 // singleton instance to manage CAs for the peer across channel config changes

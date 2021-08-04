@@ -27,7 +27,7 @@ import (
 )
 
 type handler struct {
-	ChatStream       pb.Events_ChatServer
+	ChatStream       pb.Events_ChatServer //在events.pb.go中生成Events_ChatServer类型的接口，用于发送流数据，
 	interestedEvents map[string]*pb.Interest
 }
 
@@ -106,20 +106,24 @@ func (d *handler) HandleMessage(msg *pb.SignedEvent) error {
 
 	switch evt.Event.(type) {
 	case *pb.Event_Register:
+		//注册事件，则注册
 		eventsObj := evt.GetRegister()
 		if err := d.register(eventsObj.Events); err != nil {
 			return fmt.Errorf("could not register events %s", err)
 		}
 	case *pb.Event_Unregister:
+		//注销事件
 		eventsObj := evt.GetUnregister()
 		if err := d.deregister(eventsObj.Events); err != nil {
 			return fmt.Errorf("could not unregister events %s", err)
 		}
 	case nil:
 	default:
+		//其他类型的事件，则打印一条错误消息
 		return fmt.Errorf("invalide type from client %T", evt.Event)
 	}
 	//TODO return supported events.. for now just return the received msg
+	//若是注册或者注销事件执行相应的操作之后,返回Event数据给客户端,该数据是在验证函数validateEventMessage中获取的
 	if err := d.ChatStream.Send(evt); err != nil {
 		return fmt.Errorf("error sending response to %v:  %s", msg, err)
 	}
@@ -158,7 +162,7 @@ func validateEventMessage(signedEvt *pb.SignedEvent) (*pb.Event, error) {
 		return nil, fmt.Errorf("error unmarshaling the event bytes in the SignedEvent: %s", err)
 	}
 
-	localMSP := mgmt.GetLocalMSP()
+	localMSP := mgmt.GetLocalMSP()//利用local MSP验证数据的有效性,
 	principalGetter := mgmt.NewLocalMSPPrincipalGetter()
 
 	// Load MSPPrincipal for policy

@@ -109,6 +109,7 @@ func IsSysCC(name string) bool {
 // is a system chaincode and *CANNOT* be invoked through
 // a proposal to this peer
 func IsSysCCAndNotInvokableExternal(name string) bool {
+	//是系统chaincode且不能被外界调用
 	for _, sysCC := range systemChaincodes {
 		if sysCC.Name == name {
 			return !sysCC.InvokableExternal

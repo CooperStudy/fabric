@@ -1,18 +1,6 @@
-/*
-Copyright IBM Corp. 2017 All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-		 http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+/**
+定义了策略检查器工厂PolicyCheckerFactory接口
+ */
 
 package policy
 
@@ -73,7 +61,7 @@ func (p *policyChecker) CheckPolicy(channelID, policyName string, signedProp *pb
 		return fmt.Errorf("Invalid signed proposal during check policy on channel [%s] with policy [%s]", channelID, policyName)
 	}
 
-	// Get Policy
+	//获取策略管理者
 	policyManager, _ := p.channelPolicyManagerGetter.Manager(channelID)
 	if policyManager == nil {
 		return fmt.Errorf("Failed to get policy manager for channel [%s]", channelID)
@@ -167,16 +155,18 @@ func (p *policyChecker) CheckPolicyBySignedData(channelID, policyName string, sd
 		return fmt.Errorf("Invalid signed data during check policy on channel [%s] with policy [%s]", channelID, policyName)
 	}
 
-	// Get Policy
+	//获取策略管理者
 	policyManager, _ := p.channelPolicyManagerGetter.Manager(channelID)
 	if policyManager == nil {
 		return fmt.Errorf("Failed to get policy manager for channel [%s]", channelID)
 	}
 
 	// Recall that get policy always returns a policy object
+	//根据策略名获取策略对象，在/fabric/common/policies/policy.go中定义和实现
 	policy, _ := policyManager.GetPolicy(policyName)
 
 	// Evaluate the policy
+	//评定策略
 	err := policy.Evaluate(sd)
 	if err != nil {
 		return fmt.Errorf("Failed evaluating policy on signed data during check policy on channel [%s] with policy [%s]: [%s]", channelID, policyName, err)

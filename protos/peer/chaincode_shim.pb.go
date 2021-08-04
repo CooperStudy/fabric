@@ -377,6 +377,7 @@ func (x *chaincodeSupportRegisterClient) Recv() (*ChaincodeMessage, error) {
 
 // Server API for ChaincodeSupport service
 
+//生成服务器端的接口和注册函数
 type ChaincodeSupportServer interface {
 	Register(ChaincodeSupport_RegisterServer) error
 }
@@ -389,12 +390,13 @@ func _ChaincodeSupport_Register_Handler(srv interface{}, stream grpc.ServerStrea
 	return srv.(ChaincodeSupportServer).Register(&chaincodeSupportRegisterServer{stream})
 }
 
+//生成的服务器端接口定义、接口实例
 type ChaincodeSupport_RegisterServer interface {
 	Send(*ChaincodeMessage) error
 	Recv() (*ChaincodeMessage, error)
 	grpc.ServerStream
 }
-
+//接口实例
 type chaincodeSupportRegisterServer struct {
 	grpc.ServerStream
 }

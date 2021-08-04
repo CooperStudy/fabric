@@ -1,19 +1,3 @@
-/*
-Copyright IBM Corp. 2016 All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-		 http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package producer
 
 import (
@@ -47,13 +31,15 @@ func NewEventsServer(bufferSize uint, timeout time.Duration) *EventsServer {
 
 // Chat implementation of the Chat bidi streaming RPC function
 func (p *EventsServer) Chat(stream pb.Events_ChatServer) error {
-	handler, err := newEventHandler(stream)
+	handler, err := newEventHandler(stream)//
 	if err != nil {
 		return fmt.Errorf("error creating handler during handleChat initiation: %s", err)
 	}
+	//根据服务端流接口stream，创建一个handler，用于处理接收客户端发送的SignedEvent类型数据
 	defer handler.Stop()
 	for {
-		in, err := stream.Recv()
+		//循环接收数据，然后处理数据
+		in, err := stream.Recv()//接收signedEvent类型的数据，这也是grpc双向流的标准用法，
 		if err == io.EOF {
 			logger.Debug("Received EOF, ending Chat")
 			return nil
@@ -63,7 +49,7 @@ func (p *EventsServer) Chat(stream pb.Events_ChatServer) error {
 			logger.Error(e.Error())
 			return e
 		}
-		err = handler.HandleMessage(in)
+		err = handler.HandleMessage(in)//处理数据
 		if err != nil {
 			logger.Errorf("Error handling message: %s", err)
 			return err

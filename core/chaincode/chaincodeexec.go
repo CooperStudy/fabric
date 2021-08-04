@@ -74,6 +74,7 @@ func GetChaincodeDataFromLSCC(ctxt context.Context, txid string, signedProp *pb.
 }
 
 // ExecuteChaincode executes a given chaincode given chaincode name and arguments
+//chaincode的执行代码
 func ExecuteChaincode(ctxt context.Context, cccid *ccprovider.CCContext, args [][]byte) (*pb.Response, *pb.ChaincodeEvent, error) {
 	var spec *pb.ChaincodeInvocationSpec
 	var err error

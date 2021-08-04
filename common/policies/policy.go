@@ -65,6 +65,7 @@ var logger = flogging.MustGetLogger("policies")
 // Policy is used to determine if a signature is valid
 type Policy interface {
 	// Evaluate takes a set of SignedData and evaluates whether this set of signatures satisfies the policy
+	//对比SignedData中的签名,是否满足SignedData中策略
 	Evaluate(signatureSet []*cb.SignedData) error
 }
 
@@ -157,6 +158,7 @@ func NewManagerImpl(basePath string, providers map[int32]Provider) *ManagerImpl 
 	}
 }
 
+//错误或者拒绝亲狂下的策略实现
 type rejectPolicy string
 
 func (rp rejectPolicy) Evaluate(signedData []*cb.SignedData) error {

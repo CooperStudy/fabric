@@ -91,7 +91,6 @@ func serve(args []string) error {
 	if chaincodeDevMode {
 		logger.Info("Running in chaincode development mode")
 		logger.Info("Disable loading validity system chaincode")
-
 		viper.Set("chaincode.mode", chaincode.DevModeUserRunsChaincode)
 
 	}
@@ -108,6 +107,7 @@ func serve(args []string) error {
 
 	listenAddr := viper.GetString("peer.listenAddress")
 
+	//获取安全配置
 	secureConfig, err := peer.GetSecureConfig()
 	if err != nil {
 		logger.Fatalf("Error loading secure config for peer (%s)", err)
@@ -224,7 +224,7 @@ func serve(args []string) error {
 
 	// Start the event hub server
 	if ehubGrpcServer != nil {
-		go ehubGrpcServer.Start()
+		go ehubGrpcServer.Start()//讲该服务的grpc服务器端启动,start内部是一个标准启动
 	}
 
 	// Start profiling http endpoint if enabled
@@ -348,20 +348,24 @@ func getChaincodeAddressEndpoint() (*pb.PeerEndpoint, error) {
 func createEventHubServer(secureConfig comm.SecureServerConfig) (comm.GRPCServer, error) {
 	var lis net.Listener
 	var err error
+	//定义一个监听对象，即服务器监听的地址
 	lis, err = net.Listen("tcp", viper.GetString("peer.events.address"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to listen: %v", err)
 	}
 
+	//创建grpc服务器对象
 	grpcServer, err := comm.NewGRPCServerFromListener(lis, secureConfig)
 	if err != nil {
 		logger.Errorf("Failed to return new GRPC server: %s", err)
 		return nil, err
 	}
+
+	//返回的是全局的单例
 	ehServer := producer.NewEventsServer(
 		uint(viper.GetInt("peer.events.buffersize")),
 		viper.GetDuration("peer.events.timeout"))
-
+    //xx.pb.go中的注册函数注册服务，注册到grpc服务器对象上
 	pb.RegisterEventsServer(grpcServer.Server(), ehServer)
 	return grpcServer, nil
 }

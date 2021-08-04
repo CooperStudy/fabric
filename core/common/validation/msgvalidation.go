@@ -57,6 +57,7 @@ func validateChaincodeProposalMessage(prop *pb.Proposal, hdr *common.Header) (*p
 	// therefore expected to be nil; however the fabric may be extended to
 	// encode more elaborate visibility mechanisms that shall be encoded in
 	// this field (and handled appropriately by the peer)
+	//该字段控制着proposal对象signedPropsal的payload在最终弄交易和在ledger中能用到的范围
 	if chaincodeHdrExt.PayloadVisibility != nil {
 		return nil, errors.New("Invalid payload visibility field")
 	}
@@ -87,12 +88,16 @@ func ValidateProposalMessage(signedProp *pb.SignedProposal) (*pb.Proposal, *comm
 	}
 
 	// validate the header
+	//函数验证了SiignedProposal中ProposalBytes的Header，主要验证SignatureHeader中的creator不为空，
+	//nonce不为空且存在，已经channelHeader中的type必须为Endorser_TRANSACTION、Config_UpDATE,CONFIG三者之一
+	//并顺道反悔了Unmashal出来的结构体对象
 	chdr, shdr, err := validateCommonHeader(hdr)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
 	// validate the signature
+	//利用validateCoommoonHeader顺道返回的结构体数据，验证了SingedProposal中的证书，背书策略，以及发起者的身份等有效性
 	err = checkSignatureFromCreator(shdr.Creator, signedProp.Signature, signedProp.ProposalBytes, chdr.ChannelId)
 	if err != nil {
 		return nil, nil, nil, err
@@ -119,6 +124,8 @@ func ValidateProposalMessage(signedProp *pb.SignedProposal) (*pb.Proposal, *comm
 		fallthrough
 	case common.HeaderType_ENDORSER_TRANSACTION:
 		// validation of the proposal message knowing it's of type CHAINCODE
+		//简单验证了Proposal中Extension对应的结构体ChaincodeHeaderExtension中的PayloadVisibility
+		//是否为空，该字段控制着Proposal的payload在最终弄的交易和在ledger中能用到的范围，
 		chaincodeHdrExt, err := validateChaincodeProposalMessage(prop, hdr)
 		if err != nil {
 			return nil, nil, nil, err

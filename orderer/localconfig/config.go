@@ -38,7 +38,7 @@ const (
 	pkgLogID = "orderer/localconfig"
 
 	// Prefix identifies the prefix for the orderer-related ENV vars.
-	Prefix = "ORDERER"
+	Prefix = "ORDERER" //定义了orderer相关的环境变量
 )
 
 var (
@@ -51,7 +51,7 @@ func init() {
 	logger = flogging.MustGetLogger(pkgLogID)
 	flogging.SetModuleLevel(pkgLogID, "error")
 
-	configName = strings.ToLower(Prefix)
+	configName = strings.ToLower(Prefix)//定义了configname
 }
 
 // TopLevel directly corresponds to the orderer config YAML.
@@ -217,8 +217,9 @@ var defaults = TopLevel{
 
 // Load parses the orderer.yaml file and environment, producing a struct suitable for config use
 func Load() *TopLevel {
-	config := viper.New()
-	cf.InitViper(config, configName)
+	//
+	config := viper.New()//创建一个新的viper
+	cf.InitViper(config, configName)//其中config参数为新建的用于orderer自身的viper，configNanme为配置文件名，
 
 	// for environment variables
 	config.SetEnvPrefix(Prefix)
@@ -226,7 +227,7 @@ func Load() *TopLevel {
 	replacer := strings.NewReplacer(".", "_")
 	config.SetEnvKeyReplacer(replacer)
 
-	err := config.ReadInConfig()
+	err := config.ReadInConfig()//读取配置文件
 	if err != nil {
 		logger.Panic("Error reading configuration:", err)
 	}

@@ -60,6 +60,7 @@ func (pr *provider) NewPolicy(data []byte) (policies.Policy, proto.Message, erro
 
 }
 
+//策略实现1
 type policy struct {
 	evaluator func([]*cb.SignedData, []bool) bool
 }
