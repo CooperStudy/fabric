@@ -28,6 +28,7 @@ import (
 
 // VsccValidatorImpl is the implementation used to call
 // the vscc chaincode and validate block transactions
+//调用vscc chaincode并且验证块事务
 type VsccValidatorImpl struct {
 	support         Support
 	sccprovider     sysccprovider.SystemChaincodeProvider
@@ -35,6 +36,7 @@ type VsccValidatorImpl struct {
 }
 
 // newVSCCValidator creates new vscc validator
+// 创建新的vscc验证器
 func newVSCCValidator(support Support, sccp sysccprovider.SystemChaincodeProvider, pluginValidator *PluginValidator) *VsccValidatorImpl {
 	return &VsccValidatorImpl{
 		support:         support,
@@ -44,6 +46,7 @@ func newVSCCValidator(support Support, sccp sysccprovider.SystemChaincodeProvide
 }
 
 // VSCCValidateTx executes vscc validation for transaction
+//为事务执行vscc验证
 func (v *VsccValidatorImpl) VSCCValidateTx(seq int, payload *common.Payload, envBytes []byte, block *common.Block) (error, peer.TxValidationCode) {
 	logger.Debugf("VSCCValidateTx starts for bytes %p", envBytes)
 	defer logger.Debugf("VSCCValidateTx completes env bytes %p", envBytes)
@@ -310,6 +313,7 @@ func (v *VsccValidatorImpl) getCDataForCC(chid, ccid string) (ccprovider.Chainco
 }
 
 // GetInfoForValidate gets the ChaincodeInstance(with latest version) of tx, vscc and policy from lscc
+//从lscc获取tx，vscc，policy的chaincode Instance（包含最新版本）
 func (v *VsccValidatorImpl) GetInfoForValidate(chdr *common.ChannelHeader, ccID string) (*sysccprovider.ChaincodeInstance, *sysccprovider.ChaincodeInstance, []byte, error) {
 	cc := &sysccprovider.ChaincodeInstance{
 		ChainID:          chdr.ChannelId,
@@ -354,6 +358,7 @@ func (v *VsccValidatorImpl) GetInfoForValidate(chdr *common.ChannelHeader, ccID 
 
 // txWritesToNamespace returns true if the supplied NsRwSet
 // performs a ledger write
+//确认提供NsRwSet执行账本写入
 func (v *VsccValidatorImpl) txWritesToNamespace(ns *rwsetutil.NsRwSet) bool {
 	// check for public writes first
 	if ns.KvRwSet != nil && len(ns.KvRwSet.Writes) > 0 {

@@ -29,33 +29,42 @@ import (
 )
 
 // Support provides all of the needed to evaluate the VSCC
+// 提供了VSCC的全部内容
 type Support interface {
 	// Acquire implements semaphore-like acquire semantics
+	//实现信号量的获取语义
 	Acquire(ctx context.Context, n int64) error
 
 	// Release implements semaphore-like release semantics
+	//实现了信号量的释放语义
 	Release(n int64)
 
 	// Ledger returns the ledger associated with this validator
+	//返回与此验证程序相关联的账本
 	Ledger() ledger.PeerLedger
 
 	// MSPManager returns the MSP manager for this channel
+	//返回此频道的MSP管理器
 	MSPManager() msp.MSPManager
 
 	// Apply attempts to apply a configtx to become the new config
+	//尝试应用configtx以成为新配置
 	Apply(configtx *common.ConfigEnvelope) error
 
 	// GetMSPIDs returns the IDs for the application MSPs
 	// that have been defined in the channel
+	//返回已在通道中定义的应用程序MSP的ID
 	GetMSPIDs(cid string) []string
 
 	// Capabilities defines the capabilities for the application portion of this channel
+	//定义此频道的应用程序部分的功能
 	Capabilities() channelconfig.ApplicationCapabilities
 }
 
 //Validator interface which defines API to validate block transactions
 // and return the bit array mask indicating invalid transactions which
 // didn't pass validation.
+//定义api以验证块事物并返回位数数组掩码，指示未通过的无效事物
 type Validator interface {
 	Validate(block *common.Block) error
 }
@@ -63,6 +72,7 @@ type Validator interface {
 // private interface to decouple tx validator
 // and vscc execution, in order to increase
 // testability of TxValidator
+//声明vsccValidator接口，专用接口来解耦tx_validator和vscc_execution,以提高txValidator的可测性
 type vsccValidator interface {
 	VSCCValidateTx(seq int, payload *common.Payload, envBytes []byte, block *common.Block) (error, peer.TxValidationCode)
 }
@@ -70,6 +80,7 @@ type vsccValidator interface {
 // implementation of Validator interface, keeps
 // reference to the ledger to enable tx simulation
 // and execution of vscc
+//Validator的实现，继续参考账本，以启用tx访真和执行VSCC。
 type TxValidator struct {
 	Support Support
 	Vscc    vsccValidator
@@ -98,6 +109,7 @@ type blockValidationResult struct {
 }
 
 // NewTxValidator creates new transactions validator
+//创建新的事务验证器
 func NewTxValidator(support Support, sccp sysccprovider.SystemChaincodeProvider, pm PluginMapper) *TxValidator {
 	// Encapsulates interface implementation
 	pluginValidator := NewPluginValidator(pm, support.Ledger(), &dynamicDeserializer{support: support}, &dynamicCapabilities{support: support})
@@ -131,6 +143,16 @@ func (v *TxValidator) chainExists(chain string) bool {
 //    state is when a config transaction is received, but they are
 //    guaranteed to be alone in the block. If/when this assumption
 //    is violated, this code must be changed.
+/*
+   （1）Validate执行块的验证，并且执行块中每个事务的验证方式如下：提交程序线程在gorontine
+   中启动tx验证函数(使用信号量来限制并发验证goroutine的数量)。该线程然后从结果通道中
+   读取验证结果（在完成goroutine的订购者中）。goroutine执行块中txs的验证并且将验证结果
+   放入结果通道
+  （2）为了保持验证方式简单，提交者线程将块中的所有事务排入队列，然后继续读取结果。
+  （3）为了使并行验证正常工作，重要的是验证功能不会改变系统的状态，此处验证执行的顺序很重要，
+   我们不得不求助与顺序验证（或者一些锁定）。目前就是这样做的，因为影响状态的函数是收到交易并且
+   验证交易,但这必须保证交易独立在区块中。如果这个条件改变了，代码也要改变。
+ */
 func (v *TxValidator) Validate(block *common.Block) error {
 	var err error
 	var errPos int
@@ -452,11 +474,13 @@ func (v *TxValidator) validateTx(req *blockValidationRequest, results chan<- *bl
 }
 
 // generateCCKey generates a unique identifier for chaincode in specific channel
+//为特定通道中的chaincode生成唯一的标识符
 func (v *TxValidator) generateCCKey(ccName, chainID string) string {
 	return fmt.Sprintf("%s/%s", ccName, chainID)
 }
 
 // invalidTXsForUpgradeCC invalid all txs that should be invalided because of chaincode upgrade txs
+// 由于chaincode升级txs而导致应该被废止的txs
 func (v *TxValidator) invalidTXsForUpgradeCC(txsChaincodeNames map[int]*sysccprovider.ChaincodeInstance, txsUpgradedChaincodes map[int]*sysccprovider.ChaincodeInstance, txsfltr ledgerUtil.TxValidationFlags) {
 	if len(txsUpgradedChaincodes) == 0 {
 		return

@@ -100,14 +100,17 @@ func Start(cmd string, conf *localconfig.TopLevel) {
 
 	manager := initializeMultichannelRegistrar(conf, signer, tlsCallback)
 	mutualTLS := serverConfig.SecOpts.UseTLS && serverConfig.SecOpts.RequireClientCert
+	//服务端对象实例
 	server := NewServer(manager, signer, &conf.Debug, conf.General.Authentication.TimeWindow, mutualTLS)
 
 	switch cmd {
 	case start.FullCommand(): // "start" command
 		logger.Infof("Starting %s", metadata.GetVersionInfo())
 		initializeProfilingService(conf)
+		//注册
 		ab.RegisterAtomicBroadcastServer(grpcServer.Server(), server)
 		logger.Info("Beginning to serve requests")
+		//启动
 		grpcServer.Start()
 	case benchmark.FullCommand(): // "benchmark" command
 		logger.Info("Starting orderer in benchmark mode")

@@ -26,11 +26,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-//--------!!!IMPORTANT!!-!!IMPORTANT!!-!!IMPORTANT!!---------
-// This is used merely to complete the loop for the "skeleton"
-// path so we can reason about and  modify committer component
-// more effectively using code.
-
 var logger *logging.Logger // package-level logger
 
 func init() {
@@ -39,6 +34,7 @@ func init() {
 
 // PeerLedgerSupport abstract out the API's of ledger.PeerLedger interface
 // required to implement LedgerCommitter
+//主要为抽象出ledeger.PeerLedger接口，去实现LedgerCommitter所需的api
 type PeerLedgerSupport interface {
 	GetPvtDataAndBlockByNum(blockNum uint64, filter ledger.PvtNsCollFilter) (*ledger.BlockAndPvtData, error)
 
@@ -58,6 +54,7 @@ type PeerLedgerSupport interface {
 // LedgerCommitter is the implementation of  Committer interface
 // it keeps the reference to the ledger to commit blocks and retrieve
 // chain information
+//是committer的实现，它保持对账本的引用来提交区块和检索链信息
 type LedgerCommitter struct {
 	PeerLedgerSupport
 	eventer ConfigBlockEventer
@@ -65,10 +62,13 @@ type LedgerCommitter struct {
 
 // ConfigBlockEventer callback function proto type to define action
 // upon arrival on new configuaration update block
+
+//回调函数原型在到达新配置更新块时定义动作
 type ConfigBlockEventer func(block *common.Block) error
 
 // NewLedgerCommitter is a factory function to create an instance of the committer
 // which passes incoming blocks via validation and commits them into the ledger.
+//是一个工厂函数，用于创建提交者的一个实例，它通过验证传入入块，并将它提交到分类账中
 func NewLedgerCommitter(ledger PeerLedgerSupport) *LedgerCommitter {
 	return NewLedgerCommitterReactive(ledger, func(_ *common.Block) error { return nil })
 }
@@ -76,12 +76,14 @@ func NewLedgerCommitter(ledger PeerLedgerSupport) *LedgerCommitter {
 // NewLedgerCommitterReactive is a factory function to create an instance of the committer
 // same as way as NewLedgerCommitter, while also provides an option to specify callback to
 // be called upon new configuration block arrival and commit event
+//是一个工厂函数，用于创建与newledgerCommiter相同的提交者实例,同时还提供一个选项来指定在新的配置块到达和提交事件时调用的回调
 func NewLedgerCommitterReactive(ledger PeerLedgerSupport, eventer ConfigBlockEventer) *LedgerCommitter {
 	return &LedgerCommitter{PeerLedgerSupport: ledger, eventer: eventer}
 }
 
 // preCommit takes care to validate the block and update based on its
 // content
+//负责验证区块病根据其内容进行更新
 func (lc *LedgerCommitter) preCommit(block *common.Block) error {
 	// Updating CSCC with new configuration block
 	if utils.IsConfigBlock(block) {
@@ -94,6 +96,7 @@ func (lc *LedgerCommitter) preCommit(block *common.Block) error {
 }
 
 // CommitWithPvtData commits blocks atomically with private data
+//以私有数据自动提交块
 func (lc *LedgerCommitter) CommitWithPvtData(blockAndPvtData *ledger.BlockAndPvtData) error {
 	// Do validation and whatever needed before
 	// committing new block
@@ -113,11 +116,13 @@ func (lc *LedgerCommitter) CommitWithPvtData(blockAndPvtData *ledger.BlockAndPvt
 }
 
 // GetPvtDataAndBlockByNum retrieves private data and block for given sequence number
+//通过给定的私有数据检索区块的序列号
 func (lc *LedgerCommitter) GetPvtDataAndBlockByNum(seqNum uint64) (*ledger.BlockAndPvtData, error) {
 	return lc.PeerLedgerSupport.GetPvtDataAndBlockByNum(seqNum, nil)
 }
 
 // postCommit publish event or handle other tasks once block committed to the ledger
+// 一旦提交账本，则通过postcommit发布事件或处理其他任务
 func (lc *LedgerCommitter) postCommit(block *common.Block) {
 	// create/send block events *after* the block has been committed
 	bevent, fbevent, channelID, err := producer.CreateBlockEvents(block)
@@ -134,6 +139,7 @@ func (lc *LedgerCommitter) postCommit(block *common.Block) {
 }
 
 // LedgerHeight returns recently committed block sequence number
+//返回最近提交的块的序列号
 func (lc *LedgerCommitter) LedgerHeight() (uint64, error) {
 	var info *common.BlockchainInfo
 	var err error
@@ -146,6 +152,7 @@ func (lc *LedgerCommitter) LedgerHeight() (uint64, error) {
 }
 
 // GetBlocks used to retrieve blocks with sequence numbers provided in the slice
+//用于检索切片中提供的序号的块
 func (lc *LedgerCommitter) GetBlocks(blockSeqs []uint64) []*common.Block {
 	var blocks []*common.Block
 
