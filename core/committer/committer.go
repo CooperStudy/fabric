@@ -31,21 +31,26 @@ import (
 type Committer interface {
 
 	// CommitWithPvtData block and private data into the ledger
+	//将区块和私有数据写入账本
 	CommitWithPvtData(blockAndPvtData *ledger.BlockAndPvtData) error
 
 	// GetPvtDataAndBlockByNum retrieves block with private data with given
 	// sequence number
+	//检索块
 	GetPvtDataAndBlockByNum(seqNum uint64) (*ledger.BlockAndPvtData, error)
 
 	// GetPvtDataByNum returns a slice of the private data from the ledger
 	// for given block and based on the filter which indicates a map of
 	// collections and namespaces of private data to retrieve
+	//从给定区块中返回私有数据切片，并且根据过滤指示要检索私有数据的集合和名称空间的映射
 	GetPvtDataByNum(blockNum uint64, filter ledger.PvtNsCollFilter) ([]*ledger.TxPvtData, error)
 
 	// Get recent block sequence number
+	//获取最近的区块序列号
 	LedgerHeight() (uint64, error)
 
 	// Gets blocks with sequence numbers provided in the slice
+	//根据参数提供的序列号获取区块
 	GetBlocks(blockSeqs []uint64) []*common.Block
 
 	// Closes committing service
