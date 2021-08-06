@@ -1,19 +1,3 @@
-/*
-Copyright IBM Corp. 2016 All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-                 http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package deliver
 
 import (
@@ -70,6 +54,7 @@ func NewHandlerImpl(sm SupportManager) Handler {
 }
 
 func (ds *deliverServer) Handle(srv ab.AtomicBroadcast_DeliverServer) error {
+
 	logger.Debugf("Starting new deliver loop")
 	for {
 		logger.Debugf("Attempting to read seek info message")
@@ -156,12 +141,15 @@ func (ds *deliverServer) Handle(srv ab.AtomicBroadcast_DeliverServer) error {
 		}
 
 		for {
+
 			if seekInfo.Behavior == ab.SeekInfo_BLOCK_UNTIL_READY {
+				//正常情况下会进入这个，除了关闭deliver时会来消息，erroredChan不会来消息，只会等待
 				select {
 				case <-erroredChan:
 					logger.Warningf("[channel: %s] Aborting deliver request because of consenter error", chdr.ChannelId)
 					return sendStatusReply(srv, cb.Status_SERVICE_UNAVAILABLE)
 				case <-cursor.ReadyChan():
+					//只会等待cursor.ReadyChan，由于closeChan是关闭的，程序将继续执行
 				}
 			} else {
 				select {
