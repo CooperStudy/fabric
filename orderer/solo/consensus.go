@@ -83,7 +83,7 @@ func (ch *chain) Enqueue(env *cb.Envelope) bool {
 func (ch *chain) Errored() <-chan struct{} {
 	return ch.exitChan
 }
-
+//solode chain是for循环+select-case+chan组成的简单处理流程
 func (ch *chain) main() {
 	var timer <-chan time.Time
 

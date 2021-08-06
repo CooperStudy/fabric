@@ -148,6 +148,7 @@ func startThread(chain *chainImpl) {
 	var err error
 
 	// Set up the producer
+	//创建kafka生产者
 	chain.producer, err = setupProducerForChannel(chain.consenter.retryOptions(), chain.haltChan, chain.support.SharedConfig().KafkaBrokers(), chain.consenter.brokerConfig(), chain.channel)
 	if err != nil {
 		logger.Panicf("[channel: %s] Cannot set up producer = %s", chain.channel.topic(), err)
@@ -155,12 +156,14 @@ func startThread(chain *chainImpl) {
 	logger.Infof("[channel: %s] Producer set up successfully", chain.support.ChainID())
 
 	// Have the producer post the CONNECT message
+
 	if err = sendConnectMessage(chain.consenter.retryOptions(), chain.haltChan, chain.producer, chain.channel); err != nil {
 		logger.Panicf("[channel: %s] Cannot post CONNECT message = %s", chain.channel.topic(), err)
 	}
 	logger.Infof("[channel: %s] CONNECT message posted successfully", chain.channel.topic())
 
 	// Set up the parent consumer
+	//创建消费者
 	chain.parentConsumer, err = setupParentConsumerForChannel(chain.consenter.retryOptions(), chain.haltChan, chain.support.SharedConfig().KafkaBrokers(), chain.consenter.brokerConfig(), chain.channel)
 	if err != nil {
 		logger.Panicf("[channel: %s] Cannot set up parent consumer = %s", chain.channel.topic(), err)
@@ -168,17 +171,23 @@ func startThread(chain *chainImpl) {
 	logger.Infof("[channel: %s] Parent consumer set up successfully", chain.channel.topic())
 
 	// Set up the channel consumer
+	//分区消费者
 	chain.channelConsumer, err = setupChannelConsumerForChannel(chain.consenter.retryOptions(), chain.haltChan, chain.parentConsumer, chain.channel, chain.lastOffsetPersisted+1)
 	if err != nil {
 		logger.Panicf("[channel: %s] Cannot set up channel consumer = %s", chain.channel.topic(), err)
 	}
 	logger.Infof("[channel: %s] Channel consumer set up successfully", chain.channel.topic())
 
-	close(chain.startChan)                // Broadcast requests will now go through
+	close(chain.startChan)
+	// Broadcast requests will now go through
 	chain.errorChan = make(chan struct{}) // Deliver requests will also go through
+	//分别开启处理peer节点，通过Broadcast，Deliver发送的请求开关（只有开启orderer才会开始处理peer发来的请求)
 
 	logger.Infof("[channel: %s] Start phase completed successfully", chain.channel.topic())
 
+	//启动了for循环接收处理消息过程，该过程是用来接收kafka服务端（在orderer中就是kafka容器）序列化后，返回给kafka客服端（在orderer中就是
+	//sarama的消息流，然后依次分类处理，在processMessagesToBlocks中，正常的kafka生产出来的消息，会从chain。channelConsumer.Messagers()这个通道中出来，
+	//根据不同的kafka消息类型，在switch-case中分别使用processConnect，processTimeToCut、KafkaMessage_Regular函数进行处理。
 	chain.processMessagesToBlocks() // Keep up to date with the channel
 }
 

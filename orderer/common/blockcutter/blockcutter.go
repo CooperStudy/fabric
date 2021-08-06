@@ -1,19 +1,3 @@
-/*
-Copyright IBM Corp. 2016 All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-                 http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package blockcutter
 
 import (
@@ -22,9 +6,24 @@ import (
 	cb "github.com/hyperledger/fabric/protos/common"
 
 	"github.com/op/go-logging"
-)
+	)
+
 
 var logger = logging.MustGetLogger("orderer/common/blockcutter")
+/*
+块分割工具，用于分割block，具体为定义的Receiver，类似与工厂流水线的自动打包机，一条条的消息在流水线上被传到cutter处，把
+一条条消息打包成一批（一箱）消息，同时返回整理好的这批消息对应的committer集合，至此cutter的任务完成。每一批消息被当做一个block
+执行完对应的committer之后被写入账本。在configtx。yaml中关于Orderer的配置项中，BatchSize部分规定了block的大小：MaxMeessageCout制定饿了block中最多
+能够存储的消息总数，AbsoluteMaxBytes指定了block中最大的字节数（block cutter处理消息的过程中，会努力使每一批消息计量保持在这个值上）。根据这三个值，cutter在工作的
+时候（具体指blockcutter。go中的Orderer函数）1。若一个Envelope的数据大小（Payload+签名）大于PreferredMaxBytes，不论当前缓存如何，立即Cut。2）若一个Envelop被要求
+单纯存储在一个block里面（即该消息对应的committer的Isolated()返回true），要立即cut。3）若一个Envelope的大小加上blockcutter已有消息的大小之和大于 MaxMessageCount
+要立即cut，5）还有一个中比较特殊的Cut，有confitx.yaml配置项，batchtimeout控制，当时间超过此值的时候，chain启动的处理消息的流程中主动触发的Cut。cut所做的工作，就是将
+当前缓存的的消息，和committer返回供blockcutter与当前处理的Envelope打包成一批或者两批消息，然后清空缓存信息。在在上述需要cut的情况中，只有1）2）会产生两批消息，且先是旧消息
+（即blockcutter中之前缓存的消息）为一批，receiver中，filters是一个RuleSet,定义了过滤条件集合，均来自与orderer/multiChain/chainsupport.go中的
+createStandardFilters或createSystemChainFilters（后者只是比前者多了一个systemChainFilter过滤对象，4）所示）；pendingBatch是一个Envelope组合，用来缓存Envelope消息
+pendingBatchSizeBytes用来记录这些缓存消息的大小，pendingCommitters是一个Committer数组，用来缓存每个Envelope对应的committer。
+
+ */
 
 // Receiver defines a sink for the ordered broadcast messages
 type Receiver interface {
@@ -53,10 +52,10 @@ type Receiver interface {
 
 type receiver struct {
 	sharedConfigManager   config.Orderer
-	filters               *filter.RuleSet
-	pendingBatch          []*cb.Envelope
-	pendingBatchSizeBytes uint32
-	pendingCommitters     []filter.Committer
+	filters               *filter.RuleSet//RuleSet定义了过滤条件集合
+	pendingBatch          []*cb.Envelope//是一个Envelope数组，用来缓存Envelope消息；
+	pendingBatchSizeBytes uint32 //用来记录这些缓存的消息大小，
+	pendingCommitters     []filter.Committer//pendingCommitters是一个Committer数组，用来缓存每个Envelope对应的committer
 }
 
 // NewReceiverImpl creates a Receiver implementation based on the given configtxorderer manager and filters

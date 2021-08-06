@@ -1,19 +1,3 @@
-/*
-Copyright IBM Corp. 2016 All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-                 http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package multichain
 
 import (
@@ -79,6 +63,8 @@ type ConsenterSupport interface {
 }
 
 // ChainSupport provides a wrapper for the resources backing a chain
+//属于尽力对chain操作提供支持的对象.既包账本本身,也包含了账本用到的各种工具对象,如分割工具cutter\过滤工具filter\签名工具signer\以及最新配置
+//在chain中的位置信息(lastConfig的值代表着当前链中最新配置所在的block的编号)
 type ChainSupport interface {
 	// This interface is actually the union with the deliver.Support but because of a golang
 	// limitation https://github.com/golang/go/issues/6977 the methods must be explicitly declared
@@ -101,15 +87,16 @@ type ChainSupport interface {
 	// ProposeConfigUpdate applies a CONFIG_UPDATE to an existing config to produce a *cb.ConfigEnvelope
 	ProposeConfigUpdate(env *cb.Envelope) (*cb.ConfigEnvelope, error)
 }
-
+//chainsupport也实现了一些用于支持各个工具的小接口，一些流程切换，数据流向的转变工作，都交给了chainSupport来做
+//chainsupport也会做其他工作，比如A操作需要调用B工具，则A包含的往往B本身，而是chainsupport，接chainsupport来使用B
 type chainSupport struct {
 	*ledgerResources
 	chain         Chain
 	cutter        blockcutter.Receiver
 	filters       *filter.RuleSet
 	signer        crypto.LocalSigner
-	lastConfig    uint64
-	lastConfigSeq uint64
+	lastConfig    uint64 //代表最新配置在chain中的位置信息（lastConfig的值代表当前链中最新配置所在block的编号）
+	lastConfigSeq uint64 //lastConfigSeq的值代表当前链中最新配置消息自身的编号）
 }
 
 func newChainSupport(

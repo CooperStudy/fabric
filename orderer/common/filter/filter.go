@@ -1,19 +1,17 @@
 /*
-Copyright IBM Corp. 2016 All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-                 http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+	几种filter可以组装到一起形成一个过滤器集合，orderer服务用此过滤集合（ruleSet）ruleset中的各个filter的Apply函数对收到的消息进行过滤，比如有些类型的消息
+的一些字段不能为空，大小必须在配置的范围之内等。
+	和filter对应的是一个提交对象committer，寄一个消息通过了filter的Apply，会返回一个committer，这个committer会在该消息写入账本之前执行Commit操作。
+同时，committer的Isolated的返回值标识着一条消息是否要单独成块，一些比较特殊的消息可能在不满足一定大小的情况下也要单独作为一个区块，比如genesisBlock，一个filter集合，
+就是一个合同，而一个envelope来到orderer中之后，会根据这个合同一条条地进行条款对照，如果符合，执行一个对应的committer工具，以使Envelope能拿到这个committer工具进一步，
+完成一些事情。同时定义了三种基本的Apply过滤结果，Accept接收，reject拒绝，Forward表示需要进一步验证。filter有哦如下类型：1）emptyRejectRule 验证不能为空的filter，
+在orderer/common/filter/filter.go中定义，2）signFilter，验证签名的filter，在orderer/common/sigfilter/sigfilter.go中定义，这里会使用公共签名策略（common/
+policies中定义）来验证进入orderer的Envelope中所携带的签名是否满足要求， 3）sizeFilter，验证大小的filter，在orderer/common/sigfilter/sigfilter.go中定义。
+在configtx.yaml中Orderer配置中有需要关于大小多少的配置项，讲在这个filter中验证。4）systemChainFilter，系统链filter，在orderer/multichain/systemchain.go中定义
+，作用在于验证一个Envelop是否是一个用于升级的orderer配置的configUpdate类型消息，若是则会提供一个包含configtx工具的committer，在该Envelope写入账本前，执行committer，
+，新建一条新配置的链。5）configtxfilter，在orderer/common/configtxfilter/filter.go中定义，作用与systemChainFilter类似，检测Envelope是否是一个Header_config类型的消息，
+然后返回一个包含有configManager的工具的committer供之后对消息做进一步操作。
 */
-
 package filter
 
 import (

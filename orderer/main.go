@@ -56,12 +56,14 @@ func main() {
 		grpcServer := initializeGrpcServer(conf)
 		initializeLocalMsp(conf)
 		signer := localmsp.NewSigner()
+		//完成了对multiLedger的初始化。初始化完成时，所有包含的子对象也相应被初始化，所有orderer中现存的chain也启动起来。
+		//这里的chain可以指账本本身,还可以指包含了账本的chainsupport,还可以指具体的处理消息的流程(如orderer/solo和orderer/kafka下各自
+		//实现的chain所执行的Enqueue).而multiLedgerd是多条链的总管家
 		manager := initializeMultiChainManager(conf, signer)
 		server := NewServer(manager, signer)
 		ab.RegisterAtomicBroadcastServer(grpcServer.Server(), server)
 		logger.Info("Beginning to serve requests")
 		grpcServer.Start()
-	// "version" command
 	case version.FullCommand():
 		fmt.Println(metadata.GetVersionInfo())
 	}
