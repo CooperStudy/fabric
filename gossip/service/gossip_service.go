@@ -63,20 +63,22 @@ type DeliveryServiceFactory interface {
 	Service(g GossipService, endpoints []string, msc api.MessageCryptoService) (deliverclient.DeliverService, error)
 }
 
+//deliverFactory,这个deliver工厂的值是deliveryFactoryImpl，
 type deliveryFactoryImpl struct {
 }
 
 // Returns an instance of delivery client
 func (*deliveryFactoryImpl) Service(g GossipService, endpoints []string, mcs api.MessageCryptoService) (deliverclient.DeliverService, error) {
+	//生成了一个Deliver服务实例deliverServiceImpl,将其赋值给gossip服务中的deliveryService,所给配置config中
 	return deliverclient.NewDeliverService(&deliverclient.Config{
 		CryptoSvc:   mcs,
 		Gossip:      g,
-		Endpoints:   endpoints,
-		ConnFactory: deliverclient.DefaultConnectionFactory,
+		Endpoints:   endpoints,//赋值为传进来的orderer的地址
+		ConnFactory: deliverclient.DefaultConnectionFactory,//core/deliversevice.go中的DefaultConnection Factory
 		ABCFactory:  deliverclient.DefaultABCFactory,
 	})
 }
-
+//gossip服务成员
 type gossipServiceImpl struct {
 	gossipSvc
 	chains          map[string]state.GossipStateProvider
@@ -119,6 +121,8 @@ func (jcm *joinChannelMessage) AnchorPeersOf(org api.OrgIdentityType) []api.Anch
 var logger = util.GetLogger(util.LoggingServiceModule, "")
 
 // InitGossipService initialize gossip service
+
+//
 func InitGossipService(peerIdentity []byte, endpoint string, s *grpc.Server, mcs api.MessageCryptoService,
 	secAdv api.SecurityAdvisor, secureDialOpts api.PeerSecureDialOpts, bootPeers ...string) error {
 	// TODO: Remove this.
@@ -171,6 +175,7 @@ func (g *gossipServiceImpl) NewConfigEventer() ConfigProcessor {
 }
 
 // InitializeChannel allocates the state provider and should be invoked once per channel per execution
+//最后一个参数ordererAddress是orderer的地址i，对gossip服务进行进一步初始化
 func (g *gossipServiceImpl) InitializeChannel(chainID string, committer committer.Committer, endpoints []string) {
 	g.lock.Lock()
 	defer g.lock.Unlock()
@@ -179,6 +184,7 @@ func (g *gossipServiceImpl) InitializeChannel(chainID string, committer committe
 	g.chains[chainID] = state.NewGossipStateProvider(chainID, g, committer, g.mcs)
 	if g.deliveryService == nil {
 		var err error
+		//使用了deliveryFactoryImpl的Service函数
 		g.deliveryService, err = g.deliveryFactory.Service(gossipServiceInstance, endpoints, g.mcs)
 		if err != nil {
 			logger.Warning("Cannot create delivery client, due to", err)
@@ -197,6 +203,7 @@ func (g *gossipServiceImpl) InitializeChannel(chainID string, committer committe
 		leaderElection := viper.GetBool("peer.gossip.useLeaderElection")
 		isStaticOrgLeader := viper.GetBool("peer.gossip.orgLeader")
 
+		//静态指定leader还是动态选举leader
 		if leaderElection && isStaticOrgLeader {
 			logger.Panic("Setting both orgLeader and useLeaderElection to true isn't supported, aborting execution")
 		}
@@ -205,6 +212,7 @@ func (g *gossipServiceImpl) InitializeChannel(chainID string, committer committe
 			logger.Debug("Delivery uses dynamic leader election mechanism, channel", chainID)
 			g.leaderElection[chainID] = g.newLeaderElectionComponent(chainID, g.onStatusChangeFactory(chainID, committer))
 		} else if isStaticOrgLeader {
+			//静态指定
 			logger.Debug("This peer is configured to connect to ordering service for blocks delivery, channel", chainID)
 			g.deliveryService.StartDeliverForChannel(chainID, committer)
 		} else {

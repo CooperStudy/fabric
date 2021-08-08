@@ -43,6 +43,7 @@ type broadcastSetup func(blocksprovider.BlocksDeliverer) error
 type retryPolicy func(attemptNum int, elapsedTime time.Duration) (time.Duration, bool)
 
 // clientFactory creates a gRPC broadcast client out of a ClientConn
+//用于生成Deliver服务实例
 type clientFactory func(*grpc.ClientConn) orderer.AtomicBroadcastClient
 
 type broadcastClient struct {
@@ -59,11 +60,15 @@ type broadcastClient struct {
 
 // NewBroadcastClient returns a broadcastClient with the given params
 func NewBroadcastClient(prod comm.ConnectionProducer, clFactory clientFactory, onConnect broadcastSetup, bos retryPolicy) *broadcastClient {
+	//createClient被赋值的config的ABCfactory，生成的broadcastCliet是blocksProvideImpl中的成员client，即blocksProviderImpl中createClinet的值是DefualtABCFactory
+	//DefaultABCFacotry使用了protos/orderer/ab.pb.go中生成的默认的AtomicBroadcastClient（包含默认的DeLiver客户端）
 	return &broadcastClient{prod: prod, onConnect: onConnect, shouldRetry: bos, createClient: clFactory, stopChan: make(chan struct{}, 1)}
 }
 
 // Recv receives a message from the ordering service
+// 启动client接收线程后，在client接受欧消息时，core/deliverservice/client.go中的recv（）会执行try
 func (bc *broadcastClient) Recv() (*orderer.DeliverResponse, error) {
+	//执行try函数
 	o, err := bc.try(func() (interface{}, error) {
 		if bc.shouldStop() {
 			return nil, errors.New("closing")
@@ -87,6 +92,7 @@ func (bc *broadcastClient) Send(msg *common.Envelope) error {
 	return err
 }
 
+
 func (bc *broadcastClient) try(action func() (interface{}, error)) (interface{}, error) {
 	attempt := 0
 	start := time.Now()
@@ -94,6 +100,7 @@ func (bc *broadcastClient) try(action func() (interface{}, error)) (interface{},
 	retry := true
 	for retry && !bc.shouldStop() {
 		attempt++
+		//进而执行bc.doAction函数
 		resp, err := bc.doAction(action)
 		if err != nil {
 			backoffDuration, retry = bc.shouldRetry(attempt, time.Since(start))
@@ -110,7 +117,9 @@ func (bc *broadcastClient) try(action func() (interface{}, error)) (interface{},
 	}
 	return nil, fmt.Errorf("Attempts (%d) or elapsed time (%v) exhausted", attempt, time.Since(start))
 }
-
+/*
+   在doAction会查看到client是或否已经和orderer通过grpc连接上，若未连接怎会执行connect()进行grpc连接
+ */
 func (bc *broadcastClient) doAction(action func() (interface{}, error)) (interface{}, error) {
 	if bc.conn == nil {
 		err := bc.connect()
@@ -118,6 +127,7 @@ func (bc *broadcastClient) doAction(action func() (interface{}, error)) (interfa
 			return nil, err
 		}
 	}
+
 	resp, err := action()
 	if err != nil {
 		bc.Disconnect()

@@ -52,9 +52,11 @@ type DeliverService interface {
 // deliverServiceImpl the implementation of the delivery service
 // maintains connection to the ordering service and maps of
 // blocks providers
+//按chainID存储不同的
 type deliverServiceImpl struct {
 	conf           *Config
-	blockProviders map[string]blocksprovider.BlocksProvider
+
+	blockProviders map[string]blocksprovider.BlocksProvider//按chainID存储不同的BlocksProvider，即每个chain都会有一个client，是gossip服务直接使用的deliver服务对象
 	lock           sync.RWMutex
 	stopping       bool
 }
@@ -130,9 +132,12 @@ func (d *deliverServiceImpl) StartDeliverForChannel(chainID string, ledgerInfo b
 		logger.Errorf(errMsg)
 		return errors.New(errMsg)
 	} else {
+		//使用new client
 		client := d.newClient(chainID, ledgerInfo)
 		logger.Debug("This peer will pass blocks from orderer service to other peers for channel", chainID)
+		//然后创建一个包含client的blocksProviderImpl
 		d.blockProviders[chainID] = blocksprovider.NewBlocksProvider(chainID, client, d.conf.Gossip, d.conf.CryptoSvc)
+		//启动client接收线程
 		go d.blockProviders[chainID].DeliverBlocks()
 	}
 	return nil
@@ -171,6 +176,7 @@ func (d *deliverServiceImpl) Stop() {
 	}
 }
 
+
 func (d *deliverServiceImpl) newClient(chainID string, ledgerInfoProvider blocksprovider.LedgerInfo) *broadcastClient {
 	requester := &blocksRequester{
 		chainID: chainID,
@@ -187,6 +193,7 @@ func (d *deliverServiceImpl) newClient(chainID string, ledgerInfoProvider blocks
 		return time.Duration(math.Min(math.Pow(2, attempt)*sleepIncrement, reConnectBackoffThreshold)), true
 	}
 	connProd := comm.NewConnectionProducer(d.conf.ConnFactory(chainID), d.conf.Endpoints)
+	//创建client
 	bClient := NewBroadcastClient(connProd, d.conf.ABCFactory, broadcastSetup, backoffPolicy)
 	requester.client = bClient
 	return bClient

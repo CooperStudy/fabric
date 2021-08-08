@@ -113,6 +113,7 @@ func Initialize(init func(string)) {
 			continue
 		}
 		// Create a chain if we get a valid ledger with config block
+		//创建一个chain
 		if err = createChain(cid, ledger, cb); err != nil {
 			peerLogger.Warningf("Failed to load chain %s(%s)", cid, err)
 			peerLogger.Debugf("Error reloading chain %s with message %s. We continue to the next chain rather than abort.", cid, err)

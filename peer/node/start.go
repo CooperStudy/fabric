@@ -1,9 +1,3 @@
-/*
-Copyright IBM Corp. All Rights Reserved.
-
-SPDX-License-Identifier: Apache-2.0
-*/
-
 package node
 
 import (
@@ -41,7 +35,13 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
 )
+/*
+    当peer节点的容器启动的时候，peer节点的gossip服务随着peer node start命令启动，其中角色是leader的peer节点的gossip服务中
+    使用到的deliver，服务对象deliverServiceImpl也会使
 
+
+用默认生成的Deliver客户端，通过grpc连接orderer节点并且启动循环接收的线程
+ */
 //function used by chaincode support
 type ccEndpointFunc func() (*pb.PeerEndpoint, error)
 
@@ -177,6 +177,8 @@ func serve(args []string) error {
 		}
 		return dialOpts
 	}
+	//初始化gossip服务，讲一个专门生成deliver服务对象对象的deliver工厂赋值给gossip服务的成员deliveryFactory，这个deliver工厂的值
+	//是gossip/service/gossip_service.
 	err = service.InitGossipService(serializedIdentity, peerEndpoint.Address, peerServer.Server(),
 		messageCryptoService, secAdv, secureDialOpts, bootstrap...)
 	if err != nil {
@@ -188,6 +190,7 @@ func serve(args []string) error {
 	initSysCCs()
 
 	//this brings up all the chains (including testchainid)
+	//调用了createChain
 	peer.Initialize(func(cid string) {
 		logger.Debugf("Deploying system CC, for chain <%s>", cid)
 		scc.DeploySysCCs(cid)

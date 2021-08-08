@@ -64,9 +64,9 @@ type chainImpl struct {
 	lastOffsetPersisted int64
 	lastCutBlockNumber  uint64
 
-	producer        sarama.SyncProducer
-	parentConsumer  sarama.Consumer
-	channelConsumer sarama.PartitionConsumer
+	producer        sarama.SyncProducer//生产者
+	parentConsumer  sarama.Consumer //消费者（负责生成和管理分区消费者的）
+	channelConsumer sarama.PartitionConsumer //为分区消费者（实际消费消息的）
 
 	// When the partition consumer errors, close the channel. Otherwise, make
 	// this an open, unbuffered channel.
