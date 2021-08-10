@@ -113,12 +113,18 @@ func (chain *chainImpl) Halt() {
 
 // Enqueue accepts a message and returns true on acceptance, or false otheriwse.
 // Implements the multichain.Chain interface. Called by Broadcast().
+/*
+
+ */
 func (chain *chainImpl) Enqueue(env *cb.Envelope) bool {
 	logger.Debugf("[channel: %s] Enqueueing envelope...", chain.support.ChainID())
+	//在select最外层的select-case中
 	select {
+	//如果startChan已经被close，则说明orderer的kafka客户端部分（即orderer/kafka/chain.go的chainImpl）已经一切准备就绪
 	case <-chain.startChan: // The Start phase has completed
 		select {
 		case <-chain.haltChan: // The chain has been halted, stop here
+		    //如果chain没有停止，即haltChain没有被close
 			logger.Warningf("[channel: %s] Will not enqueue, consenter for this channel has been halted", chain.support.ChainID())
 			return false
 		default: // The post path
@@ -129,7 +135,12 @@ func (chain *chainImpl) Enqueue(env *cb.Envelope) bool {
 			}
 			// We're good to go
 			payload := utils.MarshalOrPanic(newRegularMessage(marshaledEnv))
+			//把消息打包成kafka类型，也就是使用sarama预定义的Producer Message类型
 			message := newProducerMessage(chain.channel, payload)
+			//使用sarama的生产者对象讲kafka消息发送到kafka服务端。
+			//kafka服务端（即kafka容器）这个暗盒接收到消息并生产消息
+			//在之前chiain启动时接收的kafka服务端消息的线程中，即orderer/kafka/chain.go中的proccessMessagesToBlocks(),
+			//kafka服务端生产的消息从startThread的chain.errorChain
 			if _, _, err := chain.producer.SendMessage(message); err != nil {
 				logger.Errorf("[channel: %s] cannot enqueue envelope = %s", chain.support.ChainID(), err)
 				return false
@@ -138,6 +149,7 @@ func (chain *chainImpl) Enqueue(env *cb.Envelope) bool {
 			return true
 		}
 	default: // Not ready yet
+	    //还没准备好，不处理消息返回
 		logger.Warningf("[channel: %s] Will not enqueue, consenter for this channel hasn't started yet", chain.support.ChainID())
 		return false
 	}
@@ -180,8 +192,13 @@ func startThread(chain *chainImpl) {
 
 	close(chain.startChan)
 	// Broadcast requests will now go through
+	/*
+	 chan.errorChain通道在初始化之初是关闭的，而后chain.errorChain在度生成，算是再度开启。
+	如果errorChain是关闭的，
+	 */
 	chain.errorChan = make(chan struct{}) // Deliver requests will also go through
 	//分别开启处理peer节点，通过Broadcast，Deliver发送的请求开关（只有开启orderer才会开始处理peer发来的请求)
+
 
 	logger.Infof("[channel: %s] Start phase completed successfully", chain.channel.topic())
 
@@ -193,15 +210,18 @@ func startThread(chain *chainImpl) {
 
 // processMessagesToBlocks drains the Kafka consumer for the given channel, and
 // takes care of converting the stream of ordered messages into blocks for the
-// channel's ledger.
+// channel's ledger
+/*
+ 在之前chain启动时接收的kafka服务端消息的线程中，kafka服务端生产的消息
+ */
 func (chain *chainImpl) processMessagesToBlocks() ([]uint64, error) {
 	counts := make([]uint64, 11) // For metrics and tests
 	msg := new(ab.KafkaMessage)
 	var timer <-chan time.Time
-
 	defer func() { // When Halt() is called
 		select {
 		case <-chain.errorChan: // If already closed, don't do anything
+
 		default:
 			close(chain.errorChan)
 		}
@@ -230,14 +250,24 @@ func (chain *chainImpl) processMessagesToBlocks() ([]uint64, error) {
 			// mark the chain as available, so we have to force that trigger via
 			// the emission of a CONNECT message. TODO Consider rate limiting
 			go sendConnectMessage(chain.consenter.retryOptions(), chain.haltChan, chain.producer, chain.channel)
+			//kafka服务器端生产的消息从case in,ok中出被消费等到ConsumerMessage类型的消费消息，并进入该分支。
+			//select-case是一个关于errorChan通道开关，errorChan通道在chain初始化之初是关闭的，而后在startThread()中再度生成，算是再度开启
+			//
 		case in, ok := <-chain.channelConsumer.Messages():
 			if !ok {
 				logger.Criticalf("[channel: %s] Kafka consumer closed.", chain.support.ChainID())
 				return counts, nil
 			}
+			/*
+			select-case是一个关于errorChan通道开关
+			 */
 			select {
+			/*
+
+			 */
 			case <-chain.errorChan: // If this channel was closed...
-				chain.errorChan = make(chan struct{}) // ...make a new one.
+			    //如果errorChan是关闭的，会进入这里
+				chain.errorChan = make(chan struct{}) // 再度开启
 				logger.Infof("[channel: %s] Marked consenter as available again", chain.support.ChainID())
 			default:
 			}
@@ -250,6 +280,7 @@ func (chain *chainImpl) processMessagesToBlocks() ([]uint64, error) {
 				logger.Debugf("[channel: %s] Successfully unmarshalled consumed message, offset is %d. Inspecting type...", chain.support.ChainID(), in.Offset)
 				counts[indexRecvPass]++
 			}
+			//进入一个switch case根据解压消费消息所携带的数据的类型，进入不同分支来处理消息
 			switch msg.Type.(type) {
 			case *ab.KafkaMessage_Connect:
 				_ = processConnect(chain.support.ChainID())
@@ -263,6 +294,9 @@ func (chain *chainImpl) processMessagesToBlocks() ([]uint64, error) {
 				}
 				counts[indexProcessTimeToCutPass]++
 			case *ab.KafkaMessage_Regular:
+				//正常来说分支会走这里，然后被processRegular处理
+				//in.Offset 该值是消息在kafka服务端分区中的offset，在整个生产消费过程中，序列化排序会依次分配给每个消息，因此每个消息都有唯一的
+				//offset,也因此in.Offset也代表每个具体的消费消息。
 				if err := processRegular(msg.GetRegular(), chain.support, &timer, in.Offset, &chain.lastCutBlockNumber); err != nil {
 					logger.Warningf("[channel: %s] Error when processing incoming message of type REGULAR = %s", chain.support.ChainID(), err)
 					counts[indexProcessRegularError]++
@@ -362,6 +396,10 @@ func newTimeToCutMessage(blockNumber uint64) *ab.KafkaMessage {
 }
 
 func newProducerMessage(channel channel, pld []byte) *sarama.ProducerMessage {
+	/*
+	使用sarama预定的ProducerMessage类型，Topic定义了消息的类型——Key和Value，key为分区号，value为Marshal过的peer点发过来
+	的peer点发来的原始消息
+	 */
 	return &sarama.ProducerMessage{
 		Topic: channel.topic(),
 		Key:   sarama.StringEncoder(strconv.Itoa(int(channel.partition()))), // TODO Consider writing an IntEncoder?
@@ -380,6 +418,9 @@ func processRegular(regularMessage *ab.KafkaMessageRegular, support multichain.C
 		// This shouldn't happen, it should be filtered at ingress
 		return fmt.Errorf("unmarshal/%s", err)
 	}
+	/*
+	 将原有的数据（即从peer节点发来的消息)从kafka类型消息消息中分解出来后，交由blockcutter模块的orderer进行分块处理。
+	 */
 	batches, committers, ok := support.BlockCutter().Ordered(env)
 	logger.Debugf("[channel: %s] Ordering results: items in batch = %d, ok = %v", support.ChainID(), len(batches), ok)
 	if ok && len(batches) == 0 && *timer == nil {
@@ -388,13 +429,17 @@ func processRegular(regularMessage *ab.KafkaMessageRegular, support multichain.C
 		return nil
 	}
 	// If !ok, batches == nil, so this will be skipped
+	//当返回1或两批消息，程序就会进入for，依次循环处理每批消息。
 	for i, batch := range batches {
 		// If more than one batch is produced, exactly 2 batches are produced.
 		// The receivedOffset for the first batch is one less than the supplied
 		// offset to this function.
+		//在循环过程中，（a) 计算当批消息的offset值即最后一条消息的offset值+1
 		offset := receivedOffset - int64(len(batches)-i-1)
+		//(b) 将消息批量打包成block，至此消息正式成块。
 		block := support.CreateNextBlock(batch)
 		encodedLastOffsetPersisted := utils.MarshalOrPanic(&ab.KafkaMetadata{LastOffsetPersisted: offset})
+		//讲block对应的committer集合，然后讲block吸入账本
 		support.WriteBlock(block, committers[i], encodedLastOffsetPersisted)
 		*lastCutBlockNumber++
 		logger.Debugf("[channel: %s] Batch filled, just cut block %d - last persisted offset is now %d", support.ChainID(), *lastCutBlockNumber, offset)

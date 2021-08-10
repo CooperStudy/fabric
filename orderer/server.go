@@ -70,6 +70,9 @@ func NewServer(ml multichain.Manager, signer crypto.LocalSigner) ab.AtomicBroadc
 }
 
 // Broadcast receives a stream of messages from a client for ordering
+/*
+1） broadcast收到peer节点发来的Envelope消息，直接交由成员bh的handle处理
+ */
 func (s *server) Broadcast(srv ab.AtomicBroadcast_BroadcastServer) error {
 	logger.Debugf("Starting new Broadcast handler")
 	defer func() {

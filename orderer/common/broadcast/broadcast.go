@@ -75,7 +75,11 @@ func NewHandlerImpl(sm SupportManager) Handler {
 // Handle starts a service thread for a given gRPC connection and services the broadcast connection
 func (bh *handlerImpl) Handle(srv ab.AtomicBroadcast_BroadcastServer) error {
 	logger.Debugf("Starting new broadcast loop")
+	/*
+	会在for循环中，不断接收来自peer节点的消息
+	 */
 	for {
+		//接收消息
 		msg, err := srv.Recv()
 		if err == io.EOF {
 			logger.Debugf("Received EOF, hangup")
@@ -86,6 +90,7 @@ func (bh *handlerImpl) Handle(srv ab.AtomicBroadcast_BroadcastServer) error {
 			return err
 		}
 
+		//检查Envelope消息中的一些字段（如ChannelId），
 		payload, err := utils.UnmarshalPayload(msg.Payload)
 		if err != nil {
 			logger.Warningf("Received malformed message, dropping connection: %s", err)
@@ -102,9 +107,10 @@ func (bh *handlerImpl) Handle(srv ab.AtomicBroadcast_BroadcastServer) error {
 			logger.Warningf("Received malformed message (bad channel header), dropping connection: %s", err)
 			return srv.Send(&ab.BroadcastResponse{Status: cb.Status_BAD_REQUEST})
 		}
-
+		//如果是HeadType_CONFIG_UPDATE类型的消息，则会将消息经过
 		if chdr.Type == int32(cb.HeaderType_CONFIG_UPDATE) {
 			logger.Debugf("Preprocessing CONFIG_UPDATE")
+			//实际上是对消息的进一步加工，将消息加工成一个orderer可以处理的交易(加工成创建新chain的配置或已存在的chain的更新配置)
 			msg, err = bh.sm.Process(msg)
 			if err != nil {
 				logger.Warningf("Rejecting CONFIG_UPDATE because: %s", err)
@@ -129,6 +135,9 @@ func (bh *handlerImpl) Handle(srv ab.AtomicBroadcast_BroadcastServer) error {
 			}
 		}
 
+		/*
+		获取消息对应的channelID的链的chainSupport
+		 */
 		support, ok := bh.sm.GetChain(chdr.ChannelId)
 		if !ok {
 			logger.Warningf("Rejecting broadcast because channel %s was not found", chdr.ChannelId)
@@ -138,6 +147,7 @@ func (bh *handlerImpl) Handle(srv ab.AtomicBroadcast_BroadcastServer) error {
 		logger.Debugf("[channel: %s] Broadcast is filtering message of type %s", chdr.ChannelId, cb.HeaderType_name[chdr.Type])
 
 		// Normal transaction for existing chain
+		//使用该chainSupport的过滤器过滤该消息，以查看该消息是否达标，这米有没有使用过滤器一并返回committer集合，这是第一次过滤
 		_, filterErr := support.Filters().Apply(msg)
 
 		if filterErr != nil {
@@ -145,6 +155,13 @@ func (bh *handlerImpl) Handle(srv ab.AtomicBroadcast_BroadcastServer) error {
 			return srv.Send(&ab.BroadcastResponse{Status: cb.Status_BAD_REQUEST})
 		}
 
+		/*
+		进而调用了support对应的chain的cs.chain.Enqueue(env)处理消息，这个chain是对应consenter（这里以kakfa为例进行介绍）的handleChain生成
+		的（在创建chainsupport的时候在orderer/multichain/chainSupport.go的newChainSupport中，指定
+		cs.chai, err :=  consenter.HandleChain(cs,metadata)
+
+		消息进入orderer/kafka/chain.go的Enqueue(env)
+		 */
 		if !support.Enqueue(msg) {
 			return srv.Send(&ab.BroadcastResponse{Status: cb.Status_SERVICE_UNAVAILABLE})
 		}

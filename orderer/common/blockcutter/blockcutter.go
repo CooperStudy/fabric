@@ -85,6 +85,8 @@ func NewReceiverImpl(sharedConfigManager config.Orderer, filters *filter.RuleSet
 //   - After adding the current message to the pending batch, the message count has reached BatchSize.MaxMessageCount.
 func (r *receiver) Ordered(msg *cb.Envelope) ([][]*cb.Envelope, [][]filter.Committer, bool) {
 	// The messages must be filtered a second time in case configuration has changed since the message was received
+	//经由r.filters.Apply(msg)进行第二次过滤，然后就是根据配置信息进行分割成block的过程。这里假设此时满足生成一批消息的条件，该批消息和对应的
+	//committer集合一同被返回
 	committer, err := r.filters.Apply(msg)
 	if err != nil {
 		logger.Debugf("Rejecting message: %s", err)

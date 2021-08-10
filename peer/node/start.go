@@ -38,11 +38,9 @@ import (
 /*
     当peer节点的容器启动的时候，peer节点的gossip服务随着peer node start命令启动，其中角色是leader的peer节点的gossip服务中
     使用到的deliver，服务对象deliverServiceImpl也会使
-
-
-用默认生成的Deliver客户端，通过grpc连接orderer节点并且启动循环接收的线程
+    用默认生成的Deliver客户端，通过grpc连接orderer节点并且启动循环接收的线程
  */
-//function used by chaincode support
+ //function used by chaincode support
 type ccEndpointFunc func() (*pb.PeerEndpoint, error)
 
 var chaincodeDevMode bool

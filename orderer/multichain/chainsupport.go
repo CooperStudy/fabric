@@ -200,6 +200,7 @@ func (cs *chainSupport) Reader() ledger.Reader {
 }
 
 func (cs *chainSupport) Enqueue(env *cb.Envelope) bool {
+
 	return cs.chain.Enqueue(env)
 }
 
@@ -257,11 +258,20 @@ func (cs *chainSupport) addLastConfigSignature(block *cb.Block) {
 		},
 	})
 }
+/*
 
+ */
 func (cs *chainSupport) WriteBlock(block *cb.Block, committers []filter.Committer, encodedMetadataValue []byte) *cb.Block {
 	for _, committer := range committers {
 		committer.Commit()
 	}
+	/*
+	  在block的结构中，一方面，Metadata是一个数组，用来存储与block块有关的基础信息，其中下标
+	  offset值+1 （也相当于下一个block中第一条消息的offset）；另一方面，block中实际存储数据的Data是一个[]byte数组，序列化过后的消息都被二进制化后依次
+	  存放在这个数组中，我么可以算出block中具体有多少条消息。因此通过<offset+1的条件就是准确定位block中的每条消息
+	b)二是传入processRegular{}的time计时器。在processRegular（）中，讲原始数据（即peer节点发来的消息）从kafka类型消息中分解出来后
+
+	*/
 	// Set the orderer-related metadata field
 	if encodedMetadataValue != nil {
 		block.Metadata.Metadata[cb.BlockMetadataIndex_ORDERER] = utils.MarshalOrPanic(&cb.Metadata{Value: encodedMetadataValue})
