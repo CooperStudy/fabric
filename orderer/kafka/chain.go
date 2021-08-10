@@ -217,7 +217,21 @@ func startThread(chain *chainImpl) {
 func (chain *chainImpl) processMessagesToBlocks() ([]uint64, error) {
 	counts := make([]uint64, 11) // For metrics and tests
 	msg := new(ab.KafkaMessage)
-	var timer <-chan time.Time
+	var timer <-chan time.Time//是chainImpl启动的ProcessMessagesToBlocks,而消息来源于kafka服务器出了故障
+	//也可能是因为客户端没有新的生产消息发给kafka服务器。在这种情况下blockcutter可能已经缓存了一些之前的消息，为了不使
+	//这部分消息丢失并且将其及时记录到账本中（比如kafka处理的数量很小或消息流不是很稳定，一条消息后很长时间都不来下一条消息
+	//会造成已缓存的数据不能及时记录到账本，有丢失的风险。也有交易已经产生了很长时间，但是包裹交易的消息一致悬空在blockcutter缓存中，
+	//无法被消费，进而无法被记录和查询，configtx。yaml配置中，配置的BatchTimeout规定了超时时间，默认2s，当下一条消息超过2s还没有
+	//被消费出来，将会主动cut操作，将现有缓存打包成一个block写入账本。
+	/*
+	   具体的操作是：a) timer初始化状态为nil，当消息进入processREgular（）中，若缓存进入blockCutter，则会进入if ok && len(cutter) == 0 && *timer == nil分支
+	   设timer计时器为2s后触发然后返回。（b)下一条消息若在2s之前再放入processRegular（），若仍是被放入缓存，则依然会进入 if ok && len(cutter) == 0 && *timer == nil分支
+	   重置timer为2s及时然后返回。(c)当timer没有及时被重置，即超过2s,processMessagesToBlocks会进入case<-timer:分支，调用sendTimeToCut向kafka服务器发送一条TimeToCutMessage
+	   消息（包裹着chain.lastCutBlockNumber+1,即若主动cut，会使用block的序号，接着kafka服务器收到，然后偶被消费出来（这个存在一个时间过程），这条TimeToCutMessage消息会再次进入processMessage
+	toBlocks的case in，ok = 《- chain.channelConsumer.Messages():分支，进入进入case ab.kafkaMessgage_TimeToCut：分支，调用processTimeToCut{}处理这条消息
+	，也就是主动cut。
+	（d)在processTimeToCut（）中，如果哦此时if ttcNumber == *lastCutBlockNumber+1(ttcNumber即为（c)点TimeToCutMessage消息包裹的block序列
+	 */
 	defer func() { // When Halt() is called
 		select {
 		case <-chain.errorChan: // If already closed, don't do anything
@@ -286,6 +300,9 @@ func (chain *chainImpl) processMessagesToBlocks() ([]uint64, error) {
 				_ = processConnect(chain.support.ChainID())
 				counts[indexProcessConnectPass]++
 			case *ab.KafkaMessage_TimeToCut:
+				/*
+				   处理这条消息，
+				 */
 				if err := processTimeToCut(msg.GetTimeToCut(), chain.support, &chain.lastCutBlockNumber, &timer, in.Offset); err != nil {
 					logger.Warningf("[channel: %s] %s", chain.support.ChainID(), err)
 					logger.Criticalf("[channel: %s] Consenter for channel exiting", chain.support.ChainID())
@@ -296,7 +313,10 @@ func (chain *chainImpl) processMessagesToBlocks() ([]uint64, error) {
 			case *ab.KafkaMessage_Regular:
 				//正常来说分支会走这里，然后被processRegular处理
 				//in.Offset 该值是消息在kafka服务端分区中的offset，在整个生产消费过程中，序列化排序会依次分配给每个消息，因此每个消息都有唯一的
-				//offset,也因此in.Offset也代表每个具体的消费消息。
+				//offset,也因此in.Offset也代表每个具体的消费消息。\
+				/*
+				  time及时器，和该计时器控制的主动Cut操作。
+				 */
 				if err := processRegular(msg.GetRegular(), chain.support, &timer, in.Offset, &chain.lastCutBlockNumber); err != nil {
 					logger.Warningf("[channel: %s] Error when processing incoming message of type REGULAR = %s", chain.support.ChainID(), err)
 					counts[indexProcessRegularError]++
@@ -453,7 +473,15 @@ func processRegular(regularMessage *ab.KafkaMessageRegular, support multichain.C
 func processTimeToCut(ttcMessage *ab.KafkaMessageTimeToCut, support multichain.ConsenterSupport, lastCutBlockNumber *uint64, timer *<-chan time.Time, receivedOffset int64) error {
 	ttcNumber := ttcMessage.GetBlockNumber()
 	logger.Debugf("[channel: %s] It's a time-to-cut message for block %d", support.ChainID(), ttcNumber)
+	/*
+	如果此时if ttcNumber == *lastCutBlockNumber+1,
+	ttcNumber即为TimeToCutMessage消息包裹的block序列号，说明在c点提到的时间过程中
+	chain.lastCutBlockNumber的值没有变，也就是没有发生新的Cut,因为一旦有新的Cut发生，chain.lastCutBlockNumber就会增1，
+	 */
 	if ttcNumber == *lastCutBlockNumber+1 {
+		//没有发生新的cut，则说明blockcutter中现在缓存额数据依然是发送timeToCutMessage消息时的数据，或者有新的数据，但是依然没有达到cut的条件
+		//此时就会进行主动cut，blockcutter中现有的缓存被打包出来后清空，timer计时器也会被置位nil，在processMessageToBlocks中的for-select-case
+		//等待再次从kafka中消费出消息。
 		*timer = nil
 		logger.Debugf("[channel: %s] Nil'd the timer", support.ChainID())
 		batch, committers := support.BlockCutter().Cut()
@@ -461,6 +489,8 @@ func processTimeToCut(ttcMessage *ab.KafkaMessageTimeToCut, support multichain.C
 			return fmt.Errorf("got right time-to-cut message (for block %d),"+
 				" no pending requests though; this might indicate a bug", *lastCutBlockNumber+1)
 		}
+		//调用了support中的ledge创建block和吸入block，在写入block之前会逐一执行该block对应的committer集合。至此，orderer端处理
+		//peer节点发送来的消息的流程结束。
 		block := support.CreateNextBlock(batch)
 		encodedLastOffsetPersisted := utils.MarshalOrPanic(&ab.KafkaMetadata{LastOffsetPersisted: receivedOffset})
 		support.WriteBlock(block, committers, encodedLastOffsetPersisted)
