@@ -58,6 +58,10 @@ func (ds *deliverServer) Handle(srv ab.AtomicBroadcast_DeliverServer) error {
 	logger.Debugf("Starting new deliver loop")
 	for {
 		logger.Debugf("Attempting to read seek info message")
+		/*
+		在执行bc.onConnect(bc)后，即执行core/delieverservice/requester.go中RequestBlocks后，
+		在srv.Recv(）处被接收，之后进行一系列从Envelope的解压收取数据的操作
+		 */
 		envelope, err := srv.Recv()
 		if err == io.EOF {
 			logger.Debugf("Received EOF, hangup")
@@ -86,6 +90,7 @@ func (ds *deliverServer) Handle(srv ab.AtomicBroadcast_DeliverServer) error {
 			return sendStatusReply(srv, cb.Status_BAD_REQUEST)
 		}
 
+		//获取Envelope中对应的ChainID的chainSupport。
 		chain, ok := ds.sm.GetChain(chdr.ChannelId)
 		if !ok {
 			// Note, we log this at DEBUG because SDKs will poll waiting for channels to be created
@@ -94,8 +99,9 @@ func (ds *deliverServer) Handle(srv ab.AtomicBroadcast_DeliverServer) error {
 			return sendStatusReply(srv, cb.Status_NOT_FOUND)
 		}
 
+
 		erroredChan := chain.Errored()
-		select {
+		select {//一个erroredChan控制开关，此刻erroredChan处于开启状态，程序继续往下走
 		case <-erroredChan:
 			logger.Warningf("[channel: %s] Rejecting deliver request because of consenter error", chdr.ChannelId)
 			return sendStatusReply(srv, cb.Status_SERVICE_UNAVAILABLE)
@@ -106,7 +112,7 @@ func (ds *deliverServer) Handle(srv ab.AtomicBroadcast_DeliverServer) error {
 		lastConfigSequence := chain.Sequence()
 
 		sf := sigfilter.New(policies.ChannelReaders, chain.PolicyManager())
-		result, _ := sf.Apply(envelope)
+		result, _ := sf.Apply(envelope)//创建一个签名过滤对象验证Envelope消息。
 		if result != filter.Forward {
 			logger.Warningf("[channel: %s] Received unauthorized deliver request", chdr.ChannelId)
 			return sendStatusReply(srv, cb.Status_FORBIDDEN)
@@ -125,6 +131,10 @@ func (ds *deliverServer) Handle(srv ab.AtomicBroadcast_DeliverServer) error {
 
 		logger.Debugf("[channel: %s] Received seekInfo (%p) %v", chdr.ChannelId, seekInfo, seekInfo)
 
+		/*
+		从Envelope解压出来携带的索要的block气质信息SeekInfo，根据起止信息创建一个查询迭代器cursor
+		这个迭代器是orderer/ledger/file/impl.go定义的fileLedgerIterator，存储了起点，
+		 */
 		cursor, number := chain.Reader().Iterator(seekInfo.Start)
 		var stopNum uint64
 		switch stop := seekInfo.Stop.Type.(type) {
@@ -170,6 +180,11 @@ func (ds *deliverServer) Handle(srv ab.AtomicBroadcast_DeliverServer) error {
 				}
 			}
 
+			/*
+			有一个特性就是
+					Next()会在迭代到还没有写入到账本的block（即当前账本最新的block的下一个block）时阻塞等待，一致等待到该block
+					写入到账本中， cursor.Next()不断使用迭代器cursor获取一个block，
+			 */
 			block, status := cursor.Next()
 			if status != cb.Status_SUCCESS {
 				logger.Errorf("[channel: %s] Error reading from channel, cause was: %v", chdr.ChannelId, status)
@@ -178,11 +193,19 @@ func (ds *deliverServer) Handle(srv ab.AtomicBroadcast_DeliverServer) error {
 
 			logger.Debugf("[channel: %s] Delivering block for (%p)", chdr.ChannelId, seekInfo)
 
+			/*
+			向Deliever客户端回复该block。
+			 */
 			if err := sendBlockReply(srv, block); err != nil {
 				logger.Warningf("[channel: %s] Error sending to stream: %s", chdr.ChannelId, err)
 				return err
 			}
 
+			/*
+			向Deliever客户端回复一个block后，会进行判断，若刚刚发送的block已经是客户端索要的最后一个block，则break
+			跳出循环等下客户端下次索要行为。但是前面已经提到，gossip服务索要的block的起点止点是Max.Uint64，即stopNum
+			的值是math.MaxUint64,所以gossip服务发送block的for循环永远不会退出。
+			 */
 			if stopNum == block.Header.Number {
 				break
 			}

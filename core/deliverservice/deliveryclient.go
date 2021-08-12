@@ -132,12 +132,15 @@ func (d *deliverServiceImpl) StartDeliverForChannel(chainID string, ledgerInfo b
 		logger.Errorf(errMsg)
 		return errors.New(errMsg)
 	} else {
-		//使用new client
+		//使用new client,bClient赋值给了对应的chainID的BlocksProvider的成员client
 		client := d.newClient(chainID, ledgerInfo)
 		logger.Debug("This peer will pass blocks from orderer service to other peers for channel", chainID)
 		//然后创建一个包含client的blocksProviderImpl
 		d.blockProviders[chainID] = blocksprovider.NewBlocksProvider(chainID, client, d.conf.Gossip, d.conf.CryptoSvc)
 		//启动client接收线程
+		//调用了b.client.Recv()，这个client，就是(c)的bClient，
+		//以上步骤都是随着gossip服务运行起来的，调用delieverServiceImpl对象的StartDeliverForChannel在启动go d.blockProviders[chainID].DeliverBlocks()
+		//中for循环是持续调用的，其中建立连接和索要行为只会发生一次
 		go d.blockProviders[chainID].DeliverBlocks()
 	}
 	return nil
@@ -176,11 +179,16 @@ func (d *deliverServiceImpl) Stop() {
 	}
 }
 
-
+/*
+    索要全部block的行为何时发生？（a) 在newClient中
+ */
 func (d *deliverServiceImpl) newClient(chainID string, ledgerInfoProvider blocksprovider.LedgerInfo) *broadcastClient {
 	requester := &blocksRequester{
 		chainID: chainID,
 	}
+	/*
+	  调用了RequestBlocks
+	 */
 	broadcastSetup := func(bd blocksprovider.BlocksDeliverer) error {
 		return requester.RequestBlocks(ledgerInfoProvider)
 	}
@@ -193,7 +201,8 @@ func (d *deliverServiceImpl) newClient(chainID string, ledgerInfoProvider blocks
 		return time.Duration(math.Min(math.Pow(2, attempt)*sleepIncrement, reConnectBackoffThreshold)), true
 	}
 	connProd := comm.NewConnectionProducer(d.conf.ConnFactory(chainID), d.conf.Endpoints)
-	//创建client
+	//创建client,（b）broadcastSetup作为一个参数通过NewBroadcastClient赋值给bClient（原型是core/deliverservice/client.go中
+	//broadcastClient）的成员onConnect
 	bClient := NewBroadcastClient(connProd, d.conf.ABCFactory, broadcastSetup, backoffPolicy)
 	requester.client = bClient
 	return bClient

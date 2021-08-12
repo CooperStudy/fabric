@@ -1,7 +1,3 @@
-// Copyright IBM Corp. All Rights Reserved.
-//
-// SPDX-License-Identifier: Apache-2.0
-//
 syntax = "proto3";
 
 option go_package = "github.com/hyperledger/fabric/protos/gossip" ;
@@ -16,18 +12,20 @@ service Gossip {
     rpc GossipStream (stream Envelope) returns (stream Envelope) {}
 
     // Ping is used to probe a remote peer's aliveness
+    // 用来探测远程peer的存活情况
     rpc Ping (Empty) returns (Empty) {}
 }
 
 
 // Envelope contains a marshalled
+// Envelope 包括了一个序列化的GossipMessage信息
 // GossipMessage and a signature over it.
 // It may also contain a SecretEnvelope
 // which is a marshalled Secret
 message Envelope {
-    bytes payload   = 1;
-    bytes signature = 2;
-    SecretEnvelope secret_envelope = 3;
+    bytes payload   = 1; //一个序列化的GossipMessage信息
+    bytes signature = 2; //以及一个对该信息的一个签名，
+    SecretEnvelope secret_envelope = 3;//它也可能包含一个 SecretEnvelope（一个的序列化secret)
 }
 
 // SecretEnvelope is a marshalled Secret
@@ -36,13 +34,14 @@ message Envelope {
 // that signed the Envelope the SecretEnvelope
 // came with
 message SecretEnvelope {
-    bytes payload   = 1;
-    bytes signature = 2;
+    bytes payload   = 1; //一个序列化的Secret
+    bytes signature = 2; //对该Secret的一个签名
 }
 
 // Secret is an entity that might be omitted
 // from an Envelope when the remote peer that is receiving
 // the Envelope shouldn't know the secret's content.
+Secret是 一个可以从Envelope中被忽略的实体，当远程的peer接收到了Envelope且不知道secret的内容时，peer就将Secret忽略
 message Secret {
     oneof content {
         string internalEndpoint = 1;
@@ -50,15 +49,18 @@ message Secret {
 }
 
 // GossipMessage defines the message sent in a gossip network
+定义了gossip网络中传送的消息
 message GossipMessage {
 
     // used mainly for testing, but will might be used in the future
     // for ensuring message delivery by acking
+    //主要哦用于测试，但将来也 可能会用来确保消息传送
     uint64 nonce  = 1;
 
     // The channel of the message.
     // Some GossipMessages may set this to nil, because
     // they are cross-channels but some may not
+   消息通道，一个GossipMessages可能会将其置为nil，因为它们是跨通道的，但另一些也可能不会
     bytes channel = 2;
 
 
@@ -73,15 +75,16 @@ message GossipMessage {
 
     // determines to which peers it is allowed
     // to forward the message
+    //决定那些peers可以转发消息
     Tag tag = 3;
-
+    //
     oneof content {
-        // Membership
+        // Membership 成员
         AliveMessage alive_msg = 5;
         MembershipRequest mem_req = 6;
         MembershipResponse mem_res = 7;
 
-        // Contains a ledger block
+        // Contains a ledger block 包含一个账本区块
         DataMessage data_msg = 8;
 
         // Used for push&pull
@@ -103,16 +106,18 @@ message GossipMessage {
         // Used for sending sets of StateInfo messages
         StateInfoSnapshot state_snapshot = 16;
 
-        // Used for asking for StateInfoSnapshots
+        // Used for asking for StateInfoSnapshots 用来请求
         StateInfoPullRequest state_info_pull_req = 17;
 
-        //  Used to ask from a remote peer a set of blocks
+        //  Used to ask from a remote peer a set of blocks  用来请求块的集合
         RemoteStateRequest state_request = 18;
 
         // Used to send a set of blocks to a remote peer
+        //用来向remote peer发送blocks集合
         RemoteStateResponse state_response = 19;
 
         // Used to indicate intent of peer to become leader
+        //用来表明peer成为leader的意图
         LeadershipMessage leadership_msg = 20;
 
         // Used to learn of a peer's certificate

@@ -1,9 +1,3 @@
-/*
-Copyright IBM Corp. All Rights Reserved.
-
-SPDX-License-Identifier: Apache-2.0
-*/
-
 package kafka
 
 import (
@@ -461,6 +455,12 @@ func processRegular(regularMessage *ab.KafkaMessageRegular, support multichain.C
 		encodedLastOffsetPersisted := utils.MarshalOrPanic(&ab.KafkaMetadata{LastOffsetPersisted: offset})
 		//讲block对应的committer集合，然后讲block吸入账本
 		support.WriteBlock(block, committers[i], encodedLastOffsetPersisted)
+		/*
+		    block := support.CreateNextBlock(batch)
+		    support.WriteBlock(block, committers[i], encodedLastOffsetPersisted)
+		中，调用了support中的ledger创建block和写入block，在写入block之前会逐一执行该block对应的committer集合。至此orderer
+		端处理peer节点发送来的消息流程结束。
+		 */
 		*lastCutBlockNumber++
 		logger.Debugf("[channel: %s] Batch filled, just cut block %d - last persisted offset is now %d", support.ChainID(), *lastCutBlockNumber, offset)
 	}

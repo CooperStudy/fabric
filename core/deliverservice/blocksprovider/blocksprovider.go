@@ -106,6 +106,14 @@ func NewBlocksProvider(chainID string, client streamClient, gossip GossipService
 		wrongStatusThreshold: wrongStatusThreshold,
 	}
 }
+/*
+    向orderer的Deliever服务端索要block消息，除了gossip服务，还有peer channel的几个子命令，但peer channel索要的都是一定量的
+   block，即非持续性的，指示Deliver服务端最后会进入 if stop== block.Header.Number分支跳出回复block的for循环
+   peer节点中的leader的gossip服务启动之后建立了与orderer的Deliver服务连接（这期间，peer节点只会在开始的时候向orderer的Deliver
+   服务索要一次block），之后当orderer中的账本中存在block数据后，就开始主动向leader的Deliver客户端发送block数据，这个推动行为一直持续。
+   leader的Deliver客户端收到block流之后会使用gossip服务向自身和其他peer节点散播这些block数据。另外，peer channel等命令也会向Deliver
+   服务器请求某一个段block数据，但是该推送是非持续的
+ */
 
 // DeliverBlocks used to pull out blocks from the ordering service to
 // distributed them across peers
@@ -114,6 +122,7 @@ func (b *blocksProviderImpl) DeliverBlocks() {
 	statusCounter := 0
 	defer b.client.Close()
 	for !b.isDone() {
+		//这个client就是bClient，收到orderer传过的block
 		msg, err := b.client.Recv()
 		if err != nil {
 			logger.Warningf("[%s] Receive error: %s", b.chainID, err.Error())
@@ -145,6 +154,7 @@ func (b *blocksProviderImpl) DeliverBlocks() {
 			b.client.Disconnect()
 			continue
 		case *orderer.DeliverResponse_Block:
+			//进入这个分支
 			errorStatusCounter = 0
 			statusCounter = 0
 			seqNum := t.Block.Header.Number
@@ -163,14 +173,18 @@ func (b *blocksProviderImpl) DeliverBlocks() {
 			// Create payload with a block received
 			payload := createPayload(seqNum, marshaledBlock)
 			// Use payload to create gossip message
+			//将block包装成gossip服务器能处理的消息类型，
 			gossipMsg := createGossipMsg(b.chainID, payload)
 
 			logger.Debugf("[%s] Adding payload locally, buffer seqNum = [%d], peers number [%d]", b.chainID, seqNum, numberOfPeers)
 			// Add payload to local state payloads buffer
+			//将block添加到peer节点的gossip服务模块到本地，目的在于添加块到本地的ledger。再次强调，接收block的是peer节点中的leader，
+			//所以这里的gossip服务模块是leader的，
 			b.gossip.AddPayload(b.chainID, payload)
 
 			// Gossip messages with other nodes
 			logger.Debugf("[%s] Gossiping block [%d], peers number [%d]", b.chainID, seqNum, numberOfPeers)
+			//leader的gossip服务模块向其他peer节点散播block。
 			b.gossip.Gossip(gossipMsg)
 		default:
 			logger.Warningf("[%s] Received unknown: ", b.chainID, t)
