@@ -87,6 +87,9 @@ type LeaderElectionAdapter interface {
 type leadershipCallback func(isLeader bool)
 
 // LeaderElectionService is the object that runs the leader election algorithm
+/*
+    由type  leaderElectionSvcImpl struct,LeaderElection模块的初始化和上一部分中GossipSateProvider的初始化一样，都是在InitializeChannel方法中进行的
+ */
 type LeaderElectionService interface {
 	// IsLeader returns whether this peer is a leader or not
 	IsLeader() bool
@@ -121,10 +124,16 @@ func noopCallback(_ bool) {
 }
 
 // NewLeaderElectionService returns a new LeaderElectionService
+/*
+   根据传入参数初始化一个leader选举服务的实例
+ */
 func NewLeaderElectionService(adapter LeaderElectionAdapter, id string, callback leadershipCallback) LeaderElectionService {
 	if len(id) == 0 {
 		panic("Empty id")
 	}
+	/*
+	  初始化选服务的实例
+	 */
 	le := &leaderElectionSvcImpl{
 		id:            peerID(id),
 		proposals:     util.NewSet(),
@@ -139,6 +148,7 @@ func NewLeaderElectionService(adapter LeaderElectionAdapter, id string, callback
 		le.callback = callback
 	}
 
+	//开启一个go程
 	go le.start()
 	return le
 }
@@ -163,6 +173,9 @@ type leaderElectionSvcImpl struct {
 }
 
 func (le *leaderElectionSvcImpl) start() {
+	/*
+	相关选举服务的实现通过该goroutine进行，
+	 */
 	le.stopWG.Add(2)
 	go le.handleMessages()
 	le.waitForMembershipStabilization(getStartupGracePeriod())

@@ -37,30 +37,35 @@ const (
 
 type channelRoutingFilterFactory func(channel.GossipChannel) filter.RoutingFilter
 
+/*
+  type Gossip interface的实现
+ */
 type gossipServiceImpl struct {
-	selfIdentity          api.PeerIdentityType
-	includeIdentityPeriod time.Time
-	certStore             *certStore
-	idMapper              identity.Mapper
-	presumedDead          chan common.PKIidType
-	disc                  discovery.Discovery
-	comm                  comm.Comm
+	selfIdentity          api.PeerIdentityType //该peer自己的Identity
+	includeIdentityPeriod time.Time  //自peer启动时将自己的certificate包含在Alive message之中的持续时间，默认为10s
+	certStore             *certStore //用来处理与peer identity有关的消息
+	idMapper              identity.Mapper //维护peers的pkiID与certificate之间的映射
+	presumedDead          chan common.PKIidType //存储疑似dead的peer的pikID的通道，默认大小为100
+	disc                  discovery.Discovery   //discovery模块，用来维护当前网络视图
+
+	comm                  comm.Comm //Comm模块，用来与同样嵌入了Comm模块的其他peer通信
 	incTime               time.Time
-	selfOrg               api.OrgIdentityType
-	*comm.ChannelDeMultiplexer
+	selfOrg               api.OrgIdentityType //peer 自己所属Org的identity
+	*comm.ChannelDeMultiplexer //一个用来你接收channel注册（AddChannel）与发布DeMultiplex的结构体
 	logger            *logging.Logger
 	stopSignal        *sync.WaitGroup
-	conf              *Config
-	toDieChan         chan struct{}
-	stopFlag          int32
-	emitter           batchingEmitter
-	discAdapter       *discoveryAdapter
-	secAdvisor        api.SecurityAdvisor
-	chanState         *channelState
-	disSecAdap        *discoverySecurityAdapter
-	mcs               api.MessageCryptoService
-	stateInfoMsgStore msgstore.MessageStore
-	certPuller        pull.Mediator
+	conf              *Config    //Gossip服务的相关配置
+	toDieChan         chan struct{} //用来标识Gossip服务是否停止通道，默认大小为1
+	stopFlag          int32         //Gossip服务是否停止的标识
+	emitter           batchingEmitter //emitter模块，用来发送message
+	discAdapter       *discoveryAdapter //discovery适配器，用来为discovery模块中声明的comm接口的所需功能
+	secAdvisor        api.SecurityAdvisor //SecurityAdvisor定义了一个外部的辅助对象，提供安全和审核相关
+	chanState         *channelState //维护peer所加入的channel消息
+	disSecAdap        *discoverySecurityAdapter  //discovery安全适配器，用来验证Alive message等
+	mcs               api.MessageCryptoService //MessageCryptoService是在gossip组件与peer加密层之间的协议（contract）;messageCryptoService是被用来验证与授权远程peer与他们所发送的数据，也用来验证从
+	//从Ordering Service收到的区块
+	stateInfoMsgStore msgstore.MessageStore //消息存储，当接收到一个message的时候，将message放入一内部缓存
+	certPuller        pull.Mediator //是一个包装PullEngine的组件，它提供了执行pull同步所需的方法
 }
 
 // NewGossipService creates a gossip instance attached to a gRPC server

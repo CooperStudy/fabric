@@ -46,20 +46,27 @@ func getReConnectTotalTimeThreshold() time.Duration {
 
 // DeliverService used to communicate with orderers to obtain
 // new blocks and send them to the committer service
+/*
+    DeliverService用来与orderers交流以获得新的区块，并且将新的区块发送到committer service
+ */
 type DeliverService interface {
 	// StartDeliverForChannel dynamically starts delivery of new blocks from ordering service
 	// to channel peers.
 	// When the delivery finishes, the finalizer func is called
+	//StartDeliverForChannel 动态地将从Ordering Service获取的区块发送到channel peers，当delivery结束，finalizer函数被调用
 	StartDeliverForChannel(chainID string, ledgerInfo blocksprovider.LedgerInfo, finalizer func()) error
 
 	// StopDeliverForChannel dynamically stops delivery of new blocks from ordering service
 	// to channel peers.
+	//StopDeliverForChannel 停止channel的block provider来停止传递区块
 	StopDeliverForChannel(chainID string) error
 
 	// UpdateEndpoints
+	//更新所连接的Ordering Service的端点
 	UpdateEndpoints(chainID string, endpoints []string) error
 
 	// Stop terminates delivery service and closes the connection
+	//Stop 终止delivery服务并关闭 connection
 	Stop()
 }
 
@@ -145,11 +152,15 @@ func (d *deliverServiceImpl) validateConfiguration() error {
 func (d *deliverServiceImpl) StartDeliverForChannel(chainID string, ledgerInfo blocksprovider.LedgerInfo, finalizer func()) error {
 	d.lock.Lock()
 	defer d.lock.Unlock()
+	/*
+	首先判断deliverService实例是否已经停止（stopping）
+	 */
 	if d.stopping {
 		errMsg := fmt.Sprintf("Delivery service is stopping cannot join a new channel %s", chainID)
 		logger.Errorf(errMsg)
 		return errors.New(errMsg)
 	}
+	//或者对于某个channel已经存在blockProvider,若停止或者对于某个channel已经存在blockProvider怎么返回相应的错误，若既没有停止也不存在相应的blockProvider，则
 	if _, exist := d.blockProviders[chainID]; exist {
 		errMsg := fmt.Sprintf("Delivery service - block provider already exists for %s found, can't start delivery", chainID)
 		logger.Errorf(errMsg)

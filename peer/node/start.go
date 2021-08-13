@@ -1,9 +1,3 @@
-/*
-Copyright IBM Corp. All Rights Reserved.
-
-SPDX-License-Identifier: Apache-2.0
-*/
-
 package node
 
 import (
@@ -266,6 +260,9 @@ func serve(args []string) error {
 		certs.TLSClientCert.Store(&clientCert)
 	}
 
+	/*
+	  初始化gossip服务
+	 */
 	err = service.InitGossipService(serializedIdentity, peerEndpoint.Address, peerServer.Server(), certs,
 		messageCryptoService, secAdv, secureDialOpts, bootstrap...)
 	if err != nil {

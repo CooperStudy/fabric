@@ -31,7 +31,8 @@ import (
 )
 
 var (
-	gossipServiceInstance *gossipServiceImpl
+	gossipServiceInstance *gossipServiceImpl //全局实例，即代表了peer下的gossip服务，gossipServiceInstance是一gossipServiceImpl
+	//类型的结构体，
 	once                  sync.Once
 )
 
@@ -83,11 +84,13 @@ func (p privateHandler) close() {
 }
 
 type gossipServiceImpl struct {
-	gossipSvc
-	privateHandlers map[string]privateHandler
-	chains          map[string]state.GossipStateProvider
-	leaderElection  map[string]election.LeaderElectionService
-	deliveryService map[string]deliverclient.DeliverService
+	gossipSvc 	//变量类型，继承interface接口，
+	privateHandlers map[string]privateHandler //维护了当前peer中每一个channel到其privateHandle结构体的映射
+	chains          map[string]state.GossipStateProvider //维护了当前peer中，每一个channel到其GossipStateProvider的映射
+	leaderElection  map[string]election.LeaderElectionService //如果哦一个peer的core.yaml文件中peer.gossip.useLeaderElection配置
+	//项目为true，则该peer对每一个channel都会开启一个leaderElection模块，用于领导节点的选举。
+	deliveryService map[string]deliverclient.DeliverService //gossip服务的deliveryService维护了当前peer中每一个channel到其DeliverService的映射，
+	//在InitializeChannel中完成初始化
 	deliveryFactory DeliveryServiceFactory
 	lock            sync.RWMutex
 	mcs             api.MessageCryptoService
@@ -150,6 +153,7 @@ func InitGossipServiceCustomDeliveryFactory(peerIdentity []byte, endpoint string
 
 		gossip, err = integration.NewGossipComponent(peerIdentity, endpoint, s, secAdv,
 			mcs, secureDialOpts, certs, bootPeers...)
+
 		gossipServiceInstance = &gossipServiceImpl{
 			mcs:             mcs,
 			gossipSvc:       gossip,
@@ -214,6 +218,9 @@ type DataStoreSupport struct {
 }
 
 // InitializeChannel allocates the state provider and should be invoked once per channel per execution
+/*
+   每一个channel的gossipStateProvider都在InitializeChannel方法中被初始化，而InitializeChannel进一步调用了
+ */
 func (g *gossipServiceImpl) InitializeChannel(chainID string, endpoints []string, support Support) {
 	g.lock.Lock()
 	defer g.lock.Unlock()
@@ -245,9 +252,12 @@ func (g *gossipServiceImpl) InitializeChannel(chainID string, endpoints []string
 		coordinator: coordinator,
 		distributor: privdata2.NewDistributor(chainID, g),
 	}
+	//
 	g.chains[chainID] = state.NewGossipStateProvider(chainID, servicesAdapter, coordinator)
+	//首先判断peer在该channel是否已经存在deliveryService实例。如果为空
 	if g.deliveryService[chainID] == nil {
 		var err error
+		//如果是为空，则调用Gossip服务中deliveryFactory模块下Service方法，新建一个delivery client的实例
 		g.deliveryService[chainID], err = g.deliveryFactory.Service(g, endpoints, g.mcs)
 		if err != nil {
 			logger.Warningf("Cannot create delivery client, due to %+v", errors.WithStack(err))
@@ -256,6 +266,7 @@ func (g *gossipServiceImpl) InitializeChannel(chainID string, endpoints []string
 
 	// Delivery service might be nil only if it was not able to get connected
 	// to the ordering service
+
 	if g.deliveryService[chainID] != nil {
 		// Parameters:
 		//              - peer.gossip.useLeaderElection
@@ -263,18 +274,27 @@ func (g *gossipServiceImpl) InitializeChannel(chainID string, endpoints []string
 		//
 		// are mutual exclusive, setting both to true is not defined, hence
 		// peer will panic and terminate
+		//首先读取core.yaml中的配置项。
 		leaderElection := viper.GetBool("peer.gossip.useLeaderElection")
+		//读取
 		isStaticOrgLeader := viper.GetBool("peer.gossip.orgLeader")
 
 		if leaderElection && isStaticOrgLeader {
+			//同为true则抛出异常
 			logger.Panic("Setting both orgLeader and useLeaderElection to true isn't supported, aborting execution")
 		}
 
+		//Leader初始化
 		if leaderElection {
+			//
 			logger.Debug("Delivery uses dynamic leader election mechanism, channel", chainID)
 			g.leaderElection[chainID] = g.newLeaderElectionComponent(chainID, g.onStatusChangeFactory(chainID, support.Committer))
 		} else if isStaticOrgLeader {
+			/*
+			  如果orgLeader为TRUE，则该peer，即对于当前channel代表该Org与Ordering Service进行通信拉取区块的leader peer
+			 */
 			logger.Debug("This peer is configured to connect to ordering service for blocks delivery, channel", chainID)
+
 			g.deliveryService[chainID].StartDeliverForChannel(chainID, support.Committer, func() {})
 		} else {
 			logger.Debug("This peer is not configured to connect to ordering service for blocks delivery, channel", chainID)
@@ -363,8 +383,14 @@ func (g *gossipServiceImpl) Stop() {
 }
 
 func (g *gossipServiceImpl) newLeaderElectionComponent(chainID string, callback func(bool)) election.LeaderElectionService {
+	/*
+	    获取当前peer的Identity并初始化一个leader选举适配器
+	 */
 	PKIid := g.mcs.GetPKIidOfCert(g.peerIdentity)
 	adapter := election.NewAdapter(g, PKIid, gossipCommon.ChainID(chainID))
+	/*
+	  然后在进一步调用
+	 */
 	return election.NewLeaderElectionService(adapter, string(PKIid), callback)
 }
 

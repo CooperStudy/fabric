@@ -1,9 +1,3 @@
-/*
-Copyright IBM Corp. All Rights Reserved.
-
-SPDX-License-Identifier: Apache-2.0
-*/
-
 package gossip
 
 import (
@@ -19,56 +13,82 @@ import (
 )
 
 // Gossip is the interface of the gossip component
+// gossipSvc是gossip_service.go文件下定义的变量类型，具体是type Gossip interface
 type Gossip interface {
 
 	// Send sends a message to remote peers
+	//将某一个message 发送到remote peers
 	Send(msg *proto.GossipMessage, peers ...*comm.RemotePeer)
 
 	// SendByCriteria sends a given message to all peers that match the given SendCriteria
+	// 将某一个message发送到所有满足SendCriteria的peers
 	SendByCriteria(*proto.SignedGossipMessage, SendCriteria) error
 
 	// GetPeers returns the NetworkMembers considered alive
+	//返回被认为还alive netWorkMembers
 	Peers() []discovery.NetworkMember
 
 	// PeersOfChannel returns the NetworkMembers considered alive
 	// and also subscribed to the channel given
+	//返回被认为还alive并且订阅了给定channel的NetworkMembers
 	PeersOfChannel(common.ChainID) []discovery.NetworkMember
 
 	// UpdateMetadata updates the self metadata of the discovery layer
 	// the peer publishes to other peers
+	// 更新peer发布给其他peers的discovery layer的self metadata
 	UpdateMetadata(metadata []byte)
 
 	// UpdateChannelMetadata updates the self metadata the peer
 	// publishes to other peers about its channel-related state
+	//更新peer发布给其他peers的与其channel-related state的self-metadata
 	UpdateChannelMetadata(metadata []byte, chainID common.ChainID)
 
 	// Gossip sends a message to other peers to the network
+	//发送一个message到网络中的其他peers
 	Gossip(msg *proto.GossipMessage)
 
 	// PeerFilter receives a SubChannelSelectionCriteria and returns a RoutingFilter that selects
 	// only peer identities that match the given criteria, and that they published their channel participation
+	/*
+	   接收一个SubChannelSelectionCriteria并且返回一个RoutingFilter
+	   RoutingFilter选择那些满足给定的criteria（准则）,并且发布了他们的channel participation的peer Identity
+	 */
 	PeerFilter(channel common.ChainID, messagePredicate api.SubChannelSelectionCriteria) (filter.RoutingFilter, error)
 
 	// Accept returns a dedicated read-only channel for messages sent by other nodes that match a certain predicate.
 	// If passThrough is false, the messages are processed by the gossip layer beforehand.
 	// If passThrough is true, the gossip layer doesn't intervene and the messages
 	// can be used to send a reply back to the sender
+	/*
+	  Accept返回一个明确只读的通道，其中存储的是其他节点发送过来的符合某个谓词的messaged，
+	  如果passThrough是false，这些message先有gossip layer处理
+	  如果passThrouth是true，gossip layer不会介入，并且这些message可以被发送回对应的sender
+	 */
 	Accept(acceptor common.MessageAcceptor, passThrough bool) (<-chan *proto.GossipMessage, <-chan proto.ReceivedMessage)
 
 	// JoinChan makes the Gossip instance join a channel
+	//使得一个gossip实例加入channel
 	JoinChan(joinMsg api.JoinChannelMessage, chainID common.ChainID)
 
 	// LeaveChan makes the Gossip instance leave a channel.
-	// It still disseminates stateInfo message, but doesn't participate
+	// It still disseminates(传播) stateInfo message, but doesn't participate
 	// in block pulling anymore, and can't return anymore a list of peers
 	// in the channel.
+	//LeaveChan使得一个Gossip实例离开一个channel
+	//该Gossip实例仍旧可以传播stateInfo message
+	//但是不能再参与进block的拉去，并且不能再返回一个channel中所含peers的列表
 	LeaveChan(chainID common.ChainID)
 
 	// SuspectPeers makes the gossip instance validate identities of suspected peers, and close
 	// any connections to peers with identities that are found invalid
+	/*
+	   SuspectPeers使得一个Gossip实例验证被怀疑的peers的identities，并且关掉那些被发现的identities不合法的peers之间
+	   的connections
+	 */
 	SuspectPeers(s api.PeerSuspector)
 
 	// Stop stops the gossip component
+	// 停止该goss component
 	Stop()
 }
 
