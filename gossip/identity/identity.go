@@ -77,6 +77,7 @@ func NewIdentityMapper(mcs api.MessageCryptoService, selfIdentity api.PeerIdenti
 	if err := idMapper.Put(selfPKIID, selfIdentity); err != nil {
 		panic(errors.Wrap(err, "Failed putting our own identity into the identity mapper"))
 	}
+	//定义将满足条件的peer与其identity（certificate）清除
 	go idMapper.periodicalPurgeUnusedIdentities()
 	return idMapper
 }

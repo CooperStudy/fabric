@@ -89,6 +89,7 @@ func NewCommInstanceWithServer(port int, idMapper identity.Mapper, peerIdentity 
 		commInst.stopWG.Add(1)
 		proto.RegisterGossipServer(s, commInst)
 		go func() {
+			//监听接口
 			defer commInst.stopWG.Done()
 			s.Serve(ll)
 		}()

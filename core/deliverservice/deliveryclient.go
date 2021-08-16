@@ -161,14 +161,17 @@ func (d *deliverServiceImpl) StartDeliverForChannel(chainID string, ledgerInfo b
 		return errors.New(errMsg)
 	}
 	//或者对于某个channel已经存在blockProvider,若停止或者对于某个channel已经存在blockProvider怎么返回相应的错误，若既没有停止也不存在相应的blockProvider，则
+
 	if _, exist := d.blockProviders[chainID]; exist {
 		errMsg := fmt.Sprintf("Delivery service - block provider already exists for %s found, can't start delivery", chainID)
 		logger.Errorf(errMsg)
 		return errors.New(errMsg)
 	} else {
+		//构建新的blockProvider实例
 		client := d.newClient(chainID, ledgerInfo)
 		logger.Debug("This peer will pass blocks from orderer service to other peers for channel", chainID)
 		d.blockProviders[chainID] = blocksprovider.NewBlocksProvider(chainID, client, d.conf.Gossip, d.conf.CryptoSvc)
+		//开启一个goroutine调用该实例的DeliverBlocks方法，并开始从Ordering Service拉取区块
 		go func() {
 			d.blockProviders[chainID].DeliverBlocks()
 			finalizer()

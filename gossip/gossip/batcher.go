@@ -1,9 +1,3 @@
-/*
-Copyright IBM Corp. All Rights Reserved.
-
-SPDX-License-Identifier: Apache-2.0
-*/
-
 package gossip
 
 import (
@@ -35,6 +29,12 @@ type batchingEmitter interface {
 // burstSize: a threshold that triggers a forwarding because of message count
 // latency: the maximum delay that each message can be stored without being forwarded
 // cb: a callback that is called in order for the forwarding to take place
+/*
+   emitter模块是通过gossip/gossip/batcher.go，gossip的发送方式的核心与该模块息息相关
+   发送的消息分为5类：1.block区块消息 2.stateInfoMessage状态信息消息 3.orgMsgs:组织内消息 4.leadershipMsg领导类的消息 5.others
+   gossip Batch要送发送的Msgs的切片中解析出这几类消息，然后通过设定的过滤条件，从当前视图中刷选出有资格接收特定种类消息的remote peers,然后
+   将消息发送。
+ */
 func newBatchingEmitter(iterations, burstSize int, latency time.Duration, cb emitBatchCallback) batchingEmitter {
 	if iterations < 0 {
 		panic(errors.Errorf("Got a negative iterations number"))
@@ -51,6 +51,7 @@ func newBatchingEmitter(iterations, burstSize int, latency time.Duration, cb emi
 	}
 
 	if iterations != 0 {
+		//每隔5s向外发送一次AliveMsg
 		go p.periodicEmit()
 	}
 

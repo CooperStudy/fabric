@@ -1,19 +1,3 @@
-/*
-Copyright IBM Corp. 2017 All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-		 http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package gossip
 
 import (
@@ -32,6 +16,10 @@ var saLogger = flogging.MustGetLogger("peer/gossip/sa")
 // configuration transactions distributed by the ordering service.
 //
 // This implementation assumes that these mechanisms are all in place and working.
+/*
+  对于整个系统的安全而言，能够动态更新MSPs极为重要的，channel的MSPs是通过Ordering Service分发的配置交易（configuration transaction）来更新的，
+  secAdv组件与mcs组件都是为了实现这个目标提供了相关功能
+ */
 type mspSecurityAdvisor struct {
 	deserializer mgmt.DeserializersManager
 }

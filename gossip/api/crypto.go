@@ -17,37 +17,69 @@ import (
 // peer's cryptographic layer and is used by the gossip component to verify,
 // and authenticate remote peers and data they send, as well as to verify
 // received blocks from the ordering service.
+/*
+
+ */
 type MessageCryptoService interface {
 
 	// GetPKIidOfCert returns the PKI-ID of a peer's identity
 	// If any error occurs, the method return nil
 	// This method does not validate peerIdentity.
 	// This validation is supposed to be done appropriately during the execution flow.
+	/*
+	  GetPKIidOfCert返回了peer身份的PKI-ID
+	 如果返生了错误，发方法返回nil
+	 该方法并不验证peerIdentity,验证过程应该在execution flow中完成
+	 */
 	GetPKIidOfCert(peerIdentity PeerIdentityType) common.PKIidType
 
 	// VerifyBlock returns nil if the block is properly signed, and the claimed seqNum is the
 	// sequence number that the block's header contains.
 	// else returns error
+	/*
+	  如果区块已经被正确签名了的，VerifyBlock返回nil
+	  声明的seqNum是包含在该block的header中的序列号，否则返回错误
+	 */
 	VerifyBlock(chainID common.ChainID, seqNum uint64, signedBlock []byte) error
 
 	// Sign signs msg with this peer's signing key and outputs
-	// the signature if no error occurred.
+	// the signature if no error occurred
+	/*
+	  Sign用该peer的siging key 对msg签名，如果没错的话则输出该签名
+	 */
 	Sign(msg []byte) ([]byte, error)
 
 	// Verify checks that signature is a valid signature of message under a peer's verification key.
 	// If the verification succeeded, Verify returns nil meaning no error occurred.
 	// If peerIdentity is nil, then the verification fails.
+	/*
+	  Verify使用peer的verification key 来验证该签名
+	  是否是一个合法的签名
+	  若成功的话则返回nil
+	  如果peerIdentity是空的话则验证失败
+	 */
 	Verify(peerIdentity PeerIdentityType, signature, message []byte) error
 
 	// VerifyByChannel checks that signature is a valid signature of message
 	// under a peer's verification key, but also in the context of a specific channel.
 	// If the verification succeeded, Verify returns nil meaning no error occurred.
 	// If peerIdentity is nil, then the verification fails.
+	/*
+		VerifyByChannel检查一个peer的verification key下
+		该信息的签名是否有效，在特定通道的上下文中
+		如果验证成功，Verify返回nil
+		如果peerIdentity是空则验证失败
+	*/
 	VerifyByChannel(chainID common.ChainID, peerIdentity PeerIdentityType, signature, message []byte) error
 
 	// ValidateIdentity validates the identity of a remote peer.
 	// If the identity is invalid, revoked, expired it returns an error.
 	// Else, returns nil
+    /*
+     验证远程peer的身份
+     如果身份无效/撤销/过期则返回错误
+     否则返回nil
+     */
 	ValidateIdentity(peerIdentity PeerIdentityType) error
 
 	// Expiration returns:
@@ -57,6 +89,11 @@ type MessageCryptoService interface {
 	//   in case it cannot expire
 	// - A zero value, error in case it cannot be
 	//   determined if the identity can expire or not
+	/*
+	如果到期了，返回该Identity到期的时间 nil
+	如果没有到期，返回一个零值，time.Time,nil
+	如果不能判断该身份是否会到期，返回一个零值，error
+	 */
 	Expiration(peerIdentity PeerIdentityType) (time.Time, error)
 }
 

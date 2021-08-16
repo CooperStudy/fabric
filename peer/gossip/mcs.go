@@ -47,10 +47,13 @@ var mcsLogger = flogging.MustGetLogger("peer/gossip/mcs")
 //
 // A similar mechanism needs to be in place to update the local MSP, as well.
 // This implementation assumes that these mechanisms are all in place and working.
+/*
+
+ */
 type mspMessageCryptoService struct {
-	channelPolicyManagerGetter policies.ChannelPolicyManagerGetter
-	localSigner                crypto.LocalSigner
-	deserializer               mgmt.DeserializersManager
+	channelPolicyManagerGetter policies.ChannelPolicyManagerGetter //channel策略管理获取器,这是一个支持性的接口，用来你获取给定的channel的策略管理器（policy manager）
+	localSigner                crypto.LocalSigner //本地签名器，用来执行当前Gossip服务的本地签名的
+	deserializer               mgmt.DeserializersManager //也是一个支持性的接口，用来获取本地和channel的反序列化器
 }
 
 // NewMCS creates a new instance of mspMessageCryptoService

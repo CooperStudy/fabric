@@ -114,12 +114,13 @@ func NewDiscoveryService(self NetworkMember, comm CommService, crypt CryptoServi
 
 	d.validateSelfConfig()
 	d.msgStore = newAliveMsgStore(d)
+    //启动多个goroutine
 
-	go d.periodicalSendAlive()
-	go d.periodicalCheckAlive()
-	go d.handleMessages()
-	go d.periodicalReconnectToDead()
-	go d.handlePresumedDeadPeers()
+	go d.periodicalSendAlive()//每隔5s向外发送一次AliveMsg
+	go d.periodicalCheckAlive()//每隔2.5秒遍历一次上一次收到的AliveMsg
+	go d.handleMessages()//从一个只读通道中读取remote peer发送过来的membership mesage并做处理
+	go d.periodicalReconnectToDead()//每25s尝试一次重连已死亡的节点
+	go d.handlePresumedDeadPeers()//处理假设已死亡的节点
 
 	d.logger.Info("Started", self, "incTime is", d.incTime)
 

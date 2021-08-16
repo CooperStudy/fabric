@@ -56,6 +56,7 @@ type GossipService interface {
 // DeliveryServiceFactory factory to create and initialize delivery service instance
 type DeliveryServiceFactory interface {
 	// Returns an instance of delivery client
+	//返回一个delivery client的实例，sevice方法调用
 	Service(g GossipService, endpoints []string, msc api.MessageCryptoService) (deliverclient.DeliverService, error)
 }
 
@@ -91,9 +92,11 @@ type gossipServiceImpl struct {
 	//项目为true，则该peer对每一个channel都会开启一个leaderElection模块，用于领导节点的选举。
 	deliveryService map[string]deliverclient.DeliverService //gossip服务的deliveryService维护了当前peer中每一个channel到其DeliverService的映射，
 	//在InitializeChannel中完成初始化
-	deliveryFactory DeliveryServiceFactory
-	lock            sync.RWMutex
-	mcs             api.MessageCryptoService
+	deliveryFactory DeliveryServiceFactory //用于生成创建并且初始化delivery service实例的组件，类型为DeliveryServiceFactory，
+	lock            sync.RWMutex //即Gossip服务实例的读写锁，在gossip_service.go文件下的gossipServiceImpl结构体的各个方法中，有的使用了写锁定，有的使用了读锁定
+	//Initialize Channel写锁定，Stop方法 写锁定
+	mcs             api.MessageCryptoService //MessageCryptoService是在Gossip服务组件与peer一同被Gossip服务组件验证与授权远程peer月peer们所发送的数据，
+	//也用来验证从Ordering Service收到的区块
 	peerIdentity    []byte
 	secAdv          api.SecurityAdvisor
 }
@@ -175,8 +178,9 @@ func GetGossipService() GossipService {
 }
 
 // DistributePrivateData distribute private read write set inside the channel based on the collections policies
+//用于在channel中分发私有读写集
 func (g *gossipServiceImpl) DistributePrivateData(chainID string, txID string, privData *rwset.TxPvtReadWriteSet) error {
-	g.lock.RLock()
+	g.lock.RLock()//读锁定
 	handler, exists := g.privateHandlers[chainID]
 	g.lock.RUnlock()
 	if !exists {
@@ -222,7 +226,7 @@ type DataStoreSupport struct {
    每一个channel的gossipStateProvider都在InitializeChannel方法中被初始化，而InitializeChannel进一步调用了
  */
 func (g *gossipServiceImpl) InitializeChannel(chainID string, endpoints []string, support Support) {
-	g.lock.Lock()
+	g.lock.Lock() //写锁定
 	defer g.lock.Unlock()
 	// Initialize new state provider for given committer
 	logger.Debug("Creating state provider for chainID", chainID)
@@ -355,6 +359,9 @@ func (g *gossipServiceImpl) updateEndpoints(chainID string, endpoints []string) 
 }
 
 // AddPayload appends message payload to for given chain
+/*
+    用于将message payload添加到给定的链
+ */
 func (g *gossipServiceImpl) AddPayload(chainID string, payload *gproto.Payload) error {
 	g.lock.RLock()
 	defer g.lock.RUnlock()
@@ -363,7 +370,7 @@ func (g *gossipServiceImpl) AddPayload(chainID string, payload *gproto.Payload) 
 
 // Stop stops the gossip component
 func (g *gossipServiceImpl) Stop() {
-	g.lock.Lock()
+	g.lock.Lock() //写锁定
 	defer g.lock.Unlock()
 
 	for chainID := range g.chains {

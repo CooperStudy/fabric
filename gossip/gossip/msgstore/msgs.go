@@ -50,6 +50,8 @@ func NewMessageStoreExpirable(pol common.MessageReplacingPolicy, trigger invalid
 		store.expireMsgCallback = externalExpire
 	}
 
+
+	//定期清楚过期的message
 	go store.expirationRoutine()
 	return store
 }

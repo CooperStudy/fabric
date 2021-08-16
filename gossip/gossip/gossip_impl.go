@@ -116,6 +116,9 @@ func NewGossipService(conf *Config, s *grpc.Server, secAdvisor api.SecurityAdvis
 
 	g.discAdapter = g.newDiscoveryAdapter()
 	g.disSecAdap = g.newDiscoverySecurityAdapter()
+	/*
+	    周期性地将打包好的message传给回调函数gossipBatch以发送
+	 */
 	g.disc = discovery.NewDiscoveryService(g.selfNetworkMember(), g.discAdapter, g.disSecAdap, g.disclosurePolicy)
 	g.logger.Info("Creating gossip service with self membership of", g.selfNetworkMember())
 
@@ -127,6 +130,7 @@ func NewGossipService(conf *Config, s *grpc.Server, secAdvisor api.SecurityAdvis
 	}
 
 	go g.start()
+
 	go g.connect2BootstrapPeers()
 
 	return g
@@ -301,8 +305,8 @@ func (g *gossipServiceImpl) syncDiscovery() {
 }
 
 func (g *gossipServiceImpl) start() {
-	go g.syncDiscovery()
-	go g.handlePresumedDead()
+	go g.syncDiscovery() //peers间成员视图
+	go g.handlePresumedDead() //处理dead的peer
 
 	msgSelector := func(msg interface{}) bool {
 		gMsg, isGossipMsg := msg.(proto.ReceivedMessage)
@@ -317,8 +321,10 @@ func (g *gossipServiceImpl) start() {
 		return !(isConn || isEmpty || isPrivateData)
 	}
 
+	//
 	incMsgs := g.comm.Accept(msgSelector)
 
+	//处理收到的messages
 	go g.acceptMessages(incMsgs)
 
 	g.logger.Info("Gossip instance", g.conf.ID, "started")
@@ -462,22 +468,45 @@ func (g *gossipServiceImpl) sendGossipBatch(a []interface{}) {
 // to the same set of peers.
 // The rest of the messages that have no restrictions on their destinations can be sent
 // to any group of peers.
+/*
+   1.blocks
+   2.stateInfoMsg
+   3.orgMsgs
+   4.leadershipMsgs
+   5.others 其他
+ */
 func (g *gossipServiceImpl) gossipBatch(msgs []*emittedGossipMessage) {
 	if g.disc == nil {
 		g.logger.Error("Discovery has not been initialized yet, aborting!")
 		return
 	}
 
-	var blocks []*emittedGossipMessage
-	var stateInfoMsgs []*emittedGossipMessage
-	var orgMsgs []*emittedGossipMessage
-	var leadershipMsgs []*emittedGossipMessage
-
+	//定义的谓词
+	var blocks []*emittedGossipMessage  //判断是否为DataMesage
+	var stateInfoMsgs []*emittedGossipMessage //stateInfoMsgs的处理，首先要遍历stateInfoMsgs。对于每一条stateInfoMsg，首先要判给出的peer是否属于本Org
+	//然后通过过去发送的stateInfoMsgs查看stateInfo所在的channel，如果这个channel存在且存在external endpoint，则需要哦判断给出的peer是否是这个channel的成员
+	//然后通过remote peers过滤器刷选出要发送的peers，将stateInfoMsg进行发送。三个基本过滤器分别是：
+	/*
+	   1.g.conf.PropagatePeerNum 要发送的节点个数，
+	   2.g.disc.GetMembership() 网络存活的成员
+	   3.peerSelector 判断节点是否在channel上
+	 */
+	var orgMsgs []*emittedGossipMessage //对于stateInfoMsgs的处理过程，首先需要遍历stateInfoMsg，首先会判断给出的peer是否属于本Org，然后通过过去发送的
+	/*
+	   通过remote peers过滤器刷选出要发送的peers，三个基本过滤器分别是：
+			g.conf.PropagatePeerNum 要发送的节点个数（有由core.yaml文件下的peer.gossip.PropagatePeerNum配置项决定
+	        g.disc.GetMembership() 网络中存活的成员
+	        g.isInMyorg 判断节点是否在组织内
+	    然后对orgMsgs进行遍历，逐条发送给刷选出的peer节点
+	 */
+	//stateInfoMsgs查看stateInfo所在的channel。如果这个channel存在且有
+	var leadershipMsgs []*emittedGossipMessage //对于leadershipMsgs的处理过程与blocks消息基本一致，区别在于，blocks消息最多只会发送3个remote peers
+	//但是对于LeadershipMsgs消息，gossipInChan会将消息发送给所有满足过滤条件的remote peers。这也容易理解，因为leader选举与声明需要Org中的全体成员参与的.
 	isABlock := func(o interface{}) bool {
-		return o.(*emittedGossipMessage).IsDataMsg()
+		return o.(*emittedGossipMessage).IsDataMsg() //判断消息类型是否为DataMessage
 	}
 	isAStateInfoMsg := func(o interface{}) bool {
-		return o.(*emittedGossipMessage).IsStateInfoMsg()
+		return o.(*emittedGossipMessage).IsStateInfoMsg()  //判断是否是stateInfo
 	}
 	aliveMsgsWithNoEndpointAndInOurOrg := func(o interface{}) bool {
 		msg := o.(*emittedGossipMessage)
@@ -486,16 +515,28 @@ func (g *gossipServiceImpl) gossipBatch(msgs []*emittedGossipMessage) {
 		}
 		member := msg.GetAliveMsg().Membership
 		return member.Endpoint == "" && g.isInMyorg(discovery.NetworkMember{PKIid: member.PkiId})
-	}
+	} //判断该消息是否是aliveMsg，判断发送该aliveMsg的remote peer会否有
+	//external endpoint ，判断该remote peer是否属于当前组织，
 	isOrgRestricted := func(o interface{}) bool {
 		return aliveMsgsWithNoEndpointAndInOurOrg(o) || o.(*emittedGossipMessage).IsOrgRestricted()
-	}
+	}//判断消息是否满足aliveMsgsWithNoEndpointAndInOurOrg或者IsOrgRestricted判断消息是否只应该在组织内传播
 	isLeadershipMsg := func(o interface{}) bool {
-		return o.(*emittedGossipMessage).IsLeadershipMsg()
+		return o.(*emittedGossipMessage).IsLeadershipMsg()  //判断消息或否为LeadershipMsg,故消息类别的解析也会有顺序限制的：
+		//blocks ->　leadershipMsg -> stateInfoMsgs => orgMsg -> others
 	}
 
 	// Gossip blocks
+	//定以了五中消息谓词，通过定义的谓词，结合通文件下的partitionMessages函数实现对消息类别的解析，定义的谓词：
 	blocks, msgs = partitionMessages(isABlock, msgs)
+	//从要发送的msgs切片中，解析出几类消息，然后通过设定的过滤条件，从当前视图中刷选出有资格节后欧特定种类的消息remote peers,然后将消息发送
+
+	//调用gossipInChan方法来发送blocks消息。blocks消息切片 和remote peers--过滤器。remote peers过滤器是通过利用
+	//gossip/fiilter/filter.go文件下的CombineRoutingFilters函数，将三个基本过滤网通过逻辑组合而成的，三个基本过滤器分别是：
+	/*
+	 1.gc.EligibleForChannel 。判断一个给定的peer是否有资格获得该channel下的区块
+	 2.gc.IsMemberInChan 判断一个给定的peer是否是该channel的成员
+	 3.g.isInMyorg. 判断一个给定的peer是否属于本Org
+	 */
 	g.gossipInChan(blocks, func(gc channel.GossipChannel) filter.RoutingFilter {
 		return filter.CombineRoutingFilters(gc.EligibleForChannel, gc.IsMemberInChan, g.isInMyorg)
 	})
@@ -567,6 +608,9 @@ func (g *gossipServiceImpl) gossipInChan(messages []*emittedGossipMessage, chanR
 	if len(messages) == 0 {
 		return
 	}
+	//对于blocks切片中的各个信息，提取器所属channel信息，将blocks按所属channel归类，对于每一类block，刷选出有资格接收该block的remote peers，
+	//并从刷选出的remote peers中随机选出最多3个（core.yaml peer.gossip.PropagatePeerNum配置选项决定），将block发送给这些peers,
+	//特别地，还会将某一msg的发送者sender，从peers的待发送列表中过滤掉，以免造成消息发送的循环。
 	totalChannels := extractChannels(messages)
 	var channel common.ChainID
 	var messagesOfChannel []*emittedGossipMessage
@@ -1326,6 +1370,11 @@ func (g *gossipServiceImpl) peersByOriginOrgPolicy(peer discovery.NetworkMember)
 // partitionMessages receives a predicate and a slice of gossip messages
 // and returns a tuple of two slices: the messages that hold for the predicate
 // and the rest
+/*
+   接收两个输入参数，第一个是上面所说的谓词，第二个是一个消息切片，该函数最后输出的是两个消息切片，一个是满足谓词的消息切片
+   另一个是剩余的消息切片，因为上面说的5个谓词，有些是包含关系的，比如说isOrgRestricted包含了isLeadershipMsg，故消息类别的解析也是有顺序限制的
+   blocks－＞　leadershipMsgs -> stateInfoMsgs-> orgMsgs -> others
+ */
 func partitionMessages(pred common.MessageAcceptor, a []*emittedGossipMessage) ([]*emittedGossipMessage, []*emittedGossipMessage) {
 	s1 := []*emittedGossipMessage{}
 	s2 := []*emittedGossipMessage{}

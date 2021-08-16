@@ -20,12 +20,19 @@ func init() {
 
 // SecurityAdvisor defines an external auxiliary object
 // that provides security and identity related capabilities
+//定义了一个提供安全性和身份相关功能的外部辅助对象
 type SecurityAdvisor interface {
 	// OrgByPeerIdentity returns the OrgIdentityType
 	// of a given peer identity.
 	// If any error occurs, nil is returned.
 	// This method does not validate peerIdentity.
 	// This validation is supposed to be done appropriately during the execution flow.
+	/*
+	 OrgByPeerIdentity返回给定的peer对应的OrgIdentityType
+	 出错返回nil，
+	 此方法不验证peerIdentity
+	 该方法应该在执行流程期间适当进行
+	 */
 	OrgByPeerIdentity(PeerIdentityType) OrgIdentityType
 }
 
