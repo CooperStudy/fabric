@@ -48,6 +48,8 @@ func newCertStore(puller pull.Mediator, idMapper identity.Mapper, selfIdentity a
 	if err != nil {
 		certStore.logger.Panicf("Failed creating self identity message: %+v", errors.WithStack(err))
 	}
+	//即该peer将资金的pkiID与identity信息存储进了gossipSvc实例下的certStore模块下的certPull模块，所以我们可以知道
+	//在certPuller模块下执行的基于pull的同步，同步对象是各个peer自己所知的peers的identity（certificate）信息
 	puller.Add(selfIDMsg)
 	puller.RegisterMsgHook(pull.RequestMsgType, func(_ []string, msgs []*proto.SignedGossipMessage, _ proto.ReceivedMessage) {
 		for _, msg := range msgs {

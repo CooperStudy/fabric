@@ -132,6 +132,10 @@ func NewGossipService(conf *Config, s *grpc.Server, secAdvisor api.SecurityAdvis
 
 	 */
 	g.certPuller = g.createCertStorePuller()
+	/*
+	  这个模块的名称可以看出模块的功能，即该模块可以同步peers之间各个peer（所持有自己或者其他peer）的identity（certificate），gossipSvc的certPuller
+	  模块与certStore模块是搭配使用的，刚刚初始化的certPuller模块是certStore模块的一部分，
+	 */
 	g.certStore = newCertStore(g.certPuller, g.idMapper, selfIdentity, mcs)
 
 	if g.conf.ExternalEndpoint == "" {

@@ -273,6 +273,8 @@ func (conn *connection) send(msg *proto.SignedGossipMessage, onErr func(error), 
 		}
 	}
 	conn.outBuff <- m
+	//gossip 和grpc之间传送本地消息是用channel，因为gossip启动了一个本地服务，通道中有数据的时候，就会触发gossip中的select方法
+	//从而将数据从gossip启动的send服务中，将数据发送出去。
 }
 
 func (conn *connection) serviceConnection() error {
