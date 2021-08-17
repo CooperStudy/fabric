@@ -126,6 +126,9 @@ func noopCallback(_ bool) {
 // NewLeaderElectionService returns a new LeaderElectionService
 /*
    根据传入参数初始化一个leader选举服务的实例
+   leaderElection组件用于领导节点的选举，将收到的信息在节点间扩散。
+   leader选举的算法性质：1） peer之间靠pkiID分辨各自的身份， 2）每个peer不是leader就是follow，算法的目的在于对于所有具有相同成员视图的peers，只选图一个leader
+   3）如果网络分区成2个或多个子集，则leader的数目等于分区的数目，但是当网络又归为
  */
 func NewLeaderElectionService(adapter LeaderElectionAdapter, id string, callback leadershipCallback) LeaderElectionService {
 	if len(id) == 0 {
@@ -173,13 +176,15 @@ type leaderElectionSvcImpl struct {
 }
 
 func (le *leaderElectionSvcImpl) start() {
+
+
 	/*
 	相关选举服务的实现通过该goroutine进行，
 	 */
 	le.stopWG.Add(2)
-	go le.handleMessages()
-	le.waitForMembershipStabilization(getStartupGracePeriod())
-	go le.run()
+	go le.handleMessages()//监听leader选举相关消息
+	le.waitForMembershipStabilization(getStartupGracePeriod())//等待成员视图稳定
+	go le.run()//执行leader选举并广播相关的Proposal或declaration消息
 }
 
 func (le *leaderElectionSvcImpl) handleMessages() {
