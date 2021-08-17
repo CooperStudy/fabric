@@ -182,7 +182,9 @@ func (le *leaderElectionSvcImpl) start() {
 	le.waitForMembershipStabilization(getStartupGracePeriod())//等待成员视图稳定，时间长度15秒，core.yaml peer.gossip.election.membershipSampleInterval配置项决定
 	go le.run()//执行leader选举并广播相关的Proposal或declaration消息
 }
-
+/*
+ 主要
+ */
 func (le *leaderElectionSvcImpl) handleMessages() {
 	le.logger.Debug(le.id, ": Entering")
 	defer le.logger.Debug(le.id, ": Exiting")
@@ -257,6 +259,7 @@ func (le *leaderElectionSvcImpl) run() {
 	defer le.stopWG.Done()
 	for !le.shouldStop() {
 		if !le.isLeaderExists() {
+			//leader不存在，就进入选举
 			le.leaderElection()
 		}
 		// If we are yielding and some leader has been elected,
@@ -268,6 +271,7 @@ func (le *leaderElectionSvcImpl) run() {
 			return
 		}
 		if le.IsLeader() {
+			//如果是leader就发送 leadership declaration 消息
 			le.leader()
 		} else {
 			le.follower()
@@ -306,9 +310,11 @@ func (le *leaderElectionSvcImpl) leaderElection() {
 			return
 		}
 	}
+	//if a proposal mesage form peer with an ID lower than yourself was received,return
+
 	// If we got here, there is no one that proposed being a leader
 	// that's a better candidate than us.
-	le.beLeader()
+	le.beLeader()//声明自己是领导
 	atomic.StoreInt32(&le.leaderExists, int32(1))
 }
 
@@ -324,10 +330,12 @@ func (le *leaderElectionSvcImpl) follower() {
 	le.logger.Debug(le.id, ": Entering")
 	defer le.logger.Debug(le.id, ": Exiting")
 
+
 	le.proposals.Clear()
 	//如果一个peer发现，当前已经存在leader，且自己不是leader，则首先将leader是否存在的标志位设为leaderExists设为0
 	atomic.StoreInt32(&le.leaderExists, int32(0))
 	select {
+	//如果没有收到leadership declaration 5表内，设置值leader known false
 	case <-time.After(getLeaderAliveThreshold())://然后等待10秒，由peer.gossip.election.leaderAliveThreshold配置决定），在这期间，如果收到了其他
 	//leader发来的leadership declaration消息，则将leaderExists设为1，这样做的目的在于，探测网络分区或者leader节点是否失效
 	case <-le.stopChan:
@@ -336,6 +344,7 @@ func (le *leaderElectionSvcImpl) follower() {
 }
 
 func (le *leaderElectionSvcImpl) leader() {
+
 	leaderDeclaration := le.adapter.CreateMessage(true)
 	le.adapter.Gossip(leaderDeclaration) //如果一个peer被选为leader，则它每5s向外发送一此leadership declaration
 	//peer.gossip.election.leaderAliveThreshold的时间（10s）/2 = 5s
