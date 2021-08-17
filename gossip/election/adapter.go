@@ -102,7 +102,7 @@ func (ai *adapterImpl) Accept() <-chan Msg {
 	}, false)
 
 	msgCh := make(chan Msg)
-
+	//所以Accept()中开启一个goroutine去把gossip服务中获取的proto.GossipMessage类型转换成msgImpl发送到msgChan中
 	go func(inCh <-chan *proto.GossipMessage, outCh chan Msg, stopCh chan struct{}) {
 		for {
 			select {

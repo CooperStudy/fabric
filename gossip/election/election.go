@@ -183,19 +183,22 @@ func (le *leaderElectionSvcImpl) start() {
 	go le.run()//执行leader选举并广播相关的Proposal或declaration消息
 }
 /*
- 主要
+ 主要开启处理消息服务，首先
  */
 func (le *leaderElectionSvcImpl) handleMessages() {
 	le.logger.Debug(le.id, ": Entering")
 	defer le.logger.Debug(le.id, ": Exiting")
 	defer le.stopWG.Done()
-	msgChan := le.adapter.Accept()
+	//首先用适配器adapter获取接收消息的频道
+	msgChan := le.adapter.Accept()//msgChan是专门处理election模块中特定消息类型msgImpl的
 	for {
+		//在for循环中持续接收msgChan中到来的一条条消息，交由handleMessage函数处理，
 		select {
 		case <-le.stopChan:
 			le.stopChan <- struct{}{}
 			return
 		case msg := <-msgChan:
+
 			if !le.isAlive(msg.SenderID()) {
 				le.logger.Debug(le.id, ": Got message from", msg.SenderID(), "but it is not in the view")
 				break
@@ -213,10 +216,11 @@ func (le *leaderElectionSvcImpl) handleMessage(msg Msg) {
 	le.logger.Debug(le.id, ":", msg.SenderID(), "sent us", msgType)
 	le.Lock()
 	defer le.Unlock()
-
+	//如果消息是proposal，则记录到election模块成员proposals中，即把所有其他节点发来的想要成为leader的自荐信先放起来
 	if msg.IsProposal() {
 		le.proposals.Add(string(msg.SenderID()))
 	} else if msg.IsDeclaration() {
+		//如果消息
 		atomic.StoreInt32(&le.leaderExists, int32(1))
 		if le.sleeping && len(le.interruptChan) == 0 {
 			le.interruptChan <- struct{}{}
