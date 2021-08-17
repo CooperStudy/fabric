@@ -244,11 +244,15 @@ func NewGossipStateProvider(chainID string, services *ServicesMediator, ledger l
 	s.done.Add(4)
 
 	// Listen for incoming communication
+	//监听传入的通信
 	go s.listen()
+	//对传入的block相关的message进行处理
 	// Deliver in order messages into the incoming channel
 	go s.deliverPayloads()
+	//执行反熵以填补缺失的块
 	// Execute anti entropy to fill missing gaps
 	go s.antiEntropy()
+	//处理状态请求消息
 	// Taking care of state request messages
 	go s.processStateRequests()
 
@@ -260,7 +264,10 @@ func (s *GossipStateProviderImpl) listen() {
 
 	for {
 		select {
+		//不断尝试读取chains组件对应当前channel下的gossipStateProviderImpl结果体实例中的gossipChan字段与commChan字段，
+			//两个字段均为只读通道类型
 		case msg := <-s.gossipChan:
+			//1.一般收到的消息是DataMessage类型，这种消息类型包含有一个block
 			logger.Debug("Received new message via gossip channel")
 			go s.queueNewMessage(msg)
 		case msg := <-s.commChan:

@@ -144,6 +144,8 @@ func NewGossipService(conf *Config, s *grpc.Server, secAdvisor api.SecurityAdvis
 
 	go g.start()
 
+	//该 goroutine会读取core.yaml文件下的peer.gossip.bootstrap配置项，里面包含了配置remote peers的endpoint，每一个peer启动时都会
+	//尝试连接bootstrap配置项中配置remote peers的endpoint
 	go g.connect2BootstrapPeers()
 
 	return g
@@ -302,7 +304,12 @@ func (g *gossipServiceImpl) handlePresumedDead() {
 		case s := <-g.toDieChan:
 			g.toDieChan <- s
 			return
+			/*
+			不断的读取gossipSvc实例中commm模块中PresumedDead 《- chan方法返回的只读通道，从该通道中读取出的数据是已被认为dead
+			的peer的pkiID
+			*/
 		case deadEndpoint := <-g.comm.PresumedDead():
+			//，读取出后放入presumedDead模块中，该模块也是一个通道，gossipSvc实例初始化是默认通道大小为100
 			g.presumedDead <- deadEndpoint
 		}
 	}
@@ -312,11 +319,16 @@ func (g *gossipServiceImpl) syncDiscovery() {
 	g.logger.Debug("Entering discovery sync with interval", g.conf.PullInterval)
 	defer g.logger.Debug("Exiting discovery sync loop")
 	for !g.toDie() {
+		//InitiateSync请求一些peers的成员视图（membership view）
 		g.disc.InitiateSync(g.conf.PullPeerNum)
+		//每隔4s与pullInterval的配置有关，默认4s,再执行下一次。该goroutine实现了peers之间成员视图之间视图的交换
 		time.Sleep(g.conf.PullInterval)
 	}
 }
 
+/*
+可以视为gossipSvc实例的开启，
+ */
 func (g *gossipServiceImpl) start() {
 	go g.syncDiscovery() //peers间成员视图
 	go g.handlePresumedDead() //处理dead的peer
@@ -334,7 +346,11 @@ func (g *gossipServiceImpl) start() {
 		return !(isConn || isEmpty || isPrivateData)
 	}
 
-	//
+	/*
+	开启之前，start方法首先定义了一个msgSelector，调用了gossipSvc实例中comm模块下的
+	Accept方法，该方法返回一个只读通道，incMsg,不断从只读通道incMgs中读取到来的Message，
+	再调用同文件下的handleMessage方法进行处理。
+	 */
 	incMsgs := g.comm.Accept(msgSelector)
 
 	//处理收到的messages
@@ -353,6 +369,12 @@ func (g *gossipServiceImpl) acceptMessages(incMsgs <-chan proto.ReceivedMessage)
 			g.toDieChan <- s
 			return
 		case msg := <-incMsgs:
+			//handleMessage方法对接收到的ReceivedMessage做处理，将接收到的消息分为三类：
+			/*
+			 1) 受channel限制的Message
+			 2） Discovery类消息，包括：Alive Message，MembershipRequest Message，MembershipResponse Message
+			 3）基于pull机制的消息，并且该消息是identity相关的消息
+			 */
 			g.handleMessage(msg)
 		}
 	}
@@ -1193,15 +1215,23 @@ func (g *gossipServiceImpl) sameOrgOrOurOrgPullFilter(msg proto.ReceivedMessage)
 func (g *gossipServiceImpl) connect2BootstrapPeers() {
 	for _, endpoint := range g.conf.BootstrapPeers {
 		endpoint := endpoint
+		/*
+		连接的过程：构建一个identifier身份识别器，再通过gossipSvc的disc模块下的Connect方法 建立连接
+		 */
 		identifier := func() (*discovery.PeerIdentification, error) {
+
+			//首先通过Handshake获取remote peers的identity，
 			remotePeerIdentity, err := g.comm.Handshake(&comm.RemotePeer{Endpoint: endpoint})
 			if err != nil {
 				return nil, errors.WithStack(err)
 			}
+			//检测是否当前peer同属一个Org,期望是同一个，否则返回错误
 			sameOrg := bytes.Equal(g.selfOrg, g.secAdvisor.OrgByPeerIdentity(remotePeerIdentity))
 			if !sameOrg {
 				return nil, errors.Errorf("%s isn't in our organization, cannot be a bootstrap peer", endpoint)
 			}
+			//再通过remote peer的identity在gossipSvc实例的mcs模块中查询器pikID（期望能够查询到，否则返回错误信息），最后返回对
+			//remote peer的身份认证信息（PeerIdentification) 与 error信息。
 			pkiID := g.mcs.GetPKIidOfCert(remotePeerIdentity)
 			if len(pkiID) == 0 {
 				return nil, errors.Errorf("Wasn't able to extract PKI-ID of remote peer with identity of %v", remotePeerIdentity)
