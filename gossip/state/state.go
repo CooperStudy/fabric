@@ -267,11 +267,13 @@ func (s *GossipStateProviderImpl) listen() {
 		//不断尝试读取chains组件对应当前channel下的gossipStateProviderImpl结果体实例中的gossipChan字段与commChan字段，
 			//两个字段均为只读通道类型
 		case msg := <-s.gossipChan:
-			//1.一般收到的消息是DataMessage类型，这种消息类型包含有一个block
+			//1.一般收到的消息是DataMessage类型，这种消息类型包含有一个block.
 			logger.Debug("Received new message via gossip channel")
-			go s.queueNewMessage(msg)
+			go s.queueNewMessage(msg)//方法在进行不要的有效性检测后，调用同文件下addPayload方法，以非阻塞模式将message中包含的
+			//block加入一个区块缓存block buffer中
 		case msg := <-s.commChan:
 			logger.Debug("Dispatching a message", msg)
+			//若从s.commChan读取到新消息，意味着从其他remote peers收到了新的message，否则进一步开启一个goroutine，
 			go s.dispatch(msg)
 		case <-s.stopCh:
 			s.stopCh <- struct{}{}
@@ -281,12 +283,22 @@ func (s *GossipStateProviderImpl) listen() {
 	}
 }
 func (s *GossipStateProviderImpl) dispatch(msg proto.ReceivedMessage) {
+	//将收到的message交给同文件下的dispatch方法进行处理。一般收到的message信息
 	// Check type of the message
+	//1。状态同步 state synchronization相关信息 。包括RemoteStateRequest，RemoteStateResponse
+	//RemoteStateRequest用来向remote peers请求一系列blocks的消息类型，
+	//RemorteStateResponse用来向remote peers发送一系列消息类型
 	if msg.GetGossipMessage().IsRemoteStateMessage() {
 		logger.Debug("Handling direct state transfer message")
 		// Got state transfer request response
 		s.directMessage(msg)
 	} else if msg.GetGossipMessage().GetPrivateData() != nil {
+		/*
+		 2。私有数据相关，包括RemotePvtDataRequest、RemotePvtDataResponse，PrivateDataMessage是用来向remote peers发送一系列blocks的消息类型
+		   RemotePvtDataRequest是用来请求错失的私有读写及 private rwset
+		   RemotePvtDataResponse 是后用来回复私有数据复制请求  private data replication request
+		   PrivateDataMessage 是交易背书后包含私有数据信息的消息类型
+		 */
 		logger.Debug("Handling private data collection message")
 		// Handling private data replication message
 		s.privateDataMessage(msg)
