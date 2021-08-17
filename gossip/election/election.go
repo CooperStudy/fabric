@@ -181,7 +181,11 @@ func (le *leaderElectionSvcImpl) start() {
 	go le.handleMessages()//监听leader选举相关消息
 	//startupGracePeriod整个判断过程N+15秒，或leader已经出现（即收到declaration消息），则停止判断，
 	//这里需要深入理解，在一个新初始化的chaiin中，新的节点陆续加入到网络中，被gossip服务的discovery模块发现并记录，这个过程是很快的
-	//可能几毫秒内就会发现若干个新节点，所系咋判断成员关系是否稳定时，若在等待1秒后新获取的成员数据量还是等于原来的
+	//可能几毫秒内就会发现若干个新节点，所系咋判断成员关系是否稳定时，若在等待1秒后新获取的成员数据量还是等于原来的成员数量，那么
+	//election模块就认为在1s这么长的时间内都没有新节点加入，则自认为当前网络中所有活着的界定啊都已经发现了，即成员关系固定了。另外一个
+	//这个等待进成员关系固定化的过程是一个辅助election模块进行选举的leader的，不能无限期等待下去而耽误了选举的正事儿，所以规定了15s
+	//要是15s还没固定，那就不等了。自然的，要是这个期间已经有了leader，那也就没有选举的必要了，没选举的必要，更没有再等待固定化的必要，
+	//所以这种情况下就会停止判断。
 	le.waitForMembershipStabilization(getStartupGracePeriod())//等待成员视图稳定，时间长度15秒，core.yaml peer.gossip.election.membershipSampleInterval配置项决定
 	go le.run()//执行leader选举并广播相关的Proposal或declaration消息
 }
