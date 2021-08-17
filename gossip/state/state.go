@@ -376,13 +376,16 @@ func (s *GossipStateProviderImpl) directMessage(msg proto.ReceivedMessage) {
 		}
 	}
 }
-
+/*
+   通过for不断监听GossiptateProviderImpl实例的stateRequestCh该通道的默认大小是100
+ */
 func (s *GossipStateProviderImpl) processStateRequests() {
 	defer s.done.Done()
 
 	for {
 		select {
 		case msg := <-s.stateRequestCh:
+			//如果有新的状态请求（state request）信息进入，则调用同文件下的handleStateRequest方法处理请求信息
 			s.handleStateRequest(msg)
 		case <-s.stopCh:
 			s.stopCh <- struct{}{}
@@ -397,8 +400,11 @@ func (s *GossipStateProviderImpl) handleStateRequest(msg proto.ReceivedMessage) 
 	if msg == nil {
 		return
 	}
+
 	request := msg.GetGossipMessage().GetStateRequest()
 
+	//收到状态请求消息msg后，首先判断请求中请求区块的范围是否有效，包括一次最多请求10个区块等限制，自身所持有的区块高度是否能满足msg中请求区块高度等，
+	//一系列验
 	batchSize := request.EndSeqNum - request.StartSeqNum
 	if batchSize > defAntiEntropyBatchSize {
 		logger.Errorf("Requesting blocks batchSize size (%d) greater than configured allowed"+
@@ -542,6 +548,7 @@ func (s *GossipStateProviderImpl) queueNewMessage(msg *proto.GossipMessage) {
 	}
 }
 
+
 func (s *GossipStateProviderImpl) deliverPayloads() {
 	defer s.done.Done()
 
@@ -593,7 +600,9 @@ func (s *GossipStateProviderImpl) deliverPayloads() {
 		}
 	}
 }
-
+/*
+  反熵 顾名思义就是降低混乱程度，
+*/
 func (s *GossipStateProviderImpl) antiEntropy() {
 	defer s.done.Done()
 	defer logger.Debug("State Provider stopped, stopping anti entropy procedure.")
@@ -603,8 +612,8 @@ func (s *GossipStateProviderImpl) antiEntropy() {
 		case <-s.stopCh:
 			s.stopCh <- struct{}{}
 			return
-		case <-time.After(defAntiEntropyInterval):
-			current, err := s.ledger.LedgerHeight()
+		case <-time.After(defAntiEntropyInterval)://每隔10s,与全局变量defAntiEntropyInterval有关，
+			current, err := s.ledger.LedgerHeight()//获取自身账本的高度
 			if err != nil {
 				// Unable to read from ledger continue to the next round
 				logger.Errorf("Cannot obtain ledger height, due to %+v", errors.WithStack(err))
@@ -614,12 +623,12 @@ func (s *GossipStateProviderImpl) antiEntropy() {
 				logger.Error("Ledger reported block height of 0 but this should be impossible")
 				continue
 			}
-			max := s.maxAvailableLedgerHeight()
+			max := s.maxAvailableLedgerHeight()//迭代获取该通道所有可用的alive remote peers，获取他们的账本高度信息max_height;
 
 			if current-1 >= max {
 				continue
 			}
-
+            //current-1 < max则调用同文件下的requestBlocksInRange方法请求缺失的区块
 			s.requestBlocksInRange(uint64(current), uint64(max))
 		}
 	}
@@ -647,13 +656,18 @@ func (s *GossipStateProviderImpl) maxAvailableLedgerHeight() uint64 {
 // GetBlocksInRange capable to acquire blocks with sequence
 // numbers in the range [start...end].
 func (s *GossipStateProviderImpl) requestBlocksInRange(start uint64, end uint64) {
+	/*
+
+	 */
 	atomic.StoreInt32(&s.stateTransferActive, 1)
 	defer atomic.StoreInt32(&s.stateTransferActive, 0)
 
 	for prev := start; prev <= end; {
 		next := min(end, prev+defAntiEntropyBatchSize)
+		//end - start >= 10
 
 		gossipMsg := s.stateRequestMessage(prev, next)
+		//每次构造的Gossip Message中请求的block数目为10个，剩余的不足10个，在最后欧一个GossipMessage中请求，
 
 		responseReceived := false
 		tryCounts := 0
@@ -675,12 +689,15 @@ func (s *GossipStateProviderImpl) requestBlocksInRange(start uint64, end uint64)
 			logger.Debugf("State transfer, with peer %s, requesting blocks in range [%d...%d], "+
 				"for chainID %s", peer.Endpoint, prev, next, s.chainID)
 
+			//发送请求
 			s.mediator.Send(gossipMsg, peer)
 			tryCounts++
 
+			//等待计时器到期或者请求回复到达。
 			// Wait until timeout or response arrival
 			select {
 			case msg := <-s.stateResponseCh:
+				//对请求消息的辨认是通过NONCE机制实现的
 				if msg.GetGossipMessage().Nonce != gossipMsg.Nonce {
 					continue
 				}
@@ -728,6 +745,7 @@ func (s *GossipStateProviderImpl) selectPeerToRequestFrom(height uint64) (*comm.
 	}
 
 	// Select peer to ask for blocks
+	//发送gossipMessage区块的时候，会从当前channel中的所有可用的（alive) remote peers中，随机在所有拥有区块高度满足要求（即拥有区块高度大于 等于请求区块高度）的peers中 选择一个
 	return peers[util.RandomInt(n)], nil
 }
 
