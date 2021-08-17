@@ -223,10 +223,13 @@ func (le *leaderElectionSvcImpl) handleMessage(msg Msg) {
 		//如果消息是declaration,则把已经存在leader的标志leaderExists置为1
 		atomic.StoreInt32(&le.leaderExists, int32(1))
 		if le.sleeping && len(le.interruptChan) == 0 {
-			//如果
+			//如果此时模块正在休眠且interruptChan是空，则向iinterruptChan唤醒模块
+			//这里的interruptChan可以理解为模块的中断休眠频道，模块成员sleeping标志者模块当前是否在休眠，
+			//而waitForINttrupt（time)函数通过select{}让模块进入休眠 ，等待time后，或者declaration消息一旦到来，在置sleeping为false，即唤醒模块。
 			le.interruptChan <- struct{}{}
 		}
 		if bytes.Compare(msg.SenderID(), le.id) < 0 && le.IsLeader() {
+			//若自己当前是leader而declaration中的新leader不是自己，则调用stopBeingLeader，停止当leader。
 			le.stopBeingLeader()
 		}
 	} else {
