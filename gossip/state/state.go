@@ -403,14 +403,14 @@ func (s *GossipStateProviderImpl) handleStateRequest(msg proto.ReceivedMessage) 
 
 	request := msg.GetGossipMessage().GetStateRequest()
 
-	//收到状态请求消息msg后，首先判断请求中请求区块的范围是否有效，包括一次最多请求10个区块等限制，自身所持有的区块高度是否能满足msg中请求区块高度等，
-	//一系列验
+	//收到状态请求消息msg后，首先判断请求中请求区块的范围是否有效，包括一次最多请求10个区块等限制，
 	batchSize := request.EndSeqNum - request.StartSeqNum
 	if batchSize > defAntiEntropyBatchSize {
 		logger.Errorf("Requesting blocks batchSize size (%d) greater than configured allowed"+
 			" (%d) batching for anti-entropy. Ignoring request...", batchSize, defAntiEntropyBatchSize)
 		return
 	}
+
 
 	if request.StartSeqNum > request.EndSeqNum {
 		logger.Errorf("Invalid sequence interval [%d...%d], ignoring request...", request.StartSeqNum, request.EndSeqNum)
@@ -422,6 +422,7 @@ func (s *GossipStateProviderImpl) handleStateRequest(msg proto.ReceivedMessage) 
 		logger.Errorf("Cannot access to current ledger height, due to %+v", errors.WithStack(err))
 		return
 	}
+	//自身所持有的区块高度是否能满足msg中请求区块高度等，
 	if currentHeight < request.EndSeqNum {
 		logger.Warningf("Received state request to transfer blocks with sequence numbers higher  [%d...%d] "+
 			"than available in ledger (%d)", request.StartSeqNum, request.StartSeqNum, currentHeight)
@@ -429,6 +430,9 @@ func (s *GossipStateProviderImpl) handleStateRequest(msg proto.ReceivedMessage) 
 
 	endSeqNum := min(currentHeight, request.EndSeqNum)
 
+
+	//开始构造回复信息（类型为&proto.GossipMessage
+	//
 	response := &proto.RemoteStateResponse{Payloads: make([]*proto.Payload, 0)}
 	for seqNum := request.StartSeqNum; seqNum <= endSeqNum; seqNum++ {
 		logger.Debug("Reading block ", seqNum, " with private data from the coordinator service")
@@ -476,6 +480,7 @@ func (s *GossipStateProviderImpl) handleStateRequest(msg proto.ReceivedMessage) 
 		})
 	}
 	// Sending back response with missing blocks
+	//重点在于回复信息是通过msg中的Respond方法（实际实现在gossip/comm/msg.go)回复的，
 	msg.Respond(&proto.GossipMessage{
 		// Copy nonce field from the request, so it will be possible to match response
 		Nonce:   msg.GetGossipMessage().Nonce,
