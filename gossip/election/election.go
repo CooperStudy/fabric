@@ -325,9 +325,11 @@ func (le *leaderElectionSvcImpl) follower() {
 	defer le.logger.Debug(le.id, ": Exiting")
 
 	le.proposals.Clear()
+	//如果一个peer发现，当前已经存在leader，且自己不是leader，则首先将leader是否存在的标志位设为leaderExists设为0
 	atomic.StoreInt32(&le.leaderExists, int32(0))
 	select {
-	case <-time.After(getLeaderAliveThreshold()):
+	case <-time.After(getLeaderAliveThreshold())://然后等待10秒，由peer.gossip.election.leaderAliveThreshold配置决定），在这期间，如果收到了其他
+	//leader发来的leadership declaration消息，则将leaderExists设为1，这样做的目的在于，探测网络分区或者leader节点是否失效
 	case <-le.stopChan:
 		le.stopChan <- struct{}{}
 	}
@@ -335,7 +337,7 @@ func (le *leaderElectionSvcImpl) follower() {
 
 func (le *leaderElectionSvcImpl) leader() {
 	leaderDeclaration := le.adapter.CreateMessage(true)
-	le.adapter.Gossip(leaderDeclaration) //如果一个
+	le.adapter.Gossip(leaderDeclaration) //如果一个peer被选为leader，则它每5s向外发送一此leadership declaration
 	//peer.gossip.election.leaderAliveThreshold的时间（10s）/2 = 5s
 	le.waitForInterrupt(getLeadershipDeclarationInterval())
 }
