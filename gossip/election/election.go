@@ -220,9 +220,10 @@ func (le *leaderElectionSvcImpl) handleMessage(msg Msg) {
 	if msg.IsProposal() {
 		le.proposals.Add(string(msg.SenderID()))
 	} else if msg.IsDeclaration() {
-		//如果消息
+		//如果消息是declaration,则把已经存在leader的标志leaderExists置为1
 		atomic.StoreInt32(&le.leaderExists, int32(1))
 		if le.sleeping && len(le.interruptChan) == 0 {
+			//如果
 			le.interruptChan <- struct{}{}
 		}
 		if bytes.Compare(msg.SenderID(), le.id) < 0 && le.IsLeader() {
