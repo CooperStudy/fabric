@@ -548,7 +548,11 @@ func (s *GossipStateProviderImpl) deliverPayloads() {
 	for {
 		select {
 		// Wait for notification that next seq has arrived
+			//等待下一个 区块的 到来
 		case <-s.payloads.Ready():
+			//这里意味着下一个区块已经到来
+			//新的DataMessage到来之后，会交给AddPayload方法进行处理，将message中包含的block加入区块缓存中，但同事addPayload还会往GossipStateProviderImpl
+			//实例下的payloads字段代表的结构体实例下的readyChan字段（类型是一个缓存为0的通道）中写入一个空结构体
 			logger.Debugf("Ready to transfer payloads to the ledger, next sequence number is = [%d]", s.payloads.Next())
 			// Collect all subsequent payloads
 			for payload := s.payloads.Pop(); payload != nil; payload = s.payloads.Pop() {
@@ -573,6 +577,7 @@ func (s *GossipStateProviderImpl) deliverPayloads() {
 						continue
 					}
 				}
+				//提交新的区块
 				if err := s.commitBlock(rawBlock, p); err != nil {
 					if executionErr, isExecutionErr := err.(*vsccErrors.VSCCExecutionFailureError); isExecutionErr {
 						logger.Errorf("Failed executing VSCC due to %v. Aborting chain processing", executionErr)
@@ -794,6 +799,9 @@ func (s *GossipStateProviderImpl) addPayload(payload *proto.Payload, blockingMod
 func (s *GossipStateProviderImpl) commitBlock(block *common.Block, pvtData util.PvtDataCollections) error {
 
 	// Commit block with available private transactions
+	/*
+	 1)提交了block与私有交易信息
+	 */
 	if err := s.ledger.StoreBlock(block, pvtData); err != nil {
 		logger.Errorf("Got error while committing(%+v)", errors.WithStack(err))
 		return err
@@ -804,6 +812,7 @@ func (s *GossipStateProviderImpl) commitBlock(block *common.Block, pvtData util.
 	// Decode nodeMetastate to byte array
 	b, err := nodeMetastate.Bytes()
 	if err == nil {
+		//调用updateChannelMetadata方法啊，更新了与该channel相关的状态信息（状态信息周期性的发送到其他remote peers)
 		s.mediator.UpdateChannelMetadata(b, common2.ChainID(s.chainID))
 	} else {
 

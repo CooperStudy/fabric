@@ -141,6 +141,9 @@ func (c *coordinator) StorePvtData(txID string, privData *rwset.TxPvtReadWriteSe
 }
 
 // StoreBlock stores block with private data into the ledger
+/*
+    获取私有数据读写集的过程，只有顺利完成红藕才能调用core/ledger/下的代码存储区块
+ */
 func (c *coordinator) StoreBlock(block *common.Block, privateDataSets util.PvtDataCollections) error {
 	if block.Data == nil {
 		return errors.New("Block data is empty")
