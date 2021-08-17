@@ -128,7 +128,7 @@ func noopCallback(_ bool) {
    根据传入参数初始化一个leader选举服务的实例
    leaderElection组件用于领导节点的选举，将收到的信息在节点间扩散。
    leader选举的算法性质：1） peer之间靠pkiID分辨各自的身份， 2）每个peer不是leader就是follow，算法的目的在于对于所有具有相同成员视图的peers，只选图一个leader
-   3）如果网络分区成2个或多个子集，则leader的数目等于分区的数目，但是当网络又归为
+   3）如果网络分区成2个或多个子集，则leader的数目等于分区的数目，但是当网络又归为一个时，有一个leader可以留下来
  */
 func NewLeaderElectionService(adapter LeaderElectionAdapter, id string, callback leadershipCallback) LeaderElectionService {
 	if len(id) == 0 {
@@ -177,13 +177,9 @@ type leaderElectionSvcImpl struct {
 
 func (le *leaderElectionSvcImpl) start() {
 
-
-	/*
-	相关选举服务的实现通过该goroutine进行，
-	 */
 	le.stopWG.Add(2)
 	go le.handleMessages()//监听leader选举相关消息
-	le.waitForMembershipStabilization(getStartupGracePeriod())//等待成员视图稳定
+	le.waitForMembershipStabilization(getStartupGracePeriod())//等待成员视图稳定，时间长度15秒，core.yaml peer.gossip.election.membershipSampleInterval配置项决定
 	go le.run()//执行leader选举并广播相关的Proposal或declaration消息
 }
 
@@ -339,21 +335,33 @@ func (le *leaderElectionSvcImpl) follower() {
 
 func (le *leaderElectionSvcImpl) leader() {
 	leaderDeclaration := le.adapter.CreateMessage(true)
-	le.adapter.Gossip(leaderDeclaration)
+	le.adapter.Gossip(leaderDeclaration) //如果一个
+	//peer.gossip.election.leaderAliveThreshold的时间（10s）/2 = 5s
 	le.waitForInterrupt(getLeadershipDeclarationInterval())
 }
 
 // waitForMembershipStabilization waits for membership view to stabilize
 // or until a time limit expires, or until a peer declares itself as a leader
+/*
+   1.首先设置一个定时器，事件妆度15秒。在定时器没到期之前，每隔1s,peer.gossip.election.membersipSampleInterval配置项决定
+    做如下检查，1)成员视图是否稳定，即所掌握的remote peers的数目和航一次检查时的数目是否一致
+     2）计时器是否到期，
+　　　３）是否已经存在leader，若有一个满足条件，则结束对成员视图的等待
+ */
 func (le *leaderElectionSvcImpl) waitForMembershipStabilization(timeLimit time.Duration) {
+
+
 	le.logger.Debug(le.id, ": Entering")
 	defer le.logger.Debug(le.id, ": Exiting, peers found", len(le.adapter.Peers()))
 	endTime := time.Now().Add(timeLimit)
 	viewSize := len(le.adapter.Peers())
 	for !le.shouldStop() {
-		time.Sleep(getMembershipSampleInterval())
+		time.Sleep(getMembershipSampleInterval())//peer.gossip.election.membershipSampleInterval 1秒
 		newSize := len(le.adapter.Peers())
 		if newSize == viewSize || time.Now().After(endTime) || le.isLeaderExists() {
+			//1)所掌握的remote peers的数目和航一次检查时的数目是否一致
+			//2)计时器是否到期，
+			//3)是否已经存在leader，若有一个满足条件，则结束对成员视图的等待
 			return
 		}
 		viewSize = newSize
