@@ -179,6 +179,9 @@ func (le *leaderElectionSvcImpl) start() {
 
 	le.stopWG.Add(2)
 	go le.handleMessages()//监听leader选举相关消息
+	//startupGracePeriod整个判断过程N+15秒，或leader已经出现（即收到declaration消息），则停止判断，
+	//这里需要深入理解，在一个新初始化的chaiin中，新的节点陆续加入到网络中，被gossip服务的discovery模块发现并记录，这个过程是很快的
+	//可能几毫秒内就会发现若干个新节点，所系咋判断成员关系是否稳定时，若在等待1秒后新获取的成员数据量还是等于原来的
 	le.waitForMembershipStabilization(getStartupGracePeriod())//等待成员视图稳定，时间长度15秒，core.yaml peer.gossip.election.membershipSampleInterval配置项决定
 	go le.run()//执行leader选举并广播相关的Proposal或declaration消息
 }
@@ -368,8 +371,14 @@ func (le *leaderElectionSvcImpl) leader() {
 　　　３）是否已经存在leader，若有一个满足条件，则结束对成员视图的等待
  */
 func (le *leaderElectionSvcImpl) waitForMembershipStabilization(timeLimit time.Duration) {
+	/*
+	此函数等待成员关系固定化，这里的成员关系指的是网络中存在的所有或者的节点数量，固化指成员关系稳定的，
+	这个等待过程是：确定当前时间为N后开始判断，使用适配器获取当前成员变量viewSize（追溯适配器可知，获取成员数量
+	使用的还是discovery模块）
+	然后进入for循环，不断地判断成员关系是否稳定，判断的标准是，每隔一秒重弄获取最新的成员数量newSize
+	若newSize == viewSize,则称当前成员关系稳定，否则更新viewSize最新发现的成员 数量，即viewSize = newSize，进行下一轮判断
 
-
+	 */
 	le.logger.Debug(le.id, ": Entering")
 	defer le.logger.Debug(le.id, ": Exiting, peers found", len(le.adapter.Peers()))
 	endTime := time.Now().Add(timeLimit)
