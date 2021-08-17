@@ -69,6 +69,7 @@ type gossipServiceImpl struct {
 }
 
 // NewGossipService creates a gossip instance attached to a gRPC server
+//gossipSvc
 func NewGossipService(conf *Config, s *grpc.Server, secAdvisor api.SecurityAdvisor,
 	mcs api.MessageCryptoService, selfIdentity api.PeerIdentityType,
 	secureDialOpts api.PeerSecureDialOpts) Gossip {
@@ -91,6 +92,8 @@ func NewGossipService(conf *Config, s *grpc.Server, secAdvisor api.SecurityAdvis
 		stopSignal:            &sync.WaitGroup{},
 		includeIdentityPeriod: time.Now().Add(conf.PublishCertPeriod),
 	}
+
+
 	g.stateInfoMsgStore = g.newStateInfoMsgStore()
 
 	g.idMapper = identity.NewIdentityMapper(mcs, selfIdentity, func(pkiID common.PKIidType, identity api.PeerIdentityType) {
@@ -120,8 +123,14 @@ func NewGossipService(conf *Config, s *grpc.Server, secAdvisor api.SecurityAdvis
 	    周期性地将打包好的message传给回调函数gossipBatch以发送
 	 */
 	g.disc = discovery.NewDiscoveryService(g.selfNetworkMember(), g.discAdapter, g.disSecAdap, g.disclosurePolicy)
+
+
+
 	g.logger.Info("Creating gossip service with self membership of", g.selfNetworkMember())
 
+	/*
+
+	 */
 	g.certPuller = g.createCertStorePuller()
 	g.certStore = newCertStore(g.certPuller, g.idMapper, selfIdentity, mcs)
 

@@ -19,6 +19,7 @@ import (
    identified by string numbers.
    The protocol is as follows:
    1) The Initiator sends a Hello message with a specific NONCE to a set of remote peers.
+
    2) Each remote peer responds with a digest of its messages and returns that NONCE.
    3) The initiator checks the validity of the NONCEs received, aggregates the digests,
       and crafts a request containing specific item ids it wants to receive from each remote peer and then
@@ -30,7 +31,6 @@ import (
 	/|\	--------- Digest <[3,5,8, 10...], NONCE> -------->     /|\
 	 |	<-------- Request <[3,8], NONCE> -----------------      |
 	/ \	--------- Response <[item3, item8], NONCE>------->     / \
-
 */
 
 const (
@@ -86,6 +86,10 @@ type PullAdapter interface {
 
 // PullEngine is the component that actually invokes the pull algorithm
 // with the help of the PullAdapter
+/*
+ pullEngine是执行基于pull的同步操作对象，并维护有字符串号码标识的items的内部状态。基于pull的同步协议如下所示：
+
+ */
 type PullEngine struct {
 	PullAdapter
 	stopFlag           int32

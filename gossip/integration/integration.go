@@ -39,9 +39,9 @@ func newConfig(selfEndpoint string, externalEndpoint string, certs *common.TLSCe
 		BootstrapPeers:             bootPeers,
 		ID:                         selfEndpoint,
 		MaxBlockCountToStore:       util.GetIntOrDefault("peer.gossip.maxBlockCountToStore", 100),
-		MaxPropagationBurstLatency: util.GetDurationOrDefault("peer.gossip.maxPropagationBurstLatency", 10*time.Millisecond),
-		MaxPropagationBurstSize:    util.GetIntOrDefault("peer.gossip.maxPropagationBurstSize", 10),
-		PropagateIterations:        util.GetIntOrDefault("peer.gossip.propagateIterations", 1),
+		MaxPropagationBurstLatency: util.GetDurationOrDefault("peer.gossip.maxPropagationBurstLatency", 10*time.Millisecond),//连续两次push msg之间的最大时间间隔
+		MaxPropagationBurstSize:    util.GetIntOrDefault("peer.gossip.maxPropagationBurstSize", 10),//缓存mg的最大值
+		PropagateIterations:        util.GetIntOrDefault("peer.gossip.propagateIterations", 1), //代表每个msg batch被发送的次数
 		PropagatePeerNum:           util.GetIntOrDefault("peer.gossip.propagatePeerNum", 3),
 		PullInterval:               util.GetDurationOrDefault("peer.gossip.pullInterval", 4*time.Second),
 		PullPeerNum:                util.GetIntOrDefault("peer.gossip.pullPeerNum", 3),

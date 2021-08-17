@@ -52,6 +52,11 @@ func newBatchingEmitter(iterations, burstSize int, latency time.Duration, cb emi
 
 	if iterations != 0 {
 		//每隔5s向外发送一次AliveMsg
+		/*
+	     周期性的执行emit（发送）操作，(emit 有两种触发条件，一种是gossipServiceImpl的emitter的字段中
+		存储的msg数量大于配置文件设定的阈值，一种是定期的计时器到期，每隔10秒发送一次，该配置
+		core.yaml的peer.gossip.maxPropagationBurst  latency 配置决定
+		 */
 		go p.periodicEmit()
 	}
 
@@ -74,12 +79,26 @@ func (p *batchingEmitterImpl) emit() {
 	if len(p.buff) == 0 {
 		return
 	}
+	/*
+	 emit操作实际上是要将发送的msg打包成msgs2beEmitted的切片，然后传送给一个回调函数--即前面所说的第4个参数，sendGossipBatch()
+	 gossipBatch()是真正决定将要mgs传送（gossip）到哪里peers的方法
+	 */
 	msgs2beEmitted := make([]interface{}, len(p.buff))
 	for i, v := range p.buff {
 		msgs2beEmitted[i] = v.data
 	}
 
 	p.cb(msgs2beEmitted)
+	//emitBatchCallback
+	//type emitBatchCallback func([]interface{})
+
+	//func (g *gossipServiceImpl) sendGossipBatch(a []interface{}) {
+	//	msgs2Gossip := make([]*emittedGossipMessage, len(a))
+	//	for i, e := range a {
+	//		msgs2Gossip[i] = e.(*emittedGossipMessage)
+	//	}
+	//	g.gossipBatch(msgs2Gossip)
+	//}
 	p.decrementCounters()
 }
 
@@ -104,7 +123,7 @@ type batchingEmitterImpl struct {
 	iterations int
 	burstSize  int
 	delay      time.Duration
-	cb         emitBatchCallback
+	cb         emitBatchCallback //回调函数
 	lock       *sync.Mutex
 	buff       []*batchedMessage
 	stopFlag   int32

@@ -1452,6 +1452,10 @@ func (m *PrivatePayload) GetPrivateRwset() []byte {
 
 // AliveMessage is sent to inform remote peers
 // of a peer's existence and activity
+
+/*
+  Alive Message是一个peer发送给remote peer以告知其自身的存在与活动的消息类型
+*/
 type AliveMessage struct {
 	Membership *Member   `protobuf:"bytes,1,opt,name=membership" json:"membership,omitempty"`
 	Timestamp  *PeerTime `protobuf:"bytes,2,opt,name=timestamp" json:"timestamp,omitempty"`
@@ -1545,6 +1549,7 @@ func (m *PeerTime) GetSeqNum() uint64 {
 
 // MembershipRequest is used to ask membership information
 // from a remote peer
+//用来从一个remote peer请求器其成员信息的消息类型
 type MembershipRequest struct {
 	SelfInformation *Envelope `protobuf:"bytes,1,opt,name=self_information,json=selfInformation" json:"self_information,omitempty"`
 	Known           [][]byte  `protobuf:"bytes,2,rep,name=known,proto3" json:"known,omitempty"`
@@ -1570,6 +1575,7 @@ func (m *MembershipRequest) GetKnown() [][]byte {
 }
 
 // MembershipResponse is used for replying to MembershipRequests
+// 用来回复MembershipRequest的消息类型
 type MembershipResponse struct {
 	Alive []*Envelope `protobuf:"bytes,1,rep,name=alive" json:"alive,omitempty"`
 	Dead  []*Envelope `protobuf:"bytes,2,rep,name=dead" json:"dead,omitempty"`

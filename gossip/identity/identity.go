@@ -83,11 +83,15 @@ func NewIdentityMapper(mcs api.MessageCryptoService, selfIdentity api.PeerIdenti
 }
 
 func (is *identityMapperImpl) periodicalPurgeUnusedIdentities() {
+	/*
+	  每隔6分钟执行一次检查，对于已经被插销、过期、或者长时间未用（超过1小时的）peer的identity（certificate),将他们从gossipSvc
+	  的idMapper模块（该模块委会pkiID与peers identity（certificates）之间的映射，的pkiIID2Cert字段键值对中删除。
+	 */
 	for {
 		select {
 		case <-is.stopChan:
 			return
-		case <-time.After(usageThreshold / 10):
+		case <-time.After(usageThreshold / 10)://每隔6分钟执行一次检查，
 			is.SuspectPeers(func(_ api.PeerIdentityType) bool {
 				return false
 			})

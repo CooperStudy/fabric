@@ -119,6 +119,11 @@ type pullMediatorImpl struct {
 }
 
 // NewPullMediator returns a new Mediator
+/*
+    Mediator是一个包装了PullEngine的组件，并提供了pull同步所需的一些方法，Mediator
+    对于特定的消息类型配置了相应的钩子，hook来对消息进行处理，在pull同步中共有四种消息
+    类型，hello，digest，req，res
+ */
 func NewPullMediator(config Config, adapter *PullAdapter) Mediator {
 	egressDigFilter := adapter.EgressDigFilter
 

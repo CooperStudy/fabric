@@ -115,7 +115,7 @@ func NewDiscoveryService(self NetworkMember, comm CommService, crypt CryptoServi
 	d.validateSelfConfig()
 	d.msgStore = newAliveMsgStore(d)
     //启动多个goroutine
-
+	//gossipServiceImpl -> discAdapt ->
 	go d.periodicalSendAlive()//每隔5s向外发送一次AliveMsg
 	go d.periodicalCheckAlive()//每隔2.5秒遍历一次上一次收到的AliveMsg
 	go d.handleMessages()//从一个只读通道中读取remote peer发送过来的membership mesage并做处理
@@ -273,10 +273,19 @@ func (d *gossipDiscoveryImpl) InitiateSync(peerNum int) {
 }
 
 func (d *gossipDiscoveryImpl) handlePresumedDeadPeers() {
+	/*
+
+	 */
 	defer d.logger.Debug("Stopped")
 
 	for !d.toDie() {
 		select {
+		//不断的调用 PresumedDead，PresumedDead() <-chan common.PKIidType，
+			//disc模块下的comm模块即gossipSvc实例的discAdapter模块，Presumed Dead方法返回的是gossipSvc实例的presumeDead模块
+			//gossipSVc实例的presumedDead模块，gossipSvc实例的presumedDead模块是一个通道，默认大小是100，用来存储已dead的remote peer
+			//遍历其中存储的remote peer，将其添加进disc模块的deadMembership模块维护的键值对中，从disc模块的aliveMembership模块维护
+			//的键值对中删除。
+
 		case deadPeer := <-d.comm.PresumedDead():
 			if d.isAlive(deadPeer) {
 				d.expireDeadMembers([]common.PKIidType{deadPeer})
@@ -298,13 +307,19 @@ func (d *gossipDiscoveryImpl) isAlive(pkiID common.PKIidType) bool {
 func (d *gossipDiscoveryImpl) handleMessages() {
 	defer d.logger.Debug("Stopped")
 
+	/*
+	调用disc模块下的comm模块中的Accept方法，或得你一个只读通道，
+	Accept() <-chan proto.ReceivedMessage
+	 */
 	in := d.comm.Accept()
+	//不断读取通道中的内容
 	for !d.toDie() {
 		select {
 		case s := <-d.toDieChan:
 			d.toDieChan <- s
 			return
 		case m := <-in:
+			//对读取到的mesage做处理。
 			d.handleMsgFromComm(m)
 		}
 	}
@@ -315,6 +330,7 @@ func (d *gossipDiscoveryImpl) handleMsgFromComm(msg proto.ReceivedMessage) {
 		return
 	}
 	m := msg.GetGossipMessage()
+	//disc只处理三种类型的消息，分别是aliveMsg，mebershipResponse message，MembershipRequest message
 	if m.GetAliveMsg() == nil && m.GetMemRes() == nil && m.GetMemReq() == nil {
 		d.logger.Warning("Got message with wrong type (expected Alive or MembershipResponse or MembershipRequest message):", m.GossipMessage)
 		return
@@ -586,6 +602,11 @@ func (d *gossipDiscoveryImpl) resurrectMember(am *proto.SignedGossipMessage, t p
 }
 
 func (d *gossipDiscoveryImpl) periodicalReconnectToDead() {
+	/*
+	   该goroutine检查自己维护的dead member的视图，对于每一个被怀疑已dead的remote peer，都开一个goroutine,利用disc模块中
+	   的Ping（） 方法探测一下该remote peer会否大大，如果可以到达，则向其发送MemberShipRequest消息，请求成员信息，
+
+	 */
 	defer d.logger.Debug("Stopped")
 
 	for !d.toDie() {
@@ -606,7 +627,7 @@ func (d *gossipDiscoveryImpl) periodicalReconnectToDead() {
 
 		wg.Wait()
 		d.logger.Debug("Sleeping", getReconnectInterval())
-		time.Sleep(getReconnectInterval())
+		time.Sleep(getReconnectInterval())//然后等待25秒，再开始下一次尝试
 	}
 }
 
@@ -657,11 +678,16 @@ func (d *gossipDiscoveryImpl) copyLastSeen(lastSeenMap map[string]*timestamp) []
 }
 
 func (d *gossipDiscoveryImpl) periodicalCheckAlive() {
+	/*
+	 该goroutine定期地（与core.yaml文件中的peer.gossip.aliveExpirationTimeOut配置有关，默认为2.5s
+	 */
 	defer d.logger.Debug("Stopped")
 
 	for !d.toDie() {
+		//peer.gossip.aliveTimeInterval
 		time.Sleep(getAliveExpirationCheckInterval())
-		dead := d.getDeadMembers()
+		dead := d.getDeadMembers()//遍历一次上一次收到的AliveMsg.如果某个remote peer发过来的最新的AliveMsg距现在已经过去了25秒
+		//则将该remote peer从disc模块下的aliveMembership字段实例（类型为map[string]*timestamp）中移除，放入deadMemberShip中
 		if len(dead) > 0 {
 			d.logger.Debugf("Got %v dead members: %v", len(dead), dead)
 			d.expireDeadMembers(dead)
@@ -710,6 +736,7 @@ func (d *gossipDiscoveryImpl) getDeadMembers() []common.PKIidType {
 	dead := []common.PKIidType{}
 	for id, last := range d.aliveLastTS {
 		elapsedNonAliveTime := time.Since(last.lastSeen)
+		                                                    //25秒
 		if elapsedNonAliveTime.Nanoseconds() > getAliveExpirationTimeout().Nanoseconds() {
 			d.logger.Warning("Haven't heard from", []byte(id), "for", elapsedNonAliveTime)
 			dead = append(dead, common.PKIidType(id))
@@ -719,6 +746,29 @@ func (d *gossipDiscoveryImpl) getDeadMembers() []common.PKIidType {
 }
 
 func (d *gossipDiscoveryImpl) periodicalSendAlive() {
+	/*
+        定期地（由core.yaml文件中的peer.gossip.aliveTimeInterval配置项决定，默认为5s)向外发送一次AliveMsg,发送AliveMsg是通过调用
+	    gossipSvc实例的comm模块下的gossip方法实现的，而该方法实际最终调用gossip/gossip/batcher.go文件下的Add方法，下一步发送给emiitter完成
+
+
+	func (g *gossipServiceImpl) newDiscoveryAdapter() *discoveryAdapter {
+		return &discoveryAdapter{
+			c:        g.comm,
+			stopping: int32(0),
+			gossipFunc: func(msg *proto.SignedGossipMessage) {
+				if g.conf.PropagateIterations == 0 {
+					return
+				}
+				g.emitter.Add(&emittedGossipMessage{
+					SignedGossipMessage: msg,
+					filter: func(_ common.PKIidType) bool {
+						return true
+					},
+				})
+			},
+		}
+	}
+	 */
 	defer d.logger.Debug("Stopped")
 
 	for !d.toDie() {
@@ -985,6 +1035,7 @@ func getAliveExpirationCheckInterval() time.Duration {
 		return aliveExpirationCheckInterval
 	}
 
+	//25s/10 = 2.5s
 	return time.Duration(getAliveExpirationTimeout() / 10)
 }
 
