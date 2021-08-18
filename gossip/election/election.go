@@ -314,7 +314,10 @@ func (le *leaderElectionSvcImpl) leaderElection() {
 	//由peer.gossip.election.leaderElectionDuration决定，在这个休眠过程中，既接收其他节点发来的自荐信并存储在proposals中，
 	//也可以等待可能出现的declaration消息，在模块被唤醒后，判断此时是否有leader存在，若存在（休眠期间接收到了declaration信息，
 	//则自己放弃成为leader，若不存在，则拿自己的身份与proposals中已经收到的自荐信中其他节点身份进行一一对比，看看自己是否比它们更
-	//有资格当leader。这里所说的身份是一个节点pki-ID，而判断其他的特权和优待
+	//有资格当leader。这里所说的身份是一个节点pki-ID，而判断谁更有资格当leader的标准是bytes.compare(peerID(id),le.id)，即
+	//谁的身份的二进制值更小，谁更有资格。不过gossip中的leader工作量大，并且没有其他的特权和优待，若proposals中所有的身份都没有
+	//自己的身份小，则自己当选leader，，通过调用le.beLeader(),真正成为一名leader，把“已经有leader"和"自己是leader的标识"，即成员
+	//leaderExists和isLeader,如果自己是fellow，则执行le.follower(),都是自己陈伟的角色应该做的
 	// If someone declared itself as a leader, give up
 	// on trying to become a leader too
 	if le.isLeaderExists() {
