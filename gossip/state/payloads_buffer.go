@@ -87,6 +87,16 @@ func (b *PayloadsBufferImpl) Push(payload *proto.Payload) {
 	b.buf[seqNum] = payload
 
 	// Send notification that next sequence has arrived
+	/*
+	   next指期望的下一个消息序号，消息序号即是一个频道的状态高度，也即一个频道的高度
+	   则向readyChan通道发送ready命令以指示期望的消息已经收到，即当前阶段的数据已经准备好了，
+	   这里有个前提是Q：ordering服务输出的消息都是排序过并依次输出给state模块的。例如在push（）函数中，
+	   若next为2，则说明序号为1的消息之前肯定已经被接收并处理过，当前想要接收序号为2的消息，，在Q的前提下，
+	   state模块再接收到消息的序号也只可能是1或2，因为ordering服务可能会因为某些原因重发已经发过的消息1，但是绝不可能
+	   从跳过序号为2，而去发序号为3的消息，因此如果若Push的消息序号小于2，则会直接返回。若等于2，则存储进
+	   成员buf后，发送ready命令。此外pop函数从payloads中弹出一个消息给state模拟块处理，同时将next增1，
+	比如 一旦序号2的消息而被弹出交给state模块处理，则next变为3，即此时序号为2的消息已经在处理，且payloads的消息排序输出功能
+	 */
 	if seqNum == b.next {
 		// Do not block execution of current routine
 		go func() {
