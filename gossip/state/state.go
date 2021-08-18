@@ -245,11 +245,12 @@ func NewGossipStateProvider(chainID string, services *ServicesMediator, ledger l
 	} else {
 		logger.Errorf("Unable to serialize node meta nodeMetastate, error = %+v", errors.WithStack(err))
 	}
-
+	//1.DataMessage
 	s.done.Add(4)
 
 	// Listen for incoming communication
 	//监听传入的通信
+	//2.
 	go s.listen()
 	//对传入的block相关的message进行处理
 	// Deliver in order messages into the incoming channel
@@ -274,6 +275,7 @@ func (s *GossipStateProviderImpl) listen() {
 		case msg := <-s.gossipChan:
 			//1.一般收到的消息是DataMessage类型，这种消息类型包含有一个block.
 			logger.Debug("Received new message via gossip channel")
+			//3.
 			go s.queueNewMessage(msg)//方法在进行不要的有效性检测后，调用同文件下addPayload方法，以非阻塞模式将message中包含的
 			//block加入一个区块缓存block buffer中
 		case msg := <-s.commChan:
@@ -572,6 +574,7 @@ func (s *GossipStateProviderImpl) deliverPayloads() {
 			//实例下的payloads字段代表的结构体实例下的readyChan字段（类型是一个缓存为0的通道）中写入一个空结构体
 			logger.Debugf("Ready to transfer payloads to the ledger, next sequence number is = [%d]", s.payloads.Next())
 			// Collect all subsequent payloads
+			//消息
 			for payload := s.payloads.Pop(); payload != nil; payload = s.payloads.Pop() {
 				rawBlock := &common.Block{}
 				if err := pb.Unmarshal(payload.Data, rawBlock); err != nil {
