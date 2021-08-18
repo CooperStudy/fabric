@@ -25,7 +25,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
-
+/*
+   state模块的原型为GossipStateProvider，在gossip/state/state.go中定义，相关代码
+   都在state目录中，可以将其理解为gossip传播和提交状态消息的管理模块，这里的状态的意思和账本block
+   数据的意思一致，state模块也封装了一个适配器，election模块类似，也是被赋值为gossip服务器实例，
+   在state模块中，消息处理流程如图8-1所示
+ */
 // GossipStateProvider is the interface to acquire sequences of the ledger blocks
 // capable to full fill missing blocks by running state replication and
 // sending request to get missing block to other nodes
