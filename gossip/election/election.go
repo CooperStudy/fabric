@@ -317,7 +317,8 @@ func (le *leaderElectionSvcImpl) leaderElection() {
 	//有资格当leader。这里所说的身份是一个节点pki-ID，而判断谁更有资格当leader的标准是bytes.compare(peerID(id),le.id)，即
 	//谁的身份的二进制值更小，谁更有资格。不过gossip中的leader工作量大，并且没有其他的特权和优待，若proposals中所有的身份都没有
 	//自己的身份小，则自己当选leader，，通过调用le.beLeader(),真正成为一名leader，把“已经有leader"和"自己是leader的标识"，即成员
-	//leaderExists和isLeader,如果自己是fellow，则执行le.follower(),都是自己陈伟的角色应该做的
+	//leaderExists和isLeader,如果自己是follower，则执行le.follower(),都是自己成为的角色应该做的事情。leader的任务：循环地
+	//每休眠5秒，因为自身是leader，所有不可能再从其他节点中接收到declaration消息而使休眠中中断，
 	// If someone declared itself as a leader, give up
 	// on trying to become a leader too
 	if le.isLeaderExists() {
@@ -358,13 +359,16 @@ func (le *leaderElectionSvcImpl) follower() {
 	defer le.logger.Debug(le.id, ": Exiting")
 
 
-	le.proposals.Clear()
+	le.proposals.Clear() //清空“信箱” proposals以备下一轮选举，置leaderExists为0（用以接待收到leader发来的declaration消息后再置为1），
 	//如果一个peer发现，当前已经存在leader，且自己不是leader，则首先将leader是否存在的标志位设为leaderExists设为0
 	atomic.StoreInt32(&le.leaderExists, int32(0))
 	select {
 	//如果没有收到leadership declaration 5表内，设置值leader known false
 	case <-time.After(getLeaderAliveThreshold())://然后等待10秒，由peer.gossip.election.leaderAliveThreshold配置决定），在这期间，如果收到了其他
 	//leader发来的leadership declaration消息，则将leaderExists设为1，这样做的目的在于，探测网络分区或者leader节点是否失效
+
+	//10s结束后还没有收到leader发来的declaration消息，即leaderExists还为0，则节点将再发起新一轮的选举。这里仍然是，follower认为10秒这么长的时间，
+	//足够leader发送一条declaration消息给自己，若10s还没有收到，则follower认为这个leader已死，则自己发起新一轮的选举
 	case <-le.stopChan:
 		le.stopChan <- struct{}{}
 	}
@@ -440,7 +444,9 @@ func (le *leaderElectionSvcImpl) IsLeader() bool {
 	le.logger.Debug(le.id, ": Returning", isLeader)
 	return isLeader
 }
+/*
 
+ */
 func (le *leaderElectionSvcImpl) beLeader() {
 	le.logger.Info(le.id, ": Becoming a leader")
 	atomic.StoreInt32(&le.isLeader, int32(1))
