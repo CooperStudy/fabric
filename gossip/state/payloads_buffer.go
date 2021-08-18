@@ -83,7 +83,7 @@ func (b *PayloadsBufferImpl) Push(payload *proto.Payload) {
 		logger.Debugf("Payload with sequence number = %d has been already processed", payload.SeqNum)
 		return
 	}
-
+   //buf map[uint64]*proto.Payload
 	b.buf[seqNum] = payload
 
 	// Send notification that next sequence has arrived
