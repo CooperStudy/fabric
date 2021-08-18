@@ -445,7 +445,12 @@ func (le *leaderElectionSvcImpl) IsLeader() bool {
 	return isLeader
 }
 /*
-
+  当一个节点调用le.beLeader(）成为一名leader时，调用le.callback(true)
+  当一个节点调用le.stopBeingLeader()停止leader时，调用了le.callback(false),
+  两者只是参数不同，“倒钩函数”callback有election模块初始化的时候传入，具体的赋值
+  service/gossip_service.go中onStatusChangeFactory(),返回的函数func（isLeader bool）
+  即根据是否是leader而分别执行g.deliveryService.StartDeliverForChannel,和g.deliveryService.StopDeliverForChannel
+  从这点就可以看出，leader多干扰了DeliverForChanel向其它节点分发数据相关的一些事情，这与ordering服务的数据分啊客户端有关
  */
 func (le *leaderElectionSvcImpl) beLeader() {
 	le.logger.Info(le.id, ": Becoming a leader")
