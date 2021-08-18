@@ -271,6 +271,10 @@ func (le *leaderElectionSvcImpl) waitForInterrupt(timeout time.Duration) {
 }
 
 func (le *leaderElectionSvcImpl) run() {
+	/*
+	   现在可以election任务了。1）如果现在还没有leader，则调用leaderElection（）进行选举，这里说
+	   选举，不如说进行自荐，
+	 */
 	defer le.stopWG.Done()
 	for !le.shouldStop() {
 		if !le.isLeaderExists() {
@@ -303,9 +307,14 @@ func (le *leaderElectionSvcImpl) leaderElection() {
 		return
 	}
 	// Propose ourselves as a leader
-	le.propose()
+	le.propose() //向其他节点传播自己的自荐信，即包含自己身份的proposal消息，其他节点收到后
+	//会在他们的handleMessage（）中存储这消息，
 	// Collect other proposals
-	le.waitForInterrupt(getLeaderElectionDuration())
+	le.waitForInterrupt(getLeaderElectionDuration())//让模块进入休眠，time为5s
+	//由peer.gossip.election.leaderElectionDuration决定，在这个休眠过程中，既接收其他节点发来的自荐信并存储在proposals中，
+	//也可以等待可能出现的declaration消息，在模块被唤醒后，判断此时是否有leader存在，若存在（休眠期间接收到了declaration信息，
+	//则自己放弃成为leader，若不存在，则拿自己的身份与proposals中已经收到的自荐信中其他节点身份进行一一对比，看看自己是否比它们更
+	//有资格当leader。这里所说的身份是一个节点pki-ID，而判断其他的特权和优待
 	// If someone declared itself as a leader, give up
 	// on trying to become a leader too
 	if le.isLeaderExists() {
