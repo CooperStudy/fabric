@@ -250,7 +250,13 @@ func NewGossipStateProvider(chainID string, services *ServicesMediator, ledger l
 
 	// Listen for incoming communication
 	//监听传入的通信
-	//2.
+	/*、
+	2.循环接受来自gossipChan、commChan通道的消息，接收后分别交给queueNewMessage（） 和directMessage（）处理，
+	两个通道均是在state模块初始化时有gossip服务的Accept()生成的，且均在msgPublisher模块中完成订阅，即gossipChan接收出版
+	的标准GossipMessage类型的消息，实质上只处理DataMessage类型的消息，commChan则接收有comm模块传来的RecievedMessage类型的消息，
+	实质上只处理stateRequest、stateResponse这两种类型的消息。当State_A接收到DataMessage的时候，直接Push进payloads，state_B
+	在初始化时也
+	 */
 	go s.listen()
 	//对传入的block相关的message进行处理
 	// Deliver in order messages into the incoming channel
