@@ -99,6 +99,7 @@ message QueryResponse {
 
 // Interface that provides support to chaincode execution. ChaincodeContext
 // provides the context necessary for the server to respond appropriately.
+//该服务实现客户端和服务器端ChaincodeMessage类型流数据的交换
 service ChaincodeSupport {
     rpc Register(stream ChaincodeMessage) returns (stream ChaincodeMessage) {}
 

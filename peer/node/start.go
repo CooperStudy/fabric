@@ -132,6 +132,9 @@ func serve(args []string) error {
 	ccprovider.EnableCCInfoCache()
 
 	ccSrv, ccEpFunc := createChaincodeServer(peerServer, listenAddr)
+	/*
+	   为peerServer注册ChaincodeSupport服务
+	 */
 	registerChaincodeSupport(ccSrv.Server(), ccEpFunc)
 	go ccSrv.Start()
 

@@ -10,7 +10,7 @@ import google_protobuf1 "github.com/golang/protobuf/ptypes/timestamp"
 
 import (
 	context "golang.org/x/net/context"
-	grpc "google.golang.org/grpc"
+	grpc"google.golang.org/grpc"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
