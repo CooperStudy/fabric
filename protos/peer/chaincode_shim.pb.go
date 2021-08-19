@@ -10,7 +10,7 @@ import google_protobuf1 "github.com/golang/protobuf/ptypes/timestamp"
 
 import (
 	context "golang.org/x/net/context"
-	grpc"google.golang.org/grpc"
+	grpc "google.golang.org/grpc"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -90,6 +90,7 @@ func (x ChaincodeMessage_Type) String() string {
 }
 func (ChaincodeMessage_Type) EnumDescriptor() ([]byte, []int) { return fileDescriptor3, []int{0, 0} }
 
+//生成的收发的收据类型
 type ChaincodeMessage struct {
 	Type      ChaincodeMessage_Type       `protobuf:"varint,1,opt,name=type,enum=protos.ChaincodeMessage_Type" json:"type,omitempty"`
 	Timestamp *google_protobuf1.Timestamp `protobuf:"bytes,2,opt,name=timestamp" json:"timestamp,omitempty"`
@@ -396,6 +397,7 @@ type ChaincodeSupport_RegisterServer interface {
 	Recv() (*ChaincodeMessage, error)
 	grpc.ServerStream
 }
+
 //接口实例
 type chaincodeSupportRegisterServer struct {
 	grpc.ServerStream

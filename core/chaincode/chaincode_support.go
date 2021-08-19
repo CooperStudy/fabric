@@ -47,6 +47,9 @@ const (
 //chains. Chains are per-proposal entities that are
 //setup as part of "join" and go through this object
 //via calls to Execute and Deploy chaincodes.
+/*
+   单例模式，对象自身存储一系列值，
+*/
 var theChaincodeSupport *ChaincodeSupport
 
 //use this for
