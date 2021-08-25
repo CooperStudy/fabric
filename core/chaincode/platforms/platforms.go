@@ -67,11 +67,20 @@ func Find(chaincodeType pb.ChaincodeSpec_Type) (Platform, error) {
 }
 
 func GetDeploymentPayload(spec *pb.ChaincodeSpec) ([]byte, error) {
+	//type指chaincode的语言类型
+	/*
+		ChaincodeSpec_UNDEFINED ChaincodeSpec_Type = 0
+		ChaincodeSpec_GOLANG    ChaincodeSpec_Type = 1
+		ChaincodeSpec_NODE      ChaincodeSpec_Type = 2
+		ChaincodeSpec_CAR       ChaincodeSpec_Type = 3
+		ChaincodeSpec_JAVA      ChaincodeSpec_Type = 4
+	*/
 	platform, err := Find(spec.Type)
 	if err != nil {
 		return nil, err
 	}
 
+	//根据chaincode说明书中记录的chaincode信息，生成压缩包
 	return platform.GetDeploymentPayload(spec)
 }
 

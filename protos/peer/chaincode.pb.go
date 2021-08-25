@@ -197,9 +197,11 @@ func (m *ChaincodeSpec) GetTimeout() int32 {
 type ChaincodeDeploymentSpec struct {
 	ChaincodeSpec *ChaincodeSpec `protobuf:"bytes,1,opt,name=chaincode_spec,json=chaincodeSpec" json:"chaincode_spec,omitempty"`
 	// Controls when the chaincode becomes executable.
-	EffectiveDate *google_protobuf1.Timestamp                  `protobuf:"bytes,2,opt,name=effective_date,json=effectiveDate" json:"effective_date,omitempty"`
-	CodePackage   []byte                                       `protobuf:"bytes,3,opt,name=code_package,json=codePackage,proto3" json:"code_package,omitempty"`
-	ExecEnv       ChaincodeDeploymentSpec_ExecutionEnvironment `protobuf:"varint,4,opt,name=exec_env,json=execEnv,enum=protos.ChaincodeDeploymentSpec_ExecutionEnvironment" json:"exec_env,omitempty"`
+	EffectiveDate *google_protobuf1.Timestamp `protobuf:"bytes,2,opt,name=effective_date,json=effectiveDate" json:"effective_date,omitempty"`
+
+	CodePackage []byte `protobuf:"bytes,3,opt,name=code_package,json=codePackage,proto3" json:"code_package,omitempty"`
+	//标识chaincode的运行的环境，表明是运行在Docker容器还是操作系统之中
+	ExecEnv ChaincodeDeploymentSpec_ExecutionEnvironment `protobuf:"varint,4,opt,name=exec_env,json=execEnv,enum=protos.ChaincodeDeploymentSpec_ExecutionEnvironment" json:"exec_env,omitempty"`
 }
 
 func (m *ChaincodeDeploymentSpec) Reset()                    { *m = ChaincodeDeploymentSpec{} }
@@ -236,6 +238,9 @@ func (m *ChaincodeDeploymentSpec) GetExecEnv() ChaincodeDeploymentSpec_Execution
 }
 
 // Carries the chaincode function and its arguments.
+/*
+   chaincode使用说明说明书，简称CIS,主要存储了一份chaincode说明书，
+*/
 type ChaincodeInvocationSpec struct {
 	ChaincodeSpec *ChaincodeSpec `protobuf:"bytes,1,opt,name=chaincode_spec,json=chaincodeSpec" json:"chaincode_spec,omitempty"`
 	// This field can contain a user-specified ID generation algorithm

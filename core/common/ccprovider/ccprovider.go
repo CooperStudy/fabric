@@ -1,19 +1,3 @@
-/*
-Copyright IBM Corp. 2017 All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-		 http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package ccprovider
 
 import (
@@ -45,30 +29,22 @@ var chaincodeInstallPath string
 type CCPackage interface {
 	//InitFromBuffer initialize the package from bytes
 	InitFromBuffer(buf []byte) (*ChaincodeData, error)
-
 	// InitFromFS gets the chaincode from the filesystem (includes the raw bytes too)
 	InitFromFS(ccname string, ccversion string) ([]byte, *pb.ChaincodeDeploymentSpec, error)
-
 	// PutChaincodeToFS writes the chaincode to the filesystem
 	PutChaincodeToFS() error
-
 	// GetDepSpec gets the ChaincodeDeploymentSpec from the package
 	GetDepSpec() *pb.ChaincodeDeploymentSpec
-
 	// GetDepSpecBytes gets the serialized ChaincodeDeploymentSpec from the package
 	GetDepSpecBytes() []byte
-
 	// ValidateCC validates and returns the chaincode deployment spec corresponding to
 	// ChaincodeData. The validation is based on the metadata from ChaincodeData
 	// One use of this method is to validate the chaincode before launching
 	ValidateCC(ccdata *ChaincodeData) error
-
 	// GetPackageObject gets the object as a proto.Message
 	GetPackageObject() proto.Message
-
 	// GetChaincodeData gets the ChaincodeData
 	GetChaincodeData() *ChaincodeData
-
 	// GetId gets the fingerprint of the chaincode based on package computation
 	GetId() []byte
 }
@@ -320,29 +296,22 @@ func GetInstalledChaincodes() (*pb.ChaincodeQueryResponse, error) {
 type CCContext struct {
 	//ChainID chain id
 	ChainID string
-
 	//Name chaincode name
 	Name string
-
 	//Version used to construct the chaincode image and register
 	Version string
-
 	//TxID is the transaction id for the proposal (if any)
 	TxID string
-
 	//Syscc is this a system chaincode
 	Syscc bool
-
 	//SignedProposal for this invoke (if any)
 	//this is kept here for access control and in case we need to pass something
 	//from this to the chaincode
 	SignedProposal *pb.SignedProposal
-
 	//Proposal for this invoke (if any)
 	//this is kept here just in case we need to pass something
 	//from this to the chaincode
 	Proposal *pb.Proposal
-
 	//this is not set but computed (note that this is not exported. use GetCanonicalName)
 	canonicalName string
 }

@@ -135,7 +135,7 @@ func getPackageFromFile(ccpackfile string) (proto.Message, *pb.ChaincodeDeployme
 	}
 
 	//try CDS first
-	cds, ok := o.(*pb.ChaincodeDeploymentSpec)
+	cds, ok := o.(*pb.ChaincodeDeploymentSpec) //接着将其转化为其他所需要格式的中间件
 	if !ok || cds == nil {
 		//try Envelope next
 		env, ok := o.(*pcommon.Envelope)

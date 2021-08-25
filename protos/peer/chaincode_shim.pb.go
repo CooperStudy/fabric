@@ -92,14 +92,25 @@ func (ChaincodeMessage_Type) EnumDescriptor() ([]byte, []int) { return fileDescr
 
 //生成的收发的收据类型
 type ChaincodeMessage struct {
-	Type      ChaincodeMessage_Type       `protobuf:"varint,1,opt,name=type,enum=protos.ChaincodeMessage_Type" json:"type,omitempty"`
+	//消息类型
+	Type ChaincodeMessage_Type `protobuf:"varint,1,opt,name=type,enum=protos.ChaincodeMessage_Type" json:"type,omitempty"`
+	//时间戳
 	Timestamp *google_protobuf1.Timestamp `protobuf:"bytes,2,opt,name=timestamp" json:"timestamp,omitempty"`
-	Payload   []byte                      `protobuf:"bytes,3,opt,name=payload,proto3" json:"payload,omitempty"`
-	Txid      string                      `protobuf:"bytes,4,opt,name=txid" json:"txid,omitempty"`
-	Proposal  *SignedProposal             `protobuf:"bytes,5,opt,name=proposal" json:"proposal,omitempty"`
+	/*
+		消息承载的chaincode数据，源码包和执行参数,[]byte格式的所以内容很自由，并且可以为空
+	*/
+	Payload  []byte          `protobuf:"bytes,3,opt,name=payload,proto3" json:"payload,omitempty"`
+	Proposal *SignedProposal `protobuf:"bytes,5,opt,name=proposal" json:"proposal,omitempty"`
+
+	//该消息所在的交易编号
+	Txid string `protobuf:"bytes,4,opt,name=txid" json:"txid,omitempty"`
 	// event emmited by chaincode. Used only with Init or Invoke.
 	// This event is then stored (currently)
 	// with Block.NonHashData.TransactionResult
+	/*
+		   chaincode在Init或Invoke时给回的所要触发的事件，比如，chaincode部署时，当部署完毕后，shim可能给回服务端一个Event让服务器去触发，做一些其他必要的事情，
+		同样也可以为空
+	*/
 	ChaincodeEvent *ChaincodeEvent `protobuf:"bytes,6,opt,name=chaincode_event,json=chaincodeEvent" json:"chaincode_event,omitempty"`
 }
 

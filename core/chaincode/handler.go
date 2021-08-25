@@ -57,6 +57,9 @@ type MessageHandler interface {
 	SendMessage(msg *pb.ChaincodeMessage) error
 }
 
+/*
+  交易上下文，在交易中产生，以交易id为key，记录在Handler的一个map中，随用随删。供交易的实体使用
+*/
 type transactionContext struct {
 	chainID          string
 	signedProp       *pb.SignedProposal

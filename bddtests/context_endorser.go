@@ -1,19 +1,3 @@
-/*
-Copyright IBM Corp. 2016 All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-		 http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package bddtests
 
 import (
@@ -47,8 +31,11 @@ func (*BDDContext) checkSpec(spec *pb.ChaincodeSpec) error {
 	return platform.ValidateSpec(spec)
 }
 
+//codePackageBytes存储了一个.tar.gz压缩包的二进制数据，这个压缩包包含chaincode源码，已经源码所依赖的第三方包
+
 // Build builds the supplied chaincode image
 func (b *BDDContext) build(spec *pb.ChaincodeSpec) (*pb.ChaincodeDeploymentSpec, error) {
+
 	var codePackageBytes []byte
 	if err := b.checkSpec(spec); err != nil {
 		return nil, err

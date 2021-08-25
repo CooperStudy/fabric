@@ -107,6 +107,7 @@ func (e *LedgerQuerier) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return shim.Error(fmt.Sprintf("Authorization request failed %s: %s", cid, err))
 	}
 
+	//TODO
 	switch fname {
 	case GetTransactionByID:
 		return getTransactionByID(targetLedger, args[2])
