@@ -1,9 +1,3 @@
-/*
-Copyright IBM Corp. All Rights Reserved.
-
-SPDX-License-Identifier: Apache-2.0
-*/
-
 package fsblkstorage
 
 import (
@@ -25,6 +19,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+/*
+    拥有将区块写入文件的方法之后，那还需要考虑一个问题，就是单个文件的大小，
+ 	1，所有的数据是写入一个文件，还是多个文件 需要管理，
+*/
 var logger = flogging.MustGetLogger("fsblkstorage")
 
 const (
