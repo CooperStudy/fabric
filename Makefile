@@ -460,6 +460,6 @@ dist-clean:
 
 release-clean: $(patsubst %,%-release-clean, $(RELEASE_PLATFORMS))
 
-.PHONY: unit-test-clean
-unit-test-clean:
-	cd unit-test && docker-compose down
+#.PHONY: unit-test-clean
+#unit-test-clean:
+#	cd unit-test && docker-compose down
