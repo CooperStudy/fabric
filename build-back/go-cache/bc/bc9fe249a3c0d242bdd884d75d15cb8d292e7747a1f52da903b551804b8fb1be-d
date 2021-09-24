@@ -1,0 +1,673 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/bccsp/sw/fileks.go:1
+/*
+Copyright IBM Corp. 2016 All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+		 http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+package sw; import _cover_atomic_ "sync/atomic"
+
+import (
+	"bytes"
+	"crypto/ecdsa"
+	"crypto/rsa"
+	"encoding/hex"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
+	"sync"
+
+	"github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric/bccsp/utils"
+)
+
+// NewFileBasedKeyStore instantiated a file-based key store at a given position.
+// The key store can be encrypted if a non-empty password is specified.
+// It can be also be set as read only. In this case, any store operation
+// will be forbidden
+func NewFileBasedKeyStore(pwd []byte, path string, readOnly bool) (bccsp.KeyStore, error) {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[0], 1);
+	ks := &fileBasedKeyStore{}
+	return ks, ks.Init(pwd, path, readOnly)
+}
+
+// fileBasedKeyStore is a folder-based KeyStore.
+// Each key is stored in a separated file whose name contains the key's SKI
+// and flags to identity the key's type. All the keys are stored in
+// a folder whose path is provided at initialization time.
+// The KeyStore can be initialized with a password, this password
+// is used to encrypt and decrypt the files storing the keys.
+// A KeyStore can be read only to avoid the overwriting of keys.
+type fileBasedKeyStore struct {
+	path string
+
+	readOnly bool
+	isOpen   bool
+
+	pwd []byte
+
+	// Sync
+	m sync.Mutex
+}
+
+// Init initializes this KeyStore with a password, a path to a folder
+// where the keys are stored and a read only flag.
+// Each key is stored in a separated file whose name contains the key's SKI
+// and flags to identity the key's type.
+// If the KeyStore is initialized with a password, this password
+// is used to encrypt and decrypt the files storing the keys.
+// The pwd can be nil for non-encrypted KeyStores. If an encrypted
+// key-store is initialized without a password, then retrieving keys from the
+// KeyStore will fail.
+// A KeyStore can be read only to avoid the overwriting of keys.
+func (ks *fileBasedKeyStore) Init(pwd []byte, path string, readOnly bool) error {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[1], 1);
+	// Validate inputs
+	// pwd can be nil
+
+	if len(path) == 0 {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[6], 1);
+		return errors.New("An invalid KeyStore path provided. Path cannot be an empty string.")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[2], 1);ks.m.Lock()
+	defer ks.m.Unlock()
+
+	if ks.isOpen {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[7], 1);
+		return errors.New("KeyStore already initilized.")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[3], 1);ks.path = path
+	ks.pwd = utils.Clone(pwd)
+
+	err := ks.createKeyStoreIfNotExists()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[8], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[4], 1);err = ks.openKeyStore()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[9], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[5], 1);ks.readOnly = readOnly
+
+	return nil
+}
+
+// ReadOnly returns true if this KeyStore is read only, false otherwise.
+// If ReadOnly is true then StoreKey will fail.
+func (ks *fileBasedKeyStore) ReadOnly() bool {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[10], 1);
+	return ks.readOnly
+}
+
+// GetKey returns a key object whose SKI is the one passed.
+func (ks *fileBasedKeyStore) GetKey(ski []byte) (bccsp.Key, error) {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[11], 1);
+	// Validate arguments
+	if len(ski) == 0 {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[13], 1);
+		return nil, errors.New("Invalid SKI. Cannot be of zero length.")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[12], 1);suffix := ks.getSuffix(hex.EncodeToString(ski))
+
+	switch suffix {
+	case "key":_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[14], 1);
+		// Load the key
+		key, err := ks.loadKey(hex.EncodeToString(ski))
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[21], 1);
+			return nil, fmt.Errorf("Failed loading key [%x] [%s]", ski, err)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[15], 1);return &aesPrivateKey{key, false}, nil
+	case "sk":_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[16], 1);
+		// Load the private key
+		key, err := ks.loadPrivateKey(hex.EncodeToString(ski))
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[22], 1);
+			return nil, fmt.Errorf("Failed loading secret key [%x] [%s]", ski, err)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[17], 1);switch key.(type) {
+		case *ecdsa.PrivateKey:_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[23], 1);
+			return &ecdsaPrivateKey{key.(*ecdsa.PrivateKey)}, nil
+		case *rsa.PrivateKey:_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[24], 1);
+			return &rsaPrivateKey{key.(*rsa.PrivateKey)}, nil
+		default:_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[25], 1);
+			return nil, errors.New("Secret key type not recognized")
+		}
+	case "pk":_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[18], 1);
+		// Load the public key
+		key, err := ks.loadPublicKey(hex.EncodeToString(ski))
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[26], 1);
+			return nil, fmt.Errorf("Failed loading public key [%x] [%s]", ski, err)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[19], 1);switch key.(type) {
+		case *ecdsa.PublicKey:_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[27], 1);
+			return &ecdsaPublicKey{key.(*ecdsa.PublicKey)}, nil
+		case *rsa.PublicKey:_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[28], 1);
+			return &rsaPublicKey{key.(*rsa.PublicKey)}, nil
+		default:_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[29], 1);
+			return nil, errors.New("Public key type not recognized")
+		}
+	default:_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[20], 1);
+		return ks.searchKeystoreForSKI(ski)
+	}
+}
+
+// StoreKey stores the key k in this KeyStore.
+// If this KeyStore is read only then the method will fail.
+func (ks *fileBasedKeyStore) StoreKey(k bccsp.Key) (err error) {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[30], 1);
+	if ks.readOnly {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[34], 1);
+		return errors.New("Read only KeyStore.")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[31], 1);if k == nil {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[35], 1);
+		return errors.New("Invalid key. It must be different from nil.")
+	}
+	_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[32], 1);switch k.(type) {
+	case *ecdsaPrivateKey:_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[36], 1);
+		kk := k.(*ecdsaPrivateKey)
+
+		err = ks.storePrivateKey(hex.EncodeToString(k.SKI()), kk.privKey)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[42], 1);
+			return fmt.Errorf("Failed storing ECDSA private key [%s]", err)
+		}
+
+	case *ecdsaPublicKey:_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[37], 1);
+		kk := k.(*ecdsaPublicKey)
+
+		err = ks.storePublicKey(hex.EncodeToString(k.SKI()), kk.pubKey)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[43], 1);
+			return fmt.Errorf("Failed storing ECDSA public key [%s]", err)
+		}
+
+	case *rsaPrivateKey:_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[38], 1);
+		kk := k.(*rsaPrivateKey)
+
+		err = ks.storePrivateKey(hex.EncodeToString(k.SKI()), kk.privKey)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[44], 1);
+			return fmt.Errorf("Failed storing RSA private key [%s]", err)
+		}
+
+	case *rsaPublicKey:_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[39], 1);
+		kk := k.(*rsaPublicKey)
+
+		err = ks.storePublicKey(hex.EncodeToString(k.SKI()), kk.pubKey)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[45], 1);
+			return fmt.Errorf("Failed storing RSA public key [%s]", err)
+		}
+
+	case *aesPrivateKey:_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[40], 1);
+		kk := k.(*aesPrivateKey)
+
+		err = ks.storeKey(hex.EncodeToString(k.SKI()), kk.privKey)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[46], 1);
+			return fmt.Errorf("Failed storing AES key [%s]", err)
+		}
+
+	default:_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[41], 1);
+		return fmt.Errorf("Key type not reconigned [%s]", k)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[33], 1);return
+}
+
+func (ks *fileBasedKeyStore) searchKeystoreForSKI(ski []byte) (k bccsp.Key, err error) {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[47], 1);
+
+	files, _ := ioutil.ReadDir(ks.path)
+	for _, f := range files {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[49], 1);
+		if f.IsDir() {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[56], 1);
+			continue
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[50], 1);if f.Size() > (1 << 16) {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[57], 1); //64k, somewhat arbitrary limit, considering even large RSA keys
+			continue
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[51], 1);raw, err := ioutil.ReadFile(filepath.Join(ks.path, f.Name()))
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[58], 1);
+			continue
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[52], 1);key, err := utils.PEMtoPrivateKey(raw, ks.pwd)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[59], 1);
+			continue
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[53], 1);switch key.(type) {
+		case *ecdsa.PrivateKey:_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[60], 1);
+			k = &ecdsaPrivateKey{key.(*ecdsa.PrivateKey)}
+		case *rsa.PrivateKey:_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[61], 1);
+			k = &rsaPrivateKey{key.(*rsa.PrivateKey)}
+		default:_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[62], 1);
+			continue
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[54], 1);if !bytes.Equal(k.SKI(), ski) {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[63], 1);
+			continue
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[55], 1);return k, nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[48], 1);return nil, fmt.Errorf("Key with SKI %s not found in %s", hex.EncodeToString(ski), ks.path)
+}
+
+func (ks *fileBasedKeyStore) getSuffix(alias string) string {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[64], 1);
+	files, _ := ioutil.ReadDir(ks.path)
+	for _, f := range files {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[66], 1);
+		if strings.HasPrefix(f.Name(), alias) {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[67], 1);
+			if strings.HasSuffix(f.Name(), "sk") {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[71], 1);
+				return "sk"
+			}
+			_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[68], 1);if strings.HasSuffix(f.Name(), "pk") {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[72], 1);
+				return "pk"
+			}
+			_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[69], 1);if strings.HasSuffix(f.Name(), "key") {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[73], 1);
+				return "key"
+			}
+			_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[70], 1);break
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[65], 1);return ""
+}
+
+func (ks *fileBasedKeyStore) storePrivateKey(alias string, privateKey interface{}) error {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[74], 1);
+	rawKey, err := utils.PrivateKeyToPEM(privateKey, ks.pwd)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[77], 1);
+		logger.Errorf("Failed converting private key to PEM [%s]: [%s]", alias, err)
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[75], 1);err = ioutil.WriteFile(ks.getPathForAlias(alias, "sk"), rawKey, 0600)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[78], 1);
+		logger.Errorf("Failed storing private key [%s]: [%s]", alias, err)
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[76], 1);return nil
+}
+
+func (ks *fileBasedKeyStore) storePublicKey(alias string, publicKey interface{}) error {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[79], 1);
+	rawKey, err := utils.PublicKeyToPEM(publicKey, ks.pwd)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[82], 1);
+		logger.Errorf("Failed converting public key to PEM [%s]: [%s]", alias, err)
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[80], 1);err = ioutil.WriteFile(ks.getPathForAlias(alias, "pk"), rawKey, 0600)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[83], 1);
+		logger.Errorf("Failed storing private key [%s]: [%s]", alias, err)
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[81], 1);return nil
+}
+
+func (ks *fileBasedKeyStore) storeKey(alias string, key []byte) error {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[84], 1);
+	pem, err := utils.AEStoEncryptedPEM(key, ks.pwd)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[87], 1);
+		logger.Errorf("Failed converting key to PEM [%s]: [%s]", alias, err)
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[85], 1);err = ioutil.WriteFile(ks.getPathForAlias(alias, "key"), pem, 0600)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[88], 1);
+		logger.Errorf("Failed storing key [%s]: [%s]", alias, err)
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[86], 1);return nil
+}
+
+func (ks *fileBasedKeyStore) loadPrivateKey(alias string) (interface{}, error) {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[89], 1);
+	path := ks.getPathForAlias(alias, "sk")
+	logger.Debugf("Loading private key [%s] at [%s]...", alias, path)
+
+	raw, err := ioutil.ReadFile(path)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[92], 1);
+		logger.Errorf("Failed loading private key [%s]: [%s].", alias, err.Error())
+
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[90], 1);privateKey, err := utils.PEMtoPrivateKey(raw, ks.pwd)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[93], 1);
+		logger.Errorf("Failed parsing private key [%s]: [%s].", alias, err.Error())
+
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[91], 1);return privateKey, nil
+}
+
+func (ks *fileBasedKeyStore) loadPublicKey(alias string) (interface{}, error) {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[94], 1);
+	path := ks.getPathForAlias(alias, "pk")
+	logger.Debugf("Loading public key [%s] at [%s]...", alias, path)
+
+	raw, err := ioutil.ReadFile(path)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[97], 1);
+		logger.Errorf("Failed loading public key [%s]: [%s].", alias, err.Error())
+
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[95], 1);privateKey, err := utils.PEMtoPublicKey(raw, ks.pwd)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[98], 1);
+		logger.Errorf("Failed parsing private key [%s]: [%s].", alias, err.Error())
+
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[96], 1);return privateKey, nil
+}
+
+func (ks *fileBasedKeyStore) loadKey(alias string) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[99], 1);
+	path := ks.getPathForAlias(alias, "key")
+	logger.Debugf("Loading key [%s] at [%s]...", alias, path)
+
+	pem, err := ioutil.ReadFile(path)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[102], 1);
+		logger.Errorf("Failed loading key [%s]: [%s].", alias, err.Error())
+
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[100], 1);key, err := utils.PEMtoAES(pem, ks.pwd)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[103], 1);
+		logger.Errorf("Failed parsing key [%s]: [%s]", alias, err)
+
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[101], 1);return key, nil
+}
+
+func (ks *fileBasedKeyStore) createKeyStoreIfNotExists() error {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[104], 1);
+	// Check keystore directory
+	ksPath := ks.path
+	missing, err := utils.DirMissingOrEmpty(ksPath)
+
+	if missing {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[106], 1);
+		logger.Debugf("KeyStore path [%s] missing [%t]: [%s]", ksPath, missing, utils.ErrToString(err))
+
+		err := ks.createKeyStore()
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[107], 1);
+			logger.Errorf("Failed creating KeyStore At [%s]: [%s]", ksPath, err.Error())
+			return nil
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[105], 1);return nil
+}
+
+func (ks *fileBasedKeyStore) createKeyStore() error {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[108], 1);
+	// Create keystore directory root if it doesn't exist yet
+	ksPath := ks.path
+	logger.Debugf("Creating KeyStore at [%s]...", ksPath)
+
+	os.MkdirAll(ksPath, 0755)
+
+	logger.Debugf("KeyStore created at [%s].", ksPath)
+	return nil
+}
+
+func (ks *fileBasedKeyStore) openKeyStore() error {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[109], 1);
+	if ks.isOpen {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[111], 1);
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[110], 1);ks.isOpen = true
+	logger.Debugf("KeyStore opened at [%s]...done", ks.path)
+
+	return nil
+}
+
+func (ks *fileBasedKeyStore) getPathForAlias(alias, suffix string) string {_cover_atomic_.AddUint32(&GoCover_6_613964656536343766303630.Count[112], 1);
+	return filepath.Join(ks.path, alias+"_"+suffix)
+}
+
+var GoCover_6_613964656536343766303630 = struct {
+	Count     [113]uint32
+	Pos       [3 * 113]uint32
+	NumStmt   [113]uint16
+} {
+	Pos: [3 * 113]uint32{
+		39, 42, 0x2005b, // [0]
+		73, 77, 0x140051, // [1]
+		81, 84, 0xf0002, // [2]
+		88, 92, 0x100002, // [3]
+		96, 97, 0x100002, // [4]
+		101, 103, 0xc0002, // [5]
+		77, 79, 0x30014, // [6]
+		84, 86, 0x3000f, // [7]
+		92, 94, 0x30010, // [8]
+		97, 99, 0x30010, // [9]
+		108, 110, 0x2002e, // [10]
+		113, 115, 0x130044, // [11]
+		119, 121, 0x100002, // [12]
+		115, 117, 0x30013, // [13]
+		122, 125, 0x11000d, // [14]
+		129, 129, 0x290003, // [15]
+		130, 133, 0x11000c, // [16]
+		137, 137, 0x150003, // [17]
+		145, 148, 0x11000c, // [18]
+		152, 152, 0x150003, // [19]
+		160, 161, 0x26000a, // [20]
+		125, 127, 0x40011, // [21]
+		133, 135, 0x40011, // [22]
+		138, 139, 0x39001a, // [23]
+		140, 141, 0x350018, // [24]
+		142, 143, 0x3c000b, // [25]
+		148, 150, 0x40011, // [26]
+		153, 154, 0x370019, // [27]
+		155, 156, 0x330017, // [28]
+		157, 158, 0x3c000b, // [29]
+		167, 168, 0x110040, // [30]
+		172, 172, 0xe0002, // [31]
+		175, 175, 0x120002, // [32]
+		220, 220, 0x80002, // [33]
+		168, 170, 0x30011, // [34]
+		172, 174, 0x3000e, // [35]
+		176, 180, 0x110018, // [36]
+		184, 188, 0x110017, // [37]
+		192, 196, 0x110016, // [38]
+		200, 204, 0x110015, // [39]
+		208, 212, 0x110016, // [40]
+		216, 217, 0x37000a, // [41]
+		180, 182, 0x40011, // [42]
+		188, 190, 0x40011, // [43]
+		196, 198, 0x40011, // [44]
+		204, 206, 0x40011, // [45]
+		212, 214, 0x40011, // [46]
+		223, 226, 0x1a0058, // [47]
+		260, 260, 0x5d0002, // [48]
+		226, 227, 0x10001a, // [49]
+		231, 231, 0x1b0003, // [50]
+		235, 236, 0x110003, // [51]
+		240, 241, 0x110003, // [52]
+		245, 245, 0x150003, // [53]
+		254, 254, 0x210003, // [54]
+		258, 258, 0x100003, // [55]
+		227, 228, 0xc0010, // [56]
+		231, 232, 0xc001b, // [57]
+		236, 237, 0xc0011, // [58]
+		241, 242, 0xc0011, // [59]
+		246, 247, 0x31001a, // [60]
+		248, 249, 0x2d0018, // [61]
+		250, 251, 0xc000b, // [62]
+		254, 255, 0xc0021, // [63]
+		263, 265, 0x1a003d, // [64]
+		279, 279, 0xb0002, // [65]
+		265, 266, 0x29001a, // [66]
+		266, 267, 0x290029, // [67]
+		270, 270, 0x290004, // [68]
+		273, 273, 0x2a0004, // [69]
+		276, 276, 0x90004, // [70]
+		267, 269, 0x50029, // [71]
+		270, 272, 0x50029, // [72]
+		273, 275, 0x5002a, // [73]
+		282, 284, 0x10005a, // [74]
+		289, 290, 0x100002, // [75]
+		295, 295, 0xc0002, // [76]
+		284, 287, 0x30010, // [77]
+		290, 293, 0x30010, // [78]
+		298, 300, 0x100058, // [79]
+		305, 306, 0x100002, // [80]
+		311, 311, 0xc0002, // [81]
+		300, 303, 0x30010, // [82]
+		306, 309, 0x30010, // [83]
+		314, 316, 0x100047, // [84]
+		321, 322, 0x100002, // [85]
+		327, 327, 0xc0002, // [86]
+		316, 319, 0x30010, // [87]
+		322, 325, 0x30010, // [88]
+		330, 335, 0x100050, // [89]
+		341, 342, 0x100002, // [90]
+		348, 348, 0x180002, // [91]
+		335, 339, 0x30010, // [92]
+		342, 346, 0x30010, // [93]
+		351, 356, 0x10004f, // [94]
+		362, 363, 0x100002, // [95]
+		369, 369, 0x180002, // [96]
+		356, 360, 0x30010, // [97]
+		363, 367, 0x30010, // [98]
+		372, 377, 0x100044, // [99]
+		383, 384, 0x100002, // [100]
+		390, 390, 0x110002, // [101]
+		377, 381, 0x30010, // [102]
+		384, 388, 0x30010, // [103]
+		393, 398, 0xd0040, // [104]
+		408, 408, 0xc0002, // [105]
+		398, 402, 0x11000d, // [106]
+		402, 405, 0x40011, // [107]
+		411, 420, 0x20035, // [108]
+		422, 423, 0xf0033, // [109]
+		426, 429, 0xc0002, // [110]
+		423, 425, 0x3000f, // [111]
+		432, 434, 0x2004b, // [112]
+	},
+	NumStmt: [113]uint16{
+		2, // 0
+		1, // 1
+		3, // 2
+		4, // 3
+		2, // 4
+		2, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		2, // 12
+		1, // 13
+		2, // 14
+		1, // 15
+		2, // 16
+		1, // 17
+		2, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+		1, // 24
+		1, // 25
+		1, // 26
+		1, // 27
+		1, // 28
+		1, // 29
+		1, // 30
+		1, // 31
+		1, // 32
+		1, // 33
+		1, // 34
+		1, // 35
+		3, // 36
+		3, // 37
+		3, // 38
+		3, // 39
+		3, // 40
+		1, // 41
+		1, // 42
+		1, // 43
+		1, // 44
+		1, // 45
+		1, // 46
+		2, // 47
+		1, // 48
+		1, // 49
+		1, // 50
+		2, // 51
+		2, // 52
+		1, // 53
+		1, // 54
+		1, // 55
+		1, // 56
+		1, // 57
+		1, // 58
+		1, // 59
+		1, // 60
+		1, // 61
+		1, // 62
+		1, // 63
+		2, // 64
+		1, // 65
+		1, // 66
+		1, // 67
+		1, // 68
+		1, // 69
+		1, // 70
+		1, // 71
+		1, // 72
+		1, // 73
+		2, // 74
+		2, // 75
+		1, // 76
+		2, // 77
+		2, // 78
+		2, // 79
+		2, // 80
+		1, // 81
+		2, // 82
+		2, // 83
+		2, // 84
+		2, // 85
+		1, // 86
+		2, // 87
+		2, // 88
+		4, // 89
+		2, // 90
+		1, // 91
+		2, // 92
+		2, // 93
+		4, // 94
+		2, // 95
+		1, // 96
+		2, // 97
+		2, // 98
+		4, // 99
+		2, // 100
+		1, // 101
+		2, // 102
+		2, // 103
+		3, // 104
+		1, // 105
+		3, // 106
+		2, // 107
+		5, // 108
+		1, // 109
+		3, // 110
+		1, // 111
+		1, // 112
+	},
+}
+var _ = _cover_atomic_.LoadUint32

@@ -1,0 +1,4 @@
+./collection.go
+./endorsement.go
+./collection_test.go
+./endorsement_test.go

@@ -1,0 +1,354 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/examples/chaincode/go/enccc_example/enccc_example.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package main; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+
+	"github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric/bccsp/factory"
+	"github.com/hyperledger/fabric/core/chaincode/shim"
+	"github.com/hyperledger/fabric/core/chaincode/shim/ext/entities"
+	pb "github.com/hyperledger/fabric/protos/peer"
+)
+
+const DECKEY = "DECKEY"
+const VERKEY = "VERKEY"
+const ENCKEY = "ENCKEY"
+const SIGKEY = "SIGKEY"
+const IV = "IV"
+
+// EncCC example simple Chaincode implementation of a chaincode that uses encryption/signatures
+type EncCC struct {
+	bccspInst bccsp.BCCSP
+}
+
+// Init does nothing for this cc
+func (t *EncCC) Init(stub shim.ChaincodeStubInterface) pb.Response {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[0], 1);
+	return shim.Success(nil)
+}
+
+// Encrypter exposes how to write state to the ledger after having
+// encrypted it with an AES 256 bit key that has been provided to the chaincode through the
+// transient field
+func (t *EncCC) Encrypter(stub shim.ChaincodeStubInterface, args []string, encKey, IV []byte) pb.Response {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[1], 1);
+	// create the encrypter entity - we give it an ID, the bccsp instance, the key and (optionally) the IV
+	ent, err := entities.NewAES256EncrypterEntity("ID", t.bccspInst, encKey, IV)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[5], 1);
+		return shim.Error(fmt.Sprintf("entities.NewAES256EncrypterEntity failed, err %s", err))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[2], 1);if len(args) != 2 {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[6], 1);
+		return shim.Error("Expected 2 parameters to function Encrypter")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[3], 1);key := args[0]
+	cleartextValue := []byte(args[1])
+
+	// here, we encrypt cleartextValue and assign it to key
+	err = encryptAndPutState(stub, ent, key, cleartextValue)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[7], 1);
+		return shim.Error(fmt.Sprintf("encryptAndPutState failed, err %+v", err))
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[4], 1);return shim.Success(nil)
+}
+
+// Decrypter exposes how to read from the ledger and decrypt using an AES 256
+// bit key that has been provided to the chaincode through the transient field.
+func (t *EncCC) Decrypter(stub shim.ChaincodeStubInterface, args []string, decKey, IV []byte) pb.Response {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[8], 1);
+	// create the encrypter entity - we give it an ID, the bccsp instance, the key and (optionally) the IV
+	ent, err := entities.NewAES256EncrypterEntity("ID", t.bccspInst, decKey, IV)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[12], 1);
+		return shim.Error(fmt.Sprintf("entities.NewAES256EncrypterEntity failed, err %s", err))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[9], 1);if len(args) != 1 {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[13], 1);
+		return shim.Error("Expected 1 parameters to function Decrypter")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[10], 1);key := args[0]
+
+	// here we decrypt the state associated to key
+	cleartextValue, err := getStateAndDecrypt(stub, ent, key)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[14], 1);
+		return shim.Error(fmt.Sprintf("getStateAndDecrypt failed, err %+v", err))
+	}
+
+	// here we return the decrypted value as a result
+	_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[11], 1);return shim.Success(cleartextValue)
+}
+
+// EncrypterSigner exposes how to write state to the ledger after having received keys for
+// encrypting (AES 256 bit key) and signing (X9.62/SECG curve over a 256 bit prime field) that has been provided to the chaincode through the
+// transient field
+func (t *EncCC) EncrypterSigner(stub shim.ChaincodeStubInterface, args []string, encKey, sigKey []byte) pb.Response {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[15], 1);
+	// create the encrypter/signer entity - we give it an ID, the bccsp instance and the keys
+	ent, err := entities.NewAES256EncrypterECDSASignerEntity("ID", t.bccspInst, encKey, sigKey)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[19], 1);
+		return shim.Error(fmt.Sprintf("entities.NewAES256EncrypterEntity failed, err %s", err))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[16], 1);if len(args) != 2 {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[20], 1);
+		return shim.Error("Expected 2 parameters to function EncrypterSigner")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[17], 1);key := args[0]
+	cleartextValue := []byte(args[1])
+
+	// here, we sign cleartextValue, encrypt it and assign it to key
+	err = signEncryptAndPutState(stub, ent, key, cleartextValue)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[21], 1);
+		return shim.Error(fmt.Sprintf("signEncryptAndPutState failed, err %+v", err))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[18], 1);return shim.Success(nil)
+}
+
+// DecrypterVerify exposes how to get state to the ledger after having received keys for
+// decrypting (AES 256 bit key) and verifying (X9.62/SECG curve over a 256 bit prime field) that has been provided to the chaincode through the
+// transient field
+func (t *EncCC) DecrypterVerify(stub shim.ChaincodeStubInterface, args []string, decKey, verKey []byte) pb.Response {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[22], 1);
+	// create the decrypter/verify entity - we give it an ID, the bccsp instance and the keys
+	ent, err := entities.NewAES256EncrypterECDSASignerEntity("ID", t.bccspInst, decKey, verKey)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[26], 1);
+		return shim.Error(fmt.Sprintf("entities.NewAES256DecrypterEntity failed, err %s", err))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[23], 1);if len(args) != 1 {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[27], 1);
+		return shim.Error("Expected 1 parameters to function DecrypterVerify")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[24], 1);key := args[0]
+
+	// here we decrypt the state associated to key and verify it
+	cleartextValue, err := getStateDecryptAndVerify(stub, ent, key)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[28], 1);
+		return shim.Error(fmt.Sprintf("getStateDecryptAndVerify failed, err %+v", err))
+	}
+
+	// here we return the decrypted and verified value as a result
+	_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[25], 1);return shim.Success(cleartextValue)
+}
+
+// RangeDecrypter shows how range queries may be satisfied by using the decrypter
+// entity directly to decrypt previously encrypted key-value pairs
+func (t *EncCC) RangeDecrypter(stub shim.ChaincodeStubInterface, decKey []byte) pb.Response {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[29], 1);
+	// create the encrypter entity - we give it an ID, the bccsp instance and the key
+	ent, err := entities.NewAES256EncrypterEntity("ID", t.bccspInst, decKey, nil)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[32], 1);
+		return shim.Error(fmt.Sprintf("entities.NewAES256EncrypterEntity failed, err %s", err))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[30], 1);bytes, err := getStateByRangeAndDecrypt(stub, ent, "", "")
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[33], 1);
+		return shim.Error(fmt.Sprintf("getStateByRangeAndDecrypt failed, err %+v", err))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[31], 1);return shim.Success(bytes)
+}
+
+// Invoke for this chaincode exposes functions to ENCRYPT, DECRYPT transactional
+// data.  It also supports an example to ENCRYPT and SIGN and DECRYPT and
+// VERIFY.  The Initialization Vector (IV) can be passed in as a parm to
+// ensure peers have deterministic data.
+func (t *EncCC) Invoke(stub shim.ChaincodeStubInterface) pb.Response {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[34], 1);
+	// get arguments and transient
+	f, args := stub.GetFunctionAndParameters()
+	tMap, err := stub.GetTransient()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[36], 1);
+		return shim.Error(fmt.Sprintf("Could not retrieve transient, err %s", err))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[35], 1);switch f {
+	case "ENCRYPT":_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[37], 1);
+		// make sure there's a key in transient - the assumption is that
+		// it's associated to the string "ENCKEY"
+		if _, in := tMap[ENCKEY]; !in {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[48], 1);
+			return shim.Error(fmt.Sprintf("Expected transient encryption key %s", ENCKEY))
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[38], 1);return t.Encrypter(stub, args[0:], tMap[ENCKEY], tMap[IV])
+	case "DECRYPT":_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[39], 1);
+
+		// make sure there's a key in transient - the assumption is that
+		// it's associated to the string "DECKEY"
+		if _, in := tMap[DECKEY]; !in {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[49], 1);
+			return shim.Error(fmt.Sprintf("Expected transient decryption key %s", DECKEY))
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[40], 1);return t.Decrypter(stub, args[0:], tMap[DECKEY], tMap[IV])
+	case "ENCRYPTSIGN":_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[41], 1);
+		// make sure keys are there in the transient map - the assumption is that they
+		// are associated to the string "ENCKEY" and "SIGKEY"
+		if _, in := tMap[ENCKEY]; !in {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[50], 1);
+			return shim.Error(fmt.Sprintf("Expected transient key %s", ENCKEY))
+		} else{ _cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[51], 1);if _, in := tMap[SIGKEY]; !in {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[52], 1);
+			return shim.Error(fmt.Sprintf("Expected transient key %s", SIGKEY))
+		}}
+
+		_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[42], 1);return t.EncrypterSigner(stub, args[0:], tMap[ENCKEY], tMap[SIGKEY])
+	case "DECRYPTVERIFY":_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[43], 1);
+		// make sure keys are there in the transient map - the assumption is that they
+		// are associated to the string "DECKEY" and "VERKEY"
+		if _, in := tMap[DECKEY]; !in {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[53], 1);
+			return shim.Error(fmt.Sprintf("Expected transient key %s", DECKEY))
+		} else{ _cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[54], 1);if _, in := tMap[VERKEY]; !in {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[55], 1);
+			return shim.Error(fmt.Sprintf("Expected transient key %s", VERKEY))
+		}}
+
+		_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[44], 1);return t.DecrypterVerify(stub, args[0:], tMap[DECKEY], tMap[VERKEY])
+	case "RANGEQUERY":_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[45], 1);
+		// make sure there's a key in transient - the assumption is that
+		// it's associated to the string "ENCKEY"
+		if _, in := tMap[DECKEY]; !in {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[56], 1);
+			return shim.Error(fmt.Sprintf("Expected transient key %s", DECKEY))
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[46], 1);return t.RangeDecrypter(stub, tMap[DECKEY])
+	default:_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[47], 1);
+		return shim.Error(fmt.Sprintf("Unsupported function %s", f))
+	}
+}
+
+func main() {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[57], 1);
+	factory.InitFactories(nil)
+
+	err := shim.Start(&EncCC{factory.GetDefault()})
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_333531323663353230326637.Count[58], 1);
+		fmt.Printf("Error starting EncCC chaincode: %s", err)
+	}
+}
+
+var GoCover_0_333531323663353230326637 = struct {
+	Count     [59]uint32
+	Pos       [3 * 59]uint32
+	NumStmt   [59]uint16
+} {
+	Pos: [3 * 59]uint32{
+		31, 33, 0x20044, // [0]
+		38, 41, 0x10006b, // [1]
+		45, 45, 0x140002, // [2]
+		49, 54, 0x100002, // [3]
+		57, 57, 0x1a0002, // [4]
+		41, 43, 0x30010, // [5]
+		45, 47, 0x30014, // [6]
+		54, 56, 0x30010, // [7]
+		62, 65, 0x10006b, // [8]
+		69, 69, 0x140002, // [9]
+		73, 77, 0x100002, // [10]
+		82, 82, 0x250002, // [11]
+		65, 67, 0x30010, // [12]
+		69, 71, 0x30014, // [13]
+		77, 79, 0x30010, // [14]
+		88, 91, 0x100075, // [15]
+		95, 95, 0x140002, // [16]
+		99, 104, 0x100002, // [17]
+		108, 108, 0x1a0002, // [18]
+		91, 93, 0x30010, // [19]
+		95, 97, 0x30014, // [20]
+		104, 106, 0x30010, // [21]
+		114, 117, 0x100075, // [22]
+		121, 121, 0x140002, // [23]
+		124, 128, 0x100002, // [24]
+		133, 133, 0x250002, // [25]
+		117, 119, 0x30010, // [26]
+		121, 123, 0x30014, // [27]
+		128, 130, 0x30010, // [28]
+		138, 141, 0x10005d, // [29]
+		145, 146, 0x100002, // [30]
+		150, 150, 0x1c0002, // [31]
+		141, 143, 0x30010, // [32]
+		146, 148, 0x30010, // [33]
+		157, 161, 0x100046, // [34]
+		165, 165, 0xb0002, // [35]
+		161, 163, 0x30010, // [36]
+		166, 169, 0x210011, // [37]
+		173, 173, 0x3d0003, // [38]
+		174, 178, 0x210011, // [39]
+		182, 182, 0x3d0003, // [40]
+		183, 186, 0x210015, // [41]
+		192, 192, 0x470003, // [42]
+		193, 196, 0x210017, // [43]
+		202, 202, 0x470003, // [44]
+		203, 206, 0x210014, // [45]
+		210, 210, 0x2e0003, // [46]
+		211, 212, 0x3f000a, // [47]
+		169, 171, 0x40021, // [48]
+		178, 180, 0x40021, // [49]
+		186, 188, 0x40021, // [50]
+		188, 188, 0x280009, // [51]
+		188, 190, 0x40028, // [52]
+		196, 198, 0x40021, // [53]
+		198, 198, 0x280009, // [54]
+		198, 200, 0x40028, // [55]
+		206, 208, 0x40021, // [56]
+		216, 220, 0x10000d, // [57]
+		220, 222, 0x30010, // [58]
+	},
+	NumStmt: [59]uint16{
+		1, // 0
+		2, // 1
+		1, // 2
+		4, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		2, // 8
+		1, // 9
+		3, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		2, // 15
+		1, // 16
+		4, // 17
+		1, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		2, // 22
+		1, // 23
+		3, // 24
+		1, // 25
+		1, // 26
+		1, // 27
+		1, // 28
+		2, // 29
+		2, // 30
+		1, // 31
+		1, // 32
+		1, // 33
+		3, // 34
+		1, // 35
+		1, // 36
+		1, // 37
+		1, // 38
+		1, // 39
+		1, // 40
+		1, // 41
+		1, // 42
+		1, // 43
+		1, // 44
+		1, // 45
+		1, // 46
+		1, // 47
+		1, // 48
+		1, // 49
+		1, // 50
+		1, // 51
+		1, // 52
+		1, // 53
+		1, // 54
+		1, // 55
+		1, // 56
+		3, // 57
+		1, // 58
+	},
+}
+var _ = _cover_atomic_.LoadUint32

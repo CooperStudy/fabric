@@ -1,0 +1,6 @@
+./capabilities.go
+./identity_deserializer.go
+./plugin.go
+./plugin_factory.go
+./plugin_mapper.go
+./query_executor_creator.go

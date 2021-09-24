@@ -1,0 +1,120 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/chaincode/platforms/golang/list.go:1
+/*
+Copyright 2017 - Greg Haskins <gregory.haskins@gmail.com>
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+		 http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package golang; import _cover_atomic_ "sync/atomic"
+
+import (
+	"bytes"
+	"context"
+	"fmt"
+	"os/exec"
+	"strings"
+	"time"
+)
+
+//runProgram non-nil Env, timeout (typically secs or millisecs), program name and args
+func runProgram(env Env, timeout time.Duration, pgm string, args ...string) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_1_346363666338363036383165.Count[0], 1);
+	if env == nil {_cover_atomic_.AddUint32(&GoCover_1_346363666338363036383165.Count[4], 1);
+		return nil, fmt.Errorf("<%s, %v>: nil env provided", pgm, args)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_346363666338363036383165.Count[1], 1);ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, pgm, args...)
+	cmd.Env = flattenEnv(env)
+	stdErr := &bytes.Buffer{}
+	cmd.Stderr = stdErr
+
+	out, err := cmd.Output()
+
+	if ctx.Err() == context.DeadlineExceeded {_cover_atomic_.AddUint32(&GoCover_1_346363666338363036383165.Count[5], 1);
+		err = fmt.Errorf("timed out after %s", timeout)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_346363666338363036383165.Count[2], 1);if err != nil {_cover_atomic_.AddUint32(&GoCover_1_346363666338363036383165.Count[6], 1);
+		return nil,
+			fmt.Errorf(
+				"command <%s %s>: failed with error: \"%s\"\n%s",
+				pgm,
+				strings.Join(args, " "),
+				err,
+				string(stdErr.Bytes()))
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_346363666338363036383165.Count[3], 1);return out, nil
+}
+
+// Logic inspired by: https://dave.cheney.net/2014/09/14/go-list-your-swiss-army-knife
+func list(env Env, template, pkg string) ([]string, error) {_cover_atomic_.AddUint32(&GoCover_1_346363666338363036383165.Count[7], 1);
+	if env == nil {_cover_atomic_.AddUint32(&GoCover_1_346363666338363036383165.Count[10], 1);
+		env = getEnv()
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_346363666338363036383165.Count[8], 1);lst, err := runProgram(env, 60*time.Second, "go", "list", "-f", template, pkg)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_346363666338363036383165.Count[11], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_346363666338363036383165.Count[9], 1);return strings.Split(strings.Trim(string(lst), "\n"), "\n"), nil
+}
+
+func listDeps(env Env, pkg string) ([]string, error) {_cover_atomic_.AddUint32(&GoCover_1_346363666338363036383165.Count[12], 1);
+	return list(env, "{{ join .Deps \"\\n\"}}", pkg)
+}
+
+func listImports(env Env, pkg string) ([]string, error) {_cover_atomic_.AddUint32(&GoCover_1_346363666338363036383165.Count[13], 1);
+	return list(env, "{{ join .Imports \"\\n\"}}", pkg)
+}
+
+var GoCover_1_346363666338363036383165 = struct {
+	Count     [14]uint32
+	Pos       [3 * 14]uint32
+	NumStmt   [14]uint16
+} {
+	Pos: [3 * 14]uint32{
+		29, 30, 0x10005d, // [0]
+		34, 43, 0x2b0002, // [1]
+		47, 47, 0x100002, // [2]
+		56, 56, 0x110002, // [3]
+		30, 32, 0x30010, // [4]
+		43, 45, 0x3002b, // [5]
+		47, 55, 0x30010, // [6]
+		60, 61, 0x10003c, // [7]
+		65, 66, 0x100002, // [8]
+		70, 70, 0x420002, // [9]
+		61, 63, 0x30010, // [10]
+		66, 68, 0x30010, // [11]
+		73, 75, 0x20036, // [12]
+		77, 79, 0x20039, // [13]
+	},
+	NumStmt: [14]uint16{
+		1, // 0
+		8, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		2, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+	},
+}
+var _ = _cover_atomic_.LoadUint32

@@ -1,0 +1,127 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/ledger/kvledger/tests/committer.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package tests; import _cover_atomic_ "sync/atomic"
+
+import (
+	"testing"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/core/ledger"
+	"github.com/hyperledger/fabric/protos/common"
+	"github.com/stretchr/testify/assert"
+)
+
+// committer helps in cutting a block and commits the block (with pvt data) to the ledger
+type committer struct {
+	lgr    ledger.PeerLedger
+	blkgen *blkGenerator
+	assert *assert.Assertions
+}
+
+func newCommitter(lgr ledger.PeerLedger, t *testing.T) *committer {_cover_atomic_.AddUint32(&GoCover_1_363234376562373564353161.Count[0], 1);
+	return &committer{lgr, newBlockGenerator(lgr, t), assert.New(t)}
+}
+
+// cutBlockAndCommitWithPvtdata cuts the next block from the given 'txAndPvtdata' and commits the block (with pvt data) to the ledger
+// This function return a copy of 'ledger.BlockAndPvtData' that was submitted to the ledger to commit.
+// A copy is returned instead of the actual one because, ledger makes some changes to the submitted block before commit
+// (such as setting the metadata) and the test code would want to have the exact copy of the block that was submitted to
+// the ledger
+func (c *committer) cutBlockAndCommitWithPvtdata(trans ...*txAndPvtdata) *ledger.BlockAndPvtData {_cover_atomic_.AddUint32(&GoCover_1_363234376562373564353161.Count[1], 1);
+	blk := c.blkgen.nextBlockAndPvtdata(trans...)
+	blkCopy := c.copyOfBlockAndPvtdata(blk)
+	c.assert.NoError(
+		c.lgr.CommitWithPvtData(blk),
+	)
+	return blkCopy
+}
+
+func (c *committer) cutBlockAndCommitExpectError(trans ...*txAndPvtdata) (*ledger.BlockAndPvtData, error) {_cover_atomic_.AddUint32(&GoCover_1_363234376562373564353161.Count[2], 1);
+	blk := c.blkgen.nextBlockAndPvtdata(trans...)
+	blkCopy := c.copyOfBlockAndPvtdata(blk)
+	err := c.lgr.CommitWithPvtData(blk)
+	c.assert.Error(err)
+	return blkCopy, err
+}
+
+func (c *committer) copyOfBlockAndPvtdata(blk *ledger.BlockAndPvtData) *ledger.BlockAndPvtData {_cover_atomic_.AddUint32(&GoCover_1_363234376562373564353161.Count[3], 1);
+	blkBytes, err := proto.Marshal(blk.Block)
+	c.assert.NoError(err)
+	blkCopy := &common.Block{}
+	c.assert.NoError(proto.Unmarshal(blkBytes, blkCopy))
+	return &ledger.BlockAndPvtData{Block: blkCopy, PvtData: blk.PvtData,
+		MissingPvtData: blk.MissingPvtData}
+}
+
+/////////////////   block generation code  ///////////////////////////////////////////
+// blkGenerator helps creating the next block for the ledger
+type blkGenerator struct {
+	lastNum  uint64
+	lastHash []byte
+	assert   *assert.Assertions
+}
+
+// newBlockGenerator constructs a 'blkGenerator' and initializes the 'blkGenerator'
+// from the last block available in the ledger so that the next block can be populated
+// with the correct block number and previous block hash
+func newBlockGenerator(lgr ledger.PeerLedger, t *testing.T) *blkGenerator {_cover_atomic_.AddUint32(&GoCover_1_363234376562373564353161.Count[4], 1);
+	assert := assert.New(t)
+	info, err := lgr.GetBlockchainInfo()
+	assert.NoError(err)
+	return &blkGenerator{info.Height - 1, info.CurrentBlockHash, assert}
+}
+
+// nextBlockAndPvtdata cuts the next block
+func (g *blkGenerator) nextBlockAndPvtdata(trans ...*txAndPvtdata) *ledger.BlockAndPvtData {_cover_atomic_.AddUint32(&GoCover_1_363234376562373564353161.Count[5], 1);
+	block := common.NewBlock(g.lastNum+1, g.lastHash)
+	blockPvtdata := make(map[uint64]*ledger.TxPvtData)
+	for i, tran := range trans {_cover_atomic_.AddUint32(&GoCover_1_363234376562373564353161.Count[7], 1);
+		seq := uint64(i)
+		envelopeBytes, _ := proto.Marshal(tran.Envelope)
+		block.Data.Data = append(block.Data.Data, envelopeBytes)
+		if tran.Pvtws != nil {_cover_atomic_.AddUint32(&GoCover_1_363234376562373564353161.Count[8], 1);
+			blockPvtdata[seq] = &ledger.TxPvtData{SeqInBlock: seq, WriteSet: tran.Pvtws}
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_363234376562373564353161.Count[6], 1);block.Header.DataHash = block.Data.Hash()
+	g.lastNum++
+	g.lastHash = block.Header.Hash()
+	setBlockFlagsToValid(block)
+	return &ledger.BlockAndPvtData{Block: block, PvtData: blockPvtdata,
+		MissingPvtData: make(ledger.TxMissingPvtDataMap)}
+}
+
+var GoCover_1_363234376562373564353161 = struct {
+	Count     [9]uint32
+	Pos       [3 * 9]uint32
+	NumStmt   [9]uint16
+} {
+	Pos: [3 * 9]uint32{
+		25, 27, 0x20043, // [0]
+		34, 41, 0x20062, // [1]
+		43, 49, 0x2006b, // [2]
+		51, 58, 0x20060, // [3]
+		71, 76, 0x2004b, // [4]
+		79, 82, 0x1d005c, // [5]
+		90, 95, 0x340002, // [6]
+		82, 86, 0x18001d, // [7]
+		86, 88, 0x40018, // [8]
+	},
+	NumStmt: [9]uint16{
+		1, // 0
+		4, // 1
+		5, // 2
+		5, // 3
+		4, // 4
+		3, // 5
+		5, // 6
+		4, // 7
+		1, // 8
+	},
+}
+var _ = _cover_atomic_.LoadUint32

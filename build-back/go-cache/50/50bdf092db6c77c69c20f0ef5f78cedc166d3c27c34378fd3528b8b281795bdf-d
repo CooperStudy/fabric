@@ -1,0 +1,314 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/orderer/common/broadcast/broadcast.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package broadcast; import _cover_atomic_ "sync/atomic"
+
+import (
+	"io"
+	"time"
+
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/common/util"
+	"github.com/hyperledger/fabric/orderer/common/msgprocessor"
+	cb "github.com/hyperledger/fabric/protos/common"
+	ab "github.com/hyperledger/fabric/protos/orderer"
+	"github.com/pkg/errors"
+)
+
+var logger = flogging.MustGetLogger("orderer.common.broadcast")
+
+//go:generate counterfeiter -o mock/channel_support_registrar.go --fake-name ChannelSupportRegistrar . ChannelSupportRegistrar
+
+// ChannelSupportRegistrar provides a way for the Handler to look up the Support for a channel
+type ChannelSupportRegistrar interface {
+	// BroadcastChannelSupport returns the message channel header, whether the message is a config update
+	// and the channel resources for a message or an error if the message is not a message which can
+	// be processed directly (like CONFIG and ORDERER_TRANSACTION messages)
+	BroadcastChannelSupport(msg *cb.Envelope) (*cb.ChannelHeader, bool, ChannelSupport, error)
+}
+
+//go:generate counterfeiter -o mock/channel_support.go --fake-name ChannelSupport . ChannelSupport
+
+// ChannelSupport provides the backing resources needed to support broadcast on a channel
+type ChannelSupport interface {
+	msgprocessor.Processor
+	Consenter
+}
+
+// Consenter provides methods to send messages through consensus
+type Consenter interface {
+	// Order accepts a message or returns an error indicating the cause of failure
+	// It ultimately passes through to the consensus.Chain interface
+	Order(env *cb.Envelope, configSeq uint64) error
+
+	// Configure accepts a reconfiguration or returns an error indicating the cause of failure
+	// It ultimately passes through to the consensus.Chain interface
+	Configure(config *cb.Envelope, configSeq uint64) error
+
+	// WaitReady blocks waiting for consenter to be ready for accepting new messages.
+	// This is useful when consenter needs to temporarily block ingress messages so
+	// that in-flight messages can be consumed. It could return error if consenter is
+	// in erroneous states. If this blocking behavior is not desired, consenter could
+	// simply return nil.
+	WaitReady() error
+}
+
+// Handler is designed to handle connections from Broadcast AB gRPC service
+type Handler struct {
+	SupportRegistrar ChannelSupportRegistrar
+	Metrics          *Metrics
+}
+
+// Handle reads requests from a Broadcast stream, processes them, and returns the responses to the stream
+func (bh *Handler) Handle(srv ab.AtomicBroadcast_BroadcastServer) error {_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[0], 1);
+	addr := util.ExtractRemoteAddress(srv.Context())
+	logger.Debugf("Starting new broadcast loop for %s", addr)
+	for {_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[1], 1);
+		msg, err := srv.Recv()
+		if err == io.EOF {_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[5], 1);
+			logger.Debugf("Received EOF from %s, hangup", addr)
+			return nil
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[2], 1);if err != nil {_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[6], 1);
+			logger.Warningf("Error reading from %s: %s", addr, err)
+			return err
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[3], 1);resp := bh.ProcessMessage(msg, addr)
+		err = srv.Send(resp)
+		if resp.Status != cb.Status_SUCCESS {_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[7], 1);
+			return err
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[4], 1);if err != nil {_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[8], 1);
+			logger.Warningf("Error sending to %s: %s", addr, err)
+			return err
+		}
+	}
+
+}
+
+type MetricsTracker struct {
+	ValidateStartTime time.Time
+	EnqueueStartTime  time.Time
+	ValidateDuration  time.Duration
+	ChannelID         string
+	TxType            string
+	Metrics           *Metrics
+}
+
+func (mt *MetricsTracker) Record(resp *ab.BroadcastResponse) {_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[9], 1);
+	labels := []string{
+		"status", resp.Status.String(),
+		"channel", mt.ChannelID,
+		"type", mt.TxType,
+	}
+
+	if mt.ValidateDuration == 0 {_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[12], 1);
+		mt.EndValidate()
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[10], 1);mt.Metrics.ValidateDuration.With(labels...).Observe(mt.ValidateDuration.Seconds())
+
+	if mt.EnqueueStartTime != (time.Time{}) {_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[13], 1);
+		enqueueDuration := time.Since(mt.EnqueueStartTime)
+		mt.Metrics.EnqueueDuration.With(labels...).Observe(enqueueDuration.Seconds())
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[11], 1);mt.Metrics.ProcessedCount.With(labels...).Add(1)
+}
+
+func (mt *MetricsTracker) BeginValidate() {_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[14], 1);
+	mt.ValidateStartTime = time.Now()
+}
+
+func (mt *MetricsTracker) EndValidate() {_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[15], 1);
+	mt.ValidateDuration = time.Since(mt.ValidateStartTime)
+}
+
+func (mt *MetricsTracker) BeginEnqueue() {_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[16], 1);
+	mt.EnqueueStartTime = time.Now()
+}
+
+// ProcessMessage validates and enqueues a single message
+func (bh *Handler) ProcessMessage(msg *cb.Envelope, addr string) (resp *ab.BroadcastResponse) {_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[17], 1);
+	tracker := &MetricsTracker{
+		ChannelID: "unknown",
+		TxType:    "unknown",
+		Metrics:   bh.Metrics,
+	}
+	defer func() {_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[22], 1);
+		// This looks a little unnecessary, but if done directly as
+		// a defer, resp gets the (always nil) current state of resp
+		// and not the return value
+		tracker.Record(resp)
+	}()
+	_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[18], 1);tracker.BeginValidate()
+
+	chdr, isConfig, processor, err := bh.SupportRegistrar.BroadcastChannelSupport(msg)
+	if chdr != nil {_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[23], 1);
+		tracker.ChannelID = chdr.ChannelId
+		tracker.TxType = cb.HeaderType(chdr.Type).String()
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[19], 1);if err != nil {_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[24], 1);
+		logger.Warningf("[channel: %s] Could not get message processor for serving %s: %s", tracker.ChannelID, addr, err)
+		return &ab.BroadcastResponse{Status: cb.Status_BAD_REQUEST, Info: err.Error()}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[20], 1);if !isConfig {_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[25], 1);
+		logger.Debugf("[channel: %s] Broadcast is processing normal message from %s with txid '%s' of type %s", chdr.ChannelId, addr, chdr.TxId, cb.HeaderType_name[chdr.Type])
+
+		configSeq, err := processor.ProcessNormalMsg(msg)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[28], 1);
+			logger.Warningf("[channel: %s] Rejecting broadcast of normal message from %s because of error: %s", chdr.ChannelId, addr, err)
+			return &ab.BroadcastResponse{Status: ClassifyError(err), Info: err.Error()}
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[26], 1);tracker.EndValidate()
+
+		tracker.BeginEnqueue()
+		if err = processor.WaitReady(); err != nil {_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[29], 1);
+			logger.Warningf("[channel: %s] Rejecting broadcast of message from %s with SERVICE_UNAVAILABLE: rejected by Consenter: %s", chdr.ChannelId, addr, err)
+			return &ab.BroadcastResponse{Status: cb.Status_SERVICE_UNAVAILABLE, Info: err.Error()}
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[27], 1);err = processor.Order(msg, configSeq)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[30], 1);
+			logger.Warningf("[channel: %s] Rejecting broadcast of normal message from %s with SERVICE_UNAVAILABLE: rejected by Order: %s", chdr.ChannelId, addr, err)
+			return &ab.BroadcastResponse{Status: cb.Status_SERVICE_UNAVAILABLE, Info: err.Error()}
+		}
+	} else{ _cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[31], 1);{ // isConfig
+		logger.Debugf("[channel: %s] Broadcast is processing config update message from %s", chdr.ChannelId, addr)
+
+		config, configSeq, err := processor.ProcessConfigUpdateMsg(msg)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[34], 1);
+			logger.Warningf("[channel: %s] Rejecting broadcast of config message from %s because of error: %s", chdr.ChannelId, addr, err)
+			return &ab.BroadcastResponse{Status: ClassifyError(err), Info: err.Error()}
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[32], 1);tracker.EndValidate()
+
+		tracker.BeginEnqueue()
+		if err = processor.WaitReady(); err != nil {_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[35], 1);
+			logger.Warningf("[channel: %s] Rejecting broadcast of message from %s with SERVICE_UNAVAILABLE: rejected by Consenter: %s", chdr.ChannelId, addr, err)
+			return &ab.BroadcastResponse{Status: cb.Status_SERVICE_UNAVAILABLE, Info: err.Error()}
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[33], 1);err = processor.Configure(config, configSeq)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[36], 1);
+			logger.Warningf("[channel: %s] Rejecting broadcast of config message from %s with SERVICE_UNAVAILABLE: rejected by Configure: %s", chdr.ChannelId, addr, err)
+			return &ab.BroadcastResponse{Status: cb.Status_SERVICE_UNAVAILABLE, Info: err.Error()}
+		}
+	}}
+
+	_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[21], 1);logger.Debugf("[channel: %s] Broadcast has successfully enqueued message of type %s from %s", chdr.ChannelId, cb.HeaderType_name[chdr.Type], addr)
+
+	return &ab.BroadcastResponse{Status: cb.Status_SUCCESS}
+}
+
+// ClassifyError converts an error type into a status code.
+func ClassifyError(err error) cb.Status {_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[37], 1);
+	switch errors.Cause(err) {
+	case msgprocessor.ErrChannelDoesNotExist:_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[38], 1);
+		return cb.Status_NOT_FOUND
+	case msgprocessor.ErrPermissionDenied:_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[39], 1);
+		return cb.Status_FORBIDDEN
+	default:_cover_atomic_.AddUint32(&GoCover_0_346438363638396365383135.Count[40], 1);
+		return cb.Status_BAD_REQUEST
+	}
+}
+
+var GoCover_0_346438363638396365383135 = struct {
+	Count     [41]uint32
+	Pos       [3 * 41]uint32
+	NumStmt   [41]uint16
+} {
+	Pos: [3 * 41]uint32{
+		66, 69, 0x60049, // [0]
+		69, 71, 0x140006, // [1]
+		75, 75, 0x110003, // [2]
+		80, 82, 0x270003, // [3]
+		86, 86, 0x110003, // [4]
+		71, 74, 0x40014, // [5]
+		75, 78, 0x40011, // [6]
+		82, 84, 0x40027, // [7]
+		86, 89, 0x40011, // [8]
+		103, 110, 0x1e003e, // [9]
+		113, 115, 0x2a0002, // [10]
+		120, 120, 0x320002, // [11]
+		110, 112, 0x3001e, // [12]
+		115, 118, 0x3002a, // [13]
+		123, 125, 0x2002b, // [14]
+		127, 129, 0x20029, // [15]
+		131, 133, 0x2002a, // [16]
+		136, 142, 0xf005f, // [17]
+		148, 151, 0x110002, // [18]
+		155, 155, 0x100002, // [19]
+		160, 160, 0xf0002, // [20]
+		204, 206, 0x390002, // [21]
+		142, 147, 0x3000f, // [22]
+		151, 154, 0x30011, // [23]
+		155, 158, 0x30010, // [24]
+		160, 164, 0x11000f, // [25]
+		168, 171, 0x2e0003, // [26]
+		176, 177, 0x110003, // [27]
+		164, 167, 0x40011, // [28]
+		171, 174, 0x4002e, // [29]
+		177, 180, 0x40011, // [30]
+		181, 185, 0x110008, // [31]
+		189, 192, 0x2e0003, // [32]
+		197, 198, 0x110003, // [33]
+		185, 188, 0x40011, // [34]
+		192, 195, 0x4002e, // [35]
+		198, 201, 0x40011, // [36]
+		210, 211, 0x1b0029, // [37]
+		212, 213, 0x1d002b, // [38]
+		214, 215, 0x1d0028, // [39]
+		216, 217, 0x1f000a, // [40]
+	},
+	NumStmt: [41]uint16{
+		3, // 0
+		2, // 1
+		1, // 2
+		3, // 3
+		1, // 4
+		2, // 5
+		2, // 6
+		1, // 7
+		2, // 8
+		2, // 9
+		2, // 10
+		1, // 11
+		1, // 12
+		2, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		2, // 17
+		3, // 18
+		1, // 19
+		1, // 20
+		2, // 21
+		1, // 22
+		2, // 23
+		2, // 24
+		3, // 25
+		3, // 26
+		2, // 27
+		2, // 28
+		2, // 29
+		2, // 30
+		3, // 31
+		3, // 32
+		2, // 33
+		2, // 34
+		2, // 35
+		2, // 36
+		1, // 37
+		1, // 38
+		1, // 39
+		1, // 40
+	},
+}
+var _ = _cover_atomic_.LoadUint32

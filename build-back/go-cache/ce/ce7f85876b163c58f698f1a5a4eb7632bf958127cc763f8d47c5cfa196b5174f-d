@@ -1,0 +1,316 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/orderer/consensus/etcdraft/consenter.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package etcdraft; import _cover_atomic_ "sync/atomic"
+
+import (
+	"bytes"
+	"path"
+	"reflect"
+	"time"
+
+	"code.cloudfoundry.org/clock"
+	"github.com/coreos/etcd/raft"
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/common/viperutil"
+	"github.com/hyperledger/fabric/core/comm"
+	"github.com/hyperledger/fabric/orderer/common/cluster"
+	"github.com/hyperledger/fabric/orderer/common/localconfig"
+	"github.com/hyperledger/fabric/orderer/common/multichannel"
+	"github.com/hyperledger/fabric/orderer/consensus"
+	"github.com/hyperledger/fabric/protos/common"
+	"github.com/hyperledger/fabric/protos/orderer"
+	"github.com/hyperledger/fabric/protos/orderer/etcdraft"
+	"github.com/pkg/errors"
+)
+
+//go:generate mockery -dir . -name ChainGetter -case underscore -output mocks
+
+// ChainGetter obtains instances of ChainSupport for the given channel
+type ChainGetter interface {
+	// GetChain obtains the ChainSupport for the given channel.
+	// Returns nil, false when the ChainSupport for the given channel
+	// isn't found.
+	GetChain(chainID string) *multichannel.ChainSupport
+}
+
+// Config contains etcdraft configurations
+type Config struct {
+	WALDir  string // WAL data of <my-channel> is stored in WALDir/<my-channel>
+	SnapDir string // Snapshots of <my-channel> are stored in SnapDir/<my-channel>
+}
+
+// Consenter implements etddraft consenter
+type Consenter struct {
+	Dialer        *cluster.PredicateDialer
+	Communication cluster.Communicator
+	*Dispatcher
+	Chains         ChainGetter
+	Logger         *flogging.FabricLogger
+	EtcdRaftConfig Config
+	OrdererConfig  localconfig.TopLevel
+	Cert           []byte
+}
+
+// TargetChannel extracts the channel from the given proto.Message.
+// Returns an empty string on failure.
+func (c *Consenter) TargetChannel(message proto.Message) string {_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[0], 1);
+	switch req := message.(type) {
+	case *orderer.StepRequest:_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[1], 1);
+		return req.Channel
+	case *orderer.SubmitRequest:_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[2], 1);
+		return req.Channel
+	default:_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[3], 1);
+		return ""
+	}
+}
+
+// ReceiverByChain returns the MessageReceiver for the given channelID or nil
+// if not found.
+func (c *Consenter) ReceiverByChain(channelID string) MessageReceiver {_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[4], 1);
+	cs := c.Chains.GetChain(channelID)
+	if cs == nil {_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[8], 1);
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[5], 1);if cs.Chain == nil {_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[9], 1);
+		c.Logger.Panicf("Programming error - Chain %s is nil although it exists in the mapping", channelID)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[6], 1);if etcdRaftChain, isEtcdRaftChain := cs.Chain.(*Chain); isEtcdRaftChain {_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[10], 1);
+		return etcdRaftChain
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[7], 1);c.Logger.Warningf("Chain %s is of type %v and not etcdraft.Chain", channelID, reflect.TypeOf(cs.Chain))
+	return nil
+}
+
+func (c *Consenter) detectSelfID(consenters map[uint64]*etcdraft.Consenter) (uint64, error) {_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[11], 1);
+	var serverCertificates []string
+	for nodeID, cst := range consenters {_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[13], 1);
+		serverCertificates = append(serverCertificates, string(cst.ServerTlsCert))
+		if bytes.Equal(c.Cert, cst.ServerTlsCert) {_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[14], 1);
+			return nodeID, nil
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[12], 1);c.Logger.Error("Could not find", string(c.Cert), "among", serverCertificates)
+	return 0, errors.Errorf("failed to detect own Raft ID because no matching certificate found")
+}
+
+// HandleChain returns a new Chain instance or an error upon failure
+func (c *Consenter) HandleChain(support consensus.ConsenterSupport, metadata *common.Metadata) (consensus.Chain, error) {_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[15], 1);
+	m := &etcdraft.Metadata{}
+	if err := proto.Unmarshal(support.SharedConfig().ConsensusMetadata(), m); err != nil {_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[21], 1);
+		return nil, errors.Wrap(err, "failed to unmarshal consensus metadata")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[16], 1);if m.Options == nil {_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[22], 1);
+		return nil, errors.New("etcdraft options have not been provided")
+	}
+
+	// determine raft replica set mapping for each node to its id
+	// for newly started chain we need to read and initialize raft
+	// metadata by creating mapping between conseter and its id.
+	// In case chain has been restarted we restore raft metadata
+	// information from the recently committed block meta data
+	// field.
+	_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[17], 1);raftMetadata, err := readRaftMetadata(metadata, m)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[23], 1);
+		return nil, errors.Wrapf(err, "failed to read Raft metadata")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[18], 1);id, err := c.detectSelfID(raftMetadata.Consenters)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[24], 1);
+		return nil, errors.WithStack(err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[19], 1);bp, err := newBlockPuller(support, c.Dialer, c.OrdererConfig.General.Cluster)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[25], 1);
+		return nil, errors.WithStack(err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[20], 1);opts := Options{
+		RaftID:        id,
+		Clock:         clock.NewClock(),
+		MemoryStorage: raft.NewMemoryStorage(),
+		Logger:        c.Logger,
+
+		TickInterval:    time.Duration(m.Options.TickInterval) * time.Millisecond,
+		ElectionTick:    int(m.Options.ElectionTick),
+		HeartbeatTick:   int(m.Options.HeartbeatTick),
+		MaxInflightMsgs: int(m.Options.MaxInflightMsgs),
+		MaxSizePerMsg:   m.Options.MaxSizePerMsg,
+		SnapInterval:    m.Options.SnapshotInterval,
+
+		RaftMetadata: raftMetadata,
+
+		WALDir:  path.Join(c.EtcdRaftConfig.WALDir, support.ChainID()),
+		SnapDir: path.Join(c.EtcdRaftConfig.SnapDir, support.ChainID()),
+	}
+
+	rpc := &cluster.RPC{
+		Channel:             support.ChainID(),
+		Comm:                c.Communication,
+		DestinationToStream: make(map[uint64]orderer.Cluster_SubmitClient),
+	}
+	return NewChain(support, opts, c.Communication, rpc, bp, nil)
+}
+
+func readRaftMetadata(blockMetadata *common.Metadata, configMetadata *etcdraft.Metadata) (*etcdraft.RaftMetadata, error) {_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[26], 1);
+	m := &etcdraft.RaftMetadata{
+		Consenters:      map[uint64]*etcdraft.Consenter{},
+		NextConsenterId: 1,
+	}
+	if blockMetadata != nil && len(blockMetadata.Value) != 0 {_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[29], 1); // we have consenters mapping from block
+		if err := proto.Unmarshal(blockMetadata.Value, m); err != nil {_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[31], 1);
+			return nil, errors.Wrap(err, "failed to unmarshal block's metadata")
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[30], 1);return m, nil
+	}
+
+	// need to read consenters from the configuration
+	_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[27], 1);for _, consenter := range configMetadata.Consenters {_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[32], 1);
+		m.Consenters[m.NextConsenterId] = consenter
+		m.NextConsenterId++
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[28], 1);return m, nil
+}
+
+// New creates a etcdraft Consenter
+func New(clusterDialer *cluster.PredicateDialer, conf *localconfig.TopLevel,
+	srvConf comm.ServerConfig, srv *comm.GRPCServer, r *multichannel.Registrar) *Consenter {_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[33], 1);
+	logger := flogging.MustGetLogger("orderer.consensus.etcdraft")
+
+	var cfg Config
+	if err := viperutil.Decode(conf.Consensus, &cfg); err != nil {_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[35], 1);
+		logger.Panicf("Failed to decode etcdraft configuration: %s", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[34], 1);consenter := &Consenter{
+		Cert:           srvConf.SecOpts.Certificate,
+		Logger:         logger,
+		Chains:         r,
+		EtcdRaftConfig: cfg,
+		OrdererConfig:  *conf,
+		Dialer:         clusterDialer,
+	}
+	consenter.Dispatcher = &Dispatcher{
+		Logger:        logger,
+		ChainSelector: consenter,
+	}
+
+	comm := createComm(clusterDialer, conf, consenter)
+	consenter.Communication = comm
+	svc := &cluster.Service{
+		StepLogger: flogging.MustGetLogger("orderer.common.cluster.step"),
+		Logger:     flogging.MustGetLogger("orderer.common.cluster"),
+		Dispatcher: comm,
+	}
+	orderer.RegisterClusterServer(srv.Server(), svc)
+	return consenter
+}
+
+func createComm(clusterDialer *cluster.PredicateDialer,
+	conf *localconfig.TopLevel,
+	c *Consenter) *cluster.Comm {_cover_atomic_.AddUint32(&GoCover_2_643961326533346231666662.Count[36], 1);
+	comm := &cluster.Comm{
+		Logger:       flogging.MustGetLogger("orderer.common.cluster"),
+		Chan2Members: make(map[string]cluster.MemberMapping),
+		Connections:  cluster.NewConnectionStore(clusterDialer),
+		RPCTimeout:   conf.General.Cluster.RPCTimeout,
+		ChanExt:      c,
+		H:            c,
+	}
+	c.Communication = comm
+	return comm
+}
+
+var GoCover_2_643961326533346231666662 = struct {
+	Count     [37]uint32
+	Pos       [3 * 37]uint32
+	NumStmt   [37]uint16
+} {
+	Pos: [3 * 37]uint32{
+		61, 62, 0x1f0041, // [0]
+		63, 64, 0x15001c, // [1]
+		65, 66, 0x15001e, // [2]
+		67, 68, 0xc000a, // [3]
+		74, 76, 0xf0047, // [4]
+		79, 79, 0x150002, // [5]
+		82, 82, 0x4a0002, // [6]
+		85, 86, 0xc0002, // [7]
+		76, 78, 0x3000f, // [8]
+		79, 81, 0x30015, // [9]
+		82, 84, 0x3004a, // [10]
+		89, 91, 0x26005d, // [11]
+		98, 99, 0x5f0002, // [12]
+		91, 93, 0x2d0026, // [13]
+		93, 95, 0x4002d, // [14]
+		103, 105, 0x570079, // [15]
+		109, 109, 0x160002, // [16]
+		119, 120, 0x100002, // [17]
+		124, 125, 0x100002, // [18]
+		129, 130, 0x100002, // [19]
+		134, 158, 0x3f0002, // [20]
+		105, 107, 0x30057, // [21]
+		109, 111, 0x30016, // [22]
+		120, 122, 0x30010, // [23]
+		125, 127, 0x30010, // [24]
+		130, 132, 0x30010, // [25]
+		161, 166, 0x3b007a, // [26]
+		174, 174, 0x360002, // [27]
+		179, 179, 0xf0002, // [28]
+		166, 167, 0x41003b, // [29]
+		170, 170, 0x100003, // [30]
+		167, 169, 0x40041, // [31]
+		174, 177, 0x30036, // [32]
+		184, 188, 0x3f0059, // [33]
+		192, 213, 0x120002, // [34]
+		188, 190, 0x3003f, // [35]
+		218, 229, 0x2001e, // [36]
+	},
+	NumStmt: [37]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		2, // 4
+		1, // 5
+		1, // 6
+		2, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		2, // 11
+		2, // 12
+		2, // 13
+		1, // 14
+		2, // 15
+		1, // 16
+		2, // 17
+		2, // 18
+		2, // 19
+		3, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+		1, // 24
+		1, // 25
+		2, // 26
+		1, // 27
+		1, // 28
+		1, // 29
+		1, // 30
+		1, // 31
+		2, // 32
+		3, // 33
+		7, // 34
+		1, // 35
+		3, // 36
+	},
+}
+var _ = _cover_atomic_.LoadUint32

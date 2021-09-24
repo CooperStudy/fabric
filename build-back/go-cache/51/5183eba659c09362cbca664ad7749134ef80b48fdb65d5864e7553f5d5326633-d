@@ -1,0 +1,213 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/orderer/mocks/common/multichannel/multichannel.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package multichannel; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric/common/channelconfig"
+	mockconfig "github.com/hyperledger/fabric/common/mocks/config"
+	"github.com/hyperledger/fabric/orderer/common/blockcutter"
+	"github.com/hyperledger/fabric/orderer/common/msgprocessor"
+	mockblockcutter "github.com/hyperledger/fabric/orderer/mocks/common/blockcutter"
+	cb "github.com/hyperledger/fabric/protos/common"
+	"github.com/hyperledger/fabric/protos/utils"
+)
+
+// ConsenterSupport is used to mock the multichannel.ConsenterSupport interface
+// Whenever a block is written, it writes to the Batches channel to allow for synchronization
+type ConsenterSupport struct {
+	// SharedConfigVal is the value returned by SharedConfig()
+	SharedConfigVal *mockconfig.Orderer
+
+	// BlockCutterVal is the value returned by BlockCutter()
+	BlockCutterVal *mockblockcutter.Receiver
+
+	// BlockByIndex maps block numbers to retrieved values of these blocks
+	BlockByIndex map[uint64]*cb.Block
+
+	// Blocks is the channel where WriteBlock writes the most recently created block,
+	Blocks chan *cb.Block
+
+	// ChainIDVal is the value returned by ChainID()
+	ChainIDVal string
+
+	// HeightVal is the value returned by Height()
+	HeightVal uint64
+
+	// NextBlockVal stores the block created by the most recent CreateNextBlock() call
+	NextBlockVal *cb.Block
+
+	// ClassifyMsgVal is returned by ClassifyMsg
+	ClassifyMsgVal msgprocessor.Classification
+
+	// ConfigSeqVal is returned as the configSeq for Process*Msg
+	ConfigSeqVal uint64
+
+	// ProcessNormalMsgErr is returned as the error for ProcessNormalMsg
+	ProcessNormalMsgErr error
+
+	// ProcessConfigUpdateMsgVal is returned as the error for ProcessConfigUpdateMsg
+	ProcessConfigUpdateMsgVal *cb.Envelope
+
+	// ProcessConfigUpdateMsgErr is returned as the error for ProcessConfigUpdateMsg
+	ProcessConfigUpdateMsgErr error
+
+	// ProcessConfigMsgVal is returned as the error for ProcessConfigMsg
+	ProcessConfigMsgVal *cb.Envelope
+
+	// ProcessConfigMsgErr is returned by ProcessConfigMsg
+	ProcessConfigMsgErr error
+
+	// SequenceVal is returned by Sequence
+	SequenceVal uint64
+
+	// BlockVerificationErr is returned by VerifyBlockSignature
+	BlockVerificationErr error
+}
+
+// Block returns the block with the given number or nil if not found
+func (mcs *ConsenterSupport) Block(number uint64) *cb.Block {_cover_atomic_.AddUint32(&GoCover_0_633230666530663134343832.Count[0], 1);
+	return mcs.BlockByIndex[number]
+}
+
+// BlockCutter returns BlockCutterVal
+func (mcs *ConsenterSupport) BlockCutter() blockcutter.Receiver {_cover_atomic_.AddUint32(&GoCover_0_633230666530663134343832.Count[1], 1);
+	return mcs.BlockCutterVal
+}
+
+// SharedConfig returns SharedConfigVal
+func (mcs *ConsenterSupport) SharedConfig() channelconfig.Orderer {_cover_atomic_.AddUint32(&GoCover_0_633230666530663134343832.Count[2], 1);
+	return mcs.SharedConfigVal
+}
+
+// CreateNextBlock creates a simple block structure with the given data
+func (mcs *ConsenterSupport) CreateNextBlock(data []*cb.Envelope) *cb.Block {_cover_atomic_.AddUint32(&GoCover_0_633230666530663134343832.Count[3], 1);
+	block := cb.NewBlock(0, nil)
+	mtxs := make([][]byte, len(data))
+	for i := range data {_cover_atomic_.AddUint32(&GoCover_0_633230666530663134343832.Count[5], 1);
+		mtxs[i] = utils.MarshalOrPanic(data[i])
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_633230666530663134343832.Count[4], 1);block.Data = &cb.BlockData{Data: mtxs}
+	mcs.NextBlockVal = block
+	return block
+}
+
+// WriteBlock writes data to the Blocks channel
+func (mcs *ConsenterSupport) WriteBlock(block *cb.Block, encodedMetadataValue []byte) {_cover_atomic_.AddUint32(&GoCover_0_633230666530663134343832.Count[6], 1);
+	if encodedMetadataValue != nil {_cover_atomic_.AddUint32(&GoCover_0_633230666530663134343832.Count[8], 1);
+		block.Metadata.Metadata[cb.BlockMetadataIndex_ORDERER] = utils.MarshalOrPanic(&cb.Metadata{Value: encodedMetadataValue})
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_633230666530663134343832.Count[7], 1);mcs.HeightVal++
+	mcs.Blocks <- block
+}
+
+// WriteConfigBlock calls WriteBlock
+func (mcs *ConsenterSupport) WriteConfigBlock(block *cb.Block, encodedMetadataValue []byte) {_cover_atomic_.AddUint32(&GoCover_0_633230666530663134343832.Count[9], 1);
+	mcs.WriteBlock(block, encodedMetadataValue)
+}
+
+// ChainID returns the chain ID this specific consenter instance is associated with
+func (mcs *ConsenterSupport) ChainID() string {_cover_atomic_.AddUint32(&GoCover_0_633230666530663134343832.Count[10], 1);
+	return mcs.ChainIDVal
+}
+
+// Height returns the number of blocks of the chain this specific consenter instance is associated with
+func (mcs *ConsenterSupport) Height() uint64 {_cover_atomic_.AddUint32(&GoCover_0_633230666530663134343832.Count[11], 1);
+	return mcs.HeightVal
+}
+
+// Sign returns the bytes passed in
+func (mcs *ConsenterSupport) Sign(message []byte) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_0_633230666530663134343832.Count[12], 1);
+	return message, nil
+}
+
+// NewSignatureHeader returns an empty signature header
+func (mcs *ConsenterSupport) NewSignatureHeader() (*cb.SignatureHeader, error) {_cover_atomic_.AddUint32(&GoCover_0_633230666530663134343832.Count[13], 1);
+	return &cb.SignatureHeader{}, nil
+}
+
+// ClassifyMsg returns ClassifyMsgVal, ClassifyMsgErr
+func (mcs *ConsenterSupport) ClassifyMsg(chdr *cb.ChannelHeader) msgprocessor.Classification {_cover_atomic_.AddUint32(&GoCover_0_633230666530663134343832.Count[14], 1);
+	return mcs.ClassifyMsgVal
+}
+
+// ProcessNormalMsg returns ConfigSeqVal, ProcessNormalMsgErr
+func (mcs *ConsenterSupport) ProcessNormalMsg(env *cb.Envelope) (configSeq uint64, err error) {_cover_atomic_.AddUint32(&GoCover_0_633230666530663134343832.Count[15], 1);
+	return mcs.ConfigSeqVal, mcs.ProcessNormalMsgErr
+}
+
+// ProcessConfigUpdateMsg returns ProcessConfigUpdateMsgVal, ConfigSeqVal, ProcessConfigUpdateMsgErr
+func (mcs *ConsenterSupport) ProcessConfigUpdateMsg(env *cb.Envelope) (config *cb.Envelope, configSeq uint64, err error) {_cover_atomic_.AddUint32(&GoCover_0_633230666530663134343832.Count[16], 1);
+	return mcs.ProcessConfigUpdateMsgVal, mcs.ConfigSeqVal, mcs.ProcessConfigUpdateMsgErr
+}
+
+// ProcessConfigMsg returns ProcessConfigMsgVal, ConfigSeqVal, ProcessConfigMsgErr
+func (mcs *ConsenterSupport) ProcessConfigMsg(env *cb.Envelope) (*cb.Envelope, uint64, error) {_cover_atomic_.AddUint32(&GoCover_0_633230666530663134343832.Count[17], 1);
+	return mcs.ProcessConfigMsgVal, mcs.ConfigSeqVal, mcs.ProcessConfigMsgErr
+}
+
+// Sequence returns SequenceVal
+func (mcs *ConsenterSupport) Sequence() uint64 {_cover_atomic_.AddUint32(&GoCover_0_633230666530663134343832.Count[18], 1);
+	return mcs.SequenceVal
+}
+
+// VerifyBlockSignature verifies a signature of a block
+func (mcs *ConsenterSupport) VerifyBlockSignature(_ []*cb.SignedData, _ *cb.ConfigEnvelope) error {_cover_atomic_.AddUint32(&GoCover_0_633230666530663134343832.Count[19], 1);
+	return mcs.BlockVerificationErr
+}
+
+var GoCover_0_633230666530663134343832 = struct {
+	Count     [20]uint32
+	Pos       [3 * 20]uint32
+	NumStmt   [20]uint16
+} {
+	Pos: [3 * 20]uint32{
+		72, 74, 0x2003d, // [0]
+		77, 79, 0x20041, // [1]
+		82, 84, 0x20043, // [2]
+		87, 90, 0x16004d, // [3]
+		93, 95, 0xe0002, // [4]
+		90, 92, 0x30016, // [5]
+		99, 100, 0x210057, // [6]
+		103, 104, 0x150002, // [7]
+		100, 102, 0x30021, // [8]
+		108, 110, 0x2005d, // [9]
+		113, 115, 0x2002f, // [10]
+		118, 120, 0x2002e, // [11]
+		123, 125, 0x20043, // [12]
+		128, 130, 0x20050, // [13]
+		133, 135, 0x2005e, // [14]
+		138, 140, 0x2005f, // [15]
+		143, 145, 0x2007a, // [16]
+		148, 150, 0x2005f, // [17]
+		153, 155, 0x20030, // [18]
+		158, 160, 0x20063, // [19]
+	},
+	NumStmt: [20]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		3, // 3
+		3, // 4
+		1, // 5
+		1, // 6
+		2, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+	},
+}
+var _ = _cover_atomic_.LoadUint32

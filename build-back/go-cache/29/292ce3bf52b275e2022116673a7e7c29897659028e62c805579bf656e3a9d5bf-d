@@ -1,0 +1,12 @@
+config.cover.go
+configtx_processor.cover.go
+configtx_util.cover.go
+deliverevents.cover.go
+mock_helpers.cover.go
+peer.cover.go
+peer_impl.cover.go
+support.cover.go
+./config_test.go
+./configtx_test.go
+./deliverevents_test.go
+./peer_test.go

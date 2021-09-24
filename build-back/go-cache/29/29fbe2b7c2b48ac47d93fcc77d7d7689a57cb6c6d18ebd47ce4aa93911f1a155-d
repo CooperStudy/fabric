@@ -1,0 +1,57 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/token/server/manager.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package server; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric/token/ledger"
+	"github.com/hyperledger/fabric/token/tms/plain"
+	"github.com/pkg/errors"
+)
+
+// Manager implements  token/server/TMSManager interface
+// TODO: it will be updated after lscc-baased tms configuration is available
+type Manager struct {
+	LedgerManager ledger.LedgerManager
+}
+
+// For now it returns a plain issuer.
+// After lscc-based tms configuration is available, it will be updated
+// to return an issuer configured for the specific channel
+func (manager *Manager) GetIssuer(channel string, privateCredential, publicCredential []byte) (Issuer, error) {_cover_atomic_.AddUint32(&GoCover_3_626466633561326138353830.Count[0], 1);
+	return &plain.Issuer{}, nil
+}
+
+// GetTransactor returns a Transactor bound to the passed channel and whose credential
+// is the tuple (privateCredential, publicCredential).
+func (manager *Manager) GetTransactor(channel string, privateCredential, publicCredential []byte) (Transactor, error) {_cover_atomic_.AddUint32(&GoCover_3_626466633561326138353830.Count[1], 1);
+	ledger, err := manager.LedgerManager.GetLedgerReader(channel)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_626466633561326138353830.Count[3], 1);
+		return nil, errors.Wrapf(err, "failed getting ledger for channel: %s", channel)
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_626466633561326138353830.Count[2], 1);return &plain.Transactor{Ledger: ledger, PublicCredential: publicCredential}, nil
+}
+
+var GoCover_3_626466633561326138353830 = struct {
+	Count     [4]uint32
+	Pos       [3 * 4]uint32
+	NumStmt   [4]uint16
+} {
+	Pos: [3 * 4]uint32{
+		24, 26, 0x2006f, // [0]
+		30, 32, 0x100077, // [1]
+		35, 35, 0x530002, // [2]
+		32, 34, 0x30010, // [3]
+	},
+	NumStmt: [4]uint16{
+		1, // 0
+		2, // 1
+		1, // 2
+		1, // 3
+	},
+}
+var _ = _cover_atomic_.LoadUint32

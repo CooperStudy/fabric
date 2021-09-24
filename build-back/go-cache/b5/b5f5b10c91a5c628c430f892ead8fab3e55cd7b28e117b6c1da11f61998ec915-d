@@ -1,0 +1,47 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/handlers/decoration/plugin/decorator.go:1
+/*
+Copyright IBM Corp, SecureKey Technologies Inc. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package main; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric/core/handlers/decoration"
+	"github.com/hyperledger/fabric/protos/peer"
+)
+
+// NewDecorator creates a new decorator
+func NewDecorator() decoration.Decorator {_cover_atomic_.AddUint32(&GoCover_0_646433313666396535643135.Count[0], 1);
+	return &decorator{}
+}
+
+type decorator struct {
+}
+
+// Decorate decorates a chaincode input by changing it
+func (d *decorator) Decorate(proposal *peer.Proposal, input *peer.ChaincodeInput) *peer.ChaincodeInput {_cover_atomic_.AddUint32(&GoCover_0_646433313666396535643135.Count[1], 1);
+	return input
+}
+
+func main() {_cover_atomic_.AddUint32(&GoCover_0_646433313666396535643135.Count[2], 1);
+}
+
+var GoCover_0_646433313666396535643135 = struct {
+	Count     [3]uint32
+	Pos       [3 * 3]uint32
+	NumStmt   [3]uint16
+} {
+	Pos: [3 * 3]uint32{
+		15, 17, 0x2002a, // [0]
+		23, 25, 0x20068, // [1]
+		27, 28, 0x2000e, // [2]
+	},
+	NumStmt: [3]uint16{
+		1, // 0
+		1, // 1
+		0, // 2
+	},
+}
+var _ = _cover_atomic_.LoadUint32

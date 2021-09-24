@@ -1,0 +1,6 @@
+client.cover.go
+deliveryclient.cover.go
+requester.cover.go
+./client_test.go
+./deliveryclient_test.go
+./requester_test.go

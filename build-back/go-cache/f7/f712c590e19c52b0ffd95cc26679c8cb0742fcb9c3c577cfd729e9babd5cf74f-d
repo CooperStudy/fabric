@@ -1,0 +1,3 @@
+dockercontroller.cover.go
+metrics.cover.go
+./dockercontroller_test.go

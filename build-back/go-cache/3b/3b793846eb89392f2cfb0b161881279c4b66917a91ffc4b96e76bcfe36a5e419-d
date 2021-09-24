@@ -1,0 +1,128 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/orderer/common/server/util.go:1
+/*
+Copyright IBM Corp. 2017 All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package server; import _cover_atomic_ "sync/atomic"
+
+import (
+	"io/ioutil"
+	"os"
+	"path/filepath"
+
+	"github.com/hyperledger/fabric/common/ledger/blkstorage/fsblkstorage"
+	"github.com/hyperledger/fabric/common/ledger/blockledger"
+	"github.com/hyperledger/fabric/common/ledger/blockledger/file"
+	"github.com/hyperledger/fabric/common/ledger/blockledger/json"
+	"github.com/hyperledger/fabric/common/ledger/blockledger/ram"
+	config "github.com/hyperledger/fabric/orderer/common/localconfig"
+)
+
+func createLedgerFactory(conf *config.TopLevel) (blockledger.Factory, string) {_cover_atomic_.AddUint32(&GoCover_4_333331623039636261656262.Count[0], 1);
+	var lf blockledger.Factory
+	var ld string
+	switch conf.General.LedgerType {
+	case "file":_cover_atomic_.AddUint32(&GoCover_4_333331623039636261656262.Count[2], 1);
+		ld = conf.FileLedger.Location
+		if ld == "" {_cover_atomic_.AddUint32(&GoCover_4_333331623039636261656262.Count[8], 1);
+			ld = createTempDir(conf.FileLedger.Prefix)
+		}
+		_cover_atomic_.AddUint32(&GoCover_4_333331623039636261656262.Count[3], 1);logger.Debug("Ledger dir:", ld)
+		lf = fileledger.New(ld)
+		// The file-based ledger stores the blocks for each channel
+		// in a fsblkstorage.ChainsDir sub-directory that we have
+		// to create separately. Otherwise the call to the ledger
+		// Factory's ChainIDs below will fail (dir won't exist).
+		createSubDir(ld, fsblkstorage.ChainsDir)
+	case "json":_cover_atomic_.AddUint32(&GoCover_4_333331623039636261656262.Count[4], 1);
+		ld = conf.FileLedger.Location
+		if ld == "" {_cover_atomic_.AddUint32(&GoCover_4_333331623039636261656262.Count[9], 1);
+			ld = createTempDir(conf.FileLedger.Prefix)
+		}
+		_cover_atomic_.AddUint32(&GoCover_4_333331623039636261656262.Count[5], 1);logger.Debug("Ledger dir:", ld)
+		lf = jsonledger.New(ld)
+	case "ram":_cover_atomic_.AddUint32(&GoCover_4_333331623039636261656262.Count[6], 1);
+		fallthrough
+	default:_cover_atomic_.AddUint32(&GoCover_4_333331623039636261656262.Count[7], 1);
+		lf = ramledger.New(int(conf.RAMLedger.HistorySize))
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_333331623039636261656262.Count[1], 1);return lf, ld
+}
+
+func createTempDir(dirPrefix string) string {_cover_atomic_.AddUint32(&GoCover_4_333331623039636261656262.Count[10], 1);
+	dirPath, err := ioutil.TempDir("", dirPrefix)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_333331623039636261656262.Count[12], 1);
+		logger.Panic("Error creating temp dir:", err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_333331623039636261656262.Count[11], 1);return dirPath
+}
+
+func createSubDir(parentDirPath string, subDir string) (string, bool) {_cover_atomic_.AddUint32(&GoCover_4_333331623039636261656262.Count[13], 1);
+	var created bool
+	subDirPath := filepath.Join(parentDirPath, subDir)
+	if _, err := os.Stat(subDirPath); err != nil {_cover_atomic_.AddUint32(&GoCover_4_333331623039636261656262.Count[15], 1);
+		if os.IsNotExist(err) {_cover_atomic_.AddUint32(&GoCover_4_333331623039636261656262.Count[16], 1);
+			if err = os.Mkdir(subDirPath, 0755); err != nil {_cover_atomic_.AddUint32(&GoCover_4_333331623039636261656262.Count[18], 1);
+				logger.Panic("Error creating sub dir:", err)
+			}
+			_cover_atomic_.AddUint32(&GoCover_4_333331623039636261656262.Count[17], 1);created = true
+		}
+	} else{ _cover_atomic_.AddUint32(&GoCover_4_333331623039636261656262.Count[19], 1);{
+		logger.Debugf("Found %s sub-dir and using it", fsblkstorage.ChainsDir)
+	}}
+	_cover_atomic_.AddUint32(&GoCover_4_333331623039636261656262.Count[14], 1);return subDirPath, created
+}
+
+var GoCover_4_333331623039636261656262 = struct {
+	Count     [20]uint32
+	Pos       [3 * 20]uint32
+	NumStmt   [20]uint16
+} {
+	Pos: [3 * 20]uint32{
+		22, 25, 0x21004f, // [0]
+		50, 50, 0xf0002, // [1]
+		26, 28, 0xf000e, // [2]
+		31, 37, 0x2b0003, // [3]
+		38, 40, 0xf000e, // [4]
+		43, 44, 0x1a0003, // [5]
+		45, 46, 0xe000d, // [6]
+		47, 48, 0x36000a, // [7]
+		28, 30, 0x4000f, // [8]
+		40, 42, 0x4000f, // [9]
+		53, 55, 0x10002d, // [10]
+		58, 58, 0x100002, // [11]
+		55, 57, 0x30010, // [12]
+		61, 64, 0x2f0047, // [13]
+		74, 74, 0x1c0002, // [14]
+		64, 65, 0x19002f, // [15]
+		65, 66, 0x340019, // [16]
+		69, 69, 0x120004, // [17]
+		66, 68, 0x50034, // [18]
+		71, 73, 0x30008, // [19]
+	},
+	NumStmt: [20]uint16{
+		3, // 0
+		1, // 1
+		2, // 2
+		3, // 3
+		2, // 4
+		2, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		2, // 10
+		1, // 11
+		1, // 12
+		3, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+	},
+}
+var _ = _cover_atomic_.LoadUint32

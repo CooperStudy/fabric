@@ -1,0 +1,204 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/peer/chaincode/instantiate.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package chaincode; import _cover_atomic_ "sync/atomic"
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	protcommon "github.com/hyperledger/fabric/protos/common"
+	pb "github.com/hyperledger/fabric/protos/peer"
+	"github.com/hyperledger/fabric/protos/utils"
+	"github.com/spf13/cobra"
+)
+
+var chaincodeInstantiateCmd *cobra.Command
+
+const instantiateCmdName = "instantiate"
+
+const instantiateDesc = "Deploy the specified chaincode to the network."
+
+// instantiateCmd returns the cobra command for Chaincode Deploy
+func instantiateCmd(cf *ChaincodeCmdFactory) *cobra.Command {_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[0], 1);
+	chaincodeInstantiateCmd = &cobra.Command{
+		Use:       instantiateCmdName,
+		Short:     fmt.Sprint(instantiateDesc),
+		Long:      fmt.Sprint(instantiateDesc),
+		ValidArgs: []string{"1"},
+		RunE: func(cmd *cobra.Command, args []string) error {_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[2], 1);
+			return chaincodeDeploy(cmd, args, cf)
+		},
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[1], 1);flagList := []string{
+		"lang",
+		"ctor",
+		"name",
+		"channelID",
+		"version",
+		"policy",
+		"escc",
+		"vscc",
+		"collections-config",
+		"peerAddresses",
+		"tlsRootCertFiles",
+		"connectionProfile",
+	}
+	attachFlags(chaincodeInstantiateCmd, flagList)
+
+	return chaincodeInstantiateCmd
+}
+
+//instantiate the command via Endorser
+func instantiate(cmd *cobra.Command, cf *ChaincodeCmdFactory) (*protcommon.Envelope, error) {_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[3], 1);
+	spec, err := getChaincodeSpec(cmd)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[11], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[4], 1);cds, err := getChaincodeDeploymentSpec(spec, false)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[12], 1);
+		return nil, fmt.Errorf("error getting chaincode code %s: %s", chaincodeName, err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[5], 1);creator, err := cf.Signer.Serialize()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[13], 1);
+		return nil, fmt.Errorf("error serializing identity for %s: %s", cf.Signer.GetIdentifier(), err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[6], 1);prop, _, err := utils.CreateDeployProposalFromCDS(channelID, cds, creator, policyMarshalled, []byte(escc), []byte(vscc), collectionConfigBytes)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[14], 1);
+		return nil, fmt.Errorf("error creating proposal  %s: %s", chainFuncName, err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[7], 1);var signedProp *pb.SignedProposal
+	signedProp, err = utils.GetSignedProposal(prop, cf.Signer)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[15], 1);
+		return nil, fmt.Errorf("error creating signed proposal  %s: %s", chainFuncName, err)
+	}
+
+	// instantiate is currently only supported for one peer
+	_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[8], 1);proposalResponse, err := cf.EndorserClients[0].ProcessProposal(context.Background(), signedProp)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[16], 1);
+		return nil, fmt.Errorf("error endorsing %s: %s", chainFuncName, err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[9], 1);if proposalResponse != nil {_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[17], 1);
+		// assemble a signed transaction (it's an Envelope message)
+		env, err := utils.CreateSignedTx(prop, cf.Signer, proposalResponse)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[19], 1);
+			return nil, fmt.Errorf("could not assemble transaction, err %s", err)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[18], 1);return env, nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[10], 1);return nil, nil
+}
+
+// chaincodeDeploy instantiates the chaincode. On success, the chaincode name
+// (hash) is printed to STDOUT for use by subsequent chaincode-related CLI
+// commands.
+func chaincodeDeploy(cmd *cobra.Command, args []string, cf *ChaincodeCmdFactory) error {_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[20], 1);
+	if channelID == "" {_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[25], 1);
+		return errors.New("The required parameter 'channelID' is empty. Rerun the command with -C flag")
+	}
+	// Parsing of the command line is done so silence cmd usage
+	_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[21], 1);cmd.SilenceUsage = true
+
+	var err error
+	if cf == nil {_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[26], 1);
+		cf, err = InitCmdFactory(cmd.Name(), true, true)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[27], 1);
+			return err
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[22], 1);defer cf.BroadcastClient.Close()
+	env, err := instantiate(cmd, cf)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[28], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[23], 1);if env != nil {_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[29], 1);
+		err = cf.BroadcastClient.Send(env)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_316135646539653831366338.Count[24], 1);return err
+}
+
+var GoCover_3_316135646539653831366338 = struct {
+	Count     [30]uint32
+	Pos       [3 * 30]uint32
+	NumStmt   [30]uint16
+} {
+	Pos: [3 * 30]uint32{
+		27, 33, 0x37003d, // [0]
+		37, 53, 0x200002, // [1]
+		33, 35, 0x40037, // [2]
+		57, 59, 0x10005d, // [3]
+		63, 64, 0x100002, // [4]
+		68, 69, 0x100002, // [5]
+		73, 74, 0x100002, // [6]
+		78, 80, 0x100002, // [7]
+		85, 86, 0x100002, // [8]
+		90, 90, 0x1d0002, // [9]
+		100, 100, 0x110002, // [10]
+		59, 61, 0x30010, // [11]
+		64, 66, 0x30010, // [12]
+		69, 71, 0x30010, // [13]
+		74, 76, 0x30010, // [14]
+		80, 82, 0x30010, // [15]
+		86, 88, 0x30010, // [16]
+		90, 93, 0x11001d, // [17]
+		97, 97, 0x120003, // [18]
+		93, 95, 0x40011, // [19]
+		106, 107, 0x150058, // [20]
+		111, 114, 0xf0002, // [21]
+		120, 122, 0x100002, // [22]
+		126, 126, 0x100002, // [23]
+		130, 130, 0xc0002, // [24]
+		107, 109, 0x30015, // [25]
+		114, 116, 0x11000f, // [26]
+		116, 118, 0x40011, // [27]
+		122, 124, 0x30010, // [28]
+		126, 128, 0x30010, // [29]
+	},
+	NumStmt: [30]uint16{
+		1, // 0
+		3, // 1
+		1, // 2
+		2, // 3
+		2, // 4
+		2, // 5
+		2, // 6
+		3, // 7
+		2, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		2, // 17
+		1, // 18
+		1, // 19
+		1, // 20
+		3, // 21
+		3, // 22
+		1, // 23
+		1, // 24
+		1, // 25
+		2, // 26
+		1, // 27
+		1, // 28
+		1, // 29
+	},
+}
+var _ = _cover_atomic_.LoadUint32

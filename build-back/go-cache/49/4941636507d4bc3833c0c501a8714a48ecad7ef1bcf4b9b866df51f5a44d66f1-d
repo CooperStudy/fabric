@@ -1,0 +1,111 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/bccsp/sw/rsa.go:1
+/*
+Copyright IBM Corp. 2017 All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+		 http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package sw; import _cover_atomic_ "sync/atomic"
+
+import (
+	"crypto/rand"
+	"crypto/rsa"
+	"errors"
+	"fmt"
+
+	"github.com/hyperledger/fabric/bccsp"
+)
+
+type rsaSigner struct{}
+
+func (s *rsaSigner) Sign(k bccsp.Key, digest []byte, opts bccsp.SignerOpts) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_15_613964656536343766303630.Count[0], 1);
+	if opts == nil {_cover_atomic_.AddUint32(&GoCover_15_613964656536343766303630.Count[2], 1);
+		return nil, errors.New("Invalid options. Must be different from nil.")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_15_613964656536343766303630.Count[1], 1);return k.(*rsaPrivateKey).privKey.Sign(rand.Reader, digest, opts)
+}
+
+type rsaPrivateKeyVerifier struct{}
+
+func (v *rsaPrivateKeyVerifier) Verify(k bccsp.Key, signature, digest []byte, opts bccsp.SignerOpts) (bool, error) {_cover_atomic_.AddUint32(&GoCover_15_613964656536343766303630.Count[3], 1);
+	if opts == nil {_cover_atomic_.AddUint32(&GoCover_15_613964656536343766303630.Count[5], 1);
+		return false, errors.New("Invalid options. It must not be nil.")
+	}
+	_cover_atomic_.AddUint32(&GoCover_15_613964656536343766303630.Count[4], 1);switch opts.(type) {
+	case *rsa.PSSOptions:_cover_atomic_.AddUint32(&GoCover_15_613964656536343766303630.Count[6], 1);
+		err := rsa.VerifyPSS(&(k.(*rsaPrivateKey).privKey.PublicKey),
+			(opts.(*rsa.PSSOptions)).Hash,
+			digest, signature, opts.(*rsa.PSSOptions))
+
+		return err == nil, err
+	default:_cover_atomic_.AddUint32(&GoCover_15_613964656536343766303630.Count[7], 1);
+		return false, fmt.Errorf("Opts type not recognized [%s]", opts)
+	}
+}
+
+type rsaPublicKeyKeyVerifier struct{}
+
+func (v *rsaPublicKeyKeyVerifier) Verify(k bccsp.Key, signature, digest []byte, opts bccsp.SignerOpts) (bool, error) {_cover_atomic_.AddUint32(&GoCover_15_613964656536343766303630.Count[8], 1);
+	if opts == nil {_cover_atomic_.AddUint32(&GoCover_15_613964656536343766303630.Count[10], 1);
+		return false, errors.New("Invalid options. It must not be nil.")
+	}
+	_cover_atomic_.AddUint32(&GoCover_15_613964656536343766303630.Count[9], 1);switch opts.(type) {
+	case *rsa.PSSOptions:_cover_atomic_.AddUint32(&GoCover_15_613964656536343766303630.Count[11], 1);
+		err := rsa.VerifyPSS(k.(*rsaPublicKey).pubKey,
+			(opts.(*rsa.PSSOptions)).Hash,
+			digest, signature, opts.(*rsa.PSSOptions))
+
+		return err == nil, err
+	default:_cover_atomic_.AddUint32(&GoCover_15_613964656536343766303630.Count[12], 1);
+		return false, fmt.Errorf("Opts type not recognized [%s]", opts)
+	}
+}
+
+var GoCover_15_613964656536343766303630 = struct {
+	Count     [13]uint32
+	Pos       [3 * 13]uint32
+	NumStmt   [13]uint16
+} {
+	Pos: [3 * 13]uint32{
+		30, 31, 0x11005d, // [0]
+		35, 35, 0x430002, // [1]
+		31, 33, 0x30011, // [2]
+		40, 41, 0x110074, // [3]
+		44, 44, 0x150002, // [4]
+		41, 43, 0x30011, // [5]
+		45, 50, 0x190017, // [6]
+		51, 52, 0x42000a, // [7]
+		58, 59, 0x110076, // [8]
+		62, 62, 0x150002, // [9]
+		59, 61, 0x30011, // [10]
+		63, 68, 0x190017, // [11]
+		69, 70, 0x42000a, // [12]
+	},
+	NumStmt: [13]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		2, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		2, // 11
+		1, // 12
+	},
+}
+var _ = _cover_atomic_.LoadUint32

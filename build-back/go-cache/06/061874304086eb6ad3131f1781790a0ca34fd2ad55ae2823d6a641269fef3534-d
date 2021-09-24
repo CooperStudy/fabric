@@ -1,0 +1,50 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/token/server/capability_checker.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+package server; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric/core/peer"
+	"github.com/pkg/errors"
+)
+
+//go:generate counterfeiter -o mock/capability_checker.go -fake-name CapabilityChecker . CapabilityChecker
+
+// CapabilityChecker is used to check whether or not a channel supports token functions.
+type CapabilityChecker interface {
+	FabToken(channelId string) (bool, error)
+}
+
+// TokenCapabilityChecker implements CapabilityChecker interface
+type TokenCapabilityChecker struct {
+	PeerOps peer.Operations
+}
+
+func (c *TokenCapabilityChecker) FabToken(channelId string) (bool, error) {_cover_atomic_.AddUint32(&GoCover_1_626466633561326138353830.Count[0], 1);
+	ac, ok := c.PeerOps.GetChannelConfig(channelId).ApplicationConfig()
+	if !ok {_cover_atomic_.AddUint32(&GoCover_1_626466633561326138353830.Count[2], 1);
+		return false, errors.Errorf("no application config found for channel %s", channelId)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_626466633561326138353830.Count[1], 1);return ac.Capabilities().FabToken(), nil
+}
+
+var GoCover_1_626466633561326138353830 = struct {
+	Count     [3]uint32
+	Pos       [3 * 3]uint32
+	NumStmt   [3]uint16
+} {
+	Pos: [3 * 3]uint32{
+		25, 27, 0x9004b, // [0]
+		30, 30, 0x2a0002, // [1]
+		27, 29, 0x30009, // [2]
+	},
+	NumStmt: [3]uint16{
+		2, // 0
+		1, // 1
+		1, // 2
+	},
+}
+var _ = _cover_atomic_.LoadUint32

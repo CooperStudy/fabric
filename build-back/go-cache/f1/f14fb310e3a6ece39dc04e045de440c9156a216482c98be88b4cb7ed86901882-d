@@ -1,0 +1,370 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb/statecouchdb/couchdoc_conv.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package statecouchdb; import _cover_atomic_ "sync/atomic"
+
+import (
+	"bytes"
+	"encoding/json"
+	"strings"
+	"unicode/utf8"
+
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/version"
+	"github.com/hyperledger/fabric/core/ledger/util/couchdb"
+	"github.com/pkg/errors"
+)
+
+const (
+	binaryWrapper = "valueBytes"
+	idField       = "_id"
+	revField      = "_rev"
+	versionField  = "~version"
+	deletedField  = "_deleted"
+)
+
+type keyValue struct {
+	key string
+	*statedb.VersionedValue
+}
+
+type jsonValue map[string]interface{}
+
+func tryCastingToJSON(b []byte) (isJSON bool, val jsonValue) {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[0], 1);
+	var jsonVal map[string]interface{}
+	err := json.Unmarshal(b, &jsonVal)
+	return err == nil, jsonValue(jsonVal)
+}
+
+func castToJSON(b []byte) (jsonValue, error) {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[1], 1);
+	var jsonVal map[string]interface{}
+	err := json.Unmarshal(b, &jsonVal)
+	err = errors.Wrap(err, "error unmarshalling json data")
+	return jsonVal, err
+}
+
+func (v jsonValue) checkReservedFieldsNotPresent() error {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[2], 1);
+	for fieldName := range v {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[4], 1);
+		if fieldName == versionField || strings.HasPrefix(fieldName, "_") {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[5], 1);
+			return errors.Errorf("field [%s] is not valid for the CouchDB state database", fieldName)
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[3], 1);return nil
+}
+
+func (v jsonValue) removeRevField() {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[6], 1);
+	delete(v, revField)
+}
+
+func (v jsonValue) toBytes() ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[7], 1);
+	jsonBytes, err := json.Marshal(v)
+	err = errors.Wrap(err, "error marshalling json data")
+	return jsonBytes, err
+}
+
+func couchDocToKeyValue(doc *couchdb.CouchDoc) (*keyValue, error) {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[8], 1);
+	// initialize the return value
+	var returnValue []byte
+	var err error
+	// create a generic map unmarshal the json
+	jsonResult := make(map[string]interface{})
+	decoder := json.NewDecoder(bytes.NewBuffer(doc.JSONValue))
+	decoder.UseNumber()
+	if err = decoder.Decode(&jsonResult); err != nil {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[13], 1);
+		return nil, err
+	}
+	// verify the version field exists
+	_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[9], 1);if _, fieldFound := jsonResult[versionField]; !fieldFound {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[14], 1);
+		return nil, errors.Errorf("version field %s was not found", versionField)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[10], 1);key := jsonResult[idField].(string)
+	// create the return version from the version field in the JSON
+
+	returnVersion, returnMetadata, err := decodeVersionAndMetadata(jsonResult[versionField].(string))
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[15], 1);
+		return nil, err
+	}
+	// remove the _id, _rev and version fields
+	_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[11], 1);delete(jsonResult, idField)
+	delete(jsonResult, revField)
+	delete(jsonResult, versionField)
+
+	// handle binary or json data
+	if doc.Attachments != nil {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[16], 1); // binary attachment
+		// get binary data from attachment
+		for _, attachment := range doc.Attachments {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[17], 1);
+			if attachment.Name == binaryWrapper {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[18], 1);
+				returnValue = attachment.AttachmentBytes
+			}
+		}
+	} else{ _cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[19], 1);{
+		// marshal the returned JSON data.
+		if returnValue, err = json.Marshal(jsonResult); err != nil {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[20], 1);
+			return nil, err
+		}
+	}}
+	_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[12], 1);return &keyValue{key, &statedb.VersionedValue{
+		Value:    returnValue,
+		Metadata: returnMetadata,
+		Version:  returnVersion},
+	}, nil
+}
+
+func keyValToCouchDoc(kv *keyValue, revision string) (*couchdb.CouchDoc, error) {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[21], 1);
+	type kvType int32
+	const (
+		kvTypeDelete = iota
+		kvTypeJSON
+		kvTypeAttachment
+	)
+	key, value, metadata, version := kv.key, kv.Value, kv.Metadata, kv.Version
+	jsonMap := make(jsonValue)
+
+	var kvtype kvType
+	switch {
+	case value == nil:_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[28], 1);
+		kvtype = kvTypeDelete
+	// check for the case where the jsonMap is nil,  this will indicate
+	// a special case for the Unmarshal that results in a valid JSON returning nil
+	case json.Unmarshal(value, &jsonMap) == nil && jsonMap != nil:_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[29], 1);
+		kvtype = kvTypeJSON
+		if err := jsonMap.checkReservedFieldsNotPresent(); err != nil {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[32], 1);
+			return nil, err
+		}
+	default:_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[30], 1);
+		// create an empty map, if the map is nil
+		if jsonMap == nil {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[33], 1);
+			jsonMap = make(jsonValue)
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[31], 1);kvtype = kvTypeAttachment
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[22], 1);verAndMetadata, err := encodeVersionAndMetadata(version, metadata)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[34], 1);
+		return nil, err
+	}
+	// add the (version + metadata), id, revision, and delete marker (if needed)
+	_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[23], 1);jsonMap[versionField] = verAndMetadata
+	jsonMap[idField] = key
+	if revision != "" {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[35], 1);
+		jsonMap[revField] = revision
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[24], 1);if kvtype == kvTypeDelete {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[36], 1);
+		jsonMap[deletedField] = true
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[25], 1);jsonBytes, err := jsonMap.toBytes()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[37], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[26], 1);couchDoc := &couchdb.CouchDoc{JSONValue: jsonBytes}
+	if kvtype == kvTypeAttachment {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[38], 1);
+		attachment := &couchdb.AttachmentInfo{}
+		attachment.AttachmentBytes = value
+		attachment.ContentType = "application/octet-stream"
+		attachment.Name = binaryWrapper
+		attachments := append([]*couchdb.AttachmentInfo{}, attachment)
+		couchDoc.Attachments = attachments
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[27], 1);return couchDoc, nil
+}
+
+// couchSavepointData data for couchdb
+type couchSavepointData struct {
+	BlockNum uint64 `json:"BlockNum"`
+	TxNum    uint64 `json:"TxNum"`
+}
+
+func encodeSavepoint(height *version.Height) (*couchdb.CouchDoc, error) {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[39], 1);
+	var err error
+	var savepointDoc couchSavepointData
+	// construct savepoint document
+	savepointDoc.BlockNum = height.BlockNum
+	savepointDoc.TxNum = height.TxNum
+	savepointDocJSON, err := json.Marshal(savepointDoc)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[41], 1);
+		err = errors.Wrap(err, "failed to marshal savepoint data")
+		logger.Errorf("%+v", err)
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[40], 1);return &couchdb.CouchDoc{JSONValue: savepointDocJSON, Attachments: nil}, nil
+}
+
+func decodeSavepoint(couchDoc *couchdb.CouchDoc) (*version.Height, error) {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[42], 1);
+	savepointDoc := &couchSavepointData{}
+	if err := json.Unmarshal(couchDoc.JSONValue, &savepointDoc); err != nil {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[44], 1);
+		err = errors.Wrap(err, "failed to unmarshal savepoint data")
+		logger.Errorf("%+v", err)
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[43], 1);return &version.Height{BlockNum: savepointDoc.BlockNum, TxNum: savepointDoc.TxNum}, nil
+}
+
+func validateValue(value []byte) error {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[45], 1);
+	isJSON, jsonVal := tryCastingToJSON(value)
+	if !isJSON {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[47], 1);
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[46], 1);return jsonVal.checkReservedFieldsNotPresent()
+}
+
+func validateKey(key string) error {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[48], 1);
+	if !utf8.ValidString(key) {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[52], 1);
+		return errors.Errorf("invalid key [%x], must be a UTF-8 string", key)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[49], 1);if strings.HasPrefix(key, "_") {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[53], 1);
+		return errors.Errorf("invalid key [%s], cannot begin with \"_\"", key)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[50], 1);if key == "" {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[54], 1);
+		return errors.New("invalid key. Empty string is not supported as a key by couchdb")
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[51], 1);return nil
+}
+
+// removeJSONRevision removes the "_rev" if this is a JSON
+func removeJSONRevision(jsonValue *[]byte) error {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[55], 1);
+	jsonVal, err := castToJSON(*jsonValue)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[58], 1);
+		logger.Errorf("Failed to unmarshal couchdb JSON data: %+v", err)
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[56], 1);jsonVal.removeRevField()
+	if *jsonValue, err = jsonVal.toBytes(); err != nil {_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[59], 1);
+		logger.Errorf("Failed to marshal couchdb JSON data: %+v", err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_613461656536306435636636.Count[57], 1);return err
+}
+
+var GoCover_2_613461656536306435636636 = struct {
+	Count     [60]uint32
+	Pos       [3 * 60]uint32
+	NumStmt   [60]uint16
+} {
+	Pos: [3 * 60]uint32{
+		35, 39, 0x2003e, // [0]
+		41, 46, 0x2002e, // [1]
+		48, 49, 0x1b003a, // [2]
+		54, 54, 0xc0002, // [3]
+		49, 50, 0x45001b, // [4]
+		50, 52, 0x40045, // [5]
+		57, 59, 0x20025, // [6]
+		61, 65, 0x2002e, // [7]
+		67, 75, 0x330043, // [8]
+		79, 79, 0x3c0002, // [9]
+		82, 86, 0x100002, // [10]
+		90, 95, 0x1c0002, // [11]
+		108, 112, 0x80002, // [12]
+		75, 77, 0x30033, // [13]
+		79, 81, 0x3003c, // [14]
+		86, 88, 0x30010, // [15]
+		95, 97, 0x2e001c, // [16]
+		97, 98, 0x28002e, // [17]
+		98, 100, 0x50028, // [18]
+		102, 104, 0x3e0008, // [19]
+		104, 106, 0x4003e, // [20]
+		115, 126, 0x90051, // [21]
+		144, 145, 0x100002, // [22]
+		149, 151, 0x140002, // [23]
+		154, 154, 0x1c0002, // [24]
+		157, 158, 0x100002, // [25]
+		161, 162, 0x200002, // [26]
+		170, 170, 0x160002, // [27]
+		127, 128, 0x180014, // [28]
+		131, 133, 0x410040, // [29]
+		136, 138, 0x15000a, // [30]
+		141, 141, 0x1c0003, // [31]
+		133, 135, 0x40041, // [32]
+		138, 140, 0x40015, // [33]
+		145, 147, 0x30010, // [34]
+		151, 153, 0x30014, // [35]
+		154, 156, 0x3001c, // [36]
+		158, 160, 0x30010, // [37]
+		162, 169, 0x30020, // [38]
+		179, 186, 0x100049, // [39]
+		191, 191, 0x4e0002, // [40]
+		186, 190, 0x30010, // [41]
+		194, 196, 0x4a004b, // [42]
+		201, 201, 0x590002, // [43]
+		196, 200, 0x3004a, // [44]
+		204, 206, 0xd0028, // [45]
+		209, 209, 0x300002, // [46]
+		206, 208, 0x3000d, // [47]
+		212, 213, 0x1c0024, // [48]
+		216, 216, 0x210002, // [49]
+		219, 219, 0xf0002, // [50]
+		222, 222, 0xc0002, // [51]
+		213, 215, 0x3001c, // [52]
+		216, 218, 0x30021, // [53]
+		219, 221, 0x3000f, // [54]
+		226, 228, 0x100032, // [55]
+		232, 233, 0x350002, // [56]
+		236, 236, 0xc0002, // [57]
+		228, 231, 0x30010, // [58]
+		233, 235, 0x30035, // [59]
+	},
+	NumStmt: [60]uint16{
+		3, // 0
+		4, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		3, // 7
+		6, // 8
+		1, // 9
+		3, // 10
+		4, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		1, // 20
+		6, // 21
+		2, // 22
+		3, // 23
+		1, // 24
+		2, // 25
+		2, // 26
+		1, // 27
+		1, // 28
+		2, // 29
+		1, // 30
+		1, // 31
+		1, // 32
+		1, // 33
+		1, // 34
+		1, // 35
+		1, // 36
+		1, // 37
+		6, // 38
+		6, // 39
+		1, // 40
+		3, // 41
+		2, // 42
+		1, // 43
+		3, // 44
+		2, // 45
+		1, // 46
+		1, // 47
+		1, // 48
+		1, // 49
+		1, // 50
+		1, // 51
+		1, // 52
+		1, // 53
+		1, // 54
+		2, // 55
+		2, // 56
+		1, // 57
+		2, // 58
+		1, // 59
+	},
+}
+var _ = _cover_atomic_.LoadUint32

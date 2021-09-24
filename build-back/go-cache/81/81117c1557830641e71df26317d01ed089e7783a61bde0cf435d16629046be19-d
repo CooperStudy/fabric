@@ -1,0 +1,1601 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/orderer/consensus/kafka/chain.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package kafka; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+	"strconv"
+	"sync"
+	"time"
+
+	"github.com/Shopify/sarama"
+	"github.com/golang/protobuf/proto"
+	localconfig "github.com/hyperledger/fabric/orderer/common/localconfig"
+	"github.com/hyperledger/fabric/orderer/common/msgprocessor"
+	"github.com/hyperledger/fabric/orderer/consensus"
+	cb "github.com/hyperledger/fabric/protos/common"
+	ab "github.com/hyperledger/fabric/protos/orderer"
+	"github.com/hyperledger/fabric/protos/utils"
+)
+
+// Used for capturing metrics -- see processMessagesToBlocks
+const (
+	indexRecvError = iota
+	indexUnmarshalError
+	indexRecvPass
+	indexProcessConnectPass
+	indexProcessTimeToCutError
+	indexProcessTimeToCutPass
+	indexProcessRegularError
+	indexProcessRegularPass
+	indexSendTimeToCutError
+	indexSendTimeToCutPass
+	indexExitChanPass
+)
+
+func newChain(
+	consenter commonConsenter,
+	support consensus.ConsenterSupport,
+	lastOffsetPersisted int64,
+	lastOriginalOffsetProcessed int64,
+	lastResubmittedConfigOffset int64,
+) (*chainImpl, error) {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[0], 1);
+	lastCutBlockNumber := getLastCutBlockNumber(support.Height())
+	logger.Infof("[channel: %s] Starting chain with last persisted offset %d and last recorded block %d",
+		support.ChainID(), lastOffsetPersisted, lastCutBlockNumber)
+
+	doneReprocessingMsgInFlight := make(chan struct{})
+	// In either one of following cases, we should unblock ingress messages:
+	// - lastResubmittedConfigOffset == 0, where we've never resubmitted any config messages
+	// - lastResubmittedConfigOffset == lastOriginalOffsetProcessed, where the latest config message we resubmitted
+	//   has been processed already
+	// - lastResubmittedConfigOffset < lastOriginalOffsetProcessed, where we've processed one or more resubmitted
+	//   normal messages after the latest resubmitted config message. (we advance `lastResubmittedConfigOffset` for
+	//   config messages, but not normal messages)
+	if lastResubmittedConfigOffset == 0 || lastResubmittedConfigOffset <= lastOriginalOffsetProcessed {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[2], 1);
+		// If we've already caught up with the reprocessing resubmitted messages, close the channel to unblock broadcast
+		close(doneReprocessingMsgInFlight)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[1], 1);return &chainImpl{
+		consenter:                   consenter,
+		ConsenterSupport:            support,
+		channel:                     newChannel(support.ChainID(), defaultPartition),
+		lastOffsetPersisted:         lastOffsetPersisted,
+		lastOriginalOffsetProcessed: lastOriginalOffsetProcessed,
+		lastResubmittedConfigOffset: lastResubmittedConfigOffset,
+		lastCutBlockNumber:          lastCutBlockNumber,
+
+		haltChan:                    make(chan struct{}),
+		startChan:                   make(chan struct{}),
+		doneReprocessingMsgInFlight: doneReprocessingMsgInFlight,
+	}, nil
+}
+
+type chainImpl struct {
+	consenter commonConsenter
+	consensus.ConsenterSupport
+
+	channel                     channel
+	lastOffsetPersisted         int64
+	lastOriginalOffsetProcessed int64
+	lastResubmittedConfigOffset int64
+	lastCutBlockNumber          uint64
+
+	producer        sarama.SyncProducer
+	parentConsumer  sarama.Consumer
+	channelConsumer sarama.PartitionConsumer
+
+	// mutex used when changing the doneReprocessingMsgInFlight
+	doneReprocessingMutex sync.Mutex
+	// notification that there are in-flight messages need to wait for
+	doneReprocessingMsgInFlight chan struct{}
+
+	// When the partition consumer errors, close the channel. Otherwise, make
+	// this an open, unbuffered channel.
+	errorChan chan struct{}
+	// When a Halt() request comes, close the channel. Unlike errorChan, this
+	// channel never re-opens when closed. Its closing triggers the exit of the
+	// processMessagesToBlock loop.
+	haltChan chan struct{}
+	// notification that the chain has stopped processing messages into blocks
+	doneProcessingMessagesToBlocks chan struct{}
+	// Close when the retriable steps in Start have completed.
+	startChan chan struct{}
+	// timer controls the batch timeout of cutting pending messages into block
+	timer <-chan time.Time
+}
+
+// Errored returns a channel which will close when a partition consumer error
+// has occurred. Checked by Deliver().
+func (chain *chainImpl) Errored() <-chan struct{} {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[3], 1);
+	select {
+	case <-chain.startChan:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[4], 1);
+		return chain.errorChan
+	default:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[5], 1);
+		// While the consenter is starting, always return an error
+		dummyError := make(chan struct{})
+		close(dummyError)
+		return dummyError
+	}
+}
+
+// Start allocates the necessary resources for staying up to date with this
+// Chain. Implements the consensus.Chain interface. Called by
+// consensus.NewManagerImpl() which is invoked when the ordering process is
+// launched, before the call to NewServer(). Launches a goroutine so as not to
+// block the consensus.Manager.
+func (chain *chainImpl) Start() {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[6], 1);
+	go startThread(chain)
+}
+
+// Halt frees the resources which were allocated for this Chain. Implements the
+// consensus.Chain interface.
+func (chain *chainImpl) Halt() {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[7], 1);
+	select {
+	case <-chain.startChan:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[8], 1);
+		// chain finished starting, so we can halt it
+		select {
+		case <-chain.haltChan:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[10], 1);
+			// This construct is useful because it allows Halt() to be called
+			// multiple times (by a single thread) w/o panicking. Recal that a
+			// receive from a closed channel returns (the zero value) immediately.
+			logger.Warningf("[channel: %s] Halting of chain requested again", chain.ChainID())
+		default:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[11], 1);
+			logger.Criticalf("[channel: %s] Halting of chain requested", chain.ChainID())
+			// stat shutdown of chain
+			close(chain.haltChan)
+			// wait for processing of messages to blocks to finish shutting down
+			<-chain.doneProcessingMessagesToBlocks
+			// close the kafka producer and the consumer
+			chain.closeKafkaObjects()
+			logger.Debugf("[channel: %s] Closed the haltChan", chain.ChainID())
+		}
+	default:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[9], 1);
+		logger.Warningf("[channel: %s] Waiting for chain to finish starting before halting", chain.ChainID())
+		<-chain.startChan
+		chain.Halt()
+	}
+}
+
+func (chain *chainImpl) WaitReady() error {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[12], 1);
+	select {
+	case <-chain.startChan:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[13], 1); // The Start phase has completed
+		select {
+		case <-chain.haltChan:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[15], 1); // The chain has been halted, stop here
+			return fmt.Errorf("consenter for this channel has been halted")
+		case <-chain.doneReprocessing():_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[16], 1); // Block waiting for all re-submitted messages to be reprocessed
+			return nil
+		}
+	default:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[14], 1); // Not ready yet
+		return fmt.Errorf("backing Kafka cluster has not completed booting; try again later")
+	}
+}
+
+func (chain *chainImpl) doneReprocessing() <-chan struct{} {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[17], 1);
+	chain.doneReprocessingMutex.Lock()
+	defer chain.doneReprocessingMutex.Unlock()
+	return chain.doneReprocessingMsgInFlight
+}
+
+func (chain *chainImpl) reprocessConfigComplete() {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[18], 1);
+	chain.doneReprocessingMutex.Lock()
+	defer chain.doneReprocessingMutex.Unlock()
+	close(chain.doneReprocessingMsgInFlight)
+}
+
+func (chain *chainImpl) reprocessConfigPending() {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[19], 1);
+	chain.doneReprocessingMutex.Lock()
+	defer chain.doneReprocessingMutex.Unlock()
+	chain.doneReprocessingMsgInFlight = make(chan struct{})
+}
+
+// Implements the consensus.Chain interface. Called by Broadcast().
+func (chain *chainImpl) Order(env *cb.Envelope, configSeq uint64) error {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[20], 1);
+	return chain.order(env, configSeq, int64(0))
+}
+
+func (chain *chainImpl) order(env *cb.Envelope, configSeq uint64, originalOffset int64) error {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[21], 1);
+	marshaledEnv, err := utils.Marshal(env)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[24], 1);
+		return fmt.Errorf("cannot enqueue, unable to marshal envelope because = %s", err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[22], 1);if !chain.enqueue(newNormalMessage(marshaledEnv, configSeq, originalOffset)) {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[25], 1);
+		return fmt.Errorf("cannot enqueue")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[23], 1);return nil
+}
+
+// Implements the consensus.Chain interface. Called by Broadcast().
+func (chain *chainImpl) Configure(config *cb.Envelope, configSeq uint64) error {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[26], 1);
+	return chain.configure(config, configSeq, int64(0))
+}
+
+func (chain *chainImpl) configure(config *cb.Envelope, configSeq uint64, originalOffset int64) error {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[27], 1);
+	marshaledConfig, err := utils.Marshal(config)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[30], 1);
+		return fmt.Errorf("cannot enqueue, unable to marshal config because %s", err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[28], 1);if !chain.enqueue(newConfigMessage(marshaledConfig, configSeq, originalOffset)) {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[31], 1);
+		return fmt.Errorf("cannot enqueue")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[29], 1);return nil
+}
+
+// enqueue accepts a message and returns true on acceptance, or false otheriwse.
+func (chain *chainImpl) enqueue(kafkaMsg *ab.KafkaMessage) bool {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[32], 1);
+	logger.Debugf("[channel: %s] Enqueueing envelope...", chain.ChainID())
+	select {
+	case <-chain.startChan:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[33], 1); // The Start phase has completed
+		select {
+		case <-chain.haltChan:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[35], 1); // The chain has been halted, stop here
+			logger.Warningf("[channel: %s] consenter for this channel has been halted", chain.ChainID())
+			return false
+		default:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[36], 1); // The post path
+			payload, err := utils.Marshal(kafkaMsg)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[39], 1);
+				logger.Errorf("[channel: %s] unable to marshal Kafka message because = %s", chain.ChainID(), err)
+				return false
+			}
+			_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[37], 1);message := newProducerMessage(chain.channel, payload)
+			if _, _, err = chain.producer.SendMessage(message); err != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[40], 1);
+				logger.Errorf("[channel: %s] cannot enqueue envelope because = %s", chain.ChainID(), err)
+				return false
+			}
+			_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[38], 1);logger.Debugf("[channel: %s] Envelope enqueued successfully", chain.ChainID())
+			return true
+		}
+	default:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[34], 1); // Not ready yet
+		logger.Warningf("[channel: %s] Will not enqueue, consenter for this channel hasn't started yet", chain.ChainID())
+		return false
+	}
+}
+
+// Called by Start().
+func startThread(chain *chainImpl) {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[41], 1);
+	var err error
+
+	// Create topic if it does not exist (requires Kafka v0.10.1.0)
+	err = setupTopicForChannel(chain.consenter.retryOptions(), chain.haltChan, chain.SharedConfig().KafkaBrokers(), chain.consenter.brokerConfig(), chain.consenter.topicDetail(), chain.channel)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[47], 1);
+		// log for now and fallback to auto create topics setting for broker
+		logger.Infof("[channel: %s]: failed to create Kafka topic = %s", chain.channel.topic(), err)
+	}
+
+	// Set up the producer
+	_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[42], 1);chain.producer, err = setupProducerForChannel(chain.consenter.retryOptions(), chain.haltChan, chain.SharedConfig().KafkaBrokers(), chain.consenter.brokerConfig(), chain.channel)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[48], 1);
+		logger.Panicf("[channel: %s] Cannot set up producer = %s", chain.channel.topic(), err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[43], 1);logger.Infof("[channel: %s] Producer set up successfully", chain.ChainID())
+
+	// Have the producer post the CONNECT message
+	if err = sendConnectMessage(chain.consenter.retryOptions(), chain.haltChan, chain.producer, chain.channel); err != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[49], 1);
+		logger.Panicf("[channel: %s] Cannot post CONNECT message = %s", chain.channel.topic(), err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[44], 1);logger.Infof("[channel: %s] CONNECT message posted successfully", chain.channel.topic())
+
+	// Set up the parent consumer
+	chain.parentConsumer, err = setupParentConsumerForChannel(chain.consenter.retryOptions(), chain.haltChan, chain.SharedConfig().KafkaBrokers(), chain.consenter.brokerConfig(), chain.channel)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[50], 1);
+		logger.Panicf("[channel: %s] Cannot set up parent consumer = %s", chain.channel.topic(), err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[45], 1);logger.Infof("[channel: %s] Parent consumer set up successfully", chain.channel.topic())
+
+	// Set up the channel consumer
+	chain.channelConsumer, err = setupChannelConsumerForChannel(chain.consenter.retryOptions(), chain.haltChan, chain.parentConsumer, chain.channel, chain.lastOffsetPersisted+1)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[51], 1);
+		logger.Panicf("[channel: %s] Cannot set up channel consumer = %s", chain.channel.topic(), err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[46], 1);logger.Infof("[channel: %s] Channel consumer set up successfully", chain.channel.topic())
+
+	chain.doneProcessingMessagesToBlocks = make(chan struct{})
+
+	chain.errorChan = make(chan struct{}) // Deliver requests will also go through
+	close(chain.startChan)                // Broadcast requests will now go through
+
+	logger.Infof("[channel: %s] Start phase completed successfully", chain.channel.topic())
+
+	chain.processMessagesToBlocks() // Keep up to date with the channel
+}
+
+// processMessagesToBlocks drains the Kafka consumer for the given channel, and
+// takes care of converting the stream of ordered messages into blocks for the
+// channel's ledger.
+func (chain *chainImpl) processMessagesToBlocks() ([]uint64, error) {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[52], 1);
+	counts := make([]uint64, 11) // For metrics and tests
+	msg := new(ab.KafkaMessage)
+
+	defer func() {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[55], 1);
+		// notify that we are not processing messages to blocks
+		close(chain.doneProcessingMessagesToBlocks)
+	}()
+
+	_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[53], 1);defer func() {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[56], 1); // When Halt() is called
+		select {
+		case <-chain.errorChan:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[57], 1); // If already closed, don't do anything
+		default:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[58], 1);
+			close(chain.errorChan)
+		}
+	}()
+
+	_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[54], 1);subscription := fmt.Sprintf("added subscription to %s/%d", chain.channel.topic(), chain.channel.partition())
+	var topicPartitionSubscriptionResumed <-chan string
+	var deliverSessionTimer *time.Timer
+	var deliverSessionTimedOut <-chan time.Time
+
+	for {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[59], 1);
+		select {
+		case <-chain.haltChan:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[60], 1);
+			logger.Warningf("[channel: %s] Consenter for channel exiting", chain.ChainID())
+			counts[indexExitChanPass]++
+			return counts, nil
+		case kafkaErr := <-chain.channelConsumer.Errors():_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[61], 1);
+			logger.Errorf("[channel: %s] Error during consumption: %s", chain.ChainID(), kafkaErr)
+			counts[indexRecvError]++
+			select {
+			case <-chain.errorChan:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[72], 1); // If already closed, don't do anything
+			default:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[73], 1);
+
+				switch kafkaErr.Err {
+				case sarama.ErrOffsetOutOfRange:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[74], 1);
+					// the kafka consumer will auto retry for all errors except for ErrOffsetOutOfRange
+					logger.Errorf("[channel: %s] Unrecoverable error during consumption: %s", chain.ChainID(), kafkaErr)
+					close(chain.errorChan)
+				default:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[75], 1);
+					if topicPartitionSubscriptionResumed == nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[76], 1);
+						// register listener
+						topicPartitionSubscriptionResumed = saramaLogger.NewListener(subscription)
+						// start session timout timer
+						deliverSessionTimer = time.NewTimer(chain.consenter.retryOptions().NetworkTimeouts.ReadTimeout)
+						deliverSessionTimedOut = deliverSessionTimer.C
+					}
+				}
+			}
+			_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[62], 1);select {
+			case <-chain.errorChan:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[77], 1); // we are not ignoring the error
+				logger.Warningf("[channel: %s] Closed the errorChan", chain.ChainID())
+				// This covers the edge case where (1) a consumption error has
+				// closed the errorChan and thus rendered the chain unavailable to
+				// deliver clients, (2) we're already at the newest offset, and (3)
+				// there are no new Broadcast requests coming in. In this case,
+				// there is no trigger that can recreate the errorChan again and
+				// mark the chain as available, so we have to force that trigger via
+				// the emission of a CONNECT message. TODO Consider rate limiting
+				go sendConnectMessage(chain.consenter.retryOptions(), chain.haltChan, chain.producer, chain.channel)
+			default:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[78], 1); // we are ignoring the error
+				logger.Warningf("[channel: %s] Deliver sessions will be dropped if consumption errors continue.", chain.ChainID())
+			}
+		case <-topicPartitionSubscriptionResumed:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[63], 1);
+			// stop listening for subscription message
+			saramaLogger.RemoveListener(subscription, topicPartitionSubscriptionResumed)
+			// disable subscription event chan
+			topicPartitionSubscriptionResumed = nil
+
+			// stop timeout timer
+			if !deliverSessionTimer.Stop() {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[79], 1);
+				<-deliverSessionTimer.C
+			}
+			_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[64], 1);logger.Warningf("[channel: %s] Consumption will resume.", chain.ChainID())
+
+		case <-deliverSessionTimedOut:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[65], 1);
+			// stop listening for subscription message
+			saramaLogger.RemoveListener(subscription, topicPartitionSubscriptionResumed)
+			// disable subscription event chan
+			topicPartitionSubscriptionResumed = nil
+
+			close(chain.errorChan)
+			logger.Warningf("[channel: %s] Closed the errorChan", chain.ChainID())
+
+			// make chain available again via CONNECT message trigger
+			go sendConnectMessage(chain.consenter.retryOptions(), chain.haltChan, chain.producer, chain.channel)
+
+		case in, ok := <-chain.channelConsumer.Messages():_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[66], 1);
+			if !ok {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[80], 1);
+				logger.Criticalf("[channel: %s] Kafka consumer closed.", chain.ChainID())
+				return counts, nil
+			}
+
+			// catch the possibility that we missed a topic subscription event before
+			// we registered the event listener
+			_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[67], 1);if topicPartitionSubscriptionResumed != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[81], 1);
+				// stop listening for subscription message
+				saramaLogger.RemoveListener(subscription, topicPartitionSubscriptionResumed)
+				// disable subscription event chan
+				topicPartitionSubscriptionResumed = nil
+				// stop timeout timer
+				if !deliverSessionTimer.Stop() {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[82], 1);
+					<-deliverSessionTimer.C
+				}
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[68], 1);select {
+			case <-chain.errorChan:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[83], 1); // If this channel was closed...
+				chain.errorChan = make(chan struct{}) // ...make a new one.
+				logger.Infof("[channel: %s] Marked consenter as available again", chain.ChainID())
+			default:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[84], 1);
+			}
+			_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[69], 1);if err := proto.Unmarshal(in.Value, msg); err != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[85], 1);
+				// This shouldn't happen, it should be filtered at ingress
+				logger.Criticalf("[channel: %s] Unable to unmarshal consumed message = %s", chain.ChainID(), err)
+				counts[indexUnmarshalError]++
+				continue
+			} else{ _cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[86], 1);{
+				logger.Debugf("[channel: %s] Successfully unmarshalled consumed message, offset is %d. Inspecting type...", chain.ChainID(), in.Offset)
+				counts[indexRecvPass]++
+			}}
+			_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[70], 1);switch msg.Type.(type) {
+			case *ab.KafkaMessage_Connect:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[87], 1);
+				_ = chain.processConnect(chain.ChainID())
+				counts[indexProcessConnectPass]++
+			case *ab.KafkaMessage_TimeToCut:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[88], 1);
+				if err := chain.processTimeToCut(msg.GetTimeToCut(), in.Offset); err != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[91], 1);
+					logger.Warningf("[channel: %s] %s", chain.ChainID(), err)
+					logger.Criticalf("[channel: %s] Consenter for channel exiting", chain.ChainID())
+					counts[indexProcessTimeToCutError]++
+					return counts, err // TODO Revisit whether we should indeed stop processing the chain at this point
+				}
+				_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[89], 1);counts[indexProcessTimeToCutPass]++
+			case *ab.KafkaMessage_Regular:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[90], 1);
+				if err := chain.processRegular(msg.GetRegular(), in.Offset); err != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[92], 1);
+					logger.Warningf("[channel: %s] Error when processing incoming message of type REGULAR = %s", chain.ChainID(), err)
+					counts[indexProcessRegularError]++
+				} else{ _cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[93], 1);{
+					counts[indexProcessRegularPass]++
+				}}
+			}
+		case <-chain.timer:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[71], 1);
+			if err := sendTimeToCut(chain.producer, chain.channel, chain.lastCutBlockNumber+1, &chain.timer); err != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[94], 1);
+				logger.Errorf("[channel: %s] cannot post time-to-cut message = %s", chain.ChainID(), err)
+				// Do not return though
+				counts[indexSendTimeToCutError]++
+			} else{ _cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[95], 1);{
+				counts[indexSendTimeToCutPass]++
+			}}
+		}
+	}
+}
+
+func (chain *chainImpl) closeKafkaObjects() []error {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[96], 1);
+	var errs []error
+
+	err := chain.channelConsumer.Close()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[100], 1);
+		logger.Errorf("[channel: %s] could not close channelConsumer cleanly = %s", chain.ChainID(), err)
+		errs = append(errs, err)
+	} else{ _cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[101], 1);{
+		logger.Debugf("[channel: %s] Closed the channel consumer", chain.ChainID())
+	}}
+
+	_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[97], 1);err = chain.parentConsumer.Close()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[102], 1);
+		logger.Errorf("[channel: %s] could not close parentConsumer cleanly = %s", chain.ChainID(), err)
+		errs = append(errs, err)
+	} else{ _cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[103], 1);{
+		logger.Debugf("[channel: %s] Closed the parent consumer", chain.ChainID())
+	}}
+
+	_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[98], 1);err = chain.producer.Close()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[104], 1);
+		logger.Errorf("[channel: %s] could not close producer cleanly = %s", chain.ChainID(), err)
+		errs = append(errs, err)
+	} else{ _cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[105], 1);{
+		logger.Debugf("[channel: %s] Closed the producer", chain.ChainID())
+	}}
+
+	_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[99], 1);return errs
+}
+
+// Helper functions
+
+func getLastCutBlockNumber(blockchainHeight uint64) uint64 {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[106], 1);
+	return blockchainHeight - 1
+}
+
+func getOffsets(metadataValue []byte, chainID string) (persisted int64, processed int64, resubmitted int64) {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[107], 1);
+	if metadataValue != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[109], 1);
+		// Extract orderer-related metadata from the tip of the ledger first
+		kafkaMetadata := &ab.KafkaMetadata{}
+		if err := proto.Unmarshal(metadataValue, kafkaMetadata); err != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[111], 1);
+			logger.Panicf("[channel: %s] Ledger may be corrupted:"+
+				"cannot unmarshal orderer metadata in most recent block", chainID)
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[110], 1);return kafkaMetadata.LastOffsetPersisted,
+			kafkaMetadata.LastOriginalOffsetProcessed,
+			kafkaMetadata.LastResubmittedConfigOffset
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[108], 1);return sarama.OffsetOldest - 1, int64(0), int64(0) // default
+}
+
+func newConnectMessage() *ab.KafkaMessage {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[112], 1);
+	return &ab.KafkaMessage{
+		Type: &ab.KafkaMessage_Connect{
+			Connect: &ab.KafkaMessageConnect{
+				Payload: nil,
+			},
+		},
+	}
+}
+
+func newNormalMessage(payload []byte, configSeq uint64, originalOffset int64) *ab.KafkaMessage {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[113], 1);
+	return &ab.KafkaMessage{
+		Type: &ab.KafkaMessage_Regular{
+			Regular: &ab.KafkaMessageRegular{
+				Payload:        payload,
+				ConfigSeq:      configSeq,
+				Class:          ab.KafkaMessageRegular_NORMAL,
+				OriginalOffset: originalOffset,
+			},
+		},
+	}
+}
+
+func newConfigMessage(config []byte, configSeq uint64, originalOffset int64) *ab.KafkaMessage {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[114], 1);
+	return &ab.KafkaMessage{
+		Type: &ab.KafkaMessage_Regular{
+			Regular: &ab.KafkaMessageRegular{
+				Payload:        config,
+				ConfigSeq:      configSeq,
+				Class:          ab.KafkaMessageRegular_CONFIG,
+				OriginalOffset: originalOffset,
+			},
+		},
+	}
+}
+
+func newTimeToCutMessage(blockNumber uint64) *ab.KafkaMessage {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[115], 1);
+	return &ab.KafkaMessage{
+		Type: &ab.KafkaMessage_TimeToCut{
+			TimeToCut: &ab.KafkaMessageTimeToCut{
+				BlockNumber: blockNumber,
+			},
+		},
+	}
+}
+
+func newProducerMessage(channel channel, pld []byte) *sarama.ProducerMessage {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[116], 1);
+	return &sarama.ProducerMessage{
+		Topic: channel.topic(),
+		Key:   sarama.StringEncoder(strconv.Itoa(int(channel.partition()))), // TODO Consider writing an IntEncoder?
+		Value: sarama.ByteEncoder(pld),
+	}
+}
+
+func (chain *chainImpl) processConnect(channelName string) error {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[117], 1);
+	logger.Debugf("[channel: %s] It's a connect message - ignoring", channelName)
+	return nil
+}
+
+func (chain *chainImpl) processRegular(regularMessage *ab.KafkaMessageRegular, receivedOffset int64) error {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[118], 1);
+	// When committing a normal message, we also update `lastOriginalOffsetProcessed` with `newOffset`.
+	// It is caller's responsibility to deduce correct value of `newOffset` based on following rules:
+	// - if Resubmission is switched off, it should always be zero
+	// - if the message is committed on first pass, meaning it's not re-validated and re-ordered, this value
+	//   should be the same as current `lastOriginalOffsetProcessed`
+	// - if the message is re-validated and re-ordered, this value should be the `OriginalOffset` of that
+	//   Kafka message, so that `lastOriginalOffsetProcessed` is advanced
+	commitNormalMsg := func(message *cb.Envelope, newOffset int64) {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[124], 1);
+		batches, pending := chain.BlockCutter().Ordered(message)
+		logger.Debugf("[channel: %s] Ordering results: items in batch = %d, pending = %v", chain.ChainID(), len(batches), pending)
+
+		switch {
+		case chain.timer != nil && !pending:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[128], 1);
+			// Timer is already running but there are no messages pending, stop the timer
+			chain.timer = nil
+		case chain.timer == nil && pending:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[129], 1);
+			// Timer is not already running and there are messages pending, so start it
+			chain.timer = time.After(chain.SharedConfig().BatchTimeout())
+			logger.Debugf("[channel: %s] Just began %s batch timer", chain.ChainID(), chain.SharedConfig().BatchTimeout().String())
+		default:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[130], 1);
+			// Do nothing when:
+			// 1. Timer is already running and there are messages pending
+			// 2. Timer is not set and there are no messages pending
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[125], 1);if len(batches) == 0 {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[131], 1);
+			// If no block is cut, we update the `lastOriginalOffsetProcessed`, start the timer if necessary and return
+			chain.lastOriginalOffsetProcessed = newOffset
+			return
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[126], 1);offset := receivedOffset
+		if pending || len(batches) == 2 {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[132], 1);
+			// If the newest envelope is not encapsulated into the first batch,
+			// the `LastOffsetPersisted` should be `receivedOffset` - 1.
+			offset--
+		} else{ _cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[133], 1);{
+			// We are just cutting exactly one block, so it is safe to update
+			// `lastOriginalOffsetProcessed` with `newOffset` here, and then
+			// encapsulate it into this block. Otherwise, if we are cutting two
+			// blocks, the first one should use current `lastOriginalOffsetProcessed`
+			// and the second one should use `newOffset`, which is also used to
+			// update `lastOriginalOffsetProcessed`
+			chain.lastOriginalOffsetProcessed = newOffset
+		}}
+
+		// Commit the first block
+		_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[127], 1);block := chain.CreateNextBlock(batches[0])
+		metadata := utils.MarshalOrPanic(&ab.KafkaMetadata{
+			LastOffsetPersisted:         offset,
+			LastOriginalOffsetProcessed: chain.lastOriginalOffsetProcessed,
+			LastResubmittedConfigOffset: chain.lastResubmittedConfigOffset,
+		})
+		chain.WriteBlock(block, metadata)
+		chain.lastCutBlockNumber++
+		logger.Debugf("[channel: %s] Batch filled, just cut block %d - last persisted offset is now %d", chain.ChainID(), chain.lastCutBlockNumber, offset)
+
+		// Commit the second block if exists
+		if len(batches) == 2 {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[134], 1);
+			chain.lastOriginalOffsetProcessed = newOffset
+			offset++
+
+			block := chain.CreateNextBlock(batches[1])
+			metadata := utils.MarshalOrPanic(&ab.KafkaMetadata{
+				LastOffsetPersisted:         offset,
+				LastOriginalOffsetProcessed: newOffset,
+				LastResubmittedConfigOffset: chain.lastResubmittedConfigOffset,
+			})
+			chain.WriteBlock(block, metadata)
+			chain.lastCutBlockNumber++
+			logger.Debugf("[channel: %s] Batch filled, just cut block %d - last persisted offset is now %d", chain.ChainID(), chain.lastCutBlockNumber, offset)
+		}
+	}
+
+	// When committing a config message, we also update `lastOriginalOffsetProcessed` with `newOffset`.
+	// It is caller's responsibility to deduce correct value of `newOffset` based on following rules:
+	// - if Resubmission is switched off, it should always be zero
+	// - if the message is committed on first pass, meaning it's not re-validated and re-ordered, this value
+	//   should be the same as current `lastOriginalOffsetProcessed`
+	// - if the message is re-validated and re-ordered, this value should be the `OriginalOffset` of that
+	//   Kafka message, so that `lastOriginalOffsetProcessed` is advanced
+	_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[119], 1);commitConfigMsg := func(message *cb.Envelope, newOffset int64) {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[135], 1);
+		logger.Debugf("[channel: %s] Received config message", chain.ChainID())
+		batch := chain.BlockCutter().Cut()
+
+		if batch != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[137], 1);
+			logger.Debugf("[channel: %s] Cut pending messages into block", chain.ChainID())
+			block := chain.CreateNextBlock(batch)
+			metadata := utils.MarshalOrPanic(&ab.KafkaMetadata{
+				LastOffsetPersisted:         receivedOffset - 1,
+				LastOriginalOffsetProcessed: chain.lastOriginalOffsetProcessed,
+				LastResubmittedConfigOffset: chain.lastResubmittedConfigOffset,
+			})
+			chain.WriteBlock(block, metadata)
+			chain.lastCutBlockNumber++
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[136], 1);logger.Debugf("[channel: %s] Creating isolated block for config message", chain.ChainID())
+		chain.lastOriginalOffsetProcessed = newOffset
+		block := chain.CreateNextBlock([]*cb.Envelope{message})
+		metadata := utils.MarshalOrPanic(&ab.KafkaMetadata{
+			LastOffsetPersisted:         receivedOffset,
+			LastOriginalOffsetProcessed: chain.lastOriginalOffsetProcessed,
+			LastResubmittedConfigOffset: chain.lastResubmittedConfigOffset,
+		})
+		chain.WriteConfigBlock(block, metadata)
+		chain.lastCutBlockNumber++
+		chain.timer = nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[120], 1);seq := chain.Sequence()
+
+	env := &cb.Envelope{}
+	if err := proto.Unmarshal(regularMessage.Payload, env); err != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[138], 1);
+		// This shouldn't happen, it should be filtered at ingress
+		return fmt.Errorf("failed to unmarshal payload of regular message because = %s", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[121], 1);logger.Debugf("[channel: %s] Processing regular Kafka message of type %s", chain.ChainID(), regularMessage.Class.String())
+
+	// If we receive a message from a pre-v1.1 orderer, or resubmission is explicitly disabled, every orderer
+	// should operate as the pre-v1.1 ones: validate again and not attempt to reorder. That is because the
+	// pre-v1.1 orderers cannot identify re-ordered messages and resubmissions could lead to committing
+	// the same message twice.
+	//
+	// The implicit assumption here is that the resubmission capability flag is set only when there are no more
+	// pre-v1.1 orderers on the network. Otherwise it is unset, and this is what we call a compatibility mode.
+	if regularMessage.Class == ab.KafkaMessageRegular_UNKNOWN || !chain.SharedConfig().Capabilities().Resubmission() {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[139], 1);
+		// Received regular message of type UNKNOWN or resubmission if off, indicating an OSN network with v1.0.x orderer
+		logger.Warningf("[channel: %s] This orderer is running in compatibility mode", chain.ChainID())
+
+		chdr, err := utils.ChannelHeader(env)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[142], 1);
+			return fmt.Errorf("discarding bad config message because of channel header unmarshalling error = %s", err)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[140], 1);class := chain.ClassifyMsg(chdr)
+		switch class {
+		case msgprocessor.ConfigMsg:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[143], 1);
+			if _, _, err := chain.ProcessConfigMsg(env); err != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[149], 1);
+				return fmt.Errorf("discarding bad config message because = %s", err)
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[144], 1);commitConfigMsg(env, chain.lastOriginalOffsetProcessed)
+
+		case msgprocessor.NormalMsg:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[145], 1);
+			if _, err := chain.ProcessNormalMsg(env); err != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[150], 1);
+				return fmt.Errorf("discarding bad normal message because = %s", err)
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[146], 1);commitNormalMsg(env, chain.lastOriginalOffsetProcessed)
+
+		case msgprocessor.ConfigUpdateMsg:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[147], 1);
+			return fmt.Errorf("not expecting message of type ConfigUpdate")
+
+		default:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[148], 1);
+			logger.Panicf("[channel: %s] Unsupported message classification: %v", chain.ChainID(), class)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[141], 1);return nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[122], 1);switch regularMessage.Class {
+	case ab.KafkaMessageRegular_UNKNOWN:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[151], 1);
+		logger.Panicf("[channel: %s] Kafka message of type UNKNOWN should have been processed already", chain.ChainID())
+
+	case ab.KafkaMessageRegular_NORMAL:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[152], 1);
+		// This is a message that is re-validated and re-ordered
+		if regularMessage.OriginalOffset != 0 {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[161], 1);
+			logger.Debugf("[channel: %s] Received re-submitted normal message with original offset %d", chain.ChainID(), regularMessage.OriginalOffset)
+
+			// But we've reprocessed it already
+			if regularMessage.OriginalOffset <= chain.lastOriginalOffsetProcessed {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[163], 1);
+				logger.Debugf(
+					"[channel: %s] OriginalOffset(%d) <= LastOriginalOffsetProcessed(%d), message has been consumed already, discard",
+					chain.ChainID(), regularMessage.OriginalOffset, chain.lastOriginalOffsetProcessed)
+				return nil
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[162], 1);logger.Debugf(
+				"[channel: %s] OriginalOffset(%d) > LastOriginalOffsetProcessed(%d), "+
+					"this is the first time we receive this re-submitted normal message",
+				chain.ChainID(), regularMessage.OriginalOffset, chain.lastOriginalOffsetProcessed)
+
+			// In case we haven't reprocessed the message, there's no need to differentiate it from those
+			// messages that will be processed for the first time.
+		}
+
+		// The config sequence has advanced
+		_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[153], 1);if regularMessage.ConfigSeq < seq {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[164], 1);
+			logger.Debugf("[channel: %s] Config sequence has advanced since this normal message got validated, re-validating", chain.ChainID())
+			configSeq, err := chain.ProcessNormalMsg(env)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[167], 1);
+				return fmt.Errorf("discarding bad normal message because = %s", err)
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[165], 1);logger.Debugf("[channel: %s] Normal message is still valid, re-submit", chain.ChainID())
+
+			// For both messages that are ordered for the first time or re-ordered, we set original offset
+			// to current received offset and re-order it.
+			if err := chain.order(env, configSeq, receivedOffset); err != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[168], 1);
+				return fmt.Errorf("error re-submitting normal message because = %s", err)
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[166], 1);return nil
+		}
+
+		// Any messages coming in here may or may not have been re-validated
+		// and re-ordered, BUT they are definitely valid here
+
+		// advance lastOriginalOffsetProcessed iff message is re-validated and re-ordered
+		_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[154], 1);offset := regularMessage.OriginalOffset
+		if offset == 0 {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[169], 1);
+			offset = chain.lastOriginalOffsetProcessed
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[155], 1);commitNormalMsg(env, offset)
+
+	case ab.KafkaMessageRegular_CONFIG:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[156], 1);
+		// This is a message that is re-validated and re-ordered
+		if regularMessage.OriginalOffset != 0 {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[170], 1);
+			logger.Debugf("[channel: %s] Received re-submitted config message with original offset %d", chain.ChainID(), regularMessage.OriginalOffset)
+
+			// But we've reprocessed it already
+			if regularMessage.OriginalOffset <= chain.lastOriginalOffsetProcessed {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[173], 1);
+				logger.Debugf(
+					"[channel: %s] OriginalOffset(%d) <= LastOriginalOffsetProcessed(%d), message has been consumed already, discard",
+					chain.ChainID(), regularMessage.OriginalOffset, chain.lastOriginalOffsetProcessed)
+				return nil
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[171], 1);logger.Debugf(
+				"[channel: %s] OriginalOffset(%d) > LastOriginalOffsetProcessed(%d), "+
+					"this is the first time we receive this re-submitted config message",
+				chain.ChainID(), regularMessage.OriginalOffset, chain.lastOriginalOffsetProcessed)
+
+			if regularMessage.OriginalOffset == chain.lastResubmittedConfigOffset && // This is very last resubmitted config message
+				regularMessage.ConfigSeq == seq {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[174], 1); // AND we don't need to resubmit it again
+				logger.Debugf("[channel: %s] Config message with original offset %d is the last in-flight resubmitted message"+
+					"and it does not require revalidation, unblock ingress messages now", chain.ChainID(), regularMessage.OriginalOffset)
+				chain.reprocessConfigComplete() // Therefore, we could finally unblock broadcast
+			}
+
+			// Somebody resubmitted message at offset X, whereas we didn't. This is due to non-determinism where
+			// that message was considered invalid by us during revalidation, however somebody else deemed it to
+			// be valid, and resubmitted it. We need to advance lastResubmittedConfigOffset in this case in order
+			// to enforce consistency across the network.
+			_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[172], 1);if chain.lastResubmittedConfigOffset < regularMessage.OriginalOffset {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[175], 1);
+				chain.lastResubmittedConfigOffset = regularMessage.OriginalOffset
+			}
+		}
+
+		// The config sequence has advanced
+		_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[157], 1);if regularMessage.ConfigSeq < seq {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[176], 1);
+			logger.Debugf("[channel: %s] Config sequence has advanced since this config message got validated, re-validating", chain.ChainID())
+			configEnv, configSeq, err := chain.ProcessConfigMsg(env)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[179], 1);
+				return fmt.Errorf("rejecting config message because = %s", err)
+			}
+
+			// For both messages that are ordered for the first time or re-ordered, we set original offset
+			// to current received offset and re-order it.
+			_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[177], 1);if err := chain.configure(configEnv, configSeq, receivedOffset); err != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[180], 1);
+				return fmt.Errorf("error re-submitting config message because = %s", err)
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[178], 1);logger.Debugf("[channel: %s] Resubmitted config message with offset %d, block ingress messages", chain.ChainID(), receivedOffset)
+			chain.lastResubmittedConfigOffset = receivedOffset // Keep track of last resubmitted message offset
+			chain.reprocessConfigPending()                     // Begin blocking ingress messages
+
+			return nil
+		}
+
+		// Any messages coming in here may or may not have been re-validated
+		// and re-ordered, BUT they are definitely valid here
+
+		// advance lastOriginalOffsetProcessed iff message is re-validated and re-ordered
+		_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[158], 1);offset := regularMessage.OriginalOffset
+		if offset == 0 {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[181], 1);
+			offset = chain.lastOriginalOffsetProcessed
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[159], 1);commitConfigMsg(env, offset)
+
+	default:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[160], 1);
+		return fmt.Errorf("unsupported regular kafka message type: %v", regularMessage.Class.String())
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[123], 1);return nil
+}
+
+func (chain *chainImpl) processTimeToCut(ttcMessage *ab.KafkaMessageTimeToCut, receivedOffset int64) error {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[182], 1);
+	ttcNumber := ttcMessage.GetBlockNumber()
+	logger.Debugf("[channel: %s] It's a time-to-cut message for block %d", chain.ChainID(), ttcNumber)
+	if ttcNumber == chain.lastCutBlockNumber+1 {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[184], 1);
+		chain.timer = nil
+		logger.Debugf("[channel: %s] Nil'd the timer", chain.ChainID())
+		batch := chain.BlockCutter().Cut()
+		if len(batch) == 0 {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[186], 1);
+			return fmt.Errorf("got right time-to-cut message (for block %d),"+
+				" no pending requests though; this might indicate a bug", chain.lastCutBlockNumber+1)
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[185], 1);block := chain.CreateNextBlock(batch)
+		metadata := utils.MarshalOrPanic(&ab.KafkaMetadata{
+			LastOffsetPersisted:         receivedOffset,
+			LastOriginalOffsetProcessed: chain.lastOriginalOffsetProcessed,
+		})
+		chain.WriteBlock(block, metadata)
+		chain.lastCutBlockNumber++
+		logger.Debugf("[channel: %s] Proper time-to-cut received, just cut block %d", chain.ChainID(), chain.lastCutBlockNumber)
+		return nil
+	} else{ _cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[187], 1);if ttcNumber > chain.lastCutBlockNumber+1 {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[188], 1);
+		return fmt.Errorf("got larger time-to-cut message (%d) than allowed/expected (%d)"+
+			" - this might indicate a bug", ttcNumber, chain.lastCutBlockNumber+1)
+	}}
+	_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[183], 1);logger.Debugf("[channel: %s] Ignoring stale time-to-cut-message for block %d", chain.ChainID(), ttcNumber)
+	return nil
+}
+
+// Post a CONNECT message to the channel using the given retry options. This
+// prevents the panicking that would occur if we were to set up a consumer and
+// seek on a partition that hadn't been written to yet.
+func sendConnectMessage(retryOptions localconfig.Retry, exitChan chan struct{}, producer sarama.SyncProducer, channel channel) error {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[189], 1);
+	logger.Infof("[channel: %s] About to post the CONNECT message...", channel.topic())
+
+	payload := utils.MarshalOrPanic(newConnectMessage())
+	message := newProducerMessage(channel, payload)
+
+	retryMsg := "Attempting to post the CONNECT message..."
+	postConnect := newRetryProcess(retryOptions, exitChan, channel, retryMsg, func() error {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[191], 1);
+		select {
+		case <-exitChan:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[192], 1);
+			logger.Debugf("[channel: %s] Consenter for channel exiting, aborting retry", channel)
+			return nil
+		default:_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[193], 1);
+			_, _, err := producer.SendMessage(message)
+			return err
+		}
+	})
+
+	_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[190], 1);return postConnect.retry()
+}
+
+func sendTimeToCut(producer sarama.SyncProducer, channel channel, timeToCutBlockNumber uint64, timer *<-chan time.Time) error {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[194], 1);
+	logger.Debugf("[channel: %s] Time-to-cut block %d timer expired", channel.topic(), timeToCutBlockNumber)
+	*timer = nil
+	payload := utils.MarshalOrPanic(newTimeToCutMessage(timeToCutBlockNumber))
+	message := newProducerMessage(channel, payload)
+	_, _, err := producer.SendMessage(message)
+	return err
+}
+
+// Sets up the partition consumer for a channel using the given retry options.
+func setupChannelConsumerForChannel(retryOptions localconfig.Retry, haltChan chan struct{}, parentConsumer sarama.Consumer, channel channel, startFrom int64) (sarama.PartitionConsumer, error) {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[195], 1);
+	var err error
+	var channelConsumer sarama.PartitionConsumer
+
+	logger.Infof("[channel: %s] Setting up the channel consumer for this channel (start offset: %d)...", channel.topic(), startFrom)
+
+	retryMsg := "Connecting to the Kafka cluster"
+	setupChannelConsumer := newRetryProcess(retryOptions, haltChan, channel, retryMsg, func() error {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[197], 1);
+		channelConsumer, err = parentConsumer.ConsumePartition(channel.topic(), channel.partition(), startFrom)
+		return err
+	})
+
+	_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[196], 1);return channelConsumer, setupChannelConsumer.retry()
+}
+
+// Sets up the parent consumer for a channel using the given retry options.
+func setupParentConsumerForChannel(retryOptions localconfig.Retry, haltChan chan struct{}, brokers []string, brokerConfig *sarama.Config, channel channel) (sarama.Consumer, error) {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[198], 1);
+	var err error
+	var parentConsumer sarama.Consumer
+
+	logger.Infof("[channel: %s] Setting up the parent consumer for this channel...", channel.topic())
+
+	retryMsg := "Connecting to the Kafka cluster"
+	setupParentConsumer := newRetryProcess(retryOptions, haltChan, channel, retryMsg, func() error {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[200], 1);
+		parentConsumer, err = sarama.NewConsumer(brokers, brokerConfig)
+		return err
+	})
+
+	_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[199], 1);return parentConsumer, setupParentConsumer.retry()
+}
+
+// Sets up the writer/producer for a channel using the given retry options.
+func setupProducerForChannel(retryOptions localconfig.Retry, haltChan chan struct{}, brokers []string, brokerConfig *sarama.Config, channel channel) (sarama.SyncProducer, error) {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[201], 1);
+	var err error
+	var producer sarama.SyncProducer
+
+	logger.Infof("[channel: %s] Setting up the producer for this channel...", channel.topic())
+
+	retryMsg := "Connecting to the Kafka cluster"
+	setupProducer := newRetryProcess(retryOptions, haltChan, channel, retryMsg, func() error {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[203], 1);
+		producer, err = sarama.NewSyncProducer(brokers, brokerConfig)
+		return err
+	})
+
+	_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[202], 1);return producer, setupProducer.retry()
+}
+
+// Creates the Kafka topic for the channel if it does not already exist
+func setupTopicForChannel(retryOptions localconfig.Retry, haltChan chan struct{}, brokers []string, brokerConfig *sarama.Config, topicDetail *sarama.TopicDetail, channel channel) error {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[204], 1);
+
+	// requires Kafka v0.10.1.0 or higher
+	if !brokerConfig.Version.IsAtLeast(sarama.V0_10_1_0) {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[207], 1);
+		return nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[205], 1);logger.Infof("[channel: %s] Setting up the topic for this channel...",
+		channel.topic())
+
+	retryMsg := fmt.Sprintf("Creating Kafka topic [%s] for channel [%s]",
+		channel.topic(), channel.String())
+
+	setupTopic := newRetryProcess(
+		retryOptions,
+		haltChan,
+		channel,
+		retryMsg,
+		func() error {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[208], 1);
+
+			var err error
+			clusterMembers := map[int32]*sarama.Broker{}
+			var controllerId int32
+
+			// loop through brokers to access metadata
+			for _, address := range brokers {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[215], 1);
+				broker := sarama.NewBroker(address)
+				err = broker.Open(brokerConfig)
+
+				if err != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[222], 1);
+					continue
+				}
+
+				_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[216], 1);var ok bool
+				ok, err = broker.Connected()
+				if !ok {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[223], 1);
+					continue
+				}
+				_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[217], 1);defer broker.Close()
+
+				// metadata request which includes the topic
+				var apiVersion int16
+				if brokerConfig.Version.IsAtLeast(sarama.V0_11_0_0) {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[224], 1);
+					// use API version 4 to disable auto topic creation for
+					// metadata requests
+					apiVersion = 4
+				} else{ _cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[225], 1);{
+					apiVersion = 1
+				}}
+				_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[218], 1);metadata, err := broker.GetMetadata(&sarama.MetadataRequest{
+					Version:                apiVersion,
+					Topics:                 []string{channel.topic()},
+					AllowAutoTopicCreation: false})
+
+				if err != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[226], 1);
+					continue
+				}
+
+				_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[219], 1);controllerId = metadata.ControllerID
+				for _, broker := range metadata.Brokers {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[227], 1);
+					clusterMembers[broker.ID()] = broker
+				}
+
+				_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[220], 1);for _, topic := range metadata.Topics {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[228], 1);
+					if topic.Name == channel.topic() {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[229], 1);
+						if topic.Err != sarama.ErrUnknownTopicOrPartition {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[230], 1);
+							// auto create topics must be enabled so return
+							return nil
+						}
+					}
+				}
+				_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[221], 1);break
+			}
+
+			// check to see if we got any metadata from any of the brokers in the list
+			_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[209], 1);if len(clusterMembers) == 0 {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[231], 1);
+				return fmt.Errorf(
+					"error creating topic [%s]; failed to retrieve metadata for the cluster",
+					channel.topic())
+			}
+
+			// get the controller
+			_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[210], 1);controller := clusterMembers[controllerId]
+			err = controller.Open(brokerConfig)
+
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[232], 1);
+				return err
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[211], 1);var ok bool
+			ok, err = controller.Connected()
+			if !ok {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[233], 1);
+				return err
+			}
+			_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[212], 1);defer controller.Close()
+
+			// create the topic
+			req := &sarama.CreateTopicsRequest{
+				Version: 0,
+				TopicDetails: map[string]*sarama.TopicDetail{
+					channel.topic(): topicDetail},
+				Timeout: 3 * time.Second}
+			resp := &sarama.CreateTopicsResponse{}
+			resp, err = controller.CreateTopics(req)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[234], 1);
+				return err
+			}
+
+			// check the response
+			_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[213], 1);if topicErr, ok := resp.TopicErrors[channel.topic()]; ok {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[235], 1);
+				// treat no error and topic exists error as success
+				if topicErr.Err == sarama.ErrNoError ||
+					topicErr.Err == sarama.ErrTopicAlreadyExists {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[238], 1);
+					return nil
+				}
+				_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[236], 1);if topicErr.Err == sarama.ErrInvalidTopic {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[239], 1);
+					// topic is invalid so abort
+					logger.Warningf("[channel: %s] Failed to set up topic = %s",
+						channel.topic(), topicErr.Err.Error())
+					go func() {_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[240], 1);
+						haltChan <- struct{}{}
+					}()
+				}
+				_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[237], 1);return fmt.Errorf("error creating topic: [%s]",
+					topicErr.Err.Error())
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[214], 1);return nil
+		})
+
+	_cover_atomic_.AddUint32(&GoCover_0_623633326437306563303132.Count[206], 1);return setupTopic.retry()
+}
+
+var GoCover_0_623633326437306563303132 = struct {
+	Count     [241]uint32
+	Pos       [3 * 241]uint32
+	NumStmt   [241]uint16
+} {
+	Pos: [3 * 241]uint32{
+		46, 59, 0x640017, // [0]
+		64, 76, 0x80002, // [1]
+		59, 62, 0x30064, // [2]
+		115, 116, 0x90033, // [3]
+		117, 118, 0x190019, // [4]
+		119, 123, 0x14000a, // [5]
+		132, 134, 0x20021, // [6]
+		138, 139, 0x90020, // [7]
+		140, 142, 0xa0019, // [8]
+		158, 161, 0xf000a, // [9]
+		143, 147, 0x560019, // [10]
+		148, 156, 0x47000b, // [11]
+		165, 166, 0x9002b, // [12]
+		167, 168, 0xa0019, // [13]
+		174, 175, 0x58000a, // [14]
+		169, 170, 0x430019, // [15]
+		171, 172, 0xe0023, // [16]
+		179, 183, 0x2003c, // [17]
+		185, 189, 0x20033, // [18]
+		191, 195, 0x20032, // [19]
+		198, 200, 0x20049, // [20]
+		202, 204, 0x10005f, // [21]
+		207, 207, 0x4f0002, // [22]
+		210, 210, 0xc0002, // [23]
+		204, 206, 0x30010, // [24]
+		207, 209, 0x3004f, // [25]
+		214, 216, 0x20050, // [26]
+		218, 220, 0x100066, // [27]
+		223, 223, 0x520002, // [28]
+		226, 226, 0xc0002, // [29]
+		220, 222, 0x30010, // [30]
+		223, 225, 0x30052, // [31]
+		230, 232, 0x90041, // [32]
+		233, 234, 0xa0019, // [33]
+		252, 254, 0xf000a, // [34]
+		235, 237, 0x100019, // [35]
+		238, 240, 0x12000b, // [36]
+		244, 245, 0x430004, // [37]
+		249, 250, 0xf0004, // [38]
+		240, 243, 0x50012, // [39]
+		245, 248, 0x50043, // [40]
+		259, 264, 0x100024, // [41]
+		270, 271, 0x100002, // [42]
+		274, 277, 0x790002, // [43]
+		280, 284, 0x100002, // [44]
+		287, 291, 0x100002, // [45]
+		294, 303, 0x210002, // [46]
+		264, 267, 0x30010, // [47]
+		271, 273, 0x30010, // [48]
+		277, 279, 0x30079, // [49]
+		284, 286, 0x30010, // [50]
+		291, 293, 0x30010, // [51]
+		309, 313, 0xf0045, // [52]
+		318, 318, 0xf0002, // [53]
+		326, 331, 0x60002, // [54]
+		313, 316, 0x3000f, // [55]
+		318, 319, 0xa000f, // [56]
+		320, 320, 0x1a001a, // [57]
+		321, 322, 0x1a000b, // [58]
+		331, 332, 0xa0006, // [59]
+		333, 336, 0x160019, // [60]
+		337, 340, 0xb0035, // [61]
+		359, 359, 0xb0004, // [62]
+		373, 380, 0x23002c, // [63]
+		383, 383, 0x4e0004, // [64]
+		385, 395, 0x680021, // [65]
+		397, 398, 0xb0035, // [66]
+		405, 405, 0x300004, // [67]
+		416, 416, 0xb0004, // [68]
+		422, 422, 0x390004, // [69]
+		431, 431, 0x1b0004, // [70]
+		451, 452, 0x710016, // [71]
+		341, 341, 0x1b001b, // [72]
+		342, 344, 0x19000c, // [73]
+		345, 348, 0x1c0025, // [74]
+		349, 350, 0x32000d, // [75]
+		350, 356, 0x70032, // [76]
+		360, 369, 0x69001b, // [77]
+		370, 371, 0x77000c, // [78]
+		380, 382, 0x50023, // [79]
+		398, 401, 0x5000b, // [80]
+		405, 411, 0x240030, // [81]
+		411, 413, 0x60024, // [82]
+		417, 419, 0x57001b, // [83]
+		420, 420, 0xc000c, // [84]
+		422, 426, 0xd0039, // [85]
+		427, 430, 0x5000a, // [86]
+		432, 434, 0x260022, // [87]
+		435, 436, 0x510024, // [88]
+		442, 442, 0x280005, // [89]
+		443, 444, 0x4d0022, // [90]
+		436, 441, 0x60051, // [91]
+		444, 447, 0x6004d, // [92]
+		447, 449, 0x6000b, // [93]
+		452, 456, 0x50071, // [94]
+		456, 458, 0x5000a, // [95]
+		463, 467, 0x100035, // [96]
+		474, 475, 0x100002, // [97]
+		482, 483, 0x100002, // [98]
+		490, 490, 0xd0002, // [99]
+		467, 470, 0x30010, // [100]
+		470, 472, 0x30008, // [101]
+		475, 478, 0x30010, // [102]
+		478, 480, 0x30008, // [103]
+		483, 486, 0x30010, // [104]
+		486, 488, 0x30008, // [105]
+		495, 497, 0x2003c, // [106]
+		499, 500, 0x1a006d, // [107]
+		511, 511, 0x340002, // [108]
+		500, 503, 0x47001a, // [109]
+		507, 509, 0x2d0003, // [110]
+		503, 506, 0x40047, // [111]
+		514, 522, 0x2002b, // [112]
+		524, 535, 0x20060, // [113]
+		537, 548, 0x2005f, // [114]
+		550, 558, 0x2003f, // [115]
+		560, 566, 0x2004e, // [116]
+		568, 571, 0x20042, // [117]
+		573, 581, 0x41006c, // [118]
+		655, 655, 0x410002, // [119]
+		684, 687, 0x450002, // [120]
+		692, 701, 0x730002, // [121]
+		736, 736, 0x1e0002, // [122]
+		862, 862, 0xc0002, // [123]
+		581, 585, 0xa0041, // [124]
+		599, 599, 0x180003, // [125]
+		605, 606, 0x230003, // [126]
+		621, 632, 0x180003, // [127]
+		586, 588, 0x150027, // [128]
+		589, 592, 0x7b0026, // [129]
+		593, 593, 0xb000b, // [130]
+		599, 603, 0x40018, // [131]
+		606, 610, 0x40023, // [132]
+		610, 618, 0x40009, // [133]
+		632, 645, 0x40018, // [134]
+		655, 659, 0x130041, // [135]
+		671, 681, 0x140003, // [136]
+		659, 669, 0x40013, // [137]
+		687, 690, 0x30045, // [138]
+		701, 706, 0x110073, // [139]
+		710, 711, 0x100003, // [140]
+		733, 733, 0xd0003, // [141]
+		706, 708, 0x40011, // [142]
+		712, 713, 0x3c001f, // [143]
+		717, 717, 0x3b0004, // [144]
+		719, 720, 0x39001f, // [145]
+		724, 724, 0x3b0004, // [146]
+		726, 727, 0x430025, // [147]
+		729, 730, 0x61000b, // [148]
+		713, 715, 0x5003c, // [149]
+		720, 722, 0x50039, // [150]
+		737, 738, 0x730026, // [151]
+		740, 742, 0x290025, // [152]
+		763, 763, 0x250003, // [153]
+		785, 786, 0x120003, // [154]
+		790, 790, 0x1f0003, // [155]
+		792, 794, 0x290025, // [156]
+		827, 827, 0x250003, // [157]
+		851, 852, 0x120003, // [158]
+		856, 856, 0x1f0003, // [159]
+		858, 859, 0x61000a, // [160]
+		742, 746, 0x4a0029, // [161]
+		753, 756, 0x570004, // [162]
+		746, 751, 0x5004a, // [163]
+		763, 766, 0x120025, // [164]
+		770, 774, 0x460004, // [165]
+		778, 778, 0xe0004, // [166]
+		766, 768, 0x50012, // [167]
+		774, 776, 0x50046, // [168]
+		786, 788, 0x40012, // [169]
+		794, 798, 0x4a0029, // [170]
+		805, 811, 0x250004, // [171]
+		821, 821, 0x490004, // [172]
+		798, 803, 0x5004a, // [173]
+		811, 815, 0x50025, // [174]
+		821, 823, 0x50049, // [175]
+		827, 830, 0x120025, // [176]
+		836, 836, 0x500004, // [177]
+		840, 844, 0xe0004, // [178]
+		830, 832, 0x50012, // [179]
+		836, 838, 0x50050, // [180]
+		852, 854, 0x40012, // [181]
+		865, 868, 0x2d006c, // [182]
+		889, 890, 0xc0002, // [183]
+		868, 872, 0x16002d, // [184]
+		876, 884, 0xd0003, // [185]
+		872, 875, 0x40016, // [186]
+		885, 885, 0x330008, // [187]
+		885, 888, 0x30033, // [188]
+		896, 903, 0x590086, // [189]
+		914, 914, 0x1c0002, // [190]
+		903, 904, 0xa0059, // [191]
+		905, 907, 0xe0013, // [192]
+		908, 910, 0xe000b, // [193]
+		917, 924, 0x2007f, // [194]
+		927, 934, 0x6200c1, // [195]
+		939, 939, 0x360002, // [196]
+		934, 937, 0x30062, // [197]
+		943, 950, 0x6100b5, // [198]
+		955, 955, 0x340002, // [199]
+		950, 953, 0x30061, // [200]
+		959, 966, 0x5b00b3, // [201]
+		971, 971, 0x280002, // [202]
+		966, 969, 0x3005b, // [203]
+		975, 978, 0x3700ba, // [204]
+		982, 993, 0x100002, // [205]
+		1105, 1105, 0x1b0002, // [206]
+		978, 980, 0x30037, // [207]
+		993, 1000, 0x240010, // [208]
+		1050, 1050, 0x200004, // [209]
+		1057, 1060, 0x120004, // [210]
+		1064, 1066, 0xb0004, // [211]
+		1069, 1079, 0x120004, // [212]
+		1084, 1084, 0x3d0004, // [213]
+		1102, 1102, 0xe0004, // [214]
+		1000, 1004, 0x130024, // [215]
+		1008, 1010, 0xc0005, // [216]
+		1013, 1017, 0x390005, // [217]
+		1024, 1029, 0x130005, // [218]
+		1033, 1034, 0x2d0005, // [219]
+		1038, 1038, 0x2b0005, // [220]
+		1046, 1046, 0xa0005, // [221]
+		1004, 1005, 0xe0013, // [222]
+		1010, 1011, 0xe000c, // [223]
+		1017, 1021, 0x60039, // [224]
+		1021, 1023, 0x6000b, // [225]
+		1029, 1030, 0xe0013, // [226]
+		1034, 1036, 0x6002d, // [227]
+		1038, 1039, 0x27002b, // [228]
+		1039, 1040, 0x390027, // [229]
+		1040, 1043, 0x80039, // [230]
+		1050, 1054, 0x50020, // [231]
+		1060, 1062, 0x50012, // [232]
+		1066, 1068, 0x5000b, // [233]
+		1079, 1081, 0x50012, // [234]
+		1084, 1087, 0x33003d, // [235]
+		1090, 1090, 0x2f0005, // [236]
+		1098, 1099, 0x1b0005, // [237]
+		1087, 1089, 0x60033, // [238]
+		1090, 1094, 0x10002f, // [239]
+		1094, 1096, 0x70010, // [240]
+	},
+	NumStmt: [241]uint16{
+		4, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		3, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		3, // 9
+		1, // 10
+		5, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		3, // 17
+		3, // 18
+		3, // 19
+		1, // 20
+		2, // 21
+		1, // 22
+		1, // 23
+		1, // 24
+		1, // 25
+		1, // 26
+		2, // 27
+		1, // 28
+		1, // 29
+		1, // 30
+		1, // 31
+		2, // 32
+		1, // 33
+		2, // 34
+		2, // 35
+		2, // 36
+		2, // 37
+		2, // 38
+		2, // 39
+		2, // 40
+		3, // 41
+		2, // 42
+		2, // 43
+		3, // 44
+		3, // 45
+		6, // 46
+		1, // 47
+		1, // 48
+		1, // 49
+		1, // 50
+		1, // 51
+		3, // 52
+		1, // 53
+		5, // 54
+		1, // 55
+		1, // 56
+		0, // 57
+		1, // 58
+		1, // 59
+		3, // 60
+		3, // 61
+		1, // 62
+		3, // 63
+		1, // 64
+		5, // 65
+		1, // 66
+		1, // 67
+		1, // 68
+		1, // 69
+		1, // 70
+		1, // 71
+		0, // 72
+		1, // 73
+		2, // 74
+		1, // 75
+		3, // 76
+		2, // 77
+		1, // 78
+		1, // 79
+		2, // 80
+		3, // 81
+		1, // 82
+		2, // 83
+		0, // 84
+		3, // 85
+		2, // 86
+		2, // 87
+		1, // 88
+		1, // 89
+		1, // 90
+		4, // 91
+		2, // 92
+		1, // 93
+		2, // 94
+		1, // 95
+		3, // 96
+		2, // 97
+		2, // 98
+		1, // 99
+		2, // 100
+		1, // 101
+		2, // 102
+		1, // 103
+		2, // 104
+		1, // 105
+		1, // 106
+		1, // 107
+		1, // 108
+		2, // 109
+		1, // 110
+		1, // 111
+		1, // 112
+		1, // 113
+		1, // 114
+		1, // 115
+		1, // 116
+		2, // 117
+		1, // 118
+		1, // 119
+		3, // 120
+		2, // 121
+		1, // 122
+		1, // 123
+		3, // 124
+		1, // 125
+		2, // 126
+		6, // 127
+		1, // 128
+		2, // 129
+		0, // 130
+		2, // 131
+		1, // 132
+		1, // 133
+		7, // 134
+		3, // 135
+		7, // 136
+		5, // 137
+		1, // 138
+		3, // 139
+		2, // 140
+		1, // 141
+		1, // 142
+		1, // 143
+		1, // 144
+		1, // 145
+		1, // 146
+		1, // 147
+		1, // 148
+		1, // 149
+		1, // 150
+		1, // 151
+		1, // 152
+		1, // 153
+		2, // 154
+		1, // 155
+		1, // 156
+		1, // 157
+		2, // 158
+		1, // 159
+		1, // 160
+		2, // 161
+		1, // 162
+		2, // 163
+		3, // 164
+		2, // 165
+		1, // 166
+		1, // 167
+		1, // 168
+		1, // 169
+		2, // 170
+		2, // 171
+		1, // 172
+		2, // 173
+		2, // 174
+		1, // 175
+		3, // 176
+		1, // 177
+		4, // 178
+		1, // 179
+		1, // 180
+		1, // 181
+		3, // 182
+		2, // 183
+		4, // 184
+		6, // 185
+		1, // 186
+		1, // 187
+		1, // 188
+		5, // 189
+		1, // 190
+		1, // 191
+		2, // 192
+		2, // 193
+		6, // 194
+		5, // 195
+		1, // 196
+		2, // 197
+		5, // 198
+		1, // 199
+		2, // 200
+		5, // 201
+		1, // 202
+		2, // 203
+		1, // 204
+		3, // 205
+		1, // 206
+		1, // 207
+		4, // 208
+		1, // 209
+		3, // 210
+		3, // 211
+		5, // 212
+		1, // 213
+		1, // 214
+		3, // 215
+		3, // 216
+		3, // 217
+		2, // 218
+		2, // 219
+		1, // 220
+		1, // 221
+		1, // 222
+		1, // 223
+		1, // 224
+		1, // 225
+		1, // 226
+		1, // 227
+		1, // 228
+		1, // 229
+		1, // 230
+		1, // 231
+		1, // 232
+		1, // 233
+		1, // 234
+		1, // 235
+		1, // 236
+		1, // 237
+		1, // 238
+		2, // 239
+		1, // 240
+	},
+}
+var _ = _cover_atomic_.LoadUint32

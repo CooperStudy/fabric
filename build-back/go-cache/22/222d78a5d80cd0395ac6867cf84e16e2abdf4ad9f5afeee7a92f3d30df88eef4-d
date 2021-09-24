@@ -1,0 +1,570 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwsetutil/rwset_proto_util.go:1
+/*
+Copyright IBM Corp. 2016 All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+		 http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package rwsetutil; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/version"
+	"github.com/hyperledger/fabric/core/ledger/util"
+	"github.com/hyperledger/fabric/protos/ledger/rwset"
+	"github.com/hyperledger/fabric/protos/ledger/rwset/kvrwset"
+)
+
+/////////////////////////////////////////////////////////////////
+// Messages related to PUBLIC read-write set
+/////////////////////////////////////////////////////////////////
+
+// TxRwSet acts as a proxy of 'rwset.TxReadWriteSet' proto message and helps constructing Read-write set specifically for KV data model
+type TxRwSet struct {
+	NsRwSets []*NsRwSet
+}
+
+// NsRwSet encapsulates 'kvrwset.KVRWSet' proto message for a specific name space (chaincode)
+type NsRwSet struct {
+	NameSpace        string
+	KvRwSet          *kvrwset.KVRWSet
+	CollHashedRwSets []*CollHashedRwSet
+}
+
+// CollHashedRwSet encapsulates 'kvrwset.HashedRWSet' proto message for a specific collection
+type CollHashedRwSet struct {
+	CollectionName string
+	HashedRwSet    *kvrwset.HashedRWSet
+	PvtRwSetHash   []byte
+}
+
+// GetPvtDataHash returns the PvtRwSetHash for a given namespace and collection
+func (txRwSet *TxRwSet) GetPvtDataHash(ns, coll string) []byte {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[0], 1);
+	// we could build and use a map to reduce the number of lookup
+	// in the future call. However, we decided to defer such optimization
+	// due to the following assumptions (mainly to avoid additioan LOC).
+	// we assume that the number of namespaces and collections in a txRWSet
+	// to be very minimal (in a single digit),
+	for _, nsRwSet := range txRwSet.NsRwSets {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[2], 1);
+		if nsRwSet.NameSpace != ns {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[4], 1);
+			continue
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[3], 1);return nsRwSet.getPvtDataHash(coll)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[1], 1);return nil
+}
+
+func (nsRwSet *NsRwSet) getPvtDataHash(coll string) []byte {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[5], 1);
+	for _, collHashedRwSet := range nsRwSet.CollHashedRwSets {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[7], 1);
+		if collHashedRwSet.CollectionName != coll {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[9], 1);
+			continue
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[8], 1);return collHashedRwSet.PvtRwSetHash
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[6], 1);return nil
+}
+
+/////////////////////////////////////////////////////////////////
+// Messages related to PRIVATE read-write set
+/////////////////////////////////////////////////////////////////
+
+// TxPvtRwSet represents 'rwset.TxPvtReadWriteSet' proto message
+type TxPvtRwSet struct {
+	NsPvtRwSet []*NsPvtRwSet
+}
+
+// NsPvtRwSet represents 'rwset.NsPvtReadWriteSet' proto message
+type NsPvtRwSet struct {
+	NameSpace     string
+	CollPvtRwSets []*CollPvtRwSet
+}
+
+// CollPvtRwSet encapsulates 'kvrwset.KVRWSet' proto message for a private rwset for a specific collection
+// KvRwSet in a private RwSet should not contain range query info
+type CollPvtRwSet struct {
+	CollectionName string
+	KvRwSet        *kvrwset.KVRWSet
+}
+
+/////////////////////////////////////////////////////////////////
+// FUNCTIONS for converting messages to/from proto bytes
+/////////////////////////////////////////////////////////////////
+
+// ToProtoBytes constructs TxReadWriteSet proto message and serializes using protobuf Marshal
+func (txRwSet *TxRwSet) ToProtoBytes() ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[10], 1);
+	var protoMsg *rwset.TxReadWriteSet
+	var err error
+	if protoMsg, err = txRwSet.toProtoMsg(); err != nil {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[12], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[11], 1);return proto.Marshal(protoMsg)
+}
+
+// FromProtoBytes deserializes protobytes into TxReadWriteSet proto message and populates 'TxRwSet'
+func (txRwSet *TxRwSet) FromProtoBytes(protoBytes []byte) error {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[13], 1);
+	protoMsg := &rwset.TxReadWriteSet{}
+	var err error
+	var txRwSetTemp *TxRwSet
+	if err = proto.Unmarshal(protoBytes, protoMsg); err != nil {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[16], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[14], 1);if txRwSetTemp, err = TxRwSetFromProtoMsg(protoMsg); err != nil {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[17], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[15], 1);txRwSet.NsRwSets = txRwSetTemp.NsRwSets
+	return nil
+}
+
+// ToProtoBytes constructs 'TxPvtReadWriteSet' proto message and serializes using protobuf Marshal
+func (txPvtRwSet *TxPvtRwSet) ToProtoBytes() ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[18], 1);
+	var protoMsg *rwset.TxPvtReadWriteSet
+	var err error
+	if protoMsg, err = txPvtRwSet.toProtoMsg(); err != nil {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[20], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[19], 1);return proto.Marshal(protoMsg)
+}
+
+// FromProtoBytes deserializes protobytes into 'TxPvtReadWriteSet' proto message and populates 'TxPvtRwSet'
+func (txPvtRwSet *TxPvtRwSet) FromProtoBytes(protoBytes []byte) error {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[21], 1);
+	protoMsg := &rwset.TxPvtReadWriteSet{}
+	var err error
+	var txPvtRwSetTemp *TxPvtRwSet
+	if err = proto.Unmarshal(protoBytes, protoMsg); err != nil {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[24], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[22], 1);if txPvtRwSetTemp, err = TxPvtRwSetFromProtoMsg(protoMsg); err != nil {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[25], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[23], 1);txPvtRwSet.NsPvtRwSet = txPvtRwSetTemp.NsPvtRwSet
+	return nil
+}
+
+func (txRwSet *TxRwSet) toProtoMsg() (*rwset.TxReadWriteSet, error) {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[26], 1);
+	protoMsg := &rwset.TxReadWriteSet{DataModel: rwset.TxReadWriteSet_KV}
+	var nsRwSetProtoMsg *rwset.NsReadWriteSet
+	var err error
+	for _, nsRwSet := range txRwSet.NsRwSets {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[28], 1);
+		if nsRwSetProtoMsg, err = nsRwSet.toProtoMsg(); err != nil {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[30], 1);
+			return nil, err
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[29], 1);protoMsg.NsRwset = append(protoMsg.NsRwset, nsRwSetProtoMsg)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[27], 1);return protoMsg, nil
+}
+
+func TxRwSetFromProtoMsg(protoMsg *rwset.TxReadWriteSet) (*TxRwSet, error) {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[31], 1);
+	txRwSet := &TxRwSet{}
+	var nsRwSet *NsRwSet
+	var err error
+	for _, nsRwSetProtoMsg := range protoMsg.NsRwset {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[33], 1);
+		if nsRwSet, err = nsRwSetFromProtoMsg(nsRwSetProtoMsg); err != nil {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[35], 1);
+			return nil, err
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[34], 1);txRwSet.NsRwSets = append(txRwSet.NsRwSets, nsRwSet)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[32], 1);return txRwSet, nil
+}
+
+func (nsRwSet *NsRwSet) toProtoMsg() (*rwset.NsReadWriteSet, error) {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[36], 1);
+	var err error
+	protoMsg := &rwset.NsReadWriteSet{Namespace: nsRwSet.NameSpace}
+	if protoMsg.Rwset, err = proto.Marshal(nsRwSet.KvRwSet); err != nil {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[39], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[37], 1);var collHashedRwSetProtoMsg *rwset.CollectionHashedReadWriteSet
+	for _, collHashedRwSet := range nsRwSet.CollHashedRwSets {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[40], 1);
+		if collHashedRwSetProtoMsg, err = collHashedRwSet.toProtoMsg(); err != nil {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[42], 1);
+			return nil, err
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[41], 1);protoMsg.CollectionHashedRwset = append(protoMsg.CollectionHashedRwset, collHashedRwSetProtoMsg)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[38], 1);return protoMsg, nil
+}
+
+func nsRwSetFromProtoMsg(protoMsg *rwset.NsReadWriteSet) (*NsRwSet, error) {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[43], 1);
+	nsRwSet := &NsRwSet{NameSpace: protoMsg.Namespace, KvRwSet: &kvrwset.KVRWSet{}}
+	if err := proto.Unmarshal(protoMsg.Rwset, nsRwSet.KvRwSet); err != nil {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[46], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[44], 1);var err error
+	var collHashedRwSet *CollHashedRwSet
+	for _, collHashedRwSetProtoMsg := range protoMsg.CollectionHashedRwset {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[47], 1);
+		if collHashedRwSet, err = collHashedRwSetFromProtoMsg(collHashedRwSetProtoMsg); err != nil {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[49], 1);
+			return nil, err
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[48], 1);nsRwSet.CollHashedRwSets = append(nsRwSet.CollHashedRwSets, collHashedRwSet)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[45], 1);return nsRwSet, nil
+}
+
+func (collHashedRwSet *CollHashedRwSet) toProtoMsg() (*rwset.CollectionHashedReadWriteSet, error) {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[50], 1);
+	var err error
+	protoMsg := &rwset.CollectionHashedReadWriteSet{
+		CollectionName: collHashedRwSet.CollectionName,
+		PvtRwsetHash:   collHashedRwSet.PvtRwSetHash,
+	}
+	if protoMsg.HashedRwset, err = proto.Marshal(collHashedRwSet.HashedRwSet); err != nil {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[52], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[51], 1);return protoMsg, nil
+}
+
+func collHashedRwSetFromProtoMsg(protoMsg *rwset.CollectionHashedReadWriteSet) (*CollHashedRwSet, error) {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[53], 1);
+	colHashedRwSet := &CollHashedRwSet{
+		CollectionName: protoMsg.CollectionName,
+		PvtRwSetHash:   protoMsg.PvtRwsetHash,
+		HashedRwSet:    &kvrwset.HashedRWSet{},
+	}
+	if err := proto.Unmarshal(protoMsg.HashedRwset, colHashedRwSet.HashedRwSet); err != nil {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[55], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[54], 1);return colHashedRwSet, nil
+}
+
+func (txRwSet *TxRwSet) NumCollections() int {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[56], 1);
+	if txRwSet == nil {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[59], 1);
+		return 0
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[57], 1);numColls := 0
+	for _, nsRwset := range txRwSet.NsRwSets {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[60], 1);
+		for range nsRwset.CollHashedRwSets {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[61], 1);
+			numColls++
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[58], 1);return numColls
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// functions for private read-write set
+///////////////////////////////////////////////////////////////////////////////
+
+func (txPvtRwSet *TxPvtRwSet) toProtoMsg() (*rwset.TxPvtReadWriteSet, error) {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[62], 1);
+	protoMsg := &rwset.TxPvtReadWriteSet{DataModel: rwset.TxReadWriteSet_KV}
+	var nsProtoMsg *rwset.NsPvtReadWriteSet
+	var err error
+	for _, nsPvtRwSet := range txPvtRwSet.NsPvtRwSet {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[64], 1);
+		if nsProtoMsg, err = nsPvtRwSet.toProtoMsg(); err != nil {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[66], 1);
+			return nil, err
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[65], 1);protoMsg.NsPvtRwset = append(protoMsg.NsPvtRwset, nsProtoMsg)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[63], 1);return protoMsg, nil
+}
+
+func TxPvtRwSetFromProtoMsg(protoMsg *rwset.TxPvtReadWriteSet) (*TxPvtRwSet, error) {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[67], 1);
+	txPvtRwset := &TxPvtRwSet{}
+	var nsPvtRwSet *NsPvtRwSet
+	var err error
+	for _, nsRwSetProtoMsg := range protoMsg.NsPvtRwset {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[69], 1);
+		if nsPvtRwSet, err = nsPvtRwSetFromProtoMsg(nsRwSetProtoMsg); err != nil {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[71], 1);
+			return nil, err
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[70], 1);txPvtRwset.NsPvtRwSet = append(txPvtRwset.NsPvtRwSet, nsPvtRwSet)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[68], 1);return txPvtRwset, nil
+}
+
+func (nsPvtRwSet *NsPvtRwSet) toProtoMsg() (*rwset.NsPvtReadWriteSet, error) {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[72], 1);
+	protoMsg := &rwset.NsPvtReadWriteSet{Namespace: nsPvtRwSet.NameSpace}
+	var err error
+	var collPvtRwSetProtoMsg *rwset.CollectionPvtReadWriteSet
+	for _, collPvtRwSet := range nsPvtRwSet.CollPvtRwSets {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[74], 1);
+		if collPvtRwSetProtoMsg, err = collPvtRwSet.toProtoMsg(); err != nil {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[76], 1);
+			return nil, err
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[75], 1);protoMsg.CollectionPvtRwset = append(protoMsg.CollectionPvtRwset, collPvtRwSetProtoMsg)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[73], 1);return protoMsg, err
+}
+
+func nsPvtRwSetFromProtoMsg(protoMsg *rwset.NsPvtReadWriteSet) (*NsPvtRwSet, error) {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[77], 1);
+	nsPvtRwSet := &NsPvtRwSet{NameSpace: protoMsg.Namespace}
+	for _, collPvtRwSetProtoMsg := range protoMsg.CollectionPvtRwset {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[79], 1);
+		var err error
+		var collPvtRwSet *CollPvtRwSet
+		if collPvtRwSet, err = collPvtRwSetFromProtoMsg(collPvtRwSetProtoMsg); err != nil {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[81], 1);
+			return nil, err
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[80], 1);nsPvtRwSet.CollPvtRwSets = append(nsPvtRwSet.CollPvtRwSets, collPvtRwSet)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[78], 1);return nsPvtRwSet, nil
+}
+
+func (collPvtRwSet *CollPvtRwSet) toProtoMsg() (*rwset.CollectionPvtReadWriteSet, error) {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[82], 1);
+	var err error
+	protoMsg := &rwset.CollectionPvtReadWriteSet{CollectionName: collPvtRwSet.CollectionName}
+	if protoMsg.Rwset, err = proto.Marshal(collPvtRwSet.KvRwSet); err != nil {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[84], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[83], 1);return protoMsg, nil
+}
+
+func collPvtRwSetFromProtoMsg(protoMsg *rwset.CollectionPvtReadWriteSet) (*CollPvtRwSet, error) {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[85], 1);
+	collPvtRwSet := &CollPvtRwSet{CollectionName: protoMsg.CollectionName, KvRwSet: &kvrwset.KVRWSet{}}
+	if err := proto.Unmarshal(protoMsg.Rwset, collPvtRwSet.KvRwSet); err != nil {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[87], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[86], 1);return collPvtRwSet, nil
+}
+
+// NewKVRead helps constructing proto message kvrwset.KVRead
+func NewKVRead(key string, version *version.Height) *kvrwset.KVRead {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[88], 1);
+	return &kvrwset.KVRead{Key: key, Version: newProtoVersion(version)}
+}
+
+// NewVersion helps converting proto message kvrwset.Version to version.Height
+func NewVersion(protoVersion *kvrwset.Version) *version.Height {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[89], 1);
+	if protoVersion == nil {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[91], 1);
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[90], 1);return version.NewHeight(protoVersion.BlockNum, protoVersion.TxNum)
+}
+
+func newProtoVersion(height *version.Height) *kvrwset.Version {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[92], 1);
+	if height == nil {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[94], 1);
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[93], 1);return &kvrwset.Version{BlockNum: height.BlockNum, TxNum: height.TxNum}
+}
+
+func newKVWrite(key string, value []byte) *kvrwset.KVWrite {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[95], 1);
+	return &kvrwset.KVWrite{Key: key, IsDelete: value == nil, Value: value}
+}
+
+func newPvtKVReadHash(key string, version *version.Height) *kvrwset.KVReadHash {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[96], 1);
+	return &kvrwset.KVReadHash{KeyHash: util.ComputeStringHash(key), Version: newProtoVersion(version)}
+}
+
+func newPvtKVWriteAndHash(key string, value []byte) (*kvrwset.KVWrite, *kvrwset.KVWriteHash) {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[97], 1);
+	kvWrite := newKVWrite(key, value)
+	var keyHash, valueHash []byte
+	keyHash = util.ComputeStringHash(key)
+	if !kvWrite.IsDelete {_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[99], 1);
+		valueHash = util.ComputeHash(value)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_353735386332653438306431.Count[98], 1);return kvWrite, &kvrwset.KVWriteHash{KeyHash: keyHash, IsDelete: kvWrite.IsDelete, ValueHash: valueHash}
+}
+
+var GoCover_2_353735386332653438306431 = struct {
+	Count     [100]uint32
+	Pos       [3 * 100]uint32
+	NumStmt   [100]uint16
+} {
+	Pos: [3 * 100]uint32{
+		51, 57, 0x2b0040, // [0]
+		63, 63, 0xc0002, // [1]
+		57, 58, 0x1e002b, // [2]
+		61, 61, 0x260003, // [3]
+		58, 59, 0xc001e, // [4]
+		66, 67, 0x3b003c, // [5]
+		73, 73, 0xc0002, // [6]
+		67, 68, 0x2d003b, // [7]
+		71, 71, 0x260003, // [8]
+		68, 69, 0xc002d, // [9]
+		103, 106, 0x360038, // [10]
+		109, 109, 0x200002, // [11]
+		106, 108, 0x30036, // [12]
+		113, 117, 0x3d0041, // [13]
+		120, 120, 0x420002, // [14]
+		123, 124, 0xc0002, // [15]
+		117, 119, 0x3003d, // [16]
+		120, 122, 0x30042, // [17]
+		128, 131, 0x39003e, // [18]
+		134, 134, 0x200002, // [19]
+		131, 133, 0x30039, // [20]
+		138, 142, 0x3d0047, // [21]
+		145, 145, 0x480002, // [22]
+		148, 149, 0xc0002, // [23]
+		142, 144, 0x3003d, // [24]
+		145, 147, 0x30048, // [25]
+		152, 156, 0x2b0045, // [26]
+		162, 162, 0x160002, // [27]
+		156, 157, 0x3e002b, // [28]
+		160, 160, 0x3f0003, // [29]
+		157, 159, 0x4003e, // [30]
+		165, 169, 0x33004c, // [31]
+		175, 175, 0x150002, // [32]
+		169, 170, 0x460033, // [33]
+		173, 173, 0x370003, // [34]
+		170, 172, 0x40046, // [35]
+		178, 181, 0x460045, // [36]
+		185, 186, 0x3b0002, // [37]
+		192, 192, 0x160002, // [38]
+		181, 183, 0x30046, // [39]
+		186, 187, 0x4e003b, // [40]
+		190, 190, 0x630003, // [41]
+		187, 189, 0x4004e, // [42]
+		195, 197, 0x49004c, // [43]
+		200, 202, 0x490002, // [44]
+		208, 208, 0x150002, // [45]
+		197, 199, 0x30049, // [46]
+		202, 203, 0x5e0049, // [47]
+		206, 206, 0x4f0003, // [48]
+		203, 205, 0x4005e, // [49]
+		211, 217, 0x580063, // [50]
+		220, 220, 0x160002, // [51]
+		217, 219, 0x30058, // [52]
+		223, 229, 0x5a006a, // [53]
+		232, 232, 0x1c0002, // [54]
+		229, 231, 0x3005a, // [55]
+		235, 236, 0x14002e, // [56]
+		239, 240, 0x2b0002, // [57]
+		245, 245, 0x110002, // [58]
+		236, 238, 0x30014, // [59]
+		240, 241, 0x26002b, // [60]
+		241, 243, 0x40026, // [61]
+		252, 256, 0x33004e, // [62]
+		262, 262, 0x160002, // [63]
+		256, 257, 0x3c0033, // [64]
+		260, 260, 0x400003, // [65]
+		257, 259, 0x4003c, // [66]
+		265, 269, 0x360055, // [67]
+		275, 275, 0x180002, // [68]
+		269, 270, 0x4c0036, // [69]
+		273, 273, 0x440003, // [70]
+		270, 272, 0x4004c, // [71]
+		278, 282, 0x38004e, // [72]
+		288, 288, 0x160002, // [73]
+		282, 283, 0x480038, // [74]
+		286, 286, 0x5a0003, // [75]
+		283, 285, 0x40048, // [76]
+		291, 293, 0x430055, // [77]
+		301, 301, 0x180002, // [78]
+		293, 296, 0x550043, // [79]
+		299, 299, 0x4c0003, // [80]
+		296, 298, 0x40055, // [81]
+		304, 307, 0x4b005a, // [82]
+		310, 310, 0x160002, // [83]
+		307, 309, 0x3004b, // [84]
+		313, 315, 0x4e0061, // [85]
+		318, 318, 0x1a0002, // [86]
+		315, 317, 0x3004e, // [87]
+		322, 324, 0x20045, // [88]
+		327, 328, 0x190040, // [89]
+		331, 331, 0x450002, // [90]
+		328, 330, 0x30019, // [91]
+		334, 335, 0x13003f, // [92]
+		338, 338, 0x490002, // [93]
+		335, 337, 0x30013, // [94]
+		341, 343, 0x2003c, // [95]
+		345, 347, 0x20050, // [96]
+		349, 353, 0x17005e, // [97]
+		356, 356, 0x6a0002, // [98]
+		353, 355, 0x30017, // [99]
+	},
+	NumStmt: [100]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		3, // 10
+		1, // 11
+		1, // 12
+		4, // 13
+		1, // 14
+		2, // 15
+		1, // 16
+		1, // 17
+		3, // 18
+		1, // 19
+		1, // 20
+		4, // 21
+		1, // 22
+		2, // 23
+		1, // 24
+		1, // 25
+		4, // 26
+		1, // 27
+		1, // 28
+		1, // 29
+		1, // 30
+		4, // 31
+		1, // 32
+		1, // 33
+		1, // 34
+		1, // 35
+		3, // 36
+		2, // 37
+		1, // 38
+		1, // 39
+		1, // 40
+		1, // 41
+		1, // 42
+		2, // 43
+		3, // 44
+		1, // 45
+		1, // 46
+		1, // 47
+		1, // 48
+		1, // 49
+		3, // 50
+		1, // 51
+		1, // 52
+		2, // 53
+		1, // 54
+		1, // 55
+		1, // 56
+		2, // 57
+		1, // 58
+		1, // 59
+		1, // 60
+		1, // 61
+		4, // 62
+		1, // 63
+		1, // 64
+		1, // 65
+		1, // 66
+		4, // 67
+		1, // 68
+		1, // 69
+		1, // 70
+		1, // 71
+		4, // 72
+		1, // 73
+		1, // 74
+		1, // 75
+		1, // 76
+		2, // 77
+		1, // 78
+		3, // 79
+		1, // 80
+		1, // 81
+		3, // 82
+		1, // 83
+		1, // 84
+		2, // 85
+		1, // 86
+		1, // 87
+		1, // 88
+		1, // 89
+		1, // 90
+		1, // 91
+		1, // 92
+		1, // 93
+		1, // 94
+		1, // 95
+		1, // 96
+		4, // 97
+		1, // 98
+		1, // 99
+	},
+}
+var _ = _cover_atomic_.LoadUint32

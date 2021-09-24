@@ -1,0 +1,112 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/flogging/fabenc/encoder.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package fabenc; import _cover_atomic_ "sync/atomic"
+
+import (
+	"io"
+	"time"
+
+	"go.uber.org/zap/buffer"
+	"go.uber.org/zap/zapcore"
+)
+
+// A FormatEncoder is a zapcore.Encoder that formats log records according to a
+// go-logging based format specifier.
+type FormatEncoder struct {
+	zapcore.Encoder
+	formatters []Formatter
+	pool       buffer.Pool
+}
+
+// A Formatter is used to format and write data from a zap log entry.
+type Formatter interface {
+	Format(w io.Writer, entry zapcore.Entry, fields []zapcore.Field)
+}
+
+func NewFormatEncoder(formatters ...Formatter) *FormatEncoder {_cover_atomic_.AddUint32(&GoCover_1_363135623664303734363938.Count[0], 1);
+	return &FormatEncoder{
+		Encoder: zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
+			MessageKey:     "", // disable
+			LevelKey:       "", // disable
+			TimeKey:        "", // disable
+			NameKey:        "", // disable
+			CallerKey:      "", // disable
+			StacktraceKey:  "", // disable
+			LineEnding:     "\n",
+			EncodeDuration: zapcore.StringDurationEncoder,
+			EncodeTime: func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {_cover_atomic_.AddUint32(&GoCover_1_363135623664303734363938.Count[1], 1);
+				enc.AppendString(t.Format("2006-01-02T15:04:05.999Z07:00"))
+			},
+		}),
+		formatters: formatters,
+		pool:       buffer.NewPool(),
+	}
+}
+
+// Clone creates a new instance of this encoder with the same configuration.
+func (f *FormatEncoder) Clone() zapcore.Encoder {_cover_atomic_.AddUint32(&GoCover_1_363135623664303734363938.Count[2], 1);
+	return &FormatEncoder{
+		Encoder:    f.Encoder.Clone(),
+		formatters: f.formatters,
+		pool:       f.pool,
+	}
+}
+
+// EncodeEntry formats a zap log record. The structured fields are formatted by a
+// zapcore.ConsoleEncoder and are appended as JSON to the end of the formatted entry.
+// All entries are terminated by a newline.
+func (f *FormatEncoder) EncodeEntry(entry zapcore.Entry, fields []zapcore.Field) (*buffer.Buffer, error) {_cover_atomic_.AddUint32(&GoCover_1_363135623664303734363938.Count[3], 1);
+	line := f.pool.Get()
+	for _, f := range f.formatters {_cover_atomic_.AddUint32(&GoCover_1_363135623664303734363938.Count[7], 1);
+		f.Format(line, entry, fields)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_363135623664303734363938.Count[4], 1);encodedFields, err := f.Encoder.EncodeEntry(entry, fields)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_363135623664303734363938.Count[8], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_363135623664303734363938.Count[5], 1);if line.Len() > 0 && encodedFields.Len() != 1 {_cover_atomic_.AddUint32(&GoCover_1_363135623664303734363938.Count[9], 1);
+		line.AppendString(" ")
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_363135623664303734363938.Count[6], 1);line.AppendString(encodedFields.String())
+	encodedFields.Free()
+
+	return line, nil
+}
+
+var GoCover_1_363135623664303734363938 = struct {
+	Count     [10]uint32
+	Pos       [3 * 10]uint32
+	NumStmt   [10]uint16
+} {
+	Pos: [3 * 10]uint32{
+		30, 41, 0x45003f, // [0]
+		41, 43, 0x50045, // [1]
+		51, 57, 0x20031, // [2]
+		62, 64, 0x21006a, // [3]
+		68, 69, 0x100002, // [4]
+		72, 72, 0x300002, // [5]
+		75, 78, 0x120002, // [6]
+		64, 66, 0x30021, // [7]
+		69, 71, 0x30010, // [8]
+		72, 74, 0x30030, // [9]
+	},
+	NumStmt: [10]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		2, // 3
+		2, // 4
+		1, // 5
+		3, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+	},
+}
+var _ = _cover_atomic_.LoadUint32

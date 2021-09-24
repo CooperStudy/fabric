@@ -1,0 +1,5 @@
+ccmetadata.cover.go
+targzmetadataprovider.cover.go
+validators.cover.go
+./targzmetadataprovider_test.go
+./validators_test.go

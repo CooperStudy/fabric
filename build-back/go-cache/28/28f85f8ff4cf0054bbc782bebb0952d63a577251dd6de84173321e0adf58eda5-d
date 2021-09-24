@@ -1,0 +1,152 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/tools/protolator/nested.go:1
+/*
+Copyright IBM Corp. 2017 All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+                 http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package protolator; import _cover_atomic_ "sync/atomic"
+
+import (
+	"reflect"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/timestamp"
+)
+
+func nestedFrom(value interface{}, destType reflect.Type) (reflect.Value, error) {_cover_atomic_.AddUint32(&GoCover_3_323433346337636538616662.Count[0], 1);
+	tree := value.(map[string]interface{}) // Safe, already checked
+	result := reflect.New(destType.Elem())
+	nMsg := result.Interface().(proto.Message) // Safe, already checked
+	if err := recursivelyPopulateMessageFromTree(tree, nMsg); err != nil {_cover_atomic_.AddUint32(&GoCover_3_323433346337636538616662.Count[2], 1);
+		return reflect.Value{}, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_323433346337636538616662.Count[1], 1);return result, nil
+}
+
+func nestedTo(value reflect.Value) (interface{}, error) {_cover_atomic_.AddUint32(&GoCover_3_323433346337636538616662.Count[3], 1);
+	nMsg := value.Interface().(proto.Message) // Safe, already checked
+	return recursivelyCreateTreeFromMessage(nMsg)
+}
+
+var timestampType = reflect.TypeOf(&timestamp.Timestamp{})
+
+type nestedFieldFactory struct{}
+
+func (nff nestedFieldFactory) Handles(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) bool {_cover_atomic_.AddUint32(&GoCover_3_323433346337636538616662.Count[4], 1);
+	// Note, we skip recursing into the field if it is a proto native timestamp, because there is other custom marshaling this conflicts with
+	// this should probably be revisited more generally to prevent custom marshaling of 'well known messages'
+	return fieldType.Kind() == reflect.Ptr && fieldType.AssignableTo(protoMsgType) && !fieldType.AssignableTo(timestampType)
+}
+
+func (nff nestedFieldFactory) NewProtoField(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) (protoField, error) {_cover_atomic_.AddUint32(&GoCover_3_323433346337636538616662.Count[5], 1);
+	return &plainField{
+		baseField: baseField{
+			msg:   msg,
+			name:  fieldName,
+			fType: mapStringInterfaceType,
+			vType: fieldType,
+			value: fieldValue,
+		},
+		populateFrom: nestedFrom,
+		populateTo:   nestedTo,
+	}, nil
+}
+
+type nestedMapFieldFactory struct{}
+
+func (nmff nestedMapFieldFactory) Handles(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) bool {_cover_atomic_.AddUint32(&GoCover_3_323433346337636538616662.Count[6], 1);
+	return fieldType.Kind() == reflect.Map && fieldType.Elem().AssignableTo(protoMsgType) && !fieldType.Elem().AssignableTo(timestampType) && fieldType.Key().Kind() == reflect.String
+}
+
+func (nmff nestedMapFieldFactory) NewProtoField(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) (protoField, error) {_cover_atomic_.AddUint32(&GoCover_3_323433346337636538616662.Count[7], 1);
+	return &mapField{
+		baseField: baseField{
+			msg:   msg,
+			name:  fieldName,
+			fType: mapStringInterfaceType,
+			vType: fieldType,
+			value: fieldValue,
+		},
+		populateFrom: func(k string, v interface{}, dT reflect.Type) (reflect.Value, error) {_cover_atomic_.AddUint32(&GoCover_3_323433346337636538616662.Count[8], 1);
+			return nestedFrom(v, dT)
+		},
+		populateTo: func(k string, v reflect.Value) (interface{}, error) {_cover_atomic_.AddUint32(&GoCover_3_323433346337636538616662.Count[9], 1);
+			return nestedTo(v)
+		},
+	}, nil
+}
+
+type nestedSliceFieldFactory struct{}
+
+func (nmff nestedSliceFieldFactory) Handles(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) bool {_cover_atomic_.AddUint32(&GoCover_3_323433346337636538616662.Count[10], 1);
+	return fieldType.Kind() == reflect.Slice && fieldType.Elem().AssignableTo(protoMsgType) && !fieldType.Elem().AssignableTo(timestampType)
+}
+
+func (nmff nestedSliceFieldFactory) NewProtoField(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) (protoField, error) {_cover_atomic_.AddUint32(&GoCover_3_323433346337636538616662.Count[11], 1);
+	return &sliceField{
+		baseField: baseField{
+			msg:   msg,
+			name:  fieldName,
+			fType: mapStringInterfaceType,
+			vType: fieldType,
+			value: fieldValue,
+		},
+		populateFrom: func(i int, v interface{}, dT reflect.Type) (reflect.Value, error) {_cover_atomic_.AddUint32(&GoCover_3_323433346337636538616662.Count[12], 1);
+			return nestedFrom(v, dT)
+		},
+		populateTo: func(i int, v reflect.Value) (interface{}, error) {_cover_atomic_.AddUint32(&GoCover_3_323433346337636538616662.Count[13], 1);
+			return nestedTo(v)
+		},
+	}, nil
+}
+
+var GoCover_3_323433346337636538616662 = struct {
+	Count     [14]uint32
+	Pos       [3 * 14]uint32
+	NumStmt   [14]uint16
+} {
+	Pos: [3 * 14]uint32{
+		26, 30, 0x470052, // [0]
+		33, 33, 0x140002, // [1]
+		30, 32, 0x30047, // [2]
+		36, 39, 0x20039, // [3]
+		45, 49, 0x20083, // [4]
+		51, 63, 0x20098, // [5]
+		67, 69, 0x20087, // [6]
+		71, 80, 0x57009c, // [7]
+		80, 82, 0x40057, // [8]
+		83, 85, 0x40044, // [9]
+		91, 93, 0x20089, // [10]
+		95, 104, 0x54009e, // [11]
+		104, 106, 0x40054, // [12]
+		107, 109, 0x40041, // [13]
+	},
+	NumStmt: [14]uint16{
+		4, // 0
+		1, // 1
+		1, // 2
+		2, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+	},
+}
+var _ = _cover_atomic_.LoadUint32

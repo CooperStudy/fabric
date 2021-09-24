@@ -1,0 +1,3 @@
+./plugin_activation.go
+./pluggable_suite_test.go
+./pluggable_test.go

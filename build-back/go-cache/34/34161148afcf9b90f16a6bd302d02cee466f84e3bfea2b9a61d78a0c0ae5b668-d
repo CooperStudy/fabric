@@ -1,0 +1,72 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/common/ccprovider/cc_info_provider.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package ccprovider; import _cover_atomic_ "sync/atomic"
+
+import (
+	"bytes"
+	"fmt"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/core/common/sysccprovider"
+)
+
+// IsChaincodeDeployed returns true if the chaincode with given name and version is deployed
+func IsChaincodeDeployed(chainid, ccName, ccVersion string, ccHash []byte, sccp sysccprovider.SystemChaincodeProvider) (bool, error) {_cover_atomic_.AddUint32(&GoCover_0_383934626562653839653065.Count[0], 1);
+	qe, err := sccp.GetQueryExecutorForLedger(chainid)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_383934626562653839653065.Count[5], 1);
+		return false, fmt.Errorf("Could not retrieve QueryExecutor for channel %s, error %s", chainid, err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_383934626562653839653065.Count[1], 1);defer qe.Done()
+
+	// XXX We are leaking details of the LSCC table structure to other parts of the code, and this is terrible
+	chaincodeDataBytes, err := qe.GetState("lscc", ccName)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_383934626562653839653065.Count[6], 1);
+		return false, fmt.Errorf("Could not retrieve state for chaincode %s on channel %s, error %s", ccName, chainid, err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_383934626562653839653065.Count[2], 1);if chaincodeDataBytes == nil {_cover_atomic_.AddUint32(&GoCover_0_383934626562653839653065.Count[7], 1);
+		return false, nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_383934626562653839653065.Count[3], 1);chaincodeData := &ChaincodeData{}
+	err = proto.Unmarshal(chaincodeDataBytes, chaincodeData)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_383934626562653839653065.Count[8], 1);
+		return false, fmt.Errorf("Unmarshalling ChaincodeQueryResponse failed, error %s", err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_383934626562653839653065.Count[4], 1);return chaincodeData.CCVersion() == ccVersion && bytes.Equal(chaincodeData.Hash(), ccHash), nil
+}
+
+var GoCover_0_383934626562653839653065 = struct {
+	Count     [9]uint32
+	Pos       [3 * 9]uint32
+	NumStmt   [9]uint16
+} {
+	Pos: [3 * 9]uint32{
+		18, 20, 0x100086, // [0]
+		23, 27, 0x100002, // [1]
+		31, 31, 0x1f0002, // [2]
+		35, 37, 0x100002, // [3]
+		40, 40, 0x610002, // [4]
+		20, 22, 0x30010, // [5]
+		27, 29, 0x30010, // [6]
+		31, 33, 0x3001f, // [7]
+		37, 39, 0x30010, // [8]
+	},
+	NumStmt: [9]uint16{
+		2, // 0
+		3, // 1
+		1, // 2
+		3, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+	},
+}
+var _ = _cover_atomic_.LoadUint32

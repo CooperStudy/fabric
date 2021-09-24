@@ -1,0 +1,79 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/orderer/consensus/kafka/channel.go:1
+/*
+Copyright IBM Corp. 2016 All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+                 http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package kafka; import _cover_atomic_ "sync/atomic"
+
+import "fmt"
+
+const defaultPartition = 0
+
+// channel identifies the Kafka partition the Kafka-based orderer interacts
+// with.
+type channel interface {
+	topic() string
+	partition() int32
+	fmt.Stringer
+}
+
+type channelImpl struct {
+	tpc string
+	prt int32
+}
+
+// Returns a new channel for a given topic name and partition number.
+func newChannel(topic string, partition int32) channel {_cover_atomic_.AddUint32(&GoCover_1_623633326437306563303132.Count[0], 1);
+	return &channelImpl{
+		tpc: fmt.Sprintf("%s", topic),
+		prt: partition,
+	}
+}
+
+// topic returns the Kafka topic this channel belongs to.
+func (chn *channelImpl) topic() string {_cover_atomic_.AddUint32(&GoCover_1_623633326437306563303132.Count[1], 1);
+	return chn.tpc
+}
+
+// partition returns the Kafka partition where this channel resides.
+func (chn *channelImpl) partition() int32 {_cover_atomic_.AddUint32(&GoCover_1_623633326437306563303132.Count[2], 1);
+	return chn.prt
+}
+
+// String returns a string identifying the Kafka topic/partition corresponding
+// to this channel.
+func (chn *channelImpl) String() string {_cover_atomic_.AddUint32(&GoCover_1_623633326437306563303132.Count[3], 1);
+	return fmt.Sprintf("%s/%d", chn.tpc, chn.prt)
+}
+
+var GoCover_1_623633326437306563303132 = struct {
+	Count     [4]uint32
+	Pos       [3 * 4]uint32
+	NumStmt   [4]uint16
+} {
+	Pos: [3 * 4]uint32{
+		37, 42, 0x20038, // [0]
+		45, 47, 0x20028, // [1]
+		50, 52, 0x2002b, // [2]
+		56, 58, 0x20029, // [3]
+	},
+	NumStmt: [4]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+	},
+}
+var _ = _cover_atomic_.LoadUint32

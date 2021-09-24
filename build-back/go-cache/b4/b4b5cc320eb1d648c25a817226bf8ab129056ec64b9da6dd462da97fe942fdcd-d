@@ -1,0 +1,320 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/peer/common/deliverclient.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package common; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/common/localmsp"
+	"github.com/hyperledger/fabric/common/util"
+	"github.com/hyperledger/fabric/peer/common/api"
+	cb "github.com/hyperledger/fabric/protos/common"
+	ab "github.com/hyperledger/fabric/protos/orderer"
+	pb "github.com/hyperledger/fabric/protos/peer"
+	"github.com/hyperledger/fabric/protos/utils"
+	"github.com/pkg/errors"
+)
+
+var (
+	logger = flogging.MustGetLogger("cli.common")
+
+	seekNewest = &ab.SeekPosition{
+		Type: &ab.SeekPosition_Newest{
+			Newest: &ab.SeekNewest{},
+		},
+	}
+	seekOldest = &ab.SeekPosition{
+		Type: &ab.SeekPosition_Oldest{
+			Oldest: &ab.SeekOldest{},
+		},
+	}
+)
+
+// DeliverClient holds the necessary information to connect a client
+// to an orderer/peer deliver service
+type DeliverClient struct {
+	Service     api.DeliverService
+	ChannelID   string
+	TLSCertHash []byte
+}
+
+func (d *DeliverClient) seekSpecified(blockNumber uint64) error {_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[0], 1);
+	seekPosition := &ab.SeekPosition{
+		Type: &ab.SeekPosition_Specified{
+			Specified: &ab.SeekSpecified{
+				Number: blockNumber,
+			},
+		},
+	}
+	env := seekHelper(d.ChannelID, seekPosition, d.TLSCertHash)
+	return d.Service.Send(env)
+}
+
+func (d *DeliverClient) seekOldest() error {_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[1], 1);
+	env := seekHelper(d.ChannelID, seekOldest, d.TLSCertHash)
+	return d.Service.Send(env)
+}
+
+func (d *DeliverClient) seekNewest() error {_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[2], 1);
+	env := seekHelper(d.ChannelID, seekNewest, d.TLSCertHash)
+	return d.Service.Send(env)
+}
+
+func (d *DeliverClient) readBlock() (*cb.Block, error) {_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[3], 1);
+	msg, err := d.Service.Recv()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[5], 1);
+		return nil, errors.Wrap(err, "error receiving")
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[4], 1);switch t := msg.Type.(type) {
+	case *ab.DeliverResponse_Status:_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[6], 1);
+		logger.Infof("Got status: %v", t)
+		return nil, errors.Errorf("can't read the block: %v", t)
+	case *ab.DeliverResponse_Block:_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[7], 1);
+		logger.Infof("Received block: %v", t.Block.Header.Number)
+		d.Service.Recv() // Flush the success message
+		return t.Block, nil
+	default:_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[8], 1);
+		return nil, errors.Errorf("response error: unknown type %T", t)
+	}
+}
+
+// GetSpecifiedBlock gets the specified block from a peer/orderer's deliver
+// service
+func (d *DeliverClient) GetSpecifiedBlock(num uint64) (*cb.Block, error) {_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[9], 1);
+	err := d.seekSpecified(num)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[11], 1);
+		return nil, errors.WithMessage(err, "error getting specified block")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[10], 1);return d.readBlock()
+}
+
+// GetOldestBlock gets the oldest block from a peer/orderer's deliver service
+func (d *DeliverClient) GetOldestBlock() (*cb.Block, error) {_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[12], 1);
+	err := d.seekOldest()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[14], 1);
+		return nil, errors.WithMessage(err, "error getting oldest block")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[13], 1);return d.readBlock()
+}
+
+// GetNewestBlock gets the newest block from a peer/orderer's deliver service
+func (d *DeliverClient) GetNewestBlock() (*cb.Block, error) {_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[15], 1);
+	err := d.seekNewest()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[17], 1);
+		return nil, errors.WithMessage(err, "error getting newest block")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[16], 1);return d.readBlock()
+}
+
+// Close closes a deliver client's connection
+func (d *DeliverClient) Close() error {_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[18], 1);
+	return d.Service.CloseSend()
+}
+
+func seekHelper(channelID string, position *ab.SeekPosition, tlsCertHash []byte) *cb.Envelope {_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[19], 1);
+	seekInfo := &ab.SeekInfo{
+		Start:    position,
+		Stop:     position,
+		Behavior: ab.SeekInfo_BLOCK_UNTIL_READY,
+	}
+
+	env, err := utils.CreateSignedEnvelopeWithTLSBinding(
+		cb.HeaderType_DELIVER_SEEK_INFO,
+		channelID,
+		localmsp.NewSigner(),
+		seekInfo,
+		int32(0),
+		uint64(0),
+		tlsCertHash,
+	)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[21], 1);
+		logger.Errorf("Error signing envelope:  %s", err)
+		return nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[20], 1);return env
+}
+
+type ordererDeliverService struct {
+	ab.AtomicBroadcast_DeliverClient
+}
+
+// NewDeliverClientForOrderer creates a new DeliverClient from an OrdererClient
+func NewDeliverClientForOrderer(channelID string) (*DeliverClient, error) {_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[22], 1);
+	var tlsCertHash []byte
+	oc, err := NewOrdererClientFromEnv()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[26], 1);
+		return nil, errors.WithMessage(err, "failed to create deliver client")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[23], 1);dc, err := oc.Deliver()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[27], 1);
+		return nil, errors.WithMessage(err, "failed to create deliver client")
+	}
+	// check for client certificate and create hash if present
+	_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[24], 1);if len(oc.Certificate().Certificate) > 0 {_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[28], 1);
+		tlsCertHash = util.ComputeSHA256(oc.Certificate().Certificate[0])
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[25], 1);ds := &ordererDeliverService{dc}
+	o := &DeliverClient{
+		Service:     ds,
+		ChannelID:   channelID,
+		TLSCertHash: tlsCertHash,
+	}
+	return o, nil
+}
+
+type peerDeliverService struct {
+	pb.Deliver_DeliverClient
+}
+
+// NewDeliverClientForPeer creates a new DeliverClient from a PeerClient
+func NewDeliverClientForPeer(channelID string) (*DeliverClient, error) {_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[29], 1);
+	var tlsCertHash []byte
+	pc, err := NewPeerClientFromEnv()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[33], 1);
+		return nil, errors.WithMessage(err, "failed to create deliver client")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[30], 1);d, err := pc.Deliver()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[34], 1);
+		return nil, errors.WithMessage(err, "failed to create deliver client")
+	}
+
+	// check for client certificate and create hash if present
+	_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[31], 1);if len(pc.Certificate().Certificate) > 0 {_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[35], 1);
+		tlsCertHash = util.ComputeSHA256(pc.Certificate().Certificate[0])
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[32], 1);ds := &peerDeliverService{d}
+	p := &DeliverClient{
+		Service:     ds,
+		ChannelID:   channelID,
+		TLSCertHash: tlsCertHash,
+	}
+	return p, nil
+}
+
+func (p *peerDeliverService) Recv() (*ab.DeliverResponse, error) {_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[36], 1);
+	pbResp, err := p.Deliver_DeliverClient.Recv()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[39], 1);
+		return nil, errors.Wrap(err, "error receiving from peer deliver service")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[37], 1);abResp := &ab.DeliverResponse{}
+
+	switch t := pbResp.Type.(type) {
+	case *pb.DeliverResponse_Status:_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[40], 1);
+		abResp.Type = &ab.DeliverResponse_Status{Status: t.Status}
+	case *pb.DeliverResponse_Block:_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[41], 1);
+		abResp.Type = &ab.DeliverResponse_Block{Block: t.Block}
+	default:_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[42], 1);
+		return nil, errors.Errorf("response error: unknown type %T", t)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_393466303334653164333865.Count[38], 1);return abResp, nil
+}
+
+var GoCover_2_393466303334653164333865 = struct {
+	Count     [43]uint32
+	Pos       [3 * 43]uint32
+	NumStmt   [43]uint16
+} {
+	Pos: [3 * 43]uint32{
+		44, 54, 0x20041, // [0]
+		56, 59, 0x2002c, // [1]
+		61, 64, 0x2002c, // [2]
+		66, 68, 0x100038, // [3]
+		71, 71, 0x1e0002, // [4]
+		68, 70, 0x30010, // [5]
+		72, 74, 0x3b0022, // [6]
+		75, 78, 0x160021, // [7]
+		79, 80, 0x42000a, // [8]
+		86, 88, 0x10004a, // [9]
+		92, 92, 0x160002, // [10]
+		88, 90, 0x30010, // [11]
+		96, 98, 0x10003d, // [12]
+		102, 102, 0x160002, // [13]
+		98, 100, 0x30010, // [14]
+		106, 108, 0x10003d, // [15]
+		112, 112, 0x160002, // [16]
+		108, 110, 0x30010, // [17]
+		116, 118, 0x20027, // [18]
+		120, 136, 0x10005f, // [19]
+		141, 141, 0xc0002, // [20]
+		136, 139, 0x30010, // [21]
+		149, 152, 0x10004b, // [22]
+		156, 157, 0x100002, // [23]
+		161, 161, 0x2b0002, // [24]
+		164, 170, 0xf0002, // [25]
+		152, 154, 0x30010, // [26]
+		157, 159, 0x30010, // [27]
+		161, 163, 0x3002b, // [28]
+		178, 181, 0x100048, // [29]
+		185, 186, 0x100002, // [30]
+		191, 191, 0x2b0002, // [31]
+		194, 200, 0xf0002, // [32]
+		181, 183, 0x30010, // [33]
+		186, 188, 0x30010, // [34]
+		191, 193, 0x3002b, // [35]
+		203, 205, 0x100042, // [36]
+		209, 211, 0x210002, // [37]
+		220, 220, 0x140002, // [38]
+		205, 207, 0x30010, // [39]
+		212, 213, 0x3d0022, // [40]
+		214, 215, 0x3a0021, // [41]
+		216, 217, 0x42000a, // [42]
+	},
+	NumStmt: [43]uint16{
+		3, // 0
+		2, // 1
+		2, // 2
+		2, // 3
+		1, // 4
+		1, // 5
+		2, // 6
+		3, // 7
+		1, // 8
+		2, // 9
+		1, // 10
+		1, // 11
+		2, // 12
+		1, // 13
+		1, // 14
+		2, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		3, // 19
+		1, // 20
+		2, // 21
+		3, // 22
+		2, // 23
+		1, // 24
+		3, // 25
+		1, // 26
+		1, // 27
+		1, // 28
+		3, // 29
+		2, // 30
+		1, // 31
+		3, // 32
+		1, // 33
+		1, // 34
+		1, // 35
+		2, // 36
+		2, // 37
+		1, // 38
+		1, // 39
+		1, // 40
+		1, // 41
+		1, // 42
+	},
+}
+var _ = _cover_atomic_.LoadUint32

@@ -1,0 +1,12 @@
+ecdsa.cover.go
+errs.cover.go
+io.cover.go
+keys.cover.go
+slice.cover.go
+x509.cover.go
+./ecdsa_test.go
+./errs_test.go
+./io_test.go
+./keys_test.go
+./slice_test.go
+./x509_test.go

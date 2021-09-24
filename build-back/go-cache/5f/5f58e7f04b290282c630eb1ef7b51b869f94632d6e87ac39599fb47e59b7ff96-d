@@ -1,0 +1,140 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/common/ccprovider/cc_statedb_artifacts_provider.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package ccprovider; import _cover_atomic_ "sync/atomic"
+
+import (
+	"archive/tar"
+	"bytes"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"path/filepath"
+	"strings"
+
+	"github.com/hyperledger/fabric/core/chaincode/platforms"
+)
+
+const (
+	ccPackageStatedbDir = "META-INF/statedb/"
+)
+
+// tarFileEntry encapsulates a file entry and it's contents inside a tar
+type TarFileEntry struct {
+	FileHeader  *tar.Header
+	FileContent []byte
+}
+
+// ExtractStatedbArtifactsAsTarbytes extracts the statedb artifacts from the code package tar and create a statedb artifact tar.
+// The state db artifacts are expected to contain state db specific artifacts such as index specification in the case of couchdb.
+// This function is intented to be used during chaincode instantiate/upgrade so that statedb artifacts can be created.
+func ExtractStatedbArtifactsForChaincode(ccname, ccversion string, pr *platforms.Registry) (installed bool, statedbArtifactsTar []byte, err error) {_cover_atomic_.AddUint32(&GoCover_1_383934626562653839653065.Count[0], 1);
+	ccpackage, err := GetChaincodeFromFS(ccname, ccversion)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_383934626562653839653065.Count[2], 1);
+		// TODO for now, we assume that an error indicates that the chaincode is not installed on the peer.
+		// However, we need a way to differentiate between the 'not installed' and a general error so that on general error,
+		// we can abort the chaincode instantiate/upgrade/install operation.
+		ccproviderLogger.Infof("Error while loading installation package for ccname=%s, ccversion=%s. Err=%s", ccname, ccversion, err)
+		return false, nil, nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_383934626562653839653065.Count[1], 1);statedbArtifactsTar, err = ExtractStatedbArtifactsFromCCPackage(ccpackage, pr)
+	return true, statedbArtifactsTar, err
+}
+
+// ExtractStatedbArtifactsFromCCPackage extracts the statedb artifacts from the code package tar and create a statedb artifact tar.
+// The state db artifacts are expected to contain state db specific artifacts such as index specification in the case of couchdb.
+// This function is called during chaincode instantiate/upgrade (from above), and from install, so that statedb artifacts can be created.
+func ExtractStatedbArtifactsFromCCPackage(ccpackage CCPackage, pr *platforms.Registry) (statedbArtifactsTar []byte, err error) {_cover_atomic_.AddUint32(&GoCover_1_383934626562653839653065.Count[3], 1);
+	cds := ccpackage.GetDepSpec()
+	metaprov, err := pr.GetMetadataProvider(cds.CCType(), cds.Bytes())
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_383934626562653839653065.Count[5], 1);
+		ccproviderLogger.Infof("invalid deployment spec: %s", err)
+		return nil, fmt.Errorf("invalid deployment spec")
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_383934626562653839653065.Count[4], 1);return metaprov.GetMetadataAsTarEntries()
+}
+
+// ExtractFileEntries extract file entries from the given `tarBytes`. A file entry is included in the
+// returned results only if it is located in a directory under the indicated databaseType directory
+// Example for chaincode indexes:
+// "META-INF/statedb/couchdb/indexes/indexColorSortName.json"
+// Example for collection scoped indexes:
+// "META-INF/statedb/couchdb/collections/collectionMarbles/indexes/indexCollMarbles.json"
+// An empty string will have the effect of returning all statedb metadata.  This is useful in validating an
+// archive in the future with multiple database types
+func ExtractFileEntries(tarBytes []byte, databaseType string) (map[string][]*TarFileEntry, error) {_cover_atomic_.AddUint32(&GoCover_1_383934626562653839653065.Count[6], 1);
+
+	indexArtifacts := map[string][]*TarFileEntry{}
+	tarReader := tar.NewReader(bytes.NewReader(tarBytes))
+	for {_cover_atomic_.AddUint32(&GoCover_1_383934626562653839653065.Count[8], 1);
+		hdr, err := tarReader.Next()
+		if err == io.EOF {_cover_atomic_.AddUint32(&GoCover_1_383934626562653839653065.Count[11], 1);
+			// end of tar archive
+			break
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_383934626562653839653065.Count[9], 1);if err != nil {_cover_atomic_.AddUint32(&GoCover_1_383934626562653839653065.Count[12], 1);
+			return nil, err
+		}
+		//split the directory from the full name
+		_cover_atomic_.AddUint32(&GoCover_1_383934626562653839653065.Count[10], 1);dir, _ := filepath.Split(hdr.Name)
+		//remove the ending slash
+		if strings.HasPrefix(hdr.Name, "META-INF/statedb/"+databaseType) {_cover_atomic_.AddUint32(&GoCover_1_383934626562653839653065.Count[13], 1);
+			fileContent, err := ioutil.ReadAll(tarReader)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_1_383934626562653839653065.Count[15], 1);
+				return nil, err
+			}
+			_cover_atomic_.AddUint32(&GoCover_1_383934626562653839653065.Count[14], 1);indexArtifacts[filepath.Clean(dir)] = append(indexArtifacts[filepath.Clean(dir)], &TarFileEntry{FileHeader: hdr, FileContent: fileContent})
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_383934626562653839653065.Count[7], 1);return indexArtifacts, nil
+}
+
+var GoCover_1_383934626562653839653065 = struct {
+	Count     [16]uint32
+	Pos       [3 * 16]uint32
+	NumStmt   [16]uint16
+} {
+	Pos: [3 * 16]uint32{
+		34, 36, 0x100094, // [0]
+		44, 45, 0x270002, // [1]
+		36, 42, 0x30010, // [2]
+		51, 54, 0x100080, // [3]
+		58, 58, 0x2b0002, // [4]
+		54, 57, 0x30010, // [5]
+		69, 73, 0x60063, // [6]
+		94, 94, 0x1c0002, // [7]
+		73, 75, 0x140006, // [8]
+		79, 79, 0x110003, // [9]
+		83, 85, 0x440003, // [10]
+		75, 77, 0x90014, // [11]
+		79, 81, 0x40011, // [12]
+		85, 87, 0x120044, // [13]
+		90, 90, 0x8f0004, // [14]
+		87, 89, 0x50012, // [15]
+	},
+	NumStmt: [16]uint16{
+		2, // 0
+		2, // 1
+		2, // 2
+		3, // 3
+		1, // 4
+		2, // 5
+		3, // 6
+		1, // 7
+		2, // 8
+		1, // 9
+		2, // 10
+		1, // 11
+		1, // 12
+		2, // 13
+		1, // 14
+		1, // 15
+	},
+}
+var _ = _cover_atomic_.LoadUint32

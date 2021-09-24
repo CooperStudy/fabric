@@ -1,0 +1,8 @@
+application.cover.go
+capabilities.cover.go
+channel.cover.go
+orderer.cover.go
+./application_test.go
+./capabilities_test.go
+./channel_test.go
+./orderer_test.go

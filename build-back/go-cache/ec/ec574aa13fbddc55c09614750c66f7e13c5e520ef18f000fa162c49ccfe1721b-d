@@ -1,0 +1,6 @@
+./bexport.go
+./bimport.go
+./exportdata.go
+./gcimporter.go
+./iimport.go
+./newInterface11.go

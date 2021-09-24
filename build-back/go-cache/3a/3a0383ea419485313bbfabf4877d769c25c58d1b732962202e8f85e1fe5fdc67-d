@@ -1,0 +1,206 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/examples/chaincode/go/invokereturnsvalue/invokereturnsvalue.go:1
+/*
+Copyright IBM Corp. 2016 All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+		 http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package main; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+	"strconv"
+
+	"github.com/hyperledger/fabric/core/chaincode/shim"
+	pb "github.com/hyperledger/fabric/protos/peer"
+)
+
+// SimpleChaincode example simple Chaincode implementation
+type SimpleChaincode struct {
+}
+
+// Init method of chaincode
+func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[0], 1);
+	_, args := stub.GetFunctionAndParameters()
+	var A, B string    // Entities
+	var Aval, Bval int // Asset holdings
+	var err error
+
+	if len(args) != 4 {_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[6], 1);
+		return shim.Error("Incorrect number of arguments. Expecting 4")
+	}
+
+	// Initialize the chaincode
+	_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[1], 1);A = args[0]
+	Aval, err = strconv.Atoi(args[1])
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[7], 1);
+		return shim.Error("Expecting integer value for asset holding")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[2], 1);B = args[2]
+	Bval, err = strconv.Atoi(args[3])
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[8], 1);
+		return shim.Error("Expecting integer value for asset holding")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[3], 1);fmt.Printf("Aval = %d, Bval = %d\n", Aval, Bval)
+
+	// Write the state to the ledger
+	err = stub.PutState(A, []byte(strconv.Itoa(Aval)))
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[9], 1);
+		return shim.Error(err.Error())
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[4], 1);err = stub.PutState(B, []byte(strconv.Itoa(Bval)))
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[10], 1);
+		return shim.Error(err.Error())
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[5], 1);return shim.Success([]byte("OK"))
+}
+
+// Invoke transaction makes payment of X units from A to B
+func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[11], 1);
+	_, args := stub.GetFunctionAndParameters()
+
+	var A, B string    // Entities
+	var Aval, Bval int // Asset holdings
+	var X int          // Transaction value
+	var err error
+
+	if len(args) != 3 {_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[20], 1);
+		return shim.Error("Incorrect number of arguments. Expecting 3")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[12], 1);A = args[0]
+	B = args[1]
+
+	// Get the state from the ledger
+	// TODO: will be nice to have a GetAllState call to ledger
+	Avalbytes, err := stub.GetState(A)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[21], 1);
+		return shim.Error("Failed to get state")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[13], 1);if Avalbytes == nil {_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[22], 1);
+		return shim.Error("Entity not found")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[14], 1);Aval, _ = strconv.Atoi(string(Avalbytes))
+
+	Bvalbytes, err := stub.GetState(B)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[23], 1);
+		return shim.Error("Failed to get state")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[15], 1);if Bvalbytes == nil {_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[24], 1);
+		return shim.Error("Entity not found")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[16], 1);Bval, _ = strconv.Atoi(string(Bvalbytes))
+
+	// Perform the execution
+	X, err = strconv.Atoi(args[2])
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[25], 1);
+		return shim.Error("Invalid transaction amount, expecting a integer value")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[17], 1);Aval = Aval - X
+	Bval = Bval + X
+	fmt.Printf("Aval = %d, Bval = %d\n", Aval, Bval)
+
+	// Write the state back to the ledger
+	err = stub.PutState(A, []byte(strconv.Itoa(Aval)))
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[26], 1);
+		return shim.Error(err.Error())
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[18], 1);err = stub.PutState(B, []byte(strconv.Itoa(Bval)))
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[27], 1);
+		return shim.Error(err.Error())
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[19], 1);return shim.Success([]byte(fmt.Sprintf("{%d,%d}", Aval, Bval)))
+}
+
+func main() {_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[28], 1);
+	err := shim.Start(new(SimpleChaincode))
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_666461643337333161353161.Count[29], 1);
+		fmt.Printf("Error starting Simple chaincode: %s", err)
+	}
+}
+
+var GoCover_0_666461643337333161353161 = struct {
+	Count     [30]uint32
+	Pos       [3 * 30]uint32
+	NumStmt   [30]uint16
+} {
+	Pos: [3 * 30]uint32{
+		32, 38, 0x14004e, // [0]
+		43, 45, 0x100002, // [1]
+		48, 50, 0x100002, // [2]
+		53, 57, 0x100002, // [3]
+		61, 62, 0x100002, // [4]
+		66, 66, 0x230002, // [5]
+		38, 40, 0x30014, // [6]
+		45, 47, 0x30010, // [7]
+		50, 52, 0x30010, // [8]
+		57, 59, 0x30010, // [9]
+		62, 64, 0x30010, // [10]
+		70, 78, 0x140050, // [11]
+		82, 88, 0x100002, // [12]
+		91, 91, 0x160002, // [13]
+		94, 97, 0x100002, // [14]
+		100, 100, 0x160002, // [15]
+		103, 107, 0x100002, // [16]
+		110, 116, 0x100002, // [17]
+		120, 121, 0x100002, // [18]
+		125, 125, 0x410002, // [19]
+		78, 80, 0x30014, // [20]
+		88, 90, 0x30010, // [21]
+		91, 93, 0x30016, // [22]
+		97, 99, 0x30010, // [23]
+		100, 102, 0x30016, // [24]
+		107, 109, 0x30010, // [25]
+		116, 118, 0x30010, // [26]
+		121, 123, 0x30010, // [27]
+		128, 130, 0x10000d, // [28]
+		130, 132, 0x30010, // [29]
+	},
+	NumStmt: [30]uint16{
+		5, // 0
+		3, // 1
+		3, // 2
+		3, // 3
+		2, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		6, // 11
+		4, // 12
+		1, // 13
+		3, // 14
+		1, // 15
+		3, // 16
+		5, // 17
+		2, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+		1, // 24
+		1, // 25
+		1, // 26
+		1, // 27
+		2, // 28
+		1, // 29
+	},
+}
+var _ = _cover_atomic_.LoadUint32

@@ -1,0 +1,204 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/idemix/util.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package idemix; import _cover_atomic_ "sync/atomic"
+
+import (
+	"crypto/rand"
+	"crypto/sha256"
+
+	"github.com/hyperledger/fabric-amcl/amcl"
+	"github.com/hyperledger/fabric-amcl/amcl/FP256BN"
+	"github.com/pkg/errors"
+)
+
+// GenG1 is a generator of Group G1
+var GenG1 = FP256BN.NewECPbigs(
+	FP256BN.NewBIGints(FP256BN.CURVE_Gx),
+	FP256BN.NewBIGints(FP256BN.CURVE_Gy))
+
+// GenG2 is a generator of Group G2
+var GenG2 = FP256BN.NewECP2fp2s(
+	FP256BN.NewFP2bigs(FP256BN.NewBIGints(FP256BN.CURVE_Pxa), FP256BN.NewBIGints(FP256BN.CURVE_Pxb)),
+	FP256BN.NewFP2bigs(FP256BN.NewBIGints(FP256BN.CURVE_Pya), FP256BN.NewBIGints(FP256BN.CURVE_Pyb)))
+
+// GenGT is a generator of Group GT
+var GenGT = FP256BN.Fexp(FP256BN.Ate(GenG2, GenG1))
+
+// GroupOrder is the order of the groups
+var GroupOrder = FP256BN.NewBIGints(FP256BN.CURVE_Order)
+
+// FieldBytes is the bytelength of the group order
+var FieldBytes = int(FP256BN.MODBYTES)
+
+// RandModOrder returns a random element in 0, ..., GroupOrder-1
+func RandModOrder(rng *amcl.RAND) *FP256BN.BIG {_cover_atomic_.AddUint32(&GoCover_9_633637303937343739336136.Count[0], 1);
+	// curve order q
+	q := FP256BN.NewBIGints(FP256BN.CURVE_Order)
+
+	// Take random element in Zq
+	return FP256BN.Randomnum(q, rng)
+}
+
+// HashModOrder hashes data into 0, ..., GroupOrder-1
+func HashModOrder(data []byte) *FP256BN.BIG {_cover_atomic_.AddUint32(&GoCover_9_633637303937343739336136.Count[1], 1);
+	digest := sha256.Sum256(data)
+	digestBig := FP256BN.FromBytes(digest[:])
+	digestBig.Mod(GroupOrder)
+	return digestBig
+}
+
+func appendBytes(data []byte, index int, bytesToAdd []byte) int {_cover_atomic_.AddUint32(&GoCover_9_633637303937343739336136.Count[2], 1);
+	copy(data[index:], bytesToAdd)
+	return index + len(bytesToAdd)
+}
+func appendBytesG1(data []byte, index int, E *FP256BN.ECP) int {_cover_atomic_.AddUint32(&GoCover_9_633637303937343739336136.Count[3], 1);
+	length := 2*FieldBytes + 1
+	E.ToBytes(data[index:index+length], false)
+	return index + length
+}
+func EcpToBytes(E *FP256BN.ECP) []byte {_cover_atomic_.AddUint32(&GoCover_9_633637303937343739336136.Count[4], 1);
+	length := 2*FieldBytes + 1
+	res := make([]byte, length)
+	E.ToBytes(res, false)
+	return res
+}
+func appendBytesG2(data []byte, index int, E *FP256BN.ECP2) int {_cover_atomic_.AddUint32(&GoCover_9_633637303937343739336136.Count[5], 1);
+	length := 4 * FieldBytes
+	E.ToBytes(data[index : index+length])
+	return index + length
+}
+func appendBytesBig(data []byte, index int, B *FP256BN.BIG) int {_cover_atomic_.AddUint32(&GoCover_9_633637303937343739336136.Count[6], 1);
+	length := FieldBytes
+	B.ToBytes(data[index : index+length])
+	return index + length
+}
+func appendBytesString(data []byte, index int, s string) int {_cover_atomic_.AddUint32(&GoCover_9_633637303937343739336136.Count[7], 1);
+	bytes := []byte(s)
+	copy(data[index:], bytes)
+	return index + len(bytes)
+}
+
+// MakeNym creates a new unlinkable pseudonym
+func MakeNym(sk *FP256BN.BIG, IPk *IssuerPublicKey, rng *amcl.RAND) (*FP256BN.ECP, *FP256BN.BIG) {_cover_atomic_.AddUint32(&GoCover_9_633637303937343739336136.Count[8], 1);
+	// Construct a commitment to the sk
+	// Nym = h_{sk}^sk \cdot h_r^r
+	RandNym := RandModOrder(rng)
+	Nym := EcpFromProto(IPk.HSk).Mul2(sk, EcpFromProto(IPk.HRand), RandNym)
+	return Nym, RandNym
+}
+
+// BigToBytes takes an *amcl.BIG and returns a []byte representation
+func BigToBytes(big *FP256BN.BIG) []byte {_cover_atomic_.AddUint32(&GoCover_9_633637303937343739336136.Count[9], 1);
+	ret := make([]byte, FieldBytes)
+	big.ToBytes(ret)
+	return ret
+}
+
+// EcpToProto converts a *amcl.ECP into the proto struct *ECP
+func EcpToProto(p *FP256BN.ECP) *ECP {_cover_atomic_.AddUint32(&GoCover_9_633637303937343739336136.Count[10], 1);
+	return &ECP{
+		X: BigToBytes(p.GetX()),
+		Y: BigToBytes(p.GetY())}
+}
+
+// EcpFromProto converts a proto struct *ECP into an *amcl.ECP
+func EcpFromProto(p *ECP) *FP256BN.ECP {_cover_atomic_.AddUint32(&GoCover_9_633637303937343739336136.Count[11], 1);
+	return FP256BN.NewECPbigs(FP256BN.FromBytes(p.GetX()), FP256BN.FromBytes(p.GetY()))
+}
+
+// Ecp2ToProto converts a *amcl.ECP2 into the proto struct *ECP2
+func Ecp2ToProto(p *FP256BN.ECP2) *ECP2 {_cover_atomic_.AddUint32(&GoCover_9_633637303937343739336136.Count[12], 1);
+	return &ECP2{
+		Xa: BigToBytes(p.GetX().GetA()),
+		Xb: BigToBytes(p.GetX().GetB()),
+		Ya: BigToBytes(p.GetY().GetA()),
+		Yb: BigToBytes(p.GetY().GetB())}
+}
+
+// Ecp2FromProto converts a proto struct *ECP2 into an *amcl.ECP2
+func Ecp2FromProto(p *ECP2) *FP256BN.ECP2 {_cover_atomic_.AddUint32(&GoCover_9_633637303937343739336136.Count[13], 1);
+	return FP256BN.NewECP2fp2s(
+		FP256BN.NewFP2bigs(FP256BN.FromBytes(p.GetXa()), FP256BN.FromBytes(p.GetXb())),
+		FP256BN.NewFP2bigs(FP256BN.FromBytes(p.GetYa()), FP256BN.FromBytes(p.GetYb())))
+}
+
+// GetRand returns a new *amcl.RAND with a fresh seed
+func GetRand() (*amcl.RAND, error) {_cover_atomic_.AddUint32(&GoCover_9_633637303937343739336136.Count[14], 1);
+	seedLength := 32
+	b := make([]byte, seedLength)
+	_, err := rand.Read(b)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_9_633637303937343739336136.Count[16], 1);
+		return nil, errors.Wrap(err, "error getting randomness for seed")
+	}
+	_cover_atomic_.AddUint32(&GoCover_9_633637303937343739336136.Count[15], 1);rng := amcl.NewRAND()
+	rng.Clean()
+	rng.Seed(seedLength, b)
+	return rng, nil
+}
+
+// Modadd takes input BIGs a, b, m, and returns a+b modulo m
+func Modadd(a, b, m *FP256BN.BIG) *FP256BN.BIG {_cover_atomic_.AddUint32(&GoCover_9_633637303937343739336136.Count[17], 1);
+	c := a.Plus(b)
+	c.Mod(m)
+	return c
+}
+
+// Modsub takes input BIGs a, b, m and returns a-b modulo m
+func Modsub(a, b, m *FP256BN.BIG) *FP256BN.BIG {_cover_atomic_.AddUint32(&GoCover_9_633637303937343739336136.Count[18], 1);
+	return Modadd(a, FP256BN.Modneg(b, m), m)
+}
+
+var GoCover_9_633637303937343739336136 = struct {
+	Count     [19]uint32
+	Pos       [3 * 19]uint32
+	NumStmt   [19]uint16
+} {
+	Pos: [3 * 19]uint32{
+		38, 44, 0x20030, // [0]
+		47, 52, 0x2002d, // [1]
+		54, 57, 0x20041, // [2]
+		58, 62, 0x20040, // [3]
+		63, 68, 0x20028, // [4]
+		69, 73, 0x20041, // [5]
+		74, 78, 0x20041, // [6]
+		79, 83, 0x2003e, // [7]
+		86, 92, 0x20062, // [8]
+		95, 99, 0x2002a, // [9]
+		102, 106, 0x20026, // [10]
+		109, 111, 0x20028, // [11]
+		114, 120, 0x20029, // [12]
+		123, 127, 0x2002b, // [13]
+		130, 134, 0x100024, // [14]
+		137, 140, 0x110002, // [15]
+		134, 136, 0x30010, // [16]
+		144, 148, 0x20030, // [17]
+		151, 153, 0x20030, // [18]
+	},
+	NumStmt: [19]uint16{
+		2, // 0
+		4, // 1
+		2, // 2
+		3, // 3
+		4, // 4
+		3, // 5
+		3, // 6
+		3, // 7
+		3, // 8
+		3, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		4, // 14
+		4, // 15
+		1, // 16
+		3, // 17
+		1, // 18
+	},
+}
+var _ = _cover_atomic_.LoadUint32

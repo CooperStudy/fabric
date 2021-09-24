@@ -1,0 +1,702 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/common/validation/msgvalidation.go:1
+/*
+Copyright IBM Corp. 2016 All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+		 http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package validation; import _cover_atomic_ "sync/atomic"
+
+import (
+	"bytes"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/channelconfig"
+	"github.com/hyperledger/fabric/common/flogging"
+	mspmgmt "github.com/hyperledger/fabric/msp/mgmt"
+	"github.com/hyperledger/fabric/protos/common"
+	"github.com/hyperledger/fabric/protos/msp"
+	pb "github.com/hyperledger/fabric/protos/peer"
+	"github.com/hyperledger/fabric/protos/utils"
+	"github.com/pkg/errors"
+)
+
+var putilsLogger = flogging.MustGetLogger("protoutils")
+
+// validateChaincodeProposalMessage checks the validity of a Proposal message of type CHAINCODE
+func validateChaincodeProposalMessage(prop *pb.Proposal, hdr *common.Header) (*pb.ChaincodeHeaderExtension, error) {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[0], 1);
+	if prop == nil || hdr == nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[5], 1);
+		return nil, errors.New("nil arguments")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[1], 1);putilsLogger.Debugf("validateChaincodeProposalMessage starts for proposal %p, header %p", prop, hdr)
+
+	// 4) based on the header type (assuming it's CHAINCODE), look at the extensions
+	chaincodeHdrExt, err := utils.GetChaincodeHeaderExtension(hdr)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[6], 1);
+		return nil, errors.New("invalid header extension for type CHAINCODE")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[2], 1);if chaincodeHdrExt.ChaincodeId == nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[7], 1);
+		return nil, errors.New("ChaincodeHeaderExtension.ChaincodeId is nil")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[3], 1);putilsLogger.Debugf("validateChaincodeProposalMessage info: header extension references chaincode %s", chaincodeHdrExt.ChaincodeId)
+
+	//    - ensure that the chaincodeID is correct (?)
+	// TODO: should we even do this? If so, using which interface?
+
+	//    - ensure that the visibility field has some value we understand
+	// currently the fabric only supports full visibility: this means that
+	// there are no restrictions on which parts of the proposal payload will
+	// be visible in the final transaction; this default approach requires
+	// no additional instructions in the PayloadVisibility field which is
+	// therefore expected to be nil; however the fabric may be extended to
+	// encode more elaborate visibility mechanisms that shall be encoded in
+	// this field (and handled appropriately by the peer)
+	if chaincodeHdrExt.PayloadVisibility != nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[8], 1);
+		return nil, errors.New("invalid payload visibility field")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[4], 1);return chaincodeHdrExt, nil
+}
+
+// ValidateProposalMessage checks the validity of a SignedProposal message
+// this function returns Header and ChaincodeHeaderExtension messages since they
+// have been unmarshalled and validated
+func ValidateProposalMessage(signedProp *pb.SignedProposal) (*pb.Proposal, *common.Header, *pb.ChaincodeHeaderExtension, error) {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[9], 1);
+	if signedProp == nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[16], 1);
+		return nil, nil, nil, errors.New("nil arguments")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[10], 1);putilsLogger.Debugf("ValidateProposalMessage starts for signed proposal %p", signedProp)
+
+	// extract the Proposal message from signedProp
+	prop, err := utils.GetProposal(signedProp.ProposalBytes)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[17], 1);
+		return nil, nil, nil, err
+	}
+
+	// 1) look at the ProposalHeader
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[11], 1);hdr, err := utils.GetHeader(prop.Header)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[18], 1);
+		return nil, nil, nil, err
+	}
+
+	// validate the header
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[12], 1);chdr, shdr, err := validateCommonHeader(hdr)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[19], 1);
+		return nil, nil, nil, err
+	}
+
+	// validate the signature
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[13], 1);err = checkSignatureFromCreator(shdr.Creator, signedProp.Signature, signedProp.ProposalBytes, chdr.ChannelId)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[20], 1);
+		// log the exact message on the peer but return a generic error message to
+		// avoid malicious users scanning for channels
+		putilsLogger.Warningf("channel [%s]: %s", chdr.ChannelId, err)
+		sId := &msp.SerializedIdentity{}
+		err := proto.Unmarshal(shdr.Creator, sId)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[22], 1);
+			// log the error here as well but still only return the generic error
+			err = errors.Wrap(err, "could not deserialize a SerializedIdentity")
+			putilsLogger.Warningf("channel [%s]: %s", chdr.ChannelId, err)
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[21], 1);return nil, nil, nil, errors.Errorf("access denied: channel [%s] creator org [%s]", chdr.ChannelId, sId.Mspid)
+	}
+
+	// Verify that the transaction ID has been computed properly.
+	// This check is needed to ensure that the lookup into the ledger
+	// for the same TxID catches duplicates.
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[14], 1);err = utils.CheckTxID(
+		chdr.TxId,
+		shdr.Nonce,
+		shdr.Creator)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[23], 1);
+		return nil, nil, nil, err
+	}
+
+	// continue the validation in a way that depends on the type specified in the header
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[15], 1);switch common.HeaderType(chdr.Type) {
+	case common.HeaderType_CONFIG:_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[24], 1);
+		//which the types are different the validation is the same
+		//viz, validate a proposal to a chaincode. If we need other
+		//special validation for confguration, we would have to implement
+		//special validation
+		fallthrough
+	case common.HeaderType_ENDORSER_TRANSACTION:_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[25], 1);
+		// validation of the proposal message knowing it's of type CHAINCODE
+		chaincodeHdrExt, err := validateChaincodeProposalMessage(prop, hdr)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[28], 1);
+			return nil, nil, nil, err
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[26], 1);return prop, hdr, chaincodeHdrExt, err
+	default:_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[27], 1);
+		//NOTE : we proably need a case
+		return nil, nil, nil, errors.Errorf("unsupported proposal type %d", common.HeaderType(chdr.Type))
+	}
+}
+
+// given a creator, a message and a signature,
+// this function returns nil if the creator
+// is a valid cert and the signature is valid
+func checkSignatureFromCreator(creatorBytes []byte, sig []byte, msg []byte, ChainID string) error {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[29], 1);
+	putilsLogger.Debugf("begin")
+
+	// check for nil argument
+	if creatorBytes == nil || sig == nil || msg == nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[35], 1);
+		return errors.New("nil arguments")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[30], 1);mspObj := mspmgmt.GetIdentityDeserializer(ChainID)
+	if mspObj == nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[36], 1);
+		return errors.Errorf("could not get msp for channel [%s]", ChainID)
+	}
+
+	// get the identity of the creator
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[31], 1);creator, err := mspObj.DeserializeIdentity(creatorBytes)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[37], 1);
+		return errors.WithMessage(err, "MSP error")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[32], 1);putilsLogger.Debugf("creator is %s", creator.GetIdentifier())
+
+	// ensure that creator is a valid certificate
+	err = creator.Validate()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[38], 1);
+		return errors.WithMessage(err, "creator certificate is not valid")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[33], 1);putilsLogger.Debugf("creator is valid")
+
+	// validate the signature
+	err = creator.Verify(msg, sig)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[39], 1);
+		return errors.WithMessage(err, "creator's signature over the proposal is not valid")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[34], 1);putilsLogger.Debugf("exits successfully")
+
+	return nil
+}
+
+// checks for a valid SignatureHeader
+func validateSignatureHeader(sHdr *common.SignatureHeader) error {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[40], 1);
+	// check for nil argument
+	if sHdr == nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[44], 1);
+		return errors.New("nil SignatureHeader provided")
+	}
+
+	// ensure that there is a nonce
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[41], 1);if sHdr.Nonce == nil || len(sHdr.Nonce) == 0 {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[45], 1);
+		return errors.New("invalid nonce specified in the header")
+	}
+
+	// ensure that there is a creator
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[42], 1);if sHdr.Creator == nil || len(sHdr.Creator) == 0 {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[46], 1);
+		return errors.New("invalid creator specified in the header")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[43], 1);return nil
+}
+
+// checks for a valid ChannelHeader
+func validateChannelHeader(cHdr *common.ChannelHeader) error {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[47], 1);
+	// check for nil argument
+	if cHdr == nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[51], 1);
+		return errors.New("nil ChannelHeader provided")
+	}
+
+	// validate the header type
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[48], 1);if common.HeaderType(cHdr.Type) != common.HeaderType_ENDORSER_TRANSACTION &&
+		common.HeaderType(cHdr.Type) != common.HeaderType_CONFIG_UPDATE &&
+		common.HeaderType(cHdr.Type) != common.HeaderType_CONFIG &&
+		common.HeaderType(cHdr.Type) != common.HeaderType_TOKEN_TRANSACTION {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[52], 1);
+		return errors.Errorf("invalid header type %s", common.HeaderType(cHdr.Type))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[49], 1);putilsLogger.Debugf("validateChannelHeader info: header type %d", common.HeaderType(cHdr.Type))
+
+	// TODO: validate chainID in cHdr.ChainID
+
+	// Validate epoch in cHdr.Epoch
+	// Currently we enforce that Epoch is 0.
+	// TODO: This check will be modified once the Epoch management
+	// will be in place.
+	if cHdr.Epoch != 0 {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[53], 1);
+		return errors.Errorf("invalid Epoch in ChannelHeader. Expected 0, got [%d]", cHdr.Epoch)
+	}
+
+	// TODO: Validate version in cHdr.Version
+
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[50], 1);return nil
+}
+
+// checks for a valid Header
+func validateCommonHeader(hdr *common.Header) (*common.ChannelHeader, *common.SignatureHeader, error) {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[54], 1);
+	if hdr == nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[60], 1);
+		return nil, nil, errors.New("nil header")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[55], 1);chdr, err := utils.UnmarshalChannelHeader(hdr.ChannelHeader)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[61], 1);
+		return nil, nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[56], 1);shdr, err := utils.GetSignatureHeader(hdr.SignatureHeader)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[62], 1);
+		return nil, nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[57], 1);err = validateChannelHeader(chdr)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[63], 1);
+		return nil, nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[58], 1);err = validateSignatureHeader(shdr)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[64], 1);
+		return nil, nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[59], 1);return chdr, shdr, nil
+}
+
+// validateConfigTransaction validates the payload of a
+// transaction assuming its type is CONFIG
+func validateConfigTransaction(data []byte, hdr *common.Header) error {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[65], 1);
+	putilsLogger.Debugf("validateConfigTransaction starts for data %p, header %s", data, hdr)
+
+	// check for nil argument
+	if data == nil || hdr == nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[67], 1);
+		return errors.New("nil arguments")
+	}
+
+	// There is no need to do this validation here, the configtx.Validator handles this
+
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[66], 1);return nil
+}
+
+// validateEndorserTransaction validates the payload of a
+// transaction assuming its type is ENDORSER_TRANSACTION
+func validateEndorserTransaction(data []byte, hdr *common.Header) error {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[68], 1);
+	putilsLogger.Debugf("validateEndorserTransaction starts for data %p, header %s", data, hdr)
+
+	// check for nil argument
+	if data == nil || hdr == nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[74], 1);
+		return errors.New("nil arguments")
+	}
+
+	// if the type is ENDORSER_TRANSACTION we unmarshal a Transaction message
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[69], 1);tx, err := utils.GetTransaction(data)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[75], 1);
+		return err
+	}
+
+	// check for nil argument
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[70], 1);if tx == nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[76], 1);
+		return errors.New("nil transaction")
+	}
+
+	// TODO: validate tx.Version
+
+	// TODO: validate ChaincodeHeaderExtension
+
+	// hlf version 1 only supports a single action per transaction
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[71], 1);if len(tx.Actions) != 1 {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[77], 1);
+		return errors.Errorf("only one action per transaction is supported, tx contains %d", len(tx.Actions))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[72], 1);putilsLogger.Debugf("validateEndorserTransaction info: there are %d actions", len(tx.Actions))
+
+	for _, act := range tx.Actions {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[78], 1);
+		// check for nil argument
+		if act == nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[85], 1);
+			return errors.New("nil action")
+		}
+
+		// if the type is ENDORSER_TRANSACTION we unmarshal a SignatureHeader
+		_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[79], 1);sHdr, err := utils.GetSignatureHeader(act.Header)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[86], 1);
+			return err
+		}
+
+		// validate the SignatureHeader - here we actually only
+		// care about the nonce since the creator is in the outer header
+		_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[80], 1);err = validateSignatureHeader(sHdr)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[87], 1);
+			return err
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[81], 1);putilsLogger.Debugf("validateEndorserTransaction info: signature header is valid")
+
+		// if the type is ENDORSER_TRANSACTION we unmarshal a ChaincodeActionPayload
+		ccActionPayload, err := utils.GetChaincodeActionPayload(act.Payload)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[88], 1);
+			return err
+		}
+
+		// extract the proposal response payload
+		_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[82], 1);prp, err := utils.GetProposalResponsePayload(ccActionPayload.Action.ProposalResponsePayload)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[89], 1);
+			return err
+		}
+
+		// build the original header by stitching together
+		// the common ChannelHeader and the per-action SignatureHeader
+		_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[83], 1);hdrOrig := &common.Header{ChannelHeader: hdr.ChannelHeader, SignatureHeader: act.Header}
+
+		// compute proposalHash
+		pHash, err := utils.GetProposalHash2(hdrOrig, ccActionPayload.ChaincodeProposalPayload)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[90], 1);
+			return err
+		}
+
+		// ensure that the proposal hash matches
+		_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[84], 1);if bytes.Compare(pHash, prp.ProposalHash) != 0 {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[91], 1);
+			return errors.New("proposal hash does not match")
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[73], 1);return nil
+}
+
+// ValidateTransaction checks that the transaction envelope is properly formed
+func ValidateTransaction(e *common.Envelope, c channelconfig.ApplicationCapabilities) (*common.Payload, pb.TxValidationCode) {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[92], 1);
+	putilsLogger.Debugf("ValidateTransactionEnvelope starts for envelope %p", e)
+
+	// check for nil argument
+	if e == nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[97], 1);
+		putilsLogger.Errorf("Error: nil envelope")
+		return nil, pb.TxValidationCode_NIL_ENVELOPE
+	}
+
+	// get the payload from the envelope
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[93], 1);payload, err := utils.GetPayload(e)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[98], 1);
+		putilsLogger.Errorf("GetPayload returns err %s", err)
+		return nil, pb.TxValidationCode_BAD_PAYLOAD
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[94], 1);putilsLogger.Debugf("Header is %s", payload.Header)
+
+	// validate the header
+	chdr, shdr, err := validateCommonHeader(payload.Header)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[99], 1);
+		putilsLogger.Errorf("validateCommonHeader returns err %s", err)
+		return nil, pb.TxValidationCode_BAD_COMMON_HEADER
+	}
+
+	// validate the signature in the envelope
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[95], 1);err = checkSignatureFromCreator(shdr.Creator, e.Signature, e.Payload, chdr.ChannelId)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[100], 1);
+		putilsLogger.Errorf("checkSignatureFromCreator returns err %s", err)
+		return nil, pb.TxValidationCode_BAD_CREATOR_SIGNATURE
+	}
+
+	// TODO: ensure that creator can transact with us (some ACLs?) which set of APIs is supposed to give us this info?
+
+	// continue the validation in a way that depends on the type specified in the header
+	_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[96], 1);switch common.HeaderType(chdr.Type) {
+	case common.HeaderType_ENDORSER_TRANSACTION:_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[101], 1);
+		// Verify that the transaction ID has been computed properly.
+		// This check is needed to ensure that the lookup into the ledger
+		// for the same TxID catches duplicates.
+		err = utils.CheckTxID(
+			chdr.TxId,
+			shdr.Nonce,
+			shdr.Creator)
+
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[107], 1);
+			putilsLogger.Errorf("CheckTxID returns err %s", err)
+			return nil, pb.TxValidationCode_BAD_PROPOSAL_TXID
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[102], 1);err = validateEndorserTransaction(payload.Data, payload.Header)
+		putilsLogger.Debugf("ValidateTransactionEnvelope returns err %s", err)
+
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[108], 1);
+			putilsLogger.Errorf("validateEndorserTransaction returns err %s", err)
+			return payload, pb.TxValidationCode_INVALID_ENDORSER_TRANSACTION
+		} else{ _cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[109], 1);{
+			return payload, pb.TxValidationCode_VALID
+		}}
+	case common.HeaderType_CONFIG:_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[103], 1);
+		// Config transactions have signatures inside which will be validated, especially at genesis there may be no creator or
+		// signature on the outermost envelope
+
+		err = validateConfigTransaction(payload.Data, payload.Header)
+
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[110], 1);
+			putilsLogger.Errorf("validateConfigTransaction returns err %s", err)
+			return payload, pb.TxValidationCode_INVALID_CONFIG_TRANSACTION
+		} else{ _cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[111], 1);{
+			return payload, pb.TxValidationCode_VALID
+		}}
+	case common.HeaderType_TOKEN_TRANSACTION:_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[104], 1);
+		// Verify that the transaction ID has been computed properly.
+		// This check is needed to ensure that the lookup into the ledger
+		// for the same TxID catches duplicates.
+		err = utils.CheckTxID(
+			chdr.TxId,
+			shdr.Nonce,
+			shdr.Creator)
+
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[112], 1);
+			putilsLogger.Errorf("CheckTxID returns err %s", err)
+			return nil, pb.TxValidationCode_BAD_PROPOSAL_TXID
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[105], 1);return payload, pb.TxValidationCode_VALID
+	default:_cover_atomic_.AddUint32(&GoCover_0_393339656439646532633138.Count[106], 1);
+		return nil, pb.TxValidationCode_UNSUPPORTED_TX_PAYLOAD
+	}
+}
+
+var GoCover_0_393339656439646532633138 = struct {
+	Count     [113]uint32
+	Pos       [3 * 113]uint32
+	NumStmt   [113]uint16
+} {
+	Pos: [3 * 113]uint32{
+		36, 37, 0x1f0074, // [0]
+		41, 45, 0x100002, // [1]
+		49, 49, 0x280002, // [2]
+		53, 66, 0x2e0002, // [3]
+		70, 70, 0x1d0002, // [4]
+		37, 39, 0x3001f, // [5]
+		45, 47, 0x30010, // [6]
+		49, 51, 0x30028, // [7]
+		66, 68, 0x3002e, // [8]
+		76, 77, 0x170081, // [9]
+		81, 85, 0x100002, // [10]
+		90, 91, 0x100002, // [11]
+		96, 97, 0x100002, // [12]
+		102, 103, 0x100002, // [13]
+		120, 124, 0x100002, // [14]
+		129, 129, 0x260002, // [15]
+		77, 79, 0x30017, // [16]
+		85, 87, 0x30010, // [17]
+		91, 93, 0x30010, // [18]
+		97, 99, 0x30010, // [19]
+		103, 109, 0x110010, // [20]
+		114, 114, 0x710003, // [21]
+		109, 113, 0x40011, // [22]
+		124, 126, 0x30010, // [23]
+		130, 135, 0xe0020, // [24]
+		136, 139, 0x11002e, // [25]
+		143, 143, 0x290003, // [26]
+		144, 146, 0x64000a, // [27]
+		139, 141, 0x40011, // [28]
+		153, 157, 0x350063, // [29]
+		161, 162, 0x130002, // [30]
+		167, 168, 0x100002, // [31]
+		172, 176, 0x100002, // [32]
+		180, 184, 0x100002, // [33]
+		188, 190, 0xc0002, // [34]
+		157, 159, 0x30035, // [35]
+		162, 164, 0x30013, // [36]
+		168, 170, 0x30010, // [37]
+		176, 178, 0x30010, // [38]
+		184, 186, 0x30010, // [39]
+		194, 196, 0x110042, // [40]
+		201, 201, 0x2f0002, // [41]
+		206, 206, 0x330002, // [42]
+		210, 210, 0xc0002, // [43]
+		196, 198, 0x30011, // [44]
+		201, 203, 0x3002f, // [45]
+		206, 208, 0x30033, // [46]
+		214, 216, 0x11003e, // [47]
+		221, 224, 0x470002, // [48]
+		228, 236, 0x150002, // [49]
+		242, 242, 0xc0002, // [50]
+		216, 218, 0x30011, // [51]
+		224, 226, 0x30047, // [52]
+		236, 238, 0x30015, // [53]
+		246, 247, 0x100067, // [54]
+		251, 252, 0x100002, // [55]
+		256, 257, 0x100002, // [56]
+		261, 262, 0x100002, // [57]
+		266, 267, 0x100002, // [58]
+		271, 271, 0x180002, // [59]
+		247, 249, 0x30010, // [60]
+		252, 254, 0x30010, // [61]
+		257, 259, 0x30010, // [62]
+		262, 264, 0x30010, // [63]
+		267, 269, 0x30010, // [64]
+		276, 280, 0x1f0047, // [65]
+		286, 286, 0xc0002, // [66]
+		280, 282, 0x3001f, // [67]
+		291, 295, 0x1f0049, // [68]
+		300, 301, 0x100002, // [69]
+		306, 306, 0xf0002, // [70]
+		315, 315, 0x1a0002, // [71]
+		319, 321, 0x210002, // [72]
+		370, 370, 0xc0002, // [73]
+		295, 297, 0x3001f, // [74]
+		301, 303, 0x30010, // [75]
+		306, 308, 0x3000f, // [76]
+		315, 317, 0x3001a, // [77]
+		321, 323, 0x110021, // [78]
+		328, 329, 0x110003, // [79]
+		335, 336, 0x110003, // [80]
+		340, 344, 0x110003, // [81]
+		349, 350, 0x110003, // [82]
+		356, 360, 0x110003, // [83]
+		365, 365, 0x320003, // [84]
+		323, 325, 0x40011, // [85]
+		329, 331, 0x40011, // [86]
+		336, 338, 0x40011, // [87]
+		344, 346, 0x40011, // [88]
+		350, 352, 0x40011, // [89]
+		360, 362, 0x40011, // [90]
+		365, 367, 0x40032, // [91]
+		374, 378, 0xe007e, // [92]
+		384, 385, 0x100002, // [93]
+		390, 394, 0x100002, // [94]
+		400, 401, 0x100002, // [95]
+		409, 409, 0x260002, // [96]
+		378, 381, 0x3000e, // [97]
+		385, 388, 0x30010, // [98]
+		394, 397, 0x30010, // [99]
+		401, 404, 0x30010, // [100]
+		410, 419, 0x11002e, // [101]
+		424, 427, 0x110003, // [102]
+		433, 439, 0x110020, // [103]
+		445, 454, 0x11002b, // [104]
+		459, 459, 0x2c0003, // [105]
+		460, 461, 0x39000a, // [106]
+		419, 422, 0x40011, // [107]
+		427, 430, 0x40011, // [108]
+		430, 432, 0x40009, // [109]
+		439, 442, 0x40011, // [110]
+		442, 444, 0x40009, // [111]
+		454, 457, 0x40011, // [112]
+	},
+	NumStmt: [113]uint16{
+		1, // 0
+		3, // 1
+		1, // 2
+		2, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		3, // 10
+		2, // 11
+		2, // 12
+		2, // 13
+		2, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		4, // 20
+		1, // 21
+		2, // 22
+		1, // 23
+		1, // 24
+		2, // 25
+		1, // 26
+		1, // 27
+		1, // 28
+		2, // 29
+		2, // 30
+		2, // 31
+		3, // 32
+		3, // 33
+		2, // 34
+		1, // 35
+		1, // 36
+		1, // 37
+		1, // 38
+		1, // 39
+		1, // 40
+		1, // 41
+		1, // 42
+		1, // 43
+		1, // 44
+		1, // 45
+		1, // 46
+		1, // 47
+		1, // 48
+		2, // 49
+		1, // 50
+		1, // 51
+		1, // 52
+		1, // 53
+		1, // 54
+		2, // 55
+		2, // 56
+		2, // 57
+		2, // 58
+		1, // 59
+		1, // 60
+		1, // 61
+		1, // 62
+		1, // 63
+		1, // 64
+		2, // 65
+		1, // 66
+		1, // 67
+		2, // 68
+		2, // 69
+		1, // 70
+		1, // 71
+		2, // 72
+		1, // 73
+		1, // 74
+		1, // 75
+		1, // 76
+		1, // 77
+		1, // 78
+		2, // 79
+		2, // 80
+		3, // 81
+		2, // 82
+		3, // 83
+		1, // 84
+		1, // 85
+		1, // 86
+		1, // 87
+		1, // 88
+		1, // 89
+		1, // 90
+		1, // 91
+		2, // 92
+		2, // 93
+		3, // 94
+		2, // 95
+		1, // 96
+		2, // 97
+		2, // 98
+		2, // 99
+		2, // 100
+		2, // 101
+		3, // 102
+		2, // 103
+		2, // 104
+		1, // 105
+		1, // 106
+		2, // 107
+		2, // 108
+		1, // 109
+		2, // 110
+		1, // 111
+		2, // 112
+	},
+}
+var _ = _cover_atomic_.LoadUint32

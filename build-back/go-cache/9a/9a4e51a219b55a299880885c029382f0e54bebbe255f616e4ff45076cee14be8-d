@@ -1,0 +1,170 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/scc/lscc/support.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package lscc; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric/common/cauthdsl"
+	"github.com/hyperledger/fabric/core/common/ccprovider"
+	"github.com/hyperledger/fabric/core/peer"
+	"github.com/hyperledger/fabric/msp/mgmt"
+	"github.com/hyperledger/fabric/protos/common"
+	pb "github.com/hyperledger/fabric/protos/peer"
+	"github.com/hyperledger/fabric/protos/utils"
+	"github.com/pkg/errors"
+)
+
+type supportImpl struct {
+}
+
+// PutChaincodeToLocalStorage stores the supplied chaincode
+// package to local storage (i.e. the file system)
+func (s *supportImpl) PutChaincodeToLocalStorage(ccpack ccprovider.CCPackage) error {_cover_atomic_.AddUint32(&GoCover_3_386331393235373732613932.Count[0], 1);
+	if err := ccpack.PutChaincodeToFS(); err != nil {_cover_atomic_.AddUint32(&GoCover_3_386331393235373732613932.Count[2], 1);
+		return errors.Errorf("error installing chaincode code %s:%s(%s)", ccpack.GetChaincodeData().CCName(), ccpack.GetChaincodeData().CCVersion(), err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_386331393235373732613932.Count[1], 1);return nil
+}
+
+// GetChaincodeFromLocalStorage retrieves the chaincode package
+// for the requested chaincode, specified by name and version
+func (s *supportImpl) GetChaincodeFromLocalStorage(ccname string, ccversion string) (ccprovider.CCPackage, error) {_cover_atomic_.AddUint32(&GoCover_3_386331393235373732613932.Count[3], 1);
+	return ccprovider.GetChaincodeFromFS(ccname, ccversion)
+}
+
+// GetChaincodesFromLocalStorage returns an array of all chaincode
+// data that have previously been persisted to local storage
+func (s *supportImpl) GetChaincodesFromLocalStorage() (*pb.ChaincodeQueryResponse, error) {_cover_atomic_.AddUint32(&GoCover_3_386331393235373732613932.Count[4], 1);
+	return ccprovider.GetInstalledChaincodes()
+}
+
+// GetInstantiationPolicy returns the instantiation policy for the
+// supplied chaincode (or the channel's default if none was specified)
+func (s *supportImpl) GetInstantiationPolicy(channel string, ccpack ccprovider.CCPackage) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_3_386331393235373732613932.Count[5], 1);
+	var ip []byte
+	var err error
+	// if ccpack is a SignedCDSPackage, return its IP, otherwise use a default IP
+	sccpack, isSccpack := ccpack.(*ccprovider.SignedCDSPackage)
+	if isSccpack {_cover_atomic_.AddUint32(&GoCover_3_386331393235373732613932.Count[7], 1);
+		ip = sccpack.GetInstantiationPolicy()
+		if ip == nil {_cover_atomic_.AddUint32(&GoCover_3_386331393235373732613932.Count[8], 1);
+			return nil, errors.Errorf("instantiation policy cannot be nil for a SignedCCDeploymentSpec")
+		}
+	} else{ _cover_atomic_.AddUint32(&GoCover_3_386331393235373732613932.Count[9], 1);{
+		// the default instantiation policy allows any of the channel MSP admins
+		// to be able to instantiate
+		mspids := peer.GetMSPIDs(channel)
+
+		p := cauthdsl.SignedByAnyAdmin(mspids)
+		ip, err = utils.Marshal(p)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_3_386331393235373732613932.Count[10], 1);
+			return nil, errors.Errorf("error marshalling default instantiation policy")
+		}
+
+	}}
+	_cover_atomic_.AddUint32(&GoCover_3_386331393235373732613932.Count[6], 1);return ip, nil
+}
+
+// CheckInstantiationPolicy checks whether the supplied signed proposal
+// complies with the supplied instantiation policy
+func (s *supportImpl) CheckInstantiationPolicy(signedProp *pb.SignedProposal, chainName string, instantiationPolicy []byte) error {_cover_atomic_.AddUint32(&GoCover_3_386331393235373732613932.Count[11], 1);
+	// create a policy object from the policy bytes
+	mgr := mgmt.GetManagerForChain(chainName)
+	if mgr == nil {_cover_atomic_.AddUint32(&GoCover_3_386331393235373732613932.Count[18], 1);
+		return errors.Errorf("error checking chaincode instantiation policy: MSP manager for channel %s not found", chainName)
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_386331393235373732613932.Count[12], 1);npp := cauthdsl.NewPolicyProvider(mgr)
+	instPol, _, err := npp.NewPolicy(instantiationPolicy)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_386331393235373732613932.Count[19], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_386331393235373732613932.Count[13], 1);proposal, err := utils.GetProposal(signedProp.ProposalBytes)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_386331393235373732613932.Count[20], 1);
+		return err
+	}
+	// get the signature header of the proposal
+	_cover_atomic_.AddUint32(&GoCover_3_386331393235373732613932.Count[14], 1);header, err := utils.GetHeader(proposal.Header)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_386331393235373732613932.Count[21], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_386331393235373732613932.Count[15], 1);shdr, err := utils.GetSignatureHeader(header.SignatureHeader)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_386331393235373732613932.Count[22], 1);
+		return err
+	}
+	// construct signed data we can evaluate the instantiation policy against
+	_cover_atomic_.AddUint32(&GoCover_3_386331393235373732613932.Count[16], 1);sd := []*common.SignedData{{
+		Data:      signedProp.ProposalBytes,
+		Identity:  shdr.Creator,
+		Signature: signedProp.Signature,
+	}}
+	err = instPol.Evaluate(sd)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_386331393235373732613932.Count[23], 1);
+		return errors.WithMessage(err, "instantiation policy violation")
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_386331393235373732613932.Count[17], 1);return nil
+}
+
+var GoCover_3_386331393235373732613932 = struct {
+	Count     [24]uint32
+	Pos       [3 * 24]uint32
+	NumStmt   [24]uint16
+} {
+	Pos: [3 * 24]uint32{
+		25, 26, 0x320055, // [0]
+		30, 30, 0xc0002, // [1]
+		26, 28, 0x30032, // [2]
+		35, 37, 0x20073, // [3]
+		41, 43, 0x2005b, // [4]
+		47, 52, 0xf006b, // [5]
+		69, 69, 0x100002, // [6]
+		52, 54, 0x10000f, // [7]
+		54, 56, 0x40010, // [8]
+		57, 64, 0x110008, // [9]
+		64, 66, 0x40011, // [10]
+		74, 77, 0x100083, // [11]
+		80, 82, 0x100002, // [12]
+		85, 86, 0x100002, // [13]
+		90, 91, 0x100002, // [14]
+		94, 95, 0x100002, // [15]
+		99, 105, 0x100002, // [16]
+		108, 108, 0xc0002, // [17]
+		77, 79, 0x30010, // [18]
+		82, 84, 0x30010, // [19]
+		86, 88, 0x30010, // [20]
+		91, 93, 0x30010, // [21]
+		95, 97, 0x30010, // [22]
+		105, 107, 0x30010, // [23]
+	},
+	NumStmt: [24]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		4, // 5
+		1, // 6
+		2, // 7
+		1, // 8
+		4, // 9
+		1, // 10
+		2, // 11
+		3, // 12
+		2, // 13
+		2, // 14
+		2, // 15
+		3, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+	},
+}
+var _ = _cover_atomic_.LoadUint32

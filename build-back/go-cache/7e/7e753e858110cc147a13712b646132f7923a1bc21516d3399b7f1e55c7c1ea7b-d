@@ -1,0 +1,7 @@
+cauthdsl.cover.go
+cauthdsl_builder.cover.go
+policy.cover.go
+policyparser.cover.go
+./cauthdsl_test.go
+./policy_test.go
+./policyparser_test.go

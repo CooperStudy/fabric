@@ -1,0 +1,640 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/orderer/common/cluster/comm.go:1
+/*
+Copyright IBM Corp. 2017 All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package cluster; import _cover_atomic_ "sync/atomic"
+
+import (
+	"bytes"
+	"context"
+	"fmt"
+	"sync"
+	"time"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/core/comm"
+	"github.com/hyperledger/fabric/protos/orderer"
+	"github.com/pkg/errors"
+)
+
+const (
+	// DefaultRPCTimeout is the default RPC timeout
+	// that RPCs use
+	DefaultRPCTimeout = time.Second * 5
+)
+
+// ChannelExtractor extracts the channel of a given message,
+// or returns an empty string if that's not possible
+type ChannelExtractor interface {
+	TargetChannel(message proto.Message) string
+}
+
+//go:generate mockery -dir . -name Handler -case underscore -output ./mocks/
+
+// Handler handles Step() and Submit() requests and returns a corresponding response
+type Handler interface {
+	OnStep(channel string, sender uint64, req *orderer.StepRequest) (*orderer.StepResponse, error)
+	OnSubmit(channel string, sender uint64, req *orderer.SubmitRequest) (*orderer.SubmitResponse, error)
+}
+
+// RemoteNode represents a cluster member
+type RemoteNode struct {
+	// ID is unique among all members, and cannot be 0.
+	ID uint64
+	// Endpoint is the endpoint of the node, denoted in %s:%d format
+	Endpoint string
+	// ServerTLSCert is the DER encoded TLS server certificate of the node
+	ServerTLSCert []byte
+	// ClientTLSCert is the DER encoded TLS client certificate of the node
+	ClientTLSCert []byte
+}
+
+// String returns a string representation of this RemoteNode
+func (rm RemoteNode) String() string {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[0], 1);
+	return fmt.Sprintf("ID: %d\nEndpoint: %s\nServerTLSCert:%s ClientTLSCert:%s",
+		rm.ID, rm.Endpoint, DERtoPEM(rm.ServerTLSCert), DERtoPEM(rm.ClientTLSCert))
+}
+
+//go:generate mockery -dir . -name Communicator -case underscore -output ./mocks/
+
+// Communicator defines communication for a consenter
+type Communicator interface {
+	// Remote returns a RemoteContext for the given RemoteNode ID in the context
+	// of the given channel, or error if connection cannot be established, or
+	// the channel wasn't configured
+	Remote(channel string, id uint64) (*RemoteContext, error)
+	// Configure configures the communication to connect to all
+	// given members, and disconnect from any members not among the given
+	// members.
+	Configure(channel string, members []RemoteNode)
+	// Shutdown shuts down the communicator
+	Shutdown()
+}
+
+// MembersByChannel is a mapping from channel name
+// to MemberMapping
+type MembersByChannel map[string]MemberMapping
+
+// Comm implements Communicator
+type Comm struct {
+	shutdown     bool
+	Lock         sync.RWMutex
+	Logger       *flogging.FabricLogger
+	ChanExt      ChannelExtractor
+	H            Handler
+	Connections  *ConnectionStore
+	Chan2Members MembersByChannel
+	RPCTimeout   time.Duration
+}
+
+type requestContext struct {
+	channel string
+	sender  uint64
+}
+
+// DispatchSubmit identifies the channel and sender of the submit request and passes it
+// to the underlying Handler
+func (c *Comm) DispatchSubmit(ctx context.Context, request *orderer.SubmitRequest) (*orderer.SubmitResponse, error) {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[1], 1);
+	c.Logger.Debug(request.Channel)
+	reqCtx, err := c.requestContext(ctx, request)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[3], 1);
+		return nil, errors.WithStack(err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[2], 1);return c.H.OnSubmit(reqCtx.channel, reqCtx.sender, request)
+}
+
+// DispatchStep identifies the channel and sender of the step request and passes it
+// to the underlying Handler
+func (c *Comm) DispatchStep(ctx context.Context, request *orderer.StepRequest) (*orderer.StepResponse, error) {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[4], 1);
+	reqCtx, err := c.requestContext(ctx, request)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[6], 1);
+		return nil, errors.WithStack(err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[5], 1);return c.H.OnStep(reqCtx.channel, reqCtx.sender, request)
+}
+
+// classifyRequest identifies the sender and channel of the request and returns
+// it wrapped in a requestContext
+func (c *Comm) requestContext(ctx context.Context, msg proto.Message) (*requestContext, error) {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[7], 1);
+	channel := c.ChanExt.TargetChannel(msg)
+	if channel == "" {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[12], 1);
+		return nil, errors.Errorf("badly formatted message, cannot extract channel")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[8], 1);c.Lock.RLock()
+	mapping, exists := c.Chan2Members[channel]
+	c.Lock.RUnlock()
+
+	if !exists {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[13], 1);
+		return nil, errors.Errorf("channel %s doesn't exist", channel)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[9], 1);cert := comm.ExtractCertificateFromContext(ctx)
+	if len(cert) == 0 {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[14], 1);
+		return nil, errors.Errorf("no TLS certificate sent")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[10], 1);stub := mapping.LookupByClientCert(cert)
+	if stub == nil {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[15], 1);
+		return nil, errors.Errorf("certificate extracted from TLS connection isn't authorized")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[11], 1);return &requestContext{
+		channel: channel,
+		sender:  stub.ID,
+	}, nil
+}
+
+// Remote obtains a RemoteContext linked to the destination node on the context
+// of a given channel
+func (c *Comm) Remote(channel string, id uint64) (*RemoteContext, error) {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[16], 1);
+	c.Lock.RLock()
+	defer c.Lock.RUnlock()
+
+	if c.shutdown {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[22], 1);
+		return nil, errors.New("communication has been shut down")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[17], 1);mapping, exists := c.Chan2Members[channel]
+	if !exists {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[23], 1);
+		return nil, errors.Errorf("channel %s doesn't exist", channel)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[18], 1);stub := mapping.ByID(id)
+	if stub == nil {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[24], 1);
+		return nil, errors.Errorf("node %d doesn't exist in channel %s's membership", id, channel)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[19], 1);if stub.Active() {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[25], 1);
+		return stub.RemoteContext, nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[20], 1);err := stub.Activate(c.createRemoteContext(stub))
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[26], 1);
+		return nil, errors.WithStack(err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[21], 1);return stub.RemoteContext, nil
+}
+
+// Configure configures the channel with the given RemoteNodes
+func (c *Comm) Configure(channel string, newNodes []RemoteNode) {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[27], 1);
+	c.Logger.Infof("Entering, channel: %s, nodes: %v", channel, newNodes)
+	defer c.Logger.Infof("Exiting")
+
+	c.Lock.Lock()
+	defer c.Lock.Unlock()
+
+	if c.shutdown {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[29], 1);
+		return
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[28], 1);beforeConfigChange := c.serverCertsInUse()
+	// Update the channel-scoped mapping with the new nodes
+	c.applyMembershipConfig(channel, newNodes)
+	// Close connections to nodes that are not present in the new membership
+	c.cleanUnusedConnections(beforeConfigChange)
+}
+
+// Shutdown shuts down the instance
+func (c *Comm) Shutdown() {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[30], 1);
+	c.Lock.Lock()
+	defer c.Lock.Unlock()
+
+	c.shutdown = true
+	for _, members := range c.Chan2Members {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[31], 1);
+		for _, member := range members {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[32], 1);
+			c.Connections.Disconnect(member.ServerTLSCert)
+		}
+	}
+}
+
+// cleanUnusedConnections disconnects all connections that are un-used
+// at the moment of the invocation
+func (c *Comm) cleanUnusedConnections(serverCertsBeforeConfig StringSet) {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[33], 1);
+	// Scan all nodes after the reconfiguration
+	serverCertsAfterConfig := c.serverCertsInUse()
+	// Filter out the certificates that remained after the reconfiguration
+	serverCertsBeforeConfig.subtract(serverCertsAfterConfig)
+	// Close the connections to all these nodes as they shouldn't be in use now
+	for serverCertificate := range serverCertsBeforeConfig {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[34], 1);
+		c.Connections.Disconnect([]byte(serverCertificate))
+	}
+}
+
+// serverCertsInUse returns the server certificates that are in use
+// represented as strings.
+func (c *Comm) serverCertsInUse() StringSet {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[35], 1);
+	endpointsInUse := make(StringSet)
+	for _, mapping := range c.Chan2Members {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[37], 1);
+		endpointsInUse.union(mapping.ServerCertificates())
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[36], 1);return endpointsInUse
+}
+
+// applyMembershipConfig sets the given RemoteNodes for the given channel
+func (c *Comm) applyMembershipConfig(channel string, newNodes []RemoteNode) {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[38], 1);
+	mapping := c.getOrCreateMapping(channel)
+	newNodeIDs := make(map[uint64]struct{})
+
+	for _, node := range newNodes {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[40], 1);
+		newNodeIDs[node.ID] = struct{}{}
+		c.updateStubInMapping(mapping, node)
+	}
+
+	// Remove all stubs without a corresponding node
+	// in the new nodes
+	_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[39], 1);for id, stub := range mapping {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[41], 1);
+		if _, exists := newNodeIDs[id]; exists {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[43], 1);
+			c.Logger.Info(id, "exists in both old and new membership, skipping its deactivation")
+			continue
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[42], 1);c.Logger.Info("Deactivated node", id, "who's endpoint is", stub.Endpoint, "as it's removed from membership")
+		delete(mapping, id)
+		stub.Deactivate()
+	}
+}
+
+// updateStubInMapping updates the given RemoteNode and adds it to the MemberMapping
+func (c *Comm) updateStubInMapping(mapping MemberMapping, node RemoteNode) {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[44], 1);
+	stub := mapping.ByID(node.ID)
+	if stub == nil {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[48], 1);
+		c.Logger.Info("Allocating a new stub for node", node.ID, "with endpoint of", node.Endpoint)
+		stub = &Stub{}
+	}
+
+	// Check if the TLS server certificate of the node is replaced
+	// and if so - then deactivate the stub, to trigger
+	// a re-creation of its gRPC connection
+	_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[45], 1);if !bytes.Equal(stub.ServerTLSCert, node.ServerTLSCert) {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[49], 1);
+		c.Logger.Info("Deactivating node", node.ID, "with endpoint of", node.Endpoint, "due to TLS certificate change")
+		stub.Deactivate()
+	}
+
+	// Overwrite the stub Node data with the new data
+	_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[46], 1);stub.RemoteNode = node
+
+	// Put the stub into the mapping
+	mapping.Put(stub)
+
+	// Check if the stub needs activation.
+	if stub.Active() {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[50], 1);
+		return
+	}
+
+	// Activate the stub
+	_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[47], 1);stub.Activate(c.createRemoteContext(stub))
+}
+
+// createRemoteStub returns a function that creates a RemoteContext.
+// It is used as a parameter to Stub.Activate() in order to activate
+// a stub atomically.
+func (c *Comm) createRemoteContext(stub *Stub) func() (*RemoteContext, error) {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[51], 1);
+	return func() (*RemoteContext, error) {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[52], 1);
+		timeout := c.RPCTimeout
+		if timeout == time.Duration(0) {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[56], 1);
+			timeout = DefaultRPCTimeout
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[53], 1);c.Logger.Debug("Connecting to", stub.RemoteNode, "with gRPC timeout of", timeout)
+
+		conn, err := c.Connections.Connection(stub.Endpoint, stub.ServerTLSCert)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[57], 1);
+			c.Logger.Warningf("Unable to obtain connection to %d(%s): %v", stub.ID, stub.Endpoint, err)
+			return nil, err
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[54], 1);clusterClient := orderer.NewClusterClient(conn)
+
+		rc := &RemoteContext{
+			RPCTimeout: timeout,
+			Client:     clusterClient,
+			onAbort: func() {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[58], 1);
+				c.Logger.Info("Aborted connection to", stub.ID, stub.Endpoint)
+				stub.RemoteContext = nil
+			},
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[55], 1);return rc, nil
+	}
+}
+
+// getOrCreateMapping creates a MemberMapping for the given channel
+// or returns the existing one.
+func (c *Comm) getOrCreateMapping(channel string) MemberMapping {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[59], 1);
+	// Lazily create a mapping if it doesn't already exist
+	mapping, exists := c.Chan2Members[channel]
+	if !exists {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[61], 1);
+		mapping = make(MemberMapping)
+		c.Chan2Members[channel] = mapping
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[60], 1);return mapping
+}
+
+// Stub holds all information about the remote node,
+// including the RemoteContext for it, and serializes
+// some operations on it.
+type Stub struct {
+	lock sync.RWMutex
+	RemoteNode
+	*RemoteContext
+}
+
+// Active returns whether the Stub
+// is active or not
+func (stub *Stub) Active() bool {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[62], 1);
+	stub.lock.RLock()
+	defer stub.lock.RUnlock()
+	return stub.isActive()
+}
+
+// Active returns whether the Stub
+// is active or not.
+func (stub *Stub) isActive() bool {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[63], 1);
+	return stub.RemoteContext != nil
+}
+
+// Deactivate deactivates the Stub and
+// ceases all communication operations
+// invoked on it.
+func (stub *Stub) Deactivate() {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[64], 1);
+	stub.lock.Lock()
+	defer stub.lock.Unlock()
+	if !stub.isActive() {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[66], 1);
+		return
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[65], 1);stub.RemoteContext.Abort()
+	stub.RemoteContext = nil
+}
+
+// Activate creates a remote context with the given function callback
+// in an atomic manner - if two parallel invocations are invoked on this Stub,
+// only a single invocation of createRemoteStub takes place.
+func (stub *Stub) Activate(createRemoteContext func() (*RemoteContext, error)) error {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[67], 1);
+	stub.lock.Lock()
+	defer stub.lock.Unlock()
+	// Check if the stub has already been activated while we were waiting for the lock
+	if stub.isActive() {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[70], 1);
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[68], 1);remoteStub, err := createRemoteContext()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[71], 1);
+		return errors.WithStack(err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[69], 1);stub.RemoteContext = remoteStub
+	return nil
+}
+
+// RemoteContext interacts with remote cluster
+// nodes. Every call can be aborted via call to Abort()
+type RemoteContext struct {
+	RPCTimeout         time.Duration
+	onAbort            func()
+	Client             orderer.ClusterClient
+	stepLock           sync.Mutex
+	cancelStep         func()
+	submitLock         sync.Mutex
+	cancelSubmitStream func()
+	submitStream       orderer.Cluster_SubmitClient
+}
+
+// SubmitStream creates a new Submit stream
+func (rc *RemoteContext) SubmitStream() (orderer.Cluster_SubmitClient, error) {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[72], 1);
+	rc.submitLock.Lock()
+	defer rc.submitLock.Unlock()
+	// Close previous submit stream to prevent resource leak
+	rc.closeSubmitStream()
+
+	ctx, cancel := context.WithCancel(context.TODO())
+	submitStream, err := rc.Client.Submit(ctx)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[74], 1);
+		cancel()
+		return nil, errors.WithStack(err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[73], 1);rc.submitStream = submitStream
+	rc.cancelSubmitStream = cancel
+	return rc.submitStream, nil
+}
+
+// Step passes an implementation-specific message to another cluster member.
+func (rc *RemoteContext) Step(req *orderer.StepRequest) (*orderer.StepResponse, error) {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[75], 1);
+	ctx, abort := context.WithCancel(context.TODO())
+	ctx, cancel := context.WithTimeout(ctx, rc.RPCTimeout)
+	defer cancel()
+
+	rc.stepLock.Lock()
+	rc.cancelStep = abort
+	rc.stepLock.Unlock()
+
+	return rc.Client.Step(ctx, req)
+}
+
+// Abort aborts the contexts the RemoteContext uses,
+// thus effectively causes all operations on the embedded
+// ClusterClient to end.
+func (rc *RemoteContext) Abort() {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[76], 1);
+	rc.stepLock.Lock()
+	defer rc.stepLock.Unlock()
+
+	rc.submitLock.Lock()
+	defer rc.submitLock.Unlock()
+
+	if rc.cancelStep != nil {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[78], 1);
+		rc.cancelStep()
+		rc.cancelStep = nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[77], 1);rc.closeSubmitStream()
+	rc.onAbort()
+}
+
+// closeSubmitStream closes the Submit stream
+// and invokes its cancellation function
+func (rc *RemoteContext) closeSubmitStream() {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[79], 1);
+	if rc.cancelSubmitStream != nil {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[81], 1);
+		rc.cancelSubmitStream()
+		rc.cancelSubmitStream = nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[80], 1);if rc.submitStream != nil {_cover_atomic_.AddUint32(&GoCover_0_363733313532663932376566.Count[82], 1);
+		rc.submitStream.CloseSend()
+		rc.submitStream = nil
+	}
+}
+
+var GoCover_0_363733313532663932376566 = struct {
+	Count     [83]uint32
+	Pos       [3 * 83]uint32
+	NumStmt   [83]uint16
+} {
+	Pos: [3 * 83]uint32{
+		56, 59, 0x20026, // [0]
+		100, 103, 0x100075, // [1]
+		106, 106, 0x3d0002, // [2]
+		103, 105, 0x30010, // [3]
+		111, 113, 0x10006f, // [4]
+		116, 116, 0x3b0002, // [5]
+		113, 115, 0x30010, // [6]
+		121, 123, 0x130060, // [7]
+		126, 130, 0xd0002, // [8]
+		134, 135, 0x140002, // [9]
+		138, 139, 0x110002, // [10]
+		142, 145, 0x80002, // [11]
+		123, 125, 0x30013, // [12]
+		130, 132, 0x3000d, // [13]
+		135, 137, 0x30014, // [14]
+		139, 141, 0x30011, // [15]
+		150, 154, 0x10004a, // [16]
+		158, 159, 0xd0002, // [17]
+		162, 163, 0x110002, // [18]
+		167, 167, 0x130002, // [19]
+		171, 172, 0x100002, // [20]
+		175, 175, 0x200002, // [21]
+		154, 156, 0x30010, // [22]
+		159, 161, 0x3000d, // [23]
+		163, 165, 0x30011, // [24]
+		167, 169, 0x30013, // [25]
+		172, 174, 0x30010, // [26]
+		179, 186, 0x100041, // [27]
+		190, 194, 0x2e0002, // [28]
+		186, 188, 0x30010, // [29]
+		198, 203, 0x29001b, // [30]
+		203, 204, 0x220029, // [31]
+		204, 206, 0x40022, // [32]
+		212, 218, 0x39004a, // [33]
+		218, 220, 0x30039, // [34]
+		225, 227, 0x29002d, // [35]
+		230, 230, 0x170002, // [36]
+		227, 229, 0x30029, // [37]
+		234, 238, 0x20004d, // [38]
+		245, 245, 0x200002, // [39]
+		238, 241, 0x30020, // [40]
+		245, 246, 0x2a0020, // [41]
+		250, 252, 0x140003, // [42]
+		246, 248, 0xc002a, // [43]
+		257, 259, 0x11004c, // [44]
+		267, 267, 0x3a0002, // [45]
+		273, 279, 0x130002, // [46]
+		284, 284, 0x2c0002, // [47]
+		259, 262, 0x30011, // [48]
+		267, 270, 0x3003a, // [49]
+		279, 281, 0x30013, // [50]
+		290, 291, 0x28004f, // [51]
+		291, 293, 0x220028, // [52]
+		297, 300, 0x110003, // [53]
+		305, 310, 0x140003, // [54]
+		315, 315, 0x110003, // [55]
+		293, 295, 0x40022, // [56]
+		300, 303, 0x40011, // [57]
+		310, 313, 0x50014, // [58]
+		321, 324, 0xd0041, // [59]
+		328, 328, 0x100002, // [60]
+		324, 327, 0x3000d, // [61]
+		342, 346, 0x20021, // [62]
+		350, 352, 0x20023, // [63]
+		357, 360, 0x160020, // [64]
+		363, 364, 0x1a0002, // [65]
+		360, 362, 0x30016, // [66]
+		370, 374, 0x150056, // [67]
+		377, 378, 0x100002, // [68]
+		382, 383, 0xc0002, // [69]
+		374, 376, 0x30015, // [70]
+		378, 380, 0x30010, // [71]
+		400, 408, 0x10004f, // [72]
+		412, 414, 0x1d0002, // [73]
+		408, 411, 0x30010, // [74]
+		418, 428, 0x20058, // [75]
+		433, 440, 0x1a0022, // [76]
+		445, 446, 0xe0002, // [77]
+		440, 443, 0x3001a, // [78]
+		451, 452, 0x22002e, // [79]
+		457, 457, 0x1c0002, // [80]
+		452, 455, 0x30022, // [81]
+		457, 460, 0x3001c, // [82]
+	},
+	NumStmt: [83]uint16{
+		1, // 0
+		3, // 1
+		1, // 2
+		1, // 3
+		2, // 4
+		1, // 5
+		1, // 6
+		2, // 7
+		4, // 8
+		2, // 9
+		2, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		3, // 16
+		2, // 17
+		2, // 18
+		1, // 19
+		2, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+		1, // 24
+		1, // 25
+		1, // 26
+		5, // 27
+		3, // 28
+		1, // 29
+		4, // 30
+		1, // 31
+		1, // 32
+		3, // 33
+		1, // 34
+		2, // 35
+		1, // 36
+		1, // 37
+		3, // 38
+		1, // 39
+		2, // 40
+		1, // 41
+		3, // 42
+		2, // 43
+		2, // 44
+		1, // 45
+		3, // 46
+		1, // 47
+		2, // 48
+		2, // 49
+		1, // 50
+		1, // 51
+		2, // 52
+		3, // 53
+		2, // 54
+		1, // 55
+		1, // 56
+		2, // 57
+		2, // 58
+		2, // 59
+		1, // 60
+		2, // 61
+		3, // 62
+		1, // 63
+		3, // 64
+		2, // 65
+		1, // 66
+		3, // 67
+		2, // 68
+		2, // 69
+		1, // 70
+		1, // 71
+		6, // 72
+		3, // 73
+		2, // 74
+		7, // 75
+		5, // 76
+		2, // 77
+		2, // 78
+		1, // 79
+		1, // 80
+		2, // 81
+		2, // 82
+	},
+}
+var _ = _cover_atomic_.LoadUint32

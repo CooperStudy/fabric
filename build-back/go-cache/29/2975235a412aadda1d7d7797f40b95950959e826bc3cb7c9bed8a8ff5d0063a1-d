@@ -1,0 +1,11 @@
+api.cover.go
+dynamic.cover.go
+json.cover.go
+nested.cover.go
+statically_opaque.cover.go
+variably_opaque.cover.go
+./dynamic_test.go
+./json_test.go
+./nested_test.go
+./statically_opaque_test.go
+./variably_opaque_test.go

@@ -1,0 +1,10 @@
+factory.cover.go
+nopkcs11.cover.go
+opts.cover.go
+pluginfactory.cover.go
+swfactory.cover.go
+./factory_test.go
+./opts_test.go
+./pluginfactory_test.go
+./race_test.go
+./swfactory_test.go

@@ -1,0 +1,10 @@
+./chaincode.go
+./common.go
+./install.go
+./instantiate.go
+./invoke.go
+./list.go
+./package.go
+./query.go
+./signpackage.go
+./upgrade.go

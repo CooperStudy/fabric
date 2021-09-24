@@ -1,0 +1,1228 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/handlers/validation/builtin/v12/validation_logic.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package v12; import _cover_atomic_ "sync/atomic"
+
+import (
+	"bytes"
+	"fmt"
+	"regexp"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/channelconfig"
+	commonerrors "github.com/hyperledger/fabric/common/errors"
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/core/chaincode/platforms"
+	"github.com/hyperledger/fabric/core/chaincode/platforms/car"
+	"github.com/hyperledger/fabric/core/chaincode/platforms/ccmetadata"
+	"github.com/hyperledger/fabric/core/chaincode/platforms/golang"
+	"github.com/hyperledger/fabric/core/chaincode/platforms/java"
+	"github.com/hyperledger/fabric/core/chaincode/platforms/node"
+	"github.com/hyperledger/fabric/core/common/ccprovider"
+	"github.com/hyperledger/fabric/core/common/privdata"
+	. "github.com/hyperledger/fabric/core/handlers/validation/api/capabilities"
+	. "github.com/hyperledger/fabric/core/handlers/validation/api/identities"
+	. "github.com/hyperledger/fabric/core/handlers/validation/api/policies"
+	. "github.com/hyperledger/fabric/core/handlers/validation/api/state"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwsetutil"
+	"github.com/hyperledger/fabric/core/scc/lscc"
+	"github.com/hyperledger/fabric/protos/common"
+	"github.com/hyperledger/fabric/protos/ledger/rwset/kvrwset"
+	"github.com/hyperledger/fabric/protos/msp"
+	pb "github.com/hyperledger/fabric/protos/peer"
+	"github.com/hyperledger/fabric/protos/utils"
+	"github.com/pkg/errors"
+)
+
+var logger = flogging.MustGetLogger("vscc")
+
+const (
+	DUPLICATED_IDENTITY_ERROR = "Endorsement policy evaluation failure might be caused by duplicated identities"
+)
+
+var validCollectionNameRegex = regexp.MustCompile(ccmetadata.AllowedCharsCollectionName)
+
+//go:generate mockery -dir ../../api/capabilities/ -name Capabilities -case underscore -output mocks/
+//go:generate mockery -dir ../../api/state/ -name StateFetcher -case underscore -output mocks/
+//go:generate mockery -dir ../../api/identities/ -name IdentityDeserializer -case underscore -output mocks/
+//go:generate mockery -dir ../../api/policies/ -name PolicyEvaluator -case underscore -output mocks/
+
+// New creates a new instance of the default VSCC
+// Typically this will only be invoked once per peer
+func New(c Capabilities, s StateFetcher, d IdentityDeserializer, pe PolicyEvaluator) *Validator {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[0], 1);
+	return &Validator{
+		capabilities:    c,
+		stateFetcher:    s,
+		deserializer:    d,
+		policyEvaluator: pe,
+	}
+}
+
+// Validator implements the default transaction validation policy,
+// which is to check the correctness of the read-write set and the endorsement
+// signatures against an endorsement policy that is supplied as argument to
+// every invoke
+type Validator struct {
+	deserializer    IdentityDeserializer
+	capabilities    Capabilities
+	stateFetcher    StateFetcher
+	policyEvaluator PolicyEvaluator
+}
+
+// Validate validates the given envelope corresponding to a transaction with an endorsement
+// policy as given in its serialized form
+func (vscc *Validator) Validate(
+	block *common.Block,
+	namespace string,
+	txPosition int,
+	actionPosition int,
+	policyBytes []byte,
+) commonerrors.TxValidationError {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[1], 1);
+	// get the envelope...
+	env, err := utils.GetEnvelopeFromBlock(block.Data.Data[txPosition])
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[11], 1);
+		logger.Errorf("VSCC error: GetEnvelope failed, err %s", err)
+		return policyErr(err)
+	}
+
+	// ...and the payload...
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[2], 1);payl, err := utils.GetPayload(env)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[12], 1);
+		logger.Errorf("VSCC error: GetPayload failed, err %s", err)
+		return policyErr(err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[3], 1);chdr, err := utils.UnmarshalChannelHeader(payl.Header.ChannelHeader)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[13], 1);
+		return policyErr(err)
+	}
+
+	// validate the payload type
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[4], 1);if common.HeaderType(chdr.Type) != common.HeaderType_ENDORSER_TRANSACTION {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[14], 1);
+		logger.Errorf("Only Endorser Transactions are supported, provided type %d", chdr.Type)
+		return policyErr(fmt.Errorf("Only Endorser Transactions are supported, provided type %d", chdr.Type))
+	}
+
+	// ...and the transaction...
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[5], 1);tx, err := utils.GetTransaction(payl.Data)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[15], 1);
+		logger.Errorf("VSCC error: GetTransaction failed, err %s", err)
+		return policyErr(err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[6], 1);cap, err := utils.GetChaincodeActionPayload(tx.Actions[actionPosition].Payload)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[16], 1);
+		logger.Errorf("VSCC error: GetChaincodeActionPayload failed, err %s", err)
+		return policyErr(err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[7], 1);signatureSet, err := vscc.deduplicateIdentity(cap)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[17], 1);
+		return policyErr(err)
+	}
+
+	// evaluate the signature set against the policy
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[8], 1);err = vscc.policyEvaluator.Evaluate(policyBytes, signatureSet)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[18], 1);
+		logger.Warningf("Endorsement policy failure for transaction txid=%s, err: %s", chdr.GetTxId(), err.Error())
+		if len(signatureSet) < len(cap.Action.Endorsements) {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[20], 1);
+			// Warning: duplicated identities exist, endorsement failure might be cause by this reason
+			return policyErr(errors.New(DUPLICATED_IDENTITY_ERROR))
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[19], 1);return policyErr(fmt.Errorf("VSCC error: endorsement policy failure, err: %s", err))
+	}
+
+	// do some extra validation that is specific to lscc
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[9], 1);if namespace == "lscc" {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[21], 1);
+		logger.Debugf("VSCC info: doing special validation for LSCC")
+		err := vscc.ValidateLSCCInvocation(chdr.ChannelId, env, cap, payl, vscc.capabilities)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[22], 1);
+			logger.Errorf("VSCC error: ValidateLSCCInvocation failed, err %s", err)
+			return err
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[10], 1);return nil
+}
+
+// checkInstantiationPolicy evaluates an instantiation policy against a signed proposal
+func (vscc *Validator) checkInstantiationPolicy(chainName string, env *common.Envelope, instantiationPolicy []byte, payl *common.Payload) commonerrors.TxValidationError {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[23], 1);
+	// get the signature header
+	shdr, err := utils.GetSignatureHeader(payl.Header.SignatureHeader)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[26], 1);
+		return policyErr(err)
+	}
+
+	// construct signed data we can evaluate the instantiation policy against
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[24], 1);sd := []*common.SignedData{{
+		Data:      env.Payload,
+		Identity:  shdr.Creator,
+		Signature: env.Signature,
+	}}
+	err = vscc.policyEvaluator.Evaluate(instantiationPolicy, sd)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[27], 1);
+		return policyErr(fmt.Errorf("chaincode instantiation policy violated, error %s", err))
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[25], 1);return nil
+}
+
+func validateNewCollectionConfigs(newCollectionConfigs []*common.CollectionConfig) error {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[28], 1);
+	newCollectionsMap := make(map[string]bool, len(newCollectionConfigs))
+	// Process each collection config from a set of collection configs
+	for _, newCollectionConfig := range newCollectionConfigs {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[30], 1);
+
+		newCollection := newCollectionConfig.GetStaticCollectionConfig()
+		if newCollection == nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[36], 1);
+			return errors.New("unknown collection configuration type")
+		}
+
+		// Ensure that there are no duplicate collection names
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[31], 1);collectionName := newCollection.GetName()
+
+		if err := validateCollectionName(collectionName); err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[37], 1);
+			return err
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[32], 1);if _, ok := newCollectionsMap[collectionName]; !ok {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[38], 1);
+			newCollectionsMap[collectionName] = true
+		} else{ _cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[39], 1);{
+			return fmt.Errorf("collection-name: %s -- found duplicate collection configuration", collectionName)
+		}}
+
+		// Validate gossip related parameters present in the collection config
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[33], 1);maximumPeerCount := newCollection.GetMaximumPeerCount()
+		requiredPeerCount := newCollection.GetRequiredPeerCount()
+		if maximumPeerCount < requiredPeerCount {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[40], 1);
+			return fmt.Errorf("collection-name: %s -- maximum peer count (%d) cannot be greater than the required peer count (%d)",
+				collectionName, maximumPeerCount, requiredPeerCount)
+
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[34], 1);if requiredPeerCount < 0 {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[41], 1);
+			return fmt.Errorf("collection-name: %s -- requiredPeerCount (%d) cannot be less than zero (%d)",
+				collectionName, maximumPeerCount, requiredPeerCount)
+
+		}
+
+		// make sure that the signature policy is meaningful (only consists of ORs)
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[35], 1);err := validateSpOrConcat(newCollection.MemberOrgsPolicy.GetSignaturePolicy().Rule)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[42], 1);
+			return errors.WithMessage(err, fmt.Sprintf("collection-name: %s -- error in member org policy", collectionName))
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[29], 1);return nil
+}
+
+// validateSpOrConcat checks if the supplied signature policy is just an OR-concatenation of identities
+func validateSpOrConcat(sp *common.SignaturePolicy) error {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[43], 1);
+	if sp.GetNOutOf() == nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[47], 1);
+		return nil
+	}
+	// check if N == 1 (OR concatenation)
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[44], 1);if sp.GetNOutOf().N != 1 {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[48], 1);
+		return errors.New(fmt.Sprintf("signature policy is not an OR concatenation, NOutOf %d", sp.GetNOutOf().N))
+	}
+	// recurse into all sub-rules
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[45], 1);for _, rule := range sp.GetNOutOf().Rules {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[49], 1);
+		err := validateSpOrConcat(rule)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[50], 1);
+			return err
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[46], 1);return nil
+}
+
+func checkForMissingCollections(newCollectionsMap map[string]*common.StaticCollectionConfig, oldCollectionConfigs []*common.CollectionConfig,
+) error {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[51], 1);
+	var missingCollections []string
+
+	// In the new collection config package, ensure that there is one entry per old collection. Any
+	// number of new collections are allowed.
+	for _, oldCollectionConfig := range oldCollectionConfigs {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[54], 1);
+
+		oldCollection := oldCollectionConfig.GetStaticCollectionConfig()
+		// It cannot be nil
+		if oldCollection == nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[56], 1);
+			return policyErr(fmt.Errorf("unknown collection configuration type"))
+		}
+
+		// All old collection must exist in the new collection config package
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[55], 1);oldCollectionName := oldCollection.GetName()
+		_, ok := newCollectionsMap[oldCollectionName]
+		if !ok {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[57], 1);
+			missingCollections = append(missingCollections, oldCollectionName)
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[52], 1);if len(missingCollections) > 0 {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[58], 1);
+		return policyErr(fmt.Errorf("the following existing collections are missing in the new collection configuration package: %v",
+			missingCollections))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[53], 1);return nil
+}
+
+func checkForModifiedCollectionsBTL(newCollectionsMap map[string]*common.StaticCollectionConfig, oldCollectionConfigs []*common.CollectionConfig,
+) error {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[59], 1);
+	var modifiedCollectionsBTL []string
+
+	// In the new collection config package, ensure that the block to live value is not
+	// modified for the existing collections.
+	for _, oldCollectionConfig := range oldCollectionConfigs {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[62], 1);
+
+		oldCollection := oldCollectionConfig.GetStaticCollectionConfig()
+		// It cannot be nil
+		if oldCollection == nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[64], 1);
+			return policyErr(fmt.Errorf("unknown collection configuration type"))
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[63], 1);oldCollectionName := oldCollection.GetName()
+		newCollection, _ := newCollectionsMap[oldCollectionName]
+		// BlockToLive cannot be changed
+		if newCollection.GetBlockToLive() != oldCollection.GetBlockToLive() {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[65], 1);
+			modifiedCollectionsBTL = append(modifiedCollectionsBTL, oldCollectionName)
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[60], 1);if len(modifiedCollectionsBTL) > 0 {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[66], 1);
+		return policyErr(fmt.Errorf("the BlockToLive in the following existing collections must not be modified: %v",
+			modifiedCollectionsBTL))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[61], 1);return nil
+}
+
+func validateNewCollectionConfigsAgainstOld(newCollectionConfigs []*common.CollectionConfig, oldCollectionConfigs []*common.CollectionConfig,
+) error {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[67], 1);
+	newCollectionsMap := make(map[string]*common.StaticCollectionConfig, len(newCollectionConfigs))
+
+	for _, newCollectionConfig := range newCollectionConfigs {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[71], 1);
+		newCollection := newCollectionConfig.GetStaticCollectionConfig()
+		// Collection object itself is stored as value so that we can
+		// check whether the block to live is changed -- FAB-7810
+		newCollectionsMap[newCollection.GetName()] = newCollection
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[68], 1);if err := checkForMissingCollections(newCollectionsMap, oldCollectionConfigs); err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[72], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[69], 1);if err := checkForModifiedCollectionsBTL(newCollectionsMap, oldCollectionConfigs); err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[73], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[70], 1);return nil
+}
+
+func validateCollectionName(collectionName string) error {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[74], 1);
+	if collectionName == "" {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[77], 1);
+		return fmt.Errorf("empty collection-name is not allowed")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[75], 1);match := validCollectionNameRegex.FindString(collectionName)
+	if len(match) != len(collectionName) {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[78], 1);
+		return fmt.Errorf("collection-name: %s not allowed. A valid collection name follows the pattern: %s",
+			collectionName, ccmetadata.AllowedCharsCollectionName)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[76], 1);return nil
+}
+
+// validateRWSetAndCollection performs validation of the rwset
+// of an LSCC deploy operation and then it validates any collection
+// configuration
+func (vscc *Validator) validateRWSetAndCollection(
+	lsccrwset *kvrwset.KVRWSet,
+	cdRWSet *ccprovider.ChaincodeData,
+	lsccArgs [][]byte,
+	lsccFunc string,
+	ac channelconfig.ApplicationCapabilities,
+	channelName string,
+) commonerrors.TxValidationError {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[79], 1);
+	/********************************************/
+	/* security check 0.a - validation of rwset */
+	/********************************************/
+	// there can only be one or two writes
+	if len(lsccrwset.Writes) > 2 {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[88], 1);
+		return policyErr(fmt.Errorf("LSCC can only issue one or two putState upon deploy"))
+	}
+
+	/**********************************************************/
+	/* security check 0.b - validation of the collection data */
+	/**********************************************************/
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[80], 1);var collectionsConfigArg []byte
+	if len(lsccArgs) > 5 {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[89], 1);
+		collectionsConfigArg = lsccArgs[5]
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[81], 1);var collectionsConfigLedger []byte
+	if len(lsccrwset.Writes) == 2 {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[90], 1);
+		key := privdata.BuildCollectionKVSKey(cdRWSet.Name)
+		if lsccrwset.Writes[1].Key != key {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[92], 1);
+			return policyErr(fmt.Errorf("invalid key for the collection of chaincode %s:%s; expected '%s', received '%s'",
+				cdRWSet.Name, cdRWSet.Version, key, lsccrwset.Writes[1].Key))
+
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[91], 1);collectionsConfigLedger = lsccrwset.Writes[1].Value
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[82], 1);if !bytes.Equal(collectionsConfigArg, collectionsConfigLedger) {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[93], 1);
+		return policyErr(fmt.Errorf("collection configuration arguments supplied for chaincode %s:%s do not match the configuration in the lscc writeset",
+			cdRWSet.Name, cdRWSet.Version))
+
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[83], 1);channelState, err := vscc.stateFetcher.FetchState()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[94], 1);
+		return &commonerrors.VSCCExecutionFailureError{Err: fmt.Errorf("failed obtaining query executor: %v", err)}
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[84], 1);defer channelState.Done()
+
+	state := &state{channelState}
+
+	// The following condition check added in v1.1 may not be needed as it is not possible to have the chaincodeName~collection key in
+	// the lscc namespace before a chaincode deploy. To avoid forks in v1.2, the following condition is retained.
+	if lsccFunc == lscc.DEPLOY {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[95], 1);
+		colCriteria := common.CollectionCriteria{Channel: channelName, Namespace: cdRWSet.Name}
+		ccp, err := privdata.RetrieveCollectionConfigPackageFromState(colCriteria, state)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[97], 1);
+			// fail if we get any error other than NoSuchCollectionError
+			// because it means something went wrong while looking up the
+			// older collection
+			if _, ok := err.(privdata.NoSuchCollectionError); !ok {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[98], 1);
+				return &commonerrors.VSCCExecutionFailureError{Err: fmt.Errorf("unable to check whether collection existed earlier for chaincode %s:%s",
+					cdRWSet.Name, cdRWSet.Version),
+				}
+			}
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[96], 1);if ccp != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[99], 1);
+			return policyErr(fmt.Errorf("collection data should not exist for chaincode %s:%s", cdRWSet.Name, cdRWSet.Version))
+		}
+	}
+
+	// TODO: Once the new chaincode lifecycle is available (FAB-8724), the following validation
+	// and other validation performed in ValidateLSCCInvocation can be moved to LSCC itself.
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[85], 1);newCollectionConfigPackage := &common.CollectionConfigPackage{}
+
+	if collectionsConfigArg != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[100], 1);
+		err := proto.Unmarshal(collectionsConfigArg, newCollectionConfigPackage)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[101], 1);
+			return policyErr(fmt.Errorf("invalid collection configuration supplied for chaincode %s:%s",
+				cdRWSet.Name, cdRWSet.Version))
+		}
+	} else{ _cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[102], 1);{
+		return nil
+	}}
+
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[86], 1);if ac.V1_2Validation() {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[103], 1);
+		newCollectionConfigs := newCollectionConfigPackage.GetConfig()
+		if err := validateNewCollectionConfigs(newCollectionConfigs); err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[105], 1);
+			return policyErr(err)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[104], 1);if lsccFunc == lscc.UPGRADE {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[106], 1);
+
+			collectionCriteria := common.CollectionCriteria{Channel: channelName, Namespace: cdRWSet.Name}
+			// oldCollectionConfigPackage denotes the existing collection config package in the ledger
+			oldCollectionConfigPackage, err := privdata.RetrieveCollectionConfigPackageFromState(collectionCriteria, state)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[108], 1);
+				// fail if we get any error other than NoSuchCollectionError
+				// because it means something went wrong while looking up the
+				// older collection
+				if _, ok := err.(privdata.NoSuchCollectionError); !ok {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[109], 1);
+					return &commonerrors.VSCCExecutionFailureError{Err: fmt.Errorf("unable to check whether collection existed earlier for chaincode %s:%s: %v",
+						cdRWSet.Name, cdRWSet.Version, err),
+					}
+				}
+			}
+
+			// oldCollectionConfigPackage denotes the existing collection config package in the ledger
+			_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[107], 1);if oldCollectionConfigPackage != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[110], 1);
+				oldCollectionConfigs := oldCollectionConfigPackage.GetConfig()
+				if err := validateNewCollectionConfigsAgainstOld(newCollectionConfigs, oldCollectionConfigs); err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[111], 1);
+					return policyErr(err)
+				}
+
+			}
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[87], 1);return nil
+}
+
+func (vscc *Validator) ValidateLSCCInvocation(
+	chid string,
+	env *common.Envelope,
+	cap *pb.ChaincodeActionPayload,
+	payl *common.Payload,
+	ac channelconfig.ApplicationCapabilities,
+) commonerrors.TxValidationError {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[112], 1);
+	cpp, err := utils.GetChaincodeProposalPayload(cap.ChaincodeProposalPayload)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[116], 1);
+		logger.Errorf("VSCC error: GetChaincodeProposalPayload failed, err %s", err)
+		return policyErr(err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[113], 1);cis := &pb.ChaincodeInvocationSpec{}
+	err = proto.Unmarshal(cpp.Input, cis)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[117], 1);
+		logger.Errorf("VSCC error: Unmarshal ChaincodeInvocationSpec failed, err %s", err)
+		return policyErr(err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[114], 1);if cis.ChaincodeSpec == nil ||
+		cis.ChaincodeSpec.Input == nil ||
+		cis.ChaincodeSpec.Input.Args == nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[118], 1);
+		logger.Errorf("VSCC error: committing invalid vscc invocation")
+		return policyErr(fmt.Errorf("malformed chaincode invocation spec"))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[115], 1);lsccFunc := string(cis.ChaincodeSpec.Input.Args[0])
+	lsccArgs := cis.ChaincodeSpec.Input.Args[1:]
+
+	logger.Debugf("VSCC info: ValidateLSCCInvocation acting on %s %#v", lsccFunc, lsccArgs)
+
+	switch lsccFunc {
+	case lscc.UPGRADE, lscc.DEPLOY:_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[119], 1);
+		logger.Debugf("VSCC info: validating invocation of lscc function %s on arguments %#v", lsccFunc, lsccArgs)
+
+		if len(lsccArgs) < 2 {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[139], 1);
+			return policyErr(fmt.Errorf("Wrong number of arguments for invocation lscc(%s): expected at least 2, received %d", lsccFunc, len(lsccArgs)))
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[120], 1);if (!ac.PrivateChannelData() && len(lsccArgs) > 5) ||
+			(ac.PrivateChannelData() && len(lsccArgs) > 6) {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[140], 1);
+			return policyErr(fmt.Errorf("Wrong number of arguments for invocation lscc(%s): received %d", lsccFunc, len(lsccArgs)))
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[121], 1);cdsArgs, err := utils.GetChaincodeDeploymentSpec(lsccArgs[1], platforms.NewRegistry(
+			// XXX We should definitely _not_ have this external dependency in VSCC
+			// as adding a platform could cause non-determinism.  This is yet another
+			// reason why all of this custom LSCC validation at commit time has no
+			// long term hope of staying deterministic and needs to be removed.
+			&golang.Platform{},
+			&node.Platform{},
+			&java.Platform{},
+			&car.Platform{},
+		))
+
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[141], 1);
+			return policyErr(fmt.Errorf("GetChaincodeDeploymentSpec error %s", err))
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[122], 1);if cdsArgs == nil || cdsArgs.ChaincodeSpec == nil || cdsArgs.ChaincodeSpec.ChaincodeId == nil ||
+			cap.Action == nil || cap.Action.ProposalResponsePayload == nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[142], 1);
+			return policyErr(fmt.Errorf("VSCC error: invocation of lscc(%s) does not have appropriate arguments", lsccFunc))
+		}
+
+		// get the rwset
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[123], 1);pRespPayload, err := utils.GetProposalResponsePayload(cap.Action.ProposalResponsePayload)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[143], 1);
+			return policyErr(fmt.Errorf("GetProposalResponsePayload error %s", err))
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[124], 1);if pRespPayload.Extension == nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[144], 1);
+			return policyErr(fmt.Errorf("nil pRespPayload.Extension"))
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[125], 1);respPayload, err := utils.GetChaincodeAction(pRespPayload.Extension)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[145], 1);
+			return policyErr(fmt.Errorf("GetChaincodeAction error %s", err))
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[126], 1);txRWSet := &rwsetutil.TxRwSet{}
+		if err = txRWSet.FromProtoBytes(respPayload.Results); err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[146], 1);
+			return policyErr(fmt.Errorf("txRWSet.FromProtoBytes error %s", err))
+		}
+
+		// extract the rwset for lscc
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[127], 1);var lsccrwset *kvrwset.KVRWSet
+		for _, ns := range txRWSet.NsRwSets {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[147], 1);
+			logger.Debugf("Namespace %s", ns.NameSpace)
+			if ns.NameSpace == "lscc" {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[148], 1);
+				lsccrwset = ns.KvRwSet
+				break
+			}
+		}
+
+		// retrieve from the ledger the entry for the chaincode at hand
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[128], 1);cdLedger, ccExistsOnLedger, err := vscc.getInstantiatedCC(chid, cdsArgs.ChaincodeSpec.ChaincodeId.Name)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[149], 1);
+			return &commonerrors.VSCCExecutionFailureError{Err: err}
+		}
+
+		/******************************************/
+		/* security check 0 - validation of rwset */
+		/******************************************/
+		// there has to be a write-set
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[129], 1);if lsccrwset == nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[150], 1);
+			return policyErr(fmt.Errorf("No read write set for lscc was found"))
+		}
+		// there must be at least one write
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[130], 1);if len(lsccrwset.Writes) < 1 {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[151], 1);
+			return policyErr(fmt.Errorf("LSCC must issue at least one single putState upon deploy/upgrade"))
+		}
+		// the first key name must be the chaincode id provided in the deployment spec
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[131], 1);if lsccrwset.Writes[0].Key != cdsArgs.ChaincodeSpec.ChaincodeId.Name {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[152], 1);
+			return policyErr(fmt.Errorf("expected key %s, found %s", cdsArgs.ChaincodeSpec.ChaincodeId.Name, lsccrwset.Writes[0].Key))
+		}
+		// the value must be a ChaincodeData struct
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[132], 1);cdRWSet := &ccprovider.ChaincodeData{}
+		err = proto.Unmarshal(lsccrwset.Writes[0].Value, cdRWSet)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[153], 1);
+			return policyErr(fmt.Errorf("unmarhsalling of ChaincodeData failed, error %s", err))
+		}
+		// the chaincode name in the lsccwriteset must match the chaincode name in the deployment spec
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[133], 1);if cdRWSet.Name != cdsArgs.ChaincodeSpec.ChaincodeId.Name {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[154], 1);
+			return policyErr(fmt.Errorf("expected cc name %s, found %s", cdsArgs.ChaincodeSpec.ChaincodeId.Name, cdRWSet.Name))
+		}
+		// the chaincode version in the lsccwriteset must match the chaincode version in the deployment spec
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[134], 1);if cdRWSet.Version != cdsArgs.ChaincodeSpec.ChaincodeId.Version {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[155], 1);
+			return policyErr(fmt.Errorf("expected cc version %s, found %s", cdsArgs.ChaincodeSpec.ChaincodeId.Version, cdRWSet.Version))
+		}
+		// it must only write to 2 namespaces: LSCC's and the cc that we are deploying/upgrading
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[135], 1);for _, ns := range txRWSet.NsRwSets {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[156], 1);
+			if ns.NameSpace != "lscc" && ns.NameSpace != cdRWSet.Name && len(ns.KvRwSet.Writes) > 0 {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[157], 1);
+				return policyErr(fmt.Errorf("LSCC invocation is attempting to write to namespace %s", ns.NameSpace))
+			}
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[136], 1);logger.Debugf("Validating %s for cc %s version %s", lsccFunc, cdRWSet.Name, cdRWSet.Version)
+
+		switch lsccFunc {
+		case lscc.DEPLOY:_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[158], 1);
+
+			/******************************************************************/
+			/* security check 1 - cc not in the LCCC table of instantiated cc */
+			/******************************************************************/
+			if ccExistsOnLedger {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[168], 1);
+				return policyErr(fmt.Errorf("Chaincode %s is already instantiated", cdsArgs.ChaincodeSpec.ChaincodeId.Name))
+			}
+
+			/****************************************************************************/
+			/* security check 2 - validation of rwset (and of collections if enabled) */
+			/****************************************************************************/
+			_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[159], 1);if ac.PrivateChannelData() {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[169], 1);
+				// do extra validation for collections
+				err := vscc.validateRWSetAndCollection(lsccrwset, cdRWSet, lsccArgs, lsccFunc, ac, chid)
+				if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[170], 1);
+					return err
+				}
+			} else{ _cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[171], 1);{
+				// there can only be a single ledger write
+				if len(lsccrwset.Writes) != 1 {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[172], 1);
+					return policyErr(fmt.Errorf("LSCC can only issue a single putState upon deploy"))
+				}
+			}}
+
+			/*****************************************************/
+			/* security check 3 - check the instantiation policy */
+			/*****************************************************/
+			_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[160], 1);pol := cdRWSet.InstantiationPolicy
+			if pol == nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[173], 1);
+				return policyErr(fmt.Errorf("no instantiation policy was specified"))
+			}
+			// FIXME: could we actually pull the cds package from the
+			// file system to verify whether the policy that is specified
+			// here is the same as the one on disk?
+			// PROS: we prevent attacks where the policy is replaced
+			// CONS: this would be a point of non-determinism
+			_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[161], 1);err := vscc.checkInstantiationPolicy(chid, env, pol, payl)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[174], 1);
+				return err
+			}
+
+		case lscc.UPGRADE:_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[162], 1);
+			/**************************************************************/
+			/* security check 1 - cc in the LCCC table of instantiated cc */
+			/**************************************************************/
+			if !ccExistsOnLedger {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[175], 1);
+				return policyErr(fmt.Errorf("Upgrading non-existent chaincode %s", cdsArgs.ChaincodeSpec.ChaincodeId.Name))
+			}
+
+			/**********************************************************/
+			/* security check 2 - existing cc's version was different */
+			/**********************************************************/
+			_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[163], 1);if cdLedger.Version == cdsArgs.ChaincodeSpec.ChaincodeId.Version {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[176], 1);
+				return policyErr(fmt.Errorf("Existing version of the cc on the ledger (%s) should be different from the upgraded one", cdsArgs.ChaincodeSpec.ChaincodeId.Version))
+			}
+
+			/****************************************************************************/
+			/* security check 3 validation of rwset (and of collections if enabled) */
+			/****************************************************************************/
+			// Only in v1.2, a collection can be updated during a chaincode upgrade
+			_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[164], 1);if ac.V1_2Validation() {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[177], 1);
+				// do extra validation for collections
+				err := vscc.validateRWSetAndCollection(lsccrwset, cdRWSet, lsccArgs, lsccFunc, ac, chid)
+				if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[178], 1);
+					return err
+				}
+			} else{ _cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[179], 1);{
+				// there can only be a single ledger write
+				if len(lsccrwset.Writes) != 1 {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[180], 1);
+					return policyErr(fmt.Errorf("LSCC can only issue a single putState upon upgrade"))
+				}
+			}}
+
+			/*****************************************************/
+			/* security check 4 - check the instantiation policy */
+			/*****************************************************/
+			_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[165], 1);pol := cdLedger.InstantiationPolicy
+			if pol == nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[181], 1);
+				return policyErr(fmt.Errorf("No instantiation policy was specified"))
+			}
+			// FIXME: could we actually pull the cds package from the
+			// file system to verify whether the policy that is specified
+			// here is the same as the one on disk?
+			// PROS: we prevent attacks where the policy is replaced
+			// CONS: this would be a point of non-determinism
+			_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[166], 1);err := vscc.checkInstantiationPolicy(chid, env, pol, payl)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[182], 1);
+				return err
+			}
+
+			/******************************************************************/
+			/* security check 5 - check the instantiation policy in the rwset */
+			/******************************************************************/
+			_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[167], 1);if ac.V1_1Validation() {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[183], 1);
+				polNew := cdRWSet.InstantiationPolicy
+				if polNew == nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[185], 1);
+					return policyErr(fmt.Errorf("No instantiation policy was specified"))
+				}
+
+				// no point in checking it again if they are the same policy
+				_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[184], 1);if !bytes.Equal(polNew, pol) {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[186], 1);
+					err = vscc.checkInstantiationPolicy(chid, env, polNew, payl)
+					if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[187], 1);
+						return err
+					}
+				}
+			}
+		}
+
+		// all is good!
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[137], 1);return nil
+	default:_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[138], 1);
+		return policyErr(fmt.Errorf("VSCC error: committing an invocation of function %s of lscc is invalid", lsccFunc))
+	}
+}
+
+func (vscc *Validator) getInstantiatedCC(chid, ccid string) (cd *ccprovider.ChaincodeData, exists bool, err error) {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[188], 1);
+	qe, err := vscc.stateFetcher.FetchState()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[193], 1);
+		err = fmt.Errorf("could not retrieve QueryExecutor for channel %s, error %s", chid, err)
+		return
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[189], 1);defer qe.Done()
+	channelState := &state{qe}
+	bytes, err := channelState.GetState("lscc", ccid)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[194], 1);
+		err = fmt.Errorf("could not retrieve state for chaincode %s on channel %s, error %s", ccid, chid, err)
+		return
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[190], 1);if bytes == nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[195], 1);
+		return
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[191], 1);cd = &ccprovider.ChaincodeData{}
+	err = proto.Unmarshal(bytes, cd)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[196], 1);
+		err = fmt.Errorf("unmarshalling ChaincodeQueryResponse failed, error %s", err)
+		return
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[192], 1);exists = true
+	return
+}
+
+func (vscc *Validator) deduplicateIdentity(cap *pb.ChaincodeActionPayload) ([]*common.SignedData, error) {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[197], 1);
+	// this is the first part of the signed message
+	prespBytes := cap.Action.ProposalResponsePayload
+
+	// build the signature set for the evaluation
+	signatureSet := []*common.SignedData{}
+	signatureMap := make(map[string]struct{})
+	// loop through each of the endorsements and build the signature set
+	for _, endorsement := range cap.Action.Endorsements {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[199], 1);
+		//unmarshal endorser bytes
+		serializedIdentity := &msp.SerializedIdentity{}
+		if err := proto.Unmarshal(endorsement.Endorser, serializedIdentity); err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[202], 1);
+			logger.Errorf("Unmarshal endorser error: %s", err)
+			return nil, policyErr(fmt.Errorf("Unmarshal endorser error: %s", err))
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[200], 1);identity := serializedIdentity.Mspid + string(serializedIdentity.IdBytes)
+		if _, ok := signatureMap[identity]; ok {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[203], 1);
+			// Endorsement with the same identity has already been added
+			logger.Warningf("Ignoring duplicated identity, Mspid: %s, pem:\n%s", serializedIdentity.Mspid, serializedIdentity.IdBytes)
+			continue
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[201], 1);data := make([]byte, len(prespBytes)+len(endorsement.Endorser))
+		copy(data, prespBytes)
+		copy(data[len(prespBytes):], endorsement.Endorser)
+		signatureSet = append(signatureSet, &common.SignedData{
+			// set the data that is signed; concatenation of proposal response bytes and endorser ID
+			Data: data,
+			// set the identity that signs the message: it's the endorser
+			Identity: endorsement.Endorser,
+			// set the signature
+			Signature: endorsement.Signature})
+		signatureMap[identity] = struct{}{}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[198], 1);logger.Debugf("Signature set is of size %d out of %d endorsement(s)", len(signatureSet), len(cap.Action.Endorsements))
+	return signatureSet, nil
+}
+
+type state struct {
+	State
+}
+
+// GetState retrieves the value for the given key in the given namespace
+func (s *state) GetState(namespace string, key string) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[204], 1);
+	values, err := s.GetStateMultipleKeys(namespace, []string{key})
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[207], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[205], 1);if len(values) == 0 {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[208], 1);
+		return nil, nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[206], 1);return values[0], nil
+}
+
+func policyErr(err error) *commonerrors.VSCCEndorsementPolicyError {_cover_atomic_.AddUint32(&GoCover_0_313161326239636265626163.Count[209], 1);
+	return &commonerrors.VSCCEndorsementPolicyError{
+		Err: err,
+	}
+}
+
+var GoCover_0_313161326239636265626163 = struct {
+	Count     [210]uint32
+	Pos       [3 * 210]uint32
+	NumStmt   [210]uint16
+} {
+	Pos: [3 * 210]uint32{
+		55, 62, 0x20061, // [0]
+		83, 86, 0x100022, // [1]
+		92, 93, 0x100002, // [2]
+		98, 99, 0x100002, // [3]
+		104, 104, 0x4c0002, // [4]
+		110, 111, 0x100002, // [5]
+		116, 117, 0x100002, // [6]
+		122, 123, 0x100002, // [7]
+		128, 129, 0x100002, // [8]
+		139, 139, 0x190002, // [9]
+		148, 148, 0xc0002, // [10]
+		86, 89, 0x30010, // [11]
+		93, 96, 0x30010, // [12]
+		99, 101, 0x30010, // [13]
+		104, 107, 0x3004c, // [14]
+		111, 114, 0x30010, // [15]
+		117, 120, 0x30010, // [16]
+		123, 125, 0x30010, // [17]
+		129, 131, 0x370010, // [18]
+		135, 135, 0x570003, // [19]
+		131, 134, 0x40037, // [20]
+		139, 142, 0x110019, // [21]
+		142, 145, 0x40011, // [22]
+		152, 155, 0x1000aa, // [23]
+		160, 166, 0x100002, // [24]
+		169, 169, 0xc0002, // [25]
+		155, 157, 0x30010, // [26]
+		166, 168, 0x30010, // [27]
+		172, 175, 0x3b005a, // [28]
+		215, 215, 0xc0002, // [29]
+		175, 178, 0x1b003b, // [30]
+		183, 185, 0x400003, // [31]
+		189, 189, 0x360003, // [32]
+		196, 198, 0x2b0003, // [33]
+		203, 203, 0x1c0003, // [34]
+		210, 211, 0x110003, // [35]
+		178, 180, 0x4001b, // [36]
+		185, 187, 0x40040, // [37]
+		189, 191, 0x40036, // [38]
+		191, 193, 0x40009, // [39]
+		198, 202, 0x4002b, // [40]
+		203, 207, 0x4001c, // [41]
+		211, 213, 0x40011, // [42]
+		219, 220, 0x1b003b, // [43]
+		224, 224, 0x1b0002, // [44]
+		228, 228, 0x2c0002, // [45]
+		234, 234, 0xc0002, // [46]
+		220, 222, 0x3001b, // [47]
+		224, 226, 0x3001b, // [48]
+		228, 230, 0x11002c, // [49]
+		230, 232, 0x40011, // [50]
+		238, 243, 0x3b0009, // [51]
+		259, 259, 0x210002, // [52]
+		264, 264, 0xc0002, // [53]
+		243, 247, 0x1b003b, // [54]
+		252, 254, 0xa0003, // [55]
+		247, 249, 0x4001b, // [56]
+		254, 256, 0x4000a, // [57]
+		259, 262, 0x30021, // [58]
+		268, 273, 0x3b0009, // [59]
+		289, 289, 0x250002, // [60]
+		294, 294, 0xc0002, // [61]
+		273, 277, 0x1b003b, // [62]
+		281, 284, 0x470003, // [63]
+		277, 279, 0x4001b, // [64]
+		284, 286, 0x40047, // [65]
+		289, 292, 0x30025, // [66]
+		298, 301, 0x3b0009, // [67]
+		308, 308, 0x5c0002, // [68]
+		312, 312, 0x600002, // [69]
+		316, 316, 0xc0002, // [70]
+		301, 306, 0x3003b, // [71]
+		308, 310, 0x3005c, // [72]
+		312, 314, 0x30060, // [73]
+		319, 320, 0x1a003a, // [74]
+		323, 324, 0x270002, // [75]
+		328, 328, 0xc0002, // [76]
+		320, 322, 0x3001a, // [77]
+		324, 327, 0x30027, // [78]
+		341, 346, 0x1f0022, // [79]
+		353, 354, 0x170002, // [80]
+		358, 359, 0x200002, // [81]
+		370, 370, 0x410002, // [82]
+		376, 377, 0x100002, // [83]
+		380, 386, 0x1d0002, // [84]
+		406, 408, 0x210002, // [85]
+		418, 418, 0x190002, // [86]
+		451, 451, 0xc0002, // [87]
+		346, 348, 0x3001f, // [88]
+		354, 356, 0x30017, // [89]
+		359, 361, 0x250020, // [90]
+		367, 367, 0x360003, // [91]
+		361, 365, 0x40025, // [92]
+		370, 374, 0x30041, // [93]
+		377, 379, 0x30010, // [94]
+		386, 389, 0x11001d, // [95]
+		399, 399, 0x110003, // [96]
+		389, 393, 0x3a0011, // [97]
+		393, 397, 0x5003a, // [98]
+		399, 401, 0x40011, // [99]
+		408, 410, 0x110021, // [100]
+		410, 413, 0x40011, // [101]
+		414, 416, 0x30008, // [102]
+		418, 420, 0x4c0019, // [103]
+		424, 424, 0x1f0003, // [104]
+		420, 422, 0x4004c, // [105]
+		424, 429, 0x12001f, // [106]
+		441, 441, 0x290004, // [107]
+		429, 433, 0x3b0012, // [108]
+		433, 437, 0x6003b, // [109]
+		441, 443, 0x6e0029, // [110]
+		443, 445, 0x6006e, // [111]
+		460, 462, 0x100022, // [112]
+		467, 469, 0x100002, // [113]
+		474, 476, 0x270002, // [114]
+		481, 486, 0x120002, // [115]
+		462, 465, 0x30010, // [116]
+		469, 472, 0x30010, // [117]
+		476, 479, 0x30027, // [118]
+		487, 490, 0x180021, // [119]
+		494, 495, 0x330003, // [120]
+		499, 510, 0x110003, // [121]
+		514, 515, 0x430003, // [122]
+		520, 521, 0x110003, // [123]
+		524, 524, 0x240003, // [124]
+		527, 528, 0x110003, // [125]
+		531, 532, 0x440003, // [126]
+		537, 538, 0x270003, // [127]
+		547, 548, 0x110003, // [128]
+		556, 556, 0x170003, // [129]
+		560, 560, 0x200003, // [130]
+		564, 564, 0x480003, // [131]
+		568, 570, 0x110003, // [132]
+		574, 574, 0x3d0003, // [133]
+		578, 578, 0x430003, // [134]
+		582, 582, 0x270003, // [135]
+		588, 590, 0x130003, // [136]
+		702, 702, 0xd0003, // [137]
+		703, 704, 0x73000a, // [138]
+		490, 492, 0x40018, // [139]
+		495, 497, 0x40033, // [140]
+		510, 512, 0x40011, // [141]
+		515, 517, 0x40043, // [142]
+		521, 523, 0x40011, // [143]
+		524, 526, 0x40024, // [144]
+		528, 530, 0x40011, // [145]
+		532, 534, 0x40044, // [146]
+		538, 540, 0x1e0027, // [147]
+		540, 542, 0xa001e, // [148]
+		548, 550, 0x40011, // [149]
+		556, 558, 0x40017, // [150]
+		560, 562, 0x40020, // [151]
+		564, 566, 0x40048, // [152]
+		570, 572, 0x40011, // [153]
+		574, 576, 0x4003d, // [154]
+		578, 580, 0x40043, // [155]
+		582, 583, 0x5c0027, // [156]
+		583, 585, 0x5005c, // [157]
+		591, 596, 0x180014, // [158]
+		603, 603, 0x1f0004, // [159]
+		619, 620, 0x120004, // [160]
+		628, 629, 0x120004, // [161]
+		633, 637, 0x190015, // [162]
+		644, 644, 0x450004, // [163]
+		652, 652, 0x1b0004, // [164]
+		668, 669, 0x120004, // [165]
+		677, 678, 0x120004, // [166]
+		685, 685, 0x1b0004, // [167]
+		596, 598, 0x50018, // [168]
+		603, 606, 0x13001f, // [169]
+		606, 608, 0x60013, // [170]
+		609, 611, 0x23000a, // [171]
+		611, 613, 0x60023, // [172]
+		620, 622, 0x50012, // [173]
+		629, 631, 0x50012, // [174]
+		637, 639, 0x50019, // [175]
+		644, 646, 0x50045, // [176]
+		652, 655, 0x13001b, // [177]
+		655, 657, 0x60013, // [178]
+		658, 660, 0x23000a, // [179]
+		660, 662, 0x60023, // [180]
+		669, 671, 0x50012, // [181]
+		678, 680, 0x50012, // [182]
+		685, 687, 0x16001b, // [183]
+		692, 692, 0x220005, // [184]
+		687, 689, 0x60016, // [185]
+		692, 694, 0x140022, // [186]
+		694, 696, 0x70014, // [187]
+		708, 710, 0x100074, // [188]
+		714, 717, 0x100002, // [189]
+		722, 722, 0x120002, // [190]
+		726, 728, 0x100002, // [191]
+		733, 734, 0x80002, // [192]
+		710, 713, 0x30010, // [193]
+		717, 720, 0x30010, // [194]
+		722, 724, 0x30012, // [195]
+		728, 731, 0x30010, // [196]
+		737, 745, 0x36006a, // [197]
+		771, 772, 0x1a0002, // [198]
+		745, 748, 0x530036, // [199]
+		752, 753, 0x2a0003, // [200]
+		758, 768, 0x260003, // [201]
+		748, 751, 0x40053, // [202]
+		753, 756, 0xc002a, // [203]
+		780, 782, 0x100048, // [204]
+		785, 785, 0x160002, // [205]
+		788, 788, 0x170002, // [206]
+		782, 784, 0x30010, // [207]
+		785, 787, 0x30016, // [208]
+		791, 795, 0x20044, // [209]
+	},
+	NumStmt: [210]uint16{
+		1, // 0
+		2, // 1
+		2, // 2
+		2, // 3
+		1, // 4
+		2, // 5
+		2, // 6
+		2, // 7
+		2, // 8
+		1, // 9
+		1, // 10
+		2, // 11
+		2, // 12
+		1, // 13
+		2, // 14
+		2, // 15
+		2, // 16
+		1, // 17
+		2, // 18
+		1, // 19
+		1, // 20
+		3, // 21
+		2, // 22
+		2, // 23
+		3, // 24
+		1, // 25
+		1, // 26
+		1, // 27
+		2, // 28
+		1, // 29
+		2, // 30
+		2, // 31
+		1, // 32
+		3, // 33
+		1, // 34
+		2, // 35
+		1, // 36
+		1, // 37
+		1, // 38
+		1, // 39
+		1, // 40
+		1, // 41
+		1, // 42
+		1, // 43
+		1, // 44
+		1, // 45
+		1, // 46
+		1, // 47
+		1, // 48
+		2, // 49
+		1, // 50
+		2, // 51
+		1, // 52
+		1, // 53
+		2, // 54
+		3, // 55
+		1, // 56
+		1, // 57
+		1, // 58
+		2, // 59
+		1, // 60
+		1, // 61
+		2, // 62
+		3, // 63
+		1, // 64
+		1, // 65
+		1, // 66
+		2, // 67
+		1, // 68
+		1, // 69
+		1, // 70
+		2, // 71
+		1, // 72
+		1, // 73
+		1, // 74
+		2, // 75
+		1, // 76
+		1, // 77
+		1, // 78
+		1, // 79
+		2, // 80
+		2, // 81
+		1, // 82
+		2, // 83
+		3, // 84
+		2, // 85
+		1, // 86
+		1, // 87
+		1, // 88
+		1, // 89
+		2, // 90
+		1, // 91
+		1, // 92
+		1, // 93
+		1, // 94
+		3, // 95
+		1, // 96
+		1, // 97
+		1, // 98
+		1, // 99
+		2, // 100
+		1, // 101
+		1, // 102
+		2, // 103
+		1, // 104
+		1, // 105
+		3, // 106
+		1, // 107
+		1, // 108
+		1, // 109
+		2, // 110
+		1, // 111
+		2, // 112
+		3, // 113
+		1, // 114
+		4, // 115
+		2, // 116
+		2, // 117
+		2, // 118
+		2, // 119
+		1, // 120
+		2, // 121
+		1, // 122
+		2, // 123
+		1, // 124
+		2, // 125
+		2, // 126
+		2, // 127
+		2, // 128
+		1, // 129
+		1, // 130
+		1, // 131
+		3, // 132
+		1, // 133
+		1, // 134
+		1, // 135
+		2, // 136
+		1, // 137
+		1, // 138
+		1, // 139
+		1, // 140
+		1, // 141
+		1, // 142
+		1, // 143
+		1, // 144
+		1, // 145
+		1, // 146
+		2, // 147
+		2, // 148
+		1, // 149
+		1, // 150
+		1, // 151
+		1, // 152
+		1, // 153
+		1, // 154
+		1, // 155
+		1, // 156
+		1, // 157
+		1, // 158
+		1, // 159
+		2, // 160
+		2, // 161
+		1, // 162
+		1, // 163
+		1, // 164
+		2, // 165
+		2, // 166
+		1, // 167
+		1, // 168
+		2, // 169
+		1, // 170
+		1, // 171
+		1, // 172
+		1, // 173
+		1, // 174
+		1, // 175
+		1, // 176
+		2, // 177
+		1, // 178
+		1, // 179
+		1, // 180
+		1, // 181
+		1, // 182
+		2, // 183
+		1, // 184
+		1, // 185
+		2, // 186
+		1, // 187
+		2, // 188
+		4, // 189
+		1, // 190
+		3, // 191
+		2, // 192
+		2, // 193
+		2, // 194
+		1, // 195
+		2, // 196
+		4, // 197
+		2, // 198
+		2, // 199
+		2, // 200
+		5, // 201
+		2, // 202
+		2, // 203
+		2, // 204
+		1, // 205
+		1, // 206
+		1, // 207
+		1, // 208
+		1, // 209
+	},
+}
+var _ = _cover_atomic_.LoadUint32

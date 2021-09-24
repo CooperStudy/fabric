@@ -1,0 +1,151 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/tools/idemixgen/idemixca/idemixca.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package idemixca; import _cover_atomic_ "sync/atomic"
+
+import (
+	"crypto/ecdsa"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric-amcl/amcl/FP256BN"
+	"github.com/hyperledger/fabric/idemix"
+	"github.com/hyperledger/fabric/msp"
+	m "github.com/hyperledger/fabric/protos/msp"
+	"github.com/pkg/errors"
+)
+
+// GenerateIssuerKey invokes Idemix library to generate an issuer (CA) signing key pair.
+// Currently four attributes are supported by the issuer:
+// AttributeNameOU is the organization unit name
+// AttributeNameRole is the role (member or admin) name
+// AttributeNameEnrollmentId is the enrollment id
+// AttributeNameRevocationHandle contains the revocation handle, which can be used to revoke this user
+// Generated keys are serialized to bytes.
+func GenerateIssuerKey() ([]byte, []byte, error) {_cover_atomic_.AddUint32(&GoCover_0_633935383964373934333266.Count[0], 1);
+	rng, err := idemix.GetRand()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_633935383964373934333266.Count[3], 1);
+		return nil, nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_633935383964373934333266.Count[1], 1);AttributeNames := []string{msp.AttributeNameOU, msp.AttributeNameRole, msp.AttributeNameEnrollmentId, msp.AttributeNameRevocationHandle}
+	key, err := idemix.NewIssuerKey(AttributeNames, rng)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_633935383964373934333266.Count[4], 1);
+		return nil, nil, errors.WithMessage(err, "cannot generate CA key")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_633935383964373934333266.Count[2], 1);ipkSerialized, err := proto.Marshal(key.Ipk)
+
+	return key.Isk, ipkSerialized, err
+}
+
+// GenerateSignerConfig creates a new signer config.
+// It generates a fresh user secret and issues a credential
+// with four attributes (described above) using the CA's key pair.
+func GenerateSignerConfig(roleMask int, ouString string, enrollmentId string, revocationHandle int, key *idemix.IssuerKey, revKey *ecdsa.PrivateKey) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_0_633935383964373934333266.Count[5], 1);
+	attrs := make([]*FP256BN.BIG, 4)
+
+	if ouString == "" {_cover_atomic_.AddUint32(&GoCover_0_633935383964373934333266.Count[13], 1);
+		return nil, errors.Errorf("the OU attribute value is empty")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_633935383964373934333266.Count[6], 1);if enrollmentId == "" {_cover_atomic_.AddUint32(&GoCover_0_633935383964373934333266.Count[14], 1);
+		return nil, errors.Errorf("the enrollment id value is empty")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_633935383964373934333266.Count[7], 1);attrs[msp.AttributeIndexOU] = idemix.HashModOrder([]byte(ouString))
+	attrs[msp.AttributeIndexRole] = FP256BN.NewBIGint(roleMask)
+	attrs[msp.AttributeIndexEnrollmentId] = idemix.HashModOrder([]byte(enrollmentId))
+	attrs[msp.AttributeIndexRevocationHandle] = FP256BN.NewBIGint(revocationHandle)
+
+	rng, err := idemix.GetRand()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_633935383964373934333266.Count[15], 1);
+		return nil, errors.WithMessage(err, "Error getting PRNG")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_633935383964373934333266.Count[8], 1);sk := idemix.RandModOrder(rng)
+	ni := idemix.BigToBytes(idemix.RandModOrder(rng))
+	msg := idemix.NewCredRequest(sk, ni, key.Ipk, rng)
+	cred, err := idemix.NewCredential(key, msg, attrs, rng)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_633935383964373934333266.Count[16], 1);
+		return nil, errors.WithMessage(err, "failed to generate a credential")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_633935383964373934333266.Count[9], 1);credBytes, err := proto.Marshal(cred)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_633935383964373934333266.Count[17], 1);
+		return nil, errors.WithMessage(err, "failed to marshal credential")
+	}
+
+	// NOTE currently, idemixca creates CRI's with "ALG_NO_REVOCATION"
+	_cover_atomic_.AddUint32(&GoCover_0_633935383964373934333266.Count[10], 1);cri, err := idemix.CreateCRI(revKey, []*FP256BN.BIG{FP256BN.NewBIGint(revocationHandle)}, 0, idemix.ALG_NO_REVOCATION, rng)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_633935383964373934333266.Count[18], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_633935383964373934333266.Count[11], 1);criBytes, err := proto.Marshal(cri)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_633935383964373934333266.Count[19], 1);
+		return nil, errors.WithMessage(err, "failed to marshal CRI")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_633935383964373934333266.Count[12], 1);signer := &m.IdemixMSPSignerConfig{
+		Cred:                            credBytes,
+		Sk:                              idemix.BigToBytes(sk),
+		OrganizationalUnitIdentifier:    ouString,
+		Role:                            int32(roleMask),
+		EnrollmentId:                    enrollmentId,
+		CredentialRevocationInformation: criBytes,
+	}
+
+	return proto.Marshal(signer)
+}
+
+var GoCover_0_633935383964373934333266 = struct {
+	Count     [20]uint32
+	Pos       [3 * 20]uint32
+	NumStmt   [20]uint16
+} {
+	Pos: [3 * 20]uint32{
+		27, 29, 0x100032, // [0]
+		32, 34, 0x100002, // [1]
+		37, 39, 0x240002, // [2]
+		29, 31, 0x30010, // [3]
+		34, 36, 0x30010, // [4]
+		45, 48, 0x1400a6, // [5]
+		52, 52, 0x180002, // [6]
+		56, 62, 0x100002, // [7]
+		65, 69, 0x100002, // [8]
+		73, 74, 0x100002, // [9]
+		79, 80, 0x100002, // [10]
+		83, 84, 0x100002, // [11]
+		88, 97, 0x1e0002, // [12]
+		48, 50, 0x30014, // [13]
+		52, 54, 0x30018, // [14]
+		62, 64, 0x30010, // [15]
+		69, 71, 0x30010, // [16]
+		74, 76, 0x30010, // [17]
+		80, 82, 0x30010, // [18]
+		84, 86, 0x30010, // [19]
+	},
+	NumStmt: [20]uint16{
+		2, // 0
+		3, // 1
+		2, // 2
+		1, // 3
+		1, // 4
+		2, // 5
+		1, // 6
+		6, // 7
+		5, // 8
+		2, // 9
+		2, // 10
+		2, // 11
+		2, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+	},
+}
+var _ = _cover_atomic_.LoadUint32

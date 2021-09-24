@@ -1,0 +1,98 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/msp/mgmt/deserializer.go:1
+/*
+Copyright IBM Corp. 2017 All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+		 http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package mgmt; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/msp"
+	mspproto "github.com/hyperledger/fabric/protos/msp"
+	"github.com/pkg/errors"
+)
+
+// DeserializersManager is a support interface to
+// access the local and channel deserializers
+type DeserializersManager interface {
+
+	// Deserialize receives SerializedIdentity bytes and returns the unmarshaled form
+	// of the SerializedIdentity, or error on failure
+	Deserialize(raw []byte) (*mspproto.SerializedIdentity, error)
+
+	// GetLocalMSPIdentifier returns the local MSP identifier
+	GetLocalMSPIdentifier() string
+
+	// GetLocalDeserializer returns the local identity deserializer
+	GetLocalDeserializer() msp.IdentityDeserializer
+
+	// GetChannelDeserializers returns a map of the channel deserializers
+	GetChannelDeserializers() map[string]msp.IdentityDeserializer
+}
+
+// DeserializersManager returns a new instance of DeserializersManager
+func NewDeserializersManager() DeserializersManager {_cover_atomic_.AddUint32(&GoCover_0_386337366464366464333939.Count[0], 1);
+	return &mspDeserializersManager{}
+}
+
+type mspDeserializersManager struct{}
+
+func (m *mspDeserializersManager) Deserialize(raw []byte) (*mspproto.SerializedIdentity, error) {_cover_atomic_.AddUint32(&GoCover_0_386337366464366464333939.Count[1], 1);
+	sId := &mspproto.SerializedIdentity{}
+	err := proto.Unmarshal(raw, sId)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_386337366464366464333939.Count[3], 1);
+		return nil, errors.Wrap(err, "could not deserialize a SerializedIdentity")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_386337366464366464333939.Count[2], 1);return sId, nil
+}
+
+func (m *mspDeserializersManager) GetLocalMSPIdentifier() string {_cover_atomic_.AddUint32(&GoCover_0_386337366464366464333939.Count[4], 1);
+	id, _ := GetLocalMSP().GetIdentifier()
+	return id
+}
+
+func (m *mspDeserializersManager) GetLocalDeserializer() msp.IdentityDeserializer {_cover_atomic_.AddUint32(&GoCover_0_386337366464366464333939.Count[5], 1);
+	return GetLocalMSP()
+}
+
+func (m *mspDeserializersManager) GetChannelDeserializers() map[string]msp.IdentityDeserializer {_cover_atomic_.AddUint32(&GoCover_0_386337366464366464333939.Count[6], 1);
+	return GetDeserializers()
+}
+
+var GoCover_0_386337366464366464333939 = struct {
+	Count     [7]uint32
+	Pos       [3 * 7]uint32
+	NumStmt   [7]uint16
+} {
+	Pos: [3 * 7]uint32{
+		45, 47, 0x20035, // [0]
+		51, 54, 0x100061, // [1]
+		57, 57, 0x110002, // [2]
+		54, 56, 0x30010, // [3]
+		60, 63, 0x20042, // [4]
+		65, 67, 0x20053, // [5]
+		69, 71, 0x20061, // [6]
+	},
+	NumStmt: [7]uint16{
+		1, // 0
+		3, // 1
+		1, // 2
+		1, // 3
+		2, // 4
+		1, // 5
+		1, // 6
+	},
+}
+var _ = _cover_atomic_.LoadUint32

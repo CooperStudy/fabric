@@ -1,0 +1,737 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/common/ccprovider/ccprovider.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package ccprovider; import _cover_atomic_ "sync/atomic"
+
+import (
+	"bytes"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
+	"unicode"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/chaincode"
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/core/common/privdata"
+	"github.com/hyperledger/fabric/core/ledger"
+	pb "github.com/hyperledger/fabric/protos/peer"
+	"github.com/pkg/errors"
+)
+
+var ccproviderLogger = flogging.MustGetLogger("ccprovider")
+
+var chaincodeInstallPath string
+
+// CCPackage encapsulates a chaincode package which can be
+//    raw ChaincodeDeploymentSpec
+//    SignedChaincodeDeploymentSpec
+// Attempt to keep the interface at a level with minimal
+// interface for possible generalization.
+type CCPackage interface {
+	//InitFromBuffer initialize the package from bytes
+	InitFromBuffer(buf []byte) (*ChaincodeData, error)
+
+	// InitFromFS gets the chaincode from the filesystem (includes the raw bytes too)
+	InitFromFS(ccname string, ccversion string) ([]byte, *pb.ChaincodeDeploymentSpec, error)
+
+	// PutChaincodeToFS writes the chaincode to the filesystem
+	PutChaincodeToFS() error
+
+	// GetDepSpec gets the ChaincodeDeploymentSpec from the package
+	GetDepSpec() *pb.ChaincodeDeploymentSpec
+
+	// GetDepSpecBytes gets the serialized ChaincodeDeploymentSpec from the package
+	GetDepSpecBytes() []byte
+
+	// ValidateCC validates and returns the chaincode deployment spec corresponding to
+	// ChaincodeData. The validation is based on the metadata from ChaincodeData
+	// One use of this method is to validate the chaincode before launching
+	ValidateCC(ccdata *ChaincodeData) error
+
+	// GetPackageObject gets the object as a proto.Message
+	GetPackageObject() proto.Message
+
+	// GetChaincodeData gets the ChaincodeData
+	GetChaincodeData() *ChaincodeData
+
+	// GetId gets the fingerprint of the chaincode based on package computation
+	GetId() []byte
+}
+
+// SetChaincodesPath sets the chaincode path for this peer
+func SetChaincodesPath(path string) {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[0], 1);
+	if s, err := os.Stat(path); err != nil {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[2], 1);
+		if os.IsNotExist(err) {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[3], 1);
+			if err := os.Mkdir(path, 0755); err != nil {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[4], 1);
+				panic(fmt.Sprintf("Could not create chaincodes install path: %s", err))
+			}
+		} else{ _cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[5], 1);{
+			panic(fmt.Sprintf("Could not stat chaincodes install path: %s", err))
+		}}
+	} else{ _cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[6], 1);if !s.IsDir() {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[7], 1);
+		panic(fmt.Errorf("chaincode path exists but not a dir: %s", path))
+	}}
+
+	_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[1], 1);chaincodeInstallPath = path
+}
+
+func GetChaincodePackage(ccname string, ccversion string) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[8], 1);
+	return GetChaincodePackageFromPath(ccname, ccversion, chaincodeInstallPath)
+}
+
+// isPrintable is used by CDSPackage and SignedCDSPackage validation to
+// detect garbage strings in unmarshaled proto fields where printable
+// characters are expected.
+func isPrintable(name string) bool {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[9], 1);
+	notASCII := func(r rune) bool {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[11], 1);
+		return !unicode.IsPrint(r)
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[10], 1);return strings.IndexFunc(name, notASCII) == -1
+}
+
+// GetChaincodePackage returns the chaincode package from the file system
+func GetChaincodePackageFromPath(ccname string, ccversion string, ccInstallPath string) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[12], 1);
+	path := fmt.Sprintf("%s/%s.%s", ccInstallPath, ccname, ccversion)
+	var ccbytes []byte
+	var err error
+	if ccbytes, err = ioutil.ReadFile(path); err != nil {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[14], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[13], 1);return ccbytes, nil
+}
+
+// ChaincodePackageExists returns whether the chaincode package exists in the file system
+func ChaincodePackageExists(ccname string, ccversion string) (bool, error) {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[15], 1);
+	path := filepath.Join(chaincodeInstallPath, ccname+"."+ccversion)
+	_, err := os.Stat(path)
+	if err == nil {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[17], 1);
+		// chaincodepackage already exists
+		return true, nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[16], 1);return false, err
+}
+
+type CCCacheSupport interface {
+	// GetChaincode is needed by the cache to get chaincode data
+	GetChaincode(ccname string, ccversion string) (CCPackage, error)
+}
+
+// CCInfoFSImpl provides the implementation for CC on the FS and the access to it
+// It implements CCCacheSupport
+type CCInfoFSImpl struct{}
+
+// GetChaincodeFromFS this is a wrapper for hiding package implementation.
+// It calls GetChaincodeFromPath with the chaincodeInstallPath
+func (cifs *CCInfoFSImpl) GetChaincode(ccname string, ccversion string) (CCPackage, error) {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[18], 1);
+	return cifs.GetChaincodeFromPath(ccname, ccversion, chaincodeInstallPath)
+}
+
+func (cifs *CCInfoFSImpl) GetChaincodeCodePackage(ccname, ccversion string) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[19], 1);
+	ccpack, err := cifs.GetChaincode(ccname, ccversion)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[21], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[20], 1);return ccpack.GetDepSpec().Bytes(), nil
+}
+
+// GetChaincodeFromPath this is a wrapper for hiding package implementation.
+func (*CCInfoFSImpl) GetChaincodeFromPath(ccname string, ccversion string, path string) (CCPackage, error) {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[22], 1);
+	// try raw CDS
+	cccdspack := &CDSPackage{}
+	_, _, err := cccdspack.InitFromPath(ccname, ccversion, path)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[24], 1);
+		// try signed CDS
+		ccscdspack := &SignedCDSPackage{}
+		_, _, err = ccscdspack.InitFromPath(ccname, ccversion, path)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[26], 1);
+			return nil, err
+		}
+		_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[25], 1);return ccscdspack, nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[23], 1);return cccdspack, nil
+}
+
+// PutChaincodeIntoFS is a wrapper for putting raw ChaincodeDeploymentSpec
+//using CDSPackage. This is only used in UTs
+func (*CCInfoFSImpl) PutChaincode(depSpec *pb.ChaincodeDeploymentSpec) (CCPackage, error) {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[27], 1);
+	buf, err := proto.Marshal(depSpec)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[31], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[28], 1);cccdspack := &CDSPackage{}
+	if _, err := cccdspack.InitFromBuffer(buf); err != nil {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[32], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[29], 1);err = cccdspack.PutChaincodeToFS()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[33], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[30], 1);return cccdspack, nil
+}
+
+// DirEnumerator enumerates directories
+type DirEnumerator func(string) ([]os.FileInfo, error)
+
+// ChaincodeExtractor extracts chaincode from a given path
+type ChaincodeExtractor func(ccname string, ccversion string, path string) (CCPackage, error)
+
+// ListInstalledChaincodes retrieves the installed chaincodes
+func (cifs *CCInfoFSImpl) ListInstalledChaincodes(dir string, ls DirEnumerator, ccFromPath ChaincodeExtractor) ([]chaincode.InstalledChaincode, error) {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[34], 1);
+	var chaincodes []chaincode.InstalledChaincode
+	if _, err := os.Stat(dir); err != nil && os.IsNotExist(err) {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[38], 1);
+		return nil, nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[35], 1);files, err := ls(dir)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[39], 1);
+		return nil, errors.Wrapf(err, "failed reading directory %s", dir)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[36], 1);for _, f := range files {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[40], 1);
+		// Skip directories, we're only interested in normal files
+		if f.IsDir() {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[44], 1);
+			continue
+		}
+		// A chaincode file name is of the type "name.version"
+		// We're only interested in the name.
+		// Skip files that don't adhere to the file naming convention of "A.B"
+		_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[41], 1);i := strings.Index(f.Name(), ".")
+		if i == -1 {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[45], 1);
+			ccproviderLogger.Info("Skipping", f.Name(), "because of missing separator '.'")
+			continue
+		}
+		_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[42], 1);ccName := f.Name()[:i]      // Everything before the separator
+		ccVersion := f.Name()[i+1:] // Everything after the separator
+
+		ccPackage, err := ccFromPath(ccName, ccVersion, dir)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[46], 1);
+			ccproviderLogger.Warning("Failed obtaining chaincode information about", ccName, ccVersion, ":", err)
+			return nil, errors.Wrapf(err, "failed obtaining information about %s, version %s", ccName, ccVersion)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[43], 1);chaincodes = append(chaincodes, chaincode.InstalledChaincode{
+			Name:    ccName,
+			Version: ccVersion,
+			Id:      ccPackage.GetId(),
+		})
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[37], 1);ccproviderLogger.Debug("Returning", chaincodes)
+	return chaincodes, nil
+}
+
+// ccInfoFSStorageMgr is the storage manager used either by the cache or if the
+// cache is bypassed
+var ccInfoFSProvider = &CCInfoFSImpl{}
+
+// ccInfoCache is the cache instance itself
+var ccInfoCache = NewCCInfoCache(ccInfoFSProvider)
+
+// GetChaincodeFromFS retrieves chaincode information from the file system
+func GetChaincodeFromFS(ccname string, ccversion string) (CCPackage, error) {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[47], 1);
+	return ccInfoFSProvider.GetChaincode(ccname, ccversion)
+}
+
+// PutChaincodeIntoFS puts chaincode information in the file system (and
+// also in the cache to prime it) if the cache is enabled, or directly
+// from the file system otherwise
+func PutChaincodeIntoFS(depSpec *pb.ChaincodeDeploymentSpec) error {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[48], 1);
+	_, err := ccInfoFSProvider.PutChaincode(depSpec)
+	return err
+}
+
+// GetChaincodeData gets chaincode data from cache if there's one
+func GetChaincodeData(ccname string, ccversion string) (*ChaincodeData, error) {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[49], 1);
+	ccproviderLogger.Debugf("Getting chaincode data for <%s, %s> from cache", ccname, ccversion)
+	return ccInfoCache.GetChaincodeData(ccname, ccversion)
+}
+
+func CheckInstantiationPolicy(name, version string, cdLedger *ChaincodeData) error {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[50], 1);
+	ccdata, err := GetChaincodeData(name, version)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[53], 1);
+		return err
+	}
+
+	// we have the info from the fs, check that the policy
+	// matches the one on the file system if one was specified;
+	// this check is required because the admin of this peer
+	// might have specified instantiation policies for their
+	// chaincode, for example to make sure that the chaincode
+	// is only instantiated on certain channels; a malicious
+	// peer on the other hand might have created a deploy
+	// transaction that attempts to bypass the instantiation
+	// policy. This check is there to ensure that this will not
+	// happen, i.e. that the peer will refuse to invoke the
+	// chaincode under these conditions. More info on
+	// https://jira.hyperledger.org/browse/FAB-3156
+	_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[51], 1);if ccdata.InstantiationPolicy != nil {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[54], 1);
+		if !bytes.Equal(ccdata.InstantiationPolicy, cdLedger.InstantiationPolicy) {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[55], 1);
+			return fmt.Errorf("Instantiation policy mismatch for cc %s/%s", name, version)
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[52], 1);return nil
+}
+
+// GetCCPackage tries each known package implementation one by one
+// till the right package is found
+func GetCCPackage(buf []byte) (CCPackage, error) {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[56], 1);
+	// try raw CDS
+	cds := &CDSPackage{}
+	if ccdata, err := cds.InitFromBuffer(buf); err != nil {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[62], 1);
+		cds = nil
+	} else{ _cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[63], 1);{
+		err = cds.ValidateCC(ccdata)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[64], 1);
+			cds = nil
+		}
+	}}
+
+	// try signed CDS
+	_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[57], 1);scds := &SignedCDSPackage{}
+	if ccdata, err := scds.InitFromBuffer(buf); err != nil {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[65], 1);
+		scds = nil
+	} else{ _cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[66], 1);{
+		err = scds.ValidateCC(ccdata)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[67], 1);
+			scds = nil
+		}
+	}}
+
+	_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[58], 1);if cds != nil && scds != nil {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[68], 1);
+		// Both were unmarshaled successfully, this is exactly why the approach of
+		// hoping proto fails for bad inputs is fatally flawed.
+		ccproviderLogger.Errorf("Could not determine chaincode package type, guessing SignedCDS")
+		return scds, nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[59], 1);if cds != nil {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[69], 1);
+		return cds, nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[60], 1);if scds != nil {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[70], 1);
+		return scds, nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[61], 1);return nil, errors.New("could not unmarshal chaincode package to CDS or SignedCDS")
+}
+
+// GetInstalledChaincodes returns a map whose key is the chaincode id and
+// value is the ChaincodeDeploymentSpec struct for that chaincodes that have
+// been installed (but not necessarily instantiated) on the peer by searching
+// the chaincode install path
+func GetInstalledChaincodes() (*pb.ChaincodeQueryResponse, error) {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[71], 1);
+	files, err := ioutil.ReadDir(chaincodeInstallPath)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[74], 1);
+		return nil, err
+	}
+
+	// array to store info for all chaincode entries from LSCC
+	_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[72], 1);var ccInfoArray []*pb.ChaincodeInfo
+
+	for _, file := range files {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[75], 1);
+		// split at first period as chaincode versions can contain periods while
+		// chaincode names cannot
+		fileNameArray := strings.SplitN(file.Name(), ".", 2)
+
+		// check that length is 2 as expected, otherwise skip to next cc file
+		if len(fileNameArray) == 2 {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[76], 1);
+			ccname := fileNameArray[0]
+			ccversion := fileNameArray[1]
+			ccpack, err := GetChaincodeFromFS(ccname, ccversion)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[79], 1);
+				// either chaincode on filesystem has been tampered with or
+				// a non-chaincode file has been found in the chaincodes directory
+				ccproviderLogger.Errorf("Unreadable chaincode file found on filesystem: %s", file.Name())
+				continue
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[77], 1);cdsfs := ccpack.GetDepSpec()
+
+			name := cdsfs.GetChaincodeSpec().GetChaincodeId().Name
+			version := cdsfs.GetChaincodeSpec().GetChaincodeId().Version
+			if name != ccname || version != ccversion {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[80], 1);
+				// chaincode name/version in the chaincode file name has been modified
+				// by an external entity
+				ccproviderLogger.Errorf("Chaincode file's name/version has been modified on the filesystem: %s", file.Name())
+				continue
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[78], 1);path := cdsfs.GetChaincodeSpec().ChaincodeId.Path
+			// since this is just an installed chaincode these should be blank
+			input, escc, vscc := "", "", ""
+
+			ccInfo := &pb.ChaincodeInfo{Name: name, Version: version, Path: path, Input: input, Escc: escc, Vscc: vscc, Id: ccpack.GetId()}
+
+			// add this specific chaincode's metadata to the array of all chaincodes
+			ccInfoArray = append(ccInfoArray, ccInfo)
+		}
+	}
+	// add array with info about all instantiated chaincodes to the query
+	// response proto
+	_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[73], 1);cqr := &pb.ChaincodeQueryResponse{Chaincodes: ccInfoArray}
+
+	return cqr, nil
+}
+
+// CCContext pass this around instead of string of args
+type CCContext struct {
+	// Name chaincode name
+	Name string
+
+	// Version used to construct the chaincode image and register
+	Version string
+}
+
+// GetCanonicalName returns the canonical name associated with the proposal context
+func (cccid *CCContext) GetCanonicalName() string {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[81], 1);
+	return cccid.Name + ":" + cccid.Version
+}
+
+//-------- ChaincodeDefinition - interface for ChaincodeData ------
+// ChaincodeDefinition describes all of the necessary information for a peer to decide whether to endorse
+// a proposal and whether to validate a transaction, for a particular chaincode.
+type ChaincodeDefinition interface {
+	// CCName returns the name of this chaincode (the name it was put in the ChaincodeRegistry with).
+	CCName() string
+
+	// Hash returns the hash of the chaincode.
+	Hash() []byte
+
+	// CCVersion returns the version of the chaincode.
+	CCVersion() string
+
+	// Validation returns how to validate transactions for this chaincode.
+	// The string returned is the name of the validation method (usually 'vscc')
+	// and the bytes returned are the argument to the validation (in the case of
+	// 'vscc', this is a marshaled pb.VSCCArgs message).
+	Validation() (string, []byte)
+
+	// Endorsement returns how to endorse proposals for this chaincode.
+	// The string returns is the name of the endorsement method (usually 'escc').
+	Endorsement() string
+}
+
+//-------- ChaincodeData is stored on the LSCC -------
+
+// ChaincodeData defines the datastructure for chaincodes to be serialized by proto
+// Type provides an additional check by directing to use a specific package after instantiation
+// Data is Type specifc (see CDSPackage and SignedCDSPackage)
+type ChaincodeData struct {
+	// Name of the chaincode
+	Name string `protobuf:"bytes,1,opt,name=name"`
+
+	// Version of the chaincode
+	Version string `protobuf:"bytes,2,opt,name=version"`
+
+	// Escc for the chaincode instance
+	Escc string `protobuf:"bytes,3,opt,name=escc"`
+
+	// Vscc for the chaincode instance
+	Vscc string `protobuf:"bytes,4,opt,name=vscc"`
+
+	// Policy endorsement policy for the chaincode instance
+	Policy []byte `protobuf:"bytes,5,opt,name=policy,proto3"`
+
+	// Data data specific to the package
+	Data []byte `protobuf:"bytes,6,opt,name=data,proto3"`
+
+	// Id of the chaincode that's the unique fingerprint for the CC This is not
+	// currently used anywhere but serves as a good eyecatcher
+	Id []byte `protobuf:"bytes,7,opt,name=id,proto3"`
+
+	// InstantiationPolicy for the chaincode
+	InstantiationPolicy []byte `protobuf:"bytes,8,opt,name=instantiation_policy,proto3"`
+}
+
+// CCName returns the name of this chaincode (the name it was put in the ChaincodeRegistry with).
+func (cd *ChaincodeData) CCName() string {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[82], 1);
+	return cd.Name
+}
+
+// Hash returns the hash of the chaincode.
+func (cd *ChaincodeData) Hash() []byte {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[83], 1);
+	return cd.Id
+}
+
+// CCVersion returns the version of the chaincode.
+func (cd *ChaincodeData) CCVersion() string {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[84], 1);
+	return cd.Version
+}
+
+// Validation returns how to validate transactions for this chaincode.
+// The string returned is the name of the validation method (usually 'vscc')
+// and the bytes returned are the argument to the validation (in the case of
+// 'vscc', this is a marshaled pb.VSCCArgs message).
+func (cd *ChaincodeData) Validation() (string, []byte) {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[85], 1);
+	return cd.Vscc, cd.Policy
+}
+
+// Endorsement returns how to endorse proposals for this chaincode.
+// The string returns is the name of the endorsement method (usually 'escc').
+func (cd *ChaincodeData) Endorsement() string {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[86], 1);
+	return cd.Escc
+}
+
+// implement functions needed from proto.Message for proto's mar/unmarshal functions
+
+// Reset resets
+func (cd *ChaincodeData) Reset() {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[87], 1); *cd = ChaincodeData{} }
+
+// String converts to string
+func (cd *ChaincodeData) String() string {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[88], 1); return proto.CompactTextString(cd) }
+
+// ProtoMessage just exists to make proto happy
+func (*ChaincodeData) ProtoMessage() {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[89], 1);}
+
+// ChaincodeContainerInfo is yet another synonym for the data required to start/stop a chaincode.
+type ChaincodeContainerInfo struct {
+	Name        string
+	Version     string
+	Path        string
+	Type        string
+	CodePackage []byte
+
+	// ContainerType is not a great name, but 'DOCKER' and 'SYSTEM' are the valid types
+	ContainerType string
+}
+
+// TransactionParams are parameters which are tied to a particular transaction
+// and which are required for invoking chaincode.
+type TransactionParams struct {
+	TxID                 string
+	ChannelID            string
+	SignedProp           *pb.SignedProposal
+	Proposal             *pb.Proposal
+	TXSimulator          ledger.TxSimulator
+	HistoryQueryExecutor ledger.HistoryQueryExecutor
+	CollectionStore      privdata.CollectionStore
+	IsInitTransaction    bool
+
+	// this is additional data passed to the chaincode
+	ProposalDecorations map[string][]byte
+}
+
+// ChaincodeProvider provides an abstraction layer that is
+// used for different packages to interact with code in the
+// chaincode package without importing it; more methods
+// should be added below if necessary
+type ChaincodeProvider interface {
+	// Execute executes a standard chaincode invocation for a chaincode and an input
+	Execute(txParams *TransactionParams, cccid *CCContext, input *pb.ChaincodeInput) (*pb.Response, *pb.ChaincodeEvent, error)
+	// ExecuteLegacyInit is a special case for executing chaincode deployment specs,
+	// which are not already in the LSCC, needed for old lifecycle
+	ExecuteLegacyInit(txParams *TransactionParams, cccid *CCContext, spec *pb.ChaincodeDeploymentSpec) (*pb.Response, *pb.ChaincodeEvent, error)
+	// Stop stops the chaincode give
+	Stop(ccci *ChaincodeContainerInfo) error
+}
+
+func DeploymentSpecToChaincodeContainerInfo(cds *pb.ChaincodeDeploymentSpec) *ChaincodeContainerInfo {_cover_atomic_.AddUint32(&GoCover_3_383934626562653839653065.Count[90], 1);
+	return &ChaincodeContainerInfo{
+		Name:          cds.Name(),
+		Version:       cds.Version(),
+		Path:          cds.Path(),
+		Type:          cds.CCType(),
+		ContainerType: cds.ExecEnv.String(),
+	}
+}
+
+var GoCover_3_383934626562653839653065 = struct {
+	Count     [91]uint32
+	Pos       [3 * 91]uint32
+	NumStmt   [91]uint16
+} {
+	Pos: [3 * 91]uint32{
+		68, 69, 0x290025, // [0]
+		81, 81, 0x1d0002, // [1]
+		69, 70, 0x190029, // [2]
+		70, 71, 0x2f0019, // [3]
+		71, 72, 0x4c002f, // [4]
+		74, 75, 0x490009, // [5]
+		77, 77, 0x170008, // [6]
+		77, 78, 0x450017, // [7]
+		84, 86, 0x2004b, // [8]
+		91, 92, 0x200024, // [9]
+		95, 95, 0x300002, // [10]
+		92, 94, 0x30020, // [11]
+		99, 103, 0x360069, // [12]
+		106, 106, 0x150002, // [13]
+		103, 105, 0x30036, // [14]
+		110, 113, 0x10004c, // [15]
+		117, 117, 0x130002, // [16]
+		113, 116, 0x30010, // [17]
+		131, 133, 0x2005c, // [18]
+		135, 137, 0x10005d, // [19]
+		140, 140, 0x290002, // [20]
+		137, 139, 0x30010, // [21]
+		144, 148, 0x10006c, // [22]
+		157, 157, 0x170002, // [23]
+		148, 152, 0x110010, // [24]
+		155, 155, 0x190003, // [25]
+		152, 154, 0x40011, // [26]
+		162, 164, 0x10005b, // [27]
+		167, 168, 0x390002, // [28]
+		171, 172, 0x100002, // [29]
+		176, 176, 0x170002, // [30]
+		164, 166, 0x30010, // [31]
+		168, 170, 0x30039, // [32]
+		172, 174, 0x30010, // [33]
+		186, 188, 0x3e0098, // [34]
+		191, 192, 0x100002, // [35]
+		196, 196, 0x1a0002, // [36]
+		224, 225, 0x180002, // [37]
+		188, 190, 0x3003e, // [38]
+		192, 194, 0x30010, // [39]
+		196, 198, 0x10001a, // [40]
+		204, 205, 0xe0003, // [41]
+		209, 213, 0x110003, // [42]
+		218, 222, 0x50003, // [43]
+		198, 199, 0xc0010, // [44]
+		205, 207, 0xc000e, // [45]
+		213, 216, 0x40011, // [46]
+		236, 238, 0x2004d, // [47]
+		243, 246, 0x20044, // [48]
+		249, 252, 0x20050, // [49]
+		254, 256, 0x100054, // [50]
+		272, 272, 0x270002, // [51]
+		278, 278, 0xc0002, // [52]
+		256, 258, 0x30010, // [53]
+		272, 273, 0x4d0027, // [54]
+		273, 275, 0x4004d, // [55]
+		283, 286, 0x380032, // [56]
+		296, 297, 0x390002, // [57]
+		306, 306, 0x1f0002, // [58]
+		313, 313, 0x100002, // [59]
+		317, 317, 0x110002, // [60]
+		321, 321, 0x550002, // [61]
+		286, 288, 0x30038, // [62]
+		288, 290, 0x110008, // [63]
+		290, 292, 0x40011, // [64]
+		297, 299, 0x30039, // [65]
+		299, 301, 0x110008, // [66]
+		301, 303, 0x40011, // [67]
+		306, 311, 0x3001f, // [68]
+		313, 315, 0x30010, // [69]
+		317, 319, 0x30011, // [70]
+		328, 330, 0x100043, // [71]
+		335, 337, 0x1d0002, // [72]
+		377, 379, 0x110002, // [73]
+		330, 332, 0x30010, // [74]
+		337, 343, 0x1e001d, // [75]
+		343, 347, 0x12001e, // [76]
+		354, 358, 0x2e0004, // [77]
+		365, 372, 0x2d0004, // [78]
+		347, 351, 0xd0012, // [79]
+		358, 362, 0xd002e, // [80]
+		392, 394, 0x20033, // [81]
+		453, 455, 0x2002a, // [82]
+		458, 460, 0x20028, // [83]
+		463, 465, 0x2002d, // [84]
+		471, 473, 0x20038, // [85]
+		477, 479, 0x2002f, // [86]
+		484, 484, 0x3b0022, // [87]
+		487, 487, 0x50002a, // [88]
+		490, 490, 0x280027, // [89]
+		534, 542, 0x20066, // [90]
+	},
+	NumStmt: [91]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		4, // 12
+		1, // 13
+		1, // 14
+		3, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		2, // 19
+		1, // 20
+		1, // 21
+		3, // 22
+		1, // 23
+		3, // 24
+		1, // 25
+		1, // 26
+		2, // 27
+		2, // 28
+		2, // 29
+		1, // 30
+		1, // 31
+		1, // 32
+		1, // 33
+		2, // 34
+		2, // 35
+		1, // 36
+		2, // 37
+		1, // 38
+		1, // 39
+		1, // 40
+		2, // 41
+		4, // 42
+		1, // 43
+		1, // 44
+		2, // 45
+		2, // 46
+		1, // 47
+		2, // 48
+		2, // 49
+		2, // 50
+		1, // 51
+		1, // 52
+		1, // 53
+		1, // 54
+		1, // 55
+		2, // 56
+		2, // 57
+		1, // 58
+		1, // 59
+		1, // 60
+		1, // 61
+		1, // 62
+		2, // 63
+		1, // 64
+		1, // 65
+		2, // 66
+		1, // 67
+		2, // 68
+		1, // 69
+		1, // 70
+		2, // 71
+		2, // 72
+		2, // 73
+		1, // 74
+		2, // 75
+		4, // 76
+		4, // 77
+		4, // 78
+		2, // 79
+		2, // 80
+		1, // 81
+		1, // 82
+		1, // 83
+		1, // 84
+		1, // 85
+		1, // 86
+		1, // 87
+		1, // 88
+		0, // 89
+		1, // 90
+	},
+}
+var _ = _cover_atomic_.LoadUint32

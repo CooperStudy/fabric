@@ -1,0 +1,98 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/discovery/support/gossip/support.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package gossip; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric/gossip/common"
+	"github.com/hyperledger/fabric/gossip/discovery"
+	gossip2 "github.com/hyperledger/fabric/gossip/gossip"
+	"github.com/hyperledger/fabric/protos/gossip"
+)
+
+// DiscoverySupport implements support that is used for service discovery
+// that is obtained from gossip
+type DiscoverySupport struct {
+	gossip2.Gossip
+}
+
+// NewDiscoverySupport creates a new DiscoverySupport
+func NewDiscoverySupport(g gossip2.Gossip) *DiscoverySupport {_cover_atomic_.AddUint32(&GoCover_0_326261373935633664653466.Count[0], 1);
+	return &DiscoverySupport{g}
+}
+
+// ChannelExists returns whether a given channel exists or not
+func (s *DiscoverySupport) ChannelExists(channel string) bool {_cover_atomic_.AddUint32(&GoCover_0_326261373935633664653466.Count[1], 1);
+	return s.SelfChannelInfo(common.ChainID(channel)) != nil
+}
+
+// PeersOfChannel returns the NetworkMembers considered alive
+// and also subscribed to the channel given
+func (s *DiscoverySupport) PeersOfChannel(chain common.ChainID) discovery.Members {_cover_atomic_.AddUint32(&GoCover_0_326261373935633664653466.Count[2], 1);
+	msg := s.SelfChannelInfo(chain)
+	if msg == nil {_cover_atomic_.AddUint32(&GoCover_0_326261373935633664653466.Count[4], 1);
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_326261373935633664653466.Count[3], 1);stateInf := msg.GetStateInfo()
+	selfMember := discovery.NetworkMember{
+		Properties: stateInf.Properties,
+		PKIid:      stateInf.PkiId,
+		Envelope:   msg.Envelope,
+	}
+	return append(s.Gossip.PeersOfChannel(chain), selfMember)
+}
+
+// Peers returns the NetworkMembers considered alive
+func (s *DiscoverySupport) Peers() discovery.Members {_cover_atomic_.AddUint32(&GoCover_0_326261373935633664653466.Count[5], 1);
+	peers := s.Gossip.Peers()
+	peers = append(peers, s.Gossip.SelfMembershipInfo())
+	// Return only the peers that have an external endpoint, and sanitizes the envelopes.
+	return discovery.Members(peers).Filter(discovery.HasExternalEndpoint).Map(sanitizeEnvelope)
+}
+
+func sanitizeEnvelope(member discovery.NetworkMember) discovery.NetworkMember {_cover_atomic_.AddUint32(&GoCover_0_326261373935633664653466.Count[6], 1);
+	// Make a local copy of the member
+	returnedMember := member
+	if returnedMember.Envelope == nil {_cover_atomic_.AddUint32(&GoCover_0_326261373935633664653466.Count[8], 1);
+		return returnedMember
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_326261373935633664653466.Count[7], 1);returnedMember.Envelope = &gossip.Envelope{
+		Payload:   member.Envelope.Payload,
+		Signature: member.Envelope.Signature,
+	}
+	return returnedMember
+}
+
+var GoCover_0_326261373935633664653466 = struct {
+	Count     [9]uint32
+	Pos       [3 * 9]uint32
+	NumStmt   [9]uint16
+} {
+	Pos: [3 * 9]uint32{
+		23, 25, 0x2003e, // [0]
+		28, 30, 0x2003f, // [1]
+		34, 36, 0x100053, // [2]
+		39, 45, 0x3b0002, // [3]
+		36, 38, 0x30010, // [4]
+		49, 54, 0x20036, // [5]
+		56, 59, 0x24004f, // [6]
+		62, 66, 0x170002, // [7]
+		59, 61, 0x30024, // [8]
+	},
+	NumStmt: [9]uint16{
+		1, // 0
+		1, // 1
+		2, // 2
+		3, // 3
+		1, // 4
+		3, // 5
+		2, // 6
+		2, // 7
+		1, // 8
+	},
+}
+var _ = _cover_atomic_.LoadUint32

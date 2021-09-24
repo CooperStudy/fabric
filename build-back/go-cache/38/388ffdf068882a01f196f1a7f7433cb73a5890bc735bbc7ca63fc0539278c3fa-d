@@ -1,0 +1,6 @@
+entities.cover.go
+interfaces.cover.go
+message.cover.go
+testutils.cover.go
+./entities_test.go
+./message_test.go

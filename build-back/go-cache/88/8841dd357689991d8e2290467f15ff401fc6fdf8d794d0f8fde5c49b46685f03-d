@@ -1,0 +1,92 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/peer/chaincode/invoke.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package chaincode; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+)
+
+var chaincodeInvokeCmd *cobra.Command
+
+// invokeCmd returns the cobra command for Chaincode Invoke
+func invokeCmd(cf *ChaincodeCmdFactory) *cobra.Command {_cover_atomic_.AddUint32(&GoCover_4_316135646539653831366338.Count[0], 1);
+	chaincodeInvokeCmd = &cobra.Command{
+		Use:       "invoke",
+		Short:     fmt.Sprintf("Invoke the specified %s.", chainFuncName),
+		Long:      fmt.Sprintf("Invoke the specified %s. It will try to commit the endorsed transaction to the network.", chainFuncName),
+		ValidArgs: []string{"1"},
+		RunE: func(cmd *cobra.Command, args []string) error {_cover_atomic_.AddUint32(&GoCover_4_316135646539653831366338.Count[2], 1);
+			return chaincodeInvoke(cmd, cf)
+		},
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_316135646539653831366338.Count[1], 1);flagList := []string{
+		"name",
+		"ctor",
+		"channelID",
+		"peerAddresses",
+		"tlsRootCertFiles",
+		"connectionProfile",
+		"waitForEvent",
+		"waitForEventTimeout",
+	}
+	attachFlags(chaincodeInvokeCmd, flagList)
+
+	return chaincodeInvokeCmd
+}
+
+func chaincodeInvoke(cmd *cobra.Command, cf *ChaincodeCmdFactory) error {_cover_atomic_.AddUint32(&GoCover_4_316135646539653831366338.Count[3], 1);
+	if channelID == "" {_cover_atomic_.AddUint32(&GoCover_4_316135646539653831366338.Count[6], 1);
+		return errors.New("The required parameter 'channelID' is empty. Rerun the command with -C flag")
+	}
+	// Parsing of the command line is done so silence cmd usage
+	_cover_atomic_.AddUint32(&GoCover_4_316135646539653831366338.Count[4], 1);cmd.SilenceUsage = true
+
+	var err error
+	if cf == nil {_cover_atomic_.AddUint32(&GoCover_4_316135646539653831366338.Count[7], 1);
+		cf, err = InitCmdFactory(cmd.Name(), true, true)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_4_316135646539653831366338.Count[8], 1);
+			return err
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_316135646539653831366338.Count[5], 1);defer cf.BroadcastClient.Close()
+
+	return chaincodeInvokeOrQuery(cmd, true, cf)
+}
+
+var GoCover_4_316135646539653831366338 = struct {
+	Count     [9]uint32
+	Pos       [3 * 9]uint32
+	NumStmt   [9]uint16
+} {
+	Pos: [3 * 9]uint32{
+		19, 25, 0x370038, // [0]
+		29, 41, 0x1b0002, // [1]
+		25, 27, 0x40037, // [2]
+		44, 45, 0x150049, // [3]
+		49, 52, 0xf0002, // [4]
+		58, 60, 0x2e0002, // [5]
+		45, 47, 0x30015, // [6]
+		52, 54, 0x11000f, // [7]
+		54, 56, 0x40011, // [8]
+	},
+	NumStmt: [9]uint16{
+		1, // 0
+		3, // 1
+		1, // 2
+		1, // 3
+		3, // 4
+		2, // 5
+		1, // 6
+		2, // 7
+		1, // 8
+	},
+}
+var _ = _cover_atomic_.LoadUint32

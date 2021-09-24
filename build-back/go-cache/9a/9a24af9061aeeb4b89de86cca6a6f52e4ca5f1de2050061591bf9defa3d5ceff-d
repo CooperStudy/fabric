@@ -1,0 +1,228 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/ledger/kvledger/hashcheck_pvtdata.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package kvledger; import _cover_atomic_ "sync/atomic"
+
+import (
+	"bytes"
+
+	"github.com/hyperledger/fabric/common/util"
+	"github.com/hyperledger/fabric/core/ledger"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwsetutil"
+	"github.com/hyperledger/fabric/core/ledger/ledgerstorage"
+	"github.com/hyperledger/fabric/protos/ledger/rwset"
+	"github.com/hyperledger/fabric/protos/utils"
+)
+
+// ConstructValidAndInvalidPvtData computes the valid pvt data and hash mismatch list
+// from a received pvt data list of old blocks.
+func ConstructValidAndInvalidPvtData(blocksPvtData []*ledger.BlockPvtData, blockStore *ledgerstorage.Store) (
+	map[uint64][]*ledger.TxPvtData, []*ledger.PvtdataHashMismatch, error,
+) {_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[0], 1);
+	// for each block, for each transaction, retrieve the txEnvelope to
+	// compare the hash of pvtRwSet in the block and the hash of the received
+	// txPvtData. On a mismatch, add an entry to hashMismatch list.
+	// On a match, add the pvtData to the validPvtData list
+	validPvtData := make(map[uint64][]*ledger.TxPvtData)
+	var invalidPvtData []*ledger.PvtdataHashMismatch
+
+	for _, blockPvtData := range blocksPvtData {_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[2], 1);
+		validData, invalidData, err := findValidAndInvalidBlockPvtData(blockPvtData, blockStore)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[5], 1);
+			return nil, nil, err
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[3], 1);if len(validData) > 0 {_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[6], 1);
+			validPvtData[blockPvtData.BlockNum] = validData
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[4], 1);invalidPvtData = append(invalidPvtData, invalidData...)
+	} // for each block's pvtData
+	_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[1], 1);return validPvtData, invalidPvtData, nil
+}
+
+func findValidAndInvalidBlockPvtData(blockPvtData *ledger.BlockPvtData, blockStore *ledgerstorage.Store) (
+	[]*ledger.TxPvtData, []*ledger.PvtdataHashMismatch, error,
+) {_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[7], 1);
+	var validPvtData []*ledger.TxPvtData
+	var invalidPvtData []*ledger.PvtdataHashMismatch
+	for _, txPvtData := range blockPvtData.WriteSets {_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[9], 1);
+		// (1) retrieve the txrwset from the blockstore
+		logger.Debugf("Retrieving rwset of blockNum:[%d], txNum:[%d]", blockPvtData.BlockNum, txPvtData.SeqInBlock)
+		txRWSet, err := retrieveRwsetForTx(blockPvtData.BlockNum, txPvtData.SeqInBlock, blockStore)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[12], 1);
+			return nil, nil, err
+		}
+
+		// (2) validate passed pvtData against the pvtData hash in the tx rwset.
+		_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[10], 1);logger.Debugf("Constructing valid and invalid pvtData using rwset of blockNum:[%d], txNum:[%d]",
+			blockPvtData.BlockNum, txPvtData.SeqInBlock)
+		validData, invalidData := findValidAndInvalidTxPvtData(txPvtData, txRWSet, blockPvtData.BlockNum)
+
+		// (3) append validData to validPvtDataPvt list of this block and
+		// invalidData to invalidPvtData list
+		if validData != nil {_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[13], 1);
+			validPvtData = append(validPvtData, validData)
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[11], 1);invalidPvtData = append(invalidPvtData, invalidData...)
+	} // for each tx's pvtData
+	_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[8], 1);return validPvtData, invalidPvtData, nil
+}
+
+func retrieveRwsetForTx(blkNum uint64, txNum uint64, blockStore *ledgerstorage.Store) (*rwsetutil.TxRwSet, error) {_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[14], 1);
+	// retrieve the txEnvelope from the block store so that the hash of
+	// the pvtData can be retrieved for comparison
+	txEnvelope, err := blockStore.RetrieveTxByBlockNumTranNum(blkNum, txNum)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[18], 1);
+		return nil, err
+	}
+	// retrieve pvtRWset hash from the txEnvelope
+	_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[15], 1);responsePayload, err := utils.GetActionFromEnvelopeMsg(txEnvelope)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[19], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[16], 1);txRWSet := &rwsetutil.TxRwSet{}
+	if err := txRWSet.FromProtoBytes(responsePayload.Results); err != nil {_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[20], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[17], 1);return txRWSet, nil
+}
+
+func findValidAndInvalidTxPvtData(txPvtData *ledger.TxPvtData, txRWSet *rwsetutil.TxRwSet, blkNum uint64) (
+	*ledger.TxPvtData, []*ledger.PvtdataHashMismatch,
+) {_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[21], 1);
+	var invalidPvtData []*ledger.PvtdataHashMismatch
+	var toDeleteNsColl []*nsColl
+	// Compare the hash of pvtData with the hash present in the rwset to
+	// find valid and invalid pvt data
+	for _, nsRwset := range txPvtData.WriteSet.NsPvtRwset {_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[25], 1);
+		txNum := txPvtData.SeqInBlock
+		invalidData, invalidNsColl := findInvalidNsPvtData(nsRwset, txRWSet, blkNum, txNum)
+		invalidPvtData = append(invalidPvtData, invalidData...)
+		toDeleteNsColl = append(toDeleteNsColl, invalidNsColl...)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[22], 1);for _, nsColl := range toDeleteNsColl {_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[26], 1);
+		txPvtData.WriteSet.Remove(nsColl.ns, nsColl.coll)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[23], 1);if len(txPvtData.WriteSet.NsPvtRwset) == 0 {_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[27], 1);
+		// denotes that all namespaces had
+		// invalid pvt data
+		return nil, invalidPvtData
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[24], 1);return txPvtData, invalidPvtData
+}
+
+type nsColl struct {
+	ns, coll string
+}
+
+func findInvalidNsPvtData(nsRwset *rwset.NsPvtReadWriteSet, txRWSet *rwsetutil.TxRwSet, blkNum, txNum uint64) (
+	[]*ledger.PvtdataHashMismatch, []*nsColl,
+) {_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[28], 1);
+	var invalidPvtData []*ledger.PvtdataHashMismatch
+	var invalidNsColl []*nsColl
+
+	ns := nsRwset.Namespace
+	for _, collPvtRwset := range nsRwset.CollectionPvtRwset {_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[30], 1);
+		coll := collPvtRwset.CollectionName
+		rwsetHash := txRWSet.GetPvtDataHash(ns, coll)
+		if rwsetHash == nil {_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[32], 1);
+			logger.Warningf("namespace: %s collection: %s was not accessed by txNum %d in BlkNum %d. "+
+				"Unnecessary pvtdata has been passed", ns, coll, txNum, blkNum)
+			invalidNsColl = append(invalidNsColl, &nsColl{ns, coll})
+			continue
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[31], 1);if !bytes.Equal(util.ComputeSHA256(collPvtRwset.Rwset), rwsetHash) {_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[33], 1);
+			invalidPvtData = append(invalidPvtData, &ledger.PvtdataHashMismatch{
+				BlockNum:     blkNum,
+				TxNum:        txNum,
+				Namespace:    ns,
+				Collection:   coll,
+				ExpectedHash: rwsetHash})
+			invalidNsColl = append(invalidNsColl, &nsColl{ns, coll})
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_653063666537353930343531.Count[29], 1);return invalidPvtData, invalidNsColl
+}
+
+var GoCover_1_653063666537353930343531 = struct {
+	Count     [34]uint32
+	Pos       [3 * 34]uint32
+	NumStmt   [34]uint16
+} {
+	Pos: [3 * 34]uint32{
+		23, 31, 0x2d0003, // [0]
+		41, 41, 0x2a0002, // [1]
+		31, 33, 0x11002d, // [2]
+		36, 36, 0x190003, // [3]
+		39, 39, 0x3a0003, // [4]
+		33, 35, 0x40011, // [5]
+		36, 38, 0x40019, // [6]
+		46, 49, 0x330003, // [7]
+		69, 69, 0x2a0002, // [8]
+		49, 53, 0x110033, // [9]
+		58, 64, 0x170003, // [10]
+		67, 67, 0x3a0003, // [11]
+		53, 55, 0x40011, // [12]
+		64, 66, 0x40017, // [13]
+		72, 76, 0x100073, // [14]
+		80, 81, 0x100002, // [15]
+		84, 85, 0x480002, // [16]
+		88, 88, 0x150002, // [17]
+		76, 78, 0x30010, // [18]
+		81, 83, 0x30010, // [19]
+		85, 87, 0x30048, // [20]
+		93, 98, 0x380003, // [21]
+		104, 104, 0x280002, // [22]
+		107, 107, 0x2d0002, // [23]
+		112, 112, 0x220002, // [24]
+		98, 103, 0x30038, // [25]
+		104, 106, 0x30028, // [26]
+		107, 111, 0x3002d, // [27]
+		121, 126, 0x3a0003, // [28]
+		146, 146, 0x260002, // [29]
+		126, 129, 0x17003a, // [30]
+		136, 136, 0x460003, // [31]
+		129, 133, 0xc0017, // [32]
+		136, 144, 0x40046, // [33]
+	},
+	NumStmt: [34]uint16{
+		3, // 0
+		1, // 1
+		2, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		3, // 7
+		1, // 8
+		3, // 9
+		3, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		2, // 14
+		2, // 15
+		2, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		1, // 20
+		3, // 21
+		1, // 22
+		1, // 23
+		1, // 24
+		4, // 25
+		1, // 26
+		1, // 27
+		4, // 28
+		1, // 29
+		3, // 30
+		1, // 31
+		3, // 32
+		2, // 33
+	},
+}
+var _ = _cover_atomic_.LoadUint32

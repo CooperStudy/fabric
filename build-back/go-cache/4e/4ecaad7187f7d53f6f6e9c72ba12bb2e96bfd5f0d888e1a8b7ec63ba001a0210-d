@@ -1,0 +1,19 @@
+# test log
+open testdata/client/cert.pem
+open testdata/client/key.pem
+open testdata/server/cert.pem
+open testdata/server/key.pem
+getenv GODEBUG
+getenv RES_OPTIONS
+getenv HOSTALIASES
+open /etc/nsswitch.conf
+open /etc/resolv.conf
+stat /etc/mdns.allow
+open testdata/server/ca.pem
+getenv HTTP_PROXY
+getenv http_proxy
+getenv HTTPS_PROXY
+getenv https_proxy
+getenv NO_PROXY
+getenv no_proxy
+getenv REQUEST_METHOD

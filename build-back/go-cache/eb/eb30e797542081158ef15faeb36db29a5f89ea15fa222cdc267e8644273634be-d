@@ -1,0 +1,11 @@
+./big.go
+./credential.go
+./credrequest.go
+./ecp.go
+./issuer.go
+./issuer_public_key.go
+./issuer_secret_key.go
+./nymsignature_scheme.go
+./revocation.go
+./signature_scheme.go
+./user.go

@@ -1,0 +1,307 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/msp/mgmt/mgmt.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package mgmt; import _cover_atomic_ "sync/atomic"
+
+import (
+	"reflect"
+	"sync"
+
+	"github.com/hyperledger/fabric/bccsp/factory"
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/msp"
+	"github.com/hyperledger/fabric/msp/cache"
+	"github.com/pkg/errors"
+	"github.com/spf13/viper"
+)
+
+// LoadLocalMspWithType loads the local MSP with the specified type from the specified directory
+func LoadLocalMspWithType(dir string, bccspConfig *factory.FactoryOpts, mspID, mspType string) error {_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[0], 1);
+	if mspID == "" {_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[3], 1);
+		return errors.New("the local MSP must have an ID")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[1], 1);conf, err := msp.GetLocalMspConfigWithType(dir, bccspConfig, mspID, mspType)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[4], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[2], 1);return GetLocalMSP().Setup(conf)
+}
+
+// LoadLocalMsp loads the local MSP from the specified directory
+func LoadLocalMsp(dir string, bccspConfig *factory.FactoryOpts, mspID string) error {_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[5], 1);
+	if mspID == "" {_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[8], 1);
+		return errors.New("the local MSP must have an ID")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[6], 1);conf, err := msp.GetLocalMspConfig(dir, bccspConfig, mspID)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[9], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[7], 1);return GetLocalMSP().Setup(conf)
+}
+
+// FIXME: AS SOON AS THE CHAIN MANAGEMENT CODE IS COMPLETE,
+// THESE MAPS AND HELPSER FUNCTIONS SHOULD DISAPPEAR BECAUSE
+// OWNERSHIP OF PER-CHAIN MSP MANAGERS WILL BE HANDLED BY IT;
+// HOWEVER IN THE INTERIM, THESE HELPER FUNCTIONS ARE REQUIRED
+
+var m sync.Mutex
+var localMsp msp.MSP
+var mspMap map[string]msp.MSPManager = make(map[string]msp.MSPManager)
+var mspLogger = flogging.MustGetLogger("msp")
+
+// TODO - this is a temporary solution to allow the peer to track whether the
+// MSPManager has been setup for a channel, which indicates whether the channel
+// exists or not
+type mspMgmtMgr struct {
+	msp.MSPManager
+	// track whether this MSPManager has been setup successfully
+	up bool
+}
+
+func (mgr *mspMgmtMgr) DeserializeIdentity(serializedIdentity []byte) (msp.Identity, error) {_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[10], 1);
+	if !mgr.up {_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[12], 1);
+		return nil, errors.New("channel doesn't exist")
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[11], 1);return mgr.MSPManager.DeserializeIdentity(serializedIdentity)
+}
+
+func (mgr *mspMgmtMgr) Setup(msps []msp.MSP) error {_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[13], 1);
+	err := mgr.MSPManager.Setup(msps)
+	if err == nil {_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[15], 1);
+		mgr.up = true
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[14], 1);return err
+}
+
+// GetManagerForChain returns the msp manager for the supplied
+// chain; if no such manager exists, one is created
+func GetManagerForChain(chainID string) msp.MSPManager {_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[16], 1);
+	m.Lock()
+	defer m.Unlock()
+
+	mspMgr, ok := mspMap[chainID]
+	if !ok {_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[18], 1);
+		mspLogger.Debugf("Created new msp manager for channel `%s`", chainID)
+		mspMgmtMgr := &mspMgmtMgr{msp.NewMSPManager(), false}
+		mspMap[chainID] = mspMgmtMgr
+		mspMgr = mspMgmtMgr
+	} else{ _cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[19], 1);{
+		// check for internal mspManagerImpl and mspMgmtMgr types. if a different
+		// type is found, it's because a developer has added a new type that
+		// implements the MSPManager interface and should add a case to the logic
+		// above to handle it.
+		if !(reflect.TypeOf(mspMgr).Elem().Name() == "mspManagerImpl" || reflect.TypeOf(mspMgr).Elem().Name() == "mspMgmtMgr") {_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[21], 1);
+			panic("Found unexpected MSPManager type.")
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[20], 1);mspLogger.Debugf("Returning existing manager for channel '%s'", chainID)
+	}}
+	_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[17], 1);return mspMgr
+}
+
+// GetManagers returns all the managers registered
+func GetDeserializers() map[string]msp.IdentityDeserializer {_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[22], 1);
+	m.Lock()
+	defer m.Unlock()
+
+	clone := make(map[string]msp.IdentityDeserializer)
+
+	for key, mspManager := range mspMap {_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[24], 1);
+		clone[key] = mspManager
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[23], 1);return clone
+}
+
+// XXXSetMSPManager is a stopgap solution to transition from the custom MSP config block
+// parsing to the channelconfig.Resources interface, while preserving the problematic singleton
+// nature of the MSP manager
+func XXXSetMSPManager(chainID string, manager msp.MSPManager) {_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[25], 1);
+	m.Lock()
+	defer m.Unlock()
+
+	mspMap[chainID] = &mspMgmtMgr{manager, true}
+}
+
+// GetLocalMSP returns the local msp (and creates it if it doesn't exist)
+func GetLocalMSP() msp.MSP {_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[26], 1);
+	m.Lock()
+	defer m.Unlock()
+
+	if localMsp != nil {_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[28], 1);
+		return localMsp
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[27], 1);localMsp = loadLocaMSP()
+
+	return localMsp
+}
+
+func loadLocaMSP() msp.MSP {_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[29], 1);
+	// determine the type of MSP (by default, we'll use bccspMSP)
+	mspType := viper.GetString("peer.localMspType")
+	if mspType == "" {_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[34], 1);
+		mspType = msp.ProviderTypeToString(msp.FABRIC)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[30], 1);var mspOpts = map[string]msp.NewOpts{
+		msp.ProviderTypeToString(msp.FABRIC): &msp.BCCSPNewOpts{NewBaseOpts: msp.NewBaseOpts{Version: msp.MSPv1_0}},
+		msp.ProviderTypeToString(msp.IDEMIX): &msp.IdemixNewOpts{NewBaseOpts: msp.NewBaseOpts{Version: msp.MSPv1_1}},
+	}
+	newOpts, found := mspOpts[mspType]
+	if !found {_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[35], 1);
+		mspLogger.Panicf("msp type " + mspType + " unknown")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[31], 1);mspInst, err := msp.New(newOpts)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[36], 1);
+		mspLogger.Fatalf("Failed to initialize local MSP, received err %+v", err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[32], 1);switch mspType {
+	case msp.ProviderTypeToString(msp.FABRIC):_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[37], 1);
+		mspInst, err = cache.New(mspInst)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[40], 1);
+			mspLogger.Fatalf("Failed to initialize local MSP, received err %+v", err)
+		}
+	case msp.ProviderTypeToString(msp.IDEMIX):_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[38], 1);
+		// Do nothing
+	default:_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[39], 1);
+		panic("msp type " + mspType + " unknown")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[33], 1);mspLogger.Debugf("Created new local MSP")
+
+	return mspInst
+}
+
+// GetIdentityDeserializer returns the IdentityDeserializer for the given chain
+func GetIdentityDeserializer(chainID string) msp.IdentityDeserializer {_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[41], 1);
+	if chainID == "" {_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[43], 1);
+		return GetLocalMSP()
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[42], 1);return GetManagerForChain(chainID)
+}
+
+// GetLocalSigningIdentityOrPanic returns the local signing identity or panic in case
+// or error
+func GetLocalSigningIdentityOrPanic() msp.SigningIdentity {_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[44], 1);
+	id, err := GetLocalMSP().GetDefaultSigningIdentity()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[46], 1);
+		mspLogger.Panicf("Failed getting local signing identity [%+v]", err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_386337366464366464333939.Count[45], 1);return id
+}
+
+var GoCover_1_386337366464366464333939 = struct {
+	Count     [47]uint32
+	Pos       [3 * 47]uint32
+	NumStmt   [47]uint16
+} {
+	Pos: [3 * 47]uint32{
+		22, 23, 0x110066, // [0]
+		27, 28, 0x100002, // [1]
+		32, 32, 0x220002, // [2]
+		23, 25, 0x30011, // [3]
+		28, 30, 0x30010, // [4]
+		36, 37, 0x110055, // [5]
+		41, 42, 0x100002, // [6]
+		46, 46, 0x220002, // [7]
+		37, 39, 0x30011, // [8]
+		42, 44, 0x30010, // [9]
+		68, 69, 0xd005d, // [10]
+		72, 72, 0x3f0002, // [11]
+		69, 71, 0x3000d, // [12]
+		75, 77, 0x100034, // [13]
+		80, 80, 0xc0002, // [14]
+		77, 79, 0x30010, // [15]
+		85, 90, 0x90038, // [16]
+		105, 105, 0xf0002, // [17]
+		90, 95, 0x30009, // [18]
+		95, 100, 0x7a0008, // [19]
+		103, 103, 0x4b0003, // [20]
+		100, 101, 0x2e007a, // [21]
+		109, 115, 0x26003d, // [22]
+		119, 119, 0xe0002, // [23]
+		115, 117, 0x30026, // [24]
+		125, 130, 0x2003f, // [25]
+		133, 137, 0x15001c, // [26]
+		141, 143, 0x110002, // [27]
+		137, 139, 0x30015, // [28]
+		146, 149, 0x13001c, // [29]
+		153, 158, 0xc0002, // [30]
+		162, 163, 0x100002, // [31]
+		166, 166, 0x110002, // [32]
+		178, 180, 0x100002, // [33]
+		149, 151, 0x30013, // [34]
+		158, 160, 0x3000c, // [35]
+		163, 165, 0x30010, // [36]
+		167, 169, 0x11002c, // [37]
+		172, 172, 0x2c002c, // [38]
+		174, 175, 0x2c000a, // [39]
+		169, 171, 0x40011, // [40]
+		184, 185, 0x130047, // [41]
+		189, 189, 0x240002, // [42]
+		185, 187, 0x30013, // [43]
+		194, 196, 0x10003b, // [44]
+		199, 199, 0xb0002, // [45]
+		196, 198, 0x30010, // [46]
+	},
+	NumStmt: [47]uint16{
+		1, // 0
+		2, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		2, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		2, // 13
+		1, // 14
+		1, // 15
+		4, // 16
+		1, // 17
+		4, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		4, // 22
+		1, // 23
+		1, // 24
+		3, // 25
+		3, // 26
+		2, // 27
+		1, // 28
+		2, // 29
+		3, // 30
+		2, // 31
+		1, // 32
+		2, // 33
+		1, // 34
+		1, // 35
+		1, // 36
+		2, // 37
+		0, // 38
+		1, // 39
+		1, // 40
+		1, // 41
+		1, // 42
+		1, // 43
+		2, // 44
+		1, // 45
+		1, // 46
+	},
+}
+var _ = _cover_atomic_.LoadUint32

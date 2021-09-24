@@ -1,0 +1,83 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/ledger/pvtdatastorage/test_exports.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package pvtdatastorage; import _cover_atomic_ "sync/atomic"
+
+import (
+	"os"
+	"testing"
+
+	"github.com/hyperledger/fabric/core/ledger/ledgerconfig"
+	"github.com/hyperledger/fabric/core/ledger/pvtdatapolicy"
+	"github.com/stretchr/testify/assert"
+)
+
+// StoreEnv provides the  store env for testing
+type StoreEnv struct {
+	t                 testing.TB
+	TestStoreProvider Provider
+	TestStore         Store
+	ledgerid          string
+	btlPolicy         pvtdatapolicy.BTLPolicy
+}
+
+// NewTestStoreEnv construct a StoreEnv for testing
+func NewTestStoreEnv(t *testing.T, ledgerid string, btlPolicy pvtdatapolicy.BTLPolicy) *StoreEnv {_cover_atomic_.AddUint32(&GoCover_6_653833333066373334656466.Count[0], 1);
+	removeStorePath(t)
+	assert := assert.New(t)
+	testStoreProvider := NewProvider()
+	testStore, err := testStoreProvider.OpenStore(ledgerid)
+	testStore.Init(btlPolicy)
+	assert.NoError(err)
+	return &StoreEnv{t, testStoreProvider, testStore, ledgerid, btlPolicy}
+}
+
+// CloseAndReopen closes and opens the store provider
+func (env *StoreEnv) CloseAndReopen() {_cover_atomic_.AddUint32(&GoCover_6_653833333066373334656466.Count[1], 1);
+	var err error
+	env.TestStoreProvider.Close()
+	env.TestStoreProvider = NewProvider()
+	env.TestStore, err = env.TestStoreProvider.OpenStore(env.ledgerid)
+	env.TestStore.Init(env.btlPolicy)
+	assert.NoError(env.t, err)
+}
+
+// Cleanup cleansup the  store env after testing
+func (env *StoreEnv) Cleanup() {_cover_atomic_.AddUint32(&GoCover_6_653833333066373334656466.Count[2], 1);
+	//env.TestStoreProvider.Close()
+	removeStorePath(env.t)
+}
+
+func removeStorePath(t testing.TB) {_cover_atomic_.AddUint32(&GoCover_6_653833333066373334656466.Count[3], 1);
+	dbPath := ledgerconfig.GetPvtdataStorePath()
+	if err := os.RemoveAll(dbPath); err != nil {_cover_atomic_.AddUint32(&GoCover_6_653833333066373334656466.Count[4], 1);
+		t.Fatalf("Err: %s", err)
+		t.FailNow()
+	}
+}
+
+var GoCover_6_653833333066373334656466 = struct {
+	Count     [5]uint32
+	Pos       [3 * 5]uint32
+	NumStmt   [5]uint16
+} {
+	Pos: [3 * 5]uint32{
+		28, 36, 0x20062, // [0]
+		39, 46, 0x20027, // [1]
+		49, 52, 0x20020, // [2]
+		54, 56, 0x2d0024, // [3]
+		56, 59, 0x3002d, // [4]
+	},
+	NumStmt: [5]uint16{
+		7, // 0
+		6, // 1
+		1, // 2
+		2, // 3
+		2, // 4
+	},
+}
+var _ = _cover_atomic_.LoadUint32

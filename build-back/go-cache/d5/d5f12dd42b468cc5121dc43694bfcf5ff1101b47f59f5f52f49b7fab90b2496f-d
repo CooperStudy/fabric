@@ -1,0 +1,240 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/ledger/blockledger/json/factory.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package jsonledger; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"sync"
+
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/hyperledger/fabric/common/ledger/blockledger"
+	"github.com/pkg/errors"
+)
+
+type jsonLedgerFactory struct {
+	directory string
+	ledgers   map[string]blockledger.ReadWriter
+	mutex     sync.Mutex
+}
+
+// GetOrCreate gets an existing ledger (if it exists) or creates it if it does not
+func (jlf *jsonLedgerFactory) GetOrCreate(chainID string) (blockledger.ReadWriter, error) {_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[0], 1);
+	jlf.mutex.Lock()
+	defer jlf.mutex.Unlock()
+
+	key := chainID
+
+	l, ok := jlf.ledgers[key]
+	if ok {_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[3], 1);
+		return l, nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[1], 1);directory := filepath.Join(jlf.directory, fmt.Sprintf(chainDirectoryFormatString, chainID))
+
+	logger.Debugf("Initializing chain %s at: %s", chainID, directory)
+
+	if err := os.MkdirAll(directory, 0700); err != nil {_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[4], 1);
+		logger.Errorf("Error initializing channel %s: %s", chainID, err)
+		return nil, errors.Wrapf(err, "error initializing channel %s", chainID)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[2], 1);ch := newChain(directory)
+	jlf.ledgers[key] = ch
+	return ch, nil
+}
+
+// newChain creates a new chain backed by a JSON ledger
+func newChain(directory string) blockledger.ReadWriter {_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[5], 1);
+	jl := &jsonLedger{
+		directory: directory,
+		signal:    make(chan struct{}),
+		marshaler: &jsonpb.Marshaler{Indent: "  "},
+	}
+	jl.initializeBlockHeight()
+	logger.Debugf("Initialized to block height %d with hash %x", jl.height-1, jl.lastHash)
+	return jl
+}
+
+// initializeBlockHeight verifies that all blocks exist between 0 and the block
+// height, and populates the lastHash
+func (jl *jsonLedger) initializeBlockHeight() {_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[6], 1);
+	infos, err := ioutil.ReadDir(jl.directory)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[12], 1);
+		logger.Panic(err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[7], 1);nextNumber := uint64(0)
+	for _, info := range infos {_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[13], 1);
+		if info.IsDir() {_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[17], 1);
+			continue
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[14], 1);var number uint64
+		_, err := fmt.Sscanf(info.Name(), blockFileFormatString, &number)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[18], 1);
+			continue
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[15], 1);if number != nextNumber {_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[19], 1);
+			logger.Panicf("Missing block %d in the chain", nextNumber)
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[16], 1);nextNumber++
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[8], 1);jl.height = nextNumber
+	if jl.height == 0 {_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[20], 1);
+		return
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[9], 1);block, found := jl.readBlock(jl.height - 1)
+	if !found {_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[21], 1);
+		logger.Panicf("Block %d was in directory listing but error reading", jl.height-1)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[10], 1);if block == nil {_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[22], 1);
+		logger.Panicf("Error reading block %d", jl.height-1)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[11], 1);jl.lastHash = block.Header.Hash()
+}
+
+// ChainIDs returns the chain IDs the factory is aware of
+func (jlf *jsonLedgerFactory) ChainIDs() []string {_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[23], 1);
+	jlf.mutex.Lock()
+	defer jlf.mutex.Unlock()
+	ids := make([]string, len(jlf.ledgers))
+
+	i := 0
+	for key := range jlf.ledgers {_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[25], 1);
+		ids[i] = key
+		i++
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[24], 1);return ids
+}
+
+// Close is a no-op for the JSON ledger
+func (jlf *jsonLedgerFactory) Close() {_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[26], 1);
+	return // nothing to do
+}
+
+// New creates a new ledger factory
+func New(directory string) blockledger.Factory {_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[27], 1);
+	logger.Debugf("Initializing ledger at: %s", directory)
+	if err := os.MkdirAll(directory, 0700); err != nil {_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[31], 1);
+		logger.Panicf("Could not create directory %s: %s", directory, err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[28], 1);jlf := &jsonLedgerFactory{
+		directory: directory,
+		ledgers:   make(map[string]blockledger.ReadWriter),
+	}
+
+	infos, err := ioutil.ReadDir(jlf.directory)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[32], 1);
+		logger.Panicf("Error reading from directory %s while initializing ledger: %s", jlf.directory, err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[29], 1);for _, info := range infos {_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[33], 1);
+		if !info.IsDir() {_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[36], 1);
+			continue
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[34], 1);var chainID string
+		_, err := fmt.Sscanf(info.Name(), chainDirectoryFormatString, &chainID)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[37], 1);
+			continue
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[35], 1);jlf.GetOrCreate(chainID)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_663330323533613930316531.Count[30], 1);return jlf
+}
+
+var GoCover_0_663330323533613930316531 = struct {
+	Count     [38]uint32
+	Pos       [3 * 38]uint32
+	NumStmt   [38]uint16
+} {
+	Pos: [3 * 38]uint32{
+		28, 35, 0x8005b, // [0]
+		39, 43, 0x350002, // [1]
+		48, 50, 0x100002, // [2]
+		35, 37, 0x30008, // [3]
+		43, 46, 0x30035, // [4]
+		54, 63, 0x20038, // [5]
+		67, 69, 0x10002f, // [6]
+		72, 73, 0x1d0002, // [7]
+		87, 88, 0x140002, // [8]
+		91, 92, 0xc0002, // [9]
+		95, 95, 0x120002, // [10]
+		98, 98, 0x230002, // [11]
+		69, 71, 0x30010, // [12]
+		73, 74, 0x13001d, // [13]
+		77, 79, 0x110003, // [14]
+		82, 82, 0x1b0003, // [15]
+		85, 85, 0xf0003, // [16]
+		74, 75, 0xc0013, // [17]
+		79, 80, 0xc0011, // [18]
+		82, 84, 0x4001b, // [19]
+		88, 90, 0x30014, // [20]
+		92, 94, 0x3000c, // [21]
+		95, 97, 0x30012, // [22]
+		102, 108, 0x1f0033, // [23]
+		113, 113, 0xc0002, // [24]
+		108, 111, 0x3001f, // [25]
+		117, 119, 0x20027, // [26]
+		122, 124, 0x350030, // [27]
+		128, 134, 0x100002, // [28]
+		138, 138, 0x1d0002, // [29]
+		150, 150, 0xc0002, // [30]
+		124, 126, 0x30035, // [31]
+		134, 136, 0x30010, // [32]
+		138, 139, 0x14001d, // [33]
+		142, 144, 0x110003, // [34]
+		147, 147, 0x1b0003, // [35]
+		139, 140, 0xc0014, // [36]
+		144, 145, 0xc0011, // [37]
+	},
+	NumStmt: [38]uint16{
+		5, // 0
+		3, // 1
+		3, // 2
+		1, // 3
+		2, // 4
+		4, // 5
+		2, // 6
+		2, // 7
+		2, // 8
+		2, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		3, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		1, // 22
+		5, // 23
+		1, // 24
+		2, // 25
+		1, // 26
+		2, // 27
+		3, // 28
+		1, // 29
+		1, // 30
+		1, // 31
+		1, // 32
+		1, // 33
+		3, // 34
+		1, // 35
+		1, // 36
+		1, // 37
+	},
+}
+var _ = _cover_atomic_.LoadUint32

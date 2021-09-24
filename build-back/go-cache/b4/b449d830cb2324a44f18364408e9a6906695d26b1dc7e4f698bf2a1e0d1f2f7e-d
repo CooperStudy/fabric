@@ -1,0 +1,114 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/chaincode/metadata.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package chaincode; import _cover_atomic_ "sync/atomic"
+
+import (
+	"sync"
+
+	"github.com/hyperledger/fabric/protos/gossip"
+)
+
+// InstalledChaincode defines metadata about an installed chaincode
+type InstalledChaincode struct {
+	Name    string
+	Version string
+	Id      []byte
+}
+
+// Metadata defines channel-scoped metadata of a chaincode
+type Metadata struct {
+	Name              string
+	Version           string
+	Policy            []byte
+	Id                []byte
+	CollectionsConfig []byte
+}
+
+// MetadataSet defines an aggregation of Metadata
+type MetadataSet []Metadata
+
+// AsChaincodes converts this MetadataSet to a slice of gossip.Chaincodes
+func (ccs MetadataSet) AsChaincodes() []*gossip.Chaincode {_cover_atomic_.AddUint32(&GoCover_0_633765363330633366363463.Count[0], 1);
+	var res []*gossip.Chaincode
+	for _, cc := range ccs {_cover_atomic_.AddUint32(&GoCover_0_633765363330633366363463.Count[2], 1);
+		res = append(res, &gossip.Chaincode{
+			Name:    cc.Name,
+			Version: cc.Version,
+		})
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_633765363330633366363463.Count[1], 1);return res
+}
+
+// MetadataMapping defines a mapping from chaincode name to Metadata
+type MetadataMapping struct {
+	sync.RWMutex
+	mdByName map[string]Metadata
+}
+
+// NewMetadataMapping creates a new metadata mapping
+func NewMetadataMapping() *MetadataMapping {_cover_atomic_.AddUint32(&GoCover_0_633765363330633366363463.Count[3], 1);
+	return &MetadataMapping{
+		mdByName: make(map[string]Metadata),
+	}
+}
+
+// Lookup returns the Metadata that is associated with the given chaincode
+func (m *MetadataMapping) Lookup(cc string) (Metadata, bool) {_cover_atomic_.AddUint32(&GoCover_0_633765363330633366363463.Count[4], 1);
+	m.RLock()
+	defer m.RUnlock()
+	md, exists := m.mdByName[cc]
+	return md, exists
+}
+
+// Update updates the chaincode metadata in the mapping
+func (m *MetadataMapping) Update(ccMd Metadata) {_cover_atomic_.AddUint32(&GoCover_0_633765363330633366363463.Count[5], 1);
+	m.Lock()
+	defer m.Unlock()
+	m.mdByName[ccMd.Name] = ccMd
+}
+
+// Aggregate aggregates all Metadata to a MetadataSet
+func (m *MetadataMapping) Aggregate() MetadataSet {_cover_atomic_.AddUint32(&GoCover_0_633765363330633366363463.Count[6], 1);
+	m.RLock()
+	defer m.RUnlock()
+	var set MetadataSet
+	for _, md := range m.mdByName {_cover_atomic_.AddUint32(&GoCover_0_633765363330633366363463.Count[8], 1);
+		set = append(set, md)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_633765363330633366363463.Count[7], 1);return set
+}
+
+var GoCover_0_633765363330633366363463 = struct {
+	Count     [9]uint32
+	Pos       [3 * 9]uint32
+	NumStmt   [9]uint16
+} {
+	Pos: [3 * 9]uint32{
+		35, 37, 0x19003b, // [0]
+		43, 43, 0xc0002, // [1]
+		37, 42, 0x30019, // [2]
+		53, 57, 0x2002c, // [3]
+		60, 65, 0x2003e, // [4]
+		68, 72, 0x20031, // [5]
+		75, 79, 0x200033, // [6]
+		82, 82, 0xc0002, // [7]
+		79, 81, 0x30020, // [8]
+	},
+	NumStmt: [9]uint16{
+		2, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		4, // 4
+		3, // 5
+		4, // 6
+		1, // 7
+		1, // 8
+	},
+}
+var _ = _cover_atomic_.LoadUint32

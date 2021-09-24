@@ -1,0 +1,182 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/bccsp/utils/ecdsa.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package utils; import _cover_atomic_ "sync/atomic"
+
+import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"encoding/asn1"
+	"errors"
+	"fmt"
+	"math/big"
+)
+
+type ECDSASignature struct {
+	R, S *big.Int
+}
+
+var (
+	// curveHalfOrders contains the precomputed curve group orders halved.
+	// It is used to ensure that signature' S value is lower or equal to the
+	// curve group order halved. We accept only low-S signatures.
+	// They are precomputed for efficiency reasons.
+	curveHalfOrders = map[elliptic.Curve]*big.Int{
+		elliptic.P224(): new(big.Int).Rsh(elliptic.P224().Params().N, 1),
+		elliptic.P256(): new(big.Int).Rsh(elliptic.P256().Params().N, 1),
+		elliptic.P384(): new(big.Int).Rsh(elliptic.P384().Params().N, 1),
+		elliptic.P521(): new(big.Int).Rsh(elliptic.P521().Params().N, 1),
+	}
+)
+
+func GetCurveHalfOrdersAt(c elliptic.Curve) *big.Int {_cover_atomic_.AddUint32(&GoCover_0_656234373336356538323066.Count[0], 1);
+	return big.NewInt(0).Set(curveHalfOrders[c])
+}
+
+func MarshalECDSASignature(r, s *big.Int) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_0_656234373336356538323066.Count[1], 1);
+	return asn1.Marshal(ECDSASignature{r, s})
+}
+
+func UnmarshalECDSASignature(raw []byte) (*big.Int, *big.Int, error) {_cover_atomic_.AddUint32(&GoCover_0_656234373336356538323066.Count[2], 1);
+	// Unmarshal
+	sig := new(ECDSASignature)
+	_, err := asn1.Unmarshal(raw, sig)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_656234373336356538323066.Count[8], 1);
+		return nil, nil, fmt.Errorf("failed unmashalling signature [%s]", err)
+	}
+
+	// Validate sig
+	_cover_atomic_.AddUint32(&GoCover_0_656234373336356538323066.Count[3], 1);if sig.R == nil {_cover_atomic_.AddUint32(&GoCover_0_656234373336356538323066.Count[9], 1);
+		return nil, nil, errors.New("invalid signature, R must be different from nil")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_656234373336356538323066.Count[4], 1);if sig.S == nil {_cover_atomic_.AddUint32(&GoCover_0_656234373336356538323066.Count[10], 1);
+		return nil, nil, errors.New("invalid signature, S must be different from nil")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_656234373336356538323066.Count[5], 1);if sig.R.Sign() != 1 {_cover_atomic_.AddUint32(&GoCover_0_656234373336356538323066.Count[11], 1);
+		return nil, nil, errors.New("invalid signature, R must be larger than zero")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_656234373336356538323066.Count[6], 1);if sig.S.Sign() != 1 {_cover_atomic_.AddUint32(&GoCover_0_656234373336356538323066.Count[12], 1);
+		return nil, nil, errors.New("invalid signature, S must be larger than zero")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_656234373336356538323066.Count[7], 1);return sig.R, sig.S, nil
+}
+
+func SignatureToLowS(k *ecdsa.PublicKey, signature []byte) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_0_656234373336356538323066.Count[13], 1);
+	r, s, err := UnmarshalECDSASignature(signature)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_656234373336356538323066.Count[17], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_656234373336356538323066.Count[14], 1);s, modified, err := ToLowS(k, s)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_656234373336356538323066.Count[18], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_656234373336356538323066.Count[15], 1);if modified {_cover_atomic_.AddUint32(&GoCover_0_656234373336356538323066.Count[19], 1);
+		return MarshalECDSASignature(r, s)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_656234373336356538323066.Count[16], 1);return signature, nil
+}
+
+// IsLow checks that s is a low-S
+func IsLowS(k *ecdsa.PublicKey, s *big.Int) (bool, error) {_cover_atomic_.AddUint32(&GoCover_0_656234373336356538323066.Count[20], 1);
+	halfOrder, ok := curveHalfOrders[k.Curve]
+	if !ok {_cover_atomic_.AddUint32(&GoCover_0_656234373336356538323066.Count[22], 1);
+		return false, fmt.Errorf("curve not recognized [%s]", k.Curve)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_656234373336356538323066.Count[21], 1);return s.Cmp(halfOrder) != 1, nil
+
+}
+
+func ToLowS(k *ecdsa.PublicKey, s *big.Int) (*big.Int, bool, error) {_cover_atomic_.AddUint32(&GoCover_0_656234373336356538323066.Count[23], 1);
+	lowS, err := IsLowS(k, s)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_656234373336356538323066.Count[26], 1);
+		return nil, false, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_656234373336356538323066.Count[24], 1);if !lowS {_cover_atomic_.AddUint32(&GoCover_0_656234373336356538323066.Count[27], 1);
+		// Set s to N - s that will be then in the lower part of signature space
+		// less or equal to half order
+		s.Sub(k.Params().N, s)
+
+		return s, true, nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_656234373336356538323066.Count[25], 1);return s, false, nil
+}
+
+var GoCover_0_656234373336356538323066 = struct {
+	Count     [28]uint32
+	Pos       [3 * 28]uint32
+	NumStmt   [28]uint16
+} {
+	Pos: [3 * 28]uint32{
+		35, 37, 0x20036, // [0]
+		39, 41, 0x2003b, // [1]
+		43, 47, 0x100046, // [2]
+		52, 52, 0x120002, // [3]
+		55, 55, 0x120002, // [4]
+		59, 59, 0x170002, // [5]
+		62, 62, 0x170002, // [6]
+		66, 66, 0x1a0002, // [7]
+		47, 49, 0x30010, // [8]
+		52, 54, 0x30012, // [9]
+		55, 57, 0x30012, // [10]
+		59, 61, 0x30017, // [11]
+		62, 64, 0x30017, // [12]
+		69, 71, 0x10004c, // [13]
+		75, 76, 0x100002, // [14]
+		80, 80, 0xe0002, // [15]
+		84, 84, 0x170002, // [16]
+		71, 73, 0x30010, // [17]
+		76, 78, 0x30010, // [18]
+		80, 82, 0x3000e, // [19]
+		88, 90, 0x9003b, // [20]
+		94, 94, 0x230002, // [21]
+		90, 92, 0x30009, // [22]
+		98, 100, 0x100045, // [23]
+		104, 104, 0xb0002, // [24]
+		112, 112, 0x160002, // [25]
+		100, 102, 0x30010, // [26]
+		104, 110, 0x3000b, // [27]
+	},
+	NumStmt: [28]uint16{
+		1, // 0
+		1, // 1
+		3, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		2, // 13
+		2, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		2, // 20
+		1, // 21
+		1, // 22
+		2, // 23
+		1, // 24
+		1, // 25
+		1, // 26
+		2, // 27
+	},
+}
+var _ = _cover_atomic_.LoadUint32

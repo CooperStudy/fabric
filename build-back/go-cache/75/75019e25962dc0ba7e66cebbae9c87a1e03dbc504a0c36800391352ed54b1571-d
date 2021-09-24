@@ -1,0 +1,70 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/token/tms/manager/manager.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package manager; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric/msp/mgmt"
+	"github.com/hyperledger/fabric/token/identity"
+	"github.com/hyperledger/fabric/token/tms/plain"
+	"github.com/hyperledger/fabric/token/transaction"
+	"github.com/pkg/errors"
+)
+
+//go:generate counterfeiter -o mock/identity_deserializer_manager.go -fake-name DeserializerManager . DeserializerManager
+
+// FabricIdentityDeserializerManager implements an DeserializerManager
+// by routing the call to the msp/mgmt package
+type FabricIdentityDeserializerManager struct {
+}
+
+func (*FabricIdentityDeserializerManager) Deserializer(channel string) (identity.Deserializer, error) {_cover_atomic_.AddUint32(&GoCover_0_616133346533356636316261.Count[0], 1);
+	id, ok := mgmt.GetDeserializers()[channel]
+	if !ok {_cover_atomic_.AddUint32(&GoCover_0_616133346533356636316261.Count[2], 1);
+		return nil, errors.New("channel not found")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_616133346533356636316261.Count[1], 1);return id, nil
+}
+
+// Manager is used to access TMS components.
+type Manager struct {
+	IdentityDeserializerManager identity.DeserializerManager
+}
+
+// GetTxProcessor returns a TMSTxProcessor that is used to process token transactions.
+func (m *Manager) GetTxProcessor(channel string) (transaction.TMSTxProcessor, error) {_cover_atomic_.AddUint32(&GoCover_0_616133346533356636316261.Count[3], 1);
+	identityDeserializerManager, err := m.IdentityDeserializerManager.Deserializer(channel)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_616133346533356636316261.Count[5], 1);
+		return nil, errors.Wrapf(err, "failed getting identity deserialiser manager for channel '%s'", channel)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_616133346533356636316261.Count[4], 1);return &plain.Verifier{IssuingValidator: &AllIssuingValidator{Deserializer: identityDeserializerManager}}, nil
+}
+
+var GoCover_0_616133346533356636316261 = struct {
+	Count     [6]uint32
+	Pos       [3 * 6]uint32
+	NumStmt   [6]uint16
+} {
+	Pos: [3 * 6]uint32{
+		24, 26, 0x90067, // [0]
+		29, 29, 0x100002, // [1]
+		26, 28, 0x30009, // [2]
+		38, 40, 0x100056, // [3]
+		44, 44, 0x700002, // [4]
+		40, 42, 0x30010, // [5]
+	},
+	NumStmt: [6]uint16{
+		2, // 0
+		1, // 1
+		1, // 2
+		2, // 3
+		1, // 4
+		1, // 5
+	},
+}
+var _ = _cover_atomic_.LoadUint32

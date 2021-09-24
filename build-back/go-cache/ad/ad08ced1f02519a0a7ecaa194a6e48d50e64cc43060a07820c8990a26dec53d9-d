@@ -1,0 +1,162 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/config/configtest/config.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package configtest; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
+)
+
+// AddDevConfigPath adds the DevConfigDir to the viper path.
+func AddDevConfigPath(v *viper.Viper) error {_cover_atomic_.AddUint32(&GoCover_0_616564306239353336353237.Count[0], 1);
+	devPath, err := GetDevConfigDir()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_616564306239353336353237.Count[3], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_616564306239353336353237.Count[1], 1);if v != nil {_cover_atomic_.AddUint32(&GoCover_0_616564306239353336353237.Count[4], 1);
+		v.AddConfigPath(devPath)
+	} else{ _cover_atomic_.AddUint32(&GoCover_0_616564306239353336353237.Count[5], 1);{
+		viper.AddConfigPath(devPath)
+	}}
+
+	_cover_atomic_.AddUint32(&GoCover_0_616564306239353336353237.Count[2], 1);return nil
+}
+
+func dirExists(path string) bool {_cover_atomic_.AddUint32(&GoCover_0_616564306239353336353237.Count[6], 1);
+	fi, err := os.Stat(path)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_616564306239353336353237.Count[8], 1);
+		return false
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_616564306239353336353237.Count[7], 1);return fi.IsDir()
+}
+
+// GetDevConfigDir gets the path to the default configuration that is
+// maintained with the source tree. This should only be used in a
+// test/development context.
+func GetDevConfigDir() (string, error) {_cover_atomic_.AddUint32(&GoCover_0_616564306239353336353237.Count[9], 1);
+	gopath := os.Getenv("GOPATH")
+	if gopath == "" {_cover_atomic_.AddUint32(&GoCover_0_616564306239353336353237.Count[12], 1);
+		return "", fmt.Errorf("GOPATH not set")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_616564306239353336353237.Count[10], 1);for _, p := range filepath.SplitList(gopath) {_cover_atomic_.AddUint32(&GoCover_0_616564306239353336353237.Count[13], 1);
+		devPath := filepath.Join(p, "src/github.com/hyperledger/fabric/sampleconfig")
+		if !dirExists(devPath) {_cover_atomic_.AddUint32(&GoCover_0_616564306239353336353237.Count[15], 1);
+			continue
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_616564306239353336353237.Count[14], 1);return devPath, nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_616564306239353336353237.Count[11], 1);return "", fmt.Errorf("DevConfigDir not found in %s", gopath)
+}
+
+// GetDevMspDir gets the path to the sampleconfig/msp tree that is maintained
+// with the source tree.  This should only be used in a test/development
+// context.
+func GetDevMspDir() (string, error) {_cover_atomic_.AddUint32(&GoCover_0_616564306239353336353237.Count[16], 1);
+	devDir, err := GetDevConfigDir()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_616564306239353336353237.Count[18], 1);
+		return "", fmt.Errorf("Error obtaining DevConfigDir: %s", devDir)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_616564306239353336353237.Count[17], 1);return filepath.Join(devDir, "msp"), nil
+}
+
+func SetDevFabricConfigPath(t *testing.T) (cleanup func()) {_cover_atomic_.AddUint32(&GoCover_0_616564306239353336353237.Count[19], 1);
+	t.Helper()
+
+	oldFabricCfgPath, resetFabricCfgPath := os.LookupEnv("FABRIC_CFG_PATH")
+	devConfigDir, err := GetDevConfigDir()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_616564306239353336353237.Count[22], 1);
+		t.Fatalf("failed to get dev config dir: %s", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_616564306239353336353237.Count[20], 1);err = os.Setenv("FABRIC_CFG_PATH", devConfigDir)
+	if resetFabricCfgPath {_cover_atomic_.AddUint32(&GoCover_0_616564306239353336353237.Count[23], 1);
+		return func() {_cover_atomic_.AddUint32(&GoCover_0_616564306239353336353237.Count[24], 1);
+			err := os.Setenv("FABRIC_CFG_PATH", oldFabricCfgPath)
+			assert.NoError(t, err)
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_616564306239353336353237.Count[21], 1);return func() {_cover_atomic_.AddUint32(&GoCover_0_616564306239353336353237.Count[25], 1);
+		err := os.Unsetenv("FABRIC_CFG_PATH")
+		assert.NoError(t, err)
+	}
+}
+
+var GoCover_0_616564306239353336353237 = struct {
+	Count     [26]uint32
+	Pos       [3 * 26]uint32
+	NumStmt   [26]uint16
+} {
+	Pos: [3 * 26]uint32{
+		20, 22, 0x10002d, // [0]
+		26, 26, 0xe0002, // [1]
+		32, 32, 0xc0002, // [2]
+		22, 24, 0x30010, // [3]
+		26, 28, 0x3000e, // [4]
+		28, 30, 0x30008, // [5]
+		35, 37, 0x100022, // [6]
+		40, 40, 0x130002, // [7]
+		37, 39, 0x30010, // [8]
+		46, 48, 0x120028, // [9]
+		52, 52, 0x2f0002, // [10]
+		61, 61, 0x3f0002, // [11]
+		48, 50, 0x30012, // [12]
+		52, 54, 0x1a002f, // [13]
+		58, 58, 0x160003, // [14]
+		54, 55, 0xc001a, // [15]
+		67, 69, 0x100025, // [16]
+		73, 73, 0x2a0002, // [17]
+		69, 71, 0x30010, // [18]
+		76, 81, 0x10003c, // [19]
+		85, 86, 0x180002, // [20]
+		93, 93, 0x100002, // [21]
+		81, 83, 0x30010, // [22]
+		86, 87, 0x110018, // [23]
+		87, 90, 0x40011, // [24]
+		93, 96, 0x30010, // [25]
+	},
+	NumStmt: [26]uint16{
+		2, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		2, // 6
+		1, // 7
+		1, // 8
+		2, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		2, // 13
+		1, // 14
+		1, // 15
+		2, // 16
+		1, // 17
+		1, // 18
+		4, // 19
+		2, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+		2, // 24
+		2, // 25
+	},
+}
+var _ = _cover_atomic_.LoadUint32

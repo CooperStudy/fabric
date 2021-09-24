@@ -1,0 +1,174 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/cauthdsl/policy.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package cauthdsl; import _cover_atomic_ "sync/atomic"
+
+import (
+	"errors"
+	"fmt"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/policies"
+	"github.com/hyperledger/fabric/msp"
+	cb "github.com/hyperledger/fabric/protos/common"
+	mspp "github.com/hyperledger/fabric/protos/msp"
+)
+
+type Identity interface {
+	// SatisfiesPrincipal checks whether this instance matches
+	// the description supplied in MSPPrincipal. The check may
+	// involve a byte-by-byte comparison (if the principal is
+	// a serialized identity) or may require MSP validation
+	SatisfiesPrincipal(principal *mspp.MSPPrincipal) error
+
+	// GetIdentifier returns the identifier of that identity
+	GetIdentifier() *msp.IdentityIdentifier
+}
+
+type IdentityAndSignature interface {
+	// Identity returns the identity associated to this instance
+	Identity() (Identity, error)
+
+	// Verify returns the validity status of this identity's signature over the message
+	Verify() error
+}
+
+type deserializeAndVerify struct {
+	signedData           *cb.SignedData
+	deserializer         msp.IdentityDeserializer
+	deserializedIdentity msp.Identity
+}
+
+func (d *deserializeAndVerify) Identity() (Identity, error) {_cover_atomic_.AddUint32(&GoCover_2_633764376338343234663637.Count[0], 1);
+	deserializedIdentity, err := d.deserializer.DeserializeIdentity(d.signedData.Identity)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_633764376338343234663637.Count[2], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_633764376338343234663637.Count[1], 1);d.deserializedIdentity = deserializedIdentity
+	return deserializedIdentity, nil
+}
+
+func (d *deserializeAndVerify) Verify() error {_cover_atomic_.AddUint32(&GoCover_2_633764376338343234663637.Count[3], 1);
+	if d.deserializedIdentity == nil {_cover_atomic_.AddUint32(&GoCover_2_633764376338343234663637.Count[5], 1);
+		cauthdslLogger.Panicf("programming error, Identity must be called prior to Verify")
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_633764376338343234663637.Count[4], 1);return d.deserializedIdentity.Verify(d.signedData.Data, d.signedData.Signature)
+}
+
+type provider struct {
+	deserializer msp.IdentityDeserializer
+}
+
+// NewProviderImpl provides a policy generator for cauthdsl type policies
+func NewPolicyProvider(deserializer msp.IdentityDeserializer) policies.Provider {_cover_atomic_.AddUint32(&GoCover_2_633764376338343234663637.Count[6], 1);
+	return &provider{
+		deserializer: deserializer,
+	}
+}
+
+// NewPolicy creates a new policy based on the policy bytes
+func (pr *provider) NewPolicy(data []byte) (policies.Policy, proto.Message, error) {_cover_atomic_.AddUint32(&GoCover_2_633764376338343234663637.Count[7], 1);
+	sigPolicy := &cb.SignaturePolicyEnvelope{}
+	if err := proto.Unmarshal(data, sigPolicy); err != nil {_cover_atomic_.AddUint32(&GoCover_2_633764376338343234663637.Count[11], 1);
+		return nil, nil, fmt.Errorf("Error unmarshaling to SignaturePolicy: %s", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_633764376338343234663637.Count[8], 1);if sigPolicy.Version != 0 {_cover_atomic_.AddUint32(&GoCover_2_633764376338343234663637.Count[12], 1);
+		return nil, nil, fmt.Errorf("This evaluator only understands messages of version 0, but version was %d", sigPolicy.Version)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_633764376338343234663637.Count[9], 1);compiled, err := compile(sigPolicy.Rule, sigPolicy.Identities, pr.deserializer)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_633764376338343234663637.Count[13], 1);
+		return nil, nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_633764376338343234663637.Count[10], 1);return &policy{
+		evaluator:    compiled,
+		deserializer: pr.deserializer,
+	}, sigPolicy, nil
+
+}
+
+type policy struct {
+	evaluator    func([]IdentityAndSignature, []bool) bool
+	deserializer msp.IdentityDeserializer
+}
+
+// Evaluate takes a set of SignedData and evaluates whether this set of signatures satisfies the policy
+func (p *policy) Evaluate(signatureSet []*cb.SignedData) error {_cover_atomic_.AddUint32(&GoCover_2_633764376338343234663637.Count[14], 1);
+	if p == nil {_cover_atomic_.AddUint32(&GoCover_2_633764376338343234663637.Count[18], 1);
+		return fmt.Errorf("No such policy")
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_633764376338343234663637.Count[15], 1);idAndS := make([]IdentityAndSignature, len(signatureSet))
+	for i, sd := range signatureSet {_cover_atomic_.AddUint32(&GoCover_2_633764376338343234663637.Count[19], 1);
+		idAndS[i] = &deserializeAndVerify{
+			signedData:   sd,
+			deserializer: p.deserializer,
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_633764376338343234663637.Count[16], 1);ok := p.evaluator(deduplicate(idAndS), make([]bool, len(signatureSet)))
+	if !ok {_cover_atomic_.AddUint32(&GoCover_2_633764376338343234663637.Count[20], 1);
+		return errors.New("signature set did not satisfy policy")
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_633764376338343234663637.Count[17], 1);return nil
+}
+
+var GoCover_2_633764376338343234663637 = struct {
+	Count     [21]uint32
+	Pos       [3 * 21]uint32
+	NumStmt   [21]uint16
+} {
+	Pos: [3 * 21]uint32{
+		45, 47, 0x10003d, // [0]
+		51, 52, 0x220002, // [1]
+		47, 49, 0x30010, // [2]
+		55, 56, 0x23002f, // [3]
+		59, 59, 0x510002, // [4]
+		56, 58, 0x30023, // [5]
+		67, 71, 0x20051, // [6]
+		74, 76, 0x390054, // [7]
+		80, 80, 0x1c0002, // [8]
+		84, 85, 0x100002, // [9]
+		89, 92, 0x130002, // [10]
+		76, 78, 0x30039, // [11]
+		80, 82, 0x3001c, // [12]
+		85, 87, 0x30010, // [13]
+		102, 103, 0xe0040, // [14]
+		106, 107, 0x220002, // [15]
+		114, 115, 0x90002, // [16]
+		118, 118, 0xc0002, // [17]
+		103, 105, 0x3000e, // [18]
+		107, 112, 0x30022, // [19]
+		115, 117, 0x30009, // [20]
+	},
+	NumStmt: [21]uint16{
+		2, // 0
+		2, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		2, // 7
+		1, // 8
+		2, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		2, // 15
+		2, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		1, // 20
+	},
+}
+var _ = _cover_atomic_.LoadUint32

@@ -1,0 +1,421 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/tools/cryptogen/msp/generator.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+package msp; import _cover_atomic_ "sync/atomic"
+
+import (
+	"crypto/x509"
+	"encoding/hex"
+	"encoding/pem"
+	"os"
+	"path/filepath"
+
+	"github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric/bccsp/factory"
+	"github.com/hyperledger/fabric/common/tools/cryptogen/ca"
+	"github.com/hyperledger/fabric/common/tools/cryptogen/csp"
+	fabricmsp "github.com/hyperledger/fabric/msp"
+	"gopkg.in/yaml.v2"
+)
+
+const (
+	CLIENT = iota
+	ORDERER
+	PEER
+)
+
+const (
+	CLIENTOU = "client"
+	PEEROU   = "peer"
+)
+
+var nodeOUMap = map[int]string{
+	CLIENT: CLIENTOU,
+	PEER:   PEEROU,
+}
+
+func GenerateLocalMSP(baseDir, name string, sans []string, signCA *ca.CA,
+	tlsCA *ca.CA, nodeType int, nodeOUs bool) error {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[0], 1);
+
+	// create folder structure
+	mspDir := filepath.Join(baseDir, "msp")
+	tlsDir := filepath.Join(baseDir, "tls")
+
+	err := createFolderStructure(mspDir, true)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[18], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[1], 1);err = os.MkdirAll(tlsDir, 0755)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[19], 1);
+		return err
+	}
+
+	/*
+		Create the MSP identity artifacts
+	*/
+	// get keystore path
+	_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[2], 1);keystore := filepath.Join(mspDir, "keystore")
+
+	// generate private key
+	priv, _, err := csp.GeneratePrivateKey(keystore)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[20], 1);
+		return err
+	}
+
+	// get public key
+	_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[3], 1);ecPubKey, err := csp.GetECPublicKey(priv)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[21], 1);
+		return err
+	}
+	// generate X509 certificate using signing CA
+	_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[4], 1);var ous []string
+	if nodeOUs {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[22], 1);
+		ous = []string{nodeOUMap[nodeType]}
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[5], 1);cert, err := signCA.SignCertificate(filepath.Join(mspDir, "signcerts"),
+		name, ous, nil, ecPubKey, x509.KeyUsageDigitalSignature, []x509.ExtKeyUsage{})
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[23], 1);
+		return err
+	}
+
+	// write artifacts to MSP folders
+
+	// the signing CA certificate goes into cacerts
+	_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[6], 1);err = x509Export(filepath.Join(mspDir, "cacerts", x509Filename(signCA.Name)), signCA.SignCert)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[24], 1);
+		return err
+	}
+	// the TLS CA certificate goes into tlscacerts
+	_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[7], 1);err = x509Export(filepath.Join(mspDir, "tlscacerts", x509Filename(tlsCA.Name)), tlsCA.SignCert)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[25], 1);
+		return err
+	}
+
+	// generate config.yaml if required
+	_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[8], 1);if nodeOUs && nodeType == PEER {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[26], 1);
+		exportConfig(mspDir, "cacerts/"+x509Filename(signCA.Name), true)
+	}
+
+	// the signing identity goes into admincerts.
+	// This means that the signing identity
+	// of this MSP is also an admin of this MSP
+	// NOTE: the admincerts folder is going to be
+	// cleared up anyway by copyAdminCert, but
+	// we leave a valid admin for now for the sake
+	// of unit tests
+	_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[9], 1);err = x509Export(filepath.Join(mspDir, "admincerts", x509Filename(name)), cert)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[27], 1);
+		return err
+	}
+
+	/*
+		Generate the TLS artifacts in the TLS folder
+	*/
+
+	// generate private key
+	_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[10], 1);tlsPrivKey, _, err := csp.GeneratePrivateKey(tlsDir)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[28], 1);
+		return err
+	}
+	// get public key
+	_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[11], 1);tlsPubKey, err := csp.GetECPublicKey(tlsPrivKey)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[29], 1);
+		return err
+	}
+	// generate X509 certificate using TLS CA
+	_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[12], 1);_, err = tlsCA.SignCertificate(filepath.Join(tlsDir),
+		name, nil, sans, tlsPubKey, x509.KeyUsageDigitalSignature|x509.KeyUsageKeyEncipherment,
+		[]x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth})
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[30], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[13], 1);err = x509Export(filepath.Join(tlsDir, "ca.crt"), tlsCA.SignCert)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[31], 1);
+		return err
+	}
+
+	// rename the generated TLS X509 cert
+	_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[14], 1);tlsFilePrefix := "server"
+	if nodeType == CLIENT {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[32], 1);
+		tlsFilePrefix = "client"
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[15], 1);err = os.Rename(filepath.Join(tlsDir, x509Filename(name)),
+		filepath.Join(tlsDir, tlsFilePrefix+".crt"))
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[33], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[16], 1);err = keyExport(tlsDir, filepath.Join(tlsDir, tlsFilePrefix+".key"), tlsPrivKey)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[34], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[17], 1);return nil
+}
+
+func GenerateVerifyingMSP(baseDir string, signCA *ca.CA, tlsCA *ca.CA, nodeOUs bool) error {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[35], 1);
+
+	// create folder structure and write artifacts to proper locations
+	err := createFolderStructure(baseDir, false)
+	if err == nil {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[40], 1);
+		// the signing CA certificate goes into cacerts
+		err = x509Export(filepath.Join(baseDir, "cacerts", x509Filename(signCA.Name)), signCA.SignCert)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[42], 1);
+			return err
+		}
+		// the TLS CA certificate goes into tlscacerts
+		_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[41], 1);err = x509Export(filepath.Join(baseDir, "tlscacerts", x509Filename(tlsCA.Name)), tlsCA.SignCert)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[43], 1);
+			return err
+		}
+	}
+
+	// generate config.yaml if required
+	_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[36], 1);if nodeOUs {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[44], 1);
+		exportConfig(baseDir, "cacerts/"+x509Filename(signCA.Name), true)
+	}
+
+	// create a throwaway cert to act as an admin cert
+	// NOTE: the admincerts folder is going to be
+	// cleared up anyway by copyAdminCert, but
+	// we leave a valid admin for now for the sake
+	// of unit tests
+	_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[37], 1);factory.InitFactories(nil)
+	bcsp := factory.GetDefault()
+	priv, err := bcsp.KeyGen(&bccsp.ECDSAP256KeyGenOpts{Temporary: true})
+	ecPubKey, err := csp.GetECPublicKey(priv)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[45], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[38], 1);_, err = signCA.SignCertificate(filepath.Join(baseDir, "admincerts"), signCA.Name,
+		nil, nil, ecPubKey, x509.KeyUsageDigitalSignature, []x509.ExtKeyUsage{})
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[46], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[39], 1);return nil
+}
+
+func createFolderStructure(rootDir string, local bool) error {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[47], 1);
+
+	var folders []string
+	// create admincerts, cacerts, keystore and signcerts folders
+	folders = []string{
+		filepath.Join(rootDir, "admincerts"),
+		filepath.Join(rootDir, "cacerts"),
+		filepath.Join(rootDir, "tlscacerts"),
+	}
+	if local {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[50], 1);
+		folders = append(folders, filepath.Join(rootDir, "keystore"),
+			filepath.Join(rootDir, "signcerts"))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[48], 1);for _, folder := range folders {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[51], 1);
+		err := os.MkdirAll(folder, 0755)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[52], 1);
+			return err
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[49], 1);return nil
+}
+
+func x509Filename(name string) string {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[53], 1);
+	return name + "-cert.pem"
+}
+
+func x509Export(path string, cert *x509.Certificate) error {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[54], 1);
+	return pemExport(path, "CERTIFICATE", cert.Raw)
+}
+
+func keyExport(keystore, output string, key bccsp.Key) error {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[55], 1);
+	id := hex.EncodeToString(key.SKI())
+
+	return os.Rename(filepath.Join(keystore, id+"_sk"), output)
+}
+
+func pemExport(path, pemType string, bytes []byte) error {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[56], 1);
+	//write pem out to file
+	file, err := os.Create(path)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[58], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[57], 1);defer file.Close()
+
+	return pem.Encode(file, &pem.Block{Type: pemType, Bytes: bytes})
+}
+
+func exportConfig(mspDir, caFile string, enable bool) error {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[59], 1);
+	var config = &fabricmsp.Configuration{
+		NodeOUs: &fabricmsp.NodeOUs{
+			Enable: enable,
+			ClientOUIdentifier: &fabricmsp.OrganizationalUnitIdentifiersConfiguration{
+				Certificate:                  caFile,
+				OrganizationalUnitIdentifier: CLIENTOU,
+			},
+			PeerOUIdentifier: &fabricmsp.OrganizationalUnitIdentifiersConfiguration{
+				Certificate:                  caFile,
+				OrganizationalUnitIdentifier: PEEROU,
+			},
+		},
+	}
+
+	configBytes, err := yaml.Marshal(config)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[62], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[60], 1);file, err := os.Create(filepath.Join(mspDir, "config.yaml"))
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[63], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396532303063373830383033.Count[61], 1);defer file.Close()
+	_, err = file.WriteString(string(configBytes))
+
+	return err
+}
+
+var GoCover_0_396532303063373830383033 = struct {
+	Count     [64]uint32
+	Pos       [3 * 64]uint32
+	NumStmt   [64]uint16
+} {
+	Pos: [3 * 64]uint32{
+		40, 47, 0x100032, // [0]
+		51, 52, 0x100002, // [1]
+		60, 64, 0x100002, // [2]
+		69, 70, 0x100002, // [3]
+		74, 75, 0xd0002, // [4]
+		78, 80, 0x100002, // [5]
+		87, 88, 0x100002, // [6]
+		92, 93, 0x100002, // [7]
+		98, 98, 0x210002, // [8]
+		109, 110, 0x100002, // [9]
+		119, 120, 0x100002, // [10]
+		124, 125, 0x100002, // [11]
+		129, 132, 0x100002, // [12]
+		135, 136, 0x100002, // [13]
+		141, 142, 0x180002, // [14]
+		145, 147, 0x100002, // [15]
+		151, 152, 0x100002, // [16]
+		156, 156, 0xc0002, // [17]
+		47, 49, 0x30010, // [18]
+		52, 54, 0x30010, // [19]
+		64, 66, 0x30010, // [20]
+		70, 72, 0x30010, // [21]
+		75, 77, 0x3000d, // [22]
+		80, 82, 0x30010, // [23]
+		88, 90, 0x30010, // [24]
+		93, 95, 0x30010, // [25]
+		98, 100, 0x30021, // [26]
+		110, 112, 0x30010, // [27]
+		120, 122, 0x30010, // [28]
+		125, 127, 0x30010, // [29]
+		132, 134, 0x30010, // [30]
+		136, 138, 0x30010, // [31]
+		142, 144, 0x30018, // [32]
+		147, 149, 0x30010, // [33]
+		152, 154, 0x30010, // [34]
+		159, 163, 0x10005c, // [35]
+		177, 177, 0xd0002, // [36]
+		186, 190, 0x100002, // [37]
+		193, 195, 0x100002, // [38]
+		199, 199, 0xc0002, // [39]
+		163, 166, 0x110010, // [40]
+		170, 171, 0x110003, // [41]
+		166, 168, 0x40011, // [42]
+		171, 173, 0x40011, // [43]
+		177, 179, 0x3000d, // [44]
+		190, 192, 0x30010, // [45]
+		195, 197, 0x30010, // [46]
+		202, 211, 0xb003e, // [47]
+		216, 216, 0x210002, // [48]
+		223, 223, 0xc0002, // [49]
+		211, 214, 0x3000b, // [50]
+		216, 218, 0x110021, // [51]
+		218, 220, 0x40011, // [52]
+		226, 228, 0x20027, // [53]
+		230, 232, 0x2003c, // [54]
+		234, 238, 0x2003e, // [55]
+		240, 243, 0x10003a, // [56]
+		246, 248, 0x420002, // [57]
+		243, 245, 0x30010, // [58]
+		251, 267, 0x10003d, // [59]
+		271, 272, 0x100002, // [60]
+		276, 279, 0xc0002, // [61]
+		267, 269, 0x30010, // [62]
+		272, 274, 0x30010, // [63]
+	},
+	NumStmt: [64]uint16{
+		4, // 0
+		2, // 1
+		3, // 2
+		2, // 3
+		2, // 4
+		2, // 5
+		2, // 6
+		2, // 7
+		1, // 8
+		2, // 9
+		2, // 10
+		2, // 11
+		2, // 12
+		2, // 13
+		2, // 14
+		2, // 15
+		2, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+		1, // 24
+		1, // 25
+		1, // 26
+		1, // 27
+		1, // 28
+		1, // 29
+		1, // 30
+		1, // 31
+		1, // 32
+		1, // 33
+		1, // 34
+		2, // 35
+		1, // 36
+		5, // 37
+		2, // 38
+		1, // 39
+		2, // 40
+		2, // 41
+		1, // 42
+		1, // 43
+		1, // 44
+		1, // 45
+		1, // 46
+		3, // 47
+		1, // 48
+		1, // 49
+		1, // 50
+		2, // 51
+		1, // 52
+		1, // 53
+		1, // 54
+		2, // 55
+		2, // 56
+		2, // 57
+		1, // 58
+		3, // 59
+		2, // 60
+		3, // 61
+		1, // 62
+		1, // 63
+	},
+}
+var _ = _cover_atomic_.LoadUint32

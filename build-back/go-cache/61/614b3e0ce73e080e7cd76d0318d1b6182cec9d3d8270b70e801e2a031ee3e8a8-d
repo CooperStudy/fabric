@@ -1,0 +1,221 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/chaincode/lifecycle/scc.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package lifecycle; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+
+	"github.com/hyperledger/fabric/core/chaincode/shim"
+	pb "github.com/hyperledger/fabric/protos/peer"
+	lb "github.com/hyperledger/fabric/protos/peer/lifecycle"
+	"github.com/pkg/errors"
+)
+
+const (
+	//InstalledChaincodeFuncName is the chaincode function name used to install a chaincode
+	InstallChaincodeFuncName = "InstallChaincode"
+
+	// QueryInstalledChaincodeFuncName is the chaincode function name used to query an installed chaincode
+	QueryInstalledChaincodeFuncName = "QueryInstalledChaincode"
+)
+
+// SCCFunctions provides a backing implementation with concrete arguments
+// for each of the SCC functions
+type SCCFunctions interface {
+	// InstallChaincode persists a chaincode definition to disk
+	InstallChaincode(name, version string, chaincodePackage []byte) (hash []byte, err error)
+
+	// QueryInstalledChaincode returns the hash for a given name and version of an installed chaincode
+	QueryInstalledChaincode(name, version string) (hash []byte, err error)
+}
+
+// SCC implements the required methods to satisfy the chaincode interface.
+// It routes the invocation calls to the backing implementations.
+type SCC struct {
+	Protobuf  Protobuf
+	Functions SCCFunctions
+}
+
+// Name returns "+lifecycle"
+func (scc *SCC) Name() string {_cover_atomic_.AddUint32(&GoCover_2_653762643837333931396366.Count[0], 1);
+	return "+lifecycle"
+}
+
+// Path returns "github.com/hyperledger/fabric/core/chaincode/lifecycle"
+func (scc *SCC) Path() string {_cover_atomic_.AddUint32(&GoCover_2_653762643837333931396366.Count[1], 1);
+	return "github.com/hyperledger/fabric/core/chaincode/lifecycle"
+}
+
+// InitArgs returns nil
+func (scc *SCC) InitArgs() [][]byte {_cover_atomic_.AddUint32(&GoCover_2_653762643837333931396366.Count[2], 1);
+	return nil
+}
+
+// Chaincode returns a reference to itself
+func (scc *SCC) Chaincode() shim.Chaincode {_cover_atomic_.AddUint32(&GoCover_2_653762643837333931396366.Count[3], 1);
+	return scc
+}
+
+// InvokableExternal returns true
+func (scc *SCC) InvokableExternal() bool {_cover_atomic_.AddUint32(&GoCover_2_653762643837333931396366.Count[4], 1);
+	return true
+}
+
+// InvokableCC2CC returns true
+func (scc *SCC) InvokableCC2CC() bool {_cover_atomic_.AddUint32(&GoCover_2_653762643837333931396366.Count[5], 1);
+	return true
+}
+
+// Enabled returns true
+func (scc *SCC) Enabled() bool {_cover_atomic_.AddUint32(&GoCover_2_653762643837333931396366.Count[6], 1);
+	return true
+}
+
+// Init is mostly useless for system chaincodes and always returns success
+func (scc *SCC) Init(stub shim.ChaincodeStubInterface) pb.Response {_cover_atomic_.AddUint32(&GoCover_2_653762643837333931396366.Count[7], 1);
+	return shim.Success(nil)
+}
+
+// Invoke takes chaincode invocation arguments and routes them to the correct
+// underlying lifecycle operation.  All functions take a single argument of
+// type marshaled lb.<FunctionName>Args and return a marshaled lb.<FunctionName>Result
+func (scc *SCC) Invoke(stub shim.ChaincodeStubInterface) pb.Response {_cover_atomic_.AddUint32(&GoCover_2_653762643837333931396366.Count[8], 1);
+	args := stub.GetArgs()
+	if len(args) == 0 {_cover_atomic_.AddUint32(&GoCover_2_653762643837333931396366.Count[11], 1);
+		return shim.Error("lifecycle scc must be invoked with arguments")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_653762643837333931396366.Count[9], 1);if len(args) != 2 {_cover_atomic_.AddUint32(&GoCover_2_653762643837333931396366.Count[12], 1);
+		return shim.Error(fmt.Sprintf("lifecycle scc operations require exactly two arguments but received %d", len(args)))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_653762643837333931396366.Count[10], 1);funcName := args[0]
+	inputBytes := args[1]
+
+	// TODO add ACLs
+
+	switch string(funcName) {
+	// Each lifecycle SCC function gets a case here
+	case InstallChaincodeFuncName:_cover_atomic_.AddUint32(&GoCover_2_653762643837333931396366.Count[13], 1);
+		input := &lb.InstallChaincodeArgs{}
+		err := scc.Protobuf.Unmarshal(inputBytes, input)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_653762643837333931396366.Count[22], 1);
+			err = errors.WithMessage(err, "failed to decode input arg to InstallChaincode")
+			return shim.Error(err.Error())
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_2_653762643837333931396366.Count[14], 1);hash, err := scc.Functions.InstallChaincode(input.Name, input.Version, input.ChaincodeInstallPackage)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_653762643837333931396366.Count[23], 1);
+			err = errors.WithMessage(err, "failed to invoke backing InstallChaincode")
+			return shim.Error(err.Error())
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_2_653762643837333931396366.Count[15], 1);resultBytes, err := scc.Protobuf.Marshal(&lb.InstallChaincodeResult{
+			Hash: hash,
+		})
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_653762643837333931396366.Count[24], 1);
+			err = errors.WithMessage(err, "failed to marshal result")
+			return shim.Error(err.Error())
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_2_653762643837333931396366.Count[16], 1);return shim.Success(resultBytes)
+	case QueryInstalledChaincodeFuncName:_cover_atomic_.AddUint32(&GoCover_2_653762643837333931396366.Count[17], 1);
+		input := &lb.QueryInstalledChaincodeArgs{}
+		err := scc.Protobuf.Unmarshal(inputBytes, input)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_653762643837333931396366.Count[25], 1);
+			err = errors.WithMessage(err, "failed to decode input arg to QueryInstalledChaincode")
+			return shim.Error(err.Error())
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_2_653762643837333931396366.Count[18], 1);hash, err := scc.Functions.QueryInstalledChaincode(input.Name, input.Version)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_653762643837333931396366.Count[26], 1);
+			err = errors.WithMessage(err, "failed to invoke backing QueryInstalledChaincode")
+			return shim.Error(err.Error())
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_2_653762643837333931396366.Count[19], 1);resultBytes, err := scc.Protobuf.Marshal(&lb.QueryInstalledChaincodeResult{
+			Hash: hash,
+		})
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_653762643837333931396366.Count[27], 1);
+			err = errors.WithMessage(err, "failed to marshal result")
+			return shim.Error(err.Error())
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_2_653762643837333931396366.Count[20], 1);return shim.Success(resultBytes)
+	default:_cover_atomic_.AddUint32(&GoCover_2_653762643837333931396366.Count[21], 1);
+		return shim.Error(fmt.Sprintf("unknown lifecycle function: %s", funcName))
+	}
+}
+
+var GoCover_2_653762643837333931396366 = struct {
+	Count     [28]uint32
+	Pos       [3 * 28]uint32
+	NumStmt   [28]uint16
+} {
+	Pos: [3 * 28]uint32{
+		44, 46, 0x2001f, // [0]
+		49, 51, 0x2001f, // [1]
+		54, 56, 0x20025, // [2]
+		59, 61, 0x2002c, // [3]
+		64, 66, 0x2002a, // [4]
+		69, 71, 0x20027, // [5]
+		74, 76, 0x20020, // [6]
+		79, 81, 0x20044, // [7]
+		86, 88, 0x140046, // [8]
+		92, 92, 0x140002, // [9]
+		96, 101, 0x1a0002, // [10]
+		88, 90, 0x30014, // [11]
+		92, 94, 0x30014, // [12]
+		103, 106, 0x110020, // [13]
+		111, 112, 0x110003, // [14]
+		117, 120, 0x110003, // [15]
+		125, 125, 0x230003, // [16]
+		126, 129, 0x110027, // [17]
+		134, 135, 0x110003, // [18]
+		140, 143, 0x110003, // [19]
+		148, 148, 0x230003, // [20]
+		149, 150, 0x4d000a, // [21]
+		106, 109, 0x40011, // [22]
+		112, 115, 0x40011, // [23]
+		120, 123, 0x40011, // [24]
+		129, 132, 0x40011, // [25]
+		135, 138, 0x40011, // [26]
+		143, 146, 0x40011, // [27]
+	},
+	NumStmt: [28]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		2, // 8
+		1, // 9
+		3, // 10
+		1, // 11
+		1, // 12
+		3, // 13
+		2, // 14
+		2, // 15
+		1, // 16
+		3, // 17
+		2, // 18
+		2, // 19
+		1, // 20
+		1, // 21
+		2, // 22
+		2, // 23
+		2, // 24
+		2, // 25
+		2, // 26
+		2, // 27
+	},
+}
+var _ = _cover_atomic_.LoadUint32

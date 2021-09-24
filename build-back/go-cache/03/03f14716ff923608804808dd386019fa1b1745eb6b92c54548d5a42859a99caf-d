@@ -1,0 +1,52 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/bccsp/factory/opts.go:1
+/*
+Copyright IBM Corp. 2016 All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+		 http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+package factory; import _cover_atomic_ "sync/atomic"
+
+// GetDefaultOpts offers a default implementation for Opts
+// returns a new instance every time
+func GetDefaultOpts() *FactoryOpts {_cover_atomic_.AddUint32(&GoCover_2_613266356131373465643033.Count[0], 1);
+	return &FactoryOpts{
+		ProviderName: "SW",
+		SwOpts: &SwOpts{
+			HashFamily: "SHA2",
+			SecLevel:   256,
+
+			Ephemeral: true,
+		},
+	}
+}
+
+// FactoryName returns the name of the provider
+func (o *FactoryOpts) FactoryName() string {_cover_atomic_.AddUint32(&GoCover_2_613266356131373465643033.Count[1], 1);
+	return o.ProviderName
+}
+
+var GoCover_2_613266356131373465643033 = struct {
+	Count     [2]uint32
+	Pos       [3 * 2]uint32
+	NumStmt   [2]uint16
+} {
+	Pos: [3 * 2]uint32{
+		20, 30, 0x20024, // [0]
+		33, 35, 0x2002c, // [1]
+	},
+	NumStmt: [2]uint16{
+		1, // 0
+		1, // 1
+	},
+}
+var _ = _cover_atomic_.LoadUint32

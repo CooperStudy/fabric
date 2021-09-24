@@ -1,0 +1,2 @@
+chaincode.cover.go
+./chaincode_test.go

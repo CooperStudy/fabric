@@ -1,0 +1,158 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/bccsp/factory/nopkcs11.go:1
+// +build !pkcs11
+
+/*
+Copyright IBM Corp. 2017 All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+		 http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+package factory; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric/bccsp"
+	"github.com/pkg/errors"
+)
+
+// FactoryOpts holds configuration information used to initialize factory implementations
+type FactoryOpts struct {
+	ProviderName string      `mapstructure:"default" json:"default" yaml:"Default"`
+	SwOpts       *SwOpts     `mapstructure:"SW,omitempty" json:"SW,omitempty" yaml:"SwOpts"`
+	PluginOpts   *PluginOpts `mapstructure:"PLUGIN,omitempty" json:"PLUGIN,omitempty" yaml:"PluginOpts"`
+}
+
+// InitFactories must be called before using factory interfaces
+// It is acceptable to call with config = nil, in which case
+// some defaults will get used
+// Error is returned only if defaultBCCSP cannot be found
+func InitFactories(config *FactoryOpts) error {_cover_atomic_.AddUint32(&GoCover_1_613266356131373465643033.Count[0], 1);
+	factoriesInitOnce.Do(func() {_cover_atomic_.AddUint32(&GoCover_1_613266356131373465643033.Count[2], 1);
+		// Take some precautions on default opts
+		if config == nil {_cover_atomic_.AddUint32(&GoCover_1_613266356131373465643033.Count[8], 1);
+			config = GetDefaultOpts()
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_613266356131373465643033.Count[3], 1);if config.ProviderName == "" {_cover_atomic_.AddUint32(&GoCover_1_613266356131373465643033.Count[9], 1);
+			config.ProviderName = "SW"
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_613266356131373465643033.Count[4], 1);if config.SwOpts == nil {_cover_atomic_.AddUint32(&GoCover_1_613266356131373465643033.Count[10], 1);
+			config.SwOpts = GetDefaultOpts().SwOpts
+		}
+
+		// Initialize factories map
+		_cover_atomic_.AddUint32(&GoCover_1_613266356131373465643033.Count[5], 1);bccspMap = make(map[string]bccsp.BCCSP)
+
+		// Software-Based BCCSP
+		if config.SwOpts != nil {_cover_atomic_.AddUint32(&GoCover_1_613266356131373465643033.Count[11], 1);
+			f := &SWFactory{}
+			err := initBCCSP(f, config)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_1_613266356131373465643033.Count[12], 1);
+				factoriesInitError = errors.Wrapf(err, "Failed initializing BCCSP.")
+			}
+		}
+
+		// BCCSP Plugin
+		_cover_atomic_.AddUint32(&GoCover_1_613266356131373465643033.Count[6], 1);if config.PluginOpts != nil {_cover_atomic_.AddUint32(&GoCover_1_613266356131373465643033.Count[13], 1);
+			f := &PluginFactory{}
+			err := initBCCSP(f, config)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_1_613266356131373465643033.Count[14], 1);
+				factoriesInitError = errors.Wrapf(err, "Failed initializing PKCS11.BCCSP %s", factoriesInitError)
+			}
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_613266356131373465643033.Count[7], 1);var ok bool
+		defaultBCCSP, ok = bccspMap[config.ProviderName]
+		if !ok {_cover_atomic_.AddUint32(&GoCover_1_613266356131373465643033.Count[15], 1);
+			factoriesInitError = errors.Errorf("%s\nCould not find default `%s` BCCSP", factoriesInitError, config.ProviderName)
+		}
+	})
+
+	_cover_atomic_.AddUint32(&GoCover_1_613266356131373465643033.Count[1], 1);return factoriesInitError
+}
+
+// GetBCCSPFromOpts returns a BCCSP created according to the options passed in input.
+func GetBCCSPFromOpts(config *FactoryOpts) (bccsp.BCCSP, error) {_cover_atomic_.AddUint32(&GoCover_1_613266356131373465643033.Count[16], 1);
+	var f BCCSPFactory
+	switch config.ProviderName {
+	case "SW":_cover_atomic_.AddUint32(&GoCover_1_613266356131373465643033.Count[19], 1);
+		f = &SWFactory{}
+	case "PLUGIN":_cover_atomic_.AddUint32(&GoCover_1_613266356131373465643033.Count[20], 1);
+		f = &PluginFactory{}
+	default:_cover_atomic_.AddUint32(&GoCover_1_613266356131373465643033.Count[21], 1);
+		return nil, errors.Errorf("Could not find BCCSP, no '%s' provider", config.ProviderName)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_613266356131373465643033.Count[17], 1);csp, err := f.Get(config)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_613266356131373465643033.Count[22], 1);
+		return nil, errors.Wrapf(err, "Could not initialize BCCSP %s", f.Name())
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_613266356131373465643033.Count[18], 1);return csp, nil
+}
+
+var GoCover_1_613266356131373465643033 = struct {
+	Count     [23]uint32
+	Pos       [3 * 23]uint32
+	NumStmt   [23]uint16
+} {
+	Pos: [3 * 23]uint32{
+		36, 37, 0x1e002f, // [0]
+		79, 79, 0x1b0002, // [1]
+		37, 39, 0x14001e, // [2]
+		43, 43, 0x200003, // [3]
+		47, 47, 0x1b0003, // [4]
+		52, 55, 0x1b0003, // [5]
+		64, 64, 0x1f0003, // [6]
+		72, 74, 0xa0003, // [7]
+		39, 41, 0x40014, // [8]
+		43, 45, 0x40020, // [9]
+		47, 49, 0x4001b, // [10]
+		55, 58, 0x12001b, // [11]
+		58, 60, 0x50012, // [12]
+		64, 67, 0x12001f, // [13]
+		67, 69, 0x50012, // [14]
+		74, 76, 0x4000a, // [15]
+		83, 85, 0x1d0041, // [16]
+		94, 95, 0x100002, // [17]
+		98, 98, 0x110002, // [18]
+		86, 87, 0x13000c, // [19]
+		88, 89, 0x170010, // [20]
+		90, 91, 0x5b000a, // [21]
+		95, 97, 0x30010, // [22]
+	},
+	NumStmt: [23]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		2, // 5
+		1, // 6
+		3, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		3, // 11
+		1, // 12
+		3, // 13
+		1, // 14
+		1, // 15
+		2, // 16
+		2, // 17
+		1, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		1, // 22
+	},
+}
+var _ = _cover_atomic_.LoadUint32

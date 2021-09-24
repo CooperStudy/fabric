@@ -1,0 +1,6 @@
+query_results_helper.cover.go
+rwset_builder.cover.go
+rwset_proto_util.cover.go
+./query_results_helper_test.go
+./rwset_builder_test.go
+./rwset_proto_util_test.go

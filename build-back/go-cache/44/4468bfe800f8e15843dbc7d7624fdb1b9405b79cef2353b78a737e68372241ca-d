@@ -1,0 +1,85 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/peer/mock_helpers.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package peer; import _cover_atomic_ "sync/atomic"
+
+import (
+	configtxtest "github.com/hyperledger/fabric/common/configtx/test"
+	mockchannelconfig "github.com/hyperledger/fabric/common/mocks/config"
+	mockconfigtx "github.com/hyperledger/fabric/common/mocks/configtx"
+	mockpolicies "github.com/hyperledger/fabric/common/mocks/policies"
+	"github.com/hyperledger/fabric/core/ledger"
+	"github.com/hyperledger/fabric/core/ledger/ledgermgmt"
+)
+
+//MockInitialize resets chains for test env
+func MockInitialize() {_cover_atomic_.AddUint32(&GoCover_4_323265356137393664323638.Count[0], 1);
+	ledgermgmt.InitializeTestEnvWithInitializer(
+		&ledgermgmt.Initializer{
+			CustomTxProcessors: ConfigTxProcessors,
+		},
+	)
+	chains.list = make(map[string]*chain)
+	chainInitializer = func(string) {_cover_atomic_.AddUint32(&GoCover_4_323265356137393664323638.Count[1], 1); return }
+}
+
+// MockCreateChain used for creating a ledger for a chain for tests
+// without having to join
+func MockCreateChain(cid string) error {_cover_atomic_.AddUint32(&GoCover_4_323265356137393664323638.Count[2], 1);
+	var ledger ledger.PeerLedger
+	var err error
+
+	if ledger = GetLedger(cid); ledger == nil {_cover_atomic_.AddUint32(&GoCover_4_323265356137393664323638.Count[4], 1);
+		gb, _ := configtxtest.MakeGenesisBlock(cid)
+		if ledger, err = ledgermgmt.CreateLedger(gb); err != nil {_cover_atomic_.AddUint32(&GoCover_4_323265356137393664323638.Count[5], 1);
+			return err
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_323265356137393664323638.Count[3], 1);chains.Lock()
+	defer chains.Unlock()
+
+	chains.list[cid] = &chain{
+		cs: &chainSupport{
+			Resources: &mockchannelconfig.Resources{
+				PolicyManagerVal: &mockpolicies.Manager{
+					Policy: &mockpolicies.Policy{},
+				},
+				ConfigtxValidatorVal: &mockconfigtx.Validator{},
+				ApplicationConfigVal: &mockchannelconfig.MockApplication{CapabilitiesRv: &mockchannelconfig.MockApplicationCapabilities{}},
+			},
+
+			ledger: ledger,
+		},
+	}
+
+	return nil
+}
+
+var GoCover_4_323265356137393664323638 = struct {
+	Count     [6]uint32
+	Pos       [3 * 6]uint32
+	NumStmt   [6]uint16
+} {
+	Pos: [3 * 6]uint32{
+		19, 26, 0x220017, // [0]
+		26, 26, 0x2c0022, // [1]
+		31, 35, 0x2c0028, // [2]
+		42, 59, 0xc0002, // [3]
+		35, 37, 0x3c002c, // [4]
+		37, 39, 0x4003c, // [5]
+	},
+	NumStmt: [6]uint16{
+		3, // 0
+		1, // 1
+		3, // 2
+		4, // 3
+		2, // 4
+		1, // 5
+	},
+}
+var _ = _cover_atomic_.LoadUint32

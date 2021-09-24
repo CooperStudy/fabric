@@ -1,0 +1,240 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/bccsp/idemix/bccsp.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+package idemix; import _cover_atomic_ "sync/atomic"
+
+import (
+	"reflect"
+
+	"github.com/hyperledger/fabric/bccsp/idemix/bridge"
+
+	"github.com/hyperledger/fabric/bccsp/idemix/handlers"
+
+	"github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric/bccsp/sw"
+	"github.com/pkg/errors"
+)
+
+type csp struct {
+	*sw.CSP
+}
+
+func New(keyStore bccsp.KeyStore) (*csp, error) {_cover_atomic_.AddUint32(&GoCover_0_643962636231383435633734.Count[0], 1);
+	base, err := sw.New(keyStore)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_643962636231383435633734.Count[2], 1);
+		return nil, errors.Wrap(err, "failed instantiating base bccsp")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_643962636231383435633734.Count[1], 1);csp := &csp{CSP: base}
+
+	// key generators
+	base.AddWrapper(reflect.TypeOf(&bccsp.IdemixIssuerKeyGenOpts{}), &handlers.IssuerKeyGen{Issuer: &bridge.Issuer{NewRand: bridge.NewRandOrPanic}})
+	base.AddWrapper(reflect.TypeOf(&bccsp.IdemixUserSecretKeyGenOpts{}), &handlers.UserKeyGen{User: &bridge.User{NewRand: bridge.NewRandOrPanic}})
+	base.AddWrapper(reflect.TypeOf(&bccsp.IdemixRevocationKeyGenOpts{}), &handlers.RevocationKeyGen{Revocation: &bridge.Revocation{}})
+
+	// key derivers
+	base.AddWrapper(reflect.TypeOf(handlers.NewUserSecretKey(nil, false)), &handlers.NymKeyDerivation{
+		User: &bridge.User{NewRand: bridge.NewRandOrPanic},
+	})
+
+	// signers
+	base.AddWrapper(reflect.TypeOf(handlers.NewUserSecretKey(nil, false)), &userSecreKeySignerMultiplexer{
+		signer:                  &handlers.Signer{SignatureScheme: &bridge.SignatureScheme{NewRand: bridge.NewRandOrPanic}},
+		nymSigner:               &handlers.NymSigner{NymSignatureScheme: &bridge.NymSignatureScheme{NewRand: bridge.NewRandOrPanic}},
+		credentialRequestSigner: &handlers.CredentialRequestSigner{CredRequest: &bridge.CredRequest{NewRand: bridge.NewRandOrPanic}},
+	})
+	base.AddWrapper(reflect.TypeOf(handlers.NewIssuerSecretKey(nil, false)), &handlers.CredentialSigner{
+		Credential: &bridge.Credential{NewRand: bridge.NewRandOrPanic},
+	})
+	base.AddWrapper(reflect.TypeOf(handlers.NewRevocationSecretKey(nil, false)), &handlers.CriSigner{
+		Revocation: &bridge.Revocation{},
+	})
+
+	// verifiers
+	base.AddWrapper(reflect.TypeOf(handlers.NewIssuerPublicKey(nil)), &issuerPublicKeyVerifierMultiplexer{
+		verifier:                  &handlers.Verifier{SignatureScheme: &bridge.SignatureScheme{NewRand: bridge.NewRandOrPanic}},
+		credentialRequestVerifier: &handlers.CredentialRequestVerifier{CredRequest: &bridge.CredRequest{NewRand: bridge.NewRandOrPanic}},
+	})
+	base.AddWrapper(reflect.TypeOf(handlers.NewNymPublicKey(nil)), &handlers.NymVerifier{
+		NymSignatureScheme: &bridge.NymSignatureScheme{NewRand: bridge.NewRandOrPanic},
+	})
+	base.AddWrapper(reflect.TypeOf(handlers.NewUserSecretKey(nil, false)), &handlers.CredentialVerifier{
+		Credential: &bridge.Credential{NewRand: bridge.NewRandOrPanic},
+	})
+	base.AddWrapper(reflect.TypeOf(handlers.NewRevocationPublicKey(nil)), &handlers.CriVerifier{
+		Revocation: &bridge.Revocation{},
+	})
+
+	// importers
+	base.AddWrapper(reflect.TypeOf(&bccsp.IdemixUserSecretKeyImportOpts{}), &handlers.UserKeyImporter{
+		User: &bridge.User{},
+	})
+	base.AddWrapper(reflect.TypeOf(&bccsp.IdemixIssuerPublicKeyImportOpts{}), &handlers.IssuerPublicKeyImporter{
+		Issuer: &bridge.Issuer{},
+	})
+	base.AddWrapper(reflect.TypeOf(&bccsp.IdemixNymPublicKeyImportOpts{}), &handlers.NymPublicKeyImporter{
+		User: &bridge.User{},
+	})
+	base.AddWrapper(reflect.TypeOf(&bccsp.IdemixRevocationPublicKeyImportOpts{}), &handlers.RevocationPublicKeyImporter{})
+
+	return csp, nil
+}
+
+// Sign signs digest using key k.
+// The opts argument should be appropriate for the primitive used.
+//
+// Note that when a signature of a hash of a larger message is needed,
+// the caller is responsible for hashing the larger message and passing
+// the hash (as digest).
+// Notice that this is overriding the Sign methods of the sw impl. to avoid the digest check.
+func (csp *csp) Sign(k bccsp.Key, digest []byte, opts bccsp.SignerOpts) (signature []byte, err error) {_cover_atomic_.AddUint32(&GoCover_0_643962636231383435633734.Count[3], 1);
+	// Validate arguments
+	if k == nil {_cover_atomic_.AddUint32(&GoCover_0_643962636231383435633734.Count[7], 1);
+		return nil, errors.New("Invalid Key. It must not be nil.")
+	}
+	// Do not check for digest
+
+	_cover_atomic_.AddUint32(&GoCover_0_643962636231383435633734.Count[4], 1);keyType := reflect.TypeOf(k)
+	signer, found := csp.Signers[keyType]
+	if !found {_cover_atomic_.AddUint32(&GoCover_0_643962636231383435633734.Count[8], 1);
+		return nil, errors.Errorf("Unsupported 'SignKey' provided [%s]", keyType)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_643962636231383435633734.Count[5], 1);signature, err = signer.Sign(k, digest, opts)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_643962636231383435633734.Count[9], 1);
+		return nil, errors.Wrapf(err, "Failed signing with opts [%v]", opts)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_643962636231383435633734.Count[6], 1);return
+}
+
+// Verify verifies signature against key k and digest
+// Notice that this is overriding the Sign methods of the sw impl. to avoid the digest check.
+func (csp *csp) Verify(k bccsp.Key, signature, digest []byte, opts bccsp.SignerOpts) (valid bool, err error) {_cover_atomic_.AddUint32(&GoCover_0_643962636231383435633734.Count[10], 1);
+	// Validate arguments
+	if k == nil {_cover_atomic_.AddUint32(&GoCover_0_643962636231383435633734.Count[15], 1);
+		return false, errors.New("Invalid Key. It must not be nil.")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_643962636231383435633734.Count[11], 1);if len(signature) == 0 {_cover_atomic_.AddUint32(&GoCover_0_643962636231383435633734.Count[16], 1);
+		return false, errors.New("Invalid signature. Cannot be empty.")
+	}
+	// Do not check for digest
+
+	_cover_atomic_.AddUint32(&GoCover_0_643962636231383435633734.Count[12], 1);verifier, found := csp.Verifiers[reflect.TypeOf(k)]
+	if !found {_cover_atomic_.AddUint32(&GoCover_0_643962636231383435633734.Count[17], 1);
+		return false, errors.Errorf("Unsupported 'VerifyKey' provided [%v]", k)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_643962636231383435633734.Count[13], 1);valid, err = verifier.Verify(k, signature, digest, opts)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_643962636231383435633734.Count[18], 1);
+		return false, errors.Wrapf(err, "Failed verifing with opts [%v]", opts)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_643962636231383435633734.Count[14], 1);return
+}
+
+type userSecreKeySignerMultiplexer struct {
+	signer                  *handlers.Signer
+	nymSigner               *handlers.NymSigner
+	credentialRequestSigner *handlers.CredentialRequestSigner
+}
+
+func (s *userSecreKeySignerMultiplexer) Sign(k bccsp.Key, digest []byte, opts bccsp.SignerOpts) (signature []byte, err error) {_cover_atomic_.AddUint32(&GoCover_0_643962636231383435633734.Count[19], 1);
+	switch opts.(type) {
+	case *bccsp.IdemixSignerOpts:_cover_atomic_.AddUint32(&GoCover_0_643962636231383435633734.Count[20], 1);
+		return s.signer.Sign(k, digest, opts)
+	case *bccsp.IdemixNymSignerOpts:_cover_atomic_.AddUint32(&GoCover_0_643962636231383435633734.Count[21], 1);
+		return s.nymSigner.Sign(k, digest, opts)
+	case *bccsp.IdemixCredentialRequestSignerOpts:_cover_atomic_.AddUint32(&GoCover_0_643962636231383435633734.Count[22], 1);
+		return s.credentialRequestSigner.Sign(k, digest, opts)
+	default:_cover_atomic_.AddUint32(&GoCover_0_643962636231383435633734.Count[23], 1);
+		return nil, errors.New("invalid opts, expected *bccsp.IdemixSignerOpt or *bccsp.IdemixNymSignerOpts or *bccsp.IdemixCredentialRequestSignerOpts")
+	}
+}
+
+type issuerPublicKeyVerifierMultiplexer struct {
+	verifier                  *handlers.Verifier
+	credentialRequestVerifier *handlers.CredentialRequestVerifier
+}
+
+func (v *issuerPublicKeyVerifierMultiplexer) Verify(k bccsp.Key, signature, digest []byte, opts bccsp.SignerOpts) (valid bool, err error) {_cover_atomic_.AddUint32(&GoCover_0_643962636231383435633734.Count[24], 1);
+	switch opts.(type) {
+	case *bccsp.IdemixSignerOpts:_cover_atomic_.AddUint32(&GoCover_0_643962636231383435633734.Count[25], 1);
+		return v.verifier.Verify(k, signature, digest, opts)
+	case *bccsp.IdemixCredentialRequestSignerOpts:_cover_atomic_.AddUint32(&GoCover_0_643962636231383435633734.Count[26], 1);
+		return v.credentialRequestVerifier.Verify(k, signature, digest, opts)
+	default:_cover_atomic_.AddUint32(&GoCover_0_643962636231383435633734.Count[27], 1);
+		return false, errors.New("invalid opts, expected *bccsp.IdemixSignerOpts or *bccsp.IdemixCredentialRequestSignerOpts")
+	}
+}
+
+var GoCover_0_643962636231383435633734 = struct {
+	Count     [28]uint32
+	Pos       [3 * 28]uint32
+	NumStmt   [28]uint16
+} {
+	Pos: [3 * 28]uint32{
+		24, 26, 0x100031, // [0]
+		30, 82, 0x110002, // [1]
+		26, 28, 0x30010, // [2]
+		92, 94, 0xe0067, // [3]
+		99, 101, 0xc0002, // [4]
+		105, 106, 0x100002, // [5]
+		110, 110, 0x80002, // [6]
+		94, 96, 0x3000e, // [7]
+		101, 103, 0x3000c, // [8]
+		106, 108, 0x30010, // [9]
+		115, 117, 0xe006e, // [10]
+		120, 120, 0x190002, // [11]
+		125, 126, 0xc0002, // [12]
+		130, 131, 0x100002, // [13]
+		135, 135, 0x80002, // [14]
+		117, 119, 0x3000e, // [15]
+		120, 122, 0x30019, // [16]
+		126, 128, 0x3000c, // [17]
+		131, 133, 0x30010, // [18]
+		144, 145, 0x15007f, // [19]
+		146, 147, 0x28001f, // [20]
+		148, 149, 0x2b0022, // [21]
+		150, 151, 0x390030, // [22]
+		152, 153, 0x94000a, // [23]
+		162, 163, 0x15008b, // [24]
+		164, 165, 0x37001f, // [25]
+		166, 167, 0x480030, // [26]
+		168, 169, 0x79000a, // [27]
+	},
+	NumStmt: [28]uint16{
+		2, // 0
+		17, // 1
+		1, // 2
+		1, // 3
+		3, // 4
+		2, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		2, // 12
+		2, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+		1, // 24
+		1, // 25
+		1, // 26
+		1, // 27
+	},
+}
+var _ = _cover_atomic_.LoadUint32

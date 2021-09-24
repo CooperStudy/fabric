@@ -1,0 +1,9 @@
+collection.cover.go
+membershipinfo.cover.go
+simplecollection.cover.go
+store.cover.go
+util.cover.go
+./collection_test.go
+./membershipinfo_test.go
+./simplecollection_test.go
+./store_test.go

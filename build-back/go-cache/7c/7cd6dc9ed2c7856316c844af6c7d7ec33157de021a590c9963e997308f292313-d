@@ -1,0 +1,135 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/queryutil/query_executer_combiner.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package queryutil; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric/common/flogging"
+	commonledger "github.com/hyperledger/fabric/common/ledger"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb"
+)
+
+var logger = flogging.MustGetLogger("util")
+
+//go:generate counterfeiter -o mock/query_executer.go -fake-name QueryExecuter . QueryExecuter
+
+// QueryExecuter encapsulates query functions
+type QueryExecuter interface {
+	GetState(namespace, key string) (*statedb.VersionedValue, error)
+	GetStateRangeScanIterator(namespace, startKey, endKey string) (statedb.ResultsIterator, error)
+}
+
+// QECombiner combines the query results from one or more underlying 'queryExecuters'
+// In case, the same key is returned by multiple 'queryExecuters', the first 'queryExecuter'
+// in the input is considered having the latest state of the key
+type QECombiner struct {
+	QueryExecuters []QueryExecuter // actual executers in decending order of priority
+}
+
+// GetState implements function in the interface ledger.SimpleQueryExecutor
+func (c *QECombiner) GetState(namespace string, key string) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_1_613064386665656166663361.Count[0], 1);
+	var vv *statedb.VersionedValue
+	var val []byte
+	var err error
+	for _, qe := range c.QueryExecuters {_cover_atomic_.AddUint32(&GoCover_1_613064386665656166663361.Count[2], 1);
+		if vv, err = qe.GetState(namespace, key); err != nil {_cover_atomic_.AddUint32(&GoCover_1_613064386665656166663361.Count[4], 1);
+			return nil, err
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_613064386665656166663361.Count[3], 1);if vv != nil {_cover_atomic_.AddUint32(&GoCover_1_613064386665656166663361.Count[5], 1);
+			if !vv.IsDelete() {_cover_atomic_.AddUint32(&GoCover_1_613064386665656166663361.Count[7], 1);
+				val = vv.Value
+			}
+			_cover_atomic_.AddUint32(&GoCover_1_613064386665656166663361.Count[6], 1);break
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_613064386665656166663361.Count[1], 1);return val, nil
+}
+
+// GetStateRangeScanIterator implements function in the interface ledger.SimpleQueryExecutor
+func (c *QECombiner) GetStateRangeScanIterator(namespace string, startKey string, endKey string) (commonledger.ResultsIterator, error) {_cover_atomic_.AddUint32(&GoCover_1_613064386665656166663361.Count[8], 1);
+	var itrs []statedb.ResultsIterator
+	for _, qe := range c.QueryExecuters {_cover_atomic_.AddUint32(&GoCover_1_613064386665656166663361.Count[11], 1);
+		itr, err := qe.GetStateRangeScanIterator(namespace, startKey, endKey)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_613064386665656166663361.Count[13], 1);
+			for _, itr := range itrs {_cover_atomic_.AddUint32(&GoCover_1_613064386665656166663361.Count[15], 1);
+				itr.Close()
+			}
+			_cover_atomic_.AddUint32(&GoCover_1_613064386665656166663361.Count[14], 1);return nil, err
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_613064386665656166663361.Count[12], 1);itrs = append(itrs, itr)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_613064386665656166663361.Count[9], 1);itrCombiner, err := newItrCombiner(namespace, itrs)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_613064386665656166663361.Count[16], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_613064386665656166663361.Count[10], 1);return itrCombiner, nil
+}
+
+// UpdateBatchBackedQueryExecuter wraps an update batch for providing functions in the interface 'queryExecuter'
+type UpdateBatchBackedQueryExecuter struct {
+	UpdateBatch *statedb.UpdateBatch
+}
+
+// GetState implements function in interface 'queryExecuter'
+func (qe *UpdateBatchBackedQueryExecuter) GetState(ns, key string) (*statedb.VersionedValue, error) {_cover_atomic_.AddUint32(&GoCover_1_613064386665656166663361.Count[17], 1);
+	return qe.UpdateBatch.Get(ns, key), nil
+}
+
+// GetStateRangeScanIterator implements function in interface 'queryExecuter'
+func (qe *UpdateBatchBackedQueryExecuter) GetStateRangeScanIterator(namespace, startKey, endKey string) (statedb.ResultsIterator, error) {_cover_atomic_.AddUint32(&GoCover_1_613064386665656166663361.Count[18], 1);
+	return qe.UpdateBatch.GetRangeScanIterator(namespace, startKey, endKey), nil
+}
+
+var GoCover_1_613064386665656166663361 = struct {
+	Count     [19]uint32
+	Pos       [3 * 19]uint32
+	NumStmt   [19]uint16
+} {
+	Pos: [3 * 19]uint32{
+		33, 37, 0x26004d, // [0]
+		48, 48, 0x110002, // [1]
+		37, 38, 0x380026, // [2]
+		41, 41, 0x100003, // [3]
+		38, 40, 0x40038, // [4]
+		41, 42, 0x160010, // [5]
+		45, 45, 0x90004, // [6]
+		42, 44, 0x50016, // [7]
+		52, 54, 0x260088, // [8]
+		64, 65, 0x100002, // [9]
+		68, 68, 0x190002, // [10]
+		54, 56, 0x110026, // [11]
+		62, 62, 0x1b0003, // [12]
+		56, 57, 0x1d0011, // [13]
+		60, 60, 0x130004, // [14]
+		57, 59, 0x5001d, // [15]
+		65, 67, 0x30010, // [16]
+		77, 79, 0x20065, // [17]
+		82, 84, 0x2008a, // [18]
+	},
+	NumStmt: [19]uint16{
+		4, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		2, // 8
+		2, // 9
+		1, // 10
+		2, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+	},
+}
+var _ = _cover_atomic_.LoadUint32

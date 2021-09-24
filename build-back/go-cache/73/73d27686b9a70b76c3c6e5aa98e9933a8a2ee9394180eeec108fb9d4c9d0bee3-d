@@ -1,0 +1,64 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/operations/metrics.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package operations; import _cover_atomic_ "sync/atomic"
+
+import (
+	"sync"
+
+	"github.com/hyperledger/fabric/common/metrics"
+	"github.com/hyperledger/fabric/common/metrics/prometheus"
+)
+
+var (
+	fabricVersion = metrics.GaugeOpts{
+		Name:         "fabric_version",
+		Help:         "The active version of Fabric.",
+		LabelNames:   []string{"version"},
+		StatsdFormat: "%{#fqname}.%{version}",
+	}
+
+	gaugeLock        sync.Mutex
+	promVersionGauge metrics.Gauge
+)
+
+func versionGauge(provider metrics.Provider) metrics.Gauge {_cover_atomic_.AddUint32(&GoCover_0_383831363162653633366638.Count[0], 1);
+	switch provider.(type) {
+	case *prometheus.Provider:_cover_atomic_.AddUint32(&GoCover_0_383831363162653633366638.Count[1], 1);
+		gaugeLock.Lock()
+		defer gaugeLock.Unlock()
+		if promVersionGauge == nil {_cover_atomic_.AddUint32(&GoCover_0_383831363162653633366638.Count[4], 1);
+			promVersionGauge = provider.NewGauge(fabricVersion)
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_383831363162653633366638.Count[2], 1);return promVersionGauge
+
+	default:_cover_atomic_.AddUint32(&GoCover_0_383831363162653633366638.Count[3], 1);
+		return provider.NewGauge(fabricVersion)
+	}
+}
+
+var GoCover_0_383831363162653633366638 = struct {
+	Count     [5]uint32
+	Pos       [3 * 5]uint32
+	NumStmt   [5]uint16
+} {
+	Pos: [3 * 5]uint32{
+		28, 29, 0x19003c, // [0]
+		30, 33, 0x1e001c, // [1]
+		36, 36, 0x1a0003, // [2]
+		38, 39, 0x2a000a, // [3]
+		33, 35, 0x4001e, // [4]
+	},
+	NumStmt: [5]uint16{
+		1, // 0
+		3, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+	},
+}
+var _ = _cover_atomic_.LoadUint32

@@ -1,0 +1,5 @@
+txvalidationflags.cover.go
+uint64_encoding.cover.go
+util.cover.go
+./txvalidationflags_test.go
+./util_test.go

@@ -1,0 +1,5 @@
+./common_test.go
+./networkconfig_test.go
+./ordererclient_test.go
+./ordererenv_test.go
+./peerclient_test.go

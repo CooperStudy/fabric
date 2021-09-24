@@ -1,0 +1,186 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/ledger/blkstorage/fsblkstorage/blockfile_helper.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package fsblkstorage; import _cover_atomic_ "sync/atomic"
+
+import (
+	"io/ioutil"
+	"os"
+	"strconv"
+	"strings"
+
+	"github.com/davecgh/go-spew/spew"
+	"github.com/hyperledger/fabric/protos/common"
+	"github.com/pkg/errors"
+)
+
+// constructCheckpointInfoFromBlockFiles scans the last blockfile (if any) and construct the checkpoint info
+// if the last file contains no block or only a partially written block (potentially because of a crash while writing block to the file),
+// this scans the second last file (if any)
+func constructCheckpointInfoFromBlockFiles(rootDir string) (*checkpointInfo, error) {_cover_atomic_.AddUint32(&GoCover_2_386431356532613230373239.Count[0], 1);
+	logger.Debugf("Retrieving checkpoint info from block files")
+	var lastFileNum int
+	var numBlocksInFile int
+	var endOffsetLastBlock int64
+	var lastBlockNumber uint64
+
+	var lastBlockBytes []byte
+	var lastBlock *common.Block
+	var err error
+
+	if lastFileNum, err = retrieveLastFileSuffix(rootDir); err != nil {_cover_atomic_.AddUint32(&GoCover_2_386431356532613230373239.Count[6], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_386431356532613230373239.Count[1], 1);logger.Debugf("Last file number found = %d", lastFileNum)
+
+	if lastFileNum == -1 {_cover_atomic_.AddUint32(&GoCover_2_386431356532613230373239.Count[7], 1);
+		cpInfo := &checkpointInfo{0, 0, true, 0}
+		logger.Debugf("No block file found")
+		return cpInfo, nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_386431356532613230373239.Count[2], 1);fileInfo := getFileInfoOrPanic(rootDir, lastFileNum)
+	logger.Debugf("Last Block file info: FileName=[%s], FileSize=[%d]", fileInfo.Name(), fileInfo.Size())
+	if lastBlockBytes, endOffsetLastBlock, numBlocksInFile, err = scanForLastCompleteBlock(rootDir, lastFileNum, 0); err != nil {_cover_atomic_.AddUint32(&GoCover_2_386431356532613230373239.Count[8], 1);
+		logger.Errorf("Error scanning last file [num=%d]: %s", lastFileNum, err)
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_386431356532613230373239.Count[3], 1);if numBlocksInFile == 0 && lastFileNum > 0 {_cover_atomic_.AddUint32(&GoCover_2_386431356532613230373239.Count[9], 1);
+		secondLastFileNum := lastFileNum - 1
+		fileInfo := getFileInfoOrPanic(rootDir, secondLastFileNum)
+		logger.Debugf("Second last Block file info: FileName=[%s], FileSize=[%d]", fileInfo.Name(), fileInfo.Size())
+		if lastBlockBytes, _, _, err = scanForLastCompleteBlock(rootDir, secondLastFileNum, 0); err != nil {_cover_atomic_.AddUint32(&GoCover_2_386431356532613230373239.Count[10], 1);
+			logger.Errorf("Error scanning second last file [num=%d]: %s", secondLastFileNum, err)
+			return nil, err
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_386431356532613230373239.Count[4], 1);if lastBlockBytes != nil {_cover_atomic_.AddUint32(&GoCover_2_386431356532613230373239.Count[11], 1);
+		if lastBlock, err = deserializeBlock(lastBlockBytes); err != nil {_cover_atomic_.AddUint32(&GoCover_2_386431356532613230373239.Count[13], 1);
+			logger.Errorf("Error deserializing last block: %s. Block bytes length: %d", err, len(lastBlockBytes))
+			return nil, err
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_386431356532613230373239.Count[12], 1);lastBlockNumber = lastBlock.Header.Number
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_386431356532613230373239.Count[5], 1);cpInfo := &checkpointInfo{
+		lastBlockNumber:          lastBlockNumber,
+		latestFileChunksize:      int(endOffsetLastBlock),
+		latestFileChunkSuffixNum: lastFileNum,
+		isChainEmpty:             lastFileNum == 0 && numBlocksInFile == 0,
+	}
+	logger.Debugf("Checkpoint info constructed from file system = %s", spew.Sdump(cpInfo))
+	return cpInfo, nil
+}
+
+func retrieveLastFileSuffix(rootDir string) (int, error) {_cover_atomic_.AddUint32(&GoCover_2_386431356532613230373239.Count[14], 1);
+	logger.Debugf("retrieveLastFileSuffix()")
+	biggestFileNum := -1
+	filesInfo, err := ioutil.ReadDir(rootDir)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_386431356532613230373239.Count[17], 1);
+		return -1, errors.Wrapf(err, "error reading dir %s", rootDir)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_386431356532613230373239.Count[15], 1);for _, fileInfo := range filesInfo {_cover_atomic_.AddUint32(&GoCover_2_386431356532613230373239.Count[18], 1);
+		name := fileInfo.Name()
+		if fileInfo.IsDir() || !isBlockFileName(name) {_cover_atomic_.AddUint32(&GoCover_2_386431356532613230373239.Count[21], 1);
+			logger.Debugf("Skipping File name = %s", name)
+			continue
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_386431356532613230373239.Count[19], 1);fileSuffix := strings.TrimPrefix(name, blockfilePrefix)
+		fileNum, err := strconv.Atoi(fileSuffix)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_386431356532613230373239.Count[22], 1);
+			return -1, err
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_386431356532613230373239.Count[20], 1);if fileNum > biggestFileNum {_cover_atomic_.AddUint32(&GoCover_2_386431356532613230373239.Count[23], 1);
+			biggestFileNum = fileNum
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_386431356532613230373239.Count[16], 1);logger.Debugf("retrieveLastFileSuffix() - biggestFileNum = %d", biggestFileNum)
+	return biggestFileNum, err
+}
+
+func isBlockFileName(name string) bool {_cover_atomic_.AddUint32(&GoCover_2_386431356532613230373239.Count[24], 1);
+	return strings.HasPrefix(name, blockfilePrefix)
+}
+
+func getFileInfoOrPanic(rootDir string, fileNum int) os.FileInfo {_cover_atomic_.AddUint32(&GoCover_2_386431356532613230373239.Count[25], 1);
+	filePath := deriveBlockfilePath(rootDir, fileNum)
+	fileInfo, err := os.Lstat(filePath)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_386431356532613230373239.Count[27], 1);
+		panic(errors.Wrapf(err, "error retrieving file info for file number %d", fileNum))
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_386431356532613230373239.Count[26], 1);return fileInfo
+}
+
+var GoCover_2_386431356532613230373239 = struct {
+	Count     [28]uint32
+	Pos       [3 * 28]uint32
+	NumStmt   [28]uint16
+} {
+	Pos: [3 * 28]uint32{
+		23, 34, 0x440055, // [0]
+		37, 39, 0x170002, // [1]
+		45, 47, 0x7e0002, // [2]
+		52, 52, 0x2d0002, // [3]
+		62, 62, 0x1b0002, // [4]
+		70, 77, 0x140002, // [5]
+		34, 36, 0x30044, // [6]
+		39, 43, 0x30017, // [7]
+		47, 50, 0x3007e, // [8]
+		52, 56, 0x66002d, // [9]
+		56, 59, 0x40066, // [10]
+		62, 63, 0x44001b, // [11]
+		67, 67, 0x2c0003, // [12]
+		63, 66, 0x40044, // [13]
+		80, 84, 0x10003a, // [14]
+		87, 87, 0x250002, // [15]
+		102, 103, 0x1c0002, // [16]
+		84, 86, 0x30010, // [17]
+		87, 89, 0x310025, // [18]
+		93, 95, 0x110003, // [19]
+		98, 98, 0x1f0003, // [20]
+		89, 91, 0xc0031, // [21]
+		95, 97, 0x40011, // [22]
+		98, 100, 0x4001f, // [23]
+		106, 108, 0x20028, // [24]
+		110, 113, 0x100042, // [25]
+		116, 116, 0x110002, // [26]
+		113, 114, 0x550010, // [27]
+	},
+	NumStmt: [28]uint16{
+		9, // 0
+		2, // 1
+		3, // 2
+		1, // 3
+		1, // 4
+		3, // 5
+		1, // 6
+		3, // 7
+		2, // 8
+		4, // 9
+		2, // 10
+		1, // 11
+		1, // 12
+		2, // 13
+		4, // 14
+		1, // 15
+		2, // 16
+		1, // 17
+		2, // 18
+		3, // 19
+		1, // 20
+		2, // 21
+		1, // 22
+		1, // 23
+		1, // 24
+		3, // 25
+		1, // 26
+		1, // 27
+	},
+}
+var _ = _cover_atomic_.LoadUint32

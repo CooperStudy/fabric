@@ -1,0 +1,7 @@
+env.cover.go
+list.cover.go
+package.cover.go
+platform.cover.go
+./env_test.go
+./list_test.go
+./platform_test.go

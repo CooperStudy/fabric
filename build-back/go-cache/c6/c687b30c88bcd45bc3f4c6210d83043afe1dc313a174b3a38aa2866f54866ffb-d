@@ -1,0 +1,90 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/channelconfig/consortium.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package channelconfig; import _cover_atomic_ "sync/atomic"
+
+import (
+	cb "github.com/hyperledger/fabric/protos/common"
+	"github.com/pkg/errors"
+)
+
+const (
+	// ChannelCreationPolicyKey is the key used in the consortium config to denote the policy
+	// to be used in evaluating whether a channel creation request is authorized
+	ChannelCreationPolicyKey = "ChannelCreationPolicy"
+)
+
+// ConsortiumProtos holds the config protos for the consortium config
+type ConsortiumProtos struct {
+	ChannelCreationPolicy *cb.Policy
+}
+
+// ConsortiumConfig holds the consoritums configuration information
+type ConsortiumConfig struct {
+	protos *ConsortiumProtos
+	orgs   map[string]Org
+}
+
+// NewConsortiumConfig creates a new instance of the consoritums config
+func NewConsortiumConfig(consortiumGroup *cb.ConfigGroup, mspConfig *MSPConfigHandler) (*ConsortiumConfig, error) {_cover_atomic_.AddUint32(&GoCover_7_373339383034363064316135.Count[0], 1);
+	cc := &ConsortiumConfig{
+		protos: &ConsortiumProtos{},
+		orgs:   make(map[string]Org),
+	}
+
+	if err := DeserializeProtoValuesFromGroup(consortiumGroup, cc.protos); err != nil {_cover_atomic_.AddUint32(&GoCover_7_373339383034363064316135.Count[3], 1);
+		return nil, errors.Wrap(err, "failed to deserialize values")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_7_373339383034363064316135.Count[1], 1);for orgName, orgGroup := range consortiumGroup.Groups {_cover_atomic_.AddUint32(&GoCover_7_373339383034363064316135.Count[4], 1);
+		var err error
+		if cc.orgs[orgName], err = NewOrganizationConfig(orgName, orgGroup, mspConfig); err != nil {_cover_atomic_.AddUint32(&GoCover_7_373339383034363064316135.Count[5], 1);
+			return nil, err
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_7_373339383034363064316135.Count[2], 1);return cc, nil
+}
+
+// Organizations returns the set of organizations in the consortium
+func (cc *ConsortiumConfig) Organizations() map[string]Org {_cover_atomic_.AddUint32(&GoCover_7_373339383034363064316135.Count[6], 1);
+	return cc.orgs
+}
+
+// CreationPolicy returns the policy structure used to validate
+// the channel creation
+func (cc *ConsortiumConfig) ChannelCreationPolicy() *cb.Policy {_cover_atomic_.AddUint32(&GoCover_7_373339383034363064316135.Count[7], 1);
+	return cc.protos.ChannelCreationPolicy
+}
+
+var GoCover_7_373339383034363064316135 = struct {
+	Count     [8]uint32
+	Pos       [3 * 8]uint32
+	NumStmt   [8]uint16
+} {
+	Pos: [3 * 8]uint32{
+		32, 38, 0x540073, // [0]
+		42, 42, 0x380002, // [1]
+		49, 49, 0x100002, // [2]
+		38, 40, 0x30054, // [3]
+		42, 44, 0x5e0038, // [4]
+		44, 46, 0x4005e, // [5]
+		53, 55, 0x2003c, // [6]
+		59, 61, 0x20040, // [7]
+	},
+	NumStmt: [8]uint16{
+		2, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		2, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+	},
+}
+var _ = _cover_atomic_.LoadUint32

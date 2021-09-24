@@ -1,0 +1,216 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/cauthdsl/cauthdsl.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package cauthdsl; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/msp"
+	cb "github.com/hyperledger/fabric/protos/common"
+	mb "github.com/hyperledger/fabric/protos/msp"
+	"go.uber.org/zap/zapcore"
+)
+
+var cauthdslLogger = flogging.MustGetLogger("cauthdsl")
+
+// deduplicate removes any duplicated identities while otherwise preserving identity order
+func deduplicate(sds []IdentityAndSignature) []IdentityAndSignature {_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[0], 1);
+	ids := make(map[string]struct{})
+	result := make([]IdentityAndSignature, 0, len(sds))
+	for i, sd := range sds {_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[2], 1);
+		identity, err := sd.Identity()
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[4], 1);
+			cauthdslLogger.Errorf("Principal deserialization failure (%s) for identity %d", err, i)
+			continue
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[3], 1);key := identity.GetIdentifier().Mspid + identity.GetIdentifier().Id
+
+		if _, ok := ids[key]; ok {_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[5], 1);
+			cauthdslLogger.Warningf("De-duplicating identity [%s] at index %d in signature set", key, i)
+		} else{ _cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[6], 1);{
+			result = append(result, sd)
+			ids[key] = struct{}{}
+		}}
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[1], 1);return result
+}
+
+// compile recursively builds a go evaluatable function corresponding to the policy specified, remember to call deduplicate on identities before
+// passing them to this function for evaluation
+func compile(policy *cb.SignaturePolicy, identities []*mb.MSPPrincipal, deserializer msp.IdentityDeserializer) (func([]IdentityAndSignature, []bool) bool, error) {_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[7], 1);
+	if policy == nil {_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[9], 1);
+		return nil, fmt.Errorf("Empty policy element")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[8], 1);switch t := policy.Type.(type) {
+	case *cb.SignaturePolicy_NOutOf_:_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[10], 1);
+		policies := make([]func([]IdentityAndSignature, []bool) bool, len(t.NOutOf.Rules))
+		for i, policy := range t.NOutOf.Rules {_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[15], 1);
+			compiledPolicy, err := compile(policy, identities, deserializer)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[17], 1);
+				return nil, err
+			}
+			_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[16], 1);policies[i] = compiledPolicy
+
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[11], 1);return func(signedData []IdentityAndSignature, used []bool) bool {_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[18], 1);
+			grepKey := time.Now().UnixNano()
+			cauthdslLogger.Debugf("%p gate %d evaluation starts", signedData, grepKey)
+			verified := int32(0)
+			_used := make([]bool, len(used))
+			for _, policy := range policies {_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[21], 1);
+				copy(_used, used)
+				if policy(signedData, _used) {_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[22], 1);
+					verified++
+					copy(used, _used)
+				}
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[19], 1);if verified >= t.NOutOf.N {_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[23], 1);
+				cauthdslLogger.Debugf("%p gate %d evaluation succeeds", signedData, grepKey)
+			} else{ _cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[24], 1);{
+				cauthdslLogger.Debugf("%p gate %d evaluation fails", signedData, grepKey)
+			}}
+
+			_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[20], 1);return verified >= t.NOutOf.N
+		}, nil
+	case *cb.SignaturePolicy_SignedBy:_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[12], 1);
+		if t.SignedBy < 0 || t.SignedBy >= int32(len(identities)) {_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[25], 1);
+			return nil, fmt.Errorf("identity index out of range, requested %v, but identies length is %d", t.SignedBy, len(identities))
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[13], 1);signedByID := identities[t.SignedBy]
+		return func(signedData []IdentityAndSignature, used []bool) bool {_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[26], 1);
+			cauthdslLogger.Debugf("%p signed by %d principal evaluation starts (used %v)", signedData, t.SignedBy, used)
+			for i, sd := range signedData {_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[28], 1);
+				if used[i] {_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[34], 1);
+					cauthdslLogger.Debugf("%p skipping identity %d because it has already been used", signedData, i)
+					continue
+				}
+				_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[29], 1);if cauthdslLogger.IsEnabledFor(zapcore.DebugLevel) {_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[35], 1);
+					// Unlike most places, this is a huge print statement, and worth checking log level before create garbage
+					cauthdslLogger.Debugf("%p processing identity %d with bytes of %x", signedData, i, sd.Identity)
+				}
+				_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[30], 1);identity, err := sd.Identity()
+				if err != nil {_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[36], 1);
+					cauthdslLogger.Errorf("Principal deserialization failure (%s) for identity %d", err, i)
+					continue
+				}
+				_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[31], 1);err = identity.SatisfiesPrincipal(signedByID)
+				if err != nil {_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[37], 1);
+					cauthdslLogger.Debugf("%p identity %d does not satisfy principal: %s", signedData, i, err)
+					continue
+				}
+				_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[32], 1);cauthdslLogger.Debugf("%p principal matched by identity %d", signedData, i)
+				err = sd.Verify()
+				if err != nil {_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[38], 1);
+					cauthdslLogger.Debugf("%p signature for identity %d is invalid: %s", signedData, i, err)
+					continue
+				}
+				_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[33], 1);cauthdslLogger.Debugf("%p principal evaluation succeeds for identity %d", signedData, i)
+				used[i] = true
+				return true
+			}
+			_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[27], 1);cauthdslLogger.Debugf("%p principal evaluation fails", signedData)
+			return false
+		}, nil
+	default:_cover_atomic_.AddUint32(&GoCover_0_633764376338343234663637.Count[14], 1);
+		return nil, fmt.Errorf("Unknown type: %T:%v", t, t)
+	}
+}
+
+var GoCover_0_633764376338343234663637 = struct {
+	Count     [39]uint32
+	Pos       [3 * 39]uint32
+	NumStmt   [39]uint16
+} {
+	Pos: [3 * 39]uint32{
+		23, 26, 0x190045, // [0]
+		41, 41, 0xf0002, // [1]
+		26, 28, 0x110019, // [2]
+		32, 34, 0x1c0003, // [3]
+		28, 30, 0xc0011, // [4]
+		34, 36, 0x4001c, // [5]
+		36, 39, 0x40009, // [6]
+		46, 47, 0x1300a3, // [7]
+		51, 51, 0x210002, // [8]
+		47, 49, 0x30013, // [9]
+		52, 54, 0x290023, // [10]
+		62, 62, 0x440003, // [11]
+		83, 84, 0x3d0024, // [12]
+		87, 88, 0x440003, // [13]
+		122, 123, 0x36000a, // [14]
+		54, 56, 0x120029, // [15]
+		59, 59, 0x200004, // [16]
+		56, 58, 0x50012, // [17]
+		62, 67, 0x240044, // [18]
+		75, 75, 0x1e0004, // [19]
+		81, 81, 0x210004, // [20]
+		67, 69, 0x220024, // [21]
+		69, 72, 0x60022, // [22]
+		75, 77, 0x5001e, // [23]
+		77, 79, 0x5000a, // [24]
+		84, 86, 0x4003d, // [25]
+		88, 90, 0x220044, // [26]
+		119, 120, 0x100004, // [27]
+		90, 91, 0x100022, // [28]
+		95, 95, 0x380005, // [29]
+		99, 100, 0x130005, // [30]
+		104, 105, 0x130005, // [31]
+		109, 111, 0x130005, // [32]
+		115, 117, 0x100005, // [33]
+		91, 93, 0xe0010, // [34]
+		95, 98, 0x60038, // [35]
+		100, 102, 0xe0013, // [36]
+		105, 107, 0xe0013, // [37]
+		111, 113, 0xe0013, // [38]
+	},
+	NumStmt: [39]uint16{
+		3, // 0
+		1, // 1
+		2, // 2
+		2, // 3
+		2, // 4
+		1, // 5
+		2, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		2, // 10
+		1, // 11
+		1, // 12
+		2, // 13
+		1, // 14
+		2, // 15
+		1, // 16
+		1, // 17
+		5, // 18
+		1, // 19
+		1, // 20
+		2, // 21
+		2, // 22
+		1, // 23
+		1, // 24
+		1, // 25
+		2, // 26
+		2, // 27
+		1, // 28
+		1, // 29
+		2, // 30
+		2, // 31
+		3, // 32
+		3, // 33
+		2, // 34
+		1, // 35
+		2, // 36
+		2, // 37
+		2, // 38
+	},
+}
+var _ = _cover_atomic_.LoadUint32

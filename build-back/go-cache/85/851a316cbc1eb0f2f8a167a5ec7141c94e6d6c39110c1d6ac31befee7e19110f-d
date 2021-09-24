@@ -1,0 +1,409 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/orderer/consensus/etcdraft/storage.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package etcdraft; import _cover_atomic_ "sync/atomic"
+
+import (
+	"os"
+
+	"github.com/coreos/etcd/raft"
+	"github.com/coreos/etcd/raft/raftpb"
+	"github.com/coreos/etcd/snap"
+	"github.com/coreos/etcd/wal"
+	"github.com/coreos/etcd/wal/walpb"
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/pkg/errors"
+)
+
+// MemoryStorage is currently backed by etcd/raft.MemoryStorage. This interface is
+// defined to expose dependencies of fsm so that it may be swapped in the
+// future. TODO(jay) Add other necessary methods to this interface once we need
+// them in implementation, e.g. ApplySnapshot.
+type MemoryStorage interface {
+	raft.Storage
+	Append(entries []raftpb.Entry) error
+	SetHardState(st raftpb.HardState) error
+	CreateSnapshot(i uint64, cs *raftpb.ConfState, data []byte) (raftpb.Snapshot, error)
+	Compact(compactIndex uint64) error
+	ApplySnapshot(snap raftpb.Snapshot) error
+}
+
+// RaftStorage encapsulates storages needed for etcd/raft data, i.e. memory, wal
+type RaftStorage struct {
+	SnapshotCatchUpEntries uint64
+
+	lg *flogging.FabricLogger
+
+	ram  MemoryStorage
+	wal  *wal.WAL
+	snap *snap.Snapshotter
+}
+
+// CreateStorage attempts to create a storage to persist etcd/raft data.
+// If data presents in specified disk, they are loaded to reconstruct storage state.
+func CreateStorage(
+	lg *flogging.FabricLogger,
+	applied uint64,
+	walDir string,
+	snapDir string,
+	ram MemoryStorage,
+) (*RaftStorage, error) {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[0], 1);
+
+	sn, err := createSnapshotter(snapDir)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[6], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[1], 1);snapshot, err := sn.Load()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[7], 1);
+		if err == snap.ErrNoSnapshot {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[8], 1);
+			lg.Debugf("No snapshot found at %s", snapDir)
+		} else{ _cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[9], 1);{
+			return nil, errors.Errorf("failed to load snapshot: %s", err)
+		}}
+	} else{ _cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[10], 1);{
+		// snapshot found
+		lg.Debugf("Loaded snapshot at Term %d and Index %d", snapshot.Metadata.Term, snapshot.Metadata.Index)
+	}}
+
+	_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[2], 1);w, err := createWAL(lg, walDir, applied, snapshot)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[11], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[3], 1);_, st, ents, err := w.ReadAll()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[12], 1);
+		return nil, errors.Errorf("failed to read WAL: %s", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[4], 1);if snapshot != nil {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[13], 1);
+		lg.Debugf("Applying snapshot to raft MemoryStorage")
+		if err := ram.ApplySnapshot(*snapshot); err != nil {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[14], 1);
+			return nil, errors.Errorf("Failed to apply snapshot to memory: %s", err)
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[5], 1);lg.Debugf("Setting HardState to {Term: %d, Commit: %d}", st.Term, st.Commit)
+	ram.SetHardState(st) // MemoryStorage.SetHardState always returns nil
+
+	lg.Debugf("Appending %d entries to memory storage", len(ents))
+	ram.Append(ents) // MemoryStorage.Append always return nil
+
+	return &RaftStorage{lg: lg, ram: ram, wal: w, snap: sn}, nil
+}
+
+func createSnapshotter(snapDir string) (*snap.Snapshotter, error) {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[15], 1);
+	if err := os.MkdirAll(snapDir, os.ModePerm); err != nil {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[17], 1);
+		return nil, errors.Errorf("failed to mkdir '%s' for snapshot: %s", snapDir, err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[16], 1);return snap.New(snapDir), nil
+
+}
+
+func createWAL(lg *flogging.FabricLogger, walDir string, applied uint64, snapshot *raftpb.Snapshot) (*wal.WAL, error) {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[18], 1);
+	hasWAL := wal.Exist(walDir)
+	if !hasWAL && applied != 0 {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[23], 1);
+		return nil, errors.Errorf("applied index is not zero but no WAL data found")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[19], 1);if !hasWAL {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[24], 1);
+		lg.Infof("No WAL data found, creating new WAL at path '%s'", walDir)
+		// TODO(jay_guo) add metadata to be persisted with wal once we need it.
+		// use case could be data dump and restore on a new node.
+		w, err := wal.Create(walDir, nil)
+		if err == os.ErrExist {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[27], 1);
+			lg.Fatalf("programming error, we've just checked that WAL does not exist")
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[25], 1);if err != nil {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[28], 1);
+			return nil, errors.Errorf("failed to initialize WAL: %s", err)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[26], 1);if err = w.Close(); err != nil {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[29], 1);
+			return nil, errors.Errorf("failed to close the WAL just created: %s", err)
+		}
+	} else{ _cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[30], 1);{
+		lg.Infof("Found WAL data at path '%s', replaying it", walDir)
+	}}
+
+	_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[20], 1);walsnap := walpb.Snapshot{}
+	if snapshot != nil {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[31], 1);
+		walsnap.Index, walsnap.Term = snapshot.Metadata.Index, snapshot.Metadata.Term
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[21], 1);lg.Debugf("Loading WAL at Term %d and Index %d", walsnap.Term, walsnap.Index)
+	w, err := wal.Open(walDir, walsnap)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[32], 1);
+		return nil, errors.Errorf("failed to open existing WAL: %s", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[22], 1);return w, nil
+}
+
+// Snapshot returns the latest snapshot stored in memory
+func (rs *RaftStorage) Snapshot() raftpb.Snapshot {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[33], 1);
+	sn, _ := rs.ram.Snapshot() // Snapshot always returns nil error
+	return sn
+}
+
+// Store persists etcd/raft data
+func (rs *RaftStorage) Store(entries []raftpb.Entry, hardstate raftpb.HardState, snapshot raftpb.Snapshot) error {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[34], 1);
+	if err := rs.wal.Save(hardstate, entries); err != nil {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[38], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[35], 1);if !raft.IsEmptySnap(snapshot) {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[39], 1);
+		if err := rs.saveSnap(snapshot); err != nil {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[41], 1);
+			return err
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[40], 1);if err := rs.ram.ApplySnapshot(snapshot); err != nil {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[42], 1);
+			if err == raft.ErrSnapOutOfDate {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[43], 1);
+				rs.lg.Warnf("Attempted to apply out-of-date snapshot at Term %d and Index %d",
+					snapshot.Metadata.Term, snapshot.Metadata.Index)
+			} else{ _cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[44], 1);{
+				rs.lg.Fatalf("Unexpected programming error: %s", err)
+			}}
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[36], 1);if err := rs.ram.Append(entries); err != nil {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[45], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[37], 1);return nil
+}
+
+func (rs *RaftStorage) saveSnap(snap raftpb.Snapshot) error {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[46], 1);
+	// must save the snapshot index to the WAL before saving the
+	// snapshot to maintain the invariant that we only Open the
+	// wal at previously-saved snapshot indexes.
+	walsnap := walpb.Snapshot{
+		Index: snap.Metadata.Index,
+		Term:  snap.Metadata.Term,
+	}
+
+	rs.lg.Debugf("Saving snapshot to WAL")
+	if err := rs.wal.SaveSnapshot(walsnap); err != nil {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[50], 1);
+		return errors.Errorf("failed to save snapshot to WAL: %s", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[47], 1);rs.lg.Debugf("Saving snapshot to disk")
+	if err := rs.snap.SaveSnap(snap); err != nil {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[51], 1);
+		return errors.Errorf("failed to save snapshot to disk: %s", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[48], 1);rs.lg.Debugf("Releasing lock to wal files prior to %d", snap.Metadata.Index)
+	if err := rs.wal.ReleaseLockTo(snap.Metadata.Index); err != nil {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[52], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[49], 1);return nil
+}
+
+// TakeSnapshot takes a snapshot at index i from MemoryStorage, and persists it to wal and disk.
+func (rs *RaftStorage) TakeSnapshot(i uint64, cs *raftpb.ConfState, data []byte) error {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[53], 1);
+	rs.lg.Debugf("Creating snapshot at index %d from MemoryStorage", i)
+	snap, err := rs.ram.CreateSnapshot(i, cs, data)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[57], 1);
+		return errors.Errorf("failed to create snapshot from MemoryStorage: %s", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[54], 1);if err = rs.saveSnap(snap); err != nil {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[58], 1);
+		return err
+	}
+
+	// Keep some entries in memory for slow followers to catchup
+	_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[55], 1);if i > rs.SnapshotCatchUpEntries {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[59], 1);
+		compacti := i - rs.SnapshotCatchUpEntries
+		rs.lg.Debugf("Purging in-memory raft entries prior to %d", compacti)
+		if err = rs.ram.Compact(compacti); err != nil {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[60], 1);
+			if err == raft.ErrCompacted {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[61], 1);
+				rs.lg.Warnf("Raft entries prior to %d are already purged", compacti)
+			} else{ _cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[62], 1);{
+				rs.lg.Fatalf("Failed to purg raft entries: %s", err)
+			}}
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[56], 1);rs.lg.Infof("Snapshot is taken at index %d", i)
+	return nil
+}
+
+// ApplySnapshot applies snapshot to local memory storage
+func (rs *RaftStorage) ApplySnapshot(snap raftpb.Snapshot) {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[63], 1);
+	if err := rs.ram.ApplySnapshot(snap); err != nil {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[64], 1);
+		if err == raft.ErrSnapOutOfDate {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[65], 1);
+			rs.lg.Warnf("Attempted to apply out-of-date snapshot at Term %d and Index %d",
+				snap.Metadata.Term, snap.Metadata.Index)
+		} else{ _cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[66], 1);{
+			rs.lg.Fatalf("Unexpected programming error: %s", err)
+		}}
+	}
+}
+
+// Close closes storage
+func (rs *RaftStorage) Close() error {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[67], 1);
+	if err := rs.wal.Close(); err != nil {_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[69], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_643961326533346231666662.Count[68], 1);return nil
+}
+
+var GoCover_4_643961326533346231666662 = struct {
+	Count     [70]uint32
+	Pos       [3 * 70]uint32
+	NumStmt   [70]uint16
+} {
+	Pos: [3 * 70]uint32{
+		53, 56, 0x100019, // [0]
+		60, 61, 0x100002, // [1]
+		72, 73, 0x100002, // [2]
+		77, 78, 0x100002, // [3]
+		82, 82, 0x150002, // [4]
+		89, 95, 0x3e0002, // [5]
+		56, 58, 0x30010, // [6]
+		61, 62, 0x200010, // [7]
+		62, 64, 0x40020, // [8]
+		64, 66, 0x40009, // [9]
+		67, 70, 0x30008, // [10]
+		73, 75, 0x30010, // [11]
+		78, 80, 0x30010, // [12]
+		82, 84, 0x360015, // [13]
+		84, 86, 0x40036, // [14]
+		98, 99, 0x3a0043, // [15]
+		103, 103, 0x1f0002, // [16]
+		99, 101, 0x3003a, // [17]
+		107, 109, 0x1d0077, // [18]
+		113, 113, 0xd0002, // [19]
+		133, 134, 0x150002, // [20]
+		138, 140, 0x100002, // [21]
+		144, 144, 0xf0002, // [22]
+		109, 111, 0x3001d, // [23]
+		113, 118, 0x19000d, // [24]
+		122, 122, 0x110003, // [25]
+		126, 126, 0x220003, // [26]
+		118, 120, 0x40019, // [27]
+		122, 124, 0x40011, // [28]
+		126, 128, 0x40022, // [29]
+		129, 131, 0x30008, // [30]
+		134, 136, 0x30015, // [31]
+		140, 142, 0x30010, // [32]
+		148, 151, 0x20033, // [33]
+		154, 155, 0x380072, // [34]
+		159, 159, 0x210002, // [35]
+		174, 174, 0x2f0002, // [36]
+		178, 178, 0xc0002, // [37]
+		155, 157, 0x30038, // [38]
+		159, 160, 0x2f0021, // [39]
+		164, 164, 0x380003, // [40]
+		160, 162, 0x4002f, // [41]
+		164, 165, 0x240038, // [42]
+		165, 168, 0x50024, // [43]
+		168, 170, 0x5000a, // [44]
+		174, 176, 0x3002f, // [45]
+		181, 191, 0x35003d, // [46]
+		195, 196, 0x2f0002, // [47]
+		200, 201, 0x420002, // [48]
+		205, 205, 0xc0002, // [49]
+		191, 193, 0x30035, // [50]
+		196, 198, 0x3002f, // [51]
+		201, 203, 0x30042, // [52]
+		209, 212, 0x100058, // [53]
+		216, 216, 0x290002, // [54]
+		221, 221, 0x230002, // [55]
+		233, 234, 0xc0002, // [56]
+		212, 214, 0x30010, // [57]
+		216, 218, 0x30029, // [58]
+		221, 224, 0x310023, // [59]
+		224, 225, 0x200031, // [60]
+		225, 227, 0x50020, // [61]
+		227, 229, 0x5000a, // [62]
+		238, 239, 0x33003c, // [63]
+		239, 240, 0x230033, // [64]
+		240, 243, 0x40023, // [65]
+		243, 245, 0x40009, // [66]
+		250, 251, 0x270026, // [67]
+		255, 255, 0xc0002, // [68]
+		251, 253, 0x30027, // [69]
+	},
+	NumStmt: [70]uint16{
+		2, // 0
+		2, // 1
+		2, // 2
+		2, // 3
+		1, // 4
+		5, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		2, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		2, // 18
+		1, // 19
+		2, // 20
+		3, // 21
+		1, // 22
+		1, // 23
+		3, // 24
+		1, // 25
+		1, // 26
+		1, // 27
+		1, // 28
+		1, // 29
+		1, // 30
+		1, // 31
+		1, // 32
+		2, // 33
+		1, // 34
+		1, // 35
+		1, // 36
+		1, // 37
+		1, // 38
+		1, // 39
+		1, // 40
+		1, // 41
+		1, // 42
+		1, // 43
+		1, // 44
+		1, // 45
+		3, // 46
+		2, // 47
+		2, // 48
+		1, // 49
+		1, // 50
+		1, // 51
+		1, // 52
+		3, // 53
+		1, // 54
+		1, // 55
+		2, // 56
+		1, // 57
+		1, // 58
+		3, // 59
+		1, // 60
+		1, // 61
+		1, // 62
+		1, // 63
+		1, // 64
+		1, // 65
+		1, // 66
+		1, // 67
+		1, // 68
+		1, // 69
+	},
+}
+var _ = _cover_atomic_.LoadUint32

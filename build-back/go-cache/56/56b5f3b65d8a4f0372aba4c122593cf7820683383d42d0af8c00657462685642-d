@@ -1,0 +1,8 @@
+common.cover.go
+getlevel.cover.go
+getlogspec.cover.go
+logging.cover.go
+revertlevels.cover.go
+setlevel.cover.go
+setlogspec.cover.go
+./logging_test.go

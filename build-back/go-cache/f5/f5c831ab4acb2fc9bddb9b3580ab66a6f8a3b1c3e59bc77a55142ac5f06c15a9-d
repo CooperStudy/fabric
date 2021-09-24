@@ -1,0 +1,86 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/msp/mgmt/testtools/config.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package msptesttools; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric/common/util"
+	"github.com/hyperledger/fabric/core/config/configtest"
+	"github.com/hyperledger/fabric/msp"
+	"github.com/hyperledger/fabric/msp/mgmt"
+)
+
+// LoadTestMSPSetup sets up the local MSP
+// and a chain MSP for the default chain
+func LoadMSPSetupForTesting() error {_cover_atomic_.AddUint32(&GoCover_0_643239353865306438326566.Count[0], 1);
+	dir, err := configtest.GetDevMspDir()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_643239353865306438326566.Count[5], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_643239353865306438326566.Count[1], 1);conf, err := msp.GetLocalMspConfig(dir, nil, "SampleOrg")
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_643239353865306438326566.Count[6], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_643239353865306438326566.Count[2], 1);err = mgmt.GetLocalMSP().Setup(conf)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_643239353865306438326566.Count[7], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_643239353865306438326566.Count[3], 1);err = mgmt.GetManagerForChain(util.GetTestChainID()).Setup([]msp.MSP{mgmt.GetLocalMSP()})
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_643239353865306438326566.Count[8], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_643239353865306438326566.Count[4], 1);return nil
+}
+
+// Loads the development local MSP for use in testing.  Not valid for production/runtime context
+func LoadDevMsp() error {_cover_atomic_.AddUint32(&GoCover_0_643239353865306438326566.Count[9], 1);
+	mspDir, err := configtest.GetDevMspDir()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_643239353865306438326566.Count[11], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_643239353865306438326566.Count[10], 1);return mgmt.LoadLocalMsp(mspDir, nil, "SampleOrg")
+}
+
+var GoCover_0_643239353865306438326566 = struct {
+	Count     [12]uint32
+	Pos       [3 * 12]uint32
+	NumStmt   [12]uint16
+} {
+	Pos: [3 * 12]uint32{
+		18, 20, 0x100025, // [0]
+		23, 24, 0x100002, // [1]
+		28, 29, 0x100002, // [2]
+		33, 34, 0x100002, // [3]
+		38, 38, 0xc0002, // [4]
+		20, 22, 0x30010, // [5]
+		24, 26, 0x30010, // [6]
+		29, 31, 0x30010, // [7]
+		34, 36, 0x30010, // [8]
+		42, 44, 0x100019, // [9]
+		48, 48, 0x340002, // [10]
+		44, 46, 0x30010, // [11]
+	},
+	NumStmt: [12]uint16{
+		2, // 0
+		2, // 1
+		2, // 2
+		2, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		2, // 9
+		1, // 10
+		1, // 11
+	},
+}
+var _ = _cover_atomic_.LoadUint32

@@ -1,0 +1,6 @@
+./importsysccs.go
+./loadsysccs.go
+./register.go
+./sccproviderimpl.go
+./sysccapi.go
+./scc_test.go

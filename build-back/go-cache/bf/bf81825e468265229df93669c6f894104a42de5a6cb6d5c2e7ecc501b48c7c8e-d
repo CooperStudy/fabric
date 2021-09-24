@@ -1,0 +1,328 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/metrics/gendoc/options.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package gendoc; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+	"go/ast"
+	"path"
+	"reflect"
+	"strconv"
+	"strings"
+
+	"github.com/hyperledger/fabric/common/metrics"
+	"golang.org/x/tools/go/packages"
+)
+
+// Options scans the provided list of packages for options structs used when
+// creating metrics and returns instances that are recreated from the source
+// tree.
+func Options(pkgs []*packages.Package) ([]interface{}, error) {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[0], 1);
+	var options []interface{}
+	for _, p := range pkgs {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[2], 1);
+		for _, f := range p.Syntax {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[3], 1);
+			opts, err := FileOptions(f)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[5], 1);
+				return nil, err
+			}
+			_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[4], 1);options = append(options, opts...)
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[1], 1);return options, nil
+}
+
+// FileOptions walks the specified ast.File for options structs used when
+// creating metrics and returns instances that are recreated from the source.
+func FileOptions(f *ast.File) ([]interface{}, error) {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[6], 1);
+	var imports = walkImports(f)
+	var options []interface{}
+	var errors []error
+
+	// If the file contains gendoc:ignore, ignore the file
+	for _, c := range f.Comments {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[10], 1);
+		if strings.Index(c.Text(), "gendoc:ignore") != -1 {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[11], 1);
+			return nil, nil
+		}
+	}
+
+	// Iterate over declarations
+	_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[7], 1);for i := range f.Decls {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[12], 1);
+		ast.Inspect(f.Decls[i], func(x ast.Node) bool {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[13], 1);
+			node, ok := x.(*ast.ValueSpec)
+			if !ok {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[16], 1);
+				return true
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[14], 1);for _, v := range node.Values {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[17], 1);
+				value, ok := v.(*ast.CompositeLit)
+				if !ok {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[24], 1);
+					continue
+				}
+				_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[18], 1);literalType, ok := value.Type.(*ast.SelectorExpr)
+				if !ok {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[25], 1);
+					continue
+				}
+				_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[19], 1);ident, ok := literalType.X.(*ast.Ident)
+				if !ok {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[26], 1);
+					continue
+				}
+				_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[20], 1);if imports[ident.Name] != "github.com/hyperledger/fabric/common/metrics" {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[27], 1);
+					continue
+				}
+				_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[21], 1);option, err := createOption(literalType)
+				if err != nil {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[28], 1);
+					errors = append(errors, err)
+					break
+				}
+				_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[22], 1);option, err = populateOption(value, option)
+				if err != nil {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[29], 1);
+					errors = append(errors, err)
+					break
+				}
+				_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[23], 1);options = append(options, option)
+			}
+			_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[15], 1);return false
+		})
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[8], 1);if len(errors) != 0 {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[30], 1);
+		return nil, errors[0]
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[9], 1);return options, nil
+}
+
+func walkImports(f *ast.File) map[string]string {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[31], 1);
+	imports := map[string]string{}
+
+	for i := range f.Imports {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[33], 1);
+		ast.Inspect(f.Imports[i], func(x ast.Node) bool {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[34], 1);
+			switch node := x.(type) {
+			case *ast.ImportSpec:_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[35], 1);
+				importPath, err := strconv.Unquote(node.Path.Value)
+				if err != nil {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[39], 1);
+					panic(err)
+				}
+				_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[36], 1);importName := path.Base(importPath)
+				if node.Name != nil {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[40], 1);
+					importName = node.Name.Name
+				}
+				_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[37], 1);imports[importName] = importPath
+				return false
+
+			default:_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[38], 1);
+				return true
+			}
+		})
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[32], 1);return imports
+}
+
+func createOption(lit *ast.SelectorExpr) (interface{}, error) {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[41], 1);
+	optionName := lit.Sel.Name
+	switch optionName {
+	case "CounterOpts":_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[42], 1);
+		return &metrics.CounterOpts{}, nil
+	case "GaugeOpts":_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[43], 1);
+		return &metrics.GaugeOpts{}, nil
+	case "HistogramOpts":_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[44], 1);
+		return &metrics.HistogramOpts{}, nil
+	default:_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[45], 1);
+		return nil, fmt.Errorf("unknown object type: %s", optionName)
+	}
+}
+
+func populateOption(lit *ast.CompositeLit, target interface{}) (interface{}, error) {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[46], 1);
+	val := reflect.ValueOf(target).Elem()
+	for _, elem := range lit.Elts {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[48], 1);
+		if kv, ok := elem.(*ast.KeyValueExpr); ok {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[49], 1);
+			name := kv.Key.(*ast.Ident).Name
+			field := val.FieldByName(name)
+
+			switch name {
+			// ignored
+			case "Buckets":_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[50], 1);
+
+			// slice of strings
+			case "LabelNames":_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[51], 1);
+				labelNames, err := stringSlice(kv.Value.(*ast.CompositeLit))
+				if err != nil {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[56], 1);
+					return nil, err
+				}
+				_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[52], 1);labelNamesValue := reflect.ValueOf(labelNames)
+				field.Set(labelNamesValue)
+
+			// simple strings
+			case "Namespace", "Subsystem", "Name", "Help", "StatsdFormat":_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[53], 1);
+				basicVal := kv.Value.(*ast.BasicLit)
+				val, err := strconv.Unquote(basicVal.Value)
+				if err != nil {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[57], 1);
+					return nil, err
+				}
+				_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[54], 1);field.SetString(val)
+
+			default:_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[55], 1);
+				return nil, fmt.Errorf("unknown field name: %s", name)
+			}
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[47], 1);return val.Interface(), nil
+}
+
+func stringSlice(lit *ast.CompositeLit) ([]string, error) {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[58], 1);
+	var slice []string
+
+	for _, elem := range lit.Elts {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[60], 1);
+		val, err := strconv.Unquote(elem.(*ast.BasicLit).Value)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[62], 1);
+			return nil, err
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[61], 1);slice = append(slice, val)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_613837646237656166666432.Count[59], 1);return slice, nil
+}
+
+var GoCover_0_613837646237656166666432 = struct {
+	Count     [63]uint32
+	Pos       [3 * 63]uint32
+	NumStmt   [63]uint16
+} {
+	Pos: [3 * 63]uint32{
+		24, 26, 0x19003f, // [0]
+		35, 35, 0x150002, // [1]
+		26, 27, 0x1e0019, // [2]
+		27, 29, 0x12001e, // [3]
+		32, 32, 0x260004, // [4]
+		29, 31, 0x50012, // [5]
+		40, 46, 0x1f0036, // [6]
+		53, 53, 0x190002, // [7]
+		92, 92, 0x160002, // [8]
+		96, 96, 0x150002, // [9]
+		46, 47, 0x35001f, // [10]
+		47, 49, 0x40035, // [11]
+		53, 54, 0x310019, // [12]
+		54, 56, 0xb0031, // [13]
+		60, 60, 0x220004, // [14]
+		88, 88, 0x100004, // [15]
+		56, 58, 0x5000b, // [16]
+		60, 62, 0xc0022, // [17]
+		65, 66, 0xc0005, // [18]
+		69, 70, 0xc0005, // [19]
+		73, 73, 0x4e0005, // [20]
+		76, 77, 0x130005, // [21]
+		81, 82, 0x130005, // [22]
+		86, 86, 0x260005, // [23]
+		62, 63, 0xe000c, // [24]
+		66, 67, 0xe000c, // [25]
+		70, 71, 0xe000c, // [26]
+		73, 74, 0xe004e, // [27]
+		77, 79, 0xb0013, // [28]
+		82, 84, 0xb0013, // [29]
+		92, 94, 0x30016, // [30]
+		99, 102, 0x1b0031, // [31]
+		123, 123, 0x100002, // [32]
+		102, 103, 0x33001b, // [33]
+		103, 104, 0x1c0033, // [34]
+		105, 107, 0x130019, // [35]
+		110, 111, 0x190005, // [36]
+		114, 115, 0x110005, // [37]
+		117, 118, 0x10000c, // [38]
+		107, 108, 0x100013, // [39]
+		111, 113, 0x60019, // [40]
+		126, 128, 0x14003f, // [41]
+		129, 130, 0x250015, // [42]
+		131, 132, 0x230013, // [43]
+		133, 134, 0x270017, // [44]
+		135, 136, 0x40000a, // [45]
+		140, 142, 0x200055, // [46]
+		174, 174, 0x1d0002, // [47]
+		142, 143, 0x2d0020, // [48]
+		143, 147, 0x10002d, // [49]
+		149, 149, 0x130013, // [50]
+		152, 154, 0x130016, // [51]
+		157, 158, 0x1f0005, // [52]
+		161, 164, 0x130042, // [53]
+		167, 167, 0x190005, // [54]
+		169, 170, 0x3b000c, // [55]
+		154, 156, 0x60013, // [56]
+		164, 166, 0x60013, // [57]
+		177, 180, 0x20003b, // [58]
+		188, 188, 0x130002, // [59]
+		180, 182, 0x110020, // [60]
+		185, 185, 0x1d0003, // [61]
+		182, 184, 0x40011, // [62]
+	},
+	NumStmt: [63]uint16{
+		2, // 0
+		1, // 1
+		1, // 2
+		2, // 3
+		1, // 4
+		1, // 5
+		4, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		2, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		2, // 17
+		2, // 18
+		2, // 19
+		1, // 20
+		2, // 21
+		2, // 22
+		1, // 23
+		1, // 24
+		1, // 25
+		1, // 26
+		1, // 27
+		2, // 28
+		2, // 29
+		1, // 30
+		2, // 31
+		1, // 32
+		1, // 33
+		1, // 34
+		2, // 35
+		2, // 36
+		2, // 37
+		1, // 38
+		1, // 39
+		1, // 40
+		2, // 41
+		1, // 42
+		1, // 43
+		1, // 44
+		1, // 45
+		2, // 46
+		1, // 47
+		1, // 48
+		3, // 49
+		0, // 50
+		2, // 51
+		2, // 52
+		3, // 53
+		1, // 54
+		1, // 55
+		1, // 56
+		1, // 57
+		2, // 58
+		1, // 59
+		2, // 60
+		1, // 61
+		1, // 62
+	},
+}
+var _ = _cover_atomic_.LoadUint32

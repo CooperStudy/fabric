@@ -1,0 +1,174 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/discovery/cmd/stub.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package discovery; import _cover_atomic_ "sync/atomic"
+
+import (
+	"context"
+
+	"github.com/hyperledger/fabric/cmd/common"
+	"github.com/hyperledger/fabric/cmd/common/comm"
+	"github.com/hyperledger/fabric/cmd/common/signer"
+	"github.com/hyperledger/fabric/discovery/client"
+	. "github.com/hyperledger/fabric/protos/discovery"
+	"github.com/hyperledger/fabric/protos/utils"
+	"github.com/pkg/errors"
+)
+
+//go:generate mockery -dir ../client/ -name LocalResponse -case underscore -output mocks/
+//go:generate mockery -dir ../client/ -name ChannelResponse -case underscore -output mocks/
+//go:generate mockery -dir . -name ServiceResponse -case underscore -output mocks/
+
+// ServiceResponse represents a response sent from the discovery service
+type ServiceResponse interface {
+	// ForChannel returns a ChannelResponse in the context of a given channel
+	ForChannel(string) discovery.ChannelResponse
+
+	// ForLocal returns a LocalResponse in the context of no channel
+	ForLocal() discovery.LocalResponse
+
+	// Raw returns the raw response from the server
+	Raw() *Response
+}
+
+type response struct {
+	raw *Response
+	discovery.Response
+}
+
+func (r *response) Raw() *Response {_cover_atomic_.AddUint32(&GoCover_4_646636343763343830343930.Count[0], 1);
+	return r.raw
+}
+
+// ClientStub is a stub that communicates with the discovery service
+// using the discovery client implementation
+type ClientStub struct {
+}
+
+// Send sends the request, and receives a response
+func (stub *ClientStub) Send(server string, conf common.Config, req *discovery.Request) (ServiceResponse, error) {_cover_atomic_.AddUint32(&GoCover_4_646636343763343830343930.Count[1], 1);
+	comm, err := comm.NewClient(conf.TLSConfig)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_646636343763343830343930.Count[5], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_646636343763343830343930.Count[2], 1);signer, err := signer.NewSigner(conf.SignerConfig)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_646636343763343830343930.Count[6], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_646636343763343830343930.Count[3], 1);timeout, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	disc := discovery.NewClient(comm.NewDialer(server), signer.Sign, 0)
+
+	resp, err := disc.Send(timeout, req, &AuthInfo{
+		ClientIdentity:    signer.Creator,
+		ClientTlsCertHash: comm.TLSCertHash,
+	})
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_646636343763343830343930.Count[7], 1);
+		return nil, errors.Errorf("failed connecting to %s: %v", server, err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_646636343763343830343930.Count[4], 1);return &response{
+		Response: resp,
+	}, nil
+}
+
+// RawStub is a stub that communicates with the discovery service
+// without any intermediary.
+type RawStub struct {
+}
+
+// Send sends the request, and receives a response
+func (stub *RawStub) Send(server string, conf common.Config, req *discovery.Request) (ServiceResponse, error) {_cover_atomic_.AddUint32(&GoCover_4_646636343763343830343930.Count[8], 1);
+	comm, err := comm.NewClient(conf.TLSConfig)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_646636343763343830343930.Count[14], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_646636343763343830343930.Count[9], 1);signer, err := signer.NewSigner(conf.SignerConfig)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_646636343763343830343930.Count[15], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_646636343763343830343930.Count[10], 1);timeout, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	req.Authentication = &AuthInfo{
+		ClientIdentity:    signer.Creator,
+		ClientTlsCertHash: comm.TLSCertHash,
+	}
+
+	payload := utils.MarshalOrPanic(req.Request)
+	sig, err := signer.Sign(payload)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_646636343763343830343930.Count[16], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_646636343763343830343930.Count[11], 1);cc, err := comm.NewDialer(server)()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_646636343763343830343930.Count[17], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_646636343763343830343930.Count[12], 1);resp, err := NewDiscoveryClient(cc).Discover(timeout, &SignedRequest{
+		Payload:   payload,
+		Signature: sig,
+	})
+
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_646636343763343830343930.Count[18], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_646636343763343830343930.Count[13], 1);return &response{
+		raw: resp,
+	}, nil
+}
+
+var GoCover_4_646636343763343830343930 = struct {
+	Count     [19]uint32
+	Pos       [3 * 19]uint32
+	NumStmt   [19]uint16
+} {
+	Pos: [3 * 19]uint32{
+		42, 44, 0x20024, // [0]
+		52, 54, 0x100072, // [1]
+		57, 58, 0x100002, // [2]
+		61, 70, 0x100002, // [3]
+		73, 75, 0x80002, // [4]
+		54, 56, 0x30010, // [5]
+		58, 60, 0x30010, // [6]
+		70, 72, 0x30010, // [7]
+		84, 86, 0x10006f, // [8]
+		89, 90, 0x100002, // [9]
+		93, 103, 0x100002, // [10]
+		107, 108, 0x100002, // [11]
+		111, 116, 0x100002, // [12]
+		120, 122, 0x80002, // [13]
+		86, 88, 0x30010, // [14]
+		90, 92, 0x30010, // [15]
+		103, 105, 0x30010, // [16]
+		108, 110, 0x30010, // [17]
+		116, 118, 0x30010, // [18]
+	},
+	NumStmt: [19]uint16{
+		1, // 0
+		2, // 1
+		2, // 2
+		5, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		2, // 8
+		2, // 9
+		6, // 10
+		2, // 11
+		2, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+	},
+}
+var _ = _cover_atomic_.LoadUint32

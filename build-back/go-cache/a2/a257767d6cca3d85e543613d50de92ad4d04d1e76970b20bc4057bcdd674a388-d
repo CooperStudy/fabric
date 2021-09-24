@@ -1,0 +1,116 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/channelconfig/application.go:1
+/*
+Copyright IBM Corp. 2017 All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package channelconfig; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric/common/capabilities"
+	cb "github.com/hyperledger/fabric/protos/common"
+	pb "github.com/hyperledger/fabric/protos/peer"
+	"github.com/pkg/errors"
+)
+
+const (
+	// ApplicationGroupKey is the group name for the Application config
+	ApplicationGroupKey = "Application"
+
+	// ACLsKey is the name of the ACLs config
+	ACLsKey = "ACLs"
+)
+
+// ApplicationProtos is used as the source of the ApplicationConfig
+type ApplicationProtos struct {
+	ACLs         *pb.ACLs
+	Capabilities *cb.Capabilities
+}
+
+// ApplicationConfig implements the Application interface
+type ApplicationConfig struct {
+	applicationOrgs map[string]ApplicationOrg
+	protos          *ApplicationProtos
+}
+
+// NewApplicationConfig creates config from an Application config group
+func NewApplicationConfig(appGroup *cb.ConfigGroup, mspConfig *MSPConfigHandler) (*ApplicationConfig, error) {_cover_atomic_.AddUint32(&GoCover_2_373339383034363064316135.Count[0], 1);
+	ac := &ApplicationConfig{
+		applicationOrgs: make(map[string]ApplicationOrg),
+		protos:          &ApplicationProtos{},
+	}
+
+	if err := DeserializeProtoValuesFromGroup(appGroup, ac.protos); err != nil {_cover_atomic_.AddUint32(&GoCover_2_373339383034363064316135.Count[4], 1);
+		return nil, errors.Wrap(err, "failed to deserialize values")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_373339383034363064316135.Count[1], 1);if !ac.Capabilities().ACLs() {_cover_atomic_.AddUint32(&GoCover_2_373339383034363064316135.Count[5], 1);
+		if _, ok := appGroup.Values[ACLsKey]; ok {_cover_atomic_.AddUint32(&GoCover_2_373339383034363064316135.Count[6], 1);
+			return nil, errors.New("ACLs may not be specified without the required capability")
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_373339383034363064316135.Count[2], 1);var err error
+	for orgName, orgGroup := range appGroup.Groups {_cover_atomic_.AddUint32(&GoCover_2_373339383034363064316135.Count[7], 1);
+		ac.applicationOrgs[orgName], err = NewApplicationOrgConfig(orgName, orgGroup, mspConfig)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_373339383034363064316135.Count[8], 1);
+			return nil, err
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_373339383034363064316135.Count[3], 1);return ac, nil
+}
+
+// Organizations returns a map of org ID to ApplicationOrg
+func (ac *ApplicationConfig) Organizations() map[string]ApplicationOrg {_cover_atomic_.AddUint32(&GoCover_2_373339383034363064316135.Count[9], 1);
+	return ac.applicationOrgs
+}
+
+// Capabilities returns a map of capability name to Capability
+func (ac *ApplicationConfig) Capabilities() ApplicationCapabilities {_cover_atomic_.AddUint32(&GoCover_2_373339383034363064316135.Count[10], 1);
+	return capabilities.NewApplicationProvider(ac.protos.Capabilities.Capabilities)
+}
+
+// APIPolicyMapper returns a PolicyMapper that maps API names to policies
+func (ac *ApplicationConfig) APIPolicyMapper() PolicyMapper {_cover_atomic_.AddUint32(&GoCover_2_373339383034363064316135.Count[11], 1);
+	pm := newAPIsProvider(ac.protos.ACLs.Acls)
+
+	return pm
+}
+
+var GoCover_2_373339383034363064316135 = struct {
+	Count     [12]uint32
+	Pos       [3 * 12]uint32
+	NumStmt   [12]uint16
+} {
+	Pos: [3 * 12]uint32{
+		37, 43, 0x4d006e, // [0]
+		47, 47, 0x1f0002, // [1]
+		53, 54, 0x310002, // [2]
+		61, 61, 0x100002, // [3]
+		43, 45, 0x3004d, // [4]
+		47, 48, 0x2c001f, // [5]
+		48, 50, 0x4002c, // [6]
+		54, 56, 0x110031, // [7]
+		56, 58, 0x40011, // [8]
+		65, 67, 0x20048, // [9]
+		70, 72, 0x20045, // [10]
+		75, 79, 0x2003d, // [11]
+	},
+	NumStmt: [12]uint16{
+		2, // 0
+		1, // 1
+		2, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		2, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		2, // 11
+	},
+}
+var _ = _cover_atomic_.LoadUint32

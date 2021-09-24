@@ -1,0 +1,14 @@
+./buddyinfo.go
+./doc.go
+./fs.go
+./ipvs.go
+./mdstat.go
+./mountstats.go
+./net_dev.go
+./proc.go
+./proc_io.go
+./proc_limits.go
+./proc_ns.go
+./proc_stat.go
+./stat.go
+./xfrm.go

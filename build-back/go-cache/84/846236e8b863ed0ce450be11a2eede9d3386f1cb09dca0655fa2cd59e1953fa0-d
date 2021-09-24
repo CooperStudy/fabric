@@ -1,0 +1,67 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/orderer/common/msgprocessor/sizefilter.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package msgprocessor; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+
+	cb "github.com/hyperledger/fabric/protos/common"
+	ab "github.com/hyperledger/fabric/protos/orderer"
+)
+
+// Support defines the subset of the channel support required to create this filter
+type Support interface {
+	BatchSize() *ab.BatchSize
+}
+
+// New creates a size filter which rejects messages larger than maxBytes
+func NewSizeFilter(support Support) *MaxBytesRule {_cover_atomic_.AddUint32(&GoCover_4_646330373837303238396264.Count[0], 1);
+	return &MaxBytesRule{support: support}
+}
+
+// MaxBytesRule implements the Rule interface.
+type MaxBytesRule struct {
+	support Support
+}
+
+// Apply returns an error if the message exceeds the configured absolute max batch size.
+func (r *MaxBytesRule) Apply(message *cb.Envelope) error {_cover_atomic_.AddUint32(&GoCover_4_646330373837303238396264.Count[1], 1);
+	maxBytes := r.support.BatchSize().AbsoluteMaxBytes
+	if size := messageByteSize(message); size > maxBytes {_cover_atomic_.AddUint32(&GoCover_4_646330373837303238396264.Count[3], 1);
+		return fmt.Errorf("message payload is %d bytes and exceeds maximum allowed %d bytes", size, maxBytes)
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_646330373837303238396264.Count[2], 1);return nil
+}
+
+func messageByteSize(message *cb.Envelope) uint32 {_cover_atomic_.AddUint32(&GoCover_4_646330373837303238396264.Count[4], 1);
+	// XXX this is good approximation, but is going to be a few bytes short, because of the field specifiers in the proto marshaling
+	// this should probably be padded to determine the true exact marshaled size
+	return uint32(len(message.Payload) + len(message.Signature))
+}
+
+var GoCover_4_646330373837303238396264 = struct {
+	Count     [5]uint32
+	Pos       [3 * 5]uint32
+	NumStmt   [5]uint16
+} {
+	Pos: [3 * 5]uint32{
+		22, 24, 0x20033, // [0]
+		32, 34, 0x37003a, // [1]
+		37, 37, 0xc0002, // [2]
+		34, 36, 0x30037, // [3]
+		40, 44, 0x20033, // [4]
+	},
+	NumStmt: [5]uint16{
+		1, // 0
+		2, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+	},
+}
+var _ = _cover_atomic_.LoadUint32

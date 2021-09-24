@@ -1,0 +1,382 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/chaincode/lib/cid/cid.go:1
+/*
+Copyright IBM Corp. 2017 All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+                 http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package cid; import _cover_atomic_ "sync/atomic"
+
+import (
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/asn1"
+	"encoding/base64"
+	"encoding/hex"
+	"encoding/pem"
+	"fmt"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/attrmgr"
+	"github.com/hyperledger/fabric/protos/msp"
+	"github.com/pkg/errors"
+)
+
+// GetID returns the ID associated with the invoking identity.  This ID
+// is guaranteed to be unique within the MSP.
+func GetID(stub ChaincodeStubInterface) (string, error) {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[0], 1);
+	c, err := New(stub)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[2], 1);
+		return "", err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[1], 1);return c.GetID()
+}
+
+// GetMSPID returns the ID of the MSP associated with the identity that
+// submitted the transaction
+func GetMSPID(stub ChaincodeStubInterface) (string, error) {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[3], 1);
+	c, err := New(stub)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[5], 1);
+		return "", err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[4], 1);return c.GetMSPID()
+}
+
+// GetAttributeValue returns value of the specified attribute
+func GetAttributeValue(stub ChaincodeStubInterface, attrName string) (value string, found bool, err error) {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[6], 1);
+	c, err := New(stub)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[8], 1);
+		return "", false, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[7], 1);return c.GetAttributeValue(attrName)
+}
+
+// AssertAttributeValue checks to see if an attribute value equals the specified value
+func AssertAttributeValue(stub ChaincodeStubInterface, attrName, attrValue string) error {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[9], 1);
+	c, err := New(stub)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[11], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[10], 1);return c.AssertAttributeValue(attrName, attrValue)
+}
+
+// GetX509Certificate returns the X509 certificate associated with the client,
+// or nil if it was not identified by an X509 certificate.
+func GetX509Certificate(stub ChaincodeStubInterface) (*x509.Certificate, error) {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[12], 1);
+	c, err := New(stub)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[14], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[13], 1);return c.GetX509Certificate()
+}
+
+// ClientIdentityImpl implements the ClientIdentity interface
+type clientIdentityImpl struct {
+	stub  ChaincodeStubInterface
+	mspID string
+	cert  *x509.Certificate
+	attrs *attrmgr.Attributes
+}
+
+// New returns an instance of ClientIdentity
+func New(stub ChaincodeStubInterface) (ClientIdentity, error) {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[15], 1);
+	c := &clientIdentityImpl{stub: stub}
+	err := c.init()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[17], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[16], 1);return c, nil
+}
+
+// GetID returns a unique ID associated with the invoking identity.
+func (c *clientIdentityImpl) GetID() (string, error) {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[18], 1);
+	// The leading "x509::" distinguishes this as an X509 certificate, and
+	// the subject and issuer DNs uniquely identify the X509 certificate.
+	// The resulting ID will remain the same if the certificate is renewed.
+	id := fmt.Sprintf("x509::%s::%s", getDN(&c.cert.Subject), getDN(&c.cert.Issuer))
+	return base64.StdEncoding.EncodeToString([]byte(id)), nil
+}
+
+// GetMSPID returns the ID of the MSP associated with the identity that
+// submitted the transaction
+func (c *clientIdentityImpl) GetMSPID() (string, error) {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[19], 1);
+	return c.mspID, nil
+}
+
+// GetAttributeValue returns value of the specified attribute
+func (c *clientIdentityImpl) GetAttributeValue(attrName string) (value string, found bool, err error) {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[20], 1);
+	if c.attrs == nil {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[22], 1);
+		return "", false, nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[21], 1);return c.attrs.Value(attrName)
+}
+
+// AssertAttributeValue checks to see if an attribute value equals the specified value
+func (c *clientIdentityImpl) AssertAttributeValue(attrName, attrValue string) error {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[23], 1);
+	val, ok, err := c.GetAttributeValue(attrName)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[27], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[24], 1);if !ok {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[28], 1);
+		return errors.Errorf("Attribute '%s' was not found", attrName)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[25], 1);if val != attrValue {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[29], 1);
+		return errors.Errorf("Attribute '%s' equals '%s', not '%s'", attrName, val, attrValue)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[26], 1);return nil
+}
+
+// GetX509Certificate returns the X509 certificate associated with the client,
+// or nil if it was not identified by an X509 certificate.
+func (c *clientIdentityImpl) GetX509Certificate() (*x509.Certificate, error) {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[30], 1);
+	return c.cert, nil
+}
+
+// Initialize the client
+func (c *clientIdentityImpl) init() error {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[31], 1);
+	signingID, err := c.getIdentity()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[36], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[32], 1);c.mspID = signingID.GetMspid()
+	idbytes := signingID.GetIdBytes()
+	block, _ := pem.Decode(idbytes)
+	if block == nil {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[37], 1);
+		return errors.New("Expecting a PEM-encoded X509 certificate; PEM block not found")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[33], 1);cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[38], 1);
+		return errors.Wrap(err, "failed to parse certificate")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[34], 1);c.cert = cert
+	attrs, err := attrmgr.New().GetAttributesFromCert(cert)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[39], 1);
+		return errors.WithMessage(err, "failed to get attributes from the transaction invoker's certificate")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[35], 1);c.attrs = attrs
+	return nil
+}
+
+// Unmarshals the bytes returned by ChaincodeStubInterface.GetCreator method and
+// returns the resulting msp.SerializedIdentity object
+func (c *clientIdentityImpl) getIdentity() (*msp.SerializedIdentity, error) {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[40], 1);
+	sid := &msp.SerializedIdentity{}
+	creator, err := c.stub.GetCreator()
+	if err != nil || creator == nil {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[43], 1);
+		return nil, errors.WithMessage(err, "failed to get transaction invoker's identity from the chaincode stub")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[41], 1);err = proto.Unmarshal(creator, sid)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[44], 1);
+		return nil, errors.Wrap(err, "failed to unmarshal transaction invoker's identity")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[42], 1);return sid, nil
+}
+
+// Get the DN (distinguished name) associated with a pkix.Name.
+// NOTE: This code is almost a direct copy of the String() function in
+// https://go-review.googlesource.com/c/go/+/67270/1/src/crypto/x509/pkix/pkix.go#26
+// which returns a DN as defined by RFC 2253.
+func getDN(name *pkix.Name) string {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[45], 1);
+	r := name.ToRDNSequence()
+	s := ""
+	for i := 0; i < len(r); i++ {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[47], 1);
+		rdn := r[len(r)-1-i]
+		if i > 0 {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[49], 1);
+			s += ","
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[48], 1);for j, tv := range rdn {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[50], 1);
+			if j > 0 {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[54], 1);
+				s += "+"
+			}
+			_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[51], 1);typeString := tv.Type.String()
+			typeName, ok := attributeTypeNames[typeString]
+			if !ok {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[55], 1);
+				derBytes, err := asn1.Marshal(tv.Value)
+				if err == nil {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[57], 1);
+					s += typeString + "=#" + hex.EncodeToString(derBytes)
+					continue // No value escaping necessary.
+				}
+				_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[56], 1);typeName = typeString
+			}
+			_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[52], 1);valueString := fmt.Sprint(tv.Value)
+			escaped := ""
+			begin := 0
+			for idx, c := range valueString {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[58], 1);
+				if (idx == 0 && (c == ' ' || c == '#')) ||
+					(idx == len(valueString)-1 && c == ' ') {_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[60], 1);
+					escaped += valueString[begin:idx]
+					escaped += "\\" + string(c)
+					begin = idx + 1
+					continue
+				}
+				_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[59], 1);switch c {
+				case ',', '+', '"', '\\', '<', '>', ';':_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[61], 1);
+					escaped += valueString[begin:idx]
+					escaped += "\\" + string(c)
+					begin = idx + 1
+				}
+			}
+			_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[53], 1);escaped += valueString[begin:]
+			s += typeName + "=" + escaped
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_316433616636646530303766.Count[46], 1);return s
+}
+
+var attributeTypeNames = map[string]string{
+	"2.5.4.6":  "C",
+	"2.5.4.10": "O",
+	"2.5.4.11": "OU",
+	"2.5.4.3":  "CN",
+	"2.5.4.5":  "SERIALNUMBER",
+	"2.5.4.7":  "L",
+	"2.5.4.8":  "ST",
+	"2.5.4.9":  "STREET",
+	"2.5.4.17": "POSTALCODE",
+}
+
+var GoCover_0_316433616636646530303766 = struct {
+	Count     [62]uint32
+	Pos       [3 * 62]uint32
+	NumStmt   [62]uint16
+} {
+	Pos: [3 * 62]uint32{
+		36, 38, 0x100039, // [0]
+		41, 41, 0x120002, // [1]
+		38, 40, 0x30010, // [2]
+		46, 48, 0x10003c, // [3]
+		51, 51, 0x150002, // [4]
+		48, 50, 0x30010, // [5]
+		55, 57, 0x10006c, // [6]
+		60, 60, 0x260002, // [7]
+		57, 59, 0x30010, // [8]
+		64, 66, 0x10005a, // [9]
+		69, 69, 0x340002, // [10]
+		66, 68, 0x30010, // [11]
+		74, 76, 0x100051, // [12]
+		79, 79, 0x1f0002, // [13]
+		76, 78, 0x30010, // [14]
+		91, 94, 0x10003f, // [15]
+		97, 97, 0xf0002, // [16]
+		94, 96, 0x30010, // [17]
+		101, 107, 0x20036, // [18]
+		111, 113, 0x20039, // [19]
+		116, 117, 0x140067, // [20]
+		120, 120, 0x200002, // [21]
+		117, 119, 0x30014, // [22]
+		124, 126, 0x100055, // [23]
+		129, 129, 0x90002, // [24]
+		132, 132, 0x160002, // [25]
+		135, 135, 0xc0002, // [26]
+		126, 128, 0x30010, // [27]
+		129, 131, 0x30009, // [28]
+		132, 134, 0x30016, // [29]
+		140, 142, 0x2004e, // [30]
+		145, 147, 0x10002b, // [31]
+		150, 153, 0x120002, // [32]
+		156, 157, 0x100002, // [33]
+		160, 162, 0x100002, // [34]
+		165, 166, 0xc0002, // [35]
+		147, 149, 0x30010, // [36]
+		153, 155, 0x30012, // [37]
+		157, 159, 0x30010, // [38]
+		162, 164, 0x30010, // [39]
+		171, 174, 0x22004d, // [40]
+		177, 178, 0x100002, // [41]
+		181, 181, 0x110002, // [42]
+		174, 176, 0x30022, // [43]
+		178, 180, 0x30010, // [44]
+		188, 191, 0x1e0024, // [45]
+		232, 232, 0xa0002, // [46]
+		191, 193, 0xc001e, // [47]
+		196, 196, 0x1a0003, // [48]
+		193, 195, 0x4000c, // [49]
+		196, 197, 0xd001a, // [50]
+		200, 202, 0xb0004, // [51]
+		210, 213, 0x240004, // [52]
+		228, 229, 0x210004, // [53]
+		197, 199, 0x5000d, // [54]
+		202, 204, 0x13000b, // [55]
+		208, 208, 0x1a0005, // [56]
+		204, 206, 0xe0013, // [57]
+		213, 215, 0x2e0024, // [58]
+		221, 221, 0xe0005, // [59]
+		215, 219, 0xe002e, // [60]
+		222, 225, 0x15002d, // [61]
+	},
+	NumStmt: [62]uint16{
+		2, // 0
+		1, // 1
+		1, // 2
+		2, // 3
+		1, // 4
+		1, // 5
+		2, // 6
+		1, // 7
+		1, // 8
+		2, // 9
+		1, // 10
+		1, // 11
+		2, // 12
+		1, // 13
+		1, // 14
+		3, // 15
+		1, // 16
+		1, // 17
+		2, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		1, // 22
+		2, // 23
+		1, // 24
+		1, // 25
+		1, // 26
+		1, // 27
+		1, // 28
+		1, // 29
+		1, // 30
+		2, // 31
+		4, // 32
+		2, // 33
+		3, // 34
+		2, // 35
+		1, // 36
+		1, // 37
+		1, // 38
+		1, // 39
+		3, // 40
+		2, // 41
+		1, // 42
+		1, // 43
+		1, // 44
+		3, // 45
+		1, // 46
+		2, // 47
+		1, // 48
+		1, // 49
+		1, // 50
+		3, // 51
+		4, // 52
+		2, // 53
+		1, // 54
+		2, // 55
+		1, // 56
+		2, // 57
+		1, // 58
+		1, // 59
+		4, // 60
+		3, // 61
+	},
+}
+var _ = _cover_atomic_.LoadUint32

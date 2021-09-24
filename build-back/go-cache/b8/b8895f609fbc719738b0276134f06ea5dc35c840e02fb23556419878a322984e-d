@@ -1,0 +1,8 @@
+./choose.go
+./graph.go
+./perm.go
+./tree.go
+./choose_test.go
+./graph_test.go
+./perm_test.go
+./tree_test.go

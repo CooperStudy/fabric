@@ -1,0 +1,442 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/handlers/library/registry.go:1
+/*
+Copyright IBM Corp, SecureKey Technologies Inc. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package library; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+	"os"
+	"plugin"
+	"reflect"
+	"sync"
+
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/core/handlers/auth"
+	"github.com/hyperledger/fabric/core/handlers/decoration"
+	endorsement2 "github.com/hyperledger/fabric/core/handlers/endorsement/api"
+	"github.com/hyperledger/fabric/core/handlers/validation/api"
+)
+
+var logger = flogging.MustGetLogger("core.handlers")
+
+// Registry defines an object that looks up
+// handlers by name
+type Registry interface {
+	// Lookup returns a handler with a given
+	// registered name, or nil if does not exist
+	Lookup(HandlerType) interface{}
+}
+
+// HandlerType defines custom handlers that can filter and mutate
+// objects passing within the peer
+type HandlerType int
+
+const (
+	// Auth handler - reject or forward proposals from clients
+	Auth HandlerType = iota
+	// Decoration handler - append or mutate the chaincode input
+	// passed to the chaincode
+	Decoration
+	Endorsement
+	Validation
+
+	authPluginFactory      = "NewFilter"
+	decoratorPluginFactory = "NewDecorator"
+	pluginFactory          = "NewPluginFactory"
+)
+
+type registry struct {
+	filters    []auth.Filter
+	decorators []decoration.Decorator
+	endorsers  map[string]endorsement2.PluginFactory
+	validators map[string]validation.PluginFactory
+}
+
+var once sync.Once
+var reg registry
+
+// Config configures the factory methods
+// and plugins for the registry
+type Config struct {
+	AuthFilters []*HandlerConfig `mapstructure:"authFilters" yaml:"authFilters"`
+	Decorators  []*HandlerConfig `mapstructure:"decorators" yaml:"decorators"`
+	Endorsers   PluginMapping    `mapstructure:"endorsers" yaml:"endorsers"`
+	Validators  PluginMapping    `mapstructure:"validators" yaml:"validators"`
+}
+
+type PluginMapping map[string]*HandlerConfig
+
+// HandlerConfig defines configuration for a plugin or compiled handler
+type HandlerConfig struct {
+	Name    string `mapstructure:"name" yaml:"name"`
+	Library string `mapstructure:"library" yaml:"library"`
+}
+
+// InitRegistry creates the (only) instance
+// of the registry
+func InitRegistry(c Config) Registry {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[0], 1);
+	once.Do(func() {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[2], 1);
+		reg = registry{
+			endorsers:  make(map[string]endorsement2.PluginFactory),
+			validators: make(map[string]validation.PluginFactory),
+		}
+		reg.loadHandlers(c)
+	})
+	_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[1], 1);return &reg
+}
+
+// loadHandlers loads the configured handlers
+func (r *registry) loadHandlers(c Config) {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[3], 1);
+	for _, config := range c.AuthFilters {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[7], 1);
+		r.evaluateModeAndLoad(config, Auth)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[4], 1);for _, config := range c.Decorators {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[8], 1);
+		r.evaluateModeAndLoad(config, Decoration)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[5], 1);for chaincodeID, config := range c.Endorsers {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[9], 1);
+		r.evaluateModeAndLoad(config, Endorsement, chaincodeID)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[6], 1);for chaincodeID, config := range c.Validators {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[10], 1);
+		r.evaluateModeAndLoad(config, Validation, chaincodeID)
+	}
+}
+
+// evaluateModeAndLoad if a library path is provided, load the shared object
+func (r *registry) evaluateModeAndLoad(c *HandlerConfig, handlerType HandlerType, extraArgs ...string) {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[11], 1);
+	if c.Library != "" {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[12], 1);
+		r.loadPlugin(c.Library, handlerType, extraArgs...)
+	} else{ _cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[13], 1);{
+		r.loadCompiled(c.Name, handlerType, extraArgs...)
+	}}
+}
+
+// loadCompiled loads a statically compiled handler
+func (r *registry) loadCompiled(handlerFactory string, handlerType HandlerType, extraArgs ...string) {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[14], 1);
+	registryMD := reflect.ValueOf(&HandlerLibrary{})
+
+	o := registryMD.MethodByName(handlerFactory)
+	if !o.IsValid() {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[16], 1);
+		logger.Panicf(fmt.Sprintf("Method %s isn't a method of HandlerLibrary", handlerFactory))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[15], 1);inst := o.Call(nil)[0].Interface()
+
+	if handlerType == Auth {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[17], 1);
+		r.filters = append(r.filters, inst.(auth.Filter))
+	} else{ _cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[18], 1);if handlerType == Decoration {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[19], 1);
+		r.decorators = append(r.decorators, inst.(decoration.Decorator))
+	} else{ _cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[20], 1);if handlerType == Endorsement {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[21], 1);
+		if len(extraArgs) != 1 {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[23], 1);
+			logger.Panicf("expected 1 argument in extraArgs")
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[22], 1);r.endorsers[extraArgs[0]] = inst.(endorsement2.PluginFactory)
+	} else{ _cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[24], 1);if handlerType == Validation {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[25], 1);
+		if len(extraArgs) != 1 {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[27], 1);
+			logger.Panicf("expected 1 argument in extraArgs")
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[26], 1);r.validators[extraArgs[0]] = inst.(validation.PluginFactory)
+	}}}}
+}
+
+// loadPlugin loads a pluggagle handler
+func (r *registry) loadPlugin(pluginPath string, handlerType HandlerType, extraArgs ...string) {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[28], 1);
+	if _, err := os.Stat(pluginPath); err != nil {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[31], 1);
+		logger.Panicf(fmt.Sprintf("Could not find plugin at path %s: %s", pluginPath, err))
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[29], 1);p, err := plugin.Open(pluginPath)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[32], 1);
+		logger.Panicf(fmt.Sprintf("Error opening plugin at path %s: %s", pluginPath, err))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[30], 1);if handlerType == Auth {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[33], 1);
+		r.initAuthPlugin(p)
+	} else{ _cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[34], 1);if handlerType == Decoration {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[35], 1);
+		r.initDecoratorPlugin(p)
+	} else{ _cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[36], 1);if handlerType == Endorsement {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[37], 1);
+		r.initEndorsementPlugin(p, extraArgs...)
+	} else{ _cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[38], 1);if handlerType == Validation {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[39], 1);
+		r.initValidationPlugin(p, extraArgs...)
+	}}}}
+}
+
+// initAuthPlugin constructs an auth filter from the given plugin
+func (r *registry) initAuthPlugin(p *plugin.Plugin) {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[40], 1);
+	constructorSymbol, err := p.Lookup(authPluginFactory)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[43], 1);
+		panicWithLookupError(authPluginFactory, err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[41], 1);constructor, ok := constructorSymbol.(func() auth.Filter)
+	if !ok {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[44], 1);
+		panicWithDefinitionError(authPluginFactory)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[42], 1);filter := constructor()
+	if filter != nil {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[45], 1);
+		r.filters = append(r.filters, filter)
+	}
+}
+
+// initDecoratorPlugin constructs a decorator from the given plugin
+func (r *registry) initDecoratorPlugin(p *plugin.Plugin) {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[46], 1);
+	constructorSymbol, err := p.Lookup(decoratorPluginFactory)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[49], 1);
+		panicWithLookupError(decoratorPluginFactory, err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[47], 1);constructor, ok := constructorSymbol.(func() decoration.Decorator)
+	if !ok {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[50], 1);
+		panicWithDefinitionError(decoratorPluginFactory)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[48], 1);decorator := constructor()
+	if decorator != nil {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[51], 1);
+		r.decorators = append(r.decorators, constructor())
+	}
+}
+
+func (r *registry) initEndorsementPlugin(p *plugin.Plugin, extraArgs ...string) {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[52], 1);
+	if len(extraArgs) != 1 {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[57], 1);
+		logger.Panicf("expected 1 argument in extraArgs")
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[53], 1);factorySymbol, err := p.Lookup(pluginFactory)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[58], 1);
+		panicWithLookupError(pluginFactory, err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[54], 1);constructor, ok := factorySymbol.(func() endorsement2.PluginFactory)
+	if !ok {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[59], 1);
+		panicWithDefinitionError(pluginFactory)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[55], 1);factory := constructor()
+	if factory == nil {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[60], 1);
+		logger.Panicf("factory instance returned nil")
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[56], 1);r.endorsers[extraArgs[0]] = factory
+}
+
+func (r *registry) initValidationPlugin(p *plugin.Plugin, extraArgs ...string) {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[61], 1);
+	if len(extraArgs) != 1 {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[66], 1);
+		logger.Panicf("expected 1 argument in extraArgs")
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[62], 1);factorySymbol, err := p.Lookup(pluginFactory)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[67], 1);
+		panicWithLookupError(pluginFactory, err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[63], 1);constructor, ok := factorySymbol.(func() validation.PluginFactory)
+	if !ok {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[68], 1);
+		panicWithDefinitionError(pluginFactory)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[64], 1);factory := constructor()
+	if factory == nil {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[69], 1);
+		logger.Panicf("factory instance returned nil")
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[65], 1);r.validators[extraArgs[0]] = factory
+}
+
+// panicWithLookupError panics when a handler constructor lookup fails
+func panicWithLookupError(factory string, err error) {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[70], 1);
+	logger.Panicf(fmt.Sprintf("Plugin must contain constructor with name %s. Error from lookup: %s",
+		factory, err))
+}
+
+// panicWithDefinitionError panics when a handler constructor does not match
+// the expected function definition
+func panicWithDefinitionError(factory string) {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[71], 1);
+	logger.Panicf(fmt.Sprintf("Constructor method %s does not match expected definition",
+		factory))
+}
+
+// Lookup returns a list of handlers with the given
+// given type, or nil if none exist
+func (r *registry) Lookup(handlerType HandlerType) interface{} {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[72], 1);
+	if handlerType == Auth {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[74], 1);
+		return r.filters
+	} else{ _cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[75], 1);if handlerType == Decoration {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[76], 1);
+		return r.decorators
+	} else{ _cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[77], 1);if handlerType == Endorsement {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[78], 1);
+		return r.endorsers
+	} else{ _cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[79], 1);if handlerType == Validation {_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[80], 1);
+		return r.validators
+	}}}}
+
+	_cover_atomic_.AddUint32(&GoCover_1_666161666230303134643734.Count[73], 1);return nil
+}
+
+var GoCover_1_666161666230303134643734 = struct {
+	Count     [81]uint32
+	Pos       [3 * 81]uint32
+	NumStmt   [81]uint16
+} {
+	Pos: [3 * 81]uint32{
+		80, 81, 0x110026, // [0]
+		88, 88, 0xd0002, // [1]
+		81, 87, 0x30011, // [2]
+		92, 93, 0x27002b, // [3]
+		96, 96, 0x260002, // [4]
+		100, 100, 0x2f0002, // [5]
+		104, 104, 0x300002, // [6]
+		93, 95, 0x30027, // [7]
+		96, 98, 0x30026, // [8]
+		100, 102, 0x3002f, // [9]
+		104, 106, 0x30030, // [10]
+		110, 111, 0x150068, // [11]
+		111, 113, 0x30015, // [12]
+		113, 115, 0x30008, // [13]
+		119, 123, 0x120066, // [14]
+		127, 129, 0x190002, // [15]
+		123, 125, 0x30012, // [16]
+		129, 131, 0x30019, // [17]
+		131, 131, 0x260008, // [18]
+		131, 133, 0x30026, // [19]
+		133, 133, 0x270008, // [20]
+		133, 134, 0x1a0027, // [21]
+		137, 137, 0x400003, // [22]
+		134, 136, 0x4001a, // [23]
+		138, 138, 0x260008, // [24]
+		138, 139, 0x1a0026, // [25]
+		142, 142, 0x3f0003, // [26]
+		139, 141, 0x4001a, // [27]
+		147, 148, 0x2f0060, // [28]
+		151, 152, 0x100002, // [29]
+		156, 156, 0x190002, // [30]
+		148, 150, 0x3002f, // [31]
+		152, 154, 0x30010, // [32]
+		156, 158, 0x30019, // [33]
+		158, 158, 0x260008, // [34]
+		158, 160, 0x30026, // [35]
+		160, 160, 0x270008, // [36]
+		160, 162, 0x30027, // [37]
+		162, 162, 0x260008, // [38]
+		162, 164, 0x30026, // [39]
+		168, 170, 0x100035, // [40]
+		173, 174, 0x90002, // [41]
+		178, 179, 0x130002, // [42]
+		170, 172, 0x30010, // [43]
+		174, 176, 0x30009, // [44]
+		179, 181, 0x30013, // [45]
+		185, 187, 0x10003a, // [46]
+		190, 191, 0x90002, // [47]
+		194, 195, 0x160002, // [48]
+		187, 189, 0x30010, // [49]
+		191, 193, 0x30009, // [50]
+		195, 197, 0x30016, // [51]
+		200, 201, 0x190051, // [52]
+		204, 205, 0x100002, // [53]
+		209, 210, 0x90002, // [54]
+		213, 214, 0x140002, // [55]
+		217, 217, 0x250002, // [56]
+		201, 203, 0x30019, // [57]
+		205, 207, 0x30010, // [58]
+		210, 212, 0x30009, // [59]
+		214, 216, 0x30014, // [60]
+		220, 221, 0x190050, // [61]
+		224, 225, 0x100002, // [62]
+		229, 230, 0x90002, // [63]
+		233, 234, 0x140002, // [64]
+		237, 237, 0x260002, // [65]
+		221, 223, 0x30019, // [66]
+		225, 227, 0x30010, // [67]
+		230, 232, 0x30009, // [68]
+		234, 236, 0x30014, // [69]
+		241, 244, 0x20036, // [70]
+		248, 251, 0x2002f, // [71]
+		255, 256, 0x190040, // [72]
+		266, 266, 0xc0002, // [73]
+		256, 258, 0x30019, // [74]
+		258, 258, 0x260008, // [75]
+		258, 260, 0x30026, // [76]
+		260, 260, 0x270008, // [77]
+		260, 262, 0x30027, // [78]
+		262, 262, 0x260008, // [79]
+		262, 264, 0x30026, // [80]
+	},
+	NumStmt: [81]uint16{
+		1, // 0
+		1, // 1
+		2, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		3, // 14
+		2, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+		1, // 24
+		1, // 25
+		1, // 26
+		1, // 27
+		1, // 28
+		2, // 29
+		1, // 30
+		1, // 31
+		1, // 32
+		1, // 33
+		1, // 34
+		1, // 35
+		1, // 36
+		1, // 37
+		1, // 38
+		1, // 39
+		2, // 40
+		2, // 41
+		2, // 42
+		1, // 43
+		1, // 44
+		1, // 45
+		2, // 46
+		2, // 47
+		2, // 48
+		1, // 49
+		1, // 50
+		1, // 51
+		1, // 52
+		2, // 53
+		2, // 54
+		2, // 55
+		1, // 56
+		1, // 57
+		1, // 58
+		1, // 59
+		1, // 60
+		1, // 61
+		2, // 62
+		2, // 63
+		2, // 64
+		1, // 65
+		1, // 66
+		1, // 67
+		1, // 68
+		1, // 69
+		1, // 70
+		1, // 71
+		1, // 72
+		1, // 73
+		1, // 74
+		1, // 75
+		1, // 76
+		1, // 77
+		1, // 78
+		1, // 79
+		1, // 80
+	},
+}
+var _ = _cover_atomic_.LoadUint32

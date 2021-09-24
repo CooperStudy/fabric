@@ -1,0 +1,12 @@
+# test log
+getenv TMPDIR
+getenv PATH
+stat /usr/local/go/bin/go
+open /dev/null
+open /usr/local/go/bin/go
+open /dev/null
+open /tmp/gexec_artifacts455897751/g050661642/discover
+stat /tmp/gexec_artifacts455897751
+open /tmp/gexec_artifacts455897751
+stat /tmp/gexec_artifacts455897751/g050661642
+open /tmp/gexec_artifacts455897751/g050661642

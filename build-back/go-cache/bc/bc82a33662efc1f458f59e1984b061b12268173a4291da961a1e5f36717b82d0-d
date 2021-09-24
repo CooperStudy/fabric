@@ -1,0 +1,257 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/ledger/blockledger/ram/impl.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package ramledger; import _cover_atomic_ "sync/atomic"
+
+import (
+	"bytes"
+	"sync"
+
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/common/ledger/blockledger"
+	cb "github.com/hyperledger/fabric/protos/common"
+	ab "github.com/hyperledger/fabric/protos/orderer"
+	"github.com/pkg/errors"
+)
+
+var logger = flogging.MustGetLogger("common.ledger.blockledger.ram")
+
+type cursor struct {
+	list *simpleList
+}
+
+type simpleList struct {
+	lock   sync.RWMutex
+	next   *simpleList
+	signal chan struct{}
+	block  *cb.Block
+}
+
+func (s *simpleList) getNext() *simpleList {_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[0], 1);
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return s.next
+}
+
+func (s *simpleList) setNext(n *simpleList) {_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[1], 1);
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.next = n
+}
+
+type ramLedger struct {
+	lock    sync.RWMutex
+	maxSize int
+	size    int
+	oldest  *simpleList
+	newest  *simpleList
+}
+
+// Next blocks until there is a new block available, or returns an error if the
+// next block is no longer retrievable
+func (cu *cursor) Next() (*cb.Block, cb.Status) {_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[2], 1);
+	// This only loops once, as signal reading indicates non-nil next
+	for {_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[3], 1);
+		next := cu.list.getNext()
+		if next != nil {_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[5], 1);
+			cu.list = next
+			return cu.list.block, cb.Status_SUCCESS
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[4], 1);<-cu.list.signal
+	}
+}
+
+// Close does nothing
+func (cu *cursor) Close() {_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[6], 1);}
+
+// Iterator returns an Iterator, as specified by a ab.SeekInfo message, and its
+// starting block number
+func (rl *ramLedger) Iterator(startPosition *ab.SeekPosition) (blockledger.Iterator, uint64) {_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[7], 1);
+	rl.lock.RLock()
+	defer rl.lock.RUnlock()
+
+	var list *simpleList
+	switch start := startPosition.Type.(type) {
+	case *ab.SeekPosition_Oldest:_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[10], 1);
+		oldest := rl.oldest
+		list = &simpleList{
+			block:  &cb.Block{Header: &cb.BlockHeader{Number: oldest.block.Header.Number - 1}},
+			next:   oldest,
+			signal: make(chan struct{}),
+		}
+		close(list.signal)
+	case *ab.SeekPosition_Newest:_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[11], 1);
+		newest := rl.newest
+		list = &simpleList{
+			block:  &cb.Block{Header: &cb.BlockHeader{Number: newest.block.Header.Number - 1}},
+			next:   newest,
+			signal: make(chan struct{}),
+		}
+		close(list.signal)
+	case *ab.SeekPosition_Specified:_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[12], 1);
+		oldest := rl.oldest
+		specified := start.Specified.Number
+		logger.Debugf("Attempting to return block %d", specified)
+
+		// Note the two +1's here is to accommodate the 'preGenesis' block of ^uint64(0)
+		if specified+1 < oldest.block.Header.Number+1 || specified > rl.newest.block.Header.Number+1 {_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[15], 1);
+			logger.Debugf("Returning error iterator because specified seek was %d with oldest %d and newest %d",
+				specified, rl.oldest.block.Header.Number, rl.newest.block.Header.Number)
+			return &blockledger.NotFoundErrorIterator{}, 0
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[13], 1);if specified == oldest.block.Header.Number {_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[16], 1);
+			list = &simpleList{
+				block:  &cb.Block{Header: &cb.BlockHeader{Number: oldest.block.Header.Number - 1}},
+				next:   oldest,
+				signal: make(chan struct{}),
+			}
+			close(list.signal)
+			break
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[14], 1);list = oldest
+		for {_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[17], 1);
+			if list.block.Header.Number == specified-1 {_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[19], 1);
+				break
+			}
+			_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[18], 1);list = list.getNext() // No need for nil check, because of range check above
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[8], 1);cursor := &cursor{list: list}
+	blockNum := list.block.Header.Number + 1
+
+	// If the cursor is for pre-genesis, skip it, the block number wraps
+	if blockNum == ^uint64(0) {_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[20], 1);
+		cursor.Next()
+		blockNum++
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[9], 1);return cursor, blockNum
+}
+
+// Height returns the number of blocks on the ledger
+func (rl *ramLedger) Height() uint64 {_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[21], 1);
+	rl.lock.RLock()
+	defer rl.lock.RUnlock()
+	return rl.newest.block.Header.Number + 1
+}
+
+// Append appends a new block to the ledger
+func (rl *ramLedger) Append(block *cb.Block) error {_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[22], 1);
+	rl.lock.Lock()
+	defer rl.lock.Unlock()
+
+	if block.Header.Number != rl.newest.block.Header.Number+1 {_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[25], 1);
+		return errors.Errorf("block number should have been %d but was %d",
+			rl.newest.block.Header.Number+1, block.Header.Number)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[23], 1);if rl.newest.block.Header.Number+1 != 0 {_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[26], 1); // Skip this check for genesis block insertion
+		if !bytes.Equal(block.Header.PreviousHash, rl.newest.block.Header.Hash()) {_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[27], 1);
+			return errors.Errorf("block should have had previous hash of %x but was %x",
+				rl.newest.block.Header.Hash(), block.Header.PreviousHash)
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[24], 1);rl.appendBlock(block)
+	return nil
+}
+
+func (rl *ramLedger) appendBlock(block *cb.Block) {_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[28], 1);
+	next := &simpleList{
+		signal: make(chan struct{}),
+		block:  block,
+	}
+	rl.newest.setNext(next)
+
+	lastSignal := rl.newest.signal
+	logger.Debugf("Sending signal that block %d has a successor", rl.newest.block.Header.Number)
+	rl.newest = rl.newest.getNext()
+	close(lastSignal)
+
+	rl.size++
+
+	if rl.size > rl.maxSize {_cover_atomic_.AddUint32(&GoCover_1_393761663133326161353863.Count[29], 1);
+		logger.Debugf("RAM ledger max size about to be exceeded, removing oldest item: %d",
+			rl.oldest.block.Header.Number)
+		rl.oldest = rl.oldest.getNext()
+		rl.size--
+	}
+}
+
+var GoCover_1_393761663133326161353863 = struct {
+	Count     [30]uint32
+	Pos       [3 * 30]uint32
+	NumStmt   [30]uint16
+} {
+	Pos: [3 * 30]uint32{
+		33, 37, 0x2002c, // [0]
+		39, 43, 0x2002d, // [1]
+		55, 57, 0x60031, // [2]
+		57, 59, 0x120006, // [3]
+		63, 63, 0x130003, // [4]
+		59, 62, 0x40012, // [5]
+		68, 68, 0x1d001c, // [6]
+		72, 77, 0x2c005e, // [7]
+		124, 128, 0x1c0002, // [8]
+		133, 133, 0x190002, // [9]
+		78, 85, 0x15001f, // [10]
+		86, 93, 0x15001f, // [11]
+		94, 100, 0x600022, // [12]
+		106, 106, 0x2e0003, // [13]
+		116, 117, 0x70003, // [14]
+		100, 104, 0x40060, // [15]
+		106, 113, 0x9002e, // [16]
+		117, 118, 0x2f0007, // [17]
+		121, 121, 0x190004, // [18]
+		118, 119, 0xa002f, // [19]
+		128, 131, 0x3001c, // [20]
+		137, 141, 0x20026, // [21]
+		144, 148, 0x3c0034, // [22]
+		153, 153, 0x2a0002, // [23]
+		160, 161, 0xc0002, // [24]
+		148, 151, 0x3003c, // [25]
+		153, 154, 0x4d002a, // [26]
+		154, 157, 0x4004d, // [27]
+		164, 178, 0x1a0033, // [28]
+		178, 183, 0x3001a, // [29]
+	},
+	NumStmt: [30]uint16{
+		3, // 0
+		3, // 1
+		1, // 2
+		2, // 3
+		1, // 4
+		2, // 5
+		0, // 6
+		4, // 7
+		3, // 8
+		1, // 9
+		3, // 10
+		3, // 11
+		4, // 12
+		1, // 13
+		2, // 14
+		2, // 15
+		3, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		2, // 20
+		3, // 21
+		3, // 22
+		1, // 23
+		2, // 24
+		1, // 25
+		1, // 26
+		1, // 27
+		8, // 28
+		3, // 29
+	},
+}
+var _ = _cover_atomic_.LoadUint32

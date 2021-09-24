@@ -1,0 +1,489 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/comm/server.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package comm; import _cover_atomic_ "sync/atomic"
+
+import (
+	"crypto/tls"
+	"crypto/x509"
+	"errors"
+	"fmt"
+	"net"
+	"sync"
+	"sync/atomic"
+
+	"github.com/grpc-ecosystem/go-grpc-middleware"
+	"google.golang.org/grpc"
+)
+
+type GRPCServer struct {
+	// Listen address for the server specified as hostname:port
+	address string
+	// Listener for handling network requests
+	listener net.Listener
+	// GRPC server
+	server *grpc.Server
+	// Certificate presented by the server for TLS communication
+	// stored as an atomic reference
+	serverCertificate atomic.Value
+	// Key used by the server for TLS communication
+	serverKeyPEM []byte
+	// lock to protect concurrent access to append / remove
+	lock *sync.Mutex
+	// Set of PEM-encoded X509 certificate authorities used to populate
+	// the tlsConfig.ClientCAs indexed by subject
+	clientRootCAs map[string]*x509.Certificate
+	// TLS configuration used by the grpc server
+	tlsConfig *tls.Config
+}
+
+// NewGRPCServer creates a new implementation of a GRPCServer given a
+// listen address
+func NewGRPCServer(address string, serverConfig ServerConfig) (*GRPCServer, error) {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[0], 1);
+	if address == "" {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[3], 1);
+		return nil, errors.New("Missing address parameter")
+	}
+	//create our listener
+	_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[1], 1);lis, err := net.Listen("tcp", address)
+
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[4], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[2], 1);return NewGRPCServerFromListener(lis, serverConfig)
+}
+
+// NewGRPCServerFromListener creates a new implementation of a GRPCServer given
+// an existing net.Listener instance using default keepalive
+func NewGRPCServerFromListener(listener net.Listener, serverConfig ServerConfig) (*GRPCServer, error) {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[5], 1);
+	grpcServer := &GRPCServer{
+		address:  listener.Addr().String(),
+		listener: listener,
+		lock:     &sync.Mutex{},
+	}
+
+	//set up our server options
+	var serverOpts []grpc.ServerOption
+
+	//check SecOpts
+	var secureConfig SecureOptions
+	if serverConfig.SecOpts != nil {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[12], 1);
+		secureConfig = *serverConfig.SecOpts
+	}
+	_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[6], 1);if secureConfig.UseTLS {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[13], 1);
+		//both key and cert are required
+		if secureConfig.Key != nil && secureConfig.Certificate != nil {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[14], 1);
+			//load server public and private keys
+			cert, err := tls.X509KeyPair(secureConfig.Certificate, secureConfig.Key)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[19], 1);
+				return nil, err
+			}
+			_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[15], 1);grpcServer.serverCertificate.Store(cert)
+
+			//set up our TLS config
+			if len(secureConfig.CipherSuites) == 0 {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[20], 1);
+				secureConfig.CipherSuites = DefaultTLSCipherSuites
+			}
+			_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[16], 1);getCert := func(_ *tls.ClientHelloInfo) (*tls.Certificate, error) {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[21], 1);
+				cert := grpcServer.serverCertificate.Load().(tls.Certificate)
+				return &cert, nil
+			}
+			//base server certificate
+			_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[17], 1);grpcServer.tlsConfig = &tls.Config{
+				VerifyPeerCertificate:  secureConfig.VerifyCertificate,
+				GetCertificate:         getCert,
+				SessionTicketsDisabled: true,
+				CipherSuites:           secureConfig.CipherSuites,
+			}
+			grpcServer.tlsConfig.ClientAuth = tls.RequestClientCert
+			//check if client authentication is required
+			if secureConfig.RequireClientCert {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[22], 1);
+				//require TLS client auth
+				grpcServer.tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
+				//if we have client root CAs, create a certPool
+				if len(secureConfig.ClientRootCAs) > 0 {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[23], 1);
+					grpcServer.clientRootCAs = make(map[string]*x509.Certificate)
+					grpcServer.tlsConfig.ClientCAs = x509.NewCertPool()
+					for _, clientRootCA := range secureConfig.ClientRootCAs {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[24], 1);
+						err = grpcServer.appendClientRootCA(clientRootCA)
+						if err != nil {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[25], 1);
+							return nil, err
+						}
+					}
+				}
+			}
+
+			// create credentials and add to server options
+			_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[18], 1);creds := NewServerTransportCredentials(grpcServer.tlsConfig, serverConfig.Logger)
+			serverOpts = append(serverOpts, grpc.Creds(creds))
+		} else{ _cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[26], 1);{
+			return nil, errors.New("serverConfig.SecOpts must contain both Key and Certificate when UseTLS is true")
+		}}
+	}
+	// set max send and recv msg sizes
+	_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[7], 1);serverOpts = append(serverOpts, grpc.MaxSendMsgSize(MaxSendMsgSize))
+	serverOpts = append(serverOpts, grpc.MaxRecvMsgSize(MaxRecvMsgSize))
+	// set the keepalive options
+	serverOpts = append(serverOpts, ServerKeepaliveOptions(serverConfig.KaOpts)...)
+	// set connection timeout
+	if serverConfig.ConnectionTimeout <= 0 {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[27], 1);
+		serverConfig.ConnectionTimeout = DefaultConnectionTimeout
+	}
+	_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[8], 1);serverOpts = append(
+		serverOpts,
+		grpc.ConnectionTimeout(serverConfig.ConnectionTimeout))
+	// set the interceptors
+	if len(serverConfig.StreamInterceptors) > 0 {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[28], 1);
+		serverOpts = append(
+			serverOpts,
+			grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(serverConfig.StreamInterceptors...)),
+		)
+	}
+	_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[9], 1);if len(serverConfig.UnaryInterceptors) > 0 {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[29], 1);
+		serverOpts = append(
+			serverOpts,
+			grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(serverConfig.UnaryInterceptors...)),
+		)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[10], 1);if serverConfig.MetricsProvider != nil {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[30], 1);
+		sh := NewServerStatsHandler(serverConfig.MetricsProvider)
+		serverOpts = append(serverOpts, grpc.StatsHandler(sh))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[11], 1);grpcServer.server = grpc.NewServer(serverOpts...)
+
+	return grpcServer, nil
+}
+
+// SetServerCertificate assigns the current TLS certificate to be the peer's server certificate
+func (gServer *GRPCServer) SetServerCertificate(cert tls.Certificate) {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[31], 1);
+	gServer.serverCertificate.Store(cert)
+}
+
+// Address returns the listen address for this GRPCServer instance
+func (gServer *GRPCServer) Address() string {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[32], 1);
+	return gServer.address
+}
+
+// Listener returns the net.Listener for the GRPCServer instance
+func (gServer *GRPCServer) Listener() net.Listener {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[33], 1);
+	return gServer.listener
+}
+
+// Server returns the grpc.Server for the GRPCServer instance
+func (gServer *GRPCServer) Server() *grpc.Server {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[34], 1);
+	return gServer.server
+}
+
+// ServerCertificate returns the tls.Certificate used by the grpc.Server
+func (gServer *GRPCServer) ServerCertificate() tls.Certificate {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[35], 1);
+	return gServer.serverCertificate.Load().(tls.Certificate)
+}
+
+// TLSEnabled is a flag indicating whether or not TLS is enabled for the
+// GRPCServer instance
+func (gServer *GRPCServer) TLSEnabled() bool {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[36], 1);
+	return gServer.tlsConfig != nil
+}
+
+// MutualTLSRequired is a flag indicating whether or not client certificates
+// are required for this GRPCServer instance
+func (gServer *GRPCServer) MutualTLSRequired() bool {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[37], 1);
+	return gServer.tlsConfig != nil &&
+		gServer.tlsConfig.ClientAuth ==
+			tls.RequireAndVerifyClientCert
+}
+
+// Start starts the underlying grpc.Server
+func (gServer *GRPCServer) Start() error {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[38], 1);
+	return gServer.server.Serve(gServer.listener)
+}
+
+// Stop stops the underlying grpc.Server
+func (gServer *GRPCServer) Stop() {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[39], 1);
+	gServer.server.Stop()
+}
+
+// AppendClientRootCAs appends PEM-encoded X509 certificate authorities to
+// the list of authorities used to verify client certificates
+func (gServer *GRPCServer) AppendClientRootCAs(clientRoots [][]byte) error {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[40], 1);
+	gServer.lock.Lock()
+	defer gServer.lock.Unlock()
+	for _, clientRoot := range clientRoots {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[42], 1);
+		err := gServer.appendClientRootCA(clientRoot)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[43], 1);
+			return err
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[41], 1);return nil
+}
+
+// internal function to add a PEM-encoded clientRootCA
+func (gServer *GRPCServer) appendClientRootCA(clientRoot []byte) error {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[44], 1);
+
+	errMsg := "Failed to append client root certificate(s): %s"
+	//convert to x509
+	certs, subjects, err := pemToX509Certs(clientRoot)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[48], 1);
+		return fmt.Errorf(errMsg, err.Error())
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[45], 1);if len(certs) < 1 {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[49], 1);
+		return fmt.Errorf(errMsg, "No client root certificates found")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[46], 1);for i, cert := range certs {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[50], 1);
+		//first add to the ClientCAs
+		gServer.tlsConfig.ClientCAs.AddCert(cert)
+		//add it to our clientRootCAs map using subject as key
+		gServer.clientRootCAs[subjects[i]] = cert
+	}
+	_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[47], 1);return nil
+}
+
+// RemoveClientRootCAs removes PEM-encoded X509 certificate authorities from
+// the list of authorities used to verify client certificates
+func (gServer *GRPCServer) RemoveClientRootCAs(clientRoots [][]byte) error {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[51], 1);
+	gServer.lock.Lock()
+	defer gServer.lock.Unlock()
+	//remove from internal map
+	for _, clientRoot := range clientRoots {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[54], 1);
+		err := gServer.removeClientRootCA(clientRoot)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[55], 1);
+			return err
+		}
+	}
+
+	//create a new CertPool and populate with current clientRootCAs
+	_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[52], 1);certPool := x509.NewCertPool()
+	for _, clientRoot := range gServer.clientRootCAs {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[56], 1);
+		certPool.AddCert(clientRoot)
+	}
+
+	//replace the current ClientCAs pool
+	_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[53], 1);gServer.tlsConfig.ClientCAs = certPool
+	return nil
+}
+
+// internal function to remove a PEM-encoded clientRootCA
+func (gServer *GRPCServer) removeClientRootCA(clientRoot []byte) error {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[57], 1);
+
+	errMsg := "Failed to remove client root certificate(s): %s"
+	//convert to x509
+	certs, subjects, err := pemToX509Certs(clientRoot)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[61], 1);
+		return fmt.Errorf(errMsg, err.Error())
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[58], 1);if len(certs) < 1 {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[62], 1);
+		return fmt.Errorf(errMsg, "No client root certificates found")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[59], 1);for i, subject := range subjects {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[63], 1);
+		//remove it from our clientRootCAs map using subject as key
+		//check to see if we have match
+		if certs[i].Equal(gServer.clientRootCAs[subject]) {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[64], 1);
+			delete(gServer.clientRootCAs, subject)
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[60], 1);return nil
+}
+
+// SetClientRootCAs sets the list of authorities used to verify client
+// certificates based on a list of PEM-encoded X509 certificate authorities
+func (gServer *GRPCServer) SetClientRootCAs(clientRoots [][]byte) error {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[65], 1);
+	gServer.lock.Lock()
+	defer gServer.lock.Unlock()
+
+	errMsg := "Failed to set client root certificate(s): %s"
+
+	//create a new map and CertPool
+	clientRootCAs := make(map[string]*x509.Certificate)
+	for _, clientRoot := range clientRoots {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[68], 1);
+		certs, subjects, err := pemToX509Certs(clientRoot)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[70], 1);
+			return fmt.Errorf(errMsg, err.Error())
+		}
+		_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[69], 1);if len(certs) >= 1 {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[71], 1);
+			for i, cert := range certs {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[72], 1);
+				//add it to our clientRootCAs map using subject as key
+				clientRootCAs[subjects[i]] = cert
+			}
+		}
+	}
+
+	//create a new CertPool and populate with the new clientRootCAs
+	_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[66], 1);certPool := x509.NewCertPool()
+	for _, clientRoot := range clientRootCAs {_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[73], 1);
+		certPool.AddCert(clientRoot)
+	}
+	//replace the internal map
+	_cover_atomic_.AddUint32(&GoCover_6_643230363037383562363632.Count[67], 1);gServer.clientRootCAs = clientRootCAs
+	//replace the current ClientCAs pool
+	gServer.tlsConfig.ClientCAs = certPool
+	return nil
+}
+
+var GoCover_6_643230363037383562363632 = struct {
+	Count     [74]uint32
+	Pos       [3 * 74]uint32
+	NumStmt   [74]uint16
+} {
+	Pos: [3 * 74]uint32{
+		45, 46, 0x130054, // [0]
+		50, 52, 0x100002, // [1]
+		55, 55, 0x350002, // [2]
+		46, 48, 0x30013, // [3]
+		52, 54, 0x30010, // [4]
+		60, 72, 0x210067, // [5]
+		75, 75, 0x190002, // [6]
+		126, 131, 0x290002, // [7]
+		134, 138, 0x2e0002, // [8]
+		144, 144, 0x2d0002, // [9]
+		151, 151, 0x290002, // [10]
+		156, 158, 0x180002, // [11]
+		72, 74, 0x30021, // [12]
+		75, 77, 0x410019, // [13]
+		77, 80, 0x120041, // [14]
+		83, 86, 0x2b0004, // [15]
+		89, 89, 0x460004, // [16]
+		94, 102, 0x260004, // [17]
+		119, 120, 0x360004, // [18]
+		80, 82, 0x50012, // [19]
+		86, 88, 0x5002b, // [20]
+		89, 92, 0x50046, // [21]
+		102, 106, 0x2c0026, // [22]
+		106, 109, 0x3e002c, // [23]
+		109, 111, 0x15003e, // [24]
+		111, 113, 0x80015, // [25]
+		121, 123, 0x40009, // [26]
+		131, 133, 0x30029, // [27]
+		138, 143, 0x3002e, // [28]
+		144, 149, 0x3002d, // [29]
+		151, 154, 0x30029, // [30]
+		162, 164, 0x20047, // [31]
+		167, 169, 0x2002d, // [32]
+		172, 174, 0x20034, // [33]
+		177, 179, 0x20032, // [34]
+		182, 184, 0x20040, // [35]
+		188, 190, 0x2002e, // [36]
+		194, 198, 0x20035, // [37]
+		201, 203, 0x2002a, // [38]
+		206, 208, 0x20023, // [39]
+		212, 215, 0x29004c, // [40]
+		221, 221, 0xc0002, // [41]
+		215, 217, 0x110029, // [42]
+		217, 219, 0x40011, // [43]
+		225, 230, 0x100048, // [44]
+		234, 234, 0x140002, // [45]
+		238, 238, 0x1d0002, // [46]
+		244, 244, 0xc0002, // [47]
+		230, 232, 0x30010, // [48]
+		234, 236, 0x30014, // [49]
+		238, 243, 0x3001d, // [50]
+		249, 253, 0x29004c, // [51]
+		261, 262, 0x330002, // [52]
+		267, 268, 0xc0002, // [53]
+		253, 255, 0x110029, // [54]
+		255, 257, 0x40011, // [55]
+		262, 264, 0x30033, // [56]
+		272, 277, 0x100048, // [57]
+		281, 281, 0x140002, // [58]
+		285, 285, 0x230002, // [59]
+		292, 292, 0xc0002, // [60]
+		277, 279, 0x30010, // [61]
+		281, 283, 0x30014, // [62]
+		285, 288, 0x350023, // [63]
+		288, 290, 0x40035, // [64]
+		297, 305, 0x290049, // [65]
+		319, 320, 0x2b0002, // [66]
+		324, 327, 0xc0002, // [67]
+		305, 307, 0x110029, // [68]
+		310, 310, 0x160003, // [69]
+		307, 309, 0x40011, // [70]
+		310, 311, 0x1f0016, // [71]
+		311, 314, 0x5001f, // [72]
+		320, 322, 0x3002b, // [73]
+	},
+	NumStmt: [74]uint16{
+		1, // 0
+		2, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		4, // 5
+		1, // 6
+		4, // 7
+		2, // 8
+		1, // 9
+		1, // 10
+		2, // 11
+		1, // 12
+		1, // 13
+		2, // 14
+		2, // 15
+		1, // 16
+		3, // 17
+		2, // 18
+		1, // 19
+		1, // 20
+		2, // 21
+		2, // 22
+		3, // 23
+		2, // 24
+		1, // 25
+		1, // 26
+		1, // 27
+		1, // 28
+		1, // 29
+		2, // 30
+		1, // 31
+		1, // 32
+		1, // 33
+		1, // 34
+		1, // 35
+		1, // 36
+		1, // 37
+		1, // 38
+		1, // 39
+		3, // 40
+		1, // 41
+		2, // 42
+		1, // 43
+		3, // 44
+		1, // 45
+		1, // 46
+		1, // 47
+		1, // 48
+		1, // 49
+		2, // 50
+		3, // 51
+		2, // 52
+		2, // 53
+		2, // 54
+		1, // 55
+		1, // 56
+		3, // 57
+		1, // 58
+		1, // 59
+		1, // 60
+		1, // 61
+		1, // 62
+		1, // 63
+		1, // 64
+		5, // 65
+		2, // 66
+		3, // 67
+		2, // 68
+		1, // 69
+		1, // 70
+		1, // 71
+		1, // 72
+		1, // 73
+	},
+}
+var _ = _cover_atomic_.LoadUint32

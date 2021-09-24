@@ -1,0 +1,3 @@
+./plugin_validator.go
+./validator.go
+./vscc_validator.go

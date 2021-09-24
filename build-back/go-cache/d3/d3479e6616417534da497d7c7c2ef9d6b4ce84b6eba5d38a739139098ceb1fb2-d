@@ -1,0 +1,10 @@
+aesopts.cover.go
+bccsp.cover.go
+ecdsaopts.cover.go
+hashopts.cover.go
+idemixerrs.cover.go
+idemixopts.cover.go
+keystore.cover.go
+opts.cover.go
+rsaopts.cover.go
+./bccsp_test.go

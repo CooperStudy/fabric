@@ -1,0 +1,164 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/idemix/revocation_authority.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package idemix; import _cover_atomic_ "sync/atomic"
+
+import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/sha256"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric-amcl/amcl"
+	"github.com/hyperledger/fabric-amcl/amcl/FP256BN"
+	"github.com/hyperledger/fabric/bccsp/utils"
+	"github.com/pkg/errors"
+)
+
+type RevocationAlgorithm int32
+
+const (
+	ALG_NO_REVOCATION RevocationAlgorithm = iota
+)
+
+var ProofBytes = map[RevocationAlgorithm]int{
+	ALG_NO_REVOCATION: 0,
+}
+
+// GenerateLongTermRevocationKey generates a long term signing key that will be used for revocation
+func GenerateLongTermRevocationKey() (*ecdsa.PrivateKey, error) {_cover_atomic_.AddUint32(&GoCover_7_633637303937343739336136.Count[0], 1);
+	return ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+}
+
+// CreateCRI creates the Credential Revocation Information for a certain time period (epoch).
+// Users can use the CRI to prove that they are not revoked.
+// Note that when not using revocation (i.e., alg = ALG_NO_REVOCATION), the entered unrevokedHandles are not used,
+// and the resulting CRI can be used by any signer.
+func CreateCRI(key *ecdsa.PrivateKey, unrevokedHandles []*FP256BN.BIG, epoch int, alg RevocationAlgorithm, rng *amcl.RAND) (*CredentialRevocationInformation, error) {_cover_atomic_.AddUint32(&GoCover_7_633637303937343739336136.Count[1], 1);
+	if key == nil || rng == nil {_cover_atomic_.AddUint32(&GoCover_7_633637303937343739336136.Count[6], 1);
+		return nil, errors.Errorf("CreateCRI received nil input")
+	}
+	_cover_atomic_.AddUint32(&GoCover_7_633637303937343739336136.Count[2], 1);cri := &CredentialRevocationInformation{}
+	cri.RevocationAlg = int32(alg)
+	cri.Epoch = int64(epoch)
+
+	if alg == ALG_NO_REVOCATION {_cover_atomic_.AddUint32(&GoCover_7_633637303937343739336136.Count[7], 1);
+		// put a dummy PK in the proto
+		cri.EpochPk = Ecp2ToProto(GenG2)
+	} else{ _cover_atomic_.AddUint32(&GoCover_7_633637303937343739336136.Count[8], 1);{
+		// create epoch key
+		_, epochPk := WBBKeyGen(rng)
+		cri.EpochPk = Ecp2ToProto(epochPk)
+	}}
+
+	// sign epoch + epoch key with long term key
+	_cover_atomic_.AddUint32(&GoCover_7_633637303937343739336136.Count[3], 1);bytesToSign, err := proto.Marshal(cri)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_7_633637303937343739336136.Count[9], 1);
+		return nil, errors.Wrap(err, "failed to marshal CRI")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_7_633637303937343739336136.Count[4], 1);digest := sha256.Sum256(bytesToSign)
+
+	cri.EpochPkSig, err = key.Sign(rand.Reader, digest[:], nil)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_7_633637303937343739336136.Count[10], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_7_633637303937343739336136.Count[5], 1);if alg == ALG_NO_REVOCATION {_cover_atomic_.AddUint32(&GoCover_7_633637303937343739336136.Count[11], 1);
+		return cri, nil
+	} else{ _cover_atomic_.AddUint32(&GoCover_7_633637303937343739336136.Count[12], 1);{
+		return nil, errors.Errorf("the specified revocation algorithm is not supported.")
+	}}
+}
+
+// VerifyEpochPK verifies that the revocation PK for a certain epoch is valid,
+// by checking that it was signed with the long term revocation key.
+// Note that even if we use no revocation (i.e., alg = ALG_NO_REVOCATION), we need
+// to verify the signature to make sure the issuer indeed signed that no revocation
+// is used in this epoch.
+func VerifyEpochPK(pk *ecdsa.PublicKey, epochPK *ECP2, epochPkSig []byte, epoch int, alg RevocationAlgorithm) error {_cover_atomic_.AddUint32(&GoCover_7_633637303937343739336136.Count[13], 1);
+	if pk == nil || epochPK == nil {_cover_atomic_.AddUint32(&GoCover_7_633637303937343739336136.Count[18], 1);
+		return errors.Errorf("EpochPK invalid: received nil input")
+	}
+	_cover_atomic_.AddUint32(&GoCover_7_633637303937343739336136.Count[14], 1);cri := &CredentialRevocationInformation{}
+	cri.RevocationAlg = int32(alg)
+	cri.EpochPk = epochPK
+	cri.Epoch = int64(epoch)
+	bytesToSign, err := proto.Marshal(cri)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_7_633637303937343739336136.Count[19], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_7_633637303937343739336136.Count[15], 1);digest := sha256.Sum256(bytesToSign)
+
+	r, s, err := utils.UnmarshalECDSASignature(epochPkSig)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_7_633637303937343739336136.Count[20], 1);
+		return errors.Wrap(err, "failed to unmarshal ECDSA signature")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_7_633637303937343739336136.Count[16], 1);if !ecdsa.Verify(pk, digest[:], r, s) {_cover_atomic_.AddUint32(&GoCover_7_633637303937343739336136.Count[21], 1);
+		return errors.Errorf("EpochPKSig invalid")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_7_633637303937343739336136.Count[17], 1);return nil
+}
+
+var GoCover_7_633637303937343739336136 = struct {
+	Count     [22]uint32
+	Pos       [3 * 22]uint32
+	NumStmt   [22]uint16
+} {
+	Pos: [3 * 22]uint32{
+		33, 35, 0x20041, // [0]
+		41, 42, 0x1e00a6, // [1]
+		45, 49, 0x1e0002, // [2]
+		59, 60, 0x100002, // [3]
+		64, 67, 0x100002, // [4]
+		71, 71, 0x1e0002, // [5]
+		42, 44, 0x3001e, // [6]
+		49, 52, 0x3001e, // [7]
+		52, 56, 0x30008, // [8]
+		60, 62, 0x30010, // [9]
+		67, 69, 0x30010, // [10]
+		71, 73, 0x3001e, // [11]
+		73, 75, 0x30008, // [12]
+		83, 84, 0x210075, // [13]
+		87, 92, 0x100002, // [14]
+		95, 98, 0x100002, // [15]
+		102, 102, 0x280002, // [16]
+		106, 106, 0xc0002, // [17]
+		84, 86, 0x30021, // [18]
+		92, 94, 0x30010, // [19]
+		98, 100, 0x30010, // [20]
+		102, 104, 0x30028, // [21]
+	},
+	NumStmt: [22]uint16{
+		1, // 0
+		1, // 1
+		4, // 2
+		2, // 3
+		3, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		2, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		6, // 14
+		3, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+	},
+}
+var _ = _cover_atomic_.LoadUint32

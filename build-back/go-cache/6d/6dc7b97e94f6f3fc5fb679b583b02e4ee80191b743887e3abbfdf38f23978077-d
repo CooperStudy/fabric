@@ -1,0 +1,109 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/policies/util.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package policies; import _cover_atomic_ "sync/atomic"
+
+import (
+	cb "github.com/hyperledger/fabric/protos/common"
+	"github.com/hyperledger/fabric/protos/utils"
+)
+
+// ConfigPolicy defines a common representation for different *cb.ConfigPolicy values.
+type ConfigPolicy interface {
+	// Key is the key this value should be stored in the *cb.ConfigGroup.Policies map.
+	Key() string
+
+	// Value is the backing policy implementation for this ConfigPolicy
+	Value() *cb.Policy
+}
+
+// StandardConfigValue implements the ConfigValue interface.
+type StandardConfigPolicy struct {
+	key   string
+	value *cb.Policy
+}
+
+// Key is the key this value should be stored in the *cb.ConfigGroup.Values map.
+func (scv *StandardConfigPolicy) Key() string {_cover_atomic_.AddUint32(&GoCover_4_306461616464623964633937.Count[0], 1);
+	return scv.key
+}
+
+// Value is the *cb.Policy which should be stored as the *cb.ConfigPolicy.Policy.
+func (scv *StandardConfigPolicy) Value() *cb.Policy {_cover_atomic_.AddUint32(&GoCover_4_306461616464623964633937.Count[1], 1);
+	return scv.value
+}
+
+func makeImplicitMetaPolicy(subPolicyName string, rule cb.ImplicitMetaPolicy_Rule) *cb.Policy {_cover_atomic_.AddUint32(&GoCover_4_306461616464623964633937.Count[2], 1);
+	return &cb.Policy{
+		Type: int32(cb.Policy_IMPLICIT_META),
+		Value: utils.MarshalOrPanic(&cb.ImplicitMetaPolicy{
+			Rule:      rule,
+			SubPolicy: subPolicyName,
+		}),
+	}
+}
+
+// ImplicitMetaAllPolicy defines an implicit meta policy whose sub_policy and key is policyname with rule ALL.
+func ImplicitMetaAllPolicy(policyName string) *StandardConfigPolicy {_cover_atomic_.AddUint32(&GoCover_4_306461616464623964633937.Count[3], 1);
+	return &StandardConfigPolicy{
+		key:   policyName,
+		value: makeImplicitMetaPolicy(policyName, cb.ImplicitMetaPolicy_ALL),
+	}
+}
+
+// ImplicitMetaAnyPolicy defines an implicit meta policy whose sub_policy and key is policyname with rule ANY.
+func ImplicitMetaAnyPolicy(policyName string) *StandardConfigPolicy {_cover_atomic_.AddUint32(&GoCover_4_306461616464623964633937.Count[4], 1);
+	return &StandardConfigPolicy{
+		key:   policyName,
+		value: makeImplicitMetaPolicy(policyName, cb.ImplicitMetaPolicy_ANY),
+	}
+}
+
+// ImplicitMetaMajorityPolicy defines an implicit meta policy whose sub_policy and key is policyname with rule MAJORITY.
+func ImplicitMetaMajorityPolicy(policyName string) *StandardConfigPolicy {_cover_atomic_.AddUint32(&GoCover_4_306461616464623964633937.Count[5], 1);
+	return &StandardConfigPolicy{
+		key:   policyName,
+		value: makeImplicitMetaPolicy(policyName, cb.ImplicitMetaPolicy_MAJORITY),
+	}
+}
+
+// ImplicitMetaMajorityPolicy defines a policy with key policyName and the given signature policy.
+func SignaturePolicy(policyName string, sigPolicy *cb.SignaturePolicyEnvelope) *StandardConfigPolicy {_cover_atomic_.AddUint32(&GoCover_4_306461616464623964633937.Count[6], 1);
+	return &StandardConfigPolicy{
+		key: policyName,
+		value: &cb.Policy{
+			Type:  int32(cb.Policy_SIGNATURE),
+			Value: utils.MarshalOrPanic(sigPolicy),
+		},
+	}
+}
+
+var GoCover_4_306461616464623964633937 = struct {
+	Count     [7]uint32
+	Pos       [3 * 7]uint32
+	NumStmt   [7]uint16
+} {
+	Pos: [3 * 7]uint32{
+		30, 32, 0x2002f, // [0]
+		35, 37, 0x20035, // [1]
+		39, 47, 0x2005f, // [2]
+		50, 55, 0x20045, // [3]
+		58, 63, 0x20045, // [4]
+		66, 71, 0x2004a, // [5]
+		74, 82, 0x20066, // [6]
+	},
+	NumStmt: [7]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+	},
+}
+var _ = _cover_atomic_.LoadUint32

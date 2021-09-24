@@ -1,0 +1,395 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/deliverservice/deliveryclient.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package deliverclient; import _cover_atomic_ "sync/atomic"
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"math"
+	"sync"
+	"time"
+
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/core/comm"
+	"github.com/hyperledger/fabric/core/deliverservice/blocksprovider"
+	"github.com/hyperledger/fabric/gossip/api"
+	"github.com/hyperledger/fabric/gossip/util"
+	"github.com/hyperledger/fabric/protos/orderer"
+	"github.com/spf13/viper"
+	"google.golang.org/grpc"
+)
+
+var logger = flogging.MustGetLogger("deliveryClient")
+
+const (
+	defaultReConnectTotalTimeThreshold = time.Second * 60 * 60
+	defaultConnectionTimeout           = time.Second * 3
+	defaultReConnectBackoffThreshold   = float64(time.Hour)
+)
+
+func getReConnectTotalTimeThreshold() time.Duration {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[0], 1);
+	return util.GetDurationOrDefault("peer.deliveryclient.reconnectTotalTimeThreshold", defaultReConnectTotalTimeThreshold)
+}
+
+func getConnectionTimeout() time.Duration {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[1], 1);
+	return util.GetDurationOrDefault("peer.deliveryclient.connTimeout", defaultConnectionTimeout)
+}
+
+func getReConnectBackoffThreshold() float64 {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[2], 1);
+	return util.GetFloat64OrDefault("peer.deliveryclient.reConnectBackoffThreshold", defaultReConnectBackoffThreshold)
+}
+
+// DeliverService used to communicate with orderers to obtain
+// new blocks and send them to the committer service
+type DeliverService interface {
+	// StartDeliverForChannel dynamically starts delivery of new blocks from ordering service
+	// to channel peers.
+	// When the delivery finishes, the finalizer func is called
+	StartDeliverForChannel(chainID string, ledgerInfo blocksprovider.LedgerInfo, finalizer func()) error
+
+	// StopDeliverForChannel dynamically stops delivery of new blocks from ordering service
+	// to channel peers.
+	StopDeliverForChannel(chainID string) error
+
+	// UpdateEndpoints
+	UpdateEndpoints(chainID string, endpoints []string) error
+
+	// Stop terminates delivery service and closes the connection
+	Stop()
+}
+
+// deliverServiceImpl the implementation of the delivery service
+// maintains connection to the ordering service and maps of
+// blocks providers
+type deliverServiceImpl struct {
+	conf           *Config
+	blockProviders map[string]blocksprovider.BlocksProvider
+	lock           sync.RWMutex
+	stopping       bool
+}
+
+// Config dictates the DeliveryService's properties,
+// namely how it connects to an ordering service endpoint,
+// how it verifies messages received from it,
+// and how it disseminates the messages to other peers
+type Config struct {
+	// ConnFactory returns a function that creates a connection to an endpoint
+	ConnFactory func(channelID string) func(endpoint string) (*grpc.ClientConn, error)
+	// ABCFactory creates an AtomicBroadcastClient out of a connection
+	ABCFactory func(*grpc.ClientConn) orderer.AtomicBroadcastClient
+	// CryptoSvc performs cryptographic actions like message verification and signing
+	// and identity validation
+	CryptoSvc api.MessageCryptoService
+	// Gossip enables to enumerate peers in the channel, send a message to peers,
+	// and add a block to the gossip state transfer layer
+	Gossip blocksprovider.GossipServiceAdapter
+	// Endpoints specifies the endpoints of the ordering service
+	Endpoints []string
+}
+
+// NewDeliverService construction function to create and initialize
+// delivery service instance. It tries to establish connection to
+// the specified in the configuration ordering service, in case it
+// fails to dial to it, return nil
+func NewDeliverService(conf *Config) (DeliverService, error) {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[3], 1);
+	ds := &deliverServiceImpl{
+		conf:           conf,
+		blockProviders: make(map[string]blocksprovider.BlocksProvider),
+	}
+	if err := ds.validateConfiguration(); err != nil {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[5], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[4], 1);return ds, nil
+}
+
+func (d *deliverServiceImpl) UpdateEndpoints(chainID string, endpoints []string) error {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[6], 1);
+	// Use chainID to obtain blocks provider and pass endpoints
+	// for update
+	if bp, ok := d.blockProviders[chainID]; ok {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[8], 1);
+		// We have found specified channel so we can safely update it
+		bp.UpdateOrderingEndpoints(endpoints)
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[7], 1);return errors.New(fmt.Sprintf("Channel with %s id was not found", chainID))
+}
+
+func (d *deliverServiceImpl) validateConfiguration() error {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[9], 1);
+	conf := d.conf
+	if len(conf.Endpoints) == 0 {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[15], 1);
+		return errors.New("no endpoints specified")
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[10], 1);if conf.Gossip == nil {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[16], 1);
+		return errors.New("no gossip provider specified")
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[11], 1);if conf.ABCFactory == nil {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[17], 1);
+		return errors.New("no AtomicBroadcast factory specified")
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[12], 1);if conf.ConnFactory == nil {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[18], 1);
+		return errors.New("no connection factory specified")
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[13], 1);if conf.CryptoSvc == nil {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[19], 1);
+		return errors.New("no crypto service specified")
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[14], 1);return nil
+}
+
+// StartDeliverForChannel starts blocks delivery for channel
+// initializes the grpc stream for given chainID, creates blocks provider instance
+// that spawns in go routine to read new blocks starting from the position provided by ledger
+// info instance.
+func (d *deliverServiceImpl) StartDeliverForChannel(chainID string, ledgerInfo blocksprovider.LedgerInfo, finalizer func()) error {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[20], 1);
+	d.lock.Lock()
+	defer d.lock.Unlock()
+	if d.stopping {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[23], 1);
+		errMsg := fmt.Sprintf("Delivery service is stopping cannot join a new channel %s", chainID)
+		logger.Errorf(errMsg)
+		return errors.New(errMsg)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[21], 1);if _, exist := d.blockProviders[chainID]; exist {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[24], 1);
+		errMsg := fmt.Sprintf("Delivery service - block provider already exists for %s found, can't start delivery", chainID)
+		logger.Errorf(errMsg)
+		return errors.New(errMsg)
+	} else{ _cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[25], 1);{
+		client := d.newClient(chainID, ledgerInfo)
+		logger.Debug("This peer will pass blocks from orderer service to other peers for channel", chainID)
+		d.blockProviders[chainID] = blocksprovider.NewBlocksProvider(chainID, client, d.conf.Gossip, d.conf.CryptoSvc)
+		go d.launchBlockProvider(chainID, finalizer)
+	}}
+	_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[22], 1);return nil
+}
+
+func (d *deliverServiceImpl) launchBlockProvider(chainID string, finalizer func()) {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[26], 1);
+	d.lock.RLock()
+	pb := d.blockProviders[chainID]
+	d.lock.RUnlock()
+	if pb == nil {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[28], 1);
+		logger.Info("Block delivery for channel", chainID, "was stopped before block provider started")
+		return
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[27], 1);pb.DeliverBlocks()
+	finalizer()
+}
+
+// StopDeliverForChannel stops blocks delivery for channel by stopping channel block provider
+func (d *deliverServiceImpl) StopDeliverForChannel(chainID string) error {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[29], 1);
+	d.lock.Lock()
+	defer d.lock.Unlock()
+	if d.stopping {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[32], 1);
+		errMsg := fmt.Sprintf("Delivery service is stopping, cannot stop delivery for channel %s", chainID)
+		logger.Errorf(errMsg)
+		return errors.New(errMsg)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[30], 1);if client, exist := d.blockProviders[chainID]; exist {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[33], 1);
+		client.Stop()
+		delete(d.blockProviders, chainID)
+		logger.Debug("This peer will stop pass blocks from orderer service to other peers")
+	} else{ _cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[34], 1);{
+		errMsg := fmt.Sprintf("Delivery service - no block provider for %s found, can't stop delivery", chainID)
+		logger.Errorf(errMsg)
+		return errors.New(errMsg)
+	}}
+	_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[31], 1);return nil
+}
+
+// Stop all service and release resources
+func (d *deliverServiceImpl) Stop() {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[35], 1);
+	d.lock.Lock()
+	defer d.lock.Unlock()
+	// Marking flag to indicate the shutdown of the delivery service
+	d.stopping = true
+
+	for _, client := range d.blockProviders {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[36], 1);
+		client.Stop()
+	}
+}
+
+func (d *deliverServiceImpl) newClient(chainID string, ledgerInfoProvider blocksprovider.LedgerInfo) *broadcastClient {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[37], 1);
+	reconnectBackoffThreshold := getReConnectBackoffThreshold()
+	reconnectTotalTimeThreshold := getReConnectTotalTimeThreshold()
+	requester := &blocksRequester{
+		tls:     viper.GetBool("peer.tls.enabled"),
+		chainID: chainID,
+	}
+	broadcastSetup := func(bd blocksprovider.BlocksDeliverer) error {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[40], 1);
+		return requester.RequestBlocks(ledgerInfoProvider)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[38], 1);backoffPolicy := func(attemptNum int, elapsedTime time.Duration) (time.Duration, bool) {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[41], 1);
+		if elapsedTime > reconnectTotalTimeThreshold {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[43], 1);
+			return 0, false
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[42], 1);sleepIncrement := float64(time.Millisecond * 500)
+		attempt := float64(attemptNum)
+		return time.Duration(math.Min(math.Pow(2, attempt)*sleepIncrement, reconnectBackoffThreshold)), true
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[39], 1);connProd := comm.NewConnectionProducer(d.conf.ConnFactory(chainID), d.conf.Endpoints)
+	bClient := NewBroadcastClient(connProd, d.conf.ABCFactory, broadcastSetup, backoffPolicy)
+	requester.client = bClient
+	return bClient
+}
+
+func DefaultConnectionFactory(channelID string) func(endpoint string) (*grpc.ClientConn, error) {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[44], 1);
+	return func(endpoint string) (*grpc.ClientConn, error) {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[45], 1);
+		dialOpts := []grpc.DialOption{grpc.WithBlock()}
+		// set max send/recv msg sizes
+		dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(comm.MaxRecvMsgSize),
+			grpc.MaxCallSendMsgSize(comm.MaxSendMsgSize)))
+		// set the keepalive options
+		kaOpts := comm.DefaultKeepaliveOptions
+		if viper.IsSet("peer.keepalive.deliveryClient.interval") {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[49], 1);
+			kaOpts.ClientInterval = viper.GetDuration(
+				"peer.keepalive.deliveryClient.interval")
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[46], 1);if viper.IsSet("peer.keepalive.deliveryClient.timeout") {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[50], 1);
+			kaOpts.ClientTimeout = viper.GetDuration(
+				"peer.keepalive.deliveryClient.timeout")
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[47], 1);dialOpts = append(dialOpts, comm.ClientKeepaliveOptions(kaOpts)...)
+
+		if viper.GetBool("peer.tls.enabled") {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[51], 1);
+			creds, err := comm.GetCredentialSupport().GetDeliverServiceCredentials(channelID)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[53], 1);
+				return nil, fmt.Errorf("failed obtaining credentials for channel %s: %v", channelID, err)
+			}
+			_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[52], 1);dialOpts = append(dialOpts, grpc.WithTransportCredentials(creds))
+		} else{ _cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[54], 1);{
+			dialOpts = append(dialOpts, grpc.WithInsecure())
+		}}
+		_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[48], 1);ctx, cancel := context.WithTimeout(context.Background(), getConnectionTimeout())
+		defer cancel()
+		return grpc.DialContext(ctx, endpoint, dialOpts...)
+	}
+}
+
+func DefaultABCFactory(conn *grpc.ClientConn) orderer.AtomicBroadcastClient {_cover_atomic_.AddUint32(&GoCover_1_663237323366386536623539.Count[55], 1);
+	return orderer.NewAtomicBroadcastClient(conn)
+}
+
+var GoCover_1_663237323366386536623539 = struct {
+	Count     [56]uint32
+	Pos       [3 * 56]uint32
+	NumStmt   [56]uint16
+} {
+	Pos: [3 * 56]uint32{
+		35, 37, 0x20035, // [0]
+		39, 41, 0x2002b, // [1]
+		43, 45, 0x2002d, // [2]
+		99, 104, 0x33003e, // [3]
+		107, 107, 0x100002, // [4]
+		104, 106, 0x30033, // [5]
+		110, 113, 0x2d0058, // [6]
+		118, 118, 0x4d0002, // [7]
+		113, 117, 0x3002d, // [8]
+		121, 123, 0x1e003c, // [9]
+		126, 126, 0x180002, // [10]
+		129, 129, 0x1c0002, // [11]
+		132, 132, 0x1d0002, // [12]
+		135, 135, 0x1b0002, // [13]
+		138, 138, 0xc0002, // [14]
+		123, 125, 0x3001e, // [15]
+		126, 128, 0x30018, // [16]
+		129, 131, 0x3001c, // [17]
+		132, 134, 0x3001d, // [18]
+		135, 137, 0x3001b, // [19]
+		145, 148, 0x100083, // [20]
+		153, 153, 0x320002, // [21]
+		163, 163, 0xc0002, // [22]
+		148, 152, 0x30010, // [23]
+		153, 157, 0x30032, // [24]
+		157, 162, 0x30008, // [25]
+		166, 170, 0xf0054, // [26]
+		174, 175, 0xd0002, // [27]
+		170, 173, 0x3000f, // [28]
+		179, 182, 0x10004a, // [29]
+		187, 187, 0x370002, // [30]
+		196, 196, 0xc0002, // [31]
+		182, 186, 0x30010, // [32]
+		187, 191, 0x30037, // [33]
+		191, 195, 0x30008, // [34]
+		200, 206, 0x2a0025, // [35]
+		206, 208, 0x3002a, // [36]
+		211, 218, 0x420077, // [37]
+		221, 221, 0x590002, // [38]
+		229, 232, 0x100002, // [39]
+		218, 220, 0x30042, // [40]
+		221, 222, 0x300059, // [41]
+		225, 227, 0x670003, // [42]
+		222, 224, 0x40030, // [43]
+		235, 236, 0x390061, // [44]
+		236, 243, 0x3c0039, // [45]
+		247, 247, 0x3b0003, // [46]
+		251, 253, 0x280003, // [47]
+		262, 264, 0x360003, // [48]
+		243, 246, 0x4003c, // [49]
+		247, 250, 0x4003b, // [50]
+		253, 255, 0x120028, // [51]
+		258, 258, 0x450004, // [52]
+		255, 257, 0x50012, // [53]
+		259, 261, 0x40009, // [54]
+		268, 270, 0x2004d, // [55]
+	},
+	NumStmt: [56]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		2, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		2, // 8
+		2, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		3, // 20
+		1, // 21
+		1, // 22
+		3, // 23
+		3, // 24
+		4, // 25
+		4, // 26
+		2, // 27
+		2, // 28
+		3, // 29
+		1, // 30
+		1, // 31
+		3, // 32
+		3, // 33
+		3, // 34
+		4, // 35
+		1, // 36
+		4, // 37
+		1, // 38
+		4, // 39
+		1, // 40
+		1, // 41
+		3, // 42
+		1, // 43
+		1, // 44
+		4, // 45
+		1, // 46
+		2, // 47
+		3, // 48
+		1, // 49
+		1, // 50
+		2, // 51
+		1, // 52
+		1, // 53
+		1, // 54
+		1, // 55
+	},
+}
+var _ = _cover_atomic_.LoadUint32

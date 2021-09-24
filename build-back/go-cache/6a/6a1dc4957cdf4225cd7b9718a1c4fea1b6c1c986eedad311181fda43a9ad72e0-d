@@ -1,0 +1,152 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/flogging/core.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package flogging; import _cover_atomic_ "sync/atomic"
+
+import (
+	"go.uber.org/zap/zapcore"
+)
+
+type Encoding int8
+
+const (
+	CONSOLE = iota
+	JSON
+)
+
+// EncodingSelector is used to determine whether log records are
+// encoded as JSON or in a human readable CONSOLE format.
+type EncodingSelector interface {
+	Encoding() Encoding
+}
+
+// Core is a custom implementation of a zapcore.Core. It's a terrible hack that
+// only exists to work around the intersection of state associated with
+// encoders, implementation hiding in zapcore, and implicit, ad-hoc logger
+// initialization within fabric.
+//
+// In addition to encoding log entries and fields to a buffer, zap Encoder
+// implementations also need to maintain field state. When zapcore.Core.With is
+// used, the associated encoder is cloned and the fields are added to the
+// encoder. This means that encoder instances cannot be shared across cores.
+//
+// In terms of implementation hiding, it's difficult for our FormatEncoder to
+// cleanly wrap the JSON and console implementations from zap as all methods
+// from the zapcore.ObjectEncoder would need to be implemented to delegate to
+// the correct backend.
+//
+// This implementation works by associating multiple encoders with a core. When
+// fields are added to the core, the fields are added to all of the encoder
+// implementations. The core also references the logging configuration to
+// determine the proper encoding to use, the writer to delegate to, and the
+// enabled levels.
+type Core struct {
+	zapcore.LevelEnabler
+	Levels   *LoggerLevels
+	Encoders map[Encoding]zapcore.Encoder
+	Selector EncodingSelector
+	Output   zapcore.WriteSyncer
+}
+
+func (c *Core) With(fields []zapcore.Field) zapcore.Core {_cover_atomic_.AddUint32(&GoCover_0_643766633362313436336635.Count[0], 1);
+	clones := map[Encoding]zapcore.Encoder{}
+	for name, enc := range c.Encoders {_cover_atomic_.AddUint32(&GoCover_0_643766633362313436336635.Count[2], 1);
+		clone := enc.Clone()
+		addFields(clone, fields)
+		clones[name] = clone
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_643766633362313436336635.Count[1], 1);return &Core{
+		LevelEnabler: c.LevelEnabler,
+		Levels:       c.Levels,
+		Encoders:     clones,
+		Selector:     c.Selector,
+		Output:       c.Output,
+	}
+}
+
+func (c *Core) Check(e zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {_cover_atomic_.AddUint32(&GoCover_0_643766633362313436336635.Count[3], 1);
+	if c.Enabled(e.Level) && c.Levels.Level(e.LoggerName).Enabled(e.Level) {_cover_atomic_.AddUint32(&GoCover_0_643766633362313436336635.Count[5], 1);
+		return ce.AddCore(e, c)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_643766633362313436336635.Count[4], 1);return ce
+}
+
+func (c *Core) Write(e zapcore.Entry, fields []zapcore.Field) error {_cover_atomic_.AddUint32(&GoCover_0_643766633362313436336635.Count[6], 1);
+	encoding := c.Selector.Encoding()
+	enc := c.Encoders[encoding]
+
+	buf, err := enc.EncodeEntry(e, fields)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_643766633362313436336635.Count[10], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_643766633362313436336635.Count[7], 1);_, err = c.Output.Write(buf.Bytes())
+	buf.Free()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_643766633362313436336635.Count[11], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_643766633362313436336635.Count[8], 1);if e.Level >= zapcore.PanicLevel {_cover_atomic_.AddUint32(&GoCover_0_643766633362313436336635.Count[12], 1);
+		c.Sync()
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_643766633362313436336635.Count[9], 1);return nil
+}
+
+func (c *Core) Sync() error {_cover_atomic_.AddUint32(&GoCover_0_643766633362313436336635.Count[13], 1);
+	return c.Output.Sync()
+}
+
+func addFields(enc zapcore.ObjectEncoder, fields []zapcore.Field) {_cover_atomic_.AddUint32(&GoCover_0_643766633362313436336635.Count[14], 1);
+	for i := range fields {_cover_atomic_.AddUint32(&GoCover_0_643766633362313436336635.Count[15], 1);
+		fields[i].AddTo(enc)
+	}
+}
+
+var GoCover_0_643766633362313436336635 = struct {
+	Count     [16]uint32
+	Pos       [3 * 16]uint32
+	NumStmt   [16]uint16
+} {
+	Pos: [3 * 16]uint32{
+		54, 56, 0x24003a, // [0]
+		62, 68, 0x30002, // [1]
+		56, 60, 0x30024, // [2]
+		71, 72, 0x490057, // [3]
+		75, 75, 0xb0002, // [4]
+		72, 74, 0x30049, // [5]
+		78, 83, 0x100045, // [6]
+		86, 88, 0x100002, // [7]
+		92, 92, 0x230002, // [8]
+		96, 96, 0xc0002, // [9]
+		83, 85, 0x30010, // [10]
+		88, 90, 0x30010, // [11]
+		92, 94, 0x30023, // [12]
+		99, 101, 0x2001d, // [13]
+		103, 104, 0x180043, // [14]
+		104, 106, 0x30018, // [15]
+	},
+	NumStmt: [16]uint16{
+		2, // 0
+		1, // 1
+		3, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		4, // 6
+		3, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+	},
+}
+var _ = _cover_atomic_.LoadUint32

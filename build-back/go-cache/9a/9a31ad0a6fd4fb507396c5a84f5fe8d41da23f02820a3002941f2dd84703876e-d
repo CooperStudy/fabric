@@ -1,0 +1,195 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/token/client/prover.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package client; import _cover_atomic_ "sync/atomic"
+
+import (
+	"context"
+	"io"
+	"time"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
+	"github.com/hyperledger/fabric/protos/token"
+	tk "github.com/hyperledger/fabric/token"
+	"github.com/pkg/errors"
+)
+
+type TimeFunc func() time.Time
+
+type ProverPeer struct {
+	ChannelID        string
+	ProverClient     token.ProverClient
+	RandomnessReader io.Reader
+	Time             TimeFunc
+}
+
+func (prover *ProverPeer) RequestImport(tokensToIssue []*token.TokenToIssue, signingIdentity tk.SigningIdentity) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_5_386238643262613636363863.Count[0], 1);
+	ir := &token.ImportRequest{
+		TokensToIssue: tokensToIssue,
+	}
+	payload := &token.Command_ImportRequest{ImportRequest: ir}
+
+	sc, err := prover.CreateSignedCommand(payload, signingIdentity)
+
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_386238643262613636363863.Count[3], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_386238643262613636363863.Count[1], 1);scr, err := prover.ProverClient.ProcessCommand(context.Background(), sc)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_386238643262613636363863.Count[4], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_386238643262613636363863.Count[2], 1);return scr.Response, nil
+}
+
+func (prover *ProverPeer) RequestTransfer(
+	tokenIDs [][]byte,
+	shares []*token.RecipientTransferShare,
+	signingIdentity tk.SigningIdentity) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_5_386238643262613636363863.Count[5], 1);
+
+	tr := &token.TransferRequest{
+		Shares:   shares,
+		TokenIds: tokenIDs,
+	}
+	payload := &token.Command_TransferRequest{TransferRequest: tr}
+
+	sc, err := prover.CreateSignedCommand(payload, signingIdentity)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_386238643262613636363863.Count[8], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_386238643262613636363863.Count[6], 1);scr, err := prover.ProverClient.ProcessCommand(context.Background(), sc)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_386238643262613636363863.Count[9], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_386238643262613636363863.Count[7], 1);return scr.Response, nil
+}
+
+func (prover *ProverPeer) CreateSignedCommand(payload interface{}, signingIdentity tk.SigningIdentity) (*token.SignedCommand, error) {_cover_atomic_.AddUint32(&GoCover_5_386238643262613636363863.Count[10], 1);
+
+	command, err := commandFromPayload(payload)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_386238643262613636363863.Count[17], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_386238643262613636363863.Count[11], 1);nonce := make([]byte, 32)
+	_, err = io.ReadFull(prover.RandomnessReader, nonce)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_386238643262613636363863.Count[18], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_386238643262613636363863.Count[12], 1);ts, err := ptypes.TimestampProto(prover.Time())
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_386238643262613636363863.Count[19], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_386238643262613636363863.Count[13], 1);creator, err := signingIdentity.GetPublicVersion().Serialize()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_386238643262613636363863.Count[20], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_386238643262613636363863.Count[14], 1);header := &token.Header{Timestamp: ts,
+		Nonce:     nonce,
+		Creator:   creator,
+		ChannelId: prover.ChannelID,
+	}
+	command.Header = header
+
+	raw, err := proto.Marshal(command)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_386238643262613636363863.Count[21], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_386238643262613636363863.Count[15], 1);signature, err := signingIdentity.Sign(raw)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_386238643262613636363863.Count[22], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_386238643262613636363863.Count[16], 1);sc := &token.SignedCommand{
+		Command:   raw,
+		Signature: signature,
+	}
+	return sc, nil
+}
+
+func commandFromPayload(payload interface{}) (*token.Command, error) {_cover_atomic_.AddUint32(&GoCover_5_386238643262613636363863.Count[23], 1);
+	switch t := payload.(type) {
+	case *token.Command_ImportRequest:_cover_atomic_.AddUint32(&GoCover_5_386238643262613636363863.Count[24], 1);
+		return &token.Command{Payload: t}, nil
+	case *token.Command_TransferRequest:_cover_atomic_.AddUint32(&GoCover_5_386238643262613636363863.Count[25], 1);
+		return &token.Command{Payload: t}, nil
+	default:_cover_atomic_.AddUint32(&GoCover_5_386238643262613636363863.Count[26], 1);
+		return nil, errors.Errorf("command type not recognized: %T", t)
+	}
+}
+
+var GoCover_5_386238643262613636363863 = struct {
+	Count     [27]uint32
+	Pos       [3 * 27]uint32
+	NumStmt   [27]uint16
+} {
+	Pos: [3 * 27]uint32{
+		30, 38, 0x100082, // [0]
+		42, 43, 0x100002, // [1]
+		46, 46, 0x1a0002, // [2]
+		38, 40, 0x30010, // [3]
+		43, 45, 0x30010, // [4]
+		52, 61, 0x100036, // [5]
+		64, 65, 0x100002, // [6]
+		69, 69, 0x1a0002, // [7]
+		61, 63, 0x30010, // [8]
+		65, 67, 0x30010, // [9]
+		72, 75, 0x100086, // [10]
+		79, 81, 0x100002, // [11]
+		85, 86, 0x100002, // [12]
+		90, 91, 0x100002, // [13]
+		95, 103, 0x100002, // [14]
+		107, 108, 0x100002, // [15]
+		112, 116, 0x100002, // [16]
+		75, 77, 0x30010, // [17]
+		81, 83, 0x30010, // [18]
+		86, 88, 0x30010, // [19]
+		91, 93, 0x30010, // [20]
+		103, 105, 0x30010, // [21]
+		108, 110, 0x30010, // [22]
+		119, 120, 0x1d0046, // [23]
+		121, 122, 0x290024, // [24]
+		123, 124, 0x290026, // [25]
+		125, 126, 0x42000a, // [26]
+	},
+	NumStmt: [27]uint16{
+		4, // 0
+		2, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		4, // 5
+		2, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		2, // 10
+		3, // 11
+		2, // 12
+		2, // 13
+		4, // 14
+		2, // 15
+		2, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+		1, // 24
+		1, // 25
+		1, // 26
+	},
+}
+var _ = _cover_atomic_.LoadUint32

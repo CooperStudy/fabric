@@ -1,0 +1,87 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/flogging/legacy.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package flogging; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+	"io"
+	"os"
+	"strings"
+
+	logging "github.com/op/go-logging"
+)
+
+// These interfaces are used by the chaincode shim at the 1.2 version.
+// If we remove them, vendored shims are unlikely to compile against
+// newer levels of the peer.
+
+// SetFormat(string) logging.Formatter
+// InitBackend(logging.Formatter, io.Writer)
+// DefaultLevel() string
+// InitFromSpec(string) string
+
+// SetFormat sets the logging format.
+func SetFormat(formatSpec string) logging.Formatter {_cover_atomic_.AddUint32(&GoCover_2_643766633362313436336635.Count[0], 1);
+	if formatSpec == "" {_cover_atomic_.AddUint32(&GoCover_2_643766633362313436336635.Count[2], 1);
+		formatSpec = defaultFormat
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_643766633362313436336635.Count[1], 1);return logging.MustStringFormatter(formatSpec)
+}
+
+// InitBackend sets up the logging backend based on
+// the provided logging formatter and I/O writer.
+func InitBackend(formatter logging.Formatter, output io.Writer) {_cover_atomic_.AddUint32(&GoCover_2_643766633362313436336635.Count[3], 1);
+	backend := logging.NewLogBackend(output, "", 0)
+	backendFormatter := logging.NewBackendFormatter(backend, formatter)
+	logging.SetBackend(backendFormatter).SetLevel(logging.INFO, "")
+}
+
+// DefaultLevel returns the fallback value for loggers to use if parsing fails.
+func DefaultLevel() string {_cover_atomic_.AddUint32(&GoCover_2_643766633362313436336635.Count[4], 1);
+	return strings.ToUpper(Global.DefaultLevel().String())
+}
+
+// InitFromSpec initializes the logging based on the supplied spec. It is
+// exposed externally so that consumers of the flogging package may parse their
+// own logging specification. The logging specification has the following form:
+//		[<logger>[,<logger>...]=]<level>[:[<logger>[,<logger>...]=]<logger>...]
+func InitFromSpec(spec string) string {_cover_atomic_.AddUint32(&GoCover_2_643766633362313436336635.Count[5], 1);
+	err := Global.ActivateSpec(spec)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_643766633362313436336635.Count[7], 1);
+		fmt.Fprintf(os.Stderr, "failed to activate logging spec: %s", err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_643766633362313436336635.Count[6], 1);return DefaultLevel()
+}
+
+var GoCover_2_643766633362313436336635 = struct {
+	Count     [8]uint32
+	Pos       [3 * 8]uint32
+	NumStmt   [8]uint16
+} {
+	Pos: [3 * 8]uint32{
+		28, 29, 0x160035, // [0]
+		32, 32, 0x300002, // [1]
+		29, 31, 0x30016, // [2]
+		37, 41, 0x20041, // [3]
+		44, 46, 0x2001c, // [4]
+		52, 54, 0x100027, // [5]
+		57, 57, 0x170002, // [6]
+		54, 56, 0x30010, // [7]
+	},
+	NumStmt: [8]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		3, // 3
+		1, // 4
+		2, // 5
+		1, // 6
+		1, // 7
+	},
+}
+var _ = _cover_atomic_.LoadUint32

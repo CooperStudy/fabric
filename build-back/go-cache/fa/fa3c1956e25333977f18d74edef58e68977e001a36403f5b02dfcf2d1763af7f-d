@@ -1,0 +1,4 @@
+./lifecycle_suite_test.go
+./lifecycle_test.go
+./protobuf_test.go
+./scc_test.go

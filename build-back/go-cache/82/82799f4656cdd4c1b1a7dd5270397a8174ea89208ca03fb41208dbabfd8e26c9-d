@@ -1,0 +1,253 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/ledger/kvledger/coll_elg_notifier.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package kvledger; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric/core/ledger"
+	"github.com/hyperledger/fabric/protos/common"
+	"github.com/hyperledger/fabric/protos/ledger/rwset/kvrwset"
+)
+
+// collElgNotifier listens for the chaincode events and determines whether the peer has become eligible for one or more existing
+// private data collections and notifies the registered listener
+type collElgNotifier struct {
+	deployedChaincodeInfoProvider ledger.DeployedChaincodeInfoProvider
+	membershipInfoProvider        ledger.MembershipInfoProvider
+	listeners                     map[string]collElgListener
+}
+
+// InterestedInNamespaces implements function in interface ledger.StateListener
+func (n *collElgNotifier) InterestedInNamespaces() []string {_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[0], 1);
+	return n.deployedChaincodeInfoProvider.Namespaces()
+}
+
+// HandleStateUpdates implements function in interface ledger.StateListener
+// This function gets invoked when one or more chaincodes are deployed or upgraded by a block.
+// This function, for each upgraded chaincode, performs the following
+// 1) Retrieves the existing collection configurations and new collection configurations
+// 2) Computes the collections for which the peer is not eligible as per the existing collection configuration
+//    but is eligible as per the new collection configuration
+// Finally, it causes an invocation to function 'ProcessCollsEligibilityEnabled' on ledger store with a map {ns:colls}
+// that contains the details of <ns, coll> combination for which the eligibility of the peer is switched on.
+func (n *collElgNotifier) HandleStateUpdates(trigger *ledger.StateUpdateTrigger) error {_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[1], 1);
+	nsCollMap := map[string][]string{}
+	qe := trigger.CommittedStateQueryExecutor
+	postCommitQE := trigger.PostCommitQueryExecutor
+
+	stateUpdates := convertToKVWrites(trigger.StateUpdates)
+	ccLifecycleInfo, err := n.deployedChaincodeInfoProvider.UpdatedChaincodes(stateUpdates)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[5], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[2], 1);var existingCCInfo, postCommitCCInfo *ledger.DeployedChaincodeInfo
+	for _, ccInfo := range ccLifecycleInfo {_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[6], 1);
+		ledgerid := trigger.LedgerID
+		ccName := ccInfo.Name
+		if existingCCInfo, err = n.deployedChaincodeInfoProvider.ChaincodeInfo(ccName, qe); err != nil {_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[11], 1);
+			return err
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[7], 1);if existingCCInfo == nil {_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[12], 1); // not an upgrade transaction
+			continue
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[8], 1);if postCommitCCInfo, err = n.deployedChaincodeInfoProvider.ChaincodeInfo(ccName, postCommitQE); err != nil {_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[13], 1);
+			return err
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[9], 1);elgEnabledCollNames, err := n.elgEnabledCollNames(
+			ledgerid,
+			existingCCInfo.CollectionConfigPkg,
+			postCommitCCInfo.CollectionConfigPkg,
+		)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[14], 1);
+			return err
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[10], 1);logger.Debugf("[%s] collections of chaincode [%s] for which peer was not eligible before and now the eligiblity is enabled - [%s]",
+			ledgerid, ccName, elgEnabledCollNames,
+		)
+		if len(elgEnabledCollNames) > 0 {_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[15], 1);
+			nsCollMap[ccName] = elgEnabledCollNames
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[3], 1);if len(nsCollMap) > 0 {_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[16], 1);
+		n.invokeLedgerSpecificNotifier(trigger.LedgerID, trigger.CommittingBlockNum, nsCollMap)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[4], 1);return nil
+}
+
+func (n *collElgNotifier) registerListener(ledgerID string, listener collElgListener) {_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[17], 1);
+	n.listeners[ledgerID] = listener
+}
+
+func (n *collElgNotifier) invokeLedgerSpecificNotifier(ledgerID string, commtingBlk uint64, nsCollMap map[string][]string) {_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[18], 1);
+	listener := n.listeners[ledgerID]
+	listener.ProcessCollsEligibilityEnabled(commtingBlk, nsCollMap)
+}
+
+// elgEnabledCollNames returns the names of the collections for which the peer is not eligible as per 'existingPkg' and is eligible as per 'postCommitPkg'
+func (n *collElgNotifier) elgEnabledCollNames(ledgerID string,
+	existingPkg, postCommitPkg *common.CollectionConfigPackage) ([]string, error) {_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[19], 1);
+
+	collectionNames := []string{}
+	exisingConfs := retrieveCollConfs(existingPkg)
+	postCommitConfs := retrieveCollConfs(postCommitPkg)
+	existingConfMap := map[string]*common.StaticCollectionConfig{}
+	for _, existingConf := range exisingConfs {_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[22], 1);
+		existingConfMap[existingConf.Name] = existingConf
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[20], 1);for _, postCommitConf := range postCommitConfs {_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[23], 1);
+		collName := postCommitConf.Name
+		existingConf, ok := existingConfMap[collName]
+		if !ok {_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[27], 1); // brand new collection
+			continue
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[24], 1);membershipEnabled, err := n.elgEnabled(ledgerID, existingConf.MemberOrgsPolicy, postCommitConf.MemberOrgsPolicy)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[28], 1);
+			return nil, err
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[25], 1);if !membershipEnabled {_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[29], 1);
+			continue
+		}
+		// not an existing member and added now
+		_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[26], 1);collectionNames = append(collectionNames, collName)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[21], 1);return collectionNames, nil
+}
+
+// elgEnabled returns true if the peer is not eligible for a collection as per 'existingPolicy' and is eligible as per 'postCommitPolicy'
+func (n *collElgNotifier) elgEnabled(ledgerID string, existingPolicy, postCommitPolicy *common.CollectionPolicyConfig) (bool, error) {_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[30], 1);
+	existingMember, err := n.membershipInfoProvider.AmMemberOf(ledgerID, existingPolicy)
+	if err != nil || existingMember {_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[32], 1);
+		return false, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[31], 1);return n.membershipInfoProvider.AmMemberOf(ledgerID, postCommitPolicy)
+}
+
+func convertToKVWrites(stateUpdates ledger.StateUpdates) map[string][]*kvrwset.KVWrite {_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[33], 1);
+	m := map[string][]*kvrwset.KVWrite{}
+	for ns, updates := range stateUpdates {_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[35], 1);
+		m[ns] = updates.([]*kvrwset.KVWrite)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[34], 1);return m
+}
+
+// StateCommitDone implements function in interface ledger.StateListener
+func (n *collElgNotifier) StateCommitDone(ledgerID string) {_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[36], 1);
+	// Noop
+}
+
+type collElgListener interface {
+	ProcessCollsEligibilityEnabled(commitingBlk uint64, nsCollMap map[string][]string) error
+}
+
+func retrieveCollConfs(collConfPkg *common.CollectionConfigPackage) []*common.StaticCollectionConfig {_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[37], 1);
+	if collConfPkg == nil {_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[40], 1);
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[38], 1);var staticCollConfs []*common.StaticCollectionConfig
+	protoConfArray := collConfPkg.Config
+	for _, protoConf := range protoConfArray {_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[41], 1);
+		staticCollConfs = append(staticCollConfs, protoConf.GetStaticCollectionConfig())
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_653063666537353930343531.Count[39], 1);return staticCollConfs
+}
+
+var GoCover_0_653063666537353930343531 = struct {
+	Count     [42]uint32
+	Pos       [3 * 42]uint32
+	NumStmt   [42]uint16
+} {
+	Pos: [3 * 42]uint32{
+		24, 26, 0x2003d, // [0]
+		36, 43, 0x100058, // [1]
+		46, 47, 0x290002, // [2]
+		74, 74, 0x180002, // [3]
+		77, 77, 0xc0002, // [4]
+		43, 45, 0x30010, // [5]
+		47, 50, 0x620029, // [6]
+		53, 53, 0x1c0003, // [7]
+		56, 56, 0x6e0003, // [8]
+		59, 64, 0x110003, // [9]
+		67, 70, 0x230003, // [10]
+		50, 52, 0x40062, // [11]
+		53, 54, 0xc001c, // [12]
+		56, 58, 0x4006e, // [13]
+		64, 66, 0x40011, // [14]
+		70, 72, 0x40023, // [15]
+		74, 76, 0x30018, // [16]
+		80, 82, 0x20057, // [17]
+		84, 87, 0x2007c, // [18]
+		91, 97, 0x2c0050, // [19]
+		101, 101, 0x310002, // [20]
+		117, 117, 0x1d0002, // [21]
+		97, 99, 0x3002c, // [22]
+		101, 104, 0xa0031, // [23]
+		107, 108, 0x110003, // [24]
+		111, 111, 0x190003, // [25]
+		115, 115, 0x360003, // [26]
+		104, 105, 0xc000a, // [27]
+		108, 110, 0x40011, // [28]
+		111, 112, 0xc0019, // [29]
+		121, 123, 0x220086, // [30]
+		126, 126, 0x480002, // [31]
+		123, 125, 0x30022, // [32]
+		129, 131, 0x280058, // [33]
+		134, 134, 0xa0002, // [34]
+		131, 133, 0x30028, // [35]
+		138, 140, 0x2003d, // [36]
+		146, 147, 0x180066, // [37]
+		150, 152, 0x2b0002, // [38]
+		155, 155, 0x180002, // [39]
+		147, 149, 0x30018, // [40]
+		152, 154, 0x3002b, // [41]
+	},
+	NumStmt: [42]uint16{
+		1, // 0
+		6, // 1
+		2, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		3, // 6
+		1, // 7
+		1, // 8
+		2, // 9
+		2, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		2, // 18
+		5, // 19
+		1, // 20
+		1, // 21
+		1, // 22
+		3, // 23
+		2, // 24
+		1, // 25
+		1, // 26
+		1, // 27
+		1, // 28
+		1, // 29
+		2, // 30
+		1, // 31
+		1, // 32
+		2, // 33
+		1, // 34
+		1, // 35
+		0, // 36
+		1, // 37
+		3, // 38
+		1, // 39
+		1, // 40
+		1, // 41
+	},
+}
+var _ = _cover_atomic_.LoadUint32

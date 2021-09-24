@@ -1,0 +1,4 @@
+inproccontroller.cover.go
+inprocstream.cover.go
+./inproccontroller_test.go
+./inprocstream_test.go

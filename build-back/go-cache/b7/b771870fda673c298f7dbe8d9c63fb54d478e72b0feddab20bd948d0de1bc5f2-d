@@ -1,0 +1,3 @@
+./extensions.go
+./protocol.pb.go
+./extensions_test.go

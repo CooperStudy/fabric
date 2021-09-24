@@ -1,0 +1,362 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/peer/config.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+// The 'viper' package for configuration handling is very flexible, but has
+// been found to have extremely poor performance when configuration values are
+// accessed repeatedly. The function CacheConfiguration() defined here caches
+// all configuration values that are accessed frequently.  These parameters
+// are now presented as function calls that access local configuration
+// variables.  This seems to be the most robust way to represent these
+// parameters in the face of the numerous ways that configuration files are
+// loaded and used (e.g, normal usage vs. test cases).
+
+// The CacheConfiguration() function is allowed to be called globally to
+// ensure that the correct values are always cached; See for example how
+// certain parameters are forced in 'ChaincodeDevMode' in main.go.
+
+package peer; import _cover_atomic_ "sync/atomic"
+
+import (
+	"crypto/tls"
+	"fmt"
+	"io/ioutil"
+	"net"
+	"path/filepath"
+
+	"github.com/hyperledger/fabric/core/comm"
+	"github.com/hyperledger/fabric/core/config"
+	pb "github.com/hyperledger/fabric/protos/peer"
+	"github.com/pkg/errors"
+	"github.com/spf13/viper"
+)
+
+// Is the configuration cached?
+var configurationCached = false
+
+// Cached values and error values of the computed constants getLocalAddress(),
+// getValidatorStreamAddress(), and getPeerEndpoint()
+var localAddress string
+var localAddressError error
+var peerEndpoint *pb.PeerEndpoint
+var peerEndpointError error
+
+// Cached values of commonly used configuration constants.
+
+// CacheConfiguration computes and caches commonly-used constants and
+// computed constants as package variables. Routines which were previously
+// global have been embedded here to preserve the original abstraction.
+func CacheConfiguration() (err error) {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[0], 1);
+	// getLocalAddress returns the address:port the local peer is operating on.  Affected by env:peer.addressAutoDetect
+	getLocalAddress := func() (string, error) {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[4], 1);
+		peerAddress := viper.GetString("peer.address")
+		if peerAddress == "" {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[9], 1);
+			return "", fmt.Errorf("peer.address isn't set")
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[5], 1);host, port, err := net.SplitHostPort(peerAddress)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[10], 1);
+			return "", errors.Errorf("peer.address isn't in host:port format: %s", peerAddress)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[6], 1);autoDetectedIPAndPort := net.JoinHostPort(GetLocalIP(), port)
+		peerLogger.Info("Auto-detected peer address:", autoDetectedIPAndPort)
+		// If host is the IPv4 address "0.0.0.0" or the IPv6 address "::",
+		// then fallback to auto-detected address
+		if ip := net.ParseIP(host); ip != nil && ip.IsUnspecified() {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[11], 1);
+			peerLogger.Info("Host is", host, ", falling back to auto-detected address:", autoDetectedIPAndPort)
+			return autoDetectedIPAndPort, nil
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[7], 1);if viper.GetBool("peer.addressAutoDetect") {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[12], 1);
+			peerLogger.Info("Auto-detect flag is set, returning", autoDetectedIPAndPort)
+			return autoDetectedIPAndPort, nil
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[8], 1);peerLogger.Info("Returning", peerAddress)
+		return peerAddress, nil
+
+	}
+
+	// getPeerEndpoint returns the PeerEndpoint for this Peer instance.  Affected by env:peer.addressAutoDetect
+	_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[1], 1);getPeerEndpoint := func() (*pb.PeerEndpoint, error) {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[13], 1);
+		var peerAddress string
+		peerAddress, err := getLocalAddress()
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[15], 1);
+			return nil, err
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[14], 1);return &pb.PeerEndpoint{Id: &pb.PeerID{Name: viper.GetString("peer.id")}, Address: peerAddress}, nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[2], 1);localAddress, localAddressError = getLocalAddress()
+	peerEndpoint, _ = getPeerEndpoint()
+
+	configurationCached = true
+
+	if localAddressError != nil {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[16], 1);
+		return localAddressError
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[3], 1);return
+}
+
+// cacheConfiguration logs an error if error checks have failed.
+func cacheConfiguration() {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[17], 1);
+	if err := CacheConfiguration(); err != nil {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[18], 1);
+		peerLogger.Errorf("Execution continues after CacheConfiguration() failure : %s", err)
+	}
+}
+
+//Functional forms
+
+// GetLocalAddress returns the peer.address property
+func GetLocalAddress() (string, error) {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[19], 1);
+	if !configurationCached {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[21], 1);
+		cacheConfiguration()
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[20], 1);return localAddress, localAddressError
+}
+
+// GetPeerEndpoint returns peerEndpoint from cached configuration
+func GetPeerEndpoint() (*pb.PeerEndpoint, error) {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[22], 1);
+	if !configurationCached {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[24], 1);
+		cacheConfiguration()
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[23], 1);return peerEndpoint, peerEndpointError
+}
+
+// GetServerConfig returns the gRPC server configuration for the peer
+func GetServerConfig() (comm.ServerConfig, error) {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[25], 1);
+	secureOptions := &comm.SecureOptions{
+		UseTLS: viper.GetBool("peer.tls.enabled"),
+	}
+	serverConfig := comm.ServerConfig{SecOpts: secureOptions}
+	if secureOptions.UseTLS {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[28], 1);
+		// get the certs from the file system
+		serverKey, err := ioutil.ReadFile(config.GetPath("peer.tls.key.file"))
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[32], 1);
+			return serverConfig, fmt.Errorf("error loading TLS key (%s)", err)
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[29], 1);serverCert, err := ioutil.ReadFile(config.GetPath("peer.tls.cert.file"))
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[33], 1);
+			return serverConfig, fmt.Errorf("error loading TLS certificate (%s)", err)
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[30], 1);secureOptions.Certificate = serverCert
+		secureOptions.Key = serverKey
+		secureOptions.RequireClientCert = viper.GetBool("peer.tls.clientAuthRequired")
+		if secureOptions.RequireClientCert {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[34], 1);
+			var clientRoots [][]byte
+			for _, file := range viper.GetStringSlice("peer.tls.clientRootCAs.files") {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[36], 1);
+				clientRoot, err := ioutil.ReadFile(
+					config.TranslatePath(filepath.Dir(viper.ConfigFileUsed()), file))
+				if err != nil {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[38], 1);
+					return serverConfig,
+						fmt.Errorf("error loading client root CAs (%s)", err)
+				}
+				_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[37], 1);clientRoots = append(clientRoots, clientRoot)
+			}
+			_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[35], 1);secureOptions.ClientRootCAs = clientRoots
+		}
+		// check for root cert
+		_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[31], 1);if config.GetPath("peer.tls.rootcert.file") != "" {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[39], 1);
+			rootCert, err := ioutil.ReadFile(config.GetPath("peer.tls.rootcert.file"))
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[41], 1);
+				return serverConfig, fmt.Errorf("error loading TLS root certificate (%s)", err)
+			}
+			_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[40], 1);secureOptions.ServerRootCAs = [][]byte{rootCert}
+		}
+	}
+	// get the default keepalive options
+	_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[26], 1);serverConfig.KaOpts = comm.DefaultKeepaliveOptions
+	// check to see if minInterval is set for the env
+	if viper.IsSet("peer.keepalive.minInterval") {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[42], 1);
+		serverConfig.KaOpts.ServerMinInterval = viper.GetDuration("peer.keepalive.minInterval")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[27], 1);return serverConfig, nil
+}
+
+// GetClientCertificate returns the TLS certificate to use for gRPC client
+// connections
+func GetClientCertificate() (tls.Certificate, error) {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[43], 1);
+	cert := tls.Certificate{}
+
+	keyPath := viper.GetString("peer.tls.clientKey.file")
+	certPath := viper.GetString("peer.tls.clientCert.file")
+
+	if keyPath != "" || certPath != "" {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[48], 1);
+		// need both keyPath and certPath to be set
+		if keyPath == "" || certPath == "" {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[50], 1);
+			return cert, errors.New("peer.tls.clientKey.file and " +
+				"peer.tls.clientCert.file must both be set or must both be empty")
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[49], 1);keyPath = config.GetPath("peer.tls.clientKey.file")
+		certPath = config.GetPath("peer.tls.clientCert.file")
+
+	} else{ _cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[51], 1);{
+		// use the TLS server keypair
+		keyPath = viper.GetString("peer.tls.key.file")
+		certPath = viper.GetString("peer.tls.cert.file")
+
+		if keyPath != "" || certPath != "" {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[52], 1);
+			// need both keyPath and certPath to be set
+			if keyPath == "" || certPath == "" {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[54], 1);
+				return cert, errors.New("peer.tls.key.file and " +
+					"peer.tls.cert.file must both be set or must both be empty")
+			}
+			_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[53], 1);keyPath = config.GetPath("peer.tls.key.file")
+			certPath = config.GetPath("peer.tls.cert.file")
+		} else{ _cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[55], 1);{
+			return cert, errors.New("must set either " +
+				"[peer.tls.key.file and peer.tls.cert.file] or " +
+				"[peer.tls.clientKey.file and peer.tls.clientCert.file]" +
+				"when peer.tls.clientAuthEnabled is set to true")
+		}}
+	}}
+	// get the keypair from the file system
+	_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[44], 1);clientKey, err := ioutil.ReadFile(keyPath)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[56], 1);
+		return cert, errors.WithMessage(err,
+			"error loading client TLS key")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[45], 1);clientCert, err := ioutil.ReadFile(certPath)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[57], 1);
+		return cert, errors.WithMessage(err,
+			"error loading client TLS certificate")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[46], 1);cert, err = tls.X509KeyPair(clientCert, clientKey)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[58], 1);
+		return cert, errors.WithMessage(err,
+			"error parsing client TLS key pair")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_323265356137393664323638.Count[47], 1);return cert, nil
+}
+
+var GoCover_0_323265356137393664323638 = struct {
+	Count     [59]uint32
+	Pos       [3 * 59]uint32
+	NumStmt   [59]uint16
+} {
+	Pos: [3 * 59]uint32{
+		51, 53, 0x2c0027, // [0]
+		82, 82, 0x360002, // [1]
+		91, 96, 0x1e0002, // [2]
+		99, 99, 0x80002, // [3]
+		53, 55, 0x18002c, // [4]
+		58, 59, 0x110003, // [5]
+		63, 67, 0x3f0003, // [6]
+		72, 72, 0x2e0003, // [7]
+		76, 77, 0x1a0003, // [8]
+		55, 57, 0x40018, // [9]
+		59, 61, 0x40011, // [10]
+		67, 70, 0x4003f, // [11]
+		72, 75, 0x4002e, // [12]
+		82, 85, 0x110036, // [13]
+		88, 88, 0x670003, // [14]
+		85, 87, 0x40011, // [15]
+		96, 98, 0x3001e, // [16]
+		103, 104, 0x2d001b, // [17]
+		104, 106, 0x3002d, // [18]
+		112, 113, 0x1a0028, // [19]
+		116, 116, 0x280002, // [20]
+		113, 115, 0x3001a, // [21]
+		120, 121, 0x1a0032, // [22]
+		124, 124, 0x280002, // [23]
+		121, 123, 0x3001a, // [24]
+		128, 133, 0x1a0033, // [25]
+		169, 171, 0x2f0002, // [26]
+		174, 174, 0x1a0002, // [27]
+		133, 136, 0x11001a, // [28]
+		139, 140, 0x110003, // [29]
+		143, 146, 0x260003, // [30]
+		160, 160, 0x350003, // [31]
+		136, 138, 0x40011, // [32]
+		140, 142, 0x40011, // [33]
+		146, 148, 0x4e0026, // [34]
+		157, 157, 0x2d0004, // [35]
+		148, 151, 0x13004e, // [36]
+		155, 155, 0x320005, // [37]
+		151, 154, 0x60013, // [38]
+		160, 162, 0x120035, // [39]
+		165, 165, 0x340004, // [40]
+		162, 164, 0x50012, // [41]
+		171, 173, 0x3002f, // [42]
+		179, 185, 0x250036, // [43]
+		215, 216, 0x100002, // [44]
+		220, 221, 0x100002, // [45]
+		225, 226, 0x100002, // [46]
+		230, 230, 0x120002, // [47]
+		185, 187, 0x260025, // [48]
+		191, 192, 0x380003, // [49]
+		187, 190, 0x40026, // [50]
+		194, 199, 0x260008, // [51]
+		199, 201, 0x270026, // [52]
+		205, 206, 0x330004, // [53]
+		201, 204, 0x50027, // [54]
+		207, 212, 0x40009, // [55]
+		216, 219, 0x30010, // [56]
+		221, 224, 0x30010, // [57]
+		226, 229, 0x30010, // [58]
+	},
+	NumStmt: [59]uint16{
+		1, // 0
+		1, // 1
+		4, // 2
+		1, // 3
+		2, // 4
+		2, // 5
+		3, // 6
+		1, // 7
+		2, // 8
+		1, // 9
+		1, // 10
+		2, // 11
+		2, // 12
+		3, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+		1, // 24
+		3, // 25
+		2, // 26
+		1, // 27
+		2, // 28
+		2, // 29
+		4, // 30
+		1, // 31
+		1, // 32
+		1, // 33
+		2, // 34
+		1, // 35
+		2, // 36
+		1, // 37
+		1, // 38
+		2, // 39
+		1, // 40
+		1, // 41
+		1, // 42
+		4, // 43
+		2, // 44
+		2, // 45
+		2, // 46
+		1, // 47
+		1, // 48
+		2, // 49
+		1, // 50
+		3, // 51
+		1, // 52
+		2, // 53
+		1, // 54
+		1, // 55
+		1, // 56
+		1, // 57
+		1, // 58
+	},
+}
+var _ = _cover_atomic_.LoadUint32

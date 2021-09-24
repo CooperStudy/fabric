@@ -1,0 +1,448 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/pvtstatepurgemgmt/purge_mgr.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package pvtstatepurgemgmt; import _cover_atomic_ "sync/atomic"
+
+import (
+	"math"
+	"sync"
+
+	"github.com/hyperledger/fabric/core/ledger/kvledger/bookkeeping"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/privacyenabledstate"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/version"
+	"github.com/hyperledger/fabric/core/ledger/pvtdatapolicy"
+	"github.com/hyperledger/fabric/core/ledger/util"
+)
+
+// PurgeMgr manages purging of the expired pvtdata
+type PurgeMgr interface {
+	// PrepareForExpiringKeys gives a chance to the PurgeMgr to do background work in advance if any
+	PrepareForExpiringKeys(expiringAtBlk uint64)
+	// WaitForPrepareToFinish holds the caller till the background goroutine lauched by 'PrepareForExpiringKeys' is finished
+	WaitForPrepareToFinish()
+	// DeleteExpiredAndUpdateBookkeeping updates the bookkeeping and modifies the update batch by adding the deletes for the expired pvtdata
+	DeleteExpiredAndUpdateBookkeeping(
+		pvtUpdates *privacyenabledstate.PvtUpdateBatch,
+		hashedUpdates *privacyenabledstate.HashedUpdateBatch) error
+	// UpdateBookkeepingForPvtDataOfOldBlocks updates the existing expiry entries in the bookkeeper with the given pvtUpdates
+	UpdateBookkeepingForPvtDataOfOldBlocks(pvtUpdates *privacyenabledstate.PvtUpdateBatch) error
+	// BlockCommitDone is a callback to the PurgeMgr when the block is committed to the ledger
+	BlockCommitDone() error
+}
+
+type keyAndVersion struct {
+	key             string
+	committingBlock uint64
+	purgeKeyOnly    bool
+}
+
+type expiryInfoMap map[privacyenabledstate.HashedCompositeKey]*keyAndVersion
+
+type workingset struct {
+	toPurge             expiryInfoMap
+	toClearFromSchedule []*expiryInfoKey
+	expiringBlk         uint64
+	err                 error
+}
+
+type purgeMgr struct {
+	btlPolicy pvtdatapolicy.BTLPolicy
+	db        privacyenabledstate.DB
+	expKeeper expiryKeeper
+
+	lock    *sync.Mutex
+	waitGrp *sync.WaitGroup
+
+	workingset *workingset
+}
+
+// InstantiatePurgeMgr instantiates a PurgeMgr.
+func InstantiatePurgeMgr(ledgerid string, db privacyenabledstate.DB, btlPolicy pvtdatapolicy.BTLPolicy, bookkeepingProvider bookkeeping.Provider) (PurgeMgr, error) {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[0], 1);
+	return &purgeMgr{
+		btlPolicy: btlPolicy,
+		db:        db,
+		expKeeper: newExpiryKeeper(ledgerid, bookkeepingProvider),
+		lock:      &sync.Mutex{},
+		waitGrp:   &sync.WaitGroup{},
+	}, nil
+}
+
+// PrepareForExpiringKeys implements function in the interface 'PurgeMgr'
+func (p *purgeMgr) PrepareForExpiringKeys(expiringAtBlk uint64) {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[1], 1);
+	p.waitGrp.Add(1)
+	go func() {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[3], 1);
+		p.lock.Lock()
+		p.waitGrp.Done()
+		defer p.lock.Unlock()
+		p.workingset = p.prepareWorkingsetFor(expiringAtBlk)
+	}()
+	_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[2], 1);p.waitGrp.Wait()
+}
+
+// WaitForPrepareToFinish implements function in the interface 'PurgeMgr'
+func (p *purgeMgr) WaitForPrepareToFinish() {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[4], 1);
+	p.lock.Lock()
+	p.lock.Unlock()
+}
+
+func (p *purgeMgr) UpdateBookkeepingForPvtDataOfOldBlocks(pvtUpdates *privacyenabledstate.PvtUpdateBatch) error {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[5], 1);
+	builder := newExpiryScheduleBuilder(p.btlPolicy)
+	pvtUpdateCompositeKeyMap := pvtUpdates.ToCompositeKeyMap()
+	for k, vv := range pvtUpdateCompositeKeyMap {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[8], 1);
+		builder.add(k.Namespace, k.CollectionName, k.Key, util.ComputeStringHash(k.Key), vv)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[6], 1);var updatedList []*expiryInfo
+	for _, toAdd := range builder.getExpiryInfo() {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[9], 1);
+		toUpdate, err := p.expKeeper.retrieveByExpiryKey(toAdd.expiryInfoKey)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[11], 1);
+			return err
+		}
+		// Though we could update the existing entry (as there should be one due
+		// to only the keyHash of this pvtUpdateKey), for simplicity and to be less
+		// expensive, we append a new entry
+		_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[10], 1);toUpdate.pvtdataKeys.addAll(toAdd.pvtdataKeys)
+		updatedList = append(updatedList, toUpdate)
+	}
+
+	// As the expiring keys list might have been constructed after the last
+	// regular block commit, we need to update the list. This is because,
+	// some of the old pvtData which are being committed might get expired
+	// during the next regular block commit. As a result, the corresponding
+	// hashedKey in the expiring keys list would be missing the pvtData.
+	_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[7], 1);p.addMissingPvtDataToWorkingSet(pvtUpdateCompositeKeyMap)
+
+	return p.expKeeper.updateBookkeeping(updatedList, nil)
+}
+
+func (p *purgeMgr) addMissingPvtDataToWorkingSet(pvtKeys privacyenabledstate.PvtdataCompositeKeyMap) {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[12], 1);
+	if p.workingset == nil || len(p.workingset.toPurge) == 0 {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[14], 1);
+		return
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[13], 1);for k := range pvtKeys {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[15], 1);
+		hashedCompositeKey := privacyenabledstate.HashedCompositeKey{
+			Namespace:      k.Namespace,
+			CollectionName: k.CollectionName,
+			KeyHash:        string(util.ComputeStringHash(k.Key))}
+
+		toPurgeKey, ok := p.workingset.toPurge[hashedCompositeKey]
+		if !ok {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[17], 1);
+			// corresponding hashedKey is not present in the
+			// expiring keys list
+			continue
+		}
+
+		// if the purgeKeyOnly is set, it means that the version of the pvtKey
+		// stored in the stateDB is older than the version of the hashedKey.
+		// As a result, only the pvtKey needs to be purged (expiring block height
+		// for the recent hashedKey would be higher). If the recent
+		// pvtKey of the corresponding hashedKey is being committed, we need to
+		// remove the purgeKeyOnly entries from the toPurgeList it is going to be
+		// updated by the commit of missing pvtData
+		_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[16], 1);if toPurgeKey.purgeKeyOnly {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[18], 1);
+			delete(p.workingset.toPurge, hashedCompositeKey)
+		} else{ _cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[19], 1);{
+			toPurgeKey.key = k.Key
+		}}
+	}
+}
+
+// DeleteExpiredAndUpdateBookkeeping implements function in the interface 'PurgeMgr'
+func (p *purgeMgr) DeleteExpiredAndUpdateBookkeeping(
+	pvtUpdates *privacyenabledstate.PvtUpdateBatch,
+	hashedUpdates *privacyenabledstate.HashedUpdateBatch) error {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[20], 1);
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	if p.workingset.err != nil {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[24], 1);
+		return p.workingset.err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[21], 1);listExpiryInfo, err := buildExpirySchedule(p.btlPolicy, pvtUpdates, hashedUpdates)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[25], 1);
+		return err
+	}
+
+	// For each key selected for purging, check if the key is not getting updated in the current block,
+	// add its deletion in the update batches for pvt and hashed updates
+	_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[22], 1);for compositeHashedKey, keyAndVersion := range p.workingset.toPurge {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[26], 1);
+		ns := compositeHashedKey.Namespace
+		coll := compositeHashedKey.CollectionName
+		keyHash := []byte(compositeHashedKey.KeyHash)
+		key := keyAndVersion.key
+		purgeKeyOnly := keyAndVersion.purgeKeyOnly
+		hashUpdated := hashedUpdates.Contains(ns, coll, keyHash)
+		pvtKeyUpdated := pvtUpdates.Contains(ns, coll, key)
+
+		logger.Debugf("Checking whether the key [ns=%s, coll=%s, keyHash=%x, purgeKeyOnly=%t] "+
+			"is updated in the update batch for the committing block - hashUpdated=%t, and pvtKeyUpdated=%t",
+			ns, coll, keyHash, purgeKeyOnly, hashUpdated, pvtKeyUpdated)
+
+		expiringTxVersion := version.NewHeight(p.workingset.expiringBlk, math.MaxUint64)
+		if !hashUpdated && !purgeKeyOnly {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[28], 1);
+			logger.Debugf("Adding the hashed key to be purged to the delete list in the update batch")
+			hashedUpdates.Delete(ns, coll, keyHash, expiringTxVersion)
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[27], 1);if key != "" && !pvtKeyUpdated {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[29], 1);
+			logger.Debugf("Adding the pvt key to be purged to the delete list in the update batch")
+			pvtUpdates.Delete(ns, coll, key, expiringTxVersion)
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[23], 1);return p.expKeeper.updateBookkeeping(listExpiryInfo, nil)
+}
+
+// BlockCommitDone implements function in the interface 'PurgeMgr'
+// These orphan entries for purge-schedule can be cleared off in bulk in a separate background routine as well
+// If we maintian the following logic (i.e., clear off entries just after block commit), we need a TODO -
+// We need to perform a check in the start, becasue there could be a crash between the block commit and
+// invocation to this function resulting in the orphan entry for the deletes scheduled for the last block
+// Also, the another way is to club the delete of these entries in the same batch that adds entries for the future expirations -
+// however, that requires updating the expiry store by replaying the last block from blockchain in order to sustain a crash between
+// entries updates and block commit
+func (p *purgeMgr) BlockCommitDone() error {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[30], 1);
+	defer func() {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[32], 1); p.workingset = nil }()
+	_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[31], 1);return p.expKeeper.updateBookkeeping(nil, p.workingset.toClearFromSchedule)
+}
+
+// prepareWorkingsetFor returns a working set for a given expiring block 'expiringAtBlk'.
+// This working set contains the pvt data keys that will expire with the commit of block 'expiringAtBlk'.
+func (p *purgeMgr) prepareWorkingsetFor(expiringAtBlk uint64) *workingset {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[33], 1);
+	logger.Debugf("Preparing potential purge list working-set for expiringAtBlk [%d]", expiringAtBlk)
+	workingset := &workingset{expiringBlk: expiringAtBlk}
+	// Retrieve the keys from bookkeeper
+	expiryInfo, err := p.expKeeper.retrieve(expiringAtBlk)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[37], 1);
+		workingset.err = err
+		return workingset
+	}
+	// Transform the keys into the form such that for each hashed key that is eligible for purge appears in 'toPurge'
+	_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[34], 1);toPurge := transformToExpiryInfoMap(expiryInfo)
+	// Load the latest versions of the hashed keys
+	p.preloadCommittedVersionsInCache(toPurge)
+	var expiryInfoKeysToClear []*expiryInfoKey
+
+	if len(toPurge) == 0 {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[38], 1);
+		logger.Debugf("No expiry entry found for expiringAtBlk [%d]", expiringAtBlk)
+		return workingset
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[35], 1);logger.Debugf("Total [%d] expiring entries found. Evaluaitng whether some of these keys have been overwritten in later blocks...", len(toPurge))
+
+	for purgeEntryK, purgeEntryV := range toPurge {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[39], 1);
+		logger.Debugf("Evaluating for hashedKey [%s]", purgeEntryK)
+		expiryInfoKeysToClear = append(expiryInfoKeysToClear, &expiryInfoKey{committingBlk: purgeEntryV.committingBlock, expiryBlk: expiringAtBlk})
+		currentVersion, err := p.db.GetKeyHashVersion(purgeEntryK.Namespace, purgeEntryK.CollectionName, []byte(purgeEntryK.KeyHash))
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[43], 1);
+			workingset.err = err
+			return workingset
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[40], 1);if sameVersion(currentVersion, purgeEntryV.committingBlock) {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[44], 1);
+			logger.Debugf(
+				"The version of the hashed key in the committed state and in the expiry entry is same " +
+					"hence, keeping the entry in the purge list")
+			continue
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[41], 1);logger.Debugf("The version of the hashed key in the committed state and in the expiry entry is different")
+		if purgeEntryV.key != "" {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[45], 1);
+			logger.Debugf("The expiry entry also contains the raw key along with the key hash")
+			committedPvtVerVal, err := p.db.GetPrivateData(purgeEntryK.Namespace, purgeEntryK.CollectionName, purgeEntryV.key)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[47], 1);
+				workingset.err = err
+				return workingset
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[46], 1);if sameVersionFromVal(committedPvtVerVal, purgeEntryV.committingBlock) {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[48], 1);
+				logger.Debugf(
+					"The version of the pvt key in the committed state and in the expiry entry is same" +
+						"Including only key in the purge list and not the hashed key")
+				purgeEntryV.purgeKeyOnly = true
+				continue
+			}
+		}
+
+		// If we reached here, the keyhash and private key (if present, in the expiry entry) have been updated in a later block, therefore remove from current purge list
+		_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[42], 1);logger.Debugf("Removing from purge list - the key hash and key (if present, in the expiry entry)")
+		delete(toPurge, purgeEntryK)
+	}
+	// Final keys to purge from state
+	_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[36], 1);workingset.toPurge = toPurge
+	// Keys to clear from bookkeeper
+	workingset.toClearFromSchedule = expiryInfoKeysToClear
+	return workingset
+}
+
+func (p *purgeMgr) preloadCommittedVersionsInCache(expInfoMap expiryInfoMap) {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[49], 1);
+	if !p.db.IsBulkOptimizable() {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[52], 1);
+		return
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[50], 1);var hashedKeys []*privacyenabledstate.HashedCompositeKey
+	for k := range expInfoMap {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[53], 1);
+		hashedKeys = append(hashedKeys, &k)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[51], 1);p.db.LoadCommittedVersionsOfPubAndHashedKeys(nil, hashedKeys)
+}
+
+func transformToExpiryInfoMap(expiryInfo []*expiryInfo) expiryInfoMap {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[54], 1);
+	expinfoMap := make(expiryInfoMap)
+	for _, expinfo := range expiryInfo {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[56], 1);
+		for ns, colls := range expinfo.pvtdataKeys.Map {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[57], 1);
+			for coll, keysAndHashes := range colls.Map {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[58], 1);
+				for _, keyAndHash := range keysAndHashes.List {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[59], 1);
+					compositeKey := privacyenabledstate.HashedCompositeKey{Namespace: ns, CollectionName: coll, KeyHash: string(keyAndHash.Hash)}
+					expinfoMap[compositeKey] = &keyAndVersion{key: keyAndHash.Key, committingBlock: expinfo.expiryInfoKey.committingBlk}
+				}
+			}
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[55], 1);return expinfoMap
+}
+
+func sameVersion(version *version.Height, blockNum uint64) bool {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[60], 1);
+	return version != nil && version.BlockNum == blockNum
+}
+
+func sameVersionFromVal(vv *statedb.VersionedValue, blockNum uint64) bool {_cover_atomic_.AddUint32(&GoCover_2_326462396539336232343931.Count[61], 1);
+	return vv != nil && sameVersion(vv.Version, blockNum)
+}
+
+var GoCover_2_326462396539336232343931 = struct {
+	Count     [62]uint32
+	Pos       [3 * 62]uint32
+	NumStmt   [62]uint16
+} {
+	Pos: [3 * 62]uint32{
+		64, 72, 0x200a5, // [0]
+		75, 77, 0xc0041, // [1]
+		83, 83, 0x120002, // [2]
+		77, 82, 0x3000c, // [3]
+		87, 90, 0x2002d, // [4]
+		92, 95, 0x2e0071, // [5]
+		99, 100, 0x300002, // [6]
+		117, 119, 0x380002, // [7]
+		95, 97, 0x3002e, // [8]
+		100, 102, 0x110030, // [9]
+		108, 109, 0x2e0003, // [10]
+		102, 104, 0x40011, // [11]
+		122, 123, 0x3b0066, // [12]
+		127, 127, 0x190002, // [13]
+		123, 125, 0x3003b, // [14]
+		127, 134, 0xa0019, // [15]
+		147, 147, 0x1e0003, // [16]
+		134, 137, 0xc000a, // [17]
+		147, 149, 0x4001e, // [18]
+		149, 151, 0x40009, // [19]
+		158, 161, 0x1d003e, // [20]
+		165, 166, 0x100002, // [21]
+		172, 172, 0x460002, // [22]
+		195, 195, 0x3b0002, // [23]
+		161, 163, 0x3001d, // [24]
+		166, 168, 0x30010, // [25]
+		172, 186, 0x240046, // [26]
+		190, 190, 0x220003, // [27]
+		186, 189, 0x40024, // [28]
+		190, 193, 0x40022, // [29]
+		206, 207, 0xf002c, // [30]
+		208, 208, 0x4d0002, // [31]
+		207, 207, 0x25000f, // [32]
+		213, 218, 0x10004b, // [33]
+		223, 228, 0x170002, // [34]
+		232, 234, 0x300002, // [35]
+		273, 276, 0x130002, // [36]
+		218, 221, 0x30010, // [37]
+		228, 231, 0x30017, // [38]
+		234, 238, 0x110030, // [39]
+		243, 243, 0x3f0003, // [40]
+		250, 251, 0x1c0003, // [41]
+		269, 270, 0x1f0003, // [42]
+		238, 241, 0x40011, // [43]
+		243, 247, 0xc003f, // [44]
+		251, 254, 0x12001c, // [45]
+		259, 259, 0x4b0004, // [46]
+		254, 257, 0x50012, // [47]
+		259, 264, 0xd004b, // [48]
+		279, 280, 0x1f004e, // [49]
+		283, 284, 0x1c0002, // [50]
+		287, 287, 0x3f0002, // [51]
+		280, 282, 0x3001f, // [52]
+		284, 286, 0x3001c, // [53]
+		290, 292, 0x250047, // [54]
+		302, 302, 0x130002, // [55]
+		292, 293, 0x320025, // [56]
+		293, 294, 0x2f0032, // [57]
+		294, 295, 0x33002f, // [58]
+		295, 298, 0x60033, // [59]
+		305, 307, 0x20041, // [60]
+		309, 311, 0x2004b, // [61]
+	},
+	NumStmt: [62]uint16{
+		1, // 0
+		2, // 1
+		1, // 2
+		4, // 3
+		2, // 4
+		3, // 5
+		2, // 6
+		2, // 7
+		1, // 8
+		2, // 9
+		2, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		3, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		3, // 20
+		2, // 21
+		1, // 22
+		1, // 23
+		1, // 24
+		1, // 25
+		10, // 26
+		1, // 27
+		2, // 28
+		2, // 29
+		1, // 30
+		1, // 31
+		1, // 32
+		4, // 33
+		4, // 34
+		2, // 35
+		3, // 36
+		2, // 37
+		2, // 38
+		4, // 39
+		1, // 40
+		2, // 41
+		2, // 42
+		2, // 43
+		2, // 44
+		3, // 45
+		1, // 46
+		2, // 47
+		3, // 48
+		1, // 49
+		2, // 50
+		1, // 51
+		1, // 52
+		1, // 53
+		2, // 54
+		1, // 55
+		1, // 56
+		1, // 57
+		1, // 58
+		2, // 59
+		1, // 60
+		1, // 61
+	},
+}
+var _ = _cover_atomic_.LoadUint32

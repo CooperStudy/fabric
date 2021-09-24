@@ -1,0 +1,150 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/bccsp/idemix/bridge/nymsignaturescheme.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+package bridge; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric-amcl/amcl"
+	"github.com/hyperledger/fabric/bccsp/idemix/handlers"
+
+	"github.com/golang/protobuf/proto"
+	cryptolib "github.com/hyperledger/fabric/idemix"
+	"github.com/pkg/errors"
+)
+
+// NymSignatureScheme encapsulates the idemix algorithms to sign and verify using an idemix
+// pseudonym.
+type NymSignatureScheme struct {
+	NewRand func() *amcl.RAND
+}
+
+// Sign produces a signature over the passed digest. It takes in input, the user secret key (sk),
+// the pseudonym public key (Nym) and secret key (RNym), and the issuer public key (ipk).
+func (n *NymSignatureScheme) Sign(sk handlers.Big, Nym handlers.Ecp, RNym handlers.Big, ipk handlers.IssuerPublicKey, digest []byte) (res []byte, err error) {_cover_atomic_.AddUint32(&GoCover_4_373430303738666139356161.Count[0], 1);
+	defer func() {_cover_atomic_.AddUint32(&GoCover_4_373430303738666139356161.Count[7], 1);
+		if r := recover(); r != nil {_cover_atomic_.AddUint32(&GoCover_4_373430303738666139356161.Count[8], 1);
+			res = nil
+			err = errors.Errorf("failure [%s]", r)
+		}
+	}()
+
+	_cover_atomic_.AddUint32(&GoCover_4_373430303738666139356161.Count[1], 1);isk, ok := sk.(*Big)
+	if !ok {_cover_atomic_.AddUint32(&GoCover_4_373430303738666139356161.Count[9], 1);
+		return nil, errors.Errorf("invalid user secret key, expected *Big, got [%T]", sk)
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_373430303738666139356161.Count[2], 1);inym, ok := Nym.(*Ecp)
+	if !ok {_cover_atomic_.AddUint32(&GoCover_4_373430303738666139356161.Count[10], 1);
+		return nil, errors.Errorf("invalid nym public key, expected *Ecp, got [%T]", Nym)
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_373430303738666139356161.Count[3], 1);irnym, ok := RNym.(*Big)
+	if !ok {_cover_atomic_.AddUint32(&GoCover_4_373430303738666139356161.Count[11], 1);
+		return nil, errors.Errorf("invalid nym secret key, expected *Big, got [%T]", RNym)
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_373430303738666139356161.Count[4], 1);iipk, ok := ipk.(*IssuerPublicKey)
+	if !ok {_cover_atomic_.AddUint32(&GoCover_4_373430303738666139356161.Count[12], 1);
+		return nil, errors.Errorf("invalid issuer public key, expected *IssuerPublicKey, got [%T]", ipk)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_373430303738666139356161.Count[5], 1);sig, err := cryptolib.NewNymSignature(
+		isk.E,
+		inym.E,
+		irnym.E,
+		iipk.PK,
+		digest,
+		n.NewRand())
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_373430303738666139356161.Count[13], 1);
+		return nil, errors.WithMessage(err, "failed creating new nym signature")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_373430303738666139356161.Count[6], 1);return proto.Marshal(sig)
+}
+
+// Verify checks that the passed signatures is valid with the respect to the passed digest, issuer public key,
+// and pseudonym public key.
+func (*NymSignatureScheme) Verify(ipk handlers.IssuerPublicKey, Nym handlers.Ecp, signature, digest []byte) (err error) {_cover_atomic_.AddUint32(&GoCover_4_373430303738666139356161.Count[14], 1);
+	defer func() {_cover_atomic_.AddUint32(&GoCover_4_373430303738666139356161.Count[19], 1);
+		if r := recover(); r != nil {_cover_atomic_.AddUint32(&GoCover_4_373430303738666139356161.Count[20], 1);
+			err = errors.Errorf("failure [%s]", r)
+		}
+	}()
+
+	_cover_atomic_.AddUint32(&GoCover_4_373430303738666139356161.Count[15], 1);iipk, ok := ipk.(*IssuerPublicKey)
+	if !ok {_cover_atomic_.AddUint32(&GoCover_4_373430303738666139356161.Count[21], 1);
+		return errors.Errorf("invalid issuer public key, expected *IssuerPublicKey, got [%T]", ipk)
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_373430303738666139356161.Count[16], 1);inym, ok := Nym.(*Ecp)
+	if !ok {_cover_atomic_.AddUint32(&GoCover_4_373430303738666139356161.Count[22], 1);
+		return errors.Errorf("invalid nym public key, expected *Ecp, got [%T]", Nym)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_373430303738666139356161.Count[17], 1);sig := &cryptolib.NymSignature{}
+	err = proto.Unmarshal(signature, sig)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_373430303738666139356161.Count[23], 1);
+		return errors.Wrap(err, "error unmarshalling signature")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_373430303738666139356161.Count[18], 1);return sig.Ver(inym.E, iipk.PK, digest)
+}
+
+var GoCover_4_373430303738666139356161 = struct {
+	Count     [24]uint32
+	Pos       [3 * 24]uint32
+	NumStmt   [24]uint16
+} {
+	Pos: [3 * 24]uint32{
+		25, 26, 0xf009e, // [0]
+		33, 34, 0x90002, // [1]
+		37, 38, 0x90002, // [2]
+		41, 42, 0x90002, // [3]
+		45, 46, 0x90002, // [4]
+		50, 57, 0x100002, // [5]
+		61, 61, 0x1b0002, // [6]
+		26, 27, 0x1f000f, // [7]
+		27, 30, 0x4001f, // [8]
+		34, 36, 0x30009, // [9]
+		38, 40, 0x30009, // [10]
+		42, 44, 0x30009, // [11]
+		46, 48, 0x30009, // [12]
+		57, 59, 0x30010, // [13]
+		66, 67, 0xf0079, // [14]
+		73, 74, 0x90002, // [15]
+		77, 78, 0x90002, // [16]
+		82, 84, 0x100002, // [17]
+		88, 88, 0x290002, // [18]
+		67, 68, 0x1f000f, // [19]
+		68, 70, 0x4001f, // [20]
+		74, 76, 0x30009, // [21]
+		78, 80, 0x30009, // [22]
+		84, 86, 0x30010, // [23]
+	},
+	NumStmt: [24]uint16{
+		1, // 0
+		2, // 1
+		2, // 2
+		2, // 3
+		2, // 4
+		2, // 5
+		1, // 6
+		1, // 7
+		2, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		2, // 15
+		2, // 16
+		3, // 17
+		1, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+	},
+}
+var _ = _cover_atomic_.LoadUint32

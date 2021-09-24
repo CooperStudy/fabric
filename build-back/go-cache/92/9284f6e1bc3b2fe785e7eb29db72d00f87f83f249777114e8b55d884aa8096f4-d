@@ -1,0 +1,199 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/chaincode/shim/ext/statebased/statebasedimpl.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package statebased; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+	"sort"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/cauthdsl"
+	cb "github.com/hyperledger/fabric/protos/common"
+	mb "github.com/hyperledger/fabric/protos/msp"
+	"github.com/hyperledger/fabric/protos/utils"
+	"github.com/pkg/errors"
+)
+
+// stateEP implements the KeyEndorsementPolicy
+type stateEP struct {
+	orgs map[string]mb.MSPRole_MSPRoleType
+}
+
+// NewStateEP constructs a state-based endorsement policy from a given
+// serialized EP byte array. If the byte array is empty, a new EP is created.
+func NewStateEP(policy []byte) (KeyEndorsementPolicy, error) {_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[0], 1);
+	s := &stateEP{orgs: make(map[string]mb.MSPRole_MSPRoleType)}
+	if policy != nil {_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[2], 1);
+		spe := &cb.SignaturePolicyEnvelope{}
+		if err := proto.Unmarshal(policy, spe); err != nil {_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[4], 1);
+			return nil, fmt.Errorf("Error unmarshaling to SignaturePolicy: %s", err)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[3], 1);err := s.setMSPIDsFromSP(spe)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[5], 1);
+			return nil, err
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[1], 1);return s, nil
+}
+
+// Policy returns the endorsement policy as bytes
+func (s *stateEP) Policy() ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[6], 1);
+	spe := s.policyFromMSPIDs()
+	spBytes, err := proto.Marshal(spe)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[8], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[7], 1);return spBytes, nil
+}
+
+// AddOrgs adds the specified channel orgs to the existing key-level EP
+func (s *stateEP) AddOrgs(role RoleType, neworgs ...string) error {_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[9], 1);
+	var mspRole mb.MSPRole_MSPRoleType
+	switch role {
+	case RoleTypeMember:_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[12], 1);
+		mspRole = mb.MSPRole_MEMBER
+	case RoleTypePeer:_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[13], 1);
+		mspRole = mb.MSPRole_PEER
+	default:_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[14], 1);
+		return &RoleTypeDoesNotExistError{RoleType: role}
+	}
+
+	// add new orgs
+	_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[10], 1);for _, addorg := range neworgs {_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[15], 1);
+		s.orgs[addorg] = mspRole
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[11], 1);return nil
+}
+
+// DelOrgs delete the specified channel orgs from the existing key-level EP
+func (s *stateEP) DelOrgs(delorgs ...string) {_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[16], 1);
+	for _, delorg := range delorgs {_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[17], 1);
+		delete(s.orgs, delorg)
+	}
+}
+
+// ListOrgs returns an array of channel orgs that are required to endorse chnages
+func (s *stateEP) ListOrgs() []string {_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[18], 1);
+	orgNames := make([]string, 0, len(s.orgs))
+	for mspid := range s.orgs {_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[20], 1);
+		orgNames = append(orgNames, mspid)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[19], 1);return orgNames
+}
+
+func (s *stateEP) setMSPIDsFromSP(sp *cb.SignaturePolicyEnvelope) error {_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[21], 1);
+	// iterate over the identities in this envelope
+	for _, identity := range sp.Identities {_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[23], 1);
+		// this imlementation only supports the ROLE type
+		if identity.PrincipalClassification == mb.MSPPrincipal_ROLE {_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[24], 1);
+			msprole := &mb.MSPRole{}
+			err := proto.Unmarshal(identity.Principal, msprole)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[26], 1);
+				return errors.Wrapf(err, "error unmarshaling msp principal")
+			}
+			_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[25], 1);s.orgs[msprole.GetMspIdentifier()] = msprole.GetRole()
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[22], 1);return nil
+}
+
+func (s *stateEP) policyFromMSPIDs() *cb.SignaturePolicyEnvelope {_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[27], 1);
+	mspids := s.ListOrgs()
+	sort.Strings(mspids)
+	principals := make([]*mb.MSPPrincipal, len(mspids))
+	sigspolicy := make([]*cb.SignaturePolicy, len(mspids))
+	for i, id := range mspids {_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[29], 1);
+		principals[i] = &mb.MSPPrincipal{
+			PrincipalClassification: mb.MSPPrincipal_ROLE,
+			Principal:               utils.MarshalOrPanic(&mb.MSPRole{Role: s.orgs[id], MspIdentifier: id}),
+		}
+		sigspolicy[i] = cauthdsl.SignedBy(int32(i))
+	}
+
+	// create the policy: it requires exactly 1 signature from all of the principals
+	_cover_atomic_.AddUint32(&GoCover_1_623035623932666266343834.Count[28], 1);p := &cb.SignaturePolicyEnvelope{
+		Version:    0,
+		Rule:       cauthdsl.NOutOf(int32(len(mspids)), sigspolicy),
+		Identities: principals,
+	}
+	return p
+}
+
+var GoCover_1_623035623932666266343834 = struct {
+	Count     [30]uint32
+	Pos       [3 * 30]uint32
+	NumStmt   [30]uint16
+} {
+	Pos: [3 * 30]uint32{
+		28, 30, 0x13003e, // [0]
+		41, 41, 0xf0002, // [1]
+		30, 32, 0x360013, // [2]
+		36, 37, 0x110003, // [3]
+		32, 34, 0x40036, // [4]
+		37, 39, 0x40011, // [5]
+		45, 48, 0x10002c, // [6]
+		51, 51, 0x150002, // [7]
+		48, 50, 0x30010, // [8]
+		55, 57, 0xe0043, // [9]
+		67, 67, 0x210002, // [10]
+		71, 71, 0xc0002, // [11]
+		58, 59, 0x1e0016, // [12]
+		60, 61, 0x1c0014, // [13]
+		62, 63, 0x34000a, // [14]
+		67, 69, 0x30021, // [15]
+		75, 76, 0x21002e, // [16]
+		76, 78, 0x30021, // [17]
+		82, 84, 0x1c0027, // [18]
+		87, 87, 0x110002, // [19]
+		84, 86, 0x3001c, // [20]
+		90, 92, 0x290049, // [21]
+		103, 103, 0xc0002, // [22]
+		92, 94, 0x3f0029, // [23]
+		94, 97, 0x12003f, // [24]
+		100, 100, 0x3a0004, // [25]
+		97, 99, 0x50012, // [26]
+		106, 111, 0x1c0042, // [27]
+		120, 125, 0xa0002, // [28]
+		111, 117, 0x3001c, // [29]
+	},
+	NumStmt: [30]uint16{
+		2, // 0
+		1, // 1
+		2, // 2
+		2, // 3
+		1, // 4
+		1, // 5
+		3, // 6
+		1, // 7
+		1, // 8
+		2, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		2, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+		3, // 24
+		1, // 25
+		1, // 26
+		5, // 27
+		2, // 28
+		2, // 29
+	},
+}
+var _ = _cover_atomic_.LoadUint32

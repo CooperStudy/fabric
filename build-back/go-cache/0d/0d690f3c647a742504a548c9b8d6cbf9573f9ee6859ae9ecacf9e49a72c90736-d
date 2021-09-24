@@ -1,0 +1,226 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/examples/chaincode/go/enccc_example/utils.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package main; import _cover_atomic_ "sync/atomic"
+
+import (
+	"encoding/json"
+
+	"github.com/hyperledger/fabric/core/chaincode/shim"
+	"github.com/hyperledger/fabric/core/chaincode/shim/ext/entities"
+	"github.com/pkg/errors"
+)
+
+// the functions below show some best practices on how
+// to use entities to perform cryptographic operations
+// over the ledger state
+
+// getStateAndDecrypt retrieves the value associated to key,
+// decrypts it with the supplied entity and returns the result
+// of the decryption
+func getStateAndDecrypt(stub shim.ChaincodeStubInterface, ent entities.Encrypter, key string) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[0], 1);
+	// at first we retrieve the ciphertext from the ledger
+	ciphertext, err := stub.GetState(key)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[3], 1);
+		return nil, err
+	}
+
+	// GetState will return a nil slice if the key does not exist.
+	// Note that the chaincode logic may want to distinguish between
+	// nil slice (key doesn't exist in state db) and empty slice
+	// (key found in state db but value is empty). We do not
+	// distinguish the case here
+	_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[1], 1);if len(ciphertext) == 0 {_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[4], 1);
+		return nil, errors.New("no ciphertext to decrypt")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[2], 1);return ent.Decrypt(ciphertext)
+}
+
+// encryptAndPutState encrypts the supplied value using the
+// supplied entity and puts it to the ledger associated to
+// the supplied KVS key
+func encryptAndPutState(stub shim.ChaincodeStubInterface, ent entities.Encrypter, key string, value []byte) error {_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[5], 1);
+	// at first we use the supplied entity to encrypt the value
+	ciphertext, err := ent.Encrypt(value)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[7], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[6], 1);return stub.PutState(key, ciphertext)
+}
+
+// getStateDecryptAndVerify retrieves the value associated to key,
+// decrypts it with the supplied entity, verifies the signature
+// over it and returns the result of the decryption in case of
+// success
+func getStateDecryptAndVerify(stub shim.ChaincodeStubInterface, ent entities.EncrypterSignerEntity, key string) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[8], 1);
+	// here we retrieve and decrypt the state associated to key
+	val, err := getStateAndDecrypt(stub, ent, key)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[12], 1);
+		return nil, err
+	}
+
+	// we unmarshal a SignedMessage from the decrypted state
+	_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[9], 1);msg := &entities.SignedMessage{}
+	err = msg.FromBytes(val)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[13], 1);
+		return nil, err
+	}
+
+	// we verify the signature
+	_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[10], 1);ok, err := msg.Verify(ent)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[14], 1);
+		return nil, err
+	} else{ _cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[15], 1);if !ok {_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[16], 1);
+		return nil, errors.New("invalid signature")
+	}}
+
+	_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[11], 1);return msg.Payload, nil
+}
+
+// signEncryptAndPutState signs the supplied value, encrypts
+// the supplied value together with its signature using the
+// supplied entity and puts it to the ledger associated to
+// the supplied KVS key
+func signEncryptAndPutState(stub shim.ChaincodeStubInterface, ent entities.EncrypterSignerEntity, key string, value []byte) error {_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[17], 1);
+	// here we create a SignedMessage, set its payload
+	// to value and the ID of the entity and
+	// sign it with the entity
+	msg := &entities.SignedMessage{Payload: value, ID: []byte(ent.ID())}
+	err := msg.Sign(ent)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[20], 1);
+		return err
+	}
+
+	// here we serialize the SignedMessage
+	_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[18], 1);b, err := msg.ToBytes()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[21], 1);
+		return err
+	}
+
+	// here we encrypt the serialized version associated to args[0]
+	_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[19], 1);return encryptAndPutState(stub, ent, key, b)
+}
+
+type keyValuePair struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+// getStateByRangeAndDecrypt retrieves a range of KVS pairs from the
+// ledger and decrypts each value with the supplied entity; it returns
+// a json-marshalled slice of keyValuePair
+func getStateByRangeAndDecrypt(stub shim.ChaincodeStubInterface, ent entities.Encrypter, startKey, endKey string) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[22], 1);
+	// we call get state by range to go through the entire range
+	iterator, err := stub.GetStateByRange(startKey, endKey)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[26], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[23], 1);defer iterator.Close()
+
+	// we decrypt each entry - the assumption is that they have all been encrypted with the same key
+	keyvalueset := []keyValuePair{}
+	for iterator.HasNext() {_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[27], 1);
+		el, err := iterator.Next()
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[30], 1);
+			return nil, err
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[28], 1);v, err := ent.Decrypt(el.Value)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[31], 1);
+			return nil, err
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[29], 1);keyvalueset = append(keyvalueset, keyValuePair{el.Key, string(v)})
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[24], 1);bytes, err := json.Marshal(keyvalueset)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[32], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_333531323663353230326637.Count[25], 1);return bytes, nil
+}
+
+var GoCover_1_333531323663353230326637 = struct {
+	Count     [33]uint32
+	Pos       [3 * 33]uint32
+	NumStmt   [33]uint16
+} {
+	Pos: [3 * 33]uint32{
+		24, 27, 0x10006f, // [0]
+		36, 36, 0x1a0002, // [1]
+		40, 40, 0x200002, // [2]
+		27, 29, 0x30010, // [3]
+		36, 38, 0x3001a, // [4]
+		46, 49, 0x100073, // [5]
+		53, 53, 0x270002, // [6]
+		49, 51, 0x30010, // [7]
+		60, 63, 0x100081, // [8]
+		68, 70, 0x100002, // [9]
+		75, 76, 0x100002, // [10]
+		82, 82, 0x190002, // [11]
+		63, 65, 0x30010, // [12]
+		70, 72, 0x30010, // [13]
+		76, 78, 0x30010, // [14]
+		78, 78, 0x100008, // [15]
+		78, 80, 0x30010, // [16]
+		89, 95, 0x100083, // [17]
+		100, 101, 0x100002, // [18]
+		106, 106, 0x2e0002, // [19]
+		95, 97, 0x30010, // [20]
+		101, 103, 0x30010, // [21]
+		117, 120, 0x100083, // [22]
+		123, 127, 0x190002, // [23]
+		141, 142, 0x100002, // [24]
+		146, 146, 0x130002, // [25]
+		120, 122, 0x30010, // [26]
+		127, 129, 0x110019, // [27]
+		133, 134, 0x110003, // [28]
+		138, 138, 0x450003, // [29]
+		129, 131, 0x40011, // [30]
+		134, 136, 0x40011, // [31]
+		142, 144, 0x30010, // [32]
+	},
+	NumStmt: [33]uint16{
+		2, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		2, // 5
+		1, // 6
+		1, // 7
+		2, // 8
+		3, // 9
+		2, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		3, // 17
+		2, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		2, // 22
+		3, // 23
+		2, // 24
+		1, // 25
+		1, // 26
+		2, // 27
+		2, // 28
+		1, // 29
+		1, // 30
+		1, // 31
+		1, // 32
+	},
+}
+var _ = _cover_atomic_.LoadUint32

@@ -1,0 +1,8 @@
+./batch_util.go
+./commit_handling.go
+./couchdoc_conv.go
+./metadata_retrieval.go
+./statecouchdb.go
+./statecouchdb_test_export.go
+./version_cache.go
+./version_field_encoding.go

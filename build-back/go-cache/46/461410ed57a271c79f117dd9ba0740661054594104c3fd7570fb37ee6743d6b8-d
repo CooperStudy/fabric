@@ -1,0 +1,352 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/scc/qscc/query.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package qscc; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+	"strconv"
+
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/core/aclmgmt"
+	"github.com/hyperledger/fabric/core/chaincode/shim"
+	"github.com/hyperledger/fabric/core/ledger"
+	"github.com/hyperledger/fabric/core/peer"
+	pb "github.com/hyperledger/fabric/protos/peer"
+	"github.com/hyperledger/fabric/protos/utils"
+)
+
+// New returns an instance of QSCC.
+// Typically this is called once per peer.
+func New(aclProvider aclmgmt.ACLProvider) *LedgerQuerier {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[0], 1);
+	return &LedgerQuerier{
+		aclProvider: aclProvider,
+	}
+}
+
+func (e *LedgerQuerier) Name() string              {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[1], 1); return "qscc" }
+func (e *LedgerQuerier) Path() string              {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[2], 1); return "github.com/hyperledger/fabric/core/scc/qscc" }
+func (e *LedgerQuerier) InitArgs() [][]byte        {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[3], 1); return nil }
+func (e *LedgerQuerier) Chaincode() shim.Chaincode {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[4], 1); return e }
+func (e *LedgerQuerier) InvokableExternal() bool   {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[5], 1); return true }
+func (e *LedgerQuerier) InvokableCC2CC() bool      {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[6], 1); return true }
+func (e *LedgerQuerier) Enabled() bool             {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[7], 1); return true }
+
+// LedgerQuerier implements the ledger query functions, including:
+// - GetChainInfo returns BlockchainInfo
+// - GetBlockByNumber returns a block
+// - GetBlockByHash returns a block
+// - GetTransactionByID returns a transaction
+type LedgerQuerier struct {
+	aclProvider aclmgmt.ACLProvider
+}
+
+var qscclogger = flogging.MustGetLogger("qscc")
+
+// These are function names from Invoke first parameter
+const (
+	GetChainInfo       string = "GetChainInfo"
+	GetBlockByNumber   string = "GetBlockByNumber"
+	GetBlockByHash     string = "GetBlockByHash"
+	GetTransactionByID string = "GetTransactionByID"
+	GetBlockByTxID     string = "GetBlockByTxID"
+)
+
+// Init is called once per chain when the chain is created.
+// This allows the chaincode to initialize any variables on the ledger prior
+// to any transaction execution on the chain.
+func (e *LedgerQuerier) Init(stub shim.ChaincodeStubInterface) pb.Response {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[8], 1);
+	qscclogger.Info("Init QSCC")
+
+	return shim.Success(nil)
+}
+
+// Invoke is called with args[0] contains the query function name, args[1]
+// contains the chain ID, which is temporary for now until it is part of stub.
+// Each function requires additional parameters as described below:
+// # GetChainInfo: Return a BlockchainInfo object marshalled in bytes
+// # GetBlockByNumber: Return the block specified by block number in args[2]
+// # GetBlockByHash: Return the block specified by block hash in args[2]
+// # GetTransactionByID: Return the transaction specified by ID in args[2]
+func (e *LedgerQuerier) Invoke(stub shim.ChaincodeStubInterface) pb.Response {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[9], 1);
+	args := stub.GetArgs()
+
+	if len(args) < 2 {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[16], 1);
+		return shim.Error(fmt.Sprintf("Incorrect number of arguments, %d", len(args)))
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[10], 1);fname := string(args[0])
+	cid := string(args[1])
+
+	if fname != GetChainInfo && len(args) < 3 {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[17], 1);
+		return shim.Error(fmt.Sprintf("missing 3rd argument for %s", fname))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[11], 1);targetLedger := peer.GetLedger(cid)
+	if targetLedger == nil {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[18], 1);
+		return shim.Error(fmt.Sprintf("Invalid chain ID, %s", cid))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[12], 1);qscclogger.Debugf("Invoke function: %s on chain: %s", fname, cid)
+
+	// Handle ACL:
+	// 1. get the signed proposal
+	sp, err := stub.GetSignedProposal()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[19], 1);
+		return shim.Error(fmt.Sprintf("Failed getting signed proposal from stub, %s: %s", cid, err))
+	}
+
+	// 2. check the channel reader policy
+	_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[13], 1);res := getACLResource(fname)
+	if err = e.aclProvider.CheckACL(res, cid, sp); err != nil {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[20], 1);
+		return shim.Error(fmt.Sprintf("access denied for [%s][%s]: [%s]", fname, cid, err))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[14], 1);switch fname {
+	case GetTransactionByID:_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[21], 1);
+		return getTransactionByID(targetLedger, args[2])
+	case GetBlockByNumber:_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[22], 1);
+		return getBlockByNumber(targetLedger, args[2])
+	case GetBlockByHash:_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[23], 1);
+		return getBlockByHash(targetLedger, args[2])
+	case GetChainInfo:_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[24], 1);
+		return getChainInfo(targetLedger)
+	case GetBlockByTxID:_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[25], 1);
+		return getBlockByTxID(targetLedger, args[2])
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[15], 1);return shim.Error(fmt.Sprintf("Requested function %s not found.", fname))
+}
+
+func getTransactionByID(vledger ledger.PeerLedger, tid []byte) pb.Response {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[26], 1);
+	if tid == nil {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[30], 1);
+		return shim.Error("Transaction ID must not be nil.")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[27], 1);processedTran, err := vledger.GetTransactionByID(string(tid))
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[31], 1);
+		return shim.Error(fmt.Sprintf("Failed to get transaction with id %s, error %s", string(tid), err))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[28], 1);bytes, err := utils.Marshal(processedTran)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[32], 1);
+		return shim.Error(err.Error())
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[29], 1);return shim.Success(bytes)
+}
+
+func getBlockByNumber(vledger ledger.PeerLedger, number []byte) pb.Response {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[33], 1);
+	if number == nil {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[38], 1);
+		return shim.Error("Block number must not be nil.")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[34], 1);bnum, err := strconv.ParseUint(string(number), 10, 64)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[39], 1);
+		return shim.Error(fmt.Sprintf("Failed to parse block number with error %s", err))
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[35], 1);block, err := vledger.GetBlockByNumber(bnum)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[40], 1);
+		return shim.Error(fmt.Sprintf("Failed to get block number %d, error %s", bnum, err))
+	}
+	// TODO: consider trim block content before returning
+	//  Specifically, trim transaction 'data' out of the transaction array Payloads
+	//  This will preserve the transaction Payload header,
+	//  and client can do GetTransactionByID() if they want the full transaction details
+
+	_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[36], 1);bytes, err := utils.Marshal(block)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[41], 1);
+		return shim.Error(err.Error())
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[37], 1);return shim.Success(bytes)
+}
+
+func getBlockByHash(vledger ledger.PeerLedger, hash []byte) pb.Response {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[42], 1);
+	if hash == nil {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[46], 1);
+		return shim.Error("Block hash must not be nil.")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[43], 1);block, err := vledger.GetBlockByHash(hash)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[47], 1);
+		return shim.Error(fmt.Sprintf("Failed to get block hash %s, error %s", string(hash), err))
+	}
+	// TODO: consider trim block content before returning
+	//  Specifically, trim transaction 'data' out of the transaction array Payloads
+	//  This will preserve the transaction Payload header,
+	//  and client can do GetTransactionByID() if they want the full transaction details
+
+	_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[44], 1);bytes, err := utils.Marshal(block)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[48], 1);
+		return shim.Error(err.Error())
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[45], 1);return shim.Success(bytes)
+}
+
+func getChainInfo(vledger ledger.PeerLedger) pb.Response {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[49], 1);
+	binfo, err := vledger.GetBlockchainInfo()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[52], 1);
+		return shim.Error(fmt.Sprintf("Failed to get block info with error %s", err))
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[50], 1);bytes, err := utils.Marshal(binfo)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[53], 1);
+		return shim.Error(err.Error())
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[51], 1);return shim.Success(bytes)
+}
+
+func getBlockByTxID(vledger ledger.PeerLedger, rawTxID []byte) pb.Response {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[54], 1);
+	txID := string(rawTxID)
+	block, err := vledger.GetBlockByTxID(txID)
+
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[57], 1);
+		return shim.Error(fmt.Sprintf("Failed to get block for txID %s, error %s", txID, err))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[55], 1);bytes, err := utils.Marshal(block)
+
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[58], 1);
+		return shim.Error(err.Error())
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[56], 1);return shim.Success(bytes)
+}
+
+func getACLResource(fname string) string {_cover_atomic_.AddUint32(&GoCover_0_396462396333306239303464.Count[59], 1);
+	return "qscc/" + fname
+}
+
+var GoCover_0_396462396333306239303464 = struct {
+	Count     [60]uint32
+	Pos       [3 * 60]uint32
+	NumStmt   [60]uint16
+} {
+	Pos: [3 * 60]uint32{
+		24, 28, 0x2003a, // [0]
+		30, 30, 0x450034, // [1]
+		31, 31, 0x6c0034, // [2]
+		32, 32, 0x420034, // [3]
+		33, 33, 0x400034, // [4]
+		34, 34, 0x430034, // [5]
+		35, 35, 0x430034, // [6]
+		36, 36, 0x430034, // [7]
+		61, 65, 0x2004c, // [8]
+		74, 77, 0x13004e, // [9]
+		80, 83, 0x2c0002, // [10]
+		87, 88, 0x190002, // [11]
+		92, 97, 0x100002, // [12]
+		102, 103, 0x3c0002, // [13]
+		107, 107, 0xf0002, // [14]
+		120, 120, 0x4b0002, // [15]
+		77, 79, 0x30013, // [16]
+		83, 85, 0x3002c, // [17]
+		88, 90, 0x30019, // [18]
+		97, 99, 0x30010, // [19]
+		103, 105, 0x3003c, // [20]
+		108, 109, 0x33001a, // [21]
+		110, 111, 0x310018, // [22]
+		112, 113, 0x2f0016, // [23]
+		114, 115, 0x240014, // [24]
+		116, 117, 0x2f0016, // [25]
+		123, 124, 0x10004c, // [26]
+		128, 129, 0x100002, // [27]
+		133, 134, 0x100002, // [28]
+		138, 138, 0x1c0002, // [29]
+		124, 126, 0x30010, // [30]
+		129, 131, 0x30010, // [31]
+		134, 136, 0x30010, // [32]
+		141, 142, 0x13004d, // [33]
+		145, 146, 0x100002, // [34]
+		149, 150, 0x100002, // [35]
+		158, 159, 0x100002, // [36]
+		163, 163, 0x1c0002, // [37]
+		142, 144, 0x30013, // [38]
+		146, 148, 0x30010, // [39]
+		150, 152, 0x30010, // [40]
+		159, 161, 0x30010, // [41]
+		166, 167, 0x110049, // [42]
+		170, 171, 0x100002, // [43]
+		179, 180, 0x100002, // [44]
+		184, 184, 0x1c0002, // [45]
+		167, 169, 0x30011, // [46]
+		171, 173, 0x30010, // [47]
+		180, 182, 0x30010, // [48]
+		187, 189, 0x10003a, // [49]
+		192, 193, 0x100002, // [50]
+		197, 197, 0x1c0002, // [51]
+		189, 191, 0x30010, // [52]
+		193, 195, 0x30010, // [53]
+		200, 204, 0x10004c, // [54]
+		208, 210, 0x100002, // [55]
+		214, 214, 0x1c0002, // [56]
+		204, 206, 0x30010, // [57]
+		210, 212, 0x30010, // [58]
+		217, 219, 0x2002a, // [59]
+	},
+	NumStmt: [60]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		2, // 8
+		2, // 9
+		3, // 10
+		2, // 11
+		3, // 12
+		2, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+		1, // 24
+		1, // 25
+		1, // 26
+		2, // 27
+		2, // 28
+		1, // 29
+		1, // 30
+		1, // 31
+		1, // 32
+		1, // 33
+		2, // 34
+		2, // 35
+		2, // 36
+		1, // 37
+		1, // 38
+		1, // 39
+		1, // 40
+		1, // 41
+		1, // 42
+		2, // 43
+		2, // 44
+		1, // 45
+		1, // 46
+		1, // 47
+		1, // 48
+		2, // 49
+		2, // 50
+		1, // 51
+		1, // 52
+		1, // 53
+		3, // 54
+		2, // 55
+		1, // 56
+		1, // 57
+		1, // 58
+		1, // 59
+	},
+}
+var _ = _cover_atomic_.LoadUint32

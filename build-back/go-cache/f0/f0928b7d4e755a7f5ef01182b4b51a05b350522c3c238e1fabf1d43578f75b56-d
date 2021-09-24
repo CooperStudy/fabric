@@ -1,0 +1,115 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/peer/node/status.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package node; import _cover_atomic_ "sync/atomic"
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/crypto"
+	"github.com/hyperledger/fabric/peer/common"
+	common2 "github.com/hyperledger/fabric/protos/common"
+	pb "github.com/hyperledger/fabric/protos/peer"
+	"github.com/hyperledger/fabric/protos/utils"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+)
+
+func statusCmd() *cobra.Command {_cover_atomic_.AddUint32(&GoCover_3_396561323639393132633863.Count[0], 1);
+	return nodeStatusCmd
+}
+
+var nodeStatusCmd = &cobra.Command{
+	Use:   "status",
+	Short: "Returns status of the node.",
+	Long:  `Returns the status of the running node.`,
+	RunE: func(cmd *cobra.Command, args []string) error {_cover_atomic_.AddUint32(&GoCover_3_396561323639393132633863.Count[1], 1);
+		if len(args) != 0 {_cover_atomic_.AddUint32(&GoCover_3_396561323639393132633863.Count[3], 1);
+			return fmt.Errorf("trailing args detected: %s", args)
+		}
+		// Parsing of the command line is done so silence cmd usage
+		_cover_atomic_.AddUint32(&GoCover_3_396561323639393132633863.Count[2], 1);cmd.SilenceUsage = true
+		return status()
+	},
+}
+
+func status() (err error) {_cover_atomic_.AddUint32(&GoCover_3_396561323639393132633863.Count[4], 1);
+	adminClient, err := common.GetAdminClient()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_396561323639393132633863.Count[9], 1);
+		logger.Warningf("%s", err)
+		fmt.Println(&pb.ServerStatus{Status: pb.ServerStatus_UNKNOWN})
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_396561323639393132633863.Count[5], 1);signer, err := common.GetDefaultSignerFnc()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_396561323639393132633863.Count[10], 1);
+		fmt.Println(&pb.ServerStatus{Status: pb.ServerStatus_UNKNOWN})
+		return errors.Errorf("failed obtaining default signer: %v", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_396561323639393132633863.Count[6], 1);localSigner := crypto.NewSignatureHeaderCreator(signer)
+	wrapEnv := func(msg proto.Message) *common2.Envelope {_cover_atomic_.AddUint32(&GoCover_3_396561323639393132633863.Count[11], 1);
+		env, err := utils.CreateSignedEnvelope(common2.HeaderType_PEER_ADMIN_OPERATION, "", localSigner, msg, 0, 0)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_3_396561323639393132633863.Count[13], 1);
+			logger.Panicf("Failed signing: %v", err)
+		}
+		_cover_atomic_.AddUint32(&GoCover_3_396561323639393132633863.Count[12], 1);return env
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_396561323639393132633863.Count[7], 1);status, err := adminClient.GetStatus(context.Background(), wrapEnv(&pb.AdminOperation{}))
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_396561323639393132633863.Count[14], 1);
+		logger.Infof("Error trying to get status from local peer: %s", err)
+		err = fmt.Errorf("Error trying to connect to local peer: %s", err)
+		fmt.Println(&pb.ServerStatus{Status: pb.ServerStatus_UNKNOWN})
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_396561323639393132633863.Count[8], 1);fmt.Println(status)
+	return nil
+}
+
+var GoCover_3_396561323639393132633863 = struct {
+	Count     [15]uint32
+	Pos       [3 * 15]uint32
+	NumStmt   [15]uint16
+} {
+	Pos: [3 * 15]uint32{
+		23, 25, 0x20021, // [0]
+		31, 32, 0x150036, // [1]
+		36, 37, 0x120003, // [2]
+		32, 34, 0x40015, // [3]
+		41, 43, 0x10001b, // [4]
+		48, 49, 0x100002, // [5]
+		54, 55, 0x370002, // [6]
+		63, 64, 0x100002, // [7]
+		70, 71, 0xc0002, // [8]
+		43, 47, 0x30010, // [9]
+		49, 52, 0x30010, // [10]
+		55, 57, 0x110037, // [11]
+		60, 60, 0xd0003, // [12]
+		57, 59, 0x40011, // [13]
+		64, 69, 0x30010, // [14]
+	},
+	NumStmt: [15]uint16{
+		1, // 0
+		1, // 1
+		2, // 2
+		1, // 3
+		2, // 4
+		2, // 5
+		2, // 6
+		2, // 7
+		2, // 8
+		3, // 9
+		2, // 10
+		2, // 11
+		1, // 12
+		1, // 13
+		4, // 14
+	},
+}
+var _ = _cover_atomic_.LoadUint32

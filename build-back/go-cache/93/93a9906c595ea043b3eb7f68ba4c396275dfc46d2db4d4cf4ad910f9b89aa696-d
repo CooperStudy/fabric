@@ -1,0 +1,347 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/orderer/consensus/kafka/metrics.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package kafka; import _cover_atomic_ "sync/atomic"
+
+import (
+	"strings"
+	"time"
+
+	"github.com/hyperledger/fabric/common/metrics"
+
+	gometrics "github.com/rcrowley/go-metrics"
+)
+
+/*
+
+ Per the documentation at: https://godoc.org/github.com/Shopify/sarama Sarama exposes the following set of metrics:
+
+ +----------------------------------------------+------------+---------------------------------------------------------------+
+ | Name                                         | Type       | Description                                                   |
+ +----------------------------------------------+------------+---------------------------------------------------------------+
+ | incoming-byte-rate                           | meter      | Bytes/second read off all brokers                             |
+ | incoming-byte-rate-for-broker-<broker-id>    | meter      | Bytes/second read off a given broker                          |
+ | outgoing-byte-rate                           | meter      | Bytes/second written off all brokers                          |
+ | outgoing-byte-rate-for-broker-<broker-id>    | meter      | Bytes/second written off a given broker                       |
+ | request-rate                                 | meter      | Requests/second sent to all brokers                           |
+ | request-rate-for-broker-<broker-id>          | meter      | Requests/second sent to a given broker                        |
+ | request-size                                 | histogram  | Distribution of the request size in bytes for all brokers     |
+ | request-size-for-broker-<broker-id>          | histogram  | Distribution of the request size in bytes for a given broker  |
+ | request-latency-in-ms                        | histogram  | Distribution of the request latency in ms for all brokers     |
+ | request-latency-in-ms-for-broker-<broker-id> | histogram  | Distribution of the request latency in ms for a given broker  |
+ | response-rate                                | meter      | Responses/second received from all brokers                    |
+ | response-rate-for-broker-<broker-id>         | meter      | Responses/second received from a given broker                 |
+ | response-size                                | histogram  | Distribution of the response size in bytes for all brokers    |
+ | response-size-for-broker-<broker-id>         | histogram  | Distribution of the response size in bytes for a given broker |
+ +----------------------------------------------+------------+---------------------------------------------------------------+
+
+ +-------------------------------------------+------------+--------------------------------------------------------------------------------------+
+ | Name                                      | Type       | Description                                                                          |
+ +-------------------------------------------+------------+--------------------------------------------------------------------------------------+
+ | batch-size                                | histogram  | Distribution of the number of bytes sent per partition per request for all topics    |
+ | batch-size-for-topic-<topic>              | histogram  | Distribution of the number of bytes sent per partition per request for a given topic |
+ | record-send-rate                          | meter      | Records/second sent to all topics                                                    |
+ | record-send-rate-for-topic-<topic>        | meter      | Records/second sent to a given topic                                                 |
+ | records-per-request                       | histogram  | Distribution of the number of records sent per request for all topics                |
+ | records-per-request-for-topic-<topic>     | histogram  | Distribution of the number of records sent per request for a given topic             |
+ | compression-ratio                         | histogram  | Distribution of the compression ratio times 100 of record batches for all topics     |
+ | compression-ratio-for-topic-<topic>       | histogram  | Distribution of the compression ratio times 100 of record batches for a given topic  |
+ +-------------------------------------------+------------+--------------------------------------------------------------------------------------+
+*/
+
+const (
+	IncomingByteRateName  = "incoming-byte-rate-for-broker-"
+	OutgoingByteRateName  = "outgoing-byte-rate-for-broker-"
+	RequestRateName       = "request-rate-for-broker-"
+	RequestSizeName       = "request-size-for-broker-"
+	RequestLatencyName    = "request-latency-in-ms-for-broker-"
+	ResponseRateName      = "response-rate-for-broker-"
+	ResponseSizeName      = "response-size-for-broker-"
+	BatchSizeName         = "batch-size-for-topic-"
+	RecordSendRateName    = "record-send-rate-for-topic-"
+	RecordsPerRequestName = "records-per-request-for-topic-"
+	CompressionRatioName  = "compression-ratio-for-topic-"
+)
+
+var (
+	incomingByteRate = metrics.GaugeOpts{
+		Namespace:    "consensus",
+		Subsystem:    "kafka",
+		Name:         "incoming_byte_rate",
+		Help:         "Bytes/second read off brokers.",
+		LabelNames:   []string{"broker_id"},
+		StatsdFormat: "%{#fqname}.%{broker_id}",
+	}
+
+	outgoingByteRate = metrics.GaugeOpts{
+		Namespace:    "consensus",
+		Subsystem:    "kafka",
+		Name:         "outgoing_byte_rate",
+		Help:         "Bytes/second written to brokers.",
+		LabelNames:   []string{"broker_id"},
+		StatsdFormat: "%{#fqname}.%{broker_id}",
+	}
+
+	requestRate = metrics.GaugeOpts{
+		Namespace:    "consensus",
+		Subsystem:    "kafka",
+		Name:         "request_rate",
+		Help:         "Requests/second sent to brokers.",
+		LabelNames:   []string{"broker_id"},
+		StatsdFormat: "%{#fqname}.%{broker_id}",
+	}
+
+	requestSize = metrics.GaugeOpts{
+		Namespace:    "consensus",
+		Subsystem:    "kafka",
+		Name:         "request_size",
+		Help:         "The mean request size in bytes to brokers.",
+		LabelNames:   []string{"broker_id"},
+		StatsdFormat: "%{#fqname}.%{broker_id}",
+	}
+
+	requestLatency = metrics.GaugeOpts{
+		Namespace:    "consensus",
+		Subsystem:    "kafka",
+		Name:         "request_latency",
+		Help:         "The mean request latency in ms to brokers.",
+		LabelNames:   []string{"broker_id"},
+		StatsdFormat: "%{#fqname}.%{broker_id}",
+	}
+
+	responseRate = metrics.GaugeOpts{
+		Namespace:    "consensus",
+		Subsystem:    "kafka",
+		Name:         "response_rate",
+		Help:         "Requests/second sent to brokers.",
+		LabelNames:   []string{"broker_id"},
+		StatsdFormat: "%{#fqname}.%{broker_id}",
+	}
+
+	responseSize = metrics.GaugeOpts{
+		Namespace:    "consensus",
+		Subsystem:    "kafka",
+		Name:         "response_size",
+		Help:         "The mean response size in bytes from brokers.",
+		LabelNames:   []string{"broker_id"},
+		StatsdFormat: "%{#fqname}.%{broker_id}",
+	}
+
+	batchSize = metrics.GaugeOpts{
+		Namespace:    "consensus",
+		Subsystem:    "kafka",
+		Name:         "batch_size",
+		Help:         "The mean batch size in bytes sent to topics.",
+		LabelNames:   []string{"topic"},
+		StatsdFormat: "%{#fqname}.%{topic}",
+	}
+
+	recordSendRate = metrics.GaugeOpts{
+		Namespace:    "consensus",
+		Subsystem:    "kafka",
+		Name:         "record_send_rate",
+		Help:         "The number of records per second sent to topics.",
+		LabelNames:   []string{"topic"},
+		StatsdFormat: "%{#fqname}.%{topic}",
+	}
+
+	recordsPerRequest = metrics.GaugeOpts{
+		Namespace:    "consensus",
+		Subsystem:    "kafka",
+		Name:         "records_per_request",
+		Help:         "The mean number of records sent per request to topics.",
+		LabelNames:   []string{"topic"},
+		StatsdFormat: "%{#fqname}.%{topic}",
+	}
+
+	compressionRatio = metrics.GaugeOpts{
+		Namespace:    "consensus",
+		Subsystem:    "kafka",
+		Name:         "compression_ratio",
+		Help:         "The mean compression ratio (as percentage) for topics.",
+		LabelNames:   []string{"topic"},
+		StatsdFormat: "%{#fqname}.%{topic}",
+	}
+)
+
+type Metrics struct {
+	IncomingByteRate  metrics.Gauge
+	OutgoingByteRate  metrics.Gauge
+	RequestRate       metrics.Gauge
+	RequestSize       metrics.Gauge
+	RequestLatency    metrics.Gauge
+	ResponseRate      metrics.Gauge
+	ResponseSize      metrics.Gauge
+	BatchSize         metrics.Gauge
+	RecordSendRate    metrics.Gauge
+	RecordsPerRequest metrics.Gauge
+	CompressionRatio  metrics.Gauge
+
+	GoMetricsRegistry gometrics.Registry
+}
+
+func NewMetrics(p metrics.Provider, registry gometrics.Registry) *Metrics {_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[0], 1);
+	return &Metrics{
+		IncomingByteRate:  p.NewGauge(incomingByteRate),
+		OutgoingByteRate:  p.NewGauge(outgoingByteRate),
+		RequestRate:       p.NewGauge(requestRate),
+		RequestSize:       p.NewGauge(requestSize),
+		RequestLatency:    p.NewGauge(requestLatency),
+		ResponseRate:      p.NewGauge(responseRate),
+		ResponseSize:      p.NewGauge(responseSize),
+		BatchSize:         p.NewGauge(batchSize),
+		RecordSendRate:    p.NewGauge(recordSendRate),
+		RecordsPerRequest: p.NewGauge(recordsPerRequest),
+		CompressionRatio:  p.NewGauge(compressionRatio),
+
+		GoMetricsRegistry: registry,
+	}
+}
+
+// PollGoMetrics takes the current metric values from go-metrics and publishes them to
+// the gauges exposed through go-kit's metrics.
+func (m *Metrics) PollGoMetrics() {_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[1], 1);
+	m.GoMetricsRegistry.Each(func(name string, value interface{}) {_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[2], 1);
+		recordMeter := func(prefix, label string, gauge metrics.Gauge) bool {_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[5], 1);
+			if !strings.HasPrefix(name, prefix) {_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[8], 1);
+				return false
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[6], 1);meter, ok := value.(gometrics.Meter)
+			if !ok {_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[9], 1);
+				logger.Panicf("Expected metric with name %s to be of type Meter but was of type %T", name, value)
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[7], 1);labelValue := name[len(prefix):]
+			gauge.With(label, labelValue).Set(meter.Snapshot().Rate1())
+
+			return true
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[3], 1);recordHistogram := func(prefix, label string, gauge metrics.Gauge) bool {_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[10], 1);
+			if !strings.HasPrefix(name, prefix) {_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[13], 1);
+				return false
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[11], 1);histogram, ok := value.(gometrics.Histogram)
+			if !ok {_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[14], 1);
+				logger.Panicf("Expected metric with name %s to be of type Histogram but was of type %T", name, value)
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[12], 1);labelValue := name[len(prefix):]
+			gauge.With(label, labelValue).Set(histogram.Snapshot().Mean())
+
+			return true
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[4], 1);switch {
+		case recordMeter(IncomingByteRateName, "broker_id", m.IncomingByteRate):_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[15], 1);
+		case recordMeter(OutgoingByteRateName, "broker_id", m.OutgoingByteRate):_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[16], 1);
+		case recordMeter(RequestRateName, "broker_id", m.RequestRate):_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[17], 1);
+		case recordHistogram(RequestSizeName, "broker_id", m.RequestSize):_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[18], 1);
+		case recordHistogram(RequestLatencyName, "broker_id", m.RequestLatency):_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[19], 1);
+		case recordMeter(ResponseRateName, "broker_id", m.ResponseRate):_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[20], 1);
+		case recordHistogram(ResponseSizeName, "broker_id", m.ResponseSize):_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[21], 1);
+		case recordHistogram(BatchSizeName, "topic", m.BatchSize):_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[22], 1);
+		case recordMeter(RecordSendRateName, "topic", m.RecordSendRate):_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[23], 1);
+		case recordHistogram(RecordsPerRequestName, "topic", m.RecordsPerRequest):_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[24], 1);
+		case recordHistogram(CompressionRatioName, "topic", m.CompressionRatio):_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[25], 1);
+		default:_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[26], 1);
+			// Ignore unknown metrics
+		}
+	})
+}
+
+// PollGoMetricsUntilStop should generally be invoked on a dedicated go routine.  This go routine
+// will then invoke PollGoMetrics at the specified frequency until the stopChannel closes.
+func (m *Metrics) PollGoMetricsUntilStop(frequency time.Duration, stopChannel <-chan struct{}) {_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[27], 1);
+	timer := time.NewTimer(frequency)
+	defer timer.Stop()
+	for {_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[28], 1);
+		select {
+		case <-timer.C:_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[29], 1);
+			m.PollGoMetrics()
+			timer.Reset(frequency)
+		case <-stopChannel:_cover_atomic_.AddUint32(&GoCover_5_623633326437306563303132.Count[30], 1);
+			return
+		}
+	}
+}
+
+var GoCover_5_623633326437306563303132 = struct {
+	Count     [31]uint32
+	Pos       [3 * 31]uint32
+	NumStmt   [31]uint16
+} {
+	Pos: [3 * 31]uint32{
+		186, 202, 0x2004b, // [0]
+		206, 207, 0x400023, // [1]
+		207, 208, 0x470040, // [2]
+		224, 224, 0x4b0003, // [3]
+		240, 240, 0xa0003, // [4]
+		208, 209, 0x280047, // [5]
+		213, 214, 0xb0004, // [6]
+		218, 221, 0xf0004, // [7]
+		209, 211, 0x50028, // [8]
+		214, 216, 0x5000b, // [9]
+		224, 225, 0x28004b, // [10]
+		229, 230, 0xb0004, // [11]
+		234, 237, 0xf0004, // [12]
+		225, 227, 0x50028, // [13]
+		230, 232, 0x5000b, // [14]
+		241, 241, 0x4b004b, // [15]
+		242, 242, 0x4b004b, // [16]
+		243, 243, 0x410041, // [17]
+		244, 244, 0x450045, // [18]
+		245, 245, 0x4b004b, // [19]
+		246, 246, 0x430043, // [20]
+		247, 247, 0x470047, // [21]
+		248, 248, 0x3d003d, // [22]
+		249, 249, 0x430043, // [23]
+		250, 250, 0x4d004d, // [24]
+		251, 251, 0x4b004b, // [25]
+		252, 252, 0xb000b, // [26]
+		260, 263, 0x60060, // [27]
+		263, 264, 0xa0006, // [28]
+		265, 267, 0x1a0012, // [29]
+		268, 269, 0xa0016, // [30]
+	},
+	NumStmt: [31]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		2, // 6
+		3, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		2, // 11
+		3, // 12
+		1, // 13
+		1, // 14
+		0, // 15
+		0, // 16
+		0, // 17
+		0, // 18
+		0, // 19
+		0, // 20
+		0, // 21
+		0, // 22
+		0, // 23
+		0, // 24
+		0, // 25
+		0, // 26
+		3, // 27
+		1, // 28
+		2, // 29
+		1, // 30
+	},
+}
+var _ = _cover_atomic_.LoadUint32

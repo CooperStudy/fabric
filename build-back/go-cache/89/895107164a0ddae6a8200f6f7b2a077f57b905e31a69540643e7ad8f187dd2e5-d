@@ -1,0 +1,112 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/chaincode/accesscontrol/interceptor.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package accesscontrol; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+
+	pb "github.com/hyperledger/fabric/protos/peer"
+	"google.golang.org/grpc"
+)
+
+type interceptor struct {
+	next pb.ChaincodeSupportServer
+	auth authorization
+}
+
+// ChaincodeStream defines a gRPC stream for sending
+// and receiving chaincode messages
+type ChaincodeStream interface {
+	// Send sends a chaincode message
+	Send(*pb.ChaincodeMessage) error
+	// Recv receives a chaincode message
+	Recv() (*pb.ChaincodeMessage, error)
+}
+
+type authorization func(message *pb.ChaincodeMessage, stream grpc.ServerStream) error
+
+func newInterceptor(srv pb.ChaincodeSupportServer, auth authorization) pb.ChaincodeSupportServer {_cover_atomic_.AddUint32(&GoCover_1_373330356164386336643838.Count[0], 1);
+	return &interceptor{
+		next: srv,
+		auth: auth,
+	}
+}
+
+// Register makes the interceptor implement ChaincodeSupportServer
+func (i *interceptor) Register(stream pb.ChaincodeSupport_RegisterServer) error {_cover_atomic_.AddUint32(&GoCover_1_373330356164386336643838.Count[1], 1);
+	is := &interceptedStream{
+		incMessages:  make(chan *pb.ChaincodeMessage, 1),
+		stream:       stream,
+		ServerStream: stream,
+		auth:         i.auth,
+	}
+	msg, err := stream.Recv()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_373330356164386336643838.Count[4], 1);
+		return fmt.Errorf("Recv() error: %v, closing connection", err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_373330356164386336643838.Count[2], 1);err = is.auth(msg, is.ServerStream)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_373330356164386336643838.Count[5], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_373330356164386336643838.Count[3], 1);is.incMessages <- msg
+	close(is.incMessages)
+	return i.next.Register(is)
+}
+
+type interceptedStream struct {
+	incMessages chan *pb.ChaincodeMessage
+	stream      ChaincodeStream
+	grpc.ServerStream
+	auth authorization
+}
+
+// Send sends a chaincode message
+func (is *interceptedStream) Send(msg *pb.ChaincodeMessage) error {_cover_atomic_.AddUint32(&GoCover_1_373330356164386336643838.Count[6], 1);
+	return is.stream.Send(msg)
+}
+
+// Recv receives a chaincode message
+func (is *interceptedStream) Recv() (*pb.ChaincodeMessage, error) {_cover_atomic_.AddUint32(&GoCover_1_373330356164386336643838.Count[7], 1);
+	msg, ok := <-is.incMessages
+	if !ok {_cover_atomic_.AddUint32(&GoCover_1_373330356164386336643838.Count[9], 1);
+		return is.stream.Recv()
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_373330356164386336643838.Count[8], 1);return msg, nil
+}
+
+var GoCover_1_373330356164386336643838 = struct {
+	Count     [10]uint32
+	Pos       [3 * 10]uint32
+	NumStmt   [10]uint16
+} {
+	Pos: [3 * 10]uint32{
+		32, 37, 0x20062, // [0]
+		40, 48, 0x100051, // [1]
+		51, 52, 0x100002, // [2]
+		55, 57, 0x1c0002, // [3]
+		48, 50, 0x30010, // [4]
+		52, 54, 0x30010, // [5]
+		68, 70, 0x20043, // [6]
+		73, 75, 0x90043, // [7]
+		78, 78, 0x110002, // [8]
+		75, 77, 0x30009, // [9]
+	},
+	NumStmt: [10]uint16{
+		1, // 0
+		3, // 1
+		2, // 2
+		3, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		2, // 7
+		1, // 8
+		1, // 9
+	},
+}
+var _ = _cover_atomic_.LoadUint32

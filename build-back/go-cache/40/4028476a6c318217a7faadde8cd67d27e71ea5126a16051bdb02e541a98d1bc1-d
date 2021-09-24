@@ -1,0 +1,3 @@
+extensions.cover.go
+protocol.pb.cover.go
+./extensions_test.go
