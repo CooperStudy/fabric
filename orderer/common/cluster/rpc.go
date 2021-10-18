@@ -45,6 +45,7 @@ type RPC struct {
 
 // Step sends a StepRequest to the given destination node and returns the response
 func (s *RPC) Step(destination uint64, msg *orderer.StepRequest) (*orderer.StepResponse, error) {
+	logger.Info("====Step===")
 	stub, err := s.Comm.Remote(s.Channel, destination)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -54,6 +55,7 @@ func (s *RPC) Step(destination uint64, msg *orderer.StepRequest) (*orderer.StepR
 
 // SendSubmit sends a SubmitRequest to the given destination node
 func (s *RPC) SendSubmit(destination uint64, request *orderer.SubmitRequest) error {
+	logger.Info("====SendSubmit===")
 	stream, err := s.getProposeStream(destination)
 	if err != nil {
 		return err
@@ -67,6 +69,7 @@ func (s *RPC) SendSubmit(destination uint64, request *orderer.SubmitRequest) err
 
 // ReceiveSubmitResponse receives a SubmitResponse from the given destination node
 func (s *RPC) ReceiveSubmitResponse(destination uint64) (*orderer.SubmitResponse, error) {
+	logger.Info("====ReceiveSubmitResponse===")
 	stream, err := s.getProposeStream(destination)
 	if err != nil {
 		return nil, err
@@ -80,6 +83,7 @@ func (s *RPC) ReceiveSubmitResponse(destination uint64) (*orderer.SubmitResponse
 
 // getProposeStream obtains a Submit stream for the given destination node
 func (s *RPC) getProposeStream(destination uint64) (orderer.Cluster_SubmitClient, error) {
+	logger.Info("====getProposeStream===")
 	stream := s.getStream(destination)
 	if stream != nil {
 		return stream, nil
@@ -97,18 +101,21 @@ func (s *RPC) getProposeStream(destination uint64) (orderer.Cluster_SubmitClient
 }
 
 func (s *RPC) getStream(destination uint64) orderer.Cluster_SubmitClient {
+	logger.Info("====getStream===")
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	return s.DestinationToStream[destination]
 }
 
 func (s *RPC) mapStream(destination uint64, stream orderer.Cluster_SubmitClient) {
+	logger.Info("====mapStream===")
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.DestinationToStream[destination] = stream
 }
 
 func (s *RPC) unMapStream(destination uint64) {
+	logger.Info("====unMapStream===")
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	delete(s.DestinationToStream, destination)
