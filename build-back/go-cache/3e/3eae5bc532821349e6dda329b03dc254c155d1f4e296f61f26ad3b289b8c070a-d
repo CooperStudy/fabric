@@ -1,6 +1,0 @@
-./entities.go
-./interfaces.go
-./message.go
-./testutils.go
-./entities_test.go
-./message_test.go

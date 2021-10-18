@@ -1,6 +1,0 @@
-./compare.go
-./configmap.go
-./configtx.go
-./update.go
-./util.go
-./validator.go

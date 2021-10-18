@@ -1,5 +1,0 @@
-./factory.go
-./nopkcs11.go
-./opts.go
-./pluginfactory.go
-./swfactory.go

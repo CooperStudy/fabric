@@ -1,6 +1,0 @@
-./eventer.go
-./gossip_service.go
-./eventer_test.go
-./gossip_service_test.go
-./integration_test.go
-./join_test.go

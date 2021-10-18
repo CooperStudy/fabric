@@ -1,5 +1,0 @@
-./configtxlator_handlers.go
-./protolator_handlers.go
-./router.go
-./configtxlator_handlers_test.go
-./protolator_handlers_test.go

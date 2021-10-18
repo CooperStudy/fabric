@@ -1,5 +1,0 @@
-./ioreadwriter.go
-./legacy_package_provider.go
-./osfileinfo.go
-./package_parser.go
-./store_package_provider.go

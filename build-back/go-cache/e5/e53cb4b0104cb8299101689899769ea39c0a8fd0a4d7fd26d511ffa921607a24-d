@@ -1,8 +1,0 @@
-./application.go
-./capabilities.go
-./channel.go
-./orderer.go
-./application_test.go
-./capabilities_test.go
-./channel_test.go
-./orderer_test.go

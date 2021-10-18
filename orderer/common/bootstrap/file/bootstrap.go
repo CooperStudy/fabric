@@ -18,6 +18,7 @@ package file
 
 import (
 	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"io/ioutil"
 
 	"github.com/golang/protobuf/proto"
@@ -35,9 +36,10 @@ func New(fileName string) bootstrap.Helper {
 		GenesisBlockFile: fileName,
 	}
 }
-
+var logger = flogging.MustGetLogger("orderer.common.bootstrap.file.bootstrap.go")
 // GenesisBlock returns the genesis block to be used for bootstrapping
 func (b *fileBootstrapper) GenesisBlock() *cb.Block {
+	logger.Info("====GenesisBlock===")
 	bootstrapFile, fileErr := ioutil.ReadFile(b.GenesisBlockFile)
 	if fileErr != nil {
 		panic(fmt.Errorf("Unable to bootstrap orderer. Error reading genesis block file: %v", fileErr))

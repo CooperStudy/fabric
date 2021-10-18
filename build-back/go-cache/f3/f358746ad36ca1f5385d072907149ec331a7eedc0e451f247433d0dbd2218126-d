@@ -1,5 +1,0 @@
-./default_reporter.go
-./fake_reporter.go
-./junit_reporter.go
-./reporter.go
-./teamcity_reporter.go

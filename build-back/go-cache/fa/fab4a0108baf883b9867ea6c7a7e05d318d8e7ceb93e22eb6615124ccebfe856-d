@@ -1,6 +1,0 @@
-blockutils.cover.go
-chaincodeutils.cover.go
-commonutils.cover.go
-proputils.cover.go
-txutils.cover.go
-./commonutils_test.go

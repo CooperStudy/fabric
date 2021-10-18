@@ -1,9 +1,0 @@
-./dir_unix.go
-./fileutil.go
-./lock.go
-./lock_flock.go
-./lock_linux.go
-./preallocate.go
-./preallocate_unix.go
-./purge.go
-./sync_linux.go

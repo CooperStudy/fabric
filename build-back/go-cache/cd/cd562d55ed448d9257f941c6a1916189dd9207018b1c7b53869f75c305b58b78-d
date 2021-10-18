@@ -1,9 +1,0 @@
-credential.cover.go
-credrequest.cover.go
-issuer.cover.go
-math.cover.go
-nymsignaturescheme.cover.go
-rand.cover.go
-revocation.cover.go
-signaturescheme.cover.go
-user.cover.go

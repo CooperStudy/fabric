@@ -1,6 +1,0 @@
-importsysccs.cover.go
-loadsysccs.cover.go
-register.cover.go
-sccproviderimpl.cover.go
-sysccapi.cover.go
-./scc_test.go

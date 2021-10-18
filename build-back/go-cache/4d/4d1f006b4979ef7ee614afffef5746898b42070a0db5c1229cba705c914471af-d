@@ -1,6 +1,0 @@
-./query_results_helper.go
-./rwset_builder.go
-./rwset_proto_util.go
-./query_results_helper_test.go
-./rwset_builder_test.go
-./rwset_proto_util_test.go

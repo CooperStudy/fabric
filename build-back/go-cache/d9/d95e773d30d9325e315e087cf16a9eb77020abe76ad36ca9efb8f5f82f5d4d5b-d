@@ -1,8 +1,0 @@
-./logging.go
-./misc.go
-./msgs.go
-./privdata.go
-./pubsub.go
-./misc_test.go
-./msgs_test.go
-./pubsub_test.go

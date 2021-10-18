@@ -1,6 +1,0 @@
-# test log
-open testdata/expiredCert.pem
-open testdata/notExpiredCert.pem
-open testdata/notExpiredCert.pem
-open testdata/notExpiredCert.pem
-open testdata/notExpiredCert.pem

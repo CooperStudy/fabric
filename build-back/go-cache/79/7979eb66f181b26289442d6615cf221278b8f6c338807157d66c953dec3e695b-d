@@ -1,8 +1,0 @@
-./channel.go
-./create.go
-./fetch.go
-./getinfo.go
-./join.go
-./list.go
-./signconfigtx.go
-./update.go

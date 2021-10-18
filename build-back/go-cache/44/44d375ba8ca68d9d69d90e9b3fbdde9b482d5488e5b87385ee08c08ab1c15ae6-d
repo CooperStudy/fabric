@@ -1,7 +1,0 @@
-# test log
-getenv GODEBUG
-getenv RES_OPTIONS
-getenv HOSTALIASES
-open /etc/nsswitch.conf
-open /etc/resolv.conf
-stat /etc/mdns.allow

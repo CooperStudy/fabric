@@ -1,9 +1,0 @@
-./blockcreator.go
-./chain.go
-./consenter.go
-./dispatcher.go
-./storage.go
-./util.go
-./blockcreator_test.go
-./initialization_test.go
-./util_test.go

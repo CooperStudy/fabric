@@ -1,7 +1,0 @@
-comm.cover.go
-connections.cover.go
-deliver.cover.go
-replication.cover.go
-rpc.cover.go
-service.cover.go
-util.cover.go

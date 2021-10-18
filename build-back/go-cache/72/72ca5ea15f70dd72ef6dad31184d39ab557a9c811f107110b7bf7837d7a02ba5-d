@@ -1,7 +1,0 @@
-./common.go
-./getlevel.go
-./getlogspec.go
-./logging.go
-./revertlevels.go
-./setlevel.go
-./setlogspec.go

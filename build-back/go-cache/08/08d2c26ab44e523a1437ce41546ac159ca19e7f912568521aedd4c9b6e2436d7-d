@@ -1,5 +1,0 @@
-./cmd.go
-./config.go
-./endorsers.go
-./peers.go
-./stub.go

@@ -1,6 +1,0 @@
-./accesscontrol_test.go
-./ledgermanager_test.go
-./manager_test.go
-./marshal_test.go
-./prover_test.go
-./server_suite_test.go

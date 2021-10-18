@@ -1,5 +1,0 @@
-library.cover.go
-registry.cover.go
-./race_test.go
-./registry_plugin_test.go
-./registry_test.go

@@ -1,6 +1,0 @@
-compare.cover.go
-inquire.cover.go
-merge.cover.go
-./compare_test.go
-./inquire_test.go
-./merge_test.go

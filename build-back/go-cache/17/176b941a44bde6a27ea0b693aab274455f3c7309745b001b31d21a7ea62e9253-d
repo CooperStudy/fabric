@@ -1,5 +1,0 @@
-access.cover.go
-interceptor.cover.go
-mapper.cover.go
-./access_test.go
-./mapper_test.go

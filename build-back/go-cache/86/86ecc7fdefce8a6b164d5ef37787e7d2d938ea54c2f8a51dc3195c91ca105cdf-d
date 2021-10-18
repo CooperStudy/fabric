@@ -1,6 +1,0 @@
-./block.go
-./debug_stub.go
-./lz4.go
-./lz4_go1.10.go
-./reader.go
-./writer.go

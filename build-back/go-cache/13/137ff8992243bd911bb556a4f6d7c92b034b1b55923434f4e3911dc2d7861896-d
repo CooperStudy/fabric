@@ -1,7 +1,0 @@
-issuer.cover.go
-ledger.cover.go
-manager.cover.go
-pool.cover.go
-transactor.cover.go
-verifier.cover.go
-./compositekeys_test.go

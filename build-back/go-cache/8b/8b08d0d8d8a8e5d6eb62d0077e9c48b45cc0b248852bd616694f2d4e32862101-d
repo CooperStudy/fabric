@@ -1,9 +1,0 @@
-./main.go
-./onboarding.go
-./server.go
-./signals.go
-./util.go
-./main_test.go
-./onboarding_test.go
-./server_test.go
-./util_test.go

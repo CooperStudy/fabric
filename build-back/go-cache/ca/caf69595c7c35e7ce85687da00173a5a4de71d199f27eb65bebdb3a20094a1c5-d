@@ -1,6 +1,0 @@
-./chaincode.go
-./handler.go
-./inprocstream.go
-./interfaces.go
-./mockstub.go
-./response.go

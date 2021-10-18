@@ -1,7 +1,0 @@
-api.cover.go
-client.cover.go
-selection.cover.go
-signer.cover.go
-./client_test.go
-./selection_test.go
-./signer_test.go

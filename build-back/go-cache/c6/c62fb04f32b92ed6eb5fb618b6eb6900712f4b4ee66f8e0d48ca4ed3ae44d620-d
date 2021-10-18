@@ -1,4 +1,0 @@
-historyleveldb.cover.go
-historyleveldb_query_executer.cover.go
-./historyleveldb_test.go
-./pkg_test.go

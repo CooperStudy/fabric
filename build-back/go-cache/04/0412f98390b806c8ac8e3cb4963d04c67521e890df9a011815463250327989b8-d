@@ -1,6 +1,0 @@
-./channel_response.go
-./command_registrar.go
-./local_response.go
-./response_parser.go
-./service_response.go
-./stub.go

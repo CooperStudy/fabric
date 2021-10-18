@@ -1,4 +1,0 @@
-./configtxgen.go
-./cryptogen.go
-./discover.go
-./peer.go

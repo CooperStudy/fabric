@@ -1,8 +1,0 @@
-./backend.go
-./format.go
-./level.go
-./log_nix.go
-./logger.go
-./memory.go
-./multi.go
-./syslog.go

@@ -1,7 +1,0 @@
-./doc.go
-./external.go
-./golist.go
-./golist_fallback.go
-./golist_fallback_testmain.go
-./packages.go
-./visit.go

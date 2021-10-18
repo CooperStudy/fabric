@@ -1,6 +1,0 @@
-cmd.cover.go
-config.cover.go
-endorsers.cover.go
-peers.cover.go
-stub.cover.go
-./stub_test.go

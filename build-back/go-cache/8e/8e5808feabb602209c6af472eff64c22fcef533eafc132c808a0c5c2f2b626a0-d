@@ -1,7 +1,0 @@
-./comm_test.go
-./connections_test.go
-./deliver_test.go
-./replication_test.go
-./rpc_test.go
-./service_test.go
-./util_test.go

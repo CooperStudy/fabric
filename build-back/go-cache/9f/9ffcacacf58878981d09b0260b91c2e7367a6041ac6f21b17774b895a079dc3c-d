@@ -1,7 +1,0 @@
-./cred_test.go
-./idemix_suite_test.go
-./issuer_test.go
-./nymsigner_test.go
-./revocation_test.go
-./signer_test.go
-./user_test.go

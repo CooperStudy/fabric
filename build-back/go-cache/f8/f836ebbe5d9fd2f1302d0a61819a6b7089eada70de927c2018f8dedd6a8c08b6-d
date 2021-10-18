@@ -1,4 +1,0 @@
-./config.go
-./couchdb.go
-./couchdbutil.go
-./metrics.go

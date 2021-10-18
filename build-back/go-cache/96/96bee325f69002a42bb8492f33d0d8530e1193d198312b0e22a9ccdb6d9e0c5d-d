@@ -1,4 +1,0 @@
-admin.cover.go
-validate.cover.go
-./admin_test.go
-./validate_test.go

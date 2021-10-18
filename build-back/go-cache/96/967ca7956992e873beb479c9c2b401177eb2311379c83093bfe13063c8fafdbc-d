@@ -1,5 +1,0 @@
-./conf.go
-./ecdsa.go
-./ecdsakey.go
-./impl.go
-./pkcs11.go

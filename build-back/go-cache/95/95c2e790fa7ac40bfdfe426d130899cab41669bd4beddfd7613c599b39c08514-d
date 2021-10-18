@@ -1,6 +1,0 @@
-./aggregator.go
-./forwarding_reporter.go
-./output_interceptor.go
-./output_interceptor_unix.go
-./server.go
-./syscall_dup_unix.go

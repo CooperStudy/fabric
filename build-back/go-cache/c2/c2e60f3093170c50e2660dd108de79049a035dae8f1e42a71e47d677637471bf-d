@@ -1,5 +1,0 @@
-./chaincode_store.go
-./chaincode_stub.go
-./package_parser.go
-./protobuf.go
-./scc_functions.go

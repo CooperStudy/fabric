@@ -1,6 +1,0 @@
-common_storage_db.cover.go
-db.cover.go
-optimization.cover.go
-test_exports.cover.go
-./db_test.go
-./optimization_test.go

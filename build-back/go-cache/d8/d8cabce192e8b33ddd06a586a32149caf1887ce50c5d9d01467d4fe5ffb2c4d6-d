@@ -1,6 +1,0 @@
-./ecdsa.go
-./errs.go
-./io.go
-./keys.go
-./slice.go
-./x509.go

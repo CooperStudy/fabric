@@ -1,7 +1,0 @@
-./core_test.go
-./global_test.go
-./legacy_test.go
-./levels_test.go
-./loggerlevels_test.go
-./logging_test.go
-./zap_test.go

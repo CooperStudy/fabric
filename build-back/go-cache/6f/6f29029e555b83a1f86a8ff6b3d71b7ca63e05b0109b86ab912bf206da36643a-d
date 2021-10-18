@@ -1,4 +1,0 @@
-./async_producer.go
-./consumer.go
-./mocks.go
-./sync_producer.go

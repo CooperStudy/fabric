@@ -1,6 +1,0 @@
-./ioutil.go
-./protobuf_util.go
-./util.go
-./ioutil_test.go
-./protobuf_util_test.go
-./util_test.go

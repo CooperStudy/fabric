@@ -68,7 +68,7 @@ func (itr *blocksItr) shouldClose() bool {
 	return itr.closeMarker
 }
 
-// Next moves the cursor to next block and returns true iff the iterator is not exhausted
+// Next moves the cursor（光标） to next block and returns true iff the iterator is not exhausted
 func (itr *blocksItr) Next() (ledger.QueryResult, error) {
 	if itr.maxBlockNumAvailable < itr.blockNumToRetrieve {
 		itr.maxBlockNumAvailable = itr.waitForBlock(itr.blockNumToRetrieve)

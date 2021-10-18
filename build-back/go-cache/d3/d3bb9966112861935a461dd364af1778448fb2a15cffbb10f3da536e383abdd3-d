@@ -1,4 +1,0 @@
-./couchdb_test.go
-./kafka_test.go
-./runner_suite_test.go
-./zookeeper_test.go

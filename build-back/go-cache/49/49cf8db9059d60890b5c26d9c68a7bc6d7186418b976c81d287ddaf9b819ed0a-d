@@ -1,3 +1,0 @@
-# test log
-open testdata/cert.pem
-open testdata/badCert.pem

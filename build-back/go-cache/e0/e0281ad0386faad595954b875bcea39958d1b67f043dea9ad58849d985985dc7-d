@@ -1,7 +1,0 @@
-application.cover.go
-channel.cover.go
-orderer.cover.go
-resources.cover.go
-./channel_test.go
-./orderer_test.go
-./resources_test.go

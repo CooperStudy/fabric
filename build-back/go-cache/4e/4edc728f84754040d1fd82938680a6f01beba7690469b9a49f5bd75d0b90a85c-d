@@ -1,5 +1,0 @@
-deployedcc_infoprovider.cover.go
-errors.cover.go
-lscc.cover.go
-support.cover.go
-./lscc_test.go

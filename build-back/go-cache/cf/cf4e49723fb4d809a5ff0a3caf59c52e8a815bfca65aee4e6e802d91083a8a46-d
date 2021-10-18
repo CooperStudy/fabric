@@ -1,5 +1,0 @@
-./client_test.go
-./creds_test.go
-./server_test.go
-./serverstatshandler_test.go
-./util_test.go

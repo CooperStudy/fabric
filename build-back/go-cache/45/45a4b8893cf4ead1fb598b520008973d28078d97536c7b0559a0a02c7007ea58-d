@@ -1,6 +1,0 @@
-./acl_test.go
-./cft_test.go
-./e2e_signal_test.go
-./e2e_suite_test.go
-./e2e_test.go
-./health_test.go

@@ -1,5 +1,0 @@
-./batcher.go
-./certstore.go
-./chanstate.go
-./gossip.go
-./gossip_impl.go

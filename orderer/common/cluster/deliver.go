@@ -50,6 +50,7 @@ type BlockPuller struct {
 // Clone returns a copy of this BlockPuller initialized
 // for the given channel
 func (p *BlockPuller) Clone() *BlockPuller {
+	logger.Info("====Clone===")
 	// Clone by value
 	copy := *p
 	// Reset internal state
@@ -65,6 +66,7 @@ func (p *BlockPuller) Clone() *BlockPuller {
 // Close makes the BlockPuller close the connection and stream
 // with the remote endpoint.
 func (p *BlockPuller) Close() {
+	logger.Info("====Close===")
 	if p.cancelStream != nil {
 		p.cancelStream()
 	}
@@ -81,6 +83,7 @@ func (p *BlockPuller) Close() {
 // PullBlock blocks until a block with the given sequence is fetched
 // from some remote ordering node.
 func (p *BlockPuller) PullBlock(seq uint64) *common.Block {
+	logger.Info("====PullBlock===")
 	for {
 		block := p.tryFetchBlock(seq)
 		if block != nil {
@@ -91,6 +94,7 @@ func (p *BlockPuller) PullBlock(seq uint64) *common.Block {
 
 // HeightsByEndpoints returns the block heights by endpoints of orderers
 func (p *BlockPuller) HeightsByEndpoints() map[string]uint64 {
+	logger.Info("====HeightsByEndpoints===")
 	res := make(map[string]uint64)
 	for endpoint, endpointInfo := range p.probeEndpoints(1).byEndpoints() {
 		endpointInfo.conn.Close()
@@ -101,6 +105,7 @@ func (p *BlockPuller) HeightsByEndpoints() map[string]uint64 {
 }
 
 func (p *BlockPuller) tryFetchBlock(seq uint64) *common.Block {
+	logger.Info("====tryFetchBlock===")
 	var reConnected bool
 	for p.isDisconnected() {
 		reConnected = true
@@ -138,10 +143,12 @@ func (p *BlockPuller) tryFetchBlock(seq uint64) *common.Block {
 }
 
 func (p *BlockPuller) setCancelStreamFunc(f func()) {
+	logger.Info("====setCancelStreamFunc===")
 	p.cancelStream = f
 }
 
 func (p *BlockPuller) pullBlocks(seq uint64, reConnected bool) error {
+	logger.Info("====pullBlocks===")
 	env, err := p.seekNextEnvelope(seq)
 	if err != nil {
 		p.Logger.Errorf("Failed creating seek envelope: %v", err)

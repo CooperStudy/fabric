@@ -1,6 +1,0 @@
-./client.go
-./deliveryclient.go
-./requester.go
-./client_test.go
-./deliveryclient_test.go
-./requester_test.go

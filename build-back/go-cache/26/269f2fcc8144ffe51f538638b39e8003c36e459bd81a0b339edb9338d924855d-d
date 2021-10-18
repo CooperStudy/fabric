@@ -1,5 +1,0 @@
-aclmgmt.cover.go
-aclmgmtimpl.cover.go
-defaultaclprovider.cover.go
-resourceprovider.cover.go
-./resourceprovider_test.go

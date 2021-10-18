@@ -1,9 +1,0 @@
-./block_iterator.go
-./block_reader.go
-./chain.go
-./chain_manager.go
-./filtered_response_sender.go
-./inspector.go
-./policy_checker.go
-./receiver.go
-./response_sender.go

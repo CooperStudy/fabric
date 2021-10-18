@@ -1,5 +1,0 @@
-./blackbox_test.go
-./file_test.go
-./json_test.go
-./ram_test.go
-./util_test.go

@@ -1,9 +1,0 @@
-blockcreator.cover.go
-chain.cover.go
-consenter.cover.go
-dispatcher.cover.go
-storage.cover.go
-util.cover.go
-./blockcreator_test.go
-./initialization_test.go
-./util_test.go

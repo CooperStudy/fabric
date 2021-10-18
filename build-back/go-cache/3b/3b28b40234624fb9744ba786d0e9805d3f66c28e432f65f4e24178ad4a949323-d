@@ -1,6 +1,0 @@
-./coordinator.go
-./dataretriever.go
-./distributor.go
-./pull.go
-./reconcile.go
-./util.go

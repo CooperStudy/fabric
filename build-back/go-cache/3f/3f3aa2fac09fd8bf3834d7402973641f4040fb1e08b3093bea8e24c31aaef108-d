@@ -1,4 +1,0 @@
-./chain_test.go
-./consenter_test.go
-./dispatcher_test.go
-./etcdraft_suite_test.go

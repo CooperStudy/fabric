@@ -1,4 +1,0 @@
-./cmd_test.go
-./config_test.go
-./endorsers_test.go
-./peers_test.go

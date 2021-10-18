@@ -1,7 +1,0 @@
-./client.go
-./config.go
-./deliver_client.go
-./msp.go
-./orderer_client.go
-./prover.go
-./tx_submitter.go

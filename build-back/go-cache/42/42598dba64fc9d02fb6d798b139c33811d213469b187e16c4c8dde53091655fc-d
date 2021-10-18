@@ -1,6 +1,0 @@
-./issuer_test.go
-./ledger_test.go
-./plain_suite_test.go
-./pool_test.go
-./transactor_test.go
-./verifier_test.go

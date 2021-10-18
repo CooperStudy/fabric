@@ -1,8 +1,0 @@
-./format.go
-./pb.go
-./pb_x.go
-./pool.go
-./pool_x.go
-./reader.go
-./runecount.go
-./termios_sysv.go

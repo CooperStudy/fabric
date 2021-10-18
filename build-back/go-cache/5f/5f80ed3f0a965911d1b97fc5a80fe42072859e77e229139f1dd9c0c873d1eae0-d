@@ -1,7 +1,0 @@
-./blockwriter.go
-./chainsupport.go
-./registrar.go
-./blockwriter_test.go
-./chainsupport_test.go
-./registrar_test.go
-./util_test.go

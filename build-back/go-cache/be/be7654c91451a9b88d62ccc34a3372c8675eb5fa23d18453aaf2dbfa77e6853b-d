@@ -1,8 +1,0 @@
-./config.go
-./couchdb.go
-./couchdbutil.go
-./metrics.go
-./config_test.go
-./couchdb_test.go
-./couchdbutil_test.go
-./metrics_test.go

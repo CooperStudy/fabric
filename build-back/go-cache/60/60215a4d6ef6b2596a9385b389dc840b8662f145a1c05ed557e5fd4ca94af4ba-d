@@ -1,7 +1,0 @@
-./env.go
-./list.go
-./package.go
-./platform.go
-./env_test.go
-./list_test.go
-./platform_test.go

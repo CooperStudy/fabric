@@ -1,6 +1,0 @@
-combined_iterator.cover.go
-range_query_validator.cover.go
-state_based_validator.cover.go
-./combined_iterator_test.go
-./range_query_validator_test.go
-./state_based_validator_test.go

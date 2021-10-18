@@ -1,8 +1,0 @@
-config.cover.go
-couchdb.cover.go
-couchdbutil.cover.go
-metrics.cover.go
-./config_test.go
-./couchdb_test.go
-./couchdbutil_test.go
-./metrics_test.go

@@ -1,4 +1,0 @@
-./couchdb.go
-./defaults.go
-./kafka.go
-./zookeeper.go

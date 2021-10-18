@@ -1,7 +1,0 @@
-./assertion_format.go
-./assertion_forward.go
-./assertions.go
-./doc.go
-./errors.go
-./forward_assertions.go
-./http_assertions.go
