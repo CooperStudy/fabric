@@ -37,6 +37,7 @@ var logger = flogging.MustGetLogger("orderer.commmon.multichannel")
 
 // checkResources makes sure that the channel config is compatible with this binary and logs sanity checks
 func checkResources(res channelconfig.Resources) error {
+	logger.Info("====checkResources===")
 	channelconfig.LogSanityChecks(res)
 	oc, ok := res.OrdererConfig()
 	if !ok {
@@ -53,6 +54,7 @@ func checkResources(res channelconfig.Resources) error {
 
 // checkResourcesOrPanic invokes checkResources and panics if an error is returned
 func checkResourcesOrPanic(res channelconfig.Resources) {
+	logger.Info("====checkResourcesOrPanic===")
 	if err := checkResources(res); err != nil {
 		logger.Panicf("[channel %s] %s", res.ConfigtxValidator().ChainID(), err)
 	}
@@ -68,15 +70,18 @@ type configResources struct {
 }
 
 func (cr *configResources) CreateBundle(channelID string, config *cb.Config) (*channelconfig.Bundle, error) {
+	logger.Info("====CreateBundle===")
 	return channelconfig.NewBundle(channelID, config)
 }
 
 func (cr *configResources) Update(bndl *channelconfig.Bundle) {
+	logger.Info("====Update===")
 	checkResourcesOrPanic(bndl)
 	cr.mutableResources.Update(bndl)
 }
 
 func (cr *configResources) SharedConfig() channelconfig.Orderer {
+	logger.Info("====SharedConfig===")
 	oc, ok := cr.OrdererConfig()
 	if !ok {
 		logger.Panicf("[channel %s] has no orderer configuration", cr.ConfigtxValidator().ChainID())
@@ -105,6 +110,7 @@ type Registrar struct {
 }
 
 func getConfigTx(reader blockledger.Reader) *cb.Envelope {
+	logger.Info("====getConfigTx===")
 	lastBlock := blockledger.GetBlock(reader, reader.Height()-1)
 	index, err := utils.GetLastConfigIndexFromBlock(lastBlock)
 	if err != nil {
@@ -121,6 +127,9 @@ func getConfigTx(reader blockledger.Reader) *cb.Envelope {
 // NewRegistrar produces an instance of a *Registrar.
 func NewRegistrar(ledgerFactory blockledger.Factory,
 	signer crypto.LocalSigner, metricsProvider metrics.Provider, callbacks ...func(bundle *channelconfig.Bundle)) *Registrar {
+
+	logger.Info("====NewRegistrar===")
+
 	r := &Registrar{
 		chains:             make(map[string]*ChainSupport),
 		ledgerFactory:      ledgerFactory,
@@ -133,6 +142,8 @@ func NewRegistrar(ledgerFactory blockledger.Factory,
 }
 
 func (r *Registrar) Initialize(consenters map[string]consensus.Consenter) {
+	logger.Info("====Initialize===")
+
 	r.consenters = consenters
 	existingChains := r.ledgerFactory.ChainIDs()
 	for _, chainID := range existingChains {
@@ -198,6 +209,7 @@ func (r *Registrar) Initialize(consenters map[string]consensus.Consenter) {
 
 // SystemChannelID returns the ChannelID for the system channel.
 func (r *Registrar) SystemChannelID() string {
+	logger.Info("====SystemChannelID===")
 	return r.systemChannelID
 }
 
@@ -205,6 +217,9 @@ func (r *Registrar) SystemChannelID() string {
 // and the channel resources for a message or an error if the message is not a message which can
 // be processed directly (like CONFIG and ORDERER_TRANSACTION messages)
 func (r *Registrar) BroadcastChannelSupport(msg *cb.Envelope) (*cb.ChannelHeader, bool, *ChainSupport, error) {
+
+	logger.Info("====BroadcastChannelSupport===")
+
 	chdr, err := utils.ChannelHeader(msg)
 	if err != nil {
 		return nil, false, nil, fmt.Errorf("could not determine channel ID: %s", err)
@@ -229,6 +244,7 @@ func (r *Registrar) BroadcastChannelSupport(msg *cb.Envelope) (*cb.ChannelHeader
 
 // GetChain retrieves the chain support for a chain if it exists
 func (r *Registrar) GetChain(chainID string) *ChainSupport {
+	logger.Info("====GetChain===")
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
@@ -236,6 +252,7 @@ func (r *Registrar) GetChain(chainID string) *ChainSupport {
 }
 
 func (r *Registrar) newLedgerResources(configTx *cb.Envelope) *ledgerResources {
+	logger.Info("====newLedgerResources===")
 	payload, err := utils.UnmarshalPayload(configTx.Payload)
 	if err != nil {
 		logger.Panicf("Error umarshaling envelope to payload: %s", err)
@@ -276,6 +293,7 @@ func (r *Registrar) newLedgerResources(configTx *cb.Envelope) *ledgerResources {
 }
 
 func (r *Registrar) newChain(configtx *cb.Envelope) {
+	logger.Info("====newChain===")
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
@@ -301,6 +319,7 @@ func (r *Registrar) newChain(configtx *cb.Envelope) {
 
 // ChannelsCount returns the count of the current total number of channels.
 func (r *Registrar) ChannelsCount() int {
+	logger.Info("====ChannelsCount===")
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
@@ -309,10 +328,12 @@ func (r *Registrar) ChannelsCount() int {
 
 // NewChannelConfig produces a new template channel configuration based on the system channel's current config.
 func (r *Registrar) NewChannelConfig(envConfigUpdate *cb.Envelope) (channelconfig.Resources, error) {
+	logger.Info("====NewChannelConfig===")
 	return r.templator.NewChannelConfig(envConfigUpdate)
 }
 
 // CreateBundle calls channelconfig.NewBundle
 func (r *Registrar) CreateBundle(channelID string, config *cb.Config) (channelconfig.Resources, error) {
+	logger.Info("====CreateBundle===")
 	return channelconfig.NewBundle(channelID, config)
 }

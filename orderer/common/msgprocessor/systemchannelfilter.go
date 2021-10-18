@@ -47,6 +47,7 @@ func NewSystemChannelFilter(ls LimitedSupport, cc ChainCreator) *SystemChainFilt
 
 // Apply rejects bad messages with an error.
 func (scf *SystemChainFilter) Apply(env *cb.Envelope) error {
+	logger.Info("====Apply===")
 	msgData := &cb.Payload{}
 
 	err := proto.Unmarshal(env.Payload, msgData)
@@ -90,6 +91,7 @@ func (scf *SystemChainFilter) Apply(env *cb.Envelope) error {
 }
 
 func (scf *SystemChainFilter) authorizeAndInspect(configTx *cb.Envelope) error {
+	logger.Info("====authorizeAndInspect===")
 	payload := &cb.Payload{}
 	err := proto.Unmarshal(configTx.Payload, payload)
 	if err != nil {

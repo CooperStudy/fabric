@@ -67,6 +67,7 @@ var (
 
 // Main is the entry point of orderer process
 func Main() {
+	logger.Info("====Main===")
 	fullCmd := kingpin.MustParse(app.Parse(os.Args[1:]))
 
 	// "version" command
@@ -89,6 +90,7 @@ func Main() {
 
 // Start provides a layer of abstraction for benchmark test
 func Start(cmd string, conf *localconfig.TopLevel) {
+	logger.Info("====Start===")
 	bootstrapBlock := extractBootstrapBlock(conf)
 	clusterType := isClusterType(bootstrapBlock)
 	signer := localmsp.NewSigner()
@@ -154,6 +156,7 @@ func Start(cmd string, conf *localconfig.TopLevel) {
 }
 
 func initializeLogging() {
+	logger.Info("====initializeLogging===")
 	loggingSpec := os.Getenv("FABRIC_LOGGING_SPEC")
 	loggingFormat := os.Getenv("FABRIC_LOGGING_FORMAT")
 	flogging.Init(flogging.Config{
@@ -165,6 +168,7 @@ func initializeLogging() {
 
 // Start the profiling service if enabled.
 func initializeProfilingService(conf *localconfig.TopLevel) {
+	logger.Info("====initializeProfilingService===")
 	if conf.General.Profile.Enabled {
 		go func() {
 			logger.Info("Starting Go pprof profiling service on:", conf.General.Profile.Address)
@@ -175,6 +179,7 @@ func initializeProfilingService(conf *localconfig.TopLevel) {
 }
 
 func handleSignals(handlers map[os.Signal]func()) {
+	logger.Info("====handleSignals===")
 	var signals []os.Signal
 	for sig := range handlers {
 		signals = append(signals, sig)
@@ -190,6 +195,7 @@ func handleSignals(handlers map[os.Signal]func()) {
 }
 
 func initializeClusterConfig(conf *localconfig.TopLevel) comm.ClientConfig {
+	logger.Info("====initializeClusterConfig===")
 	cc := comm.ClientConfig{
 		AsyncConnect: true,
 		KaOpts:       comm.DefaultKeepaliveOptions,
@@ -236,6 +242,8 @@ func initializeClusterConfig(conf *localconfig.TopLevel) comm.ClientConfig {
 }
 
 func initializeServerConfig(conf *localconfig.TopLevel, metricsProvider metrics.Provider) comm.ServerConfig {
+
+	logger.Info("====initializeServerConfig===")
 	// secure server config
 	secureOpts := &comm.SecureOptions{
 		UseTLS:            conf.General.TLS.Enabled,
@@ -314,6 +322,7 @@ func initializeServerConfig(conf *localconfig.TopLevel, metricsProvider metrics.
 }
 
 func grpcLeveler(ctx context.Context, fullMethod string) zapcore.Level {
+	logger.Info("====grpcLeveler===")
 	switch fullMethod {
 	case "/orderer.Cluster/Step":
 		return flogging.DisabledLevel
@@ -323,6 +332,7 @@ func grpcLeveler(ctx context.Context, fullMethod string) zapcore.Level {
 }
 
 func extractBootstrapBlock(conf *localconfig.TopLevel) *cb.Block {
+	logger.Info("====extractBootstrapBlock===")
 	var bootstrapBlock *cb.Block
 
 	// Select the bootstrapping mechanism
@@ -339,6 +349,9 @@ func extractBootstrapBlock(conf *localconfig.TopLevel) *cb.Block {
 }
 
 func initializeBootstrapChannel(genesisBlock *cb.Block, lf blockledger.Factory) {
+
+	logger.Info("====initializeBootstrapChannel===")
+
 	chainID, err := utils.GetChainIDFromBlock(genesisBlock)
 	if err != nil {
 		logger.Fatal("Failed to parse chain ID from genesis block:", err)
@@ -354,10 +367,12 @@ func initializeBootstrapChannel(genesisBlock *cb.Block, lf blockledger.Factory) 
 }
 
 func isClusterType(_ *cb.Block) bool {
+	logger.Info("====isClusterType===")
 	return false
 }
 
 func initializeGrpcServer(conf *localconfig.TopLevel, serverConfig comm.ServerConfig) *comm.GRPCServer {
+	logger.Info("====initializeGrpcServer===")
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", conf.General.ListenAddress, conf.General.ListenPort))
 	if err != nil {
 		logger.Fatal("Failed to listen:", err)
@@ -373,6 +388,7 @@ func initializeGrpcServer(conf *localconfig.TopLevel, serverConfig comm.ServerCo
 }
 
 func initializeLocalMsp(conf *localconfig.TopLevel) {
+	logger.Info("====initializeLocalMsp===")
 	// Load local MSP
 	err := mspmgmt.LoadLocalMsp(conf.General.LocalMSPDir, conf.General.BCCSP, conf.General.LocalMSPID)
 	if err != nil { // Handle errors reading the config file
@@ -389,6 +405,10 @@ func initializeMultichannelRegistrar(bootstrapBlock *cb.Block,
 	metricsProvider metrics.Provider,
 	lf blockledger.Factory,
 	callbacks ...func(bundle *channelconfig.Bundle)) *multichannel.Registrar {
+
+
+	logger.Info("====initializeMultichannelRegistrar===")
+
 	genesisBlock := extractBootstrapBlock(conf)
 	// Are we bootstrapping?
 	if len(lf.ChainIDs()) == 0 {
@@ -416,6 +436,9 @@ func initializeMultichannelRegistrar(bootstrapBlock *cb.Block,
 }
 
 func newOperationsSystem(ops localconfig.Operations, metrics localconfig.Metrics) *operations.System {
+
+	logger.Info("====newOperationsSystem===")
+
 	return operations.NewSystem(operations.Options{
 		Logger:        flogging.MustGetLogger("orderer.operations"),
 		ListenAddress: ops.ListenAddress,
@@ -441,6 +464,8 @@ func newOperationsSystem(ops localconfig.Operations, metrics localconfig.Metrics
 
 func updateTrustedRoots(srv *comm.GRPCServer, rootCASupport *comm.CASupport,
 	cm channelconfig.Resources) {
+
+	logger.Info("====updateTrustedRoots===")
 	rootCASupport.Lock()
 	defer rootCASupport.Unlock()
 
@@ -535,6 +560,9 @@ func updateTrustedRoots(srv *comm.GRPCServer, rootCASupport *comm.CASupport,
 }
 
 func updateClusterDialer(rootCASupport *comm.CASupport, clusterDialer *cluster.PredicateDialer, localClusterRootCAs [][]byte) {
+
+	logger.Info("====updateClusterDialer===")
+
 	rootCASupport.Lock()
 	defer rootCASupport.Unlock()
 
@@ -554,6 +582,9 @@ func updateClusterDialer(rootCASupport *comm.CASupport, clusterDialer *cluster.P
 }
 
 func prettyPrintStruct(i interface{}) {
+
+	logger.Info("====prettyPrintStruct===")
+
 	params := util.Flatten(i)
 	var buffer bytes.Buffer
 	for i := range params {

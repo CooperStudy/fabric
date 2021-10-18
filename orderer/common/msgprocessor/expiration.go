@@ -24,6 +24,7 @@ type resources interface {
 // NewExpirationRejectRule returns a rule that rejects messages signed by identities
 // who's identities have expired, given the capability is active
 func NewExpirationRejectRule(filterSupport resources) Rule {
+	logger.Info("====NewExpirationRejectRule===")
 	return &expirationRejectRule{filterSupport: filterSupport}
 }
 
@@ -33,6 +34,7 @@ type expirationRejectRule struct {
 
 // Apply checks whether the identity that created the envelope has expired
 func (exp *expirationRejectRule) Apply(message *common.Envelope) error {
+	logger.Info("====Apply===")
 	ordererConf, ok := exp.filterSupport.OrdererConfig()
 	if !ok {
 		logger.Panic("Programming error: orderer config not found")

@@ -7,6 +7,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"os"
 	"sync"
 
@@ -27,12 +28,15 @@ type broadcastClient struct {
 	channelID string
 }
 
+var logger = flogging.MustGetLogger("orderer.simple_clients.broadcast_config.client.go")
 // newBroadcastClient creates a simple instance of the broadcastClient interface
 func newBroadcastClient(client ab.AtomicBroadcast_BroadcastClient, channelID string, signer crypto.LocalSigner) *broadcastClient {
+	logger.Info("==newChainRequest===")
 	return &broadcastClient{client: client, channelID: channelID, signer: signer}
 }
 
 func (s *broadcastClient) broadcast(transaction []byte) error {
+	logger.Info("==broadcast===")
 	env, err := utils.CreateSignedEnvelope(cb.HeaderType_MESSAGE, s.channelID, s.signer, &cb.ConfigValue{Value: transaction}, 0, 0)
 	if err != nil {
 		panic(err)
@@ -41,6 +45,8 @@ func (s *broadcastClient) broadcast(transaction []byte) error {
 }
 
 func (s *broadcastClient) getAck() error {
+
+	logger.Info("==getAck===")
 	msg, err := s.client.Recv()
 	if err != nil {
 		return err
@@ -52,6 +58,7 @@ func (s *broadcastClient) getAck() error {
 }
 
 func main() {
+	logger.Info("==main===")
 	conf, err := localconfig.Load()
 	if err != nil {
 		fmt.Println("failed to load config:", err)

@@ -36,14 +36,20 @@ type message struct {
 // It accepts messages being delivered via Order/Configure, orders them, and then uses the blockcutter to form the messages
 // into blocks before writing to the given ledger
 func New() consensus.Consenter {
+	logger.Info("==solo==New===")
 	return &consenter{}
 }
 
 func (solo *consenter) HandleChain(support consensus.ConsenterSupport, metadata *cb.Metadata) (consensus.Chain, error) {
+
+	logger.Info("==solo==HandleChain===")
 	return newChain(support), nil
 }
 
 func newChain(support consensus.ConsenterSupport) *chain {
+
+	logger.Info("==solo==newChain===")
+
 	return &chain{
 		support:  support,
 		sendChan: make(chan *message),
@@ -52,10 +58,12 @@ func newChain(support consensus.ConsenterSupport) *chain {
 }
 
 func (ch *chain) Start() {
+	logger.Info("==solo==Start===")
 	go ch.main()
 }
 
 func (ch *chain) Halt() {
+	logger.Info("==solo==Halt===")
 	select {
 	case <-ch.exitChan:
 		// Allow multiple halts without panic
@@ -65,11 +73,15 @@ func (ch *chain) Halt() {
 }
 
 func (ch *chain) WaitReady() error {
+	logger.Info("==solo==WaitReady===")
 	return nil
 }
 
 // Order accepts normal messages for ordering
 func (ch *chain) Order(env *cb.Envelope, configSeq uint64) error {
+
+	logger.Info("==solo==Order===")
+
 	select {
 	case ch.sendChan <- &message{
 		configSeq: configSeq,
@@ -83,6 +95,10 @@ func (ch *chain) Order(env *cb.Envelope, configSeq uint64) error {
 
 // Configure accepts configuration update messages for ordering
 func (ch *chain) Configure(config *cb.Envelope, configSeq uint64) error {
+
+	logger.Info("==solo==Configure===")
+
+
 	select {
 	case ch.sendChan <- &message{
 		configSeq: configSeq,
@@ -96,10 +112,14 @@ func (ch *chain) Configure(config *cb.Envelope, configSeq uint64) error {
 
 // Errored only closes on exit
 func (ch *chain) Errored() <-chan struct{} {
+
+	logger.Info("==solo==Errored===")
+
 	return ch.exitChan
 }
 
 func (ch *chain) main() {
+	logger.Info("==solo==main===")
 	var timer <-chan time.Time
 	var err error
 

@@ -36,6 +36,7 @@ func newChainSupport(
 	signer crypto.LocalSigner,
 	blockcutterMetrics *blockcutter.Metrics,
 ) *ChainSupport {
+	logger.Info("====newChainSupport===")
 	// Read in the last block and metadata for the channel
 	lastBlock := blockledger.GetBlock(ledgerResources, ledgerResources.Height()-1)
 

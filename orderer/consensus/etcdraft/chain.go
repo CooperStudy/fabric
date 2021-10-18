@@ -152,6 +152,7 @@ func NewChain(
 	puller BlockPuller,
 	observeC chan<- uint64) (*Chain, error) {
 
+	logger.Info("====NewChain===")
 	lg := opts.Logger.With("channel", support.ChainID(), "node", opts.RaftID)
 
 	fresh := !wal.Exist(opts.WALDir)
@@ -207,6 +208,7 @@ func NewChain(
 
 // Start instructs the orderer to begin serving the chain and keep it current.
 func (c *Chain) Start() {
+	logger.Info("====Start===")
 	c.logger.Infof("Starting Raft node")
 
 	// DO NOT use Applied option in config, see https://github.com/etcd-io/etcd/issues/10217
@@ -249,11 +251,13 @@ func (c *Chain) Start() {
 
 // Order submits normal type transactions for ordering.
 func (c *Chain) Order(env *common.Envelope, configSeq uint64) error {
+	logger.Info("====Order===")
 	return c.Submit(&orderer.SubmitRequest{LastValidationSeq: configSeq, Content: env, Channel: c.channelID}, 0)
 }
 
 // Configure submits config type transactions for ordering.
 func (c *Chain) Configure(env *common.Envelope, configSeq uint64) error {
+	logger.Info("====Configure===")
 	if err := c.checkConfigUpdateValidity(env); err != nil {
 		return err
 	}
@@ -262,6 +266,7 @@ func (c *Chain) Configure(env *common.Envelope, configSeq uint64) error {
 
 // Validate the config update for being of Type A or Type B as described in the design doc.
 func (c *Chain) checkConfigUpdateValidity(ctx *common.Envelope) error {
+	logger.Info("====checkConfigUpdateValidity===")
 	var err error
 	payload, err := utils.UnmarshalPayload(ctx.Payload)
 	if err != nil {
@@ -299,6 +304,7 @@ func (c *Chain) checkConfigUpdateValidity(ctx *common.Envelope) error {
 //
 // In any other case, it returns right away.
 func (c *Chain) WaitReady() error {
+	logger.Info("====WaitReady===")
 	if err := c.isRunning(); err != nil {
 		return err
 	}
@@ -318,11 +324,15 @@ func (c *Chain) WaitReady() error {
 
 // Errored returns a channel that closes when the chain stops.
 func (c *Chain) Errored() <-chan struct{} {
+	logger.Info("====Errored===")
 	return c.doneC
 }
 
 // Halt stops the chain.
 func (c *Chain) Halt() {
+
+	logger.Info("====Halt===")
+
 	select {
 	case <-c.startC:
 	default:
@@ -339,6 +349,9 @@ func (c *Chain) Halt() {
 }
 
 func (c *Chain) isRunning() error {
+
+	logger.Info("====isRunning===")
+
 	select {
 	case <-c.startC:
 	default:
@@ -356,6 +369,9 @@ func (c *Chain) isRunning() error {
 
 // Step passes the given StepRequest message to the raft.Node instance
 func (c *Chain) Step(req *orderer.StepRequest, sender uint64) error {
+
+	logger.Info("====Step===")
+
 	if err := c.isRunning(); err != nil {
 		return err
 	}
@@ -377,6 +393,9 @@ func (c *Chain) Step(req *orderer.StepRequest, sender uint64) error {
 // - the actual leader via the transport mechanism
 // The call fails if there's no leader elected yet.
 func (c *Chain) Submit(req *orderer.SubmitRequest, sender uint64) error {
+
+	logger.Info("====Submit===")
+
 	if err := c.isRunning(); err != nil {
 		return err
 	}
@@ -403,6 +422,9 @@ func (c *Chain) Submit(req *orderer.SubmitRequest, sender uint64) error {
 }
 
 func (c *Chain) serveRequest() {
+
+	logger.Info("====serveRequest===")
+
 	ticking := false
 	timer := c.clock.NewTimer(time.Second)
 	// we need a stopped timer rather than nil,
@@ -489,6 +511,9 @@ func (c *Chain) serveRequest() {
 }
 
 func (c *Chain) writeBlock(b block) {
+
+	logger.Info("====writeBlock===")
+
 	c.BlockCreator.commitBlock(b.b)
 	if utils.IsConfigBlock(b.b) {
 		if err := c.writeConfigBlock(b); err != nil {
@@ -512,6 +537,8 @@ func (c *Chain) writeBlock(b block) {
 //   -- err error; the error encountered, if any.
 // It takes care of config messages as well as the revalidation of messages if the config sequence has advanced.
 func (c *Chain) ordered(msg *orderer.SubmitRequest) (batches [][]*common.Envelope, pending bool, err error) {
+	logger.Info("====ordered===")
+
 	seq := c.support.Sequence()
 
 	if c.isConfig(msg.Content) {
@@ -542,6 +569,8 @@ func (c *Chain) ordered(msg *orderer.SubmitRequest) (batches [][]*common.Envelop
 }
 
 func (c *Chain) commitBatches(batches ...[]*common.Envelope) error {
+	logger.Info("====commitBatches===")
+
 	for _, batch := range batches {
 		b := c.BlockCreator.createNextBlock(batch)
 		data := utils.MarshalOrPanic(b)

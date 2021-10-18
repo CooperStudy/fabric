@@ -7,6 +7,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"os"
 
 	genesisconfig "github.com/hyperledger/fabric/common/tools/configtxgen/localconfig"
@@ -21,7 +22,9 @@ type broadcastClient struct {
 	ab.AtomicBroadcast_BroadcastClient
 }
 
+var logger = flogging.MustGetLogger("orderer.simple_clients.broadcast_config.client.go")
 func (bc *broadcastClient) broadcast(env *cb.Envelope) error {
+	logger.Info("==solo==broadcast===")
 	var err error
 	var resp *ab.BroadcastResponse
 
@@ -56,6 +59,7 @@ var conf *localconfig.TopLevel
 var genConf *genesisconfig.Profile
 
 func init() {
+	logger.Info("==solo==init===")
 	var err error
 	conf, err = localconfig.Load()
 	if err != nil {
@@ -73,6 +77,7 @@ func init() {
 }
 
 func main() {
+	logger.Info("===main===")
 	cmd := new(cmdImpl)
 	var srv string
 

@@ -8,6 +8,7 @@ package metadata
 
 import (
 	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"runtime"
 
 	common "github.com/hyperledger/fabric/common/metadata"
@@ -22,8 +23,9 @@ var Version string
 
 // Program name
 const ProgramName = "orderer"
-
+var logger = flogging.MustGetLogger("orderer.common.metadata.metadata.go")
 func GetVersionInfo() string {
+	logger.Info("====GetVersionInfo===")
 	Version = common.Version
 	if Version == "" {
 		Version = "development build"

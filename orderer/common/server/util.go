@@ -20,6 +20,9 @@ import (
 )
 
 func createLedgerFactory(conf *config.TopLevel) (blockledger.Factory, string) {
+
+	logger.Info("===createLedgerFactory===")
+
 	var lf blockledger.Factory
 	var ld string
 	switch conf.General.LedgerType {
@@ -51,6 +54,9 @@ func createLedgerFactory(conf *config.TopLevel) (blockledger.Factory, string) {
 }
 
 func createTempDir(dirPrefix string) string {
+
+	logger.Info("===createTempDir===")
+
 	dirPath, err := ioutil.TempDir("", dirPrefix)
 	if err != nil {
 		logger.Panic("Error creating temp dir:", err)
@@ -59,6 +65,9 @@ func createTempDir(dirPrefix string) string {
 }
 
 func createSubDir(parentDirPath string, subDir string) (string, bool) {
+
+	logger.Info("===createSubDir===")
+
 	var created bool
 	subDirPath := filepath.Join(parentDirPath, subDir)
 	if _, err := os.Stat(subDirPath); err != nil {

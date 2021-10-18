@@ -16,6 +16,9 @@ import (
 )
 
 func addPlatformSignals(sigs map[os.Signal]func()) map[os.Signal]func() {
+
+	logger.Info("===addPlatformSignals===")
+
 	sigs[syscall.SIGUSR1] = func() { diag.LogGoRoutines(logger.Named("diag")) }
 	return sigs
 }

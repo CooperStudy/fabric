@@ -41,6 +41,7 @@ type BlockWriter struct {
 }
 
 func newBlockWriter(lastBlock *cb.Block, r *Registrar, support blockWriterSupport) *BlockWriter {
+	logger.Info("====newBlockWriter===")
 	bw := &BlockWriter{
 		support:       support,
 		lastConfigSeq: support.Sequence(),

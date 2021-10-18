@@ -20,6 +20,7 @@ type Support interface {
 
 // New creates a size filter which rejects messages larger than maxBytes
 func NewSizeFilter(support Support) *MaxBytesRule {
+	logger.Info("====NewSizeFilter===")
 	return &MaxBytesRule{support: support}
 }
 
@@ -30,6 +31,7 @@ type MaxBytesRule struct {
 
 // Apply returns an error if the message exceeds the configured absolute max batch size.
 func (r *MaxBytesRule) Apply(message *cb.Envelope) error {
+	logger.Info("====Apply===")
 	maxBytes := r.support.BatchSize().AbsoluteMaxBytes
 	if size := messageByteSize(message); size > maxBytes {
 		return fmt.Errorf("message payload is %d bytes and exceeds maximum allowed %d bytes", size, maxBytes)
@@ -38,6 +40,7 @@ func (r *MaxBytesRule) Apply(message *cb.Envelope) error {
 }
 
 func messageByteSize(message *cb.Envelope) uint32 {
+	logger.Info("====messageByteSize===")
 	// XXX this is good approximation, but is going to be a few bytes short, because of the field specifiers in the proto marshaling
 	// this should probably be padded to determine the true exact marshaled size
 	return uint32(len(message.Payload) + len(message.Signature))

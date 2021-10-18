@@ -27,6 +27,7 @@ var EmptyRejectRule = Rule(emptyRejectRule{})
 type emptyRejectRule struct{}
 
 func (a emptyRejectRule) Apply(message *ab.Envelope) error {
+	logger.Info("==emptyRejectRule==Apply===")
 	if message.Payload == nil {
 		return ErrEmptyMessage
 	}
@@ -39,6 +40,7 @@ var AcceptRule = Rule(acceptRule{})
 type acceptRule struct{}
 
 func (a acceptRule) Apply(message *ab.Envelope) error {
+	logger.Info("==acceptRule==Apply===")
 	return nil
 }
 
@@ -49,6 +51,7 @@ type RuleSet struct {
 
 // NewRuleSet creates a new RuleSet with the given ordered list of Rules
 func NewRuleSet(rules []Rule) *RuleSet {
+	logger.Info("====NewRuleSet===")
 	return &RuleSet{
 		rules: rules,
 	}
@@ -56,6 +59,7 @@ func NewRuleSet(rules []Rule) *RuleSet {
 
 // Apply applies the rules given for this set in order, returning nil on valid or err on invalid
 func (rs *RuleSet) Apply(message *ab.Envelope) error {
+	logger.Info("===RuleSet=Apply===")
 	for _, rule := range rs.rules {
 		err := rule.Apply(message)
 		if err != nil {

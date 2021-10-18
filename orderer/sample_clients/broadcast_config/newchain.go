@@ -11,6 +11,7 @@ import (
 )
 
 func newChainRequest(consensusType, creationPolicy, newChannelID string) *cb.Envelope {
+	logger.Info("==newChainRequest===")
 	env, err := encoder.MakeChannelCreationTransaction(newChannelID, localmsp.NewSigner(), genesisconfig.Load(genesisconfig.SampleSingleMSPChannelProfile))
 	if err != nil {
 		panic(err)

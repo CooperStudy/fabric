@@ -33,6 +33,7 @@ type blockCreator struct {
 }
 
 func newBlockCreator(lastBlock *cb.Block, logger *flogging.FabricLogger) *blockCreator {
+	logger.Info("===newBlockCreator===")
 	if lastBlock == nil {
 		logger.Panic("block creator initialized with nil last block")
 	}
@@ -52,7 +53,10 @@ func newBlockCreator(lastBlock *cb.Block, logger *flogging.FabricLogger) *blockC
 // Returns the created block if the block could be created else nil.
 // It can fail when the there are `createdBlocksBuffersize` blocks already
 // created and no more can be accomodated in the `CreatedBlocks` channel.
+var logger = flogging.MustGetLogger("orderer.consensus.etcdraft.blockcreator.go")
+
 func (bc *blockCreator) createNextBlock(messages []*cb.Envelope) *cb.Block {
+	logger.Info("====createNextBlock===")
 	previousBlockHash := bc.LastCreatedBlock.Header.Hash()
 
 	data := &cb.BlockData{
@@ -85,6 +89,7 @@ func (bc *blockCreator) createNextBlock(messages []*cb.Envelope) *cb.Block {
 // Subsequent blocks will be created over the block that was last committed
 // using CommitBlock.
 func (bc *blockCreator) resetCreatedBlocks() {
+	logger.Info("====resetCreatedBlocks===")
 	// We should not recreate CreatedBlocks channel since it can lead to
 	// data races on its access
 	for len(bc.CreatedBlocks) > 0 {
@@ -99,6 +104,7 @@ func (bc *blockCreator) resetCreatedBlocks() {
 // which blocks have been committed. If the committed block is divergent from
 // the stack of created blocks then the stack is reset.
 func (bc *blockCreator) commitBlock(block *cb.Block) {
+	logger.Info("====commitBlock===")
 	bc.LastCommittedBlock = block
 
 	// check if the committed block diverges from the created blocks
