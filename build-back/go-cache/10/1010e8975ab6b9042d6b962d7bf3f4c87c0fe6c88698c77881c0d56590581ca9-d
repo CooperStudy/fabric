@@ -1,0 +1,6 @@
+endorser.cover.go
+plugin_endorser.cover.go
+pvtrwset_assembler.cover.go
+state.cover.go
+support.cover.go
+./pvtrwset_assembler_test.go

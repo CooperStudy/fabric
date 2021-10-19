@@ -1,0 +1,6 @@
+./cc_package.go
+./chaincode_stub.go
+./fs_support.go
+./query_executor.go
+./state_query_iterator.go
+./sysccprovider.go

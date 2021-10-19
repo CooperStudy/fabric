@@ -1,0 +1,367 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/comm/connection.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package comm; import _cover_atomic_ "sync/atomic"
+
+import (
+	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/pem"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"sync"
+	"time"
+
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/core/config"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+)
+
+const defaultTimeout = time.Second * 3
+
+var commLogger = flogging.MustGetLogger("comm")
+var credSupport *CredentialSupport
+var once sync.Once
+
+// CASupport type manages certificate authorities scoped by channel
+type CASupport struct {
+	sync.RWMutex
+	AppRootCAsByChain     map[string][][]byte
+	OrdererRootCAsByChain map[string][][]byte
+	ClientRootCAs         [][]byte
+	ServerRootCAs         [][]byte
+}
+
+// CredentialSupport type manages credentials used for gRPC client connections
+type CredentialSupport struct {
+	*CASupport
+	clientCert tls.Certificate
+}
+
+// GetCredentialSupport returns the singleton CredentialSupport instance
+func GetCredentialSupport() *CredentialSupport {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[0], 1);
+
+	once.Do(func() {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[2], 1);
+		credSupport = &CredentialSupport{
+			CASupport: &CASupport{
+				AppRootCAsByChain:     make(map[string][][]byte),
+				OrdererRootCAsByChain: make(map[string][][]byte),
+			},
+		}
+	})
+	_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[1], 1);return credSupport
+}
+
+// GetServerRootCAs returns the PEM-encoded root certificates for all of the
+// application and orderer organizations defined for all chains.  The root
+// certificates returned should be used to set the trusted server roots for
+// TLS clients.
+func (cas *CASupport) GetServerRootCAs() (appRootCAs, ordererRootCAs [][]byte) {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[3], 1);
+	cas.RLock()
+	defer cas.RUnlock()
+
+	appRootCAs = [][]byte{}
+	ordererRootCAs = [][]byte{}
+
+	for _, appRootCA := range cas.AppRootCAsByChain {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[6], 1);
+		appRootCAs = append(appRootCAs, appRootCA...)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[4], 1);for _, ordererRootCA := range cas.OrdererRootCAsByChain {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[7], 1);
+		ordererRootCAs = append(ordererRootCAs, ordererRootCA...)
+	}
+
+	// also need to append statically configured root certs
+	_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[5], 1);appRootCAs = append(appRootCAs, cas.ServerRootCAs...)
+	return appRootCAs, ordererRootCAs
+}
+
+// GetClientRootCAs returns the PEM-encoded root certificates for all of the
+// application and orderer organizations defined for all chains.  The root
+// certificates returned should be used to set the trusted client roots for
+// TLS servers.
+func (cas *CASupport) GetClientRootCAs() (appRootCAs, ordererRootCAs [][]byte) {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[8], 1);
+	cas.RLock()
+	defer cas.RUnlock()
+
+	appRootCAs = [][]byte{}
+	ordererRootCAs = [][]byte{}
+
+	for _, appRootCA := range cas.AppRootCAsByChain {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[11], 1);
+		appRootCAs = append(appRootCAs, appRootCA...)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[9], 1);for _, ordererRootCA := range cas.OrdererRootCAsByChain {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[12], 1);
+		ordererRootCAs = append(ordererRootCAs, ordererRootCA...)
+	}
+
+	// also need to append statically configured root certs
+	_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[10], 1);appRootCAs = append(appRootCAs, cas.ClientRootCAs...)
+	return appRootCAs, ordererRootCAs
+}
+
+// SetClientCertificate sets the tls.Certificate to use for gRPC client
+// connections
+func (cs *CredentialSupport) SetClientCertificate(cert tls.Certificate) {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[13], 1);
+	cs.clientCert = cert
+}
+
+// GetClientCertificate returns the client certificate of the CredentialSupport
+func (cs *CredentialSupport) GetClientCertificate() tls.Certificate {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[14], 1);
+	return cs.clientCert
+}
+
+// GetDeliverServiceCredentials returns GRPC transport credentials for given channel to be used by GRPC
+// clients which communicate with ordering service endpoints.
+// If the channel isn't found, error is returned.
+func (cs *CredentialSupport) GetDeliverServiceCredentials(channelID string) (credentials.TransportCredentials, error) {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[15], 1);
+	cs.RLock()
+	defer cs.RUnlock()
+
+	var creds credentials.TransportCredentials
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{cs.clientCert},
+	}
+	certPool := x509.NewCertPool()
+
+	rootCACerts, exists := cs.OrdererRootCAsByChain[channelID]
+	if !exists {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[18], 1);
+		commLogger.Errorf("Attempted to obtain root CA certs of a non existent channel: %s", channelID)
+		return nil, fmt.Errorf("didn't find any root CA certs for channel %s", channelID)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[16], 1);for _, cert := range rootCACerts {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[19], 1);
+		block, _ := pem.Decode(cert)
+		if block != nil {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[20], 1);
+			cert, err := x509.ParseCertificate(block.Bytes)
+			if err == nil {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[21], 1);
+				certPool.AddCert(cert)
+			} else{ _cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[22], 1);{
+				commLogger.Warningf("Failed to add root cert to credentials (%s)", err)
+			}}
+		} else{ _cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[23], 1);{
+			commLogger.Warning("Failed to add root cert to credentials")
+		}}
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[17], 1);tlsConfig.RootCAs = certPool
+	creds = credentials.NewTLS(tlsConfig)
+	return creds, nil
+}
+
+// GetPeerCredentials returns GRPC transport credentials for use by GRPC
+// clients which communicate with remote peer endpoints.
+func (cs *CredentialSupport) GetPeerCredentials() credentials.TransportCredentials {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[24], 1);
+	var creds credentials.TransportCredentials
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{cs.clientCert},
+	}
+	certPool := x509.NewCertPool()
+	// loop through the server root CAs
+	roots, _ := cs.GetServerRootCAs()
+	for _, root := range roots {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[26], 1);
+		err := AddPemToCertPool(root, certPool)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[27], 1);
+			commLogger.Warningf("Failed adding certificates to peer's client TLS trust pool: %s", err)
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[25], 1);tlsConfig.RootCAs = certPool
+	creds = credentials.NewTLS(tlsConfig)
+	return creds
+}
+
+func getEnv(key, def string) string {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[28], 1);
+	val := os.Getenv(key)
+	if len(val) > 0 {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[29], 1);
+		return val
+	} else{ _cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[30], 1);{
+		return def
+	}}
+}
+
+// NewClientConnectionWithAddress Returns a new grpc.ClientConn to the given address
+func NewClientConnectionWithAddress(peerAddress string, block bool, tslEnabled bool,
+	creds credentials.TransportCredentials, ka *KeepaliveOptions) (*grpc.ClientConn, error) {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[31], 1);
+	var opts []grpc.DialOption
+
+	if ka != nil {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[36], 1);
+		opts = ClientKeepaliveOptions(ka)
+	} else{ _cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[37], 1);{
+		// set to the default options
+		opts = ClientKeepaliveOptions(DefaultKeepaliveOptions)
+	}}
+
+	_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[32], 1);if tslEnabled {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[38], 1);
+		opts = append(opts, grpc.WithTransportCredentials(creds))
+	} else{ _cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[39], 1);{
+		opts = append(opts, grpc.WithInsecure())
+	}}
+	_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[33], 1);if block {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[40], 1);
+		opts = append(opts, grpc.WithBlock())
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[34], 1);opts = append(opts, grpc.WithDefaultCallOptions(
+		grpc.MaxCallRecvMsgSize(MaxRecvMsgSize),
+		grpc.MaxCallSendMsgSize(MaxSendMsgSize),
+	))
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+	conn, err := grpc.DialContext(ctx, peerAddress, opts...)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[41], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[35], 1);return conn, err
+}
+
+func InitTLSForShim(key, certStr string) credentials.TransportCredentials {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[42], 1);
+	var sn string
+	priv, err := base64.StdEncoding.DecodeString(key)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[48], 1);
+		commLogger.Panicf("failed decoding private key from base64, string: %s, error: %v", key, err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[43], 1);pub, err := base64.StdEncoding.DecodeString(certStr)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[49], 1);
+		commLogger.Panicf("failed decoding public key from base64, string: %s, error: %v", certStr, err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[44], 1);cert, err := tls.X509KeyPair(pub, priv)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[50], 1);
+		commLogger.Panicf("failed loading certificate: %v", err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[45], 1);b, err := ioutil.ReadFile(config.GetPath("peer.tls.rootcert.file"))
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[51], 1);
+		commLogger.Panicf("failed loading root ca cert: %v", err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[46], 1);cp := x509.NewCertPool()
+	if !cp.AppendCertsFromPEM(b) {_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[52], 1);
+		commLogger.Panicf("failed to append certificates")
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_643230363037383562363632.Count[47], 1);return credentials.NewTLS(&tls.Config{
+		Certificates: []tls.Certificate{cert},
+		RootCAs:      cp,
+		ServerName:   sn,
+	})
+}
+
+var GoCover_2_643230363037383562363632 = struct {
+	Count     [53]uint32
+	Pos       [3 * 53]uint32
+	NumStmt   [53]uint16
+} {
+	Pos: [3 * 53]uint32{
+		49, 51, 0x110030, // [0]
+		59, 59, 0x140002, // [1]
+		51, 58, 0x30011, // [2]
+		66, 73, 0x320050, // [3]
+		77, 77, 0x3a0002, // [4]
+		82, 83, 0x230002, // [5]
+		73, 75, 0x30032, // [6]
+		77, 79, 0x3003a, // [7]
+		90, 97, 0x320050, // [8]
+		101, 101, 0x3a0002, // [9]
+		106, 107, 0x230002, // [10]
+		97, 99, 0x30032, // [11]
+		101, 103, 0x3003a, // [12]
+		112, 114, 0x20049, // [13]
+		117, 119, 0x20045, // [14]
+		124, 135, 0xd0077, // [15]
+		140, 140, 0x230002, // [16]
+		153, 155, 0x130002, // [17]
+		135, 138, 0x3000d, // [18]
+		140, 142, 0x130023, // [19]
+		142, 144, 0x120013, // [20]
+		144, 146, 0x50012, // [21]
+		146, 148, 0x5000a, // [22]
+		149, 151, 0x40009, // [23]
+		160, 168, 0x1d0054, // [24]
+		174, 176, 0xe0002, // [25]
+		168, 170, 0x11001d, // [26]
+		170, 172, 0x40011, // [27]
+		179, 181, 0x120025, // [28]
+		181, 183, 0x30012, // [29]
+		183, 185, 0x30008, // [30]
+		190, 193, 0xf005a, // [31]
+		200, 200, 0x100002, // [32]
+		205, 205, 0xb0002, // [33]
+		208, 215, 0x100002, // [34]
+		218, 218, 0x120002, // [35]
+		193, 195, 0x3000f, // [36]
+		195, 198, 0x30008, // [37]
+		200, 202, 0x30010, // [38]
+		202, 204, 0x30008, // [39]
+		205, 207, 0x3000b, // [40]
+		215, 217, 0x30010, // [41]
+		221, 224, 0x10004b, // [42]
+		227, 228, 0x100002, // [43]
+		231, 232, 0x100002, // [44]
+		235, 236, 0x100002, // [45]
+		239, 240, 0x1f0002, // [46]
+		243, 247, 0x40002, // [47]
+		224, 226, 0x30010, // [48]
+		228, 230, 0x30010, // [49]
+		232, 234, 0x30010, // [50]
+		236, 238, 0x30010, // [51]
+		240, 242, 0x3001f, // [52]
+	},
+	NumStmt: [53]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		5, // 3
+		1, // 4
+		2, // 5
+		1, // 6
+		1, // 7
+		5, // 8
+		1, // 9
+		2, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		7, // 15
+		1, // 16
+		3, // 17
+		2, // 18
+		2, // 19
+		2, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+		5, // 24
+		3, // 25
+		2, // 26
+		1, // 27
+		2, // 28
+		1, // 29
+		1, // 30
+		2, // 31
+		1, // 32
+		1, // 33
+		5, // 34
+		1, // 35
+		1, // 36
+		1, // 37
+		1, // 38
+		1, // 39
+		1, // 40
+		1, // 41
+		3, // 42
+		2, // 43
+		2, // 44
+		2, // 45
+		2, // 46
+		1, // 47
+		1, // 48
+		1, // 49
+		1, // 50
+		1, // 51
+		1, // 52
+	},
+}
+var _ = _cover_atomic_.LoadUint32

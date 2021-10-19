@@ -1,0 +1,498 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwsetutil/rwset_builder.go:1
+/*
+Copyright IBM Corp. 2016 All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+		 http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package rwsetutil; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/core/ledger"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/version"
+	"github.com/hyperledger/fabric/core/ledger/util"
+	"github.com/hyperledger/fabric/protos/ledger/rwset"
+	"github.com/hyperledger/fabric/protos/ledger/rwset/kvrwset"
+)
+
+var logger = flogging.MustGetLogger("rwsetutil")
+
+// RWSetBuilder helps building the read-write set
+type RWSetBuilder struct {
+	pubRwBuilderMap map[string]*nsPubRwBuilder
+	pvtRwBuilderMap map[string]*nsPvtRwBuilder
+}
+
+type nsPubRwBuilder struct {
+	namespace         string
+	readMap           map[string]*kvrwset.KVRead //for mvcc validation
+	writeMap          map[string]*kvrwset.KVWrite
+	metadataWriteMap  map[string]*kvrwset.KVMetadataWrite
+	rangeQueriesMap   map[rangeQueryKey]*kvrwset.RangeQueryInfo //for phantom read validation
+	rangeQueriesKeys  []rangeQueryKey
+	collHashRwBuilder map[string]*collHashRwBuilder
+}
+
+type collHashRwBuilder struct {
+	collName         string
+	readMap          map[string]*kvrwset.KVReadHash
+	writeMap         map[string]*kvrwset.KVWriteHash
+	metadataWriteMap map[string]*kvrwset.KVMetadataWriteHash
+	pvtDataHash      []byte
+}
+
+type nsPvtRwBuilder struct {
+	namespace         string
+	collPvtRwBuilders map[string]*collPvtRwBuilder
+}
+
+type collPvtRwBuilder struct {
+	collectionName   string
+	writeMap         map[string]*kvrwset.KVWrite
+	metadataWriteMap map[string]*kvrwset.KVMetadataWrite
+}
+
+type rangeQueryKey struct {
+	startKey     string
+	endKey       string
+	itrExhausted bool
+}
+
+// NewRWSetBuilder constructs a new instance of RWSetBuilder
+func NewRWSetBuilder() *RWSetBuilder {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[0], 1);
+	return &RWSetBuilder{make(map[string]*nsPubRwBuilder), make(map[string]*nsPvtRwBuilder)}
+}
+
+// AddToReadSet adds a key and corresponding version to the read-set
+func (b *RWSetBuilder) AddToReadSet(ns string, key string, version *version.Height) {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[1], 1);
+	nsPubRwBuilder := b.getOrCreateNsPubRwBuilder(ns)
+	nsPubRwBuilder.readMap[key] = NewKVRead(key, version)
+}
+
+// AddToWriteSet adds a key and value to the write-set
+func (b *RWSetBuilder) AddToWriteSet(ns string, key string, value []byte) {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[2], 1);
+	nsPubRwBuilder := b.getOrCreateNsPubRwBuilder(ns)
+	nsPubRwBuilder.writeMap[key] = newKVWrite(key, value)
+}
+
+// AddToMetadataWriteSet adds a metadata to a key in the write-set
+// A nil/empty-map for 'metadata' parameter indicates the delete of the metadata
+func (b *RWSetBuilder) AddToMetadataWriteSet(ns, key string, metadata map[string][]byte) {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[3], 1);
+	b.getOrCreateNsPubRwBuilder(ns).
+		metadataWriteMap[key] = mapToMetadataWrite(key, metadata)
+}
+
+// AddToRangeQuerySet adds a range query info for performing phantom read validation
+func (b *RWSetBuilder) AddToRangeQuerySet(ns string, rqi *kvrwset.RangeQueryInfo) {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[4], 1);
+	nsPubRwBuilder := b.getOrCreateNsPubRwBuilder(ns)
+	key := rangeQueryKey{rqi.StartKey, rqi.EndKey, rqi.ItrExhausted}
+	_, ok := nsPubRwBuilder.rangeQueriesMap[key]
+	if !ok {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[5], 1);
+		nsPubRwBuilder.rangeQueriesMap[key] = rqi
+		nsPubRwBuilder.rangeQueriesKeys = append(nsPubRwBuilder.rangeQueriesKeys, key)
+	}
+}
+
+// AddToHashedReadSet adds a key and corresponding version to the hashed read-set
+func (b *RWSetBuilder) AddToHashedReadSet(ns string, coll string, key string, version *version.Height) {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[6], 1);
+	kvReadHash := newPvtKVReadHash(key, version)
+	b.getOrCreateCollHashedRwBuilder(ns, coll).readMap[key] = kvReadHash
+}
+
+// AddToPvtAndHashedWriteSet adds a key and value to the private and hashed write-set
+func (b *RWSetBuilder) AddToPvtAndHashedWriteSet(ns string, coll string, key string, value []byte) {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[7], 1);
+	kvWrite, kvWriteHash := newPvtKVWriteAndHash(key, value)
+	b.getOrCreateCollPvtRwBuilder(ns, coll).writeMap[key] = kvWrite
+	b.getOrCreateCollHashedRwBuilder(ns, coll).writeMap[key] = kvWriteHash
+}
+
+// AddToHashedMetadataWriteSet adds a metadata to a key in the hashed write-set
+func (b *RWSetBuilder) AddToHashedMetadataWriteSet(ns, coll, key string, metadata map[string][]byte) {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[8], 1);
+	// pvt write set just need the key; not the entire metadata. The metadata is stored only
+	// by the hashed key. Pvt write-set need to know the key for handling a special case where only
+	// metadata is updated so, the version of the key present in the pvt data should be incremented
+	b.getOrCreateCollPvtRwBuilder(ns, coll).
+		metadataWriteMap[key] = &kvrwset.KVMetadataWrite{Key: key, Entries: nil}
+	b.getOrCreateCollHashedRwBuilder(ns, coll).
+		metadataWriteMap[key] = mapToMetadataWriteHash(key, metadata)
+}
+
+// GetTxSimulationResults returns the proto bytes of public rwset
+// (public data + hashes of private data) and the private rwset for the transaction
+func (b *RWSetBuilder) GetTxSimulationResults() (*ledger.TxSimulationResults, error) {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[9], 1);
+	pvtData := b.getTxPvtReadWriteSet()
+	var err error
+
+	var pubDataProto *rwset.TxReadWriteSet
+	var pvtDataProto *rwset.TxPvtReadWriteSet
+
+	// Populate the collection-level hashes into pub rwset and compute the proto bytes for pvt rwset
+	if pvtData != nil {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[12], 1);
+		if pvtDataProto, err = pvtData.toProtoMsg(); err != nil {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[14], 1);
+			return nil, err
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[13], 1);for _, ns := range pvtDataProto.NsPvtRwset {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[15], 1);
+			for _, coll := range ns.CollectionPvtRwset {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[16], 1);
+				b.setPvtCollectionHash(ns.Namespace, coll.CollectionName, coll.Rwset)
+			}
+		}
+	}
+	// Compute the proto bytes for pub rwset
+	_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[10], 1);pubSet := b.GetTxReadWriteSet()
+	if pubSet != nil {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[17], 1);
+		if pubDataProto, err = b.GetTxReadWriteSet().toProtoMsg(); err != nil {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[18], 1);
+			return nil, err
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[11], 1);return &ledger.TxSimulationResults{
+		PubSimulationResults: pubDataProto,
+		PvtSimulationResults: pvtDataProto,
+	}, nil
+}
+
+func (b *RWSetBuilder) setPvtCollectionHash(ns string, coll string, pvtDataProto []byte) {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[19], 1);
+	collHashedBuilder := b.getOrCreateCollHashedRwBuilder(ns, coll)
+	collHashedBuilder.pvtDataHash = util.ComputeHash(pvtDataProto)
+}
+
+// GetTxReadWriteSet returns the read-write set
+// TODO make this function private once txmgr starts using new function `GetTxSimulationResults` introduced here
+func (b *RWSetBuilder) GetTxReadWriteSet() *TxRwSet {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[20], 1);
+	sortedNsPubBuilders := []*nsPubRwBuilder{}
+	util.GetValuesBySortedKeys(&(b.pubRwBuilderMap), &sortedNsPubBuilders)
+
+	var nsPubRwSets []*NsRwSet
+	for _, nsPubRwBuilder := range sortedNsPubBuilders {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[22], 1);
+		nsPubRwSets = append(nsPubRwSets, nsPubRwBuilder.build())
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[21], 1);return &TxRwSet{NsRwSets: nsPubRwSets}
+}
+
+// getTxPvtReadWriteSet returns the private read-write set
+func (b *RWSetBuilder) getTxPvtReadWriteSet() *TxPvtRwSet {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[23], 1);
+	sortedNsPvtBuilders := []*nsPvtRwBuilder{}
+	util.GetValuesBySortedKeys(&(b.pvtRwBuilderMap), &sortedNsPvtBuilders)
+
+	var nsPvtRwSets []*NsPvtRwSet
+	for _, nsPvtRwBuilder := range sortedNsPvtBuilders {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[26], 1);
+		nsPvtRwSets = append(nsPvtRwSets, nsPvtRwBuilder.build())
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[24], 1);if len(nsPvtRwSets) == 0 {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[27], 1);
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[25], 1);return &TxPvtRwSet{NsPvtRwSet: nsPvtRwSets}
+}
+
+func (b *nsPubRwBuilder) build() *NsRwSet {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[28], 1);
+	var readSet []*kvrwset.KVRead
+	var writeSet []*kvrwset.KVWrite
+	var metadataWriteSet []*kvrwset.KVMetadataWrite
+	var rangeQueriesInfo []*kvrwset.RangeQueryInfo
+	var collHashedRwSet []*CollHashedRwSet
+	//add read set
+	util.GetValuesBySortedKeys(&(b.readMap), &readSet)
+	//add write set
+	util.GetValuesBySortedKeys(&(b.writeMap), &writeSet)
+	util.GetValuesBySortedKeys(&(b.metadataWriteMap), &metadataWriteSet)
+	//add range query info
+	for _, key := range b.rangeQueriesKeys {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[31], 1);
+		rangeQueriesInfo = append(rangeQueriesInfo, b.rangeQueriesMap[key])
+	}
+	// add hashed rws for private collections
+	_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[29], 1);sortedCollBuilders := []*collHashRwBuilder{}
+	util.GetValuesBySortedKeys(&(b.collHashRwBuilder), &sortedCollBuilders)
+	for _, collBuilder := range sortedCollBuilders {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[32], 1);
+		collHashedRwSet = append(collHashedRwSet, collBuilder.build())
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[30], 1);return &NsRwSet{
+		NameSpace: b.namespace,
+		KvRwSet: &kvrwset.KVRWSet{
+			Reads:            readSet,
+			Writes:           writeSet,
+			MetadataWrites:   metadataWriteSet,
+			RangeQueriesInfo: rangeQueriesInfo,
+		},
+		CollHashedRwSets: collHashedRwSet,
+	}
+}
+
+func (b *nsPvtRwBuilder) build() *NsPvtRwSet {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[33], 1);
+	sortedCollBuilders := []*collPvtRwBuilder{}
+	util.GetValuesBySortedKeys(&(b.collPvtRwBuilders), &sortedCollBuilders)
+
+	var collPvtRwSets []*CollPvtRwSet
+	for _, collBuilder := range sortedCollBuilders {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[35], 1);
+		collPvtRwSets = append(collPvtRwSets, collBuilder.build())
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[34], 1);return &NsPvtRwSet{NameSpace: b.namespace, CollPvtRwSets: collPvtRwSets}
+}
+
+func (b *collHashRwBuilder) build() *CollHashedRwSet {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[36], 1);
+	var readSet []*kvrwset.KVReadHash
+	var writeSet []*kvrwset.KVWriteHash
+	var metadataWriteSet []*kvrwset.KVMetadataWriteHash
+
+	util.GetValuesBySortedKeys(&(b.readMap), &readSet)
+	util.GetValuesBySortedKeys(&(b.writeMap), &writeSet)
+	util.GetValuesBySortedKeys(&(b.metadataWriteMap), &metadataWriteSet)
+	return &CollHashedRwSet{
+		CollectionName: b.collName,
+		HashedRwSet: &kvrwset.HashedRWSet{
+			HashedReads:    readSet,
+			HashedWrites:   writeSet,
+			MetadataWrites: metadataWriteSet,
+		},
+		PvtRwSetHash: b.pvtDataHash,
+	}
+}
+
+func (b *collPvtRwBuilder) build() *CollPvtRwSet {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[37], 1);
+	var writeSet []*kvrwset.KVWrite
+	var metadataWriteSet []*kvrwset.KVMetadataWrite
+	util.GetValuesBySortedKeys(&(b.writeMap), &writeSet)
+	util.GetValuesBySortedKeys(&(b.metadataWriteMap), &metadataWriteSet)
+	return &CollPvtRwSet{
+		CollectionName: b.collectionName,
+		KvRwSet: &kvrwset.KVRWSet{
+			Writes:         writeSet,
+			MetadataWrites: metadataWriteSet,
+		},
+	}
+}
+
+func (b *RWSetBuilder) getOrCreateNsPubRwBuilder(ns string) *nsPubRwBuilder {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[38], 1);
+	nsPubRwBuilder, ok := b.pubRwBuilderMap[ns]
+	if !ok {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[40], 1);
+		nsPubRwBuilder = newNsPubRwBuilder(ns)
+		b.pubRwBuilderMap[ns] = nsPubRwBuilder
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[39], 1);return nsPubRwBuilder
+}
+
+func (b *RWSetBuilder) getOrCreateNsPvtRwBuilder(ns string) *nsPvtRwBuilder {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[41], 1);
+	nsPvtRwBuilder, ok := b.pvtRwBuilderMap[ns]
+	if !ok {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[43], 1);
+		nsPvtRwBuilder = newNsPvtRwBuilder(ns)
+		b.pvtRwBuilderMap[ns] = nsPvtRwBuilder
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[42], 1);return nsPvtRwBuilder
+}
+
+func (b *RWSetBuilder) getOrCreateCollHashedRwBuilder(ns string, coll string) *collHashRwBuilder {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[44], 1);
+	nsPubRwBuilder := b.getOrCreateNsPubRwBuilder(ns)
+	collHashRwBuilder, ok := nsPubRwBuilder.collHashRwBuilder[coll]
+	if !ok {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[46], 1);
+		collHashRwBuilder = newCollHashRwBuilder(coll)
+		nsPubRwBuilder.collHashRwBuilder[coll] = collHashRwBuilder
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[45], 1);return collHashRwBuilder
+}
+
+func (b *RWSetBuilder) getOrCreateCollPvtRwBuilder(ns string, coll string) *collPvtRwBuilder {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[47], 1);
+	nsPvtRwBuilder := b.getOrCreateNsPvtRwBuilder(ns)
+	collPvtRwBuilder, ok := nsPvtRwBuilder.collPvtRwBuilders[coll]
+	if !ok {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[49], 1);
+		collPvtRwBuilder = newCollPvtRwBuilder(coll)
+		nsPvtRwBuilder.collPvtRwBuilders[coll] = collPvtRwBuilder
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[48], 1);return collPvtRwBuilder
+}
+
+func newNsPubRwBuilder(namespace string) *nsPubRwBuilder {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[50], 1);
+	return &nsPubRwBuilder{
+		namespace,
+		make(map[string]*kvrwset.KVRead),
+		make(map[string]*kvrwset.KVWrite),
+		make(map[string]*kvrwset.KVMetadataWrite),
+		make(map[rangeQueryKey]*kvrwset.RangeQueryInfo),
+		nil,
+		make(map[string]*collHashRwBuilder),
+	}
+}
+
+func newNsPvtRwBuilder(namespace string) *nsPvtRwBuilder {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[51], 1);
+	return &nsPvtRwBuilder{namespace, make(map[string]*collPvtRwBuilder)}
+}
+
+func newCollHashRwBuilder(collName string) *collHashRwBuilder {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[52], 1);
+	return &collHashRwBuilder{
+		collName,
+		make(map[string]*kvrwset.KVReadHash),
+		make(map[string]*kvrwset.KVWriteHash),
+		make(map[string]*kvrwset.KVMetadataWriteHash),
+		nil,
+	}
+}
+
+func newCollPvtRwBuilder(collName string) *collPvtRwBuilder {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[53], 1);
+	return &collPvtRwBuilder{
+		collName,
+		make(map[string]*kvrwset.KVWrite),
+		make(map[string]*kvrwset.KVMetadataWrite),
+	}
+}
+
+func mapToMetadataWrite(key string, m map[string][]byte) *kvrwset.KVMetadataWrite {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[54], 1);
+	proto := &kvrwset.KVMetadataWrite{Key: key}
+	names := util.GetSortedKeys(m)
+	for _, name := range names {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[56], 1);
+		proto.Entries = append(proto.Entries,
+			&kvrwset.KVMetadataEntry{Name: name, Value: m[name]},
+		)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[55], 1);return proto
+}
+
+func mapToMetadataWriteHash(key string, m map[string][]byte) *kvrwset.KVMetadataWriteHash {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[57], 1);
+	proto := &kvrwset.KVMetadataWriteHash{KeyHash: util.ComputeStringHash(key)}
+	names := util.GetSortedKeys(m)
+	for _, name := range names {_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[59], 1);
+		proto.Entries = append(proto.Entries,
+			&kvrwset.KVMetadataEntry{Name: name, Value: m[name]},
+		)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_353735386332653438306431.Count[58], 1);return proto
+}
+
+var GoCover_1_353735386332653438306431 = struct {
+	Count     [60]uint32
+	Pos       [3 * 60]uint32
+	NumStmt   [60]uint16
+} {
+	Pos: [3 * 60]uint32{
+		72, 74, 0x20026, // [0]
+		77, 80, 0x20055, // [1]
+		83, 86, 0x2004b, // [2]
+		90, 93, 0x2005a, // [3]
+		96, 100, 0x90053, // [4]
+		100, 103, 0x30009, // [5]
+		107, 110, 0x20068, // [6]
+		113, 117, 0x20064, // [7]
+		120, 128, 0x20066, // [8]
+		132, 140, 0x140056, // [9]
+		151, 152, 0x130002, // [10]
+		157, 160, 0x80002, // [11]
+		140, 141, 0x3b0014, // [12]
+		144, 144, 0x2e0003, // [13]
+		141, 143, 0x4003b, // [14]
+		144, 145, 0x2f002e, // [15]
+		145, 147, 0x5002f, // [16]
+		152, 153, 0x490013, // [17]
+		153, 155, 0x40049, // [18]
+		163, 166, 0x2005a, // [19]
+		170, 175, 0x350035, // [20]
+		178, 178, 0x280002, // [21]
+		175, 177, 0x30035, // [22]
+		182, 187, 0x35003b, // [23]
+		190, 190, 0x1b0002, // [24]
+		193, 193, 0x2d0002, // [25]
+		187, 189, 0x30035, // [26]
+		190, 192, 0x3001b, // [27]
+		196, 208, 0x29002b, // [28]
+		212, 214, 0x310002, // [29]
+		217, 226, 0x30002, // [30]
+		208, 210, 0x30029, // [31]
+		214, 216, 0x30031, // [32]
+		229, 234, 0x31002e, // [33]
+		237, 237, 0x4a0002, // [34]
+		234, 236, 0x30031, // [35]
+		240, 257, 0x20036, // [36]
+		259, 271, 0x20032, // [37]
+		273, 275, 0x9004d, // [38]
+		279, 279, 0x170002, // [39]
+		275, 278, 0x30009, // [40]
+		282, 284, 0x9004d, // [41]
+		288, 288, 0x170002, // [42]
+		284, 287, 0x30009, // [43]
+		291, 294, 0x90062, // [44]
+		298, 298, 0x1a0002, // [45]
+		294, 297, 0x30009, // [46]
+		301, 304, 0x9005e, // [47]
+		308, 308, 0x190002, // [48]
+		304, 307, 0x30009, // [49]
+		311, 321, 0x2003a, // [50]
+		323, 325, 0x2003a, // [51]
+		327, 335, 0x2003f, // [52]
+		337, 343, 0x2003d, // [53]
+		345, 348, 0x1d0053, // [54]
+		353, 353, 0xe0002, // [55]
+		348, 352, 0x3001d, // [56]
+		356, 359, 0x1d005b, // [57]
+		364, 364, 0xe0002, // [58]
+		359, 363, 0x3001d, // [59]
+	},
+	NumStmt: [60]uint16{
+		1, // 0
+		2, // 1
+		2, // 2
+		1, // 3
+		4, // 4
+		2, // 5
+		2, // 6
+		3, // 7
+		2, // 8
+		5, // 9
+		2, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		2, // 19
+		4, // 20
+		1, // 21
+		1, // 22
+		4, // 23
+		1, // 24
+		1, // 25
+		1, // 26
+		1, // 27
+		9, // 28
+		3, // 29
+		1, // 30
+		1, // 31
+		1, // 32
+		4, // 33
+		1, // 34
+		1, // 35
+		7, // 36
+		5, // 37
+		2, // 38
+		1, // 39
+		2, // 40
+		2, // 41
+		1, // 42
+		2, // 43
+		3, // 44
+		1, // 45
+		2, // 46
+		3, // 47
+		1, // 48
+		2, // 49
+		1, // 50
+		1, // 51
+		1, // 52
+		1, // 53
+		3, // 54
+		1, // 55
+		1, // 56
+		3, // 57
+		1, // 58
+		1, // 59
+	},
+}
+var _ = _cover_atomic_.LoadUint32

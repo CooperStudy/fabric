@@ -1,0 +1,178 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/validator/internal/val.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package internal; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/privacyenabledstate"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwsetutil"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/version"
+	"github.com/hyperledger/fabric/protos/peer"
+)
+
+var logger = flogging.MustGetLogger("valinternal")
+
+// Validator is supposed to validate the transactions based on public data and hashes present in a block
+// and returns a batch that should be used to update the state
+type Validator interface {
+	ValidateAndPrepareBatch(block *Block, doMVCCValidation bool) (*PubAndHashUpdates, error)
+}
+
+// Block is used to used to hold the information from its proto format to a structure
+// that is more suitable/friendly for validation
+type Block struct {
+	Num uint64
+	Txs []*Transaction
+}
+
+// Transaction is used to hold the information from its proto format to a structure
+// that is more suitable/friendly for validation
+type Transaction struct {
+	IndexInBlock   int
+	ID             string
+	RWSet          *rwsetutil.TxRwSet
+	ValidationCode peer.TxValidationCode
+}
+
+// PubAndHashUpdates encapsulates public and hash updates. The intended use of this to hold the updates
+// that are to be applied to the statedb  as a result of the block commit
+type PubAndHashUpdates struct {
+	PubUpdates  *privacyenabledstate.PubUpdateBatch
+	HashUpdates *privacyenabledstate.HashedUpdateBatch
+}
+
+// NewPubAndHashUpdates constructs an empty PubAndHashUpdates
+func NewPubAndHashUpdates() *PubAndHashUpdates {_cover_atomic_.AddUint32(&GoCover_1_643566653266313137353532.Count[0], 1);
+	return &PubAndHashUpdates{
+		privacyenabledstate.NewPubUpdateBatch(),
+		privacyenabledstate.NewHashedUpdateBatch(),
+	}
+}
+
+// ContainsPvtWrites returns true if this transaction is not limited to affecting the public data only
+func (t *Transaction) ContainsPvtWrites() bool {_cover_atomic_.AddUint32(&GoCover_1_643566653266313137353532.Count[1], 1);
+	for _, ns := range t.RWSet.NsRwSets {_cover_atomic_.AddUint32(&GoCover_1_643566653266313137353532.Count[3], 1);
+		for _, coll := range ns.CollHashedRwSets {_cover_atomic_.AddUint32(&GoCover_1_643566653266313137353532.Count[4], 1);
+			if coll.PvtRwSetHash != nil {_cover_atomic_.AddUint32(&GoCover_1_643566653266313137353532.Count[5], 1);
+				return true
+			}
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_643566653266313137353532.Count[2], 1);return false
+}
+
+// RetrieveHash returns the hash of the private write-set present
+// in the public data for a given namespace-collection
+func (t *Transaction) RetrieveHash(ns string, coll string) []byte {_cover_atomic_.AddUint32(&GoCover_1_643566653266313137353532.Count[6], 1);
+	if t.RWSet == nil {_cover_atomic_.AddUint32(&GoCover_1_643566653266313137353532.Count[9], 1);
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_643566653266313137353532.Count[7], 1);for _, nsData := range t.RWSet.NsRwSets {_cover_atomic_.AddUint32(&GoCover_1_643566653266313137353532.Count[10], 1);
+		if nsData.NameSpace != ns {_cover_atomic_.AddUint32(&GoCover_1_643566653266313137353532.Count[12], 1);
+			continue
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_643566653266313137353532.Count[11], 1);for _, collData := range nsData.CollHashedRwSets {_cover_atomic_.AddUint32(&GoCover_1_643566653266313137353532.Count[13], 1);
+			if collData.CollectionName == coll {_cover_atomic_.AddUint32(&GoCover_1_643566653266313137353532.Count[14], 1);
+				return collData.PvtRwSetHash
+			}
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_643566653266313137353532.Count[8], 1);return nil
+}
+
+// ApplyWriteSet adds (or deletes) the key/values present in the write set to the PubAndHashUpdates
+func (u *PubAndHashUpdates) ApplyWriteSet(txRWSet *rwsetutil.TxRwSet, txHeight *version.Height, db privacyenabledstate.DB) error {_cover_atomic_.AddUint32(&GoCover_1_643566653266313137353532.Count[15], 1);
+	txops, err := prepareTxOps(txRWSet, txHeight, u, db)
+	logger.Debugf("txops=%#v", txops)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_643566653266313137353532.Count[18], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_643566653266313137353532.Count[16], 1);for compositeKey, keyops := range txops {_cover_atomic_.AddUint32(&GoCover_1_643566653266313137353532.Count[19], 1);
+		if compositeKey.coll == "" {_cover_atomic_.AddUint32(&GoCover_1_643566653266313137353532.Count[20], 1);
+			ns, key := compositeKey.ns, compositeKey.key
+			if keyops.isDelete() {_cover_atomic_.AddUint32(&GoCover_1_643566653266313137353532.Count[21], 1);
+				u.PubUpdates.Delete(ns, key, txHeight)
+			} else{ _cover_atomic_.AddUint32(&GoCover_1_643566653266313137353532.Count[22], 1);{
+				u.PubUpdates.PutValAndMetadata(ns, key, keyops.value, keyops.metadata, txHeight)
+			}}
+		} else{ _cover_atomic_.AddUint32(&GoCover_1_643566653266313137353532.Count[23], 1);{
+			ns, coll, keyHash := compositeKey.ns, compositeKey.coll, []byte(compositeKey.key)
+			if keyops.isDelete() {_cover_atomic_.AddUint32(&GoCover_1_643566653266313137353532.Count[24], 1);
+				u.HashUpdates.Delete(ns, coll, keyHash, txHeight)
+			} else{ _cover_atomic_.AddUint32(&GoCover_1_643566653266313137353532.Count[25], 1);{
+				u.HashUpdates.PutValHashAndMetadata(ns, coll, keyHash, keyops.value, keyops.metadata, txHeight)
+			}}
+		}}
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_643566653266313137353532.Count[17], 1);return nil
+}
+
+var GoCover_1_643566653266313137353532 = struct {
+	Count     [26]uint32
+	Pos       [3 * 26]uint32
+	NumStmt   [26]uint16
+} {
+	Pos: [3 * 26]uint32{
+		49, 54, 0x20030, // [0]
+		57, 58, 0x260030, // [1]
+		65, 65, 0xe0002, // [2]
+		58, 59, 0x2c0026, // [3]
+		59, 60, 0x20002c, // [4]
+		60, 62, 0x50020, // [5]
+		70, 71, 0x140043, // [6]
+		74, 74, 0x2a0002, // [7]
+		85, 85, 0xc0002, // [8]
+		71, 73, 0x30014, // [9]
+		74, 75, 0x1d002a, // [10]
+		79, 79, 0x340003, // [11]
+		75, 76, 0xc001d, // [12]
+		79, 80, 0x270034, // [13]
+		80, 82, 0x50027, // [14]
+		89, 92, 0x100082, // [15]
+		95, 95, 0x2a0002, // [16]
+		112, 112, 0xc0002, // [17]
+		92, 94, 0x30010, // [18]
+		95, 96, 0x1e002a, // [19]
+		96, 98, 0x19001e, // [20]
+		98, 100, 0x50019, // [21]
+		100, 102, 0x5000a, // [22]
+		103, 105, 0x190009, // [23]
+		105, 107, 0x50019, // [24]
+		107, 109, 0x5000a, // [25]
+	},
+	NumStmt: [26]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		3, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		2, // 20
+		1, // 21
+		1, // 22
+		2, // 23
+		1, // 24
+		1, // 25
+	},
+}
+var _ = _cover_atomic_.LoadUint32

@@ -286,12 +286,30 @@ func kafkaVersionDecodeHook() mapstructure.DecodeHookFunc {
 // EnhancedExactUnmarshal is intended to unmarshal a config file into a structure
 // producing error when extraneous variables are introduced and supporting
 // the time.Duration type
+/*
+EnhancedExactUnmarshal 旨在将配置文件解组为在引入无关变量时产生错误的结构，并且
+支持time.Duration类型
+ */
 func EnhancedExactUnmarshal(v *viper.Viper, output interface{}) error {
 	// AllKeys doesn't actually return all keys, it only returns the base ones
 	baseKeys := v.AllSettings()
 	getterWithClass := func(key string) interface{} { return v.Get(key) } // hide receiver
 	leafKeys := getKeysRecursively("", getterWithClass, baseKeys)
-
+	logger.Info("===leafKeys===",leafKeys)
+	/*
+	===leafKeys=== map[operations:map[ListenAddress:127.0.0.1:8443 TLS:map[ClientAuthRequired:false RootCA
+	s:[] Enabled:false Certificate:<nil> PrivateKey:<nil>]] metrics:map[Statsd:map[WriteInterval:30s Prefix:<nil> Network:udp Address:127.0.0.1:8125] Provider:disabled] consensus:ma
+	p[WALDir:/var/hyperledger/production/orderer/etcdraft/wal SnapDir:/var/hyperledger/production/orderer/etcdraft/snapshot] general:map[GenesisProfile:SampleInsecureSolo LocalMSPID
+	:OrdererMSP Profile:map[Address:0.0.0.0:6060 Enabled:false] GenesisMethod:file LedgerType:file TLS:map[ClientRootCAs:<nil> Enabled:true PrivateKey:/var/hyperledger/orderer/tls/s
+	erver.key Certificate:/var/hyperledger/orderer/tls/server.crt RootCAs:[/var/hyperledger/orderer/tls/ca.crt] ClientAuthRequired:false] Authentication:map[TimeWindow:15m] ListenAd
+	dress:0.0.0.0 Keepalive:map[ServerInterval:7200s ServerTimeout:20s ServerMinInterval:60s] BCCSP:map[SW:map[Hash:SHA2 Security:256 FileKeyStore:map[KeyStore:<nil>]] Default:SW] C
+	luster:map[ReplicationBufferSize:20971520 ReplicationPullTimeout:5s ReplicationRetryTimeout:5s ClientCertificate:<nil> ClientPrivateKey:<nil> DialTimeout:5s RPCTimeout:7s RootCA
+	s:[tls/ca.crt]] ListenPort:7050 GenesisFile:/var/hyperledger/orderer/orderer.genesis.block LocalMSPDir:/var/hyperledger/orderer/msp] fileledger:map[Location:/var/hyperledger/pro
+	duction/orderer Prefix:hyperledger-fabric-ordererledger] ramledger:map[HistorySize:1000] kafka:map[TLS:map[PrivateKey:<nil> Certificate:<nil> RootCAs:<nil> Enabled:false] SASLPl
+	ain:map[Enabled:false User:<nil> Password:<nil>] Version:<nil> Retry:map[ShortInterval:5s ShortTotal:10m LongInterval:5m LongTotal:12h NetworkTimeouts:map[WriteTimeout:10s DialT
+	imeout:10s ReadTimeout:10s] Metadata:map[RetryBackoff:250ms RetryMax:3] Producer:map[RetryMax:3 RetryBackoff:100ms] Consumer:map[RetryBackoff:2s]] Topic:map[ReplicationFactor:1]
+	 Verbose:true] debug:map[DeliverTraceDir:<nil> BroadcastTraceDir:<nil>]]
+	*/
 	logger.Debugf("%+v", leafKeys)
 	config := &mapstructure.DecoderConfig{
 		ErrorUnused:      true,

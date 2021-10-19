@@ -1,0 +1,131 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/ledger/blkstorage/fsblkstorage/fs_blockstore.go:1
+/*
+Copyright IBM Corp. 2016 All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+		 http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package fsblkstorage; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric/common/ledger"
+	"github.com/hyperledger/fabric/common/ledger/blkstorage"
+	"github.com/hyperledger/fabric/common/ledger/util/leveldbhelper"
+	"github.com/hyperledger/fabric/protos/common"
+	"github.com/hyperledger/fabric/protos/peer"
+)
+
+// fsBlockStore - filesystem based implementation for `BlockStore`
+type fsBlockStore struct {
+	id      string
+	conf    *Conf
+	fileMgr *blockfileMgr
+}
+
+// NewFsBlockStore constructs a `FsBlockStore`
+func newFsBlockStore(id string, conf *Conf, indexConfig *blkstorage.IndexConfig,
+	dbHandle *leveldbhelper.DBHandle) *fsBlockStore {_cover_atomic_.AddUint32(&GoCover_8_386431356532613230373239.Count[0], 1);
+	return &fsBlockStore{id, conf, newBlockfileMgr(id, conf, indexConfig, dbHandle)}
+}
+
+// AddBlock adds a new block
+func (store *fsBlockStore) AddBlock(block *common.Block) error {_cover_atomic_.AddUint32(&GoCover_8_386431356532613230373239.Count[1], 1);
+	return store.fileMgr.addBlock(block)
+}
+
+// GetBlockchainInfo returns the current info about blockchain
+func (store *fsBlockStore) GetBlockchainInfo() (*common.BlockchainInfo, error) {_cover_atomic_.AddUint32(&GoCover_8_386431356532613230373239.Count[2], 1);
+	return store.fileMgr.getBlockchainInfo(), nil
+}
+
+// RetrieveBlocks returns an iterator that can be used for iterating over a range of blocks
+func (store *fsBlockStore) RetrieveBlocks(startNum uint64) (ledger.ResultsIterator, error) {_cover_atomic_.AddUint32(&GoCover_8_386431356532613230373239.Count[3], 1);
+	var itr *blocksItr
+	var err error
+	if itr, err = store.fileMgr.retrieveBlocks(startNum); err != nil {_cover_atomic_.AddUint32(&GoCover_8_386431356532613230373239.Count[5], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_8_386431356532613230373239.Count[4], 1);return itr, nil
+}
+
+// RetrieveBlockByHash returns the block for given block-hash
+func (store *fsBlockStore) RetrieveBlockByHash(blockHash []byte) (*common.Block, error) {_cover_atomic_.AddUint32(&GoCover_8_386431356532613230373239.Count[6], 1);
+	return store.fileMgr.retrieveBlockByHash(blockHash)
+}
+
+// RetrieveBlockByNumber returns the block at a given blockchain height
+func (store *fsBlockStore) RetrieveBlockByNumber(blockNum uint64) (*common.Block, error) {_cover_atomic_.AddUint32(&GoCover_8_386431356532613230373239.Count[7], 1);
+	return store.fileMgr.retrieveBlockByNumber(blockNum)
+}
+
+// RetrieveTxByID returns a transaction for given transaction id
+func (store *fsBlockStore) RetrieveTxByID(txID string) (*common.Envelope, error) {_cover_atomic_.AddUint32(&GoCover_8_386431356532613230373239.Count[8], 1);
+	return store.fileMgr.retrieveTransactionByID(txID)
+}
+
+// RetrieveTxByID returns a transaction for given transaction id
+func (store *fsBlockStore) RetrieveTxByBlockNumTranNum(blockNum uint64, tranNum uint64) (*common.Envelope, error) {_cover_atomic_.AddUint32(&GoCover_8_386431356532613230373239.Count[9], 1);
+	return store.fileMgr.retrieveTransactionByBlockNumTranNum(blockNum, tranNum)
+}
+
+func (store *fsBlockStore) RetrieveBlockByTxID(txID string) (*common.Block, error) {_cover_atomic_.AddUint32(&GoCover_8_386431356532613230373239.Count[10], 1);
+	return store.fileMgr.retrieveBlockByTxID(txID)
+}
+
+func (store *fsBlockStore) RetrieveTxValidationCodeByTxID(txID string) (peer.TxValidationCode, error) {_cover_atomic_.AddUint32(&GoCover_8_386431356532613230373239.Count[11], 1);
+	return store.fileMgr.retrieveTxValidationCodeByTxID(txID)
+}
+
+// Shutdown shuts down the block store
+func (store *fsBlockStore) Shutdown() {_cover_atomic_.AddUint32(&GoCover_8_386431356532613230373239.Count[12], 1);
+	logger.Debugf("closing fs blockStore:%s", store.id)
+	store.fileMgr.close()
+}
+
+var GoCover_8_386431356532613230373239 = struct {
+	Count     [13]uint32
+	Pos       [3 * 13]uint32
+	NumStmt   [13]uint16
+} {
+	Pos: [3 * 13]uint32{
+		36, 38, 0x20032, // [0]
+		41, 43, 0x20040, // [1]
+		46, 48, 0x20050, // [2]
+		51, 54, 0x43005c, // [3]
+		57, 57, 0x110002, // [4]
+		54, 56, 0x30043, // [5]
+		61, 63, 0x20059, // [6]
+		66, 68, 0x2005a, // [7]
+		71, 73, 0x20052, // [8]
+		76, 78, 0x20073, // [9]
+		80, 82, 0x20054, // [10]
+		84, 86, 0x20067, // [11]
+		89, 92, 0x20027, // [12]
+	},
+	NumStmt: [13]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		3, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		2, // 12
+	},
+}
+var _ = _cover_atomic_.LoadUint32

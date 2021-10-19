@@ -282,16 +282,25 @@ func Load() (*TopLevel, error) {
 	replacer := strings.NewReplacer(".", "_")
 	config.SetEnvKeyReplacer(replacer)
 
+
 	if err := config.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("Error reading configuration: %s", err)
 	}
 
 	var uconf TopLevel
+	//===v.getConfigFile()==== /etc/hyperledger/fabric/orderer.yaml
 	if err := viperutil.EnhancedExactUnmarshal(config, &uconf); err != nil {
 		return nil, fmt.Errorf("Error unmarshaling config into struct: %s", err)
 	}
 
+	logger.Info("====config.ConfigFileUsed()===",config.ConfigFileUsed())
+	//====config.ConfigFileUsed()=== /etc/hyperledger/fabric/orderer.yaml
+
+	logger.Info("====filepath.Dir(config.ConfigFileUsed())===",filepath.Dir(config.ConfigFileUsed()))
 	uconf.completeInitialization(filepath.Dir(config.ConfigFileUsed()))
+	// ====filepath.Dir(config.ConfigFileUsed())=== /etc/hyperledger/fabric
+
+
 	return &uconf, nil
 }
 

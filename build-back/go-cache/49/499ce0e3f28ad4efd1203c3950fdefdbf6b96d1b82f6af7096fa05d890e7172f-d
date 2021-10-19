@@ -1,0 +1,113 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/bccsp/idemix/bridge/revocation.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+package bridge; import _cover_atomic_ "sync/atomic"
+
+import (
+	"crypto/ecdsa"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric-amcl/amcl/FP256BN"
+	"github.com/hyperledger/fabric/bccsp"
+	cryptolib "github.com/hyperledger/fabric/idemix"
+	"github.com/pkg/errors"
+)
+
+// Revocation encapsulates the idemix algorithms for revocation
+type Revocation struct {
+}
+
+// NewKey generate a new revocation key-pair.
+func (*Revocation) NewKey() (*ecdsa.PrivateKey, error) {_cover_atomic_.AddUint32(&GoCover_6_373430303738666139356161.Count[0], 1);
+	return cryptolib.GenerateLongTermRevocationKey()
+}
+
+// Sign generates a new CRI with the respect to the passed unrevoked handles, epoch, and revocation algorithm.
+func (*Revocation) Sign(key *ecdsa.PrivateKey, unrevokedHandles [][]byte, epoch int, alg bccsp.RevocationAlgorithm) (res []byte, err error) {_cover_atomic_.AddUint32(&GoCover_6_373430303738666139356161.Count[1], 1);
+	defer func() {_cover_atomic_.AddUint32(&GoCover_6_373430303738666139356161.Count[5], 1);
+		if r := recover(); r != nil {_cover_atomic_.AddUint32(&GoCover_6_373430303738666139356161.Count[6], 1);
+			res = nil
+			err = errors.Errorf("failure [%s]", r)
+		}
+	}()
+
+	_cover_atomic_.AddUint32(&GoCover_6_373430303738666139356161.Count[2], 1);handles := make([]*FP256BN.BIG, len(unrevokedHandles))
+	for i := 0; i < len(unrevokedHandles); i++ {_cover_atomic_.AddUint32(&GoCover_6_373430303738666139356161.Count[7], 1);
+		handles[i] = FP256BN.FromBytes(unrevokedHandles[i])
+	}
+	_cover_atomic_.AddUint32(&GoCover_6_373430303738666139356161.Count[3], 1);cri, err := cryptolib.CreateCRI(key, handles, epoch, cryptolib.RevocationAlgorithm(alg), NewRandOrPanic())
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_6_373430303738666139356161.Count[8], 1);
+		return nil, errors.WithMessage(err, "failed creating CRI")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_373430303738666139356161.Count[4], 1);return proto.Marshal(cri)
+}
+
+// Verify checks that the passed serialised CRI (criRaw) is valid with the respect to the passed revocation public key,
+// epoch, and revocation algorithm.
+func (*Revocation) Verify(pk *ecdsa.PublicKey, criRaw []byte, epoch int, alg bccsp.RevocationAlgorithm) (err error) {_cover_atomic_.AddUint32(&GoCover_6_373430303738666139356161.Count[9], 1);
+	defer func() {_cover_atomic_.AddUint32(&GoCover_6_373430303738666139356161.Count[12], 1);
+		if r := recover(); r != nil {_cover_atomic_.AddUint32(&GoCover_6_373430303738666139356161.Count[13], 1);
+			err = errors.Errorf("failure [%s]", r)
+		}
+	}()
+
+	_cover_atomic_.AddUint32(&GoCover_6_373430303738666139356161.Count[10], 1);cri := &cryptolib.CredentialRevocationInformation{}
+	err = proto.Unmarshal(criRaw, cri)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_6_373430303738666139356161.Count[14], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_373430303738666139356161.Count[11], 1);return cryptolib.VerifyEpochPK(
+		pk,
+		cri.EpochPk,
+		cri.EpochPkSig,
+		int(cri.Epoch),
+		cryptolib.RevocationAlgorithm(cri.RevocationAlg),
+	)
+}
+
+var GoCover_6_373430303738666139356161 = struct {
+	Count     [15]uint32
+	Pos       [3 * 15]uint32
+	NumStmt   [15]uint16
+} {
+	Pos: [3 * 15]uint32{
+		23, 25, 0x20038, // [0]
+		28, 29, 0xf008d, // [1]
+		36, 37, 0x2d0002, // [2]
+		40, 41, 0x100002, // [3]
+		45, 45, 0x1b0002, // [4]
+		29, 30, 0x1f000f, // [5]
+		30, 33, 0x4001f, // [6]
+		37, 39, 0x3002d, // [7]
+		41, 43, 0x30010, // [8]
+		50, 51, 0xf0075, // [9]
+		57, 59, 0x100002, // [10]
+		63, 69, 0x30002, // [11]
+		51, 52, 0x1f000f, // [12]
+		52, 54, 0x4001f, // [13]
+		59, 61, 0x30010, // [14]
+	},
+	NumStmt: [15]uint16{
+		1, // 0
+		1, // 1
+		2, // 2
+		2, // 3
+		1, // 4
+		1, // 5
+		2, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		3, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+	},
+}
+var _ = _cover_atomic_.LoadUint32

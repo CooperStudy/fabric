@@ -1,0 +1,414 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb/statedb.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package statedb; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+	"sort"
+
+	"github.com/hyperledger/fabric/core/common/ccprovider"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/version"
+	"github.com/hyperledger/fabric/core/ledger/util"
+)
+
+//go:generate counterfeiter -o mock/results_iterator.go -fake-name ResultsIterator . ResultsIterator
+//go:generate counterfeiter -o mock/versioned_db.go -fake-name VersionedDB . VersionedDB
+
+// VersionedDBProvider provides an instance of an versioned DB
+type VersionedDBProvider interface {
+	// GetDBHandle returns a handle to a VersionedDB
+	GetDBHandle(id string) (VersionedDB, error)
+	// Close closes all the VersionedDB instances and releases any resources held by VersionedDBProvider
+	Close()
+}
+
+// VersionedDB lists methods that a db is supposed to implement
+type VersionedDB interface {
+	// GetState gets the value for given namespace and key. For a chaincode, the namespace corresponds to the chaincodeId
+	GetState(namespace string, key string) (*VersionedValue, error)
+	// GetVersion gets the version for given namespace and key. For a chaincode, the namespace corresponds to the chaincodeId
+	GetVersion(namespace string, key string) (*version.Height, error)
+	// GetStateMultipleKeys gets the values for multiple keys in a single call
+	GetStateMultipleKeys(namespace string, keys []string) ([]*VersionedValue, error)
+	// GetStateRangeScanIterator returns an iterator that contains all the key-values between given key ranges.
+	// startKey is inclusive
+	// endKey is exclusive
+	// The returned ResultsIterator contains results of type *VersionedKV
+	GetStateRangeScanIterator(namespace string, startKey string, endKey string) (ResultsIterator, error)
+	// GetStateRangeScanIteratorWithMetadata returns an iterator that contains all the key-values between given key ranges.
+	// startKey is inclusive
+	// endKey is exclusive
+	// metadata is a map of additional query parameters
+	// The returned ResultsIterator contains results of type *VersionedKV
+	GetStateRangeScanIteratorWithMetadata(namespace string, startKey string, endKey string, metadata map[string]interface{}) (QueryResultsIterator, error)
+	// ExecuteQuery executes the given query and returns an iterator that contains results of type *VersionedKV.
+	ExecuteQuery(namespace, query string) (ResultsIterator, error)
+	// ExecuteQueryWithMetadata executes the given query with associated query options and
+	// returns an iterator that contains results of type *VersionedKV.
+	// metadata is a map of additional query parameters
+	ExecuteQueryWithMetadata(namespace, query string, metadata map[string]interface{}) (QueryResultsIterator, error)
+	// ApplyUpdates applies the batch to the underlying db.
+	// height is the height of the highest transaction in the Batch that
+	// a state db implementation is expected to ues as a save point
+	ApplyUpdates(batch *UpdateBatch, height *version.Height) error
+	// GetLatestSavePoint returns the height of the highest transaction upto which
+	// the state db is consistent
+	GetLatestSavePoint() (*version.Height, error)
+	// ValidateKeyValue tests whether the key and value is supported by the db implementation.
+	// For instance, leveldb supports any bytes for the key while the couchdb supports only valid utf-8 string
+	// TODO make the function ValidateKeyValue return a specific error say ErrInvalidKeyValue
+	// However, as of now, the both implementations of this function (leveldb and couchdb) are deterministic in returing an error
+	// i.e., an error is returned only if the key-value are found to be invalid for the underlying db
+	ValidateKeyValue(key string, value []byte) error
+	// BytesKeySupported returns true if the implementation (underlying db) supports the any bytes to be used as key.
+	// For instance, leveldb supports any bytes for the key while the couchdb supports only valid utf-8 string
+	BytesKeySupported() bool
+	// Open opens the db
+	Open() error
+	// Close closes the db
+	Close()
+}
+
+//BulkOptimizable interface provides additional functions for
+//databases capable of batch operations
+type BulkOptimizable interface {
+	LoadCommittedVersions(keys []*CompositeKey) error
+	GetCachedVersion(namespace, key string) (*version.Height, bool)
+	ClearCachedVersions()
+}
+
+//IndexCapable interface provides additional functions for
+//databases capable of index operations
+type IndexCapable interface {
+	GetDBType() string
+	ProcessIndexesForChaincodeDeploy(namespace string, fileEntries []*ccprovider.TarFileEntry) error
+}
+
+// CompositeKey encloses Namespace and Key components
+type CompositeKey struct {
+	Namespace string
+	Key       string
+}
+
+// VersionedValue encloses value and corresponding version
+type VersionedValue struct {
+	Value    []byte
+	Metadata []byte
+	Version  *version.Height
+}
+
+// IsDelete returns true if this update indicates delete of a key
+func (vv *VersionedValue) IsDelete() bool {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[0], 1);
+	return vv.Value == nil
+}
+
+// VersionedKV encloses key and corresponding VersionedValue
+type VersionedKV struct {
+	CompositeKey
+	VersionedValue
+}
+
+// ResultsIterator iterates over query results
+type ResultsIterator interface {
+	Next() (QueryResult, error)
+	Close()
+}
+
+// QueryResultsIterator adds GetBookmarkAndClose method
+type QueryResultsIterator interface {
+	ResultsIterator
+	GetBookmarkAndClose() string
+}
+
+// QueryResult - a general interface for supporting different types of query results. Actual types differ for different queries
+type QueryResult interface{}
+
+type nsUpdates struct {
+	m map[string]*VersionedValue
+}
+
+func newNsUpdates() *nsUpdates {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[1], 1);
+	return &nsUpdates{make(map[string]*VersionedValue)}
+}
+
+// UpdateBatch encloses the details of multiple `updates`
+type UpdateBatch struct {
+	updates map[string]*nsUpdates
+}
+
+// NewUpdateBatch constructs an instance of a Batch
+func NewUpdateBatch() *UpdateBatch {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[2], 1);
+	return &UpdateBatch{make(map[string]*nsUpdates)}
+}
+
+// Get returns the VersionedValue for the given namespace and key
+func (batch *UpdateBatch) Get(ns string, key string) *VersionedValue {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[3], 1);
+	nsUpdates, ok := batch.updates[ns]
+	if !ok {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[6], 1);
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[4], 1);vv, ok := nsUpdates.m[key]
+	if !ok {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[7], 1);
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[5], 1);return vv
+}
+
+// Put adds a key with value only. The metadata is assumed to be nil
+func (batch *UpdateBatch) Put(ns string, key string, value []byte, version *version.Height) {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[8], 1);
+	batch.PutValAndMetadata(ns, key, value, nil, version)
+}
+
+// PutValAndMetadata adds a key with value and metadata
+// TODO introducing a new function to limit the refactoring. Later in a separate CR, the 'Put' function above should be removed
+func (batch *UpdateBatch) PutValAndMetadata(ns string, key string, value []byte, metadata []byte, version *version.Height) {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[9], 1);
+	if value == nil {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[11], 1);
+		panic("Nil value not allowed. Instead call 'Delete' function")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[10], 1);batch.Update(ns, key, &VersionedValue{value, metadata, version})
+}
+
+// Delete deletes a Key and associated value
+func (batch *UpdateBatch) Delete(ns string, key string, version *version.Height) {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[12], 1);
+	batch.Update(ns, key, &VersionedValue{nil, nil, version})
+}
+
+// Exists checks whether the given key exists in the batch
+func (batch *UpdateBatch) Exists(ns string, key string) bool {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[13], 1);
+	nsUpdates, ok := batch.updates[ns]
+	if !ok {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[15], 1);
+		return false
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[14], 1);_, ok = nsUpdates.m[key]
+	return ok
+}
+
+// GetUpdatedNamespaces returns the names of the namespaces that are updated
+func (batch *UpdateBatch) GetUpdatedNamespaces() []string {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[16], 1);
+	namespaces := make([]string, len(batch.updates))
+	i := 0
+	for ns := range batch.updates {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[18], 1);
+		namespaces[i] = ns
+		i++
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[17], 1);return namespaces
+}
+
+// Update updates the batch with a latest entry for a namespace and a key
+func (batch *UpdateBatch) Update(ns string, key string, vv *VersionedValue) {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[19], 1);
+	batch.getOrCreateNsUpdates(ns).m[key] = vv
+}
+
+// GetUpdates returns all the updates for a namespace
+func (batch *UpdateBatch) GetUpdates(ns string) map[string]*VersionedValue {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[20], 1);
+	nsUpdates, ok := batch.updates[ns]
+	if !ok {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[22], 1);
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[21], 1);return nsUpdates.m
+}
+
+// GetRangeScanIterator returns an iterator that iterates over keys of a specific namespace in sorted order
+// In other word this gives the same functionality over the contents in the `UpdateBatch` as
+// `VersionedDB.GetStateRangeScanIterator()` method gives over the contents in the statedb
+// This function can be used for querying the contents in the updateBatch before they are committed to the statedb.
+// For instance, a validator implementation can used this to verify the validity of a range query of a transaction
+// where the UpdateBatch represents the union of the modifications performed by the preceding valid transactions in the same block
+// (Assuming Group commit approach where we commit all the updates caused by a block together).
+func (batch *UpdateBatch) GetRangeScanIterator(ns string, startKey string, endKey string) QueryResultsIterator {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[23], 1);
+	return newNsIterator(ns, startKey, endKey, batch)
+}
+
+func (batch *UpdateBatch) getOrCreateNsUpdates(ns string) *nsUpdates {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[24], 1);
+	nsUpdates := batch.updates[ns]
+	if nsUpdates == nil {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[26], 1);
+		nsUpdates = newNsUpdates()
+		batch.updates[ns] = nsUpdates
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[25], 1);return nsUpdates
+}
+
+type nsIterator struct {
+	ns         string
+	nsUpdates  *nsUpdates
+	sortedKeys []string
+	nextIndex  int
+	lastIndex  int
+}
+
+func newNsIterator(ns string, startKey string, endKey string, batch *UpdateBatch) *nsIterator {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[27], 1);
+	nsUpdates, ok := batch.updates[ns]
+	if !ok {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[31], 1);
+		return &nsIterator{}
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[28], 1);sortedKeys := util.GetSortedKeys(nsUpdates.m)
+	var nextIndex int
+	var lastIndex int
+	if startKey == "" {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[32], 1);
+		nextIndex = 0
+	} else{ _cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[33], 1);{
+		nextIndex = sort.SearchStrings(sortedKeys, startKey)
+	}}
+	_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[29], 1);if endKey == "" {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[34], 1);
+		lastIndex = len(sortedKeys)
+	} else{ _cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[35], 1);{
+		lastIndex = sort.SearchStrings(sortedKeys, endKey)
+	}}
+	_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[30], 1);return &nsIterator{ns, nsUpdates, sortedKeys, nextIndex, lastIndex}
+}
+
+// Next gives next key and versioned value. It returns a nil when exhausted
+func (itr *nsIterator) Next() (QueryResult, error) {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[36], 1);
+	if itr.nextIndex >= itr.lastIndex {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[38], 1);
+		return nil, nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[37], 1);key := itr.sortedKeys[itr.nextIndex]
+	vv := itr.nsUpdates.m[key]
+	itr.nextIndex++
+	return &VersionedKV{CompositeKey{itr.ns, key}, VersionedValue{vv.Value, vv.Metadata, vv.Version}}, nil
+}
+
+// Close implements the method from QueryResult interface
+func (itr *nsIterator) Close() {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[39], 1);
+	// do nothing
+}
+
+// GetBookmarkAndClose implements the method from QueryResult interface
+func (itr *nsIterator) GetBookmarkAndClose() string {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[40], 1);
+	// do nothing
+	return ""
+}
+
+const optionLimit = "limit"
+
+// ValidateRangeMetadata validates the JSON containing attributes for the range query
+func ValidateRangeMetadata(metadata map[string]interface{}) error {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[41], 1);
+	for key, keyVal := range metadata {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[43], 1);
+		switch key {
+
+		case optionLimit:_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[44], 1);
+			//Verify the pageSize is an integer
+			if _, ok := keyVal.(int32); ok {_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[47], 1);
+				continue
+			}
+			_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[45], 1);return fmt.Errorf("Invalid entry, \"limit\" must be a int32")
+
+		default:_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[46], 1);
+			return fmt.Errorf("Invalid entry, option %s not recognized", key)
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_653838663938663837626566.Count[42], 1);return nil
+}
+
+var GoCover_0_653838663938663837626566 = struct {
+	Count     [48]uint32
+	Pos       [3 * 48]uint32
+	NumStmt   [48]uint16
+} {
+	Pos: [3 * 48]uint32{
+		105, 107, 0x2002b, // [0]
+		134, 136, 0x20020, // [1]
+		144, 146, 0x20024, // [2]
+		149, 151, 0x90046, // [3]
+		154, 155, 0x90002, // [4]
+		158, 158, 0xb0002, // [5]
+		151, 153, 0x30009, // [6]
+		155, 157, 0x30009, // [7]
+		162, 164, 0x2005d, // [8]
+		168, 169, 0x12007c, // [9]
+		172, 172, 0x420002, // [10]
+		169, 170, 0x410012, // [11]
+		176, 178, 0x20052, // [12]
+		181, 183, 0x9003e, // [13]
+		186, 187, 0xb0002, // [14]
+		183, 185, 0x30009, // [15]
+		191, 194, 0x20003b, // [16]
+		198, 198, 0x130002, // [17]
+		194, 197, 0x30020, // [18]
+		202, 204, 0x2004d, // [19]
+		207, 209, 0x9004c, // [20]
+		212, 212, 0x140002, // [21]
+		209, 211, 0x30009, // [22]
+		222, 224, 0x20070, // [23]
+		226, 228, 0x160046, // [24]
+		232, 232, 0x120002, // [25]
+		228, 231, 0x30016, // [26]
+		243, 245, 0x9005f, // [27]
+		248, 251, 0x140002, // [28]
+		256, 256, 0x120002, // [29]
+		261, 261, 0x450002, // [30]
+		245, 247, 0x30009, // [31]
+		251, 253, 0x30014, // [32]
+		253, 255, 0x30008, // [33]
+		256, 258, 0x30012, // [34]
+		258, 260, 0x30008, // [35]
+		265, 266, 0x240034, // [36]
+		269, 272, 0x680002, // [37]
+		266, 268, 0x30024, // [38]
+		276, 278, 0x20021, // [39]
+		281, 284, 0x20035, // [40]
+		289, 290, 0x240043, // [41]
+		304, 304, 0xc0002, // [42]
+		290, 291, 0xe0024, // [43]
+		293, 295, 0x230014, // [44]
+		298, 298, 0x410004, // [45]
+		300, 301, 0x45000b, // [46]
+		295, 296, 0xd0023, // [47]
+	},
+	NumStmt: [48]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		2, // 3
+		2, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		2, // 13
+		2, // 14
+		1, // 15
+		3, // 16
+		1, // 17
+		2, // 18
+		1, // 19
+		2, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+		2, // 24
+		1, // 25
+		2, // 26
+		2, // 27
+		4, // 28
+		1, // 29
+		1, // 30
+		1, // 31
+		1, // 32
+		1, // 33
+		1, // 34
+		1, // 35
+		1, // 36
+		4, // 37
+		1, // 38
+		0, // 39
+		1, // 40
+		1, // 41
+		1, // 42
+		1, // 43
+		1, // 44
+		1, // 45
+		1, // 46
+		1, // 47
+	},
+}
+var _ = _cover_atomic_.LoadUint32

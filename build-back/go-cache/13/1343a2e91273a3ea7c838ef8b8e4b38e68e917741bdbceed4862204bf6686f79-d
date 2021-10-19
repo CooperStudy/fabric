@@ -1,0 +1,9 @@
+implicitmeta.cover.go
+implicitmeta_util.cover.go
+implicitmetaparser.cover.go
+policy.cover.go
+util.cover.go
+./implicitmeta_test.go
+./implicitmetaparser_test.go
+./policy_test.go
+./util_test.go

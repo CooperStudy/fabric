@@ -1,0 +1,29 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/scc/register.go:1
+// +build !pluginsenabled !cgo darwin,!go1.10 linux,!go1.9 linux,ppc64le,!go1.10
+
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package scc; import _cover_atomic_ "sync/atomic"
+
+// CreatePluginSysCCs creates all of the system chaincodes which are compiled into fabric
+func CreatePluginSysCCs(p *Provider) []SelfDescribingSysCC {_cover_atomic_.AddUint32(&GoCover_2_613163393733346361646563.Count[0], 1);
+	return nil
+}
+
+var GoCover_2_613163393733346361646563 = struct {
+	Count     [1]uint32
+	Pos       [3 * 1]uint32
+	NumStmt   [1]uint16
+} {
+	Pos: [3 * 1]uint32{
+		12, 14, 0x2003c, // [0]
+	},
+	NumStmt: [1]uint16{
+		1, // 0
+	},
+}
+var _ = _cover_atomic_.LoadUint32

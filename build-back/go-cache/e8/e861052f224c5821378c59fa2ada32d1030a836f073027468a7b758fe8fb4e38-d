@@ -1,0 +1,611 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/msp/configbuilder.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package msp; import _cover_atomic_ "sync/atomic"
+
+import (
+	"encoding/pem"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric/bccsp/factory"
+	"github.com/hyperledger/fabric/protos/msp"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
+)
+
+// OrganizationalUnitIdentifiersConfiguration is used to represent an OU
+// and an associated trusted certificate
+type OrganizationalUnitIdentifiersConfiguration struct {
+	// Certificate is the path to a root or intermediate certificate
+	Certificate string `yaml:"Certificate,omitempty"`
+	// OrganizationalUnitIdentifier is the name of the OU
+	OrganizationalUnitIdentifier string `yaml:"OrganizationalUnitIdentifier,omitempty"`
+}
+
+// NodeOUs contains information on how to tell apart clients, peers and orderers
+// based on OUs. If the check is enforced, by setting Enabled to true,
+// the MSP will consider an identity valid if it is an identity of a client, a peer or
+// an orderer. An identity should have only one of these special OUs.
+type NodeOUs struct {
+	// Enable activates the OU enforcement
+	Enable bool `yaml:"Enable,omitempty"`
+	// ClientOUIdentifier specifies how to recognize clients by OU
+	ClientOUIdentifier *OrganizationalUnitIdentifiersConfiguration `yaml:"ClientOUIdentifier,omitempty"`
+	// PeerOUIdentifier specifies how to recognize peers by OU
+	PeerOUIdentifier *OrganizationalUnitIdentifiersConfiguration `yaml:"PeerOUIdentifier,omitempty"`
+}
+
+// Configuration represents the accessory configuration an MSP can be equipped with.
+// By default, this configuration is stored in a yaml file
+type Configuration struct {
+	// OrganizationalUnitIdentifiers is a list of OUs. If this is set, the MSP
+	// will consider an identity valid only it contains at least one of these OUs
+	OrganizationalUnitIdentifiers []*OrganizationalUnitIdentifiersConfiguration `yaml:"OrganizationalUnitIdentifiers,omitempty"`
+	// NodeOUs enables the MSP to tell apart clients, peers and orderers based
+	// on the identity's OU.
+	NodeOUs *NodeOUs `yaml:"NodeOUs,omitempty"`
+}
+
+func readFile(file string) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[0], 1);
+	fileCont, err := ioutil.ReadFile(file)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[2], 1);
+		return nil, errors.Wrapf(err, "could not read file %s", file)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[1], 1);return fileCont, nil
+}
+
+func readPemFile(file string) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[3], 1);
+	bytes, err := readFile(file)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[6], 1);
+		return nil, errors.Wrapf(err, "reading from file %s failed", file)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[4], 1);b, _ := pem.Decode(bytes)
+	if b == nil {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[7], 1); // TODO: also check that the type is what we expect (cert vs key..)
+		return nil, errors.Errorf("no pem content for file %s", file)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[5], 1);return bytes, nil
+}
+
+func getPemMaterialFromDir(dir string) ([][]byte, error) {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[8], 1);
+	mspLogger.Debugf("Reading directory %s", dir)
+
+	_, err := os.Stat(dir)
+	if os.IsNotExist(err) {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[12], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[9], 1);content := make([][]byte, 0)
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[13], 1);
+		return nil, errors.Wrapf(err, "could not read directory %s", dir)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[10], 1);for _, f := range files {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[14], 1);
+		fullName := filepath.Join(dir, f.Name())
+
+		f, err := os.Stat(fullName)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[18], 1);
+			mspLogger.Warningf("Failed to stat %s: %s", fullName, err)
+			continue
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[15], 1);if f.IsDir() {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[19], 1);
+			continue
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[16], 1);mspLogger.Debugf("Inspecting file %s", fullName)
+
+		item, err := readPemFile(fullName)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[20], 1);
+			mspLogger.Warningf("Failed reading file %s: %s", fullName, err)
+			continue
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[17], 1);content = append(content, item)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[11], 1);return content, nil
+}
+
+const (
+	cacerts              = "cacerts"
+	admincerts           = "admincerts"
+	signcerts            = "signcerts"
+	keystore             = "keystore"
+	intermediatecerts    = "intermediatecerts"
+	crlsfolder           = "crls"
+	configfilename       = "config.yaml"
+	tlscacerts           = "tlscacerts"
+	tlsintermediatecerts = "tlsintermediatecerts"
+)
+
+func SetupBCCSPKeystoreConfig(bccspConfig *factory.FactoryOpts, keystoreDir string) *factory.FactoryOpts {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[21], 1);
+	if bccspConfig == nil {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[24], 1);
+		bccspConfig = factory.GetDefaultOpts()
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[22], 1);if bccspConfig.ProviderName == "SW" {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[25], 1);
+		if bccspConfig.SwOpts == nil {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[27], 1);
+			bccspConfig.SwOpts = factory.GetDefaultOpts().SwOpts
+		}
+
+		// Only override the KeyStorePath if it was left empty
+		_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[26], 1);if bccspConfig.SwOpts.FileKeystore == nil ||
+			bccspConfig.SwOpts.FileKeystore.KeyStorePath == "" {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[28], 1);
+			bccspConfig.SwOpts.Ephemeral = false
+			bccspConfig.SwOpts.FileKeystore = &factory.FileKeystoreOpts{KeyStorePath: keystoreDir}
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[23], 1);return bccspConfig
+}
+
+// GetLocalMspConfigWithType returns a local MSP
+// configuration for the MSP in the specified
+// directory, with the specified ID and type
+func GetLocalMspConfigWithType(dir string, bccspConfig *factory.FactoryOpts, ID, mspType string) (*msp.MSPConfig, error) {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[29], 1);
+	switch mspType {
+	case ProviderTypeToString(FABRIC):_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[30], 1);
+		return GetLocalMspConfig(dir, bccspConfig, ID)
+	case ProviderTypeToString(IDEMIX):_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[31], 1);
+		return GetIdemixMspConfig(dir, ID)
+	default:_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[32], 1);
+		return nil, errors.Errorf("unknown MSP type '%s'", mspType)
+	}
+}
+
+func GetLocalMspConfig(dir string, bccspConfig *factory.FactoryOpts, ID string) (*msp.MSPConfig, error) {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[33], 1);
+	signcertDir := filepath.Join(dir, signcerts)
+	keystoreDir := filepath.Join(dir, keystore)
+	bccspConfig = SetupBCCSPKeystoreConfig(bccspConfig, keystoreDir)
+
+	err := factory.InitFactories(bccspConfig)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[36], 1);
+		return nil, errors.WithMessage(err, "could not initialize BCCSP Factories")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[34], 1);signcert, err := getPemMaterialFromDir(signcertDir)
+	if err != nil || len(signcert) == 0 {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[37], 1);
+		return nil, errors.Wrapf(err, "could not load a valid signer certificate from directory %s", signcertDir)
+	}
+
+	/* FIXME: for now we're making the following assumptions
+	1) there is exactly one signing cert
+	2) BCCSP's KeyStore has the private key that matches SKI of
+	   signing cert
+	*/
+
+	_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[35], 1);sigid := &msp.SigningIdentityInfo{PublicSigner: signcert[0], PrivateSigner: nil}
+
+	return getMspConfig(dir, ID, sigid)
+}
+
+// GetVerifyingMspConfig returns an MSP config given directory, ID and type
+func GetVerifyingMspConfig(dir, ID, mspType string) (*msp.MSPConfig, error) {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[38], 1);
+	switch mspType {
+	case ProviderTypeToString(FABRIC):_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[39], 1);
+		return getMspConfig(dir, ID, nil)
+	case ProviderTypeToString(IDEMIX):_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[40], 1);
+		return GetIdemixMspConfig(dir, ID)
+	default:_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[41], 1);
+		return nil, errors.Errorf("unknown MSP type '%s'", mspType)
+	}
+}
+
+func getMspConfig(dir string, ID string, sigid *msp.SigningIdentityInfo) (*msp.MSPConfig, error) {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[42], 1);
+	cacertDir := filepath.Join(dir, cacerts)
+	admincertDir := filepath.Join(dir, admincerts)
+	intermediatecertsDir := filepath.Join(dir, intermediatecerts)
+	crlsDir := filepath.Join(dir, crlsfolder)
+	configFile := filepath.Join(dir, configfilename)
+	tlscacertDir := filepath.Join(dir, tlscacerts)
+	tlsintermediatecertsDir := filepath.Join(dir, tlsintermediatecerts)
+
+	cacerts, err := getPemMaterialFromDir(cacertDir)
+	if err != nil || len(cacerts) == 0 {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[49], 1);
+		return nil, errors.WithMessage(err, fmt.Sprintf("could not load a valid ca certificate from directory %s", cacertDir))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[43], 1);admincert, err := getPemMaterialFromDir(admincertDir)
+	if err != nil || len(admincert) == 0 {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[50], 1);
+		return nil, errors.WithMessage(err, fmt.Sprintf("could not load a valid admin certificate from directory %s", admincertDir))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[44], 1);intermediatecerts, err := getPemMaterialFromDir(intermediatecertsDir)
+	if os.IsNotExist(err) {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[51], 1);
+		mspLogger.Debugf("Intermediate certs folder not found at [%s]. Skipping. [%s]", intermediatecertsDir, err)
+	} else{ _cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[52], 1);if err != nil {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[53], 1);
+		return nil, errors.WithMessage(err, fmt.Sprintf("failed loading intermediate ca certs at [%s]", intermediatecertsDir))
+	}}
+
+	_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[45], 1);tlsCACerts, err := getPemMaterialFromDir(tlscacertDir)
+	tlsIntermediateCerts := [][]byte{}
+	if os.IsNotExist(err) {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[54], 1);
+		mspLogger.Debugf("TLS CA certs folder not found at [%s]. Skipping and ignoring TLS intermediate CA folder. [%s]", tlsintermediatecertsDir, err)
+	} else{ _cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[55], 1);if err != nil {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[56], 1);
+		return nil, errors.WithMessage(err, fmt.Sprintf("failed loading TLS ca certs at [%s]", tlsintermediatecertsDir))
+	} else{ _cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[57], 1);if len(tlsCACerts) != 0 {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[58], 1);
+		tlsIntermediateCerts, err = getPemMaterialFromDir(tlsintermediatecertsDir)
+		if os.IsNotExist(err) {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[59], 1);
+			mspLogger.Debugf("TLS intermediate certs folder not found at [%s]. Skipping. [%s]", tlsintermediatecertsDir, err)
+		} else{ _cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[60], 1);if err != nil {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[61], 1);
+			return nil, errors.WithMessage(err, fmt.Sprintf("failed loading TLS intermediate ca certs at [%s]", tlsintermediatecertsDir))
+		}}
+	} else{ _cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[62], 1);{
+		mspLogger.Debugf("TLS CA certs folder at [%s] is empty. Skipping.", tlsintermediatecertsDir)
+	}}}}
+
+	_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[46], 1);crls, err := getPemMaterialFromDir(crlsDir)
+	if os.IsNotExist(err) {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[63], 1);
+		mspLogger.Debugf("crls folder not found at [%s]. Skipping. [%s]", crlsDir, err)
+	} else{ _cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[64], 1);if err != nil {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[65], 1);
+		return nil, errors.WithMessage(err, fmt.Sprintf("failed loading crls at [%s]", crlsDir))
+	}}
+
+	// Load configuration file
+	// if the configuration file is there then load it
+	// otherwise skip it
+	_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[47], 1);var ouis []*msp.FabricOUIdentifier
+	var nodeOUs *msp.FabricNodeOUs
+	_, err = os.Stat(configFile)
+	if err == nil {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[66], 1);
+		// load the file, if there is a failure in loading it then
+		// return an error
+		raw, err := ioutil.ReadFile(configFile)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[70], 1);
+			return nil, errors.Wrapf(err, "failed loading configuration file at [%s]", configFile)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[67], 1);configuration := Configuration{}
+		err = yaml.Unmarshal(raw, &configuration)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[71], 1);
+			return nil, errors.Wrapf(err, "failed unmarshalling configuration file at [%s]", configFile)
+		}
+
+		// Prepare OrganizationalUnitIdentifiers
+		_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[68], 1);if len(configuration.OrganizationalUnitIdentifiers) > 0 {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[72], 1);
+			for _, ouID := range configuration.OrganizationalUnitIdentifiers {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[73], 1);
+				f := filepath.Join(dir, ouID.Certificate)
+				raw, err = readFile(f)
+				if err != nil {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[75], 1);
+					return nil, errors.Wrapf(err, "failed loading OrganizationalUnit certificate at [%s]", f)
+				}
+
+				_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[74], 1);oui := &msp.FabricOUIdentifier{
+					Certificate:                  raw,
+					OrganizationalUnitIdentifier: ouID.OrganizationalUnitIdentifier,
+				}
+				ouis = append(ouis, oui)
+			}
+		}
+
+		// Prepare NodeOUs
+		_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[69], 1);if configuration.NodeOUs != nil && configuration.NodeOUs.Enable {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[76], 1);
+			mspLogger.Debug("Loading NodeOUs")
+			if configuration.NodeOUs.ClientOUIdentifier == nil || len(configuration.NodeOUs.ClientOUIdentifier.OrganizationalUnitIdentifier) == 0 {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[80], 1);
+				return nil, errors.New("Failed loading NodeOUs. ClientOU must be different from nil.")
+			}
+			_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[77], 1);if configuration.NodeOUs.PeerOUIdentifier == nil || len(configuration.NodeOUs.PeerOUIdentifier.OrganizationalUnitIdentifier) == 0 {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[81], 1);
+				return nil, errors.New("Failed loading NodeOUs. PeerOU must be different from nil.")
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[78], 1);nodeOUs = &msp.FabricNodeOUs{
+				Enable:             configuration.NodeOUs.Enable,
+				ClientOuIdentifier: &msp.FabricOUIdentifier{OrganizationalUnitIdentifier: configuration.NodeOUs.ClientOUIdentifier.OrganizationalUnitIdentifier},
+				PeerOuIdentifier:   &msp.FabricOUIdentifier{OrganizationalUnitIdentifier: configuration.NodeOUs.PeerOUIdentifier.OrganizationalUnitIdentifier},
+			}
+
+			// Read certificates, if defined
+
+			// ClientOU
+			f := filepath.Join(dir, configuration.NodeOUs.ClientOUIdentifier.Certificate)
+			raw, err = readFile(f)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[82], 1);
+				mspLogger.Infof("Failed loading ClientOU certificate at [%s]: [%s]", f, err)
+			} else{ _cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[83], 1);{
+				nodeOUs.ClientOuIdentifier.Certificate = raw
+			}}
+
+			// PeerOU
+			_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[79], 1);f = filepath.Join(dir, configuration.NodeOUs.PeerOUIdentifier.Certificate)
+			raw, err = readFile(f)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[84], 1);
+				mspLogger.Debugf("Failed loading PeerOU certificate at [%s]: [%s]", f, err)
+			} else{ _cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[85], 1);{
+				nodeOUs.PeerOuIdentifier.Certificate = raw
+			}}
+		}
+	} else{ _cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[86], 1);{
+		mspLogger.Debugf("MSP configuration file not found at [%s]: [%s]", configFile, err)
+	}}
+
+	// Set FabricCryptoConfig
+	_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[48], 1);cryptoConfig := &msp.FabricCryptoConfig{
+		SignatureHashFamily:            bccsp.SHA2,
+		IdentityIdentifierHashFunction: bccsp.SHA256,
+	}
+
+	// Compose FabricMSPConfig
+	fmspconf := &msp.FabricMSPConfig{
+		Admins:                        admincert,
+		RootCerts:                     cacerts,
+		IntermediateCerts:             intermediatecerts,
+		SigningIdentity:               sigid,
+		Name:                          ID,
+		OrganizationalUnitIdentifiers: ouis,
+		RevocationList:                crls,
+		CryptoConfig:                  cryptoConfig,
+		TlsRootCerts:                  tlsCACerts,
+		TlsIntermediateCerts:          tlsIntermediateCerts,
+		FabricNodeOus:                 nodeOUs,
+	}
+
+	fmpsjs, _ := proto.Marshal(fmspconf)
+
+	mspconf := &msp.MSPConfig{Config: fmpsjs, Type: int32(FABRIC)}
+
+	return mspconf, nil
+}
+
+const (
+	IdemixConfigDirMsp                  = "msp"
+	IdemixConfigDirUser                 = "user"
+	IdemixConfigFileIssuerPublicKey     = "IssuerPublicKey"
+	IdemixConfigFileRevocationPublicKey = "RevocationPublicKey"
+	IdemixConfigFileSigner              = "SignerConfig"
+)
+
+// GetIdemixMspConfig returns the configuration for the Idemix MSP
+func GetIdemixMspConfig(dir string, ID string) (*msp.MSPConfig, error) {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[87], 1);
+	ipkBytes, err := readFile(filepath.Join(dir, IdemixConfigDirMsp, IdemixConfigFileIssuerPublicKey))
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[92], 1);
+		return nil, errors.Wrapf(err, "failed to read issuer public key file")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[88], 1);revocationPkBytes, err := readFile(filepath.Join(dir, IdemixConfigDirMsp, IdemixConfigFileRevocationPublicKey))
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[93], 1);
+		return nil, errors.Wrapf(err, "failed to read revocation public key file")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[89], 1);idemixConfig := &msp.IdemixMSPConfig{
+		Name:         ID,
+		Ipk:          ipkBytes,
+		RevocationPk: revocationPkBytes,
+	}
+
+	signerBytes, err := readFile(filepath.Join(dir, IdemixConfigDirUser, IdemixConfigFileSigner))
+	if err == nil {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[94], 1);
+		signerConfig := &msp.IdemixMSPSignerConfig{}
+		err = proto.Unmarshal(signerBytes, signerConfig)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[96], 1);
+			return nil, err
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[95], 1);idemixConfig.Signer = signerConfig
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[90], 1);confBytes, err := proto.Marshal(idemixConfig)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[97], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_636433306662306231613333.Count[91], 1);return &msp.MSPConfig{Config: confBytes, Type: int32(IDEMIX)}, nil
+}
+
+var GoCover_1_636433306662306231613333 = struct {
+	Count     [98]uint32
+	Pos       [3 * 98]uint32
+	NumStmt   [98]uint16
+} {
+	Pos: [3 * 98]uint32{
+		57, 59, 0x10002c, // [0]
+		63, 63, 0x160002, // [1]
+		59, 61, 0x30010, // [2]
+		66, 68, 0x10002f, // [3]
+		72, 73, 0xe0002, // [4]
+		77, 77, 0x130002, // [5]
+		68, 70, 0x30010, // [6]
+		73, 75, 0x3000e, // [7]
+		80, 84, 0x18003a, // [8]
+		88, 90, 0x100002, // [9]
+		94, 94, 0x1a0002, // [10]
+		117, 117, 0x150002, // [11]
+		84, 86, 0x30018, // [12]
+		90, 92, 0x30010, // [13]
+		94, 98, 0x11001a, // [14]
+		102, 102, 0x100003, // [15]
+		106, 109, 0x110003, // [16]
+		114, 114, 0x220003, // [17]
+		98, 100, 0xc0011, // [18]
+		102, 103, 0xc0010, // [19]
+		109, 111, 0xc0011, // [20]
+		132, 133, 0x18006a, // [21]
+		137, 137, 0x260002, // [22]
+		150, 150, 0x140002, // [23]
+		133, 135, 0x30018, // [24]
+		137, 138, 0x200026, // [25]
+		143, 144, 0x370003, // [26]
+		138, 140, 0x40020, // [27]
+		144, 147, 0x40037, // [28]
+		156, 157, 0x11007a, // [29]
+		158, 159, 0x310024, // [30]
+		160, 161, 0x250024, // [31]
+		162, 163, 0x3e000a, // [32]
+		167, 173, 0x100069, // [33]
+		177, 178, 0x260002, // [34]
+		188, 190, 0x250002, // [35]
+		173, 175, 0x30010, // [36]
+		178, 180, 0x30026, // [37]
+		194, 195, 0x11004d, // [38]
+		196, 197, 0x240024, // [39]
+		198, 199, 0x250024, // [40]
+		200, 201, 0x3e000a, // [41]
+		205, 215, 0x250062, // [42]
+		219, 220, 0x270002, // [43]
+		224, 225, 0x180002, // [44]
+		231, 233, 0x180002, // [45]
+		248, 249, 0x180002, // [46]
+		258, 261, 0x100002, // [47]
+		333, 357, 0x150002, // [48]
+		215, 217, 0x30025, // [49]
+		220, 222, 0x30027, // [50]
+		225, 227, 0x30018, // [51]
+		227, 227, 0x170008, // [52]
+		227, 229, 0x30017, // [53]
+		233, 235, 0x30018, // [54]
+		235, 235, 0x170008, // [55]
+		235, 237, 0x30017, // [56]
+		237, 237, 0x210008, // [57]
+		237, 239, 0x190021, // [58]
+		239, 241, 0x40019, // [59]
+		241, 241, 0x180009, // [60]
+		241, 243, 0x40018, // [61]
+		244, 246, 0x30008, // [62]
+		249, 251, 0x30018, // [63]
+		251, 251, 0x170008, // [64]
+		251, 253, 0x30017, // [65]
+		261, 265, 0x110010, // [66]
+		269, 271, 0x110003, // [67]
+		276, 276, 0x3b0003, // [68]
+		293, 293, 0x430003, // [69]
+		265, 267, 0x40011, // [70]
+		271, 273, 0x40011, // [71]
+		276, 277, 0x45003b, // [72]
+		277, 280, 0x130045, // [73]
+		284, 288, 0x1d0005, // [74]
+		280, 282, 0x60013, // [75]
+		293, 295, 0x8a0043, // [76]
+		298, 298, 0x860004, // [77]
+		302, 313, 0x120004, // [78]
+		320, 322, 0x120004, // [79]
+		295, 297, 0x5008a, // [80]
+		298, 300, 0x50086, // [81]
+		313, 315, 0x50012, // [82]
+		315, 317, 0x5000a, // [83]
+		322, 324, 0x50012, // [84]
+		324, 326, 0x5000a, // [85]
+		328, 330, 0x30008, // [86]
+		369, 371, 0x100048, // [87]
+		375, 376, 0x100002, // [88]
+		380, 387, 0x100002, // [89]
+		396, 397, 0x100002, // [90]
+		401, 401, 0x440002, // [91]
+		371, 373, 0x30010, // [92]
+		376, 378, 0x30010, // [93]
+		387, 390, 0x110010, // [94]
+		393, 393, 0x250003, // [95]
+		390, 392, 0x40011, // [96]
+		397, 399, 0x30010, // [97]
+	},
+	NumStmt: [98]uint16{
+		2, // 0
+		1, // 1
+		1, // 2
+		2, // 3
+		2, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		3, // 8
+		3, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		3, // 14
+		1, // 15
+		3, // 16
+		1, // 17
+		2, // 18
+		1, // 19
+		2, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+		1, // 24
+		1, // 25
+		1, // 26
+		1, // 27
+		2, // 28
+		1, // 29
+		1, // 30
+		1, // 31
+		1, // 32
+		5, // 33
+		2, // 34
+		2, // 35
+		1, // 36
+		1, // 37
+		1, // 38
+		1, // 39
+		1, // 40
+		1, // 41
+		9, // 42
+		2, // 43
+		2, // 44
+		3, // 45
+		2, // 46
+		4, // 47
+		5, // 48
+		1, // 49
+		1, // 50
+		1, // 51
+		1, // 52
+		1, // 53
+		1, // 54
+		1, // 55
+		1, // 56
+		1, // 57
+		2, // 58
+		1, // 59
+		1, // 60
+		1, // 61
+		1, // 62
+		1, // 63
+		1, // 64
+		1, // 65
+		2, // 66
+		3, // 67
+		1, // 68
+		1, // 69
+		1, // 70
+		1, // 71
+		1, // 72
+		3, // 73
+		2, // 74
+		1, // 75
+		2, // 76
+		1, // 77
+		4, // 78
+		3, // 79
+		1, // 80
+		1, // 81
+		1, // 82
+		1, // 83
+		1, // 84
+		1, // 85
+		1, // 86
+		2, // 87
+		2, // 88
+		3, // 89
+		2, // 90
+		1, // 91
+		1, // 92
+		1, // 93
+		3, // 94
+		1, // 95
+		1, // 96
+		1, // 97
+	},
+}
+var _ = _cover_atomic_.LoadUint32

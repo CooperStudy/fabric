@@ -1,0 +1,9 @@
+./collection.go
+./membershipinfo.go
+./simplecollection.go
+./store.go
+./util.go
+./collection_test.go
+./membershipinfo_test.go
+./simplecollection_test.go
+./store_test.go

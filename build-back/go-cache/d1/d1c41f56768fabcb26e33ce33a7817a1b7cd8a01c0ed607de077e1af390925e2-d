@@ -1,0 +1,37 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/cmd/discover/main.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package main; import _cover_atomic_ "sync/atomic"
+
+import (
+	"os"
+
+	"github.com/hyperledger/fabric/bccsp/factory"
+	"github.com/hyperledger/fabric/cmd/common"
+	"github.com/hyperledger/fabric/discovery/cmd"
+)
+
+func main() {_cover_atomic_.AddUint32(&GoCover_0_636435313063353364616633.Count[0], 1);
+	factory.InitFactories(nil)
+	cli := common.NewCLI("discover", "Command line client for fabric discovery service")
+	discovery.AddCommands(cli)
+	cli.Run(os.Args[1:])
+}
+
+var GoCover_0_636435313063353364616633 = struct {
+	Count     [1]uint32
+	Pos       [3 * 1]uint32
+	NumStmt   [1]uint16
+} {
+	Pos: [3 * 1]uint32{
+		17, 22, 0x2000d, // [0]
+	},
+	NumStmt: [1]uint16{
+		4, // 0
+	},
+}
+var _ = _cover_atomic_.LoadUint32

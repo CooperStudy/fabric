@@ -15,6 +15,6 @@ import (
 )
 
 func main() {
-	fmt.Println("=================orderer====================")
+	fmt.Println("=================版本1.0.2====================")
 	server.Main()
 }

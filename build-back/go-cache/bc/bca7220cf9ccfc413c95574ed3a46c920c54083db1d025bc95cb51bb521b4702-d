@@ -1,0 +1,6 @@
+ioutil.cover.go
+protobuf_util.cover.go
+util.cover.go
+./ioutil_test.go
+./protobuf_util_test.go
+./util_test.go

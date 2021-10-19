@@ -1,0 +1,4 @@
+store.cover.go
+store_helper.cover.go
+test_exports.cover.go
+./store_test.go

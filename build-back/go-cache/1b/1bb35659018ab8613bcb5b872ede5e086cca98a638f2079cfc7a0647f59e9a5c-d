@@ -1,0 +1,167 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/chaincode/persistence/chaincode_package.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package persistence; import _cover_atomic_ "sync/atomic"
+
+import (
+	"archive/tar"
+	"bytes"
+	"compress/gzip"
+	"encoding/json"
+	"io"
+	"io/ioutil"
+
+	"github.com/pkg/errors"
+)
+
+// The chaincode package is simply a .tar.gz file.  For the time being, we
+// assume that the package contains a Chaincode-Package-Metadata.json file
+// which contains a 'Type', and optionally a 'Path'.  In the future, it would
+// be nice if we moved to a more buildpack type system, rather than the below
+// presented JAR+manifest type system, but for expediency and incremental changes,
+// moving to a tar format over the proto format for a user-inspectable artifact
+// seems like a good step.
+
+const (
+	ChaincodePackageMetadataFile = "Chaincode-Package-Metadata.json"
+)
+
+// ChaincodePackage represents the un-tar-ed format of the chaincode package.
+type ChaincodePackage struct {
+	Metadata    *ChaincodePackageMetadata
+	CodePackage []byte
+}
+
+// ChaincodePackageMetadata contains the information necessary to understand
+// the embedded code package.
+type ChaincodePackageMetadata struct {
+	Type string `json:"Type"`
+	Path string `json:"Path"`
+}
+
+// ChaincodePackageParser provides the ability to parse chaincode packages
+type ChaincodePackageParser struct{}
+
+// Parse parses a set of bytes as a chaincode package
+// and returns the parsed package as a struct
+func (ccpp ChaincodePackageParser) Parse(source []byte) (*ChaincodePackage, error) {_cover_atomic_.AddUint32(&GoCover_0_346661366563343863376234.Count[0], 1);
+	gzReader, err := gzip.NewReader(bytes.NewBuffer(source))
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_346661366563343863376234.Count[5], 1);
+		return nil, errors.Wrapf(err, "error reading as gzip stream")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_346661366563343863376234.Count[1], 1);tarReader := tar.NewReader(gzReader)
+
+	var codePackage []byte
+	var ccPackageMetadata *ChaincodePackageMetadata
+	for {_cover_atomic_.AddUint32(&GoCover_0_346661366563343863376234.Count[6], 1);
+		header, err := tarReader.Next()
+		if err == io.EOF {_cover_atomic_.AddUint32(&GoCover_0_346661366563343863376234.Count[13], 1);
+			break
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_346661366563343863376234.Count[7], 1);if err != nil {_cover_atomic_.AddUint32(&GoCover_0_346661366563343863376234.Count[14], 1);
+			return nil, errors.Wrapf(err, "error inspecting next tar header")
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_346661366563343863376234.Count[8], 1);if header.Typeflag != tar.TypeReg {_cover_atomic_.AddUint32(&GoCover_0_346661366563343863376234.Count[15], 1);
+			return nil, errors.Errorf("tar entry %s is not a regular file, type %v", header.Name, header.Typeflag)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_346661366563343863376234.Count[9], 1);fileBytes, err := ioutil.ReadAll(tarReader)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_346661366563343863376234.Count[16], 1);
+			return nil, errors.Wrapf(err, "could not read %s from tar", header.Name)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_346661366563343863376234.Count[10], 1);if header.Name == ChaincodePackageMetadataFile {_cover_atomic_.AddUint32(&GoCover_0_346661366563343863376234.Count[17], 1);
+			ccPackageMetadata = &ChaincodePackageMetadata{}
+			err := json.Unmarshal(fileBytes, ccPackageMetadata)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_0_346661366563343863376234.Count[19], 1);
+				return nil, errors.Wrapf(err, "could not unmarshal %s as json", ChaincodePackageMetadataFile)
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_0_346661366563343863376234.Count[18], 1);continue
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_346661366563343863376234.Count[11], 1);if codePackage != nil {_cover_atomic_.AddUint32(&GoCover_0_346661366563343863376234.Count[20], 1);
+			return nil, errors.Errorf("found too many files in archive, cannot identify which file is the code-package")
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_346661366563343863376234.Count[12], 1);codePackage = fileBytes
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_346661366563343863376234.Count[2], 1);if codePackage == nil {_cover_atomic_.AddUint32(&GoCover_0_346661366563343863376234.Count[21], 1);
+		return nil, errors.Errorf("did not find a code package inside the package")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_346661366563343863376234.Count[3], 1);if ccPackageMetadata == nil {_cover_atomic_.AddUint32(&GoCover_0_346661366563343863376234.Count[22], 1);
+		return nil, errors.Errorf("did not find any package metadata (missing %s)", ChaincodePackageMetadataFile)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_346661366563343863376234.Count[4], 1);return &ChaincodePackage{
+		Metadata:    ccPackageMetadata,
+		CodePackage: codePackage,
+	}, nil
+}
+
+var GoCover_0_346661366563343863376234 = struct {
+	Count     [23]uint32
+	Pos       [3 * 23]uint32
+	NumStmt   [23]uint16
+} {
+	Pos: [3 * 23]uint32{
+		50, 52, 0x100054, // [0]
+		56, 60, 0x60002, // [1]
+		96, 96, 0x180002, // [2]
+		100, 100, 0x1e0002, // [3]
+		104, 107, 0x80002, // [4]
+		52, 54, 0x30010, // [5]
+		60, 62, 0x140006, // [6]
+		66, 66, 0x110003, // [7]
+		70, 70, 0x250003, // [8]
+		74, 75, 0x110003, // [9]
+		79, 79, 0x320003, // [10]
+		89, 89, 0x190003, // [11]
+		93, 93, 0x1a0003, // [12]
+		62, 63, 0x90014, // [13]
+		66, 68, 0x40011, // [14]
+		70, 72, 0x40025, // [15]
+		75, 77, 0x40011, // [16]
+		79, 82, 0x120032, // [17]
+		86, 86, 0xc0004, // [18]
+		82, 84, 0x50012, // [19]
+		89, 91, 0x40019, // [20]
+		96, 98, 0x30018, // [21]
+		100, 102, 0x3001e, // [22]
+	},
+	NumStmt: [23]uint16{
+		2, // 0
+		4, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		2, // 6
+		1, // 7
+		1, // 8
+		2, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		3, // 17
+		1, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		1, // 22
+	},
+}
+var _ = _cover_atomic_.LoadUint32

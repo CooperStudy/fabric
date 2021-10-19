@@ -1,0 +1,824 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/txmgr/lockbasedtxmgr/lockbased_txmgr.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package lockbasedtxmgr; import _cover_atomic_ "sync/atomic"
+
+import (
+	"bytes"
+	"sync"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/core/ledger"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/bookkeeping"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/privacyenabledstate"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/pvtstatepurgemgmt"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/queryutil"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/txmgr"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/validator"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/validator/valimpl"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/version"
+	"github.com/hyperledger/fabric/core/ledger/pvtdatapolicy"
+	"github.com/hyperledger/fabric/core/ledger/util"
+	"github.com/hyperledger/fabric/protos/common"
+	"github.com/hyperledger/fabric/protos/ledger/rwset"
+	"github.com/hyperledger/fabric/protos/ledger/rwset/kvrwset"
+)
+
+var logger = flogging.MustGetLogger("lockbasedtxmgr")
+
+// LockBasedTxMgr a simple implementation of interface `txmgmt.TxMgr`.
+// This implementation uses a read-write lock to prevent conflicts between transaction simulation and committing
+type LockBasedTxMgr struct {
+	ledgerid        string
+	db              privacyenabledstate.DB
+	pvtdataPurgeMgr *pvtdataPurgeMgr
+	validator       validator.Validator
+	stateListeners  []ledger.StateListener
+	ccInfoProvider  ledger.DeployedChaincodeInfoProvider
+	commitRWLock    sync.RWMutex
+	oldBlockCommit  sync.Mutex
+	current         *current
+}
+
+type current struct {
+	block     *common.Block
+	batch     *privacyenabledstate.UpdateBatch
+	listeners []ledger.StateListener
+}
+
+func (c *current) blockNum() uint64 {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[0], 1);
+	return c.block.Header.Number
+}
+
+func (c *current) maxTxNumber() uint64 {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[1], 1);
+	return uint64(len(c.block.Data.Data)) - 1
+}
+
+// NewLockBasedTxMgr constructs a new instance of NewLockBasedTxMgr
+func NewLockBasedTxMgr(ledgerid string, db privacyenabledstate.DB, stateListeners []ledger.StateListener,
+	btlPolicy pvtdatapolicy.BTLPolicy, bookkeepingProvider bookkeeping.Provider, ccInfoProvider ledger.DeployedChaincodeInfoProvider) (*LockBasedTxMgr, error) {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[2], 1);
+	db.Open()
+	txmgr := &LockBasedTxMgr{
+		ledgerid:       ledgerid,
+		db:             db,
+		stateListeners: stateListeners,
+		ccInfoProvider: ccInfoProvider,
+	}
+	pvtstatePurgeMgr, err := pvtstatepurgemgmt.InstantiatePurgeMgr(ledgerid, db, btlPolicy, bookkeepingProvider)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[4], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[3], 1);txmgr.pvtdataPurgeMgr = &pvtdataPurgeMgr{pvtstatePurgeMgr, false}
+	txmgr.validator = valimpl.NewStatebasedValidator(txmgr, db)
+	return txmgr, nil
+}
+
+// GetLastSavepoint returns the block num recorded in savepoint,
+// returns 0 if NO savepoint is found
+func (txmgr *LockBasedTxMgr) GetLastSavepoint() (*version.Height, error) {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[5], 1);
+	return txmgr.db.GetLatestSavePoint()
+}
+
+// NewQueryExecutor implements method in interface `txmgmt.TxMgr`
+func (txmgr *LockBasedTxMgr) NewQueryExecutor(txid string) (ledger.QueryExecutor, error) {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[6], 1);
+	qe := newQueryExecutor(txmgr, txid)
+	txmgr.commitRWLock.RLock()
+	return qe, nil
+}
+
+// NewTxSimulator implements method in interface `txmgmt.TxMgr`
+func (txmgr *LockBasedTxMgr) NewTxSimulator(txid string) (ledger.TxSimulator, error) {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[7], 1);
+	logger.Debugf("constructing new tx simulator")
+	s, err := newLockBasedTxSimulator(txmgr, txid)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[9], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[8], 1);txmgr.commitRWLock.RLock()
+	return s, nil
+}
+
+// ValidateAndPrepare implements method in interface `txmgmt.TxMgr`
+func (txmgr *LockBasedTxMgr) ValidateAndPrepare(blockAndPvtdata *ledger.BlockAndPvtData, doMVCCValidation bool) (
+	[]*txmgr.TxStatInfo, error,
+) {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[10], 1);
+	// Among ValidateAndPrepare(), PrepareExpiringKeys(), and
+	// RemoveStaleAndCommitPvtDataOfOldBlocks(), we can allow only one
+	// function to execute at a time. The reason is that each function calls
+	// LoadCommittedVersions() which would clear the existing entries in the
+	// transient buffer and load new entries (such a transient buffer is not
+	// applicable for the golevelDB). As a result, these three functions can
+	// interleave and nullify the optimization provided by the bulk read API.
+	// Once the ledger cache (FAB-103) is introduced and existing
+	// LoadCommittedVersions() is refactored to return a map, we can allow
+	// these three functions to execute parallely.
+	logger.Debugf("Waiting for purge mgr to finish the background job of computing expirying keys for the block")
+	txmgr.pvtdataPurgeMgr.WaitForPrepareToFinish()
+	txmgr.oldBlockCommit.Lock()
+	defer txmgr.oldBlockCommit.Unlock()
+	logger.Debug("lock acquired on oldBlockCommit for validating read set version against the committed version")
+
+	block := blockAndPvtdata.Block
+	logger.Debugf("Validating new block with num trans = [%d]", len(block.Data.Data))
+	batch, txstatsInfo, err := txmgr.validator.ValidateAndPrepareBatch(blockAndPvtdata, doMVCCValidation)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[13], 1);
+		txmgr.reset()
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[11], 1);txmgr.current = &current{block: block, batch: batch}
+	if err := txmgr.invokeNamespaceListeners(); err != nil {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[14], 1);
+		txmgr.reset()
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[12], 1);return txstatsInfo, nil
+}
+
+// RemoveStaleAndCommitPvtDataOfOldBlocks implements method in interface `txmgmt.TxMgr`
+// The following six operations are performed:
+// (1) contructs the unique pvt data from the passed blocksPvtData
+// (2) acquire a lock on oldBlockCommit
+// (3) checks for stale pvtData by comparing [version, valueHash] and removes stale data
+// (4) creates update batch from the the non-stale pvtData
+// (5) update the BTL bookkeeping managed by the purge manager and update expiring keys.
+// (6) commit the non-stale pvt data to the stateDB
+// This function assumes that the passed input contains only transactions that had been
+// marked "Valid". In the current design, this assumption holds true as we store
+// missing data info about only valid transactions. Further, gossip supplies only the
+// missing pvtData of valid transactions. If these two assumptions are broken due to some bug,
+// we are still safe from data consistency point of view as we match the version and the
+// value hashes stored in the stateDB before committing the value. However, if pvtData of
+// a tuple <ns, Coll, key> is passed for two (or more) transactions with one as valid and
+// another as invalid transaction, we might miss to store a missing data forever if the
+// version# of invalid tx is greater than the valid tx (as per our logic employed in
+// constructUniquePvtData(). Other than a bug, there is another scenario in which this
+// function might receive pvtData of both valid and invalid tx. Such a scenario is explained
+// in FAB-12924 and is related to state fork and rebuilding ledger state.
+func (txmgr *LockBasedTxMgr) RemoveStaleAndCommitPvtDataOfOldBlocks(blocksPvtData map[uint64][]*ledger.TxPvtData) error {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[15], 1);
+	// (0) Among ValidateAndPrepare(), PrepareExpiringKeys(), and
+	// RemoveStaleAndCommitPvtDataOfOldBlocks(), we can allow only one
+	// function to execute at a time. The reason is that each function calls
+	// LoadCommittedVersions() which would clear the existing entries in the
+	// transient buffer and load new entries (such a transient buffer is not
+	// applicable for the golevelDB). As a result, these three functions can
+	// interleave and nullify the optimization provided by the bulk read API.
+	// Once the ledger cache (FAB-103) is introduced and existing
+	// LoadCommittedVersions() is refactored to return a map, we can allow
+	// these three functions to execute parallely. However, we cannot remove
+	// the lock on oldBlockCommit as it is also used to avoid interleaving
+	// between Commit() and execution of this function for the correctness.
+	logger.Debug("Waiting for purge mgr to finish the background job of computing expirying keys for the block")
+	txmgr.pvtdataPurgeMgr.WaitForPrepareToFinish()
+	txmgr.oldBlockCommit.Lock()
+	defer txmgr.oldBlockCommit.Unlock()
+	logger.Debug("lock acquired on oldBlockCommit for committing pvtData of old blocks to state database")
+
+	// (1) as the blocksPvtData can contain multiple versions of pvtData for
+	// a given <ns, coll, key>, we need to find duplicate tuples with different
+	// versions and use the one with the higher version
+	logger.Debug("Constructing unique pvtData by removing duplicate entries")
+	uniquePvtData, err := constructUniquePvtData(blocksPvtData)
+	if len(uniquePvtData) == 0 || err != nil {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[20], 1);
+		return err
+	}
+
+	// (3) remove the pvt data which does not matches the hashed
+	// value stored in the public state
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[16], 1);logger.Debug("Finding and removing stale pvtData")
+	if err := uniquePvtData.findAndRemoveStalePvtData(txmgr.db); err != nil {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[21], 1);
+		return err
+	}
+
+	// (4) create the update batch from the uniquePvtData
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[17], 1);batch := uniquePvtData.transformToUpdateBatch()
+
+	// (5) update bookkeeping in the purge manager and update toPurgeList
+	// (i.e., the list of expiry keys). As the expiring keys would have
+	// been constructed during last PrepareExpiringKeys from commit, we need
+	// to update the list. This is because RemoveStaleAndCommitPvtDataOfOldBlocks
+	// may have added new data which might be eligible for expiry during the
+	// next regular block commit.
+	logger.Debug("Updating bookkeeping info in the purge manager")
+	if err := txmgr.pvtdataPurgeMgr.UpdateBookkeepingForPvtDataOfOldBlocks(batch.PvtUpdates); err != nil {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[22], 1);
+		return err
+	}
+
+	// (6) commit the pvt data to the stateDB
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[18], 1);logger.Debug("Committing updates to state database")
+	if err := txmgr.db.ApplyPrivacyAwareUpdates(batch, nil); err != nil {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[23], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[19], 1);return nil
+}
+
+type uniquePvtDataMap map[privacyenabledstate.HashedCompositeKey]*privacyenabledstate.PvtKVWrite
+
+func constructUniquePvtData(blocksPvtData map[uint64][]*ledger.TxPvtData) (uniquePvtDataMap, error) {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[24], 1);
+	uniquePvtData := make(uniquePvtDataMap)
+	// go over the blocksPvtData to find duplicate <ns, coll, key>
+	// in the pvtWrites and use the one with the higher version number
+	for blkNum, blockPvtData := range blocksPvtData {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[26], 1);
+		if err := uniquePvtData.updateUsingBlockPvtData(blockPvtData, blkNum); err != nil {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[27], 1);
+			return nil, err
+		}
+	} // for each block
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[25], 1);return uniquePvtData, nil
+}
+
+func (uniquePvtData uniquePvtDataMap) updateUsingBlockPvtData(blockPvtData []*ledger.TxPvtData, blkNum uint64) error {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[28], 1);
+	for _, txPvtData := range blockPvtData {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[30], 1);
+		ver := version.NewHeight(blkNum, txPvtData.SeqInBlock)
+		if err := uniquePvtData.updateUsingTxPvtData(txPvtData, ver); err != nil {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[31], 1);
+			return err
+		}
+	} // for each tx
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[29], 1);return nil
+}
+func (uniquePvtData uniquePvtDataMap) updateUsingTxPvtData(txPvtData *ledger.TxPvtData, ver *version.Height) error {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[32], 1);
+	for _, nsPvtData := range txPvtData.WriteSet.NsPvtRwset {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[34], 1);
+		if err := uniquePvtData.updateUsingNsPvtData(nsPvtData, ver); err != nil {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[35], 1);
+			return err
+		}
+	} // for each ns
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[33], 1);return nil
+}
+func (uniquePvtData uniquePvtDataMap) updateUsingNsPvtData(nsPvtData *rwset.NsPvtReadWriteSet, ver *version.Height) error {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[36], 1);
+	for _, collPvtData := range nsPvtData.CollectionPvtRwset {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[38], 1);
+		if err := uniquePvtData.updateUsingCollPvtData(collPvtData, nsPvtData.Namespace, ver); err != nil {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[39], 1);
+			return err
+		}
+	} // for each coll
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[37], 1);return nil
+}
+
+func (uniquePvtData uniquePvtDataMap) updateUsingCollPvtData(collPvtData *rwset.CollectionPvtReadWriteSet,
+	ns string, ver *version.Height) error {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[40], 1);
+
+	kvRWSet := &kvrwset.KVRWSet{}
+	if err := proto.Unmarshal(collPvtData.Rwset, kvRWSet); err != nil {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[43], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[41], 1);hashedCompositeKey := privacyenabledstate.HashedCompositeKey{
+		Namespace:      ns,
+		CollectionName: collPvtData.CollectionName,
+	}
+
+	for _, kvWrite := range kvRWSet.Writes {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[44], 1); // for each kv pair
+		hashedCompositeKey.KeyHash = string(util.ComputeStringHash(kvWrite.Key))
+		uniquePvtData.updateUsingPvtWrite(kvWrite, hashedCompositeKey, ver)
+	} // for each kv pair
+
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[42], 1);return nil
+}
+
+func (uniquePvtData uniquePvtDataMap) updateUsingPvtWrite(pvtWrite *kvrwset.KVWrite,
+	hashedCompositeKey privacyenabledstate.HashedCompositeKey, ver *version.Height) {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[45], 1);
+
+	pvtData, ok := uniquePvtData[hashedCompositeKey]
+	if !ok || pvtData.Version.Compare(ver) < 0 {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[46], 1);
+		uniquePvtData[hashedCompositeKey] =
+			&privacyenabledstate.PvtKVWrite{
+				Key:      pvtWrite.Key,
+				IsDelete: pvtWrite.IsDelete,
+				Value:    pvtWrite.Value,
+				Version:  ver,
+			}
+	}
+}
+
+func (uniquePvtData uniquePvtDataMap) findAndRemoveStalePvtData(db privacyenabledstate.DB) error {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[47], 1);
+	// (1) load all committed versions
+	if err := uniquePvtData.loadCommittedVersionIntoCache(db); err != nil {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[50], 1);
+		return err
+	}
+
+	// (2) find and remove the stale data
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[48], 1);for hashedCompositeKey, pvtWrite := range uniquePvtData {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[51], 1);
+		isStale, err := checkIfPvtWriteIsStale(&hashedCompositeKey, pvtWrite, db)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[53], 1);
+			return err
+		}
+		_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[52], 1);if isStale {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[54], 1);
+			delete(uniquePvtData, hashedCompositeKey)
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[49], 1);return nil
+}
+
+func (uniquePvtData uniquePvtDataMap) loadCommittedVersionIntoCache(db privacyenabledstate.DB) error {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[55], 1);
+	// Note that ClearCachedVersions would not be called till we validate and commit these
+	// pvt data of old blocks. This is because only during the exclusive lock duration, we
+	// clear the cache and we have already acquired one before reaching here.
+	var hashedCompositeKeys []*privacyenabledstate.HashedCompositeKey
+	for hashedCompositeKey := range uniquePvtData {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[58], 1);
+		// tempKey ensures a different pointer is added to the slice for each key
+		tempKey := hashedCompositeKey
+		hashedCompositeKeys = append(hashedCompositeKeys, &tempKey)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[56], 1);err := db.LoadCommittedVersionsOfPubAndHashedKeys(nil, hashedCompositeKeys)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[59], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[57], 1);return nil
+}
+
+func checkIfPvtWriteIsStale(hashedKey *privacyenabledstate.HashedCompositeKey,
+	kvWrite *privacyenabledstate.PvtKVWrite, db privacyenabledstate.DB) (bool, error) {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[60], 1);
+
+	ns := hashedKey.Namespace
+	coll := hashedKey.CollectionName
+	keyHashBytes := []byte(hashedKey.KeyHash)
+	committedVersion, err := db.GetKeyHashVersion(ns, coll, keyHashBytes)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[66], 1);
+		return true, err
+	}
+
+	// for a deleted hashedKey, we would get a nil committed version. Note that
+	// the hashedKey was deleted because either it got expired or was deleted by
+	// the chaincode itself.
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[61], 1);if committedVersion == nil && kvWrite.IsDelete {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[67], 1);
+		return false, nil
+	}
+
+	/*
+		TODO: FAB-12922
+		In the first round, we need to the check version of passed pvtData
+		against the version of pvtdata stored in the stateDB. In second round,
+		for the remaining pvtData, we need to check for stalenss using hashed
+		version. In the third round, for the still remaining pvtdata, we need
+		to check against hashed values. In each phase we would require to
+		perform bulkload of relevant data from the stateDB.
+		committedPvtData, err := db.GetPrivateData(ns, coll, kvWrite.Key)
+		if err != nil {
+			return false, err
+		}
+		if committedPvtData.Version.Compare(kvWrite.Version) > 0 {
+			return false, nil
+		}
+	*/
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[62], 1);if version.AreSame(committedVersion, kvWrite.Version) {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[68], 1);
+		return false, nil
+	}
+
+	// due to metadata updates, we could get a version
+	// mismatch between pvt kv write and the committed
+	// hashedKey. In this case, we must compare the hash
+	// of the value. If the hash matches, we should update
+	// the version number in the pvt kv write and return
+	// true as the validation result
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[63], 1);vv, err := db.GetValueHash(ns, coll, keyHashBytes)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[69], 1);
+		return true, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[64], 1);if bytes.Equal(vv.Value, util.ComputeHash(kvWrite.Value)) {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[70], 1);
+		// if hash of value matches, update version
+		// and return true
+		kvWrite.Version = vv.Version // side effect
+		// (checkIfPvtWriteIsStale should not be updating the state)
+		return false, nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[65], 1);return true, nil
+}
+
+func (uniquePvtData uniquePvtDataMap) transformToUpdateBatch() *privacyenabledstate.UpdateBatch {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[71], 1);
+	batch := privacyenabledstate.NewUpdateBatch()
+	for hashedCompositeKey, pvtWrite := range uniquePvtData {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[73], 1);
+		ns := hashedCompositeKey.Namespace
+		coll := hashedCompositeKey.CollectionName
+		if pvtWrite.IsDelete {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[74], 1);
+			batch.PvtUpdates.Delete(ns, coll, pvtWrite.Key, pvtWrite.Version)
+		} else{ _cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[75], 1);{
+			batch.PvtUpdates.Put(ns, coll, pvtWrite.Key, pvtWrite.Value, pvtWrite.Version)
+		}}
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[72], 1);return batch
+}
+
+func (txmgr *LockBasedTxMgr) invokeNamespaceListeners() error {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[76], 1);
+	for _, listener := range txmgr.stateListeners {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[78], 1);
+		stateUpdatesForListener := extractStateUpdates(txmgr.current.batch, listener.InterestedInNamespaces())
+		if len(stateUpdatesForListener) == 0 {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[81], 1);
+			continue
+		}
+		_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[79], 1);txmgr.current.listeners = append(txmgr.current.listeners, listener)
+
+		committedStateQueryExecuter := &queryutil.QECombiner{
+			QueryExecuters: []queryutil.QueryExecuter{txmgr.db}}
+
+		postCommitQueryExecuter := &queryutil.QECombiner{
+			QueryExecuters: []queryutil.QueryExecuter{
+				&queryutil.UpdateBatchBackedQueryExecuter{UpdateBatch: txmgr.current.batch.PubUpdates.UpdateBatch},
+				txmgr.db,
+			},
+		}
+
+		trigger := &ledger.StateUpdateTrigger{
+			LedgerID:                    txmgr.ledgerid,
+			StateUpdates:                stateUpdatesForListener,
+			CommittingBlockNum:          txmgr.current.blockNum(),
+			CommittedStateQueryExecutor: committedStateQueryExecuter,
+			PostCommitQueryExecutor:     postCommitQueryExecuter,
+		}
+		if err := listener.HandleStateUpdates(trigger); err != nil {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[82], 1);
+			return err
+		}
+		_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[80], 1);logger.Debugf("Invoking listener for state changes:%s", listener)
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[77], 1);return nil
+}
+
+// Shutdown implements method in interface `txmgmt.TxMgr`
+func (txmgr *LockBasedTxMgr) Shutdown() {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[83], 1);
+	// wait for background go routine to finish else the timing issue causes a nil pointer inside goleveldb code
+	// see FAB-11974
+	txmgr.pvtdataPurgeMgr.WaitForPrepareToFinish()
+	txmgr.db.Close()
+}
+
+// Commit implements method in interface `txmgmt.TxMgr`
+func (txmgr *LockBasedTxMgr) Commit() error {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[84], 1);
+	// we need to acquire a lock on oldBlockCommit. The following are the two reasons:
+	// (1) the DeleteExpiredAndUpdateBookkeeping() would perform incorrect operation if
+	//        toPurgeList is updated by RemoveStaleAndCommitPvtDataOfOldBlocks().
+	// (2) RemoveStaleAndCommitPvtDataOfOldBlocks computes the update
+	//     batch based on the current state and if we allow regular block commits at the
+	//     same time, the former may overwrite the newer versions of the data and we may
+	//     end up with an incorrect update batch.
+	txmgr.oldBlockCommit.Lock()
+	defer txmgr.oldBlockCommit.Unlock()
+	logger.Debug("lock acquired on oldBlockCommit for committing regular updates to state database")
+
+	// When using the purge manager for the first block commit after peer start, the asynchronous function
+	// 'PrepareForExpiringKeys' is invoked in-line. However, for the subsequent blocks commits, this function is invoked
+	// in advance for the next block
+	if !txmgr.pvtdataPurgeMgr.usedOnce {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[91], 1);
+		txmgr.pvtdataPurgeMgr.PrepareForExpiringKeys(txmgr.current.blockNum())
+		txmgr.pvtdataPurgeMgr.usedOnce = true
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[85], 1);defer func() {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[92], 1);
+		txmgr.pvtdataPurgeMgr.PrepareForExpiringKeys(txmgr.current.blockNum() + 1)
+		logger.Debugf("launched the background routine for preparing keys to purge with the next block")
+		txmgr.reset()
+	}()
+
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[86], 1);logger.Debugf("Committing updates to state database")
+	if txmgr.current == nil {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[93], 1);
+		panic("validateAndPrepare() method should have been called before calling commit()")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[87], 1);if err := txmgr.pvtdataPurgeMgr.DeleteExpiredAndUpdateBookkeeping(
+		txmgr.current.batch.PvtUpdates, txmgr.current.batch.HashUpdates); err != nil {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[94], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[88], 1);commitHeight := version.NewHeight(txmgr.current.blockNum(), txmgr.current.maxTxNumber())
+	txmgr.commitRWLock.Lock()
+	logger.Debugf("Write lock acquired for committing updates to state database")
+	if err := txmgr.db.ApplyPrivacyAwareUpdates(txmgr.current.batch, commitHeight); err != nil {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[95], 1);
+		txmgr.commitRWLock.Unlock()
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[89], 1);txmgr.commitRWLock.Unlock()
+	// only while holding a lock on oldBlockCommit, we should clear the cache as the
+	// cache is being used by the old pvtData committer to load the version of
+	// hashedKeys. Also, note that the PrepareForExpiringKeys uses the cache.
+	txmgr.clearCache()
+	logger.Debugf("Updates committed to state database and the write lock is released")
+
+	// purge manager should be called (in this call the purge mgr removes the expiry entries from schedules) after committing to statedb
+	if err := txmgr.pvtdataPurgeMgr.BlockCommitDone(); err != nil {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[96], 1);
+		return err
+	}
+	// In the case of error state listeners will not recieve this call - instead a peer panic is caused by the ledger upon receiveing
+	// an error from this function
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[90], 1);txmgr.updateStateListeners()
+	return nil
+}
+
+// Rollback implements method in interface `txmgmt.TxMgr`
+func (txmgr *LockBasedTxMgr) Rollback() {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[97], 1);
+	txmgr.reset()
+}
+
+// clearCache empty the cache maintained by the statedb implementation
+func (txmgr *LockBasedTxMgr) clearCache() {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[98], 1);
+	if txmgr.db.IsBulkOptimizable() {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[99], 1);
+		txmgr.db.ClearCachedVersions()
+	}
+}
+
+// ShouldRecover implements method in interface kvledger.Recoverer
+func (txmgr *LockBasedTxMgr) ShouldRecover(lastAvailableBlock uint64) (bool, uint64, error) {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[100], 1);
+	savepoint, err := txmgr.GetLastSavepoint()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[103], 1);
+		return false, 0, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[101], 1);if savepoint == nil {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[104], 1);
+		return true, 0, nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[102], 1);return savepoint.BlockNum != lastAvailableBlock, savepoint.BlockNum + 1, nil
+}
+
+// CommitLostBlock implements method in interface kvledger.Recoverer
+func (txmgr *LockBasedTxMgr) CommitLostBlock(blockAndPvtdata *ledger.BlockAndPvtData) error {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[105], 1);
+	block := blockAndPvtdata.Block
+	logger.Debugf("Constructing updateSet for the block %d", block.Header.Number)
+	if _, err := txmgr.ValidateAndPrepare(blockAndPvtdata, false); err != nil {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[108], 1);
+		return err
+	}
+
+	// log every 1000th block at Info level so that statedb rebuild progress can be tracked in production envs.
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[106], 1);if block.Header.Number%1000 == 0 {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[109], 1);
+		logger.Infof("Recommitting block [%d] to state database", block.Header.Number)
+	} else{ _cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[110], 1);{
+		logger.Debugf("Recommitting block [%d] to state database", block.Header.Number)
+	}}
+
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[107], 1);return txmgr.Commit()
+}
+
+func extractStateUpdates(batch *privacyenabledstate.UpdateBatch, namespaces []string) ledger.StateUpdates {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[111], 1);
+	stateupdates := make(ledger.StateUpdates)
+	for _, namespace := range namespaces {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[113], 1);
+		updatesMap := batch.PubUpdates.GetUpdates(namespace)
+		var kvwrites []*kvrwset.KVWrite
+		for key, versionedValue := range updatesMap {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[114], 1);
+			kvwrites = append(kvwrites, &kvrwset.KVWrite{Key: key, IsDelete: versionedValue.Value == nil, Value: versionedValue.Value})
+			if len(kvwrites) > 0 {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[115], 1);
+				stateupdates[namespace] = kvwrites
+			}
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[112], 1);return stateupdates
+}
+
+func (txmgr *LockBasedTxMgr) updateStateListeners() {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[116], 1);
+	for _, l := range txmgr.current.listeners {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[117], 1);
+		l.StateCommitDone(txmgr.ledgerid)
+	}
+}
+
+func (txmgr *LockBasedTxMgr) reset() {_cover_atomic_.AddUint32(&GoCover_4_386331373365306636336339.Count[118], 1);
+	txmgr.current = nil
+}
+
+// pvtdataPurgeMgr wraps the actual purge manager and an additional flag 'usedOnce'
+// for usage of this additional flag, see the relevant comments in the txmgr.Commit() function above
+type pvtdataPurgeMgr struct {
+	pvtstatepurgemgmt.PurgeMgr
+	usedOnce bool
+}
+
+var GoCover_4_386331373365306636336339 = struct {
+	Count     [119]uint32
+	Pos       [3 * 119]uint32
+	NumStmt   [119]uint16
+} {
+	Pos: [3 * 119]uint32{
+		52, 54, 0x20025, // [0]
+		56, 58, 0x20028, // [1]
+		62, 71, 0x10009d, // [2]
+		74, 76, 0x130002, // [3]
+		71, 73, 0x30010, // [4]
+		81, 83, 0x2004a, // [5]
+		86, 90, 0x2005a, // [6]
+		93, 96, 0x100056, // [7]
+		99, 100, 0xf0002, // [8]
+		96, 98, 0x30010, // [9]
+		106, 126, 0x100003, // [10]
+		130, 131, 0x390002, // [11]
+		135, 135, 0x190002, // [12]
+		126, 129, 0x30010, // [13]
+		131, 134, 0x30039, // [14]
+		158, 182, 0x2b0079, // [15]
+		188, 189, 0x4a0002, // [16]
+		194, 203, 0x670002, // [17]
+		208, 209, 0x460002, // [18]
+		212, 212, 0xc0002, // [19]
+		182, 184, 0x3002b, // [20]
+		189, 191, 0x3004a, // [21]
+		203, 205, 0x30067, // [22]
+		209, 211, 0x30046, // [23]
+		217, 221, 0x320065, // [24]
+		226, 226, 0x1b0002, // [25]
+		221, 222, 0x550032, // [26]
+		222, 224, 0x40055, // [27]
+		229, 230, 0x290076, // [28]
+		236, 236, 0xc0002, // [29]
+		230, 232, 0x4c0029, // [30]
+		232, 234, 0x4004c, // [31]
+		238, 239, 0x3a0074, // [32]
+		244, 244, 0xc0002, // [33]
+		239, 240, 0x4c003a, // [34]
+		240, 242, 0x4004c, // [35]
+		246, 247, 0x3b007b, // [36]
+		252, 252, 0xc0002, // [37]
+		247, 248, 0x65003b, // [38]
+		248, 250, 0x40065, // [39]
+		256, 259, 0x440028, // [40]
+		263, 268, 0x290002, // [41]
+		273, 273, 0xc0002, // [42]
+		259, 261, 0x30044, // [43]
+		268, 271, 0x30029, // [44]
+		277, 280, 0x2d0052, // [45]
+		280, 288, 0x3002d, // [46]
+		291, 293, 0x480062, // [47]
+		298, 298, 0x3a0002, // [48]
+		307, 307, 0xc0002, // [49]
+		293, 295, 0x30048, // [50]
+		298, 300, 0x11003a, // [51]
+		303, 303, 0xe0003, // [52]
+		300, 302, 0x40011, // [53]
+		303, 305, 0x4000e, // [54]
+		310, 315, 0x300066, // [55]
+		321, 322, 0x100002, // [56]
+		325, 325, 0xc0002, // [57]
+		315, 319, 0x30030, // [58]
+		322, 324, 0x30010, // [59]
+		329, 335, 0x100054, // [60]
+		342, 342, 0x310002, // [61]
+		362, 362, 0x380002, // [62]
+		372, 373, 0x100002, // [63]
+		376, 376, 0x3c0002, // [64]
+		383, 383, 0x120002, // [65]
+		335, 337, 0x30010, // [66]
+		342, 344, 0x30031, // [67]
+		362, 364, 0x30038, // [68]
+		373, 375, 0x30010, // [69]
+		376, 382, 0x3003c, // [70]
+		386, 388, 0x3a0061, // [71]
+		397, 397, 0xe0002, // [72]
+		388, 391, 0x18003a, // [73]
+		391, 393, 0x40018, // [74]
+		393, 395, 0x40009, // [75]
+		400, 401, 0x30003f, // [76]
+		430, 430, 0xc0002, // [77]
+		401, 403, 0x280030, // [78]
+		406, 425, 0x3e0003, // [79]
+		428, 428, 0x440003, // [80]
+		403, 404, 0xc0028, // [81]
+		425, 427, 0x4003e, // [82]
+		434, 439, 0x20029, // [83]
+		442, 457, 0x25002d, // [84]
+		461, 461, 0xf0002, // [85]
+		467, 468, 0x1a0002, // [86]
+		472, 473, 0x500002, // [87]
+		477, 480, 0x5d0002, // [88]
+		484, 492, 0x400002, // [89]
+		497, 498, 0xc0002, // [90]
+		457, 460, 0x30025, // [91]
+		461, 465, 0x3000f, // [92]
+		468, 469, 0x57001a, // [93]
+		473, 475, 0x30050, // [94]
+		480, 483, 0x3005d, // [95]
+		492, 494, 0x30040, // [96]
+		502, 504, 0x20029, // [97]
+		507, 508, 0x22002b, // [98]
+		508, 510, 0x30022, // [99]
+		514, 516, 0x10005d, // [100]
+		519, 519, 0x160002, // [101]
+		522, 522, 0x4e0002, // [102]
+		516, 518, 0x30010, // [103]
+		519, 521, 0x30016, // [104]
+		526, 529, 0x4c005d, // [105]
+		534, 534, 0x230002, // [106]
+		540, 540, 0x170002, // [107]
+		529, 531, 0x3004c, // [108]
+		534, 536, 0x30023, // [109]
+		536, 538, 0x30008, // [110]
+		543, 545, 0x27006b, // [111]
+		555, 555, 0x150002, // [112]
+		545, 548, 0x2f0027, // [113]
+		548, 550, 0x19002f, // [114]
+		550, 552, 0x50019, // [115]
+		558, 559, 0x2c0035, // [116]
+		559, 561, 0x3002c, // [117]
+		564, 566, 0x20026, // [118]
+	},
+	NumStmt: [119]uint16{
+		1, // 0
+		1, // 1
+		4, // 2
+		3, // 3
+		1, // 4
+		1, // 5
+		3, // 6
+		3, // 7
+		2, // 8
+		1, // 9
+		9, // 10
+		2, // 11
+		1, // 12
+		2, // 13
+		2, // 14
+		8, // 15
+		2, // 16
+		3, // 17
+		2, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+		2, // 24
+		1, // 25
+		1, // 26
+		1, // 27
+		1, // 28
+		1, // 29
+		2, // 30
+		1, // 31
+		1, // 32
+		1, // 33
+		1, // 34
+		1, // 35
+		1, // 36
+		1, // 37
+		1, // 38
+		1, // 39
+		2, // 40
+		2, // 41
+		1, // 42
+		1, // 43
+		2, // 44
+		2, // 45
+		1, // 46
+		1, // 47
+		1, // 48
+		1, // 49
+		1, // 50
+		2, // 51
+		1, // 52
+		1, // 53
+		1, // 54
+		2, // 55
+		2, // 56
+		1, // 57
+		2, // 58
+		1, // 59
+		5, // 60
+		1, // 61
+		1, // 62
+		2, // 63
+		1, // 64
+		1, // 65
+		1, // 66
+		1, // 67
+		1, // 68
+		1, // 69
+		2, // 70
+		2, // 71
+		1, // 72
+		3, // 73
+		1, // 74
+		1, // 75
+		1, // 76
+		1, // 77
+		2, // 78
+		5, // 79
+		1, // 80
+		1, // 81
+		1, // 82
+		2, // 83
+		4, // 84
+		1, // 85
+		2, // 86
+		1, // 87
+		4, // 88
+		4, // 89
+		2, // 90
+		2, // 91
+		3, // 92
+		1, // 93
+		1, // 94
+		2, // 95
+		1, // 96
+		1, // 97
+		1, // 98
+		1, // 99
+		2, // 100
+		1, // 101
+		1, // 102
+		1, // 103
+		1, // 104
+		3, // 105
+		1, // 106
+		1, // 107
+		1, // 108
+		1, // 109
+		1, // 110
+		2, // 111
+		1, // 112
+		3, // 113
+		2, // 114
+		1, // 115
+		1, // 116
+		1, // 117
+		1, // 118
+	},
+}
+var _ = _cover_atomic_.LoadUint32

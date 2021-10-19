@@ -1,0 +1,6 @@
+node.cover.go
+signals.cover.go
+start.cover.go
+status.cover.go
+./start_test.go
+./status_test.go

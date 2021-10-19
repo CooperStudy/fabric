@@ -1,0 +1,389 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/discovery/cmd/endorsers.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package discovery; import _cover_atomic_ "sync/atomic"
+
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"reflect"
+	"strings"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/cmd/common"
+	"github.com/hyperledger/fabric/discovery/client"
+	. "github.com/hyperledger/fabric/protos/discovery"
+	"github.com/hyperledger/fabric/protos/gossip"
+	"github.com/hyperledger/fabric/protos/msp"
+	"github.com/pkg/errors"
+)
+
+// NewEndorsersCmd creates a new EndorsersCmd
+func NewEndorsersCmd(stub Stub, parser ResponseParser) *EndorsersCmd {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[0], 1);
+	return &EndorsersCmd{
+		stub:   stub,
+		parser: parser,
+	}
+}
+
+// EndorsersCmd executes a command that retrieves endorsers for a chaincode invocation chain
+type EndorsersCmd struct {
+	stub        Stub
+	server      *string
+	channel     *string
+	chaincodes  *[]string
+	collections *map[string]string
+	parser      ResponseParser
+}
+
+// SetCollections sets the collections to be the given collections
+func (pc *EndorsersCmd) SetCollections(collections *map[string]string) {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[1], 1);
+	pc.collections = collections
+}
+
+// SetChaincodes sets the chaincodes to be the given chaincodes
+func (pc *EndorsersCmd) SetChaincodes(chaincodes *[]string) {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[2], 1);
+	pc.chaincodes = chaincodes
+}
+
+// SetServer sets the server
+func (pc *EndorsersCmd) SetServer(server *string) {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[3], 1);
+	pc.server = server
+}
+
+// SetChannel sets the channel
+func (pc *EndorsersCmd) SetChannel(channel *string) {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[4], 1);
+	pc.channel = channel
+}
+
+// Execute executes the command
+func (pc *EndorsersCmd) Execute(conf common.Config) error {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[5], 1);
+	if pc.channel == nil || *pc.channel == "" {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[12], 1);
+		return errors.New("no channel specified")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[6], 1);if pc.server == nil || *pc.server == "" {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[13], 1);
+		return errors.New("no server specified")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[7], 1);server := *pc.server
+	channel := *pc.channel
+
+	ccAndCol := &chaincodesAndCollections{
+		Chaincodes:  pc.chaincodes,
+		Collections: pc.collections,
+	}
+	cc2collections, err := ccAndCol.parseInput()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[14], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[8], 1);var ccCalls []*ChaincodeCall
+
+	for _, cc := range *ccAndCol.Chaincodes {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[15], 1);
+		ccCalls = append(ccCalls, &ChaincodeCall{
+			Name:            cc,
+			CollectionNames: cc2collections[cc],
+		})
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[9], 1);req, err := discovery.NewRequest().OfChannel(channel).AddEndorsersQuery(&ChaincodeInterest{Chaincodes: ccCalls})
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[16], 1);
+		return errors.Wrap(err, "failed creating request")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[10], 1);res, err := pc.stub.Send(server, conf, req)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[17], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[11], 1);return pc.parser.ParseResponse(channel, res)
+}
+
+// EndorserResponseParser parses endorsement responses from the peer
+type EndorserResponseParser struct {
+	io.Writer
+}
+
+// ParseResponse parses the given response for the given channel
+func (parser *EndorserResponseParser) ParseResponse(channel string, res ServiceResponse) error {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[18], 1);
+	rawResponse := res.Raw()
+	if len(rawResponse.Results) == 0 {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[22], 1);
+		return errors.New("empty results")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[19], 1);if e := rawResponse.Results[0].GetError(); e != nil {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[23], 1);
+		return errors.Errorf("server returned: %s", e.Content)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[20], 1);ccQueryRes := rawResponse.Results[0].GetCcQueryRes()
+	if ccQueryRes == nil {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[24], 1);
+		return errors.Errorf("server returned response of unexpected type: %v", reflect.TypeOf(rawResponse.Results[0]))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[21], 1);jsonBytes, _ := json.MarshalIndent(parseEndorsementDescriptors(ccQueryRes.Content), "", "\t")
+	fmt.Fprintln(parser.Writer, string(jsonBytes))
+	return nil
+}
+
+type chaincodesAndCollections struct {
+	Chaincodes  *[]string
+	Collections *map[string]string
+}
+
+func (ec *chaincodesAndCollections) existsInChaincodes(chaincodeName string) bool {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[25], 1);
+	for _, cc := range *ec.Chaincodes {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[27], 1);
+		if chaincodeName == cc {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[28], 1);
+			return true
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[26], 1);return false
+}
+
+func (ec *chaincodesAndCollections) parseInput() (map[string][]string, error) {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[29], 1);
+	var emptyChaincodes []string
+	if ec.Chaincodes == nil {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[34], 1);
+		ec.Chaincodes = &emptyChaincodes
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[30], 1);var emptyCollections map[string]string
+	if ec.Collections == nil {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[35], 1);
+		ec.Collections = &emptyCollections
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[31], 1);res := make(map[string][]string)
+
+	for _, cc := range *ec.Chaincodes {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[36], 1);
+		res[cc] = nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[32], 1);for cc, collections := range *ec.Collections {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[37], 1);
+		if !ec.existsInChaincodes(cc) {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[39], 1);
+			return nil, errors.Errorf("a collection specified chaincode %s but it wasn't specified with a chaincode flag", cc)
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[38], 1);res[cc] = strings.Split(collections, ",")
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[33], 1);return res, nil
+}
+
+func parseEndorsementDescriptors(descriptors []*EndorsementDescriptor) []endorsermentDescriptor {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[40], 1);
+	var res []endorsermentDescriptor
+	for _, desc := range descriptors {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[42], 1);
+		endorsersByGroups := make(map[string][]endorser)
+		for grp, endorsers := range desc.EndorsersByGroups {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[44], 1);
+			for _, p := range endorsers.Peers {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[45], 1);
+				endorsersByGroups[grp] = append(endorsersByGroups[grp], endorserFromRaw(p))
+			}
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[43], 1);res = append(res, endorsermentDescriptor{
+			Chaincode:         desc.Chaincode,
+			Layouts:           desc.Layouts,
+			EndorsersByGroups: endorsersByGroups,
+		})
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[41], 1);return res
+}
+
+type endorser struct {
+	MSPID        string
+	LedgerHeight uint64
+	Endpoint     string
+	Identity     string
+}
+
+type endorsermentDescriptor struct {
+	Chaincode         string
+	EndorsersByGroups map[string][]endorser
+	Layouts           []*Layout
+}
+
+func endorserFromRaw(p *Peer) endorser {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[46], 1);
+	sId := &msp.SerializedIdentity{}
+	proto.Unmarshal(p.Identity, sId)
+	return endorser{
+		MSPID:        sId.Mspid,
+		Endpoint:     endpointFromEnvelope(p.MembershipInfo),
+		LedgerHeight: ledgerHeightFromEnvelope(p.StateInfo),
+		Identity:     string(sId.IdBytes),
+	}
+}
+
+func endpointFromEnvelope(env *gossip.Envelope) string {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[47], 1);
+	if env == nil {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[52], 1);
+		return ""
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[48], 1);aliveMsg, _ := env.ToGossipMessage()
+	if aliveMsg == nil {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[53], 1);
+		return ""
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[49], 1);if !aliveMsg.IsAliveMsg() {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[54], 1);
+		return ""
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[50], 1);if aliveMsg.GetAliveMsg().Membership == nil {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[55], 1);
+		return ""
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[51], 1);return aliveMsg.GetAliveMsg().Membership.Endpoint
+}
+
+func ledgerHeightFromEnvelope(env *gossip.Envelope) uint64 {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[56], 1);
+	if env == nil {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[61], 1);
+		return 0
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[57], 1);stateInfoMsg, _ := env.ToGossipMessage()
+	if stateInfoMsg == nil {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[62], 1);
+		return 0
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[58], 1);if !stateInfoMsg.IsStateInfoMsg() {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[63], 1);
+		return 0
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[59], 1);if stateInfoMsg.GetStateInfo().Properties == nil {_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[64], 1);
+		return 0
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_646636343763343830343930.Count[60], 1);return stateInfoMsg.GetStateInfo().Properties.LedgerHeight
+}
+
+var GoCover_2_646636343763343830343930 = struct {
+	Count     [65]uint32
+	Pos       [3 * 65]uint32
+	NumStmt   [65]uint16
+} {
+	Pos: [3 * 65]uint32{
+		26, 31, 0x20046, // [0]
+		44, 46, 0x20048, // [1]
+		49, 51, 0x2003d, // [2]
+		54, 56, 0x20033, // [3]
+		59, 61, 0x20035, // [4]
+		64, 65, 0x2c003b, // [5]
+		69, 69, 0x2a0002, // [6]
+		73, 81, 0x100002, // [7]
+		85, 87, 0x2a0002, // [8]
+		94, 95, 0x100002, // [9]
+		99, 100, 0x100002, // [10]
+		104, 104, 0x2e0002, // [11]
+		65, 67, 0x3002c, // [12]
+		69, 71, 0x3002a, // [13]
+		81, 83, 0x30010, // [14]
+		87, 92, 0x3002a, // [15]
+		95, 97, 0x30010, // [16]
+		100, 102, 0x30010, // [17]
+		113, 115, 0x230060, // [18]
+		119, 119, 0x360002, // [19]
+		123, 124, 0x170002, // [20]
+		128, 130, 0xc0002, // [21]
+		115, 117, 0x30023, // [22]
+		119, 121, 0x30036, // [23]
+		124, 126, 0x30017, // [24]
+		138, 139, 0x240053, // [25]
+		144, 144, 0xe0002, // [26]
+		139, 140, 0x1a0024, // [27]
+		140, 142, 0x4001a, // [28]
+		147, 149, 0x1a004f, // [29]
+		152, 153, 0x1b0002, // [30]
+		157, 159, 0x240002, // [31]
+		163, 163, 0x2f0002, // [32]
+		169, 169, 0x110002, // [33]
+		149, 151, 0x3001a, // [34]
+		153, 155, 0x3001b, // [35]
+		159, 161, 0x30024, // [36]
+		163, 164, 0x21002f, // [37]
+		167, 167, 0x2c0003, // [38]
+		164, 166, 0x40021, // [39]
+		172, 174, 0x230061, // [40]
+		187, 187, 0xc0002, // [41]
+		174, 176, 0x360023, // [42]
+		181, 185, 0x50003, // [43]
+		176, 177, 0x260036, // [44]
+		177, 179, 0x50026, // [45]
+		203, 212, 0x20028, // [46]
+		214, 215, 0x100038, // [47]
+		218, 219, 0x150002, // [48]
+		222, 222, 0x1c0002, // [49]
+		225, 225, 0x2e0002, // [50]
+		228, 228, 0x330002, // [51]
+		215, 217, 0x30010, // [52]
+		219, 221, 0x30015, // [53]
+		222, 224, 0x3001c, // [54]
+		225, 227, 0x3002e, // [55]
+		231, 232, 0x10003c, // [56]
+		235, 236, 0x190002, // [57]
+		239, 239, 0x240002, // [58]
+		242, 242, 0x330002, // [59]
+		245, 245, 0x3c0002, // [60]
+		232, 234, 0x30010, // [61]
+		236, 238, 0x30019, // [62]
+		239, 241, 0x30024, // [63]
+		242, 244, 0x30033, // [64]
+	},
+	NumStmt: [65]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		5, // 7
+		2, // 8
+		2, // 9
+		2, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		2, // 18
+		1, // 19
+		2, // 20
+		3, // 21
+		1, // 22
+		1, // 23
+		1, // 24
+		1, // 25
+		1, // 26
+		1, // 27
+		1, // 28
+		2, // 29
+		2, // 30
+		2, // 31
+		1, // 32
+		1, // 33
+		1, // 34
+		1, // 35
+		1, // 36
+		1, // 37
+		1, // 38
+		1, // 39
+		2, // 40
+		1, // 41
+		2, // 42
+		1, // 43
+		1, // 44
+		1, // 45
+		3, // 46
+		1, // 47
+		2, // 48
+		1, // 49
+		1, // 50
+		1, // 51
+		1, // 52
+		1, // 53
+		1, // 54
+		1, // 55
+		1, // 56
+		2, // 57
+		1, // 58
+		1, // 59
+		1, // 60
+		1, // 61
+		1, // 62
+		1, // 63
+		1, // 64
+	},
+}
+var _ = _cover_atomic_.LoadUint32

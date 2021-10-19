@@ -1,0 +1,72 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/metrics/disabled/provider.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package disabled; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric/common/metrics"
+)
+
+type Provider struct{}
+
+func (p *Provider) NewCounter(o metrics.CounterOpts) metrics.Counter       {_cover_atomic_.AddUint32(&GoCover_0_653830633066383165353532.Count[0], 1); return &Counter{} }
+func (p *Provider) NewGauge(o metrics.GaugeOpts) metrics.Gauge             {_cover_atomic_.AddUint32(&GoCover_0_653830633066383165353532.Count[1], 1); return &Gauge{} }
+func (p *Provider) NewHistogram(o metrics.HistogramOpts) metrics.Histogram {_cover_atomic_.AddUint32(&GoCover_0_653830633066383165353532.Count[2], 1); return &Histogram{} }
+
+type Counter struct{}
+
+func (c *Counter) Add(delta float64) {_cover_atomic_.AddUint32(&GoCover_0_653830633066383165353532.Count[3], 1);}
+func (c *Counter) With(labelValues ...string) metrics.Counter {_cover_atomic_.AddUint32(&GoCover_0_653830633066383165353532.Count[4], 1);
+	return c
+}
+
+type Gauge struct{}
+
+func (g *Gauge) Add(delta float64) {_cover_atomic_.AddUint32(&GoCover_0_653830633066383165353532.Count[5], 1);}
+func (g *Gauge) Set(delta float64) {_cover_atomic_.AddUint32(&GoCover_0_653830633066383165353532.Count[6], 1);}
+func (g *Gauge) With(labelValues ...string) metrics.Gauge {_cover_atomic_.AddUint32(&GoCover_0_653830633066383165353532.Count[7], 1);
+	return g
+}
+
+type Histogram struct{}
+
+func (h *Histogram) Observe(value float64) {_cover_atomic_.AddUint32(&GoCover_0_653830633066383165353532.Count[8], 1);}
+func (h *Histogram) With(labelValues ...string) metrics.Histogram {_cover_atomic_.AddUint32(&GoCover_0_653830633066383165353532.Count[9], 1);
+	return h
+}
+
+var GoCover_0_653830633066383165353532 = struct {
+	Count     [10]uint32
+	Pos       [3 * 10]uint32
+	NumStmt   [10]uint16
+} {
+	Pos: [3 * 10]uint32{
+		15, 15, 0x61004c, // [0]
+		16, 16, 0x5f004c, // [1]
+		17, 17, 0x63004c, // [2]
+		21, 21, 0x280027, // [3]
+		22, 24, 0x2003f, // [4]
+		28, 28, 0x260025, // [5]
+		29, 29, 0x260025, // [6]
+		30, 32, 0x2003b, // [7]
+		36, 36, 0x2e002d, // [8]
+		37, 39, 0x20043, // [9]
+	},
+	NumStmt: [10]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		0, // 3
+		1, // 4
+		0, // 5
+		0, // 6
+		1, // 7
+		0, // 8
+		1, // 9
+	},
+}
+var _ = _cover_atomic_.LoadUint32

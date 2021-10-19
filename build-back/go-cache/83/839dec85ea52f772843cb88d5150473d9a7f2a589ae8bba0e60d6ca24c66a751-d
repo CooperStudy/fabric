@@ -1,0 +1,58 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/ledger/util/couchdb/metrics.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package couchdb; import _cover_atomic_ "sync/atomic"
+
+import (
+	"time"
+
+	"github.com/hyperledger/fabric/common/metrics"
+)
+
+var (
+	apiProcessingTimeOpts = metrics.HistogramOpts{
+		Namespace:    "couchdb",
+		Subsystem:    "",
+		Name:         "processing_time",
+		Help:         "Time taken in seconds for the function to complete request to CouchDB",
+		LabelNames:   []string{"database", "function_name", "result"},
+		StatsdFormat: "%{#fqname}.%{database}.%{function_name}.%{result}",
+	}
+)
+
+type stats struct {
+	apiProcessingTime metrics.Histogram
+}
+
+func newStats(metricsProvider metrics.Provider) *stats {_cover_atomic_.AddUint32(&GoCover_3_646532663132623064613838.Count[0], 1);
+	return &stats{
+		apiProcessingTime: metricsProvider.NewHistogram(apiProcessingTimeOpts),
+	}
+}
+
+func (s *stats) observeProcessingTime(startTime time.Time, dbName, functionName, result string) {_cover_atomic_.AddUint32(&GoCover_3_646532663132623064613838.Count[1], 1);
+	s.apiProcessingTime.With(
+		"database", dbName,
+		"function_name", functionName,
+		"result", result,
+	).Observe(time.Since(startTime).Seconds())
+}
+
+var GoCover_3_646532663132623064613838 = struct {
+	Count     [2]uint32
+	Pos       [3 * 2]uint32
+	NumStmt   [2]uint16
+} {
+	Pos: [3 * 2]uint32{
+		29, 33, 0x20038, // [0]
+		35, 41, 0x20061, // [1]
+	},
+	NumStmt: [2]uint16{
+		1, // 0
+		1, // 1
+	},
+}
+var _ = _cover_atomic_.LoadUint32

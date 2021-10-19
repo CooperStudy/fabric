@@ -1,0 +1,778 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/chaincode/platforms/golang/platform.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package golang; import _cover_atomic_ "sync/atomic"
+
+import (
+	"archive/tar"
+	"bytes"
+	"compress/gzip"
+	"fmt"
+	"io/ioutil"
+	"net/url"
+	"os"
+	"path/filepath"
+	"regexp"
+	"sort"
+	"strings"
+
+	"github.com/hyperledger/fabric/core/chaincode/platforms"
+	"github.com/hyperledger/fabric/core/chaincode/platforms/ccmetadata"
+	"github.com/hyperledger/fabric/core/chaincode/platforms/util"
+	cutil "github.com/hyperledger/fabric/core/container/util"
+	pb "github.com/hyperledger/fabric/protos/peer"
+	"github.com/pkg/errors"
+	"github.com/spf13/viper"
+)
+
+// Platform for chaincodes written in Go
+type Platform struct {
+}
+
+// Returns whether the given file or directory exists or not
+func pathExists(path string) (bool, error) {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[0], 1);
+	_, err := os.Stat(path)
+	if err == nil {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[3], 1);
+		return true, nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[1], 1);if os.IsNotExist(err) {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[4], 1);
+		return false, nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[2], 1);return true, err
+}
+
+func decodeUrl(path string) (string, error) {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[5], 1);
+	var urlLocation string
+	if strings.HasPrefix(path, "http://") {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[9], 1);
+		urlLocation = path[7:]
+	} else{ _cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[10], 1);if strings.HasPrefix(path, "https://") {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[11], 1);
+		urlLocation = path[8:]
+	} else{ _cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[12], 1);{
+		urlLocation = path
+	}}}
+
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[6], 1);if len(urlLocation) < 2 {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[13], 1);
+		return "", errors.New("ChaincodeSpec's path/URL invalid")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[7], 1);if strings.LastIndex(urlLocation, "/") == len(urlLocation)-1 {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[14], 1);
+		urlLocation = urlLocation[:len(urlLocation)-1]
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[8], 1);return urlLocation, nil
+}
+
+func getGopath() (string, error) {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[15], 1);
+	env, err := getGoEnv()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[18], 1);
+		return "", err
+	}
+	// Only take the first element of GOPATH
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[16], 1);splitGoPath := filepath.SplitList(env["GOPATH"])
+	if len(splitGoPath) == 0 {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[19], 1);
+		return "", fmt.Errorf("invalid GOPATH environment variable value: %s", env["GOPATH"])
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[17], 1);return splitGoPath[0], nil
+}
+
+func filter(vs []string, f func(string) bool) []string {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[20], 1);
+	vsf := make([]string, 0)
+	for _, v := range vs {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[22], 1);
+		if f(v) {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[23], 1);
+			vsf = append(vsf, v)
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[21], 1);return vsf
+}
+
+// Name returns the name of this platform
+func (goPlatform *Platform) Name() string {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[24], 1);
+	return pb.ChaincodeSpec_GOLANG.String()
+}
+
+// ValidateSpec validates Go chaincodes
+func (goPlatform *Platform) ValidatePath(rawPath string) error {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[25], 1);
+	path, err := url.Parse(rawPath)
+	if err != nil || path == nil {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[28], 1);
+		return fmt.Errorf("invalid path: %s", err)
+	}
+
+	//we have no real good way of checking existence of remote urls except by downloading and testing
+	//which we do later anyway. But we *can* - and *should* - test for existence of local paths.
+	//Treat empty scheme as a local filesystem path
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[26], 1);if path.Scheme == "" {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[29], 1);
+		gopath, err := getGopath()
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[32], 1);
+			return err
+		}
+		_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[30], 1);pathToCheck := filepath.Join(gopath, "src", rawPath)
+		exists, err := pathExists(pathToCheck)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[33], 1);
+			return fmt.Errorf("error validating chaincode path: %s", err)
+		}
+		_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[31], 1);if !exists {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[34], 1);
+			return fmt.Errorf("path to chaincode does not exist: %s", pathToCheck)
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[27], 1);return nil
+}
+
+func (goPlatform *Platform) ValidateCodePackage(code []byte) error {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[35], 1);
+
+	if len(code) == 0 {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[39], 1);
+		// Nothing to validate if no CodePackage was included
+		return nil
+	}
+
+	// FAB-2122: Scan the provided tarball to ensure it only contains source-code under
+	// /src/$packagename.  We do not want to allow something like ./pkg/shady.a to be installed under
+	// $GOPATH within the container.  Note, we do not look deeper than the path at this time
+	// with the knowledge that only the go/cgo compiler will execute for now.  We will remove the source
+	// from the system after the compilation as an extra layer of protection.
+	//
+	// It should be noted that we cannot catch every threat with these techniques.  Therefore,
+	// the container itself needs to be the last line of defense and be configured to be
+	// resilient in enforcing constraints. However, we should still do our best to keep as much
+	// garbage out of the system as possible.
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[36], 1);re := regexp.MustCompile(`^(/)?(src|META-INF)/.*`)
+	is := bytes.NewReader(code)
+	gr, err := gzip.NewReader(is)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[40], 1);
+		return fmt.Errorf("failure opening codepackage gzip stream: %s", err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[37], 1);tr := tar.NewReader(gr)
+
+	for {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[41], 1);
+		header, err := tr.Next()
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[44], 1);
+			// We only get here if there are no more entries to scan
+			break
+		}
+
+		// --------------------------------------------------------------------------------------
+		// Check name for conforming path
+		// --------------------------------------------------------------------------------------
+		_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[42], 1);if !re.MatchString(header.Name) {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[45], 1);
+			return fmt.Errorf("illegal file detected in payload: \"%s\"", header.Name)
+		}
+
+		// --------------------------------------------------------------------------------------
+		// Check that file mode makes sense
+		// --------------------------------------------------------------------------------------
+		// Acceptable flags:
+		//      ISREG      == 0100000
+		//      -rw-rw-rw- == 0666
+		//
+		// Anything else is suspect in this context and will be rejected
+		// --------------------------------------------------------------------------------------
+		_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[43], 1);if header.Mode&^0100666 != 0 {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[46], 1);
+			return fmt.Errorf("illegal file mode detected for file %s: %o", header.Name, header.Mode)
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[38], 1);return nil
+}
+
+// Vendor any packages that are not already within our chaincode's primary package
+// or vendored by it.  We take the name of the primary package and a list of files
+// that have been previously determined to comprise the package's dependencies.
+// For anything that needs to be vendored, we simply update its path specification.
+// Everything else, we pass through untouched.
+func vendorDependencies(pkg string, files Sources) {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[47], 1);
+
+	exclusions := make([]string, 0)
+	elements := strings.Split(pkg, "/")
+
+	// --------------------------------------------------------------------------------------
+	// First, add anything already vendored somewhere within our primary package to the
+	// "exclusions".  For a package "foo/bar/baz", we want to ensure we don't auto-vendor
+	// any of the following:
+	//
+	//     [ "foo/vendor", "foo/bar/vendor", "foo/bar/baz/vendor"]
+	//
+	// and we therefore employ a recursive path building process to form this list
+	// --------------------------------------------------------------------------------------
+	prev := filepath.Join("src")
+	for _, element := range elements {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[50], 1);
+		curr := filepath.Join(prev, element)
+		vendor := filepath.Join(curr, "vendor")
+		exclusions = append(exclusions, vendor)
+		prev = curr
+	}
+
+	// --------------------------------------------------------------------------------------
+	// Next add our primary package to the list of "exclusions"
+	// --------------------------------------------------------------------------------------
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[48], 1);exclusions = append(exclusions, filepath.Join("src", pkg))
+
+	count := len(files)
+	sem := make(chan bool, count)
+
+	// --------------------------------------------------------------------------------------
+	// Now start a parallel process which checks each file in files to see if it matches
+	// any of the excluded patterns.  Any that match are renamed such that they are vendored
+	// under src/$pkg/vendor.
+	// --------------------------------------------------------------------------------------
+	vendorPath := filepath.Join("src", pkg, "vendor")
+	for i, file := range files {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[51], 1);
+		go func(i int, file SourceDescriptor) {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[52], 1);
+			excluded := false
+
+			for _, exclusion := range exclusions {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[55], 1);
+				if strings.HasPrefix(file.Name, exclusion) == true {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[56], 1);
+					excluded = true
+					break
+				}
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[53], 1);if excluded == false {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[57], 1);
+				origName := file.Name
+				file.Name = strings.Replace(origName, "src", vendorPath, 1)
+				logger.Debugf("vendoring %s -> %s", origName, file.Name)
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[54], 1);files[i] = file
+			sem <- true
+		}(i, file)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[49], 1);for i := 0; i < count; i++ {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[58], 1);
+		<-sem
+	}
+}
+
+// Generates a deployment payload for GOLANG as a series of src/$pkg entries in .tar.gz format
+func (goPlatform *Platform) GetDeploymentPayload(path string) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[59], 1);
+
+	var err error
+
+	// --------------------------------------------------------------------------------------
+	// retrieve a CodeDescriptor from either HTTP or the filesystem
+	// --------------------------------------------------------------------------------------
+	code, err := getCode(path)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[72], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[60], 1);if code.Cleanup != nil {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[73], 1);
+		defer code.Cleanup()
+	}
+
+	// --------------------------------------------------------------------------------------
+	// Update our environment for the purposes of executing go-list directives
+	// --------------------------------------------------------------------------------------
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[61], 1);env, err := getGoEnv()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[74], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[62], 1);gopaths := splitEnvPaths(env["GOPATH"])
+	goroots := splitEnvPaths(env["GOROOT"])
+	gopaths[code.Gopath] = true
+	env["GOPATH"] = flattenEnvPaths(gopaths)
+
+	// --------------------------------------------------------------------------------------
+	// Retrieve the list of first-order imports referenced by the chaincode
+	// --------------------------------------------------------------------------------------
+	imports, err := listImports(env, code.Pkg)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[75], 1);
+		return nil, fmt.Errorf("Error obtaining imports: %s", err)
+	}
+
+	// --------------------------------------------------------------------------------------
+	// Remove any imports that are provided by the ccenv or system
+	// --------------------------------------------------------------------------------------
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[63], 1);var provided = map[string]bool{
+		"github.com/hyperledger/fabric/core/chaincode/shim": true,
+		"github.com/hyperledger/fabric/protos/peer":         true,
+	}
+
+	// Golang "pseudo-packages" - packages which don't actually exist
+	var pseudo = map[string]bool{
+		"C": true,
+	}
+
+	imports = filter(imports, func(pkg string) bool {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[76], 1);
+		// Drop if provided by CCENV
+		if _, ok := provided[pkg]; ok == true {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[80], 1);
+			logger.Debugf("Discarding provided package %s", pkg)
+			return false
+		}
+
+		// Drop pseudo-packages
+		_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[77], 1);if _, ok := pseudo[pkg]; ok == true {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[81], 1);
+			logger.Debugf("Discarding pseudo-package %s", pkg)
+			return false
+		}
+
+		// Drop if provided by GOROOT
+		_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[78], 1);for goroot := range goroots {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[82], 1);
+			fqp := filepath.Join(goroot, "src", pkg)
+			exists, err := pathExists(fqp)
+			if err == nil && exists {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[83], 1);
+				logger.Debugf("Discarding GOROOT package %s", pkg)
+				return false
+			}
+		}
+
+		// Else, we keep it
+		_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[79], 1);logger.Debugf("Accepting import: %s", pkg)
+		return true
+	})
+
+	// --------------------------------------------------------------------------------------
+	// Assemble the fully resolved list of direct and transitive dependencies based on the
+	// imports that remain after filtering
+	// --------------------------------------------------------------------------------------
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[64], 1);deps := make(map[string]bool)
+
+	for _, pkg := range imports {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[84], 1);
+		// ------------------------------------------------------------------------------
+		// Resolve direct import's transitives
+		// ------------------------------------------------------------------------------
+		transitives, err := listDeps(env, pkg)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[86], 1);
+			return nil, fmt.Errorf("Error obtaining dependencies for %s: %s", pkg, err)
+		}
+
+		// ------------------------------------------------------------------------------
+		// Merge all results with our top list
+		// ------------------------------------------------------------------------------
+
+		// Merge direct dependency...
+		_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[85], 1);deps[pkg] = true
+
+		// .. and then all transitives
+		for _, dep := range transitives {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[87], 1);
+			deps[dep] = true
+		}
+	}
+
+	// cull "" if it exists
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[65], 1);delete(deps, "")
+
+	// --------------------------------------------------------------------------------------
+	// Find the source from our first-order code package ...
+	// --------------------------------------------------------------------------------------
+	fileMap, err := findSource(code.Gopath, code.Pkg)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[88], 1);
+		return nil, err
+	}
+
+	// --------------------------------------------------------------------------------------
+	// ... followed by the source for any non-system dependencies that our code-package has
+	// from the filtered list
+	// --------------------------------------------------------------------------------------
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[66], 1);for dep := range deps {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[89], 1);
+
+		logger.Debugf("processing dep: %s", dep)
+
+		// Each dependency should either be in our GOPATH or GOROOT.  We are not interested in packaging
+		// any of the system packages.  However, the official way (go-list) to make this determination
+		// is too expensive to run for every dep.  Therefore, we cheat.  We assume that any packages that
+		// cannot be found must be system packages and silently skip them
+		for gopath := range gopaths {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[90], 1);
+			fqp := filepath.Join(gopath, "src", dep)
+			exists, err := pathExists(fqp)
+
+			logger.Debugf("checking: %s exists: %v", fqp, exists)
+
+			if err == nil && exists {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[91], 1);
+
+				// We only get here when we found it, so go ahead and load its code
+				files, err := findSource(gopath, dep)
+				if err != nil {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[93], 1);
+					return nil, err
+				}
+
+				// Merge the map manually
+				_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[92], 1);for _, file := range files {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[94], 1);
+					fileMap[file.Name] = file
+				}
+			}
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[67], 1);logger.Debugf("done")
+
+	// --------------------------------------------------------------------------------------
+	// Reprocess into a list for easier handling going forward
+	// --------------------------------------------------------------------------------------
+	files := make(Sources, 0)
+	for _, file := range fileMap {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[95], 1);
+		files = append(files, file)
+	}
+
+	// --------------------------------------------------------------------------------------
+	// Remap non-package dependencies to package/vendor
+	// --------------------------------------------------------------------------------------
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[68], 1);vendorDependencies(code.Pkg, files)
+
+	// --------------------------------------------------------------------------------------
+	// Sort on the filename so the tarball at least looks sane in terms of package grouping
+	// --------------------------------------------------------------------------------------
+	sort.Sort(files)
+
+	// --------------------------------------------------------------------------------------
+	// Write out our tar package
+	// --------------------------------------------------------------------------------------
+	payload := bytes.NewBuffer(nil)
+	gw := gzip.NewWriter(payload)
+	tw := tar.NewWriter(gw)
+
+	for _, file := range files {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[96], 1);
+
+		// file.Path represents os localpath
+		// file.Name represents tar packagepath
+
+		// If the file is metadata rather than golang code, remove the leading go code path, for example:
+		// original file.Name:  src/github.com/hyperledger/fabric/examples/chaincode/go/marbles02/META-INF/statedb/couchdb/indexes/indexOwner.json
+		// updated file.Name:   META-INF/statedb/couchdb/indexes/indexOwner.json
+		if file.IsMetadata {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[98], 1);
+
+			file.Name, err = filepath.Rel(filepath.Join("src", code.Pkg), file.Name)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[102], 1);
+				return nil, fmt.Errorf("This error was caused by bad packaging of the metadata.  The file [%s] is marked as MetaFile, however not located under META-INF   Error:[%s]", file.Name, err)
+			}
+
+			// Split the tar location (file.Name) into a tar package directory and filename
+			_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[99], 1);_, filename := filepath.Split(file.Name)
+
+			// Hidden files are not supported as metadata, therefore ignore them.
+			// User often doesn't know that hidden files are there, and may not be able to delete them, therefore warn user rather than error out.
+			if strings.HasPrefix(filename, ".") {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[103], 1);
+				logger.Warningf("Ignoring hidden file in metadata directory: %s", file.Name)
+				continue
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[100], 1);fileBytes, err := ioutil.ReadFile(file.Path)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[104], 1);
+				return nil, err
+			}
+
+			// Validate metadata file for inclusion in tar
+			// Validation is based on the passed filename with path
+			_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[101], 1);err = ccmetadata.ValidateMetadataFile(file.Name, fileBytes)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[105], 1);
+				return nil, err
+			}
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[97], 1);err = cutil.WriteFileToPackage(file.Path, file.Name, tw)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[106], 1);
+			return nil, fmt.Errorf("Error writing %s to tar: %s", file.Name, err)
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[69], 1);err = tw.Close()
+	if err == nil {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[107], 1);
+		err = gw.Close()
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[70], 1);if err != nil {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[108], 1);
+		return nil, errors.Wrapf(err, "failed to create tar for chaincode")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[71], 1);return payload.Bytes(), nil
+}
+
+func (goPlatform *Platform) GenerateDockerfile() (string, error) {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[109], 1);
+
+	var buf []string
+
+	buf = append(buf, "FROM "+cutil.GetDockerfileFromConfig("chaincode.golang.runtime"))
+	buf = append(buf, "ADD binpackage.tar /usr/local/bin")
+
+	dockerFileContents := strings.Join(buf, "\n")
+
+	return dockerFileContents, nil
+}
+
+const staticLDFlagsOpts = "-ldflags \"-linkmode external -extldflags '-static'\""
+const dynamicLDFlagsOpts = ""
+
+func getLDFlagsOpts() string {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[110], 1);
+	if viper.GetBool("chaincode.golang.dynamicLink") {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[112], 1);
+		return dynamicLDFlagsOpts
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[111], 1);return staticLDFlagsOpts
+}
+
+func (goPlatform *Platform) GenerateDockerBuild(path string, code []byte, tw *tar.Writer) error {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[113], 1);
+	pkgname, err := decodeUrl(path)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[116], 1);
+		return fmt.Errorf("could not decode url: %s", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[114], 1);ldflagsOpt := getLDFlagsOpts()
+	logger.Infof("building chaincode with ldflagsOpt: '%s'", ldflagsOpt)
+
+	codepackage := bytes.NewReader(code)
+	binpackage := bytes.NewBuffer(nil)
+	err = util.DockerBuild(util.DockerBuildOptions{
+		Cmd:          fmt.Sprintf("GOPATH=/chaincode/input:$GOPATH go build  %s -o /chaincode/output/chaincode %s", ldflagsOpt, pkgname),
+		InputStream:  codepackage,
+		OutputStream: binpackage,
+	})
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[117], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[115], 1);return cutil.WriteBytesToPackage("binpackage.tar", binpackage.Bytes(), tw)
+}
+
+//GetMetadataProvider fetches metadata provider given deployment spec
+func (goPlatform *Platform) GetMetadataProvider(code []byte) platforms.MetadataProvider {_cover_atomic_.AddUint32(&GoCover_3_346363666338363036383165.Count[118], 1);
+	return &ccmetadata.TargzMetadataProvider{Code: code}
+}
+
+var GoCover_3_346363666338363036383165 = struct {
+	Count     [119]uint32
+	Pos       [3 * 119]uint32
+	NumStmt   [119]uint16
+} {
+	Pos: [3 * 119]uint32{
+		36, 38, 0x10002c, // [0]
+		41, 41, 0x180002, // [1]
+		44, 44, 0x120002, // [2]
+		38, 40, 0x30010, // [3]
+		41, 43, 0x30018, // [4]
+		47, 49, 0x28002d, // [5]
+		57, 57, 0x1a0002, // [6]
+		61, 61, 0x3f0002, // [7]
+		65, 65, 0x190002, // [8]
+		49, 51, 0x30028, // [9]
+		51, 51, 0x300008, // [10]
+		51, 53, 0x30030, // [11]
+		53, 55, 0x30008, // [12]
+		57, 59, 0x3001a, // [13]
+		61, 63, 0x3003f, // [14]
+		68, 70, 0x100022, // [15]
+		74, 75, 0x1b0002, // [16]
+		78, 78, 0x1c0002, // [17]
+		70, 72, 0x30010, // [18]
+		75, 77, 0x3001b, // [19]
+		81, 83, 0x170038, // [20]
+		88, 88, 0xc0002, // [21]
+		83, 84, 0xb0017, // [22]
+		84, 86, 0x4000b, // [23]
+		92, 94, 0x2002b, // [24]
+		97, 99, 0x1f0040, // [25]
+		106, 106, 0x170002, // [26]
+		120, 120, 0xc0002, // [27]
+		99, 101, 0x3001f, // [28]
+		106, 108, 0x110017, // [29]
+		111, 113, 0x110003, // [30]
+		116, 116, 0xe0003, // [31]
+		108, 110, 0x40011, // [32]
+		113, 115, 0x40011, // [33]
+		116, 118, 0x4000e, // [34]
+		123, 125, 0x140044, // [35]
+		140, 143, 0x100002, // [36]
+		146, 148, 0x60002, // [37]
+		176, 176, 0xc0002, // [38]
+		125, 128, 0x30014, // [39]
+		143, 145, 0x30010, // [40]
+		148, 150, 0x110006, // [41]
+		158, 158, 0x230003, // [42]
+		171, 171, 0x200003, // [43]
+		150, 152, 0x90011, // [44]
+		158, 160, 0x40023, // [45]
+		171, 173, 0x40020, // [46]
+		184, 199, 0x230034, // [47]
+		209, 220, 0x1d0002, // [48]
+		242, 242, 0x1d0002, // [49]
+		199, 204, 0x30023, // [50]
+		220, 221, 0x29001d, // [51]
+		221, 224, 0x290029, // [52]
+		231, 231, 0x190004, // [53]
+		237, 238, 0xf0004, // [54]
+		224, 225, 0x380029, // [55]
+		225, 227, 0xb0038, // [56]
+		231, 235, 0x50019, // [57]
+		242, 244, 0x3001d, // [58]
+		248, 256, 0x10004f, // [59]
+		259, 259, 0x190002, // [60]
+		266, 267, 0x100002, // [61]
+		270, 279, 0x100002, // [62]
+		286, 296, 0x320002, // [63]
+		328, 330, 0x1e0002, // [64]
+		353, 359, 0x100002, // [65]
+		367, 367, 0x180002, // [66]
+		397, 403, 0x1f0002, // [67]
+		410, 424, 0x1d0002, // [68]
+		468, 469, 0x100002, // [69]
+		472, 472, 0x100002, // [70]
+		476, 476, 0x1d0002, // [71]
+		256, 258, 0x30010, // [72]
+		259, 261, 0x30019, // [73]
+		267, 269, 0x30010, // [74]
+		279, 281, 0x30010, // [75]
+		296, 298, 0x290032, // [76]
+		304, 304, 0x270003, // [77]
+		310, 310, 0x1f0003, // [78]
+		320, 321, 0xe0003, // [79]
+		298, 301, 0x40029, // [80]
+		304, 307, 0x40027, // [81]
+		310, 313, 0x1c001f, // [82]
+		313, 316, 0x5001c, // [83]
+		330, 335, 0x11001e, // [84]
+		344, 347, 0x230003, // [85]
+		335, 337, 0x40011, // [86]
+		347, 349, 0x40023, // [87]
+		359, 361, 0x30010, // [88]
+		367, 375, 0x1f0018, // [89]
+		375, 381, 0x1c001f, // [90]
+		381, 385, 0x13001c, // [91]
+		390, 390, 0x200005, // [92]
+		385, 387, 0x60013, // [93]
+		390, 392, 0x60020, // [94]
+		403, 405, 0x3001f, // [95]
+		424, 432, 0x16001d, // [96]
+		462, 463, 0x110003, // [97]
+		432, 435, 0x120016, // [98]
+		440, 444, 0x280004, // [99]
+		449, 450, 0x120004, // [100]
+		456, 457, 0x120004, // [101]
+		435, 437, 0x50012, // [102]
+		444, 446, 0xd0028, // [103]
+		450, 452, 0x50012, // [104]
+		457, 459, 0x50012, // [105]
+		463, 465, 0x40011, // [106]
+		469, 471, 0x30010, // [107]
+		472, 474, 0x30010, // [108]
+		479, 489, 0x20042, // [109]
+		494, 495, 0x33001e, // [110]
+		498, 498, 0x1a0002, // [111]
+		495, 497, 0x30033, // [112]
+		501, 503, 0x100061, // [113]
+		507, 517, 0x100002, // [114]
+		521, 521, 0x4c0002, // [115]
+		503, 505, 0x30010, // [116]
+		517, 519, 0x30010, // [117]
+		525, 527, 0x20059, // [118]
+	},
+	NumStmt: [119]uint16{
+		2, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		2, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		2, // 15
+		2, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		2, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+		1, // 24
+		2, // 25
+		1, // 26
+		1, // 27
+		1, // 28
+		2, // 29
+		3, // 30
+		1, // 31
+		1, // 32
+		1, // 33
+		1, // 34
+		1, // 35
+		4, // 36
+		2, // 37
+		1, // 38
+		1, // 39
+		1, // 40
+		2, // 41
+		1, // 42
+		1, // 43
+		1, // 44
+		1, // 45
+		1, // 46
+		4, // 47
+		5, // 48
+		1, // 49
+		4, // 50
+		1, // 51
+		2, // 52
+		1, // 53
+		2, // 54
+		1, // 55
+		2, // 56
+		3, // 57
+		1, // 58
+		3, // 59
+		1, // 60
+		2, // 61
+		6, // 62
+		3, // 63
+		2, // 64
+		3, // 65
+		1, // 66
+		3, // 67
+		6, // 68
+		2, // 69
+		1, // 70
+		1, // 71
+		1, // 72
+		1, // 73
+		1, // 74
+		1, // 75
+		1, // 76
+		1, // 77
+		1, // 78
+		2, // 79
+		2, // 80
+		2, // 81
+		3, // 82
+		2, // 83
+		2, // 84
+		2, // 85
+		1, // 86
+		1, // 87
+		1, // 88
+		2, // 89
+		4, // 90
+		2, // 91
+		1, // 92
+		1, // 93
+		1, // 94
+		1, // 95
+		1, // 96
+		2, // 97
+		2, // 98
+		2, // 99
+		2, // 100
+		2, // 101
+		1, // 102
+		2, // 103
+		1, // 104
+		1, // 105
+		1, // 106
+		1, // 107
+		1, // 108
+		5, // 109
+		1, // 110
+		1, // 111
+		1, // 112
+		2, // 113
+		6, // 114
+		1, // 115
+		1, // 116
+		1, // 117
+		1, // 118
+	},
+}
+var _ = _cover_atomic_.LoadUint32

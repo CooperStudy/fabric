@@ -1,0 +1,108 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/mocks/config/resources.go:1
+/*
+Copyright IBM Corp. 2016 All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package config; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric/common/channelconfig"
+	"github.com/hyperledger/fabric/common/configtx"
+	"github.com/hyperledger/fabric/common/policies"
+	"github.com/hyperledger/fabric/msp"
+)
+
+type Resources struct {
+	// ConfigtxValidatorVal is returned as the result of ConfigtxValidator
+	ConfigtxValidatorVal configtx.Validator
+
+	// PolicyManagerVal is returned as the result of PolicyManager()
+	PolicyManagerVal policies.Manager
+
+	// ChannelConfigVal is returned as the result of ChannelConfig()
+	ChannelConfigVal channelconfig.Channel
+
+	// OrdererConfigVal is returned as the result of OrdererConfig()
+	OrdererConfigVal channelconfig.Orderer
+
+	// ApplicationConfigVal is returned as the result of ApplicationConfig()
+	ApplicationConfigVal channelconfig.Application
+
+	// ConsortiumsConfigVal is returned as the result of ConsortiumsConfig()
+	ConsortiumsConfigVal channelconfig.Consortiums
+
+	// MSPManagerVal is returned as the result of MSPManager()
+	MSPManagerVal msp.MSPManager
+
+	// ValidateNewErr is returned as the result of ValidateNew
+	ValidateNewErr error
+}
+
+// ConfigtxMangaer returns ConfigtxValidatorVal
+func (r *Resources) ConfigtxValidator() configtx.Validator {_cover_atomic_.AddUint32(&GoCover_3_376432346462643230373733.Count[0], 1);
+	return r.ConfigtxValidatorVal
+}
+
+// Returns the PolicyManagerVal
+func (r *Resources) PolicyManager() policies.Manager {_cover_atomic_.AddUint32(&GoCover_3_376432346462643230373733.Count[1], 1);
+	return r.PolicyManagerVal
+}
+
+// Returns the ChannelConfigVal
+func (r *Resources) ChannelConfig() channelconfig.Channel {_cover_atomic_.AddUint32(&GoCover_3_376432346462643230373733.Count[2], 1);
+	return r.ChannelConfigVal
+}
+
+// Returns the OrdererConfigVal
+func (r *Resources) OrdererConfig() (channelconfig.Orderer, bool) {_cover_atomic_.AddUint32(&GoCover_3_376432346462643230373733.Count[3], 1);
+	return r.OrdererConfigVal, r.OrdererConfigVal != nil
+}
+
+// Returns the ApplicationConfigVal
+func (r *Resources) ApplicationConfig() (channelconfig.Application, bool) {_cover_atomic_.AddUint32(&GoCover_3_376432346462643230373733.Count[4], 1);
+	return r.ApplicationConfigVal, r.ApplicationConfigVal != nil
+}
+
+func (r *Resources) ConsortiumsConfig() (channelconfig.Consortiums, bool) {_cover_atomic_.AddUint32(&GoCover_3_376432346462643230373733.Count[5], 1);
+	return r.ConsortiumsConfigVal, r.ConsortiumsConfigVal != nil
+}
+
+// Returns the MSPManagerVal
+func (r *Resources) MSPManager() msp.MSPManager {_cover_atomic_.AddUint32(&GoCover_3_376432346462643230373733.Count[6], 1);
+	return r.MSPManagerVal
+}
+
+// ValidateNew returns ValidateNewErr
+func (r *Resources) ValidateNew(res channelconfig.Resources) error {_cover_atomic_.AddUint32(&GoCover_3_376432346462643230373733.Count[7], 1);
+	return r.ValidateNewErr
+}
+
+var GoCover_3_376432346462643230373733 = struct {
+	Count     [8]uint32
+	Pos       [3 * 8]uint32
+	NumStmt   [8]uint16
+} {
+	Pos: [3 * 8]uint32{
+		43, 45, 0x2003c, // [0]
+		48, 50, 0x20036, // [1]
+		53, 55, 0x2003b, // [2]
+		58, 60, 0x20043, // [3]
+		63, 65, 0x2004b, // [4]
+		67, 69, 0x2004b, // [5]
+		72, 74, 0x20031, // [6]
+		77, 79, 0x20044, // [7]
+	},
+	NumStmt: [8]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+	},
+}
+var _ = _cover_atomic_.LoadUint32

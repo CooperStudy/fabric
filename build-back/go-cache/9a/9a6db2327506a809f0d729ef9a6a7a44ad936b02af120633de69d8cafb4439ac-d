@@ -1,0 +1,8 @@
+choose.cover.go
+graph.cover.go
+perm.cover.go
+tree.cover.go
+./choose_test.go
+./graph_test.go
+./perm_test.go
+./tree_test.go

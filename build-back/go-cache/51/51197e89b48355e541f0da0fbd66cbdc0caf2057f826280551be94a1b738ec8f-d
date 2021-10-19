@@ -1,0 +1,763 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/tools/protolator/json.go:1
+/*
+Copyright IBM Corp. 2017 All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+                 http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package protolator; import _cover_atomic_ "sync/atomic"
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"reflect"
+
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
+)
+
+// MostlyDeterministicMarshal is _NOT_ the function you are looking for.
+// It causes protobuf serialization consistent within a single build.  It
+// does not guarantee that the serialization is deterministic across proto
+// versions or proto implementations.  It is useful for situations where
+// the same process wants to compare binary messages for equality without
+// needing to unmarshal first, but should not be used generally.
+func MostlyDeterministicMarshal(msg proto.Message) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[0], 1);
+	buffer := proto.NewBuffer(make([]byte, 0))
+	buffer.SetDeterministic(true)
+	if err := buffer.Marshal(msg); err != nil {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[2], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[1], 1);return buffer.Bytes(), nil
+}
+
+type protoFieldFactory interface {
+	// Handles should return whether or not this particular protoFieldFactory instance
+	// is responsible for the given proto's field
+	Handles(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) bool
+
+	// NewProtoField should create a backing protoField implementor
+	// Note that the fieldValue may represent nil, so the fieldType is also
+	// included (as reflecting the type of a nil value causes a panic)
+	NewProtoField(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) (protoField, error)
+}
+
+type protoField interface {
+	// Name returns the proto name of the field
+	Name() string
+
+	// PopulateFrom mutates the underlying object, by taking the intermediate JSON representation
+	// and converting it into the proto representation, then assigning it to the backing value
+	// via reflection
+	PopulateFrom(source interface{}) error
+
+	// PopulateTo does not mutate the underlying object, but instead converts it
+	// into the intermediate JSON representation (ie a struct -> map[string]interface{}
+	// or a slice of structs to []map[string]interface{}
+	PopulateTo() (interface{}, error)
+}
+
+var (
+	protoMsgType           = reflect.TypeOf((*proto.Message)(nil)).Elem()
+	mapStringInterfaceType = reflect.TypeOf(map[string]interface{}{})
+	bytesType              = reflect.TypeOf([]byte{})
+)
+
+type baseField struct {
+	msg   proto.Message
+	name  string
+	fType reflect.Type
+	vType reflect.Type
+	value reflect.Value
+}
+
+func (bf *baseField) Name() string {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[3], 1);
+	return bf.name
+}
+
+type plainField struct {
+	baseField
+	populateFrom func(source interface{}, destType reflect.Type) (reflect.Value, error)
+	populateTo   func(source reflect.Value) (interface{}, error)
+}
+
+func (pf *plainField) PopulateFrom(source interface{}) error {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[4], 1);
+	if source == nil {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[8], 1);
+		return nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[5], 1);if !reflect.TypeOf(source).AssignableTo(pf.fType) {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[9], 1);
+		return fmt.Errorf("expected field %s for message %T to be assignable from %v but was not.  Is %T", pf.name, pf.msg, pf.fType, source)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[6], 1);value, err := pf.populateFrom(source, pf.vType)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[10], 1);
+		return fmt.Errorf("error in PopulateFrom for field %s for message %T: %s", pf.name, pf.msg, err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[7], 1);pf.value.Set(value)
+	return nil
+}
+
+func (pf *plainField) PopulateTo() (interface{}, error) {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[11], 1);
+	if !pf.value.Type().AssignableTo(pf.vType) {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[15], 1);
+		return nil, fmt.Errorf("expected field %s for message %T to be assignable to %v but was not. Got %T.", pf.name, pf.msg, pf.fType, pf.value)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[12], 1);kind := pf.value.Type().Kind()
+	// Do not try to deeply encode nil fields, as without correct type info etc. they
+	// may return errors
+	if (kind == reflect.Ptr || kind == reflect.Slice || kind == reflect.Map) && pf.value.IsNil() {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[16], 1);
+		return nil, nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[13], 1);value, err := pf.populateTo(pf.value)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[17], 1);
+		return nil, fmt.Errorf("error in PopulateTo for field %s for message %T: %s", pf.name, pf.msg, err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[14], 1);return value, nil
+}
+
+type mapField struct {
+	baseField
+	populateFrom func(key string, value interface{}, destType reflect.Type) (reflect.Value, error)
+	populateTo   func(key string, value reflect.Value) (interface{}, error)
+}
+
+func (mf *mapField) PopulateFrom(source interface{}) error {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[18], 1);
+	tree, ok := source.(map[string]interface{})
+	if !ok {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[21], 1);
+		return fmt.Errorf("expected map field %s for message %T to be assignable from map[string]interface{} but was not. Got %T", mf.name, mf.msg, source)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[19], 1);result := reflect.MakeMap(mf.vType)
+
+	for k, v := range tree {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[22], 1);
+		if !reflect.TypeOf(v).AssignableTo(mf.fType) {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[25], 1);
+			return fmt.Errorf("expected map field %s value for %s for message %T to be assignable from %v but was not.  Is %T", mf.name, k, mf.msg, mf.fType, v)
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[23], 1);newValue, err := mf.populateFrom(k, v, mf.vType.Elem())
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[26], 1);
+			return fmt.Errorf("error in PopulateFrom for map field %s with key %s for message %T: %s", mf.name, k, mf.msg, err)
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[24], 1);result.SetMapIndex(reflect.ValueOf(k), newValue)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[20], 1);mf.value.Set(result)
+	return nil
+}
+
+func (mf *mapField) PopulateTo() (interface{}, error) {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[27], 1);
+	result := make(map[string]interface{})
+	keys := mf.value.MapKeys()
+	for _, key := range keys {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[29], 1);
+		k, ok := key.Interface().(string)
+		if !ok {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[34], 1);
+			return nil, fmt.Errorf("expected map field %s for message %T to have string keys, but did not.", mf.name, mf.msg)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[30], 1);subValue := mf.value.MapIndex(key)
+		kind := subValue.Type().Kind()
+		if (kind == reflect.Ptr || kind == reflect.Slice || kind == reflect.Map) && subValue.IsNil() {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[35], 1);
+			continue
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[31], 1);if !subValue.Type().AssignableTo(mf.vType.Elem()) {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[36], 1);
+			return nil, fmt.Errorf("expected map field %s with key %s for message %T to be assignable to %v but was not. Got %v.", mf.name, k, mf.msg, mf.vType.Elem(), subValue.Type())
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[32], 1);value, err := mf.populateTo(k, subValue)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[37], 1);
+			return nil, fmt.Errorf("error in PopulateTo for map field %s and key %s for message %T: %s", mf.name, k, mf.msg, err)
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[33], 1);result[k] = value
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[28], 1);return result, nil
+}
+
+type sliceField struct {
+	baseField
+	populateTo   func(i int, source reflect.Value) (interface{}, error)
+	populateFrom func(i int, source interface{}, destType reflect.Type) (reflect.Value, error)
+}
+
+func (sf *sliceField) PopulateFrom(source interface{}) error {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[38], 1);
+	slice, ok := source.([]interface{})
+	if !ok {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[41], 1);
+		return fmt.Errorf("expected slice field %s for message %T to be assignable from []interface{} but was not. Got %T", sf.name, sf.msg, source)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[39], 1);result := reflect.MakeSlice(sf.vType, len(slice), len(slice))
+
+	for i, v := range slice {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[42], 1);
+		if !reflect.TypeOf(v).AssignableTo(sf.fType) {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[45], 1);
+			return fmt.Errorf("expected slice field %s value at index %d for message %T to be assignable from %v but was not.  Is %T", sf.name, i, sf.msg, sf.fType, v)
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[43], 1);subValue, err := sf.populateFrom(i, v, sf.vType.Elem())
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[46], 1);
+			return fmt.Errorf("error in PopulateFrom for slice field %s at index %d for message %T: %s", sf.name, i, sf.msg, err)
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[44], 1);result.Index(i).Set(subValue)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[40], 1);sf.value.Set(result)
+	return nil
+}
+
+func (sf *sliceField) PopulateTo() (interface{}, error) {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[47], 1);
+	result := make([]interface{}, sf.value.Len())
+	for i := range result {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[49], 1);
+		subValue := sf.value.Index(i)
+		kind := subValue.Type().Kind()
+		if (kind == reflect.Ptr || kind == reflect.Slice || kind == reflect.Map) && subValue.IsNil() {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[53], 1);
+			continue
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[50], 1);if !subValue.Type().AssignableTo(sf.vType.Elem()) {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[54], 1);
+			return nil, fmt.Errorf("expected slice field %s at index %d for message %T to be assignable to %v but was not. Got %v.", sf.name, i, sf.msg, sf.vType.Elem(), subValue.Type())
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[51], 1);value, err := sf.populateTo(i, subValue)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[55], 1);
+			return nil, fmt.Errorf("error in PopulateTo for slice field %s at index %d for message %T: %s", sf.name, i, sf.msg, err)
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[52], 1);result[i] = value
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[48], 1);return result, nil
+}
+
+func stringInSlice(target string, slice []string) bool {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[56], 1);
+	for _, name := range slice {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[58], 1);
+		if name == target {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[59], 1);
+			return true
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[57], 1);return false
+}
+
+// protoToJSON is a simple shortcut wrapper around the proto JSON marshaler
+func protoToJSON(msg proto.Message) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[60], 1);
+	if reflect.ValueOf(msg).IsNil() {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[63], 1);
+		panic("We're nil here")
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[61], 1);var b bytes.Buffer
+	m := jsonpb.Marshaler{
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+		Indent:       "  ",
+		OrigName:     true,
+	}
+	err := m.Marshal(&b, msg)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[64], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[62], 1);return b.Bytes(), nil
+}
+
+func mapToProto(tree map[string]interface{}, msg proto.Message) error {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[65], 1);
+	jsonOut, err := json.Marshal(tree)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[67], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[66], 1);return jsonpb.UnmarshalString(string(jsonOut), msg)
+}
+
+// jsonToMap allocates a map[string]interface{}, unmarshals a JSON document into it
+// and returns it, or error
+func jsonToMap(marshaled []byte) (map[string]interface{}, error) {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[68], 1);
+	tree := make(map[string]interface{})
+	d := json.NewDecoder(bytes.NewReader(marshaled))
+	d.UseNumber()
+	err := d.Decode(&tree)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[70], 1);
+		return nil, fmt.Errorf("error unmarshaling intermediate JSON: %s", err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[69], 1);return tree, nil
+}
+
+// The factory implementations, listed in order of most greedy to least.
+// Factories listed lower, may depend on factories listed higher being
+// evaluated first.
+var fieldFactories = []protoFieldFactory{
+	dynamicSliceFieldFactory{},
+	dynamicMapFieldFactory{},
+	dynamicFieldFactory{},
+	variablyOpaqueSliceFieldFactory{},
+	variablyOpaqueMapFieldFactory{},
+	variablyOpaqueFieldFactory{},
+	staticallyOpaqueSliceFieldFactory{},
+	staticallyOpaqueMapFieldFactory{},
+	staticallyOpaqueFieldFactory{},
+	nestedSliceFieldFactory{},
+	nestedMapFieldFactory{},
+	nestedFieldFactory{},
+}
+
+func protoFields(msg proto.Message, uMsg proto.Message) ([]protoField, error) {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[71], 1);
+	var result []protoField
+
+	pmVal := reflect.ValueOf(uMsg)
+	if pmVal.Kind() != reflect.Ptr {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[77], 1);
+		return nil, fmt.Errorf("expected proto.Message %T to be pointer kind", msg)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[72], 1);if pmVal.IsNil() {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[78], 1);
+		return nil, nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[73], 1);mVal := pmVal.Elem()
+	if mVal.Kind() != reflect.Struct {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[79], 1);
+		return nil, fmt.Errorf("expected proto.Message %T ptr value to be struct, was %v", uMsg, mVal.Kind())
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[74], 1);iResult := make([][]protoField, len(fieldFactories))
+
+	protoProps := proto.GetProperties(mVal.Type())
+	// TODO, this will skip oneof fields, this should be handled
+	// correctly at some point
+	for _, prop := range protoProps.Prop {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[80], 1);
+		fieldName := prop.OrigName
+		fieldValue := mVal.FieldByName(prop.Name)
+		fieldTypeStruct, ok := mVal.Type().FieldByName(prop.Name)
+		if !ok {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[82], 1);
+			return nil, fmt.Errorf("programming error: proto does not have field advertised by proto package")
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[81], 1);fieldType := fieldTypeStruct.Type
+
+		for i, factory := range fieldFactories {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[83], 1);
+			if !factory.Handles(msg, fieldName, fieldType, fieldValue) {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[86], 1);
+				continue
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[84], 1);field, err := factory.NewProtoField(msg, fieldName, fieldType, fieldValue)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[87], 1);
+				return nil, err
+			}
+			_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[85], 1);iResult[i] = append(iResult[i], field)
+			break
+		}
+	}
+
+	// Loop over the collected fields in reverse order to collect them in
+	// correct dependency order as specified in fieldFactories
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[75], 1);for i := len(iResult) - 1; i >= 0; i-- {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[88], 1);
+		result = append(result, iResult[i]...)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[76], 1);return result, nil
+}
+
+func recursivelyCreateTreeFromMessage(msg proto.Message) (tree map[string]interface{}, err error) {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[89], 1);
+	defer func() {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[96], 1);
+		// Because this function is recursive, it's difficult to determine which level
+		// of the proto the error originated from, this wrapper leaves breadcrumbs for debugging
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[97], 1);
+			err = fmt.Errorf("%T: %s", msg, err)
+		}
+	}()
+
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[90], 1);uMsg := msg
+	decorated, ok := msg.(DecoratedProto)
+	if ok {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[98], 1);
+		uMsg = decorated.Underlying()
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[91], 1);fields, err := protoFields(msg, uMsg)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[99], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[92], 1);jsonBytes, err := protoToJSON(uMsg)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[100], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[93], 1);tree, err = jsonToMap(jsonBytes)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[101], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[94], 1);for _, field := range fields {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[102], 1);
+		if _, ok := tree[field.Name()]; !ok {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[104], 1);
+			continue
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[103], 1);delete(tree, field.Name())
+		tree[field.Name()], err = field.PopulateTo()
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[105], 1);
+			return nil, err
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[95], 1);return tree, nil
+}
+
+// DeepMarshalJSON marshals msg to w as JSON, but instead of marshaling bytes fields which contain nested
+// marshaled messages as base64 (like the standard proto encoding), these nested messages are remarshaled
+// as the JSON representation of those messages.  This is done so that the JSON representation is as non-binary
+// and human readable as possible.
+func DeepMarshalJSON(w io.Writer, msg proto.Message) error {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[106], 1);
+	root, err := recursivelyCreateTreeFromMessage(msg)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[108], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[107], 1);encoder := json.NewEncoder(w)
+	encoder.SetIndent("", "\t")
+	return encoder.Encode(root)
+}
+
+func recursivelyPopulateMessageFromTree(tree map[string]interface{}, msg proto.Message) (err error) {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[109], 1);
+	defer func() {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[116], 1);
+		// Because this function is recursive, it's difficult to determine which level
+		// of the proto the error orginated from, this wrapper leaves breadcrumbs for debugging
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[117], 1);
+			err = fmt.Errorf("%T: %s", msg, err)
+		}
+	}()
+
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[110], 1);uMsg := msg
+	decorated, ok := msg.(DecoratedProto)
+	if ok {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[118], 1);
+		uMsg = decorated.Underlying()
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[111], 1);fields, err := protoFields(msg, uMsg)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[119], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[112], 1);specialFieldsMap := make(map[string]interface{})
+
+	for _, field := range fields {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[120], 1);
+		specialField, ok := tree[field.Name()]
+		if !ok {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[122], 1);
+			continue
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[121], 1);specialFieldsMap[field.Name()] = specialField
+		delete(tree, field.Name())
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[113], 1);if err = mapToProto(tree, uMsg); err != nil {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[123], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[114], 1);for _, field := range fields {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[124], 1);
+		specialField, ok := specialFieldsMap[field.Name()]
+		if !ok {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[126], 1);
+			continue
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[125], 1);if err := field.PopulateFrom(specialField); err != nil {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[127], 1);
+			return err
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[115], 1);return nil
+}
+
+// DeepUnmarshalJSON takes JSON output as generated by DeepMarshalJSON and decodes it into msg
+// This includes re-marshaling the expanded nested elements to binary form
+func DeepUnmarshalJSON(r io.Reader, msg proto.Message) error {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[128], 1);
+	b, err := ioutil.ReadAll(r)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[131], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[129], 1);root, err := jsonToMap(b)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[132], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_323433346337636538616662.Count[130], 1);return recursivelyPopulateMessageFromTree(root, msg)
+}
+
+var GoCover_2_323433346337636538616662 = struct {
+	Count     [133]uint32
+	Pos       [3 * 133]uint32
+	NumStmt   [133]uint16
+} {
+	Pos: [3 * 133]uint32{
+		37, 40, 0x2c0044, // [0]
+		43, 43, 0x1c0002, // [1]
+		40, 42, 0x3002c, // [2]
+		86, 88, 0x20024, // [3]
+		96, 97, 0x13003e, // [4]
+		101, 101, 0x340002, // [5]
+		104, 105, 0x100002, // [6]
+		108, 109, 0xc0002, // [7]
+		97, 99, 0x30013, // [8]
+		101, 103, 0x30034, // [9]
+		105, 107, 0x30010, // [10]
+		112, 113, 0x2d0039, // [11]
+		117, 120, 0x5f0002, // [12]
+		124, 125, 0x100002, // [13]
+		128, 128, 0x130002, // [14]
+		113, 115, 0x3002d, // [15]
+		120, 122, 0x3005f, // [16]
+		125, 127, 0x30010, // [17]
+		137, 139, 0x9003c, // [18]
+		143, 145, 0x190002, // [19]
+		156, 157, 0xc0002, // [20]
+		139, 141, 0x30009, // [21]
+		145, 146, 0x300019, // [22]
+		149, 150, 0x110003, // [23]
+		153, 153, 0x330003, // [24]
+		146, 148, 0x40030, // [25]
+		150, 152, 0x40011, // [26]
+		160, 163, 0x1b0037, // [27]
+		186, 186, 0x140002, // [28]
+		163, 165, 0xa001b, // [29]
+		169, 171, 0x600003, // [30]
+		175, 175, 0x350003, // [31]
+		179, 180, 0x110003, // [32]
+		183, 183, 0x140003, // [33]
+		165, 167, 0x4000a, // [34]
+		171, 172, 0xc0060, // [35]
+		175, 177, 0x40035, // [36]
+		180, 182, 0x40011, // [37]
+		195, 197, 0x9003e, // [38]
+		201, 203, 0x1a0002, // [39]
+		214, 215, 0xc0002, // [40]
+		197, 199, 0x30009, // [41]
+		203, 204, 0x30001a, // [42]
+		207, 208, 0x110003, // [43]
+		211, 211, 0x200003, // [44]
+		204, 206, 0x40030, // [45]
+		208, 210, 0x40011, // [46]
+		218, 220, 0x180039, // [47]
+		238, 238, 0x140002, // [48]
+		220, 223, 0x600018, // [49]
+		227, 227, 0x350003, // [50]
+		231, 232, 0x110003, // [51]
+		235, 235, 0x140003, // [52]
+		223, 224, 0xc0060, // [53]
+		227, 229, 0x40035, // [54]
+		232, 234, 0x40011, // [55]
+		241, 242, 0x1d0038, // [56]
+		247, 247, 0xe0002, // [57]
+		242, 243, 0x15001d, // [58]
+		243, 245, 0x40015, // [59]
+		251, 252, 0x220035, // [60]
+		255, 263, 0x100002, // [61]
+		266, 266, 0x170002, // [62]
+		252, 253, 0x1a0022, // [63]
+		263, 265, 0x30010, // [64]
+		269, 271, 0x100047, // [65]
+		275, 275, 0x350002, // [66]
+		271, 273, 0x30010, // [67]
+		280, 285, 0x100042, // [68]
+		288, 288, 0x120002, // [69]
+		285, 287, 0x30010, // [70]
+		309, 313, 0x21004f, // [71]
+		317, 317, 0x130002, // [72]
+		321, 322, 0x230002, // [73]
+		326, 331, 0x270002, // [74]
+		356, 356, 0x290002, // [75]
+		360, 360, 0x140002, // [76]
+		313, 315, 0x30021, // [77]
+		317, 319, 0x30013, // [78]
+		322, 324, 0x30023, // [79]
+		331, 335, 0xa0027, // [80]
+		338, 340, 0x2a0003, // [81]
+		335, 337, 0x4000a, // [82]
+		340, 341, 0x3f002a, // [83]
+		345, 346, 0x120004, // [84]
+		349, 350, 0x90004, // [85]
+		341, 342, 0xd003f, // [86]
+		346, 348, 0x50012, // [87]
+		356, 358, 0x30029, // [88]
+		363, 364, 0xf0063, // [89]
+		372, 374, 0x80002, // [90]
+		378, 379, 0x100002, // [91]
+		383, 384, 0x100002, // [92]
+		388, 389, 0x100002, // [93]
+		393, 393, 0x1f0002, // [94]
+		404, 404, 0x120002, // [95]
+		364, 367, 0x11000f, // [96]
+		367, 369, 0x40011, // [97]
+		374, 376, 0x30008, // [98]
+		379, 381, 0x30010, // [99]
+		384, 386, 0x30010, // [100]
+		389, 391, 0x30010, // [101]
+		393, 394, 0x27001f, // [102]
+		397, 399, 0x110003, // [103]
+		394, 395, 0xc0027, // [104]
+		399, 401, 0x40011, // [105]
+		411, 413, 0x10003c, // [106]
+		417, 419, 0x1d0002, // [107]
+		413, 415, 0x30010, // [108]
+		422, 423, 0xf0065, // [109]
+		431, 433, 0x80002, // [110]
+		437, 438, 0x100002, // [111]
+		442, 444, 0x1f0002, // [112]
+		453, 453, 0x2e0002, // [113]
+		457, 457, 0x1f0002, // [114]
+		467, 467, 0xc0002, // [115]
+		423, 426, 0x11000f, // [116]
+		426, 428, 0x40011, // [117]
+		433, 435, 0x30008, // [118]
+		438, 440, 0x30010, // [119]
+		444, 446, 0xa001f, // [120]
+		449, 450, 0x1d0003, // [121]
+		446, 447, 0xc000a, // [122]
+		453, 455, 0x3002e, // [123]
+		457, 459, 0xa001f, // [124]
+		462, 462, 0x3a0003, // [125]
+		459, 460, 0xc000a, // [126]
+		462, 464, 0x4003a, // [127]
+		472, 474, 0x10003e, // [128]
+		478, 479, 0x100002, // [129]
+		483, 483, 0x360002, // [130]
+		474, 476, 0x30010, // [131]
+		479, 481, 0x30010, // [132]
+	},
+	NumStmt: [133]uint16{
+		3, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		2, // 6
+		2, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		2, // 12
+		2, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		2, // 18
+		2, // 19
+		2, // 20
+		1, // 21
+		1, // 22
+		2, // 23
+		1, // 24
+		1, // 25
+		1, // 26
+		3, // 27
+		1, // 28
+		2, // 29
+		3, // 30
+		1, // 31
+		2, // 32
+		1, // 33
+		1, // 34
+		1, // 35
+		1, // 36
+		1, // 37
+		2, // 38
+		2, // 39
+		2, // 40
+		1, // 41
+		1, // 42
+		2, // 43
+		1, // 44
+		1, // 45
+		1, // 46
+		2, // 47
+		1, // 48
+		3, // 49
+		1, // 50
+		2, // 51
+		1, // 52
+		1, // 53
+		1, // 54
+		1, // 55
+		1, // 56
+		1, // 57
+		1, // 58
+		1, // 59
+		1, // 60
+		4, // 61
+		1, // 62
+		1, // 63
+		1, // 64
+		2, // 65
+		1, // 66
+		1, // 67
+		5, // 68
+		1, // 69
+		1, // 70
+		3, // 71
+		1, // 72
+		2, // 73
+		3, // 74
+		1, // 75
+		1, // 76
+		1, // 77
+		1, // 78
+		1, // 79
+		4, // 80
+		2, // 81
+		1, // 82
+		1, // 83
+		2, // 84
+		2, // 85
+		1, // 86
+		1, // 87
+		1, // 88
+		1, // 89
+		3, // 90
+		2, // 91
+		2, // 92
+		2, // 93
+		1, // 94
+		1, // 95
+		1, // 96
+		1, // 97
+		1, // 98
+		1, // 99
+		1, // 100
+		1, // 101
+		1, // 102
+		3, // 103
+		1, // 104
+		1, // 105
+		2, // 106
+		3, // 107
+		1, // 108
+		1, // 109
+		3, // 110
+		2, // 111
+		2, // 112
+		1, // 113
+		1, // 114
+		1, // 115
+		1, // 116
+		1, // 117
+		1, // 118
+		1, // 119
+		2, // 120
+		2, // 121
+		1, // 122
+		1, // 123
+		2, // 124
+		1, // 125
+		1, // 126
+		1, // 127
+		2, // 128
+		2, // 129
+		1, // 130
+		1, // 131
+		1, // 132
+	},
+}
+var _ = _cover_atomic_.LoadUint32

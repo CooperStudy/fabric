@@ -1,0 +1,310 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/orderer/common/multichannel/blockwriter.go:1
+/*
+Copyright IBM Corp. 2017 All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package multichannel; import _cover_atomic_ "sync/atomic"
+
+import (
+	"sync"
+
+	"github.com/golang/protobuf/proto"
+	newchannelconfig "github.com/hyperledger/fabric/common/channelconfig"
+	"github.com/hyperledger/fabric/common/configtx"
+	"github.com/hyperledger/fabric/common/crypto"
+	"github.com/hyperledger/fabric/common/ledger/blockledger"
+	"github.com/hyperledger/fabric/common/util"
+	cb "github.com/hyperledger/fabric/protos/common"
+	"github.com/hyperledger/fabric/protos/utils"
+)
+
+type blockWriterSupport interface {
+	crypto.LocalSigner
+	blockledger.ReadWriter
+	configtx.Validator
+	Update(*newchannelconfig.Bundle)
+	CreateBundle(channelID string, config *cb.Config) (*newchannelconfig.Bundle, error)
+}
+
+// BlockWriter efficiently writes the blockchain to disk.
+// To safely use BlockWriter, only one thread should interact with it.
+// BlockWriter will spawn additional committing go routines and handle locking
+// so that these other go routines safely interact with the calling one.
+type BlockWriter struct {
+	support            blockWriterSupport
+	registrar          *Registrar
+	lastConfigBlockNum uint64
+	lastConfigSeq      uint64
+	lastBlock          *cb.Block
+	committingBlock    sync.Mutex
+}
+
+func newBlockWriter(lastBlock *cb.Block, r *Registrar, support blockWriterSupport) *BlockWriter {_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[0], 1);
+	bw := &BlockWriter{
+		support:       support,
+		lastConfigSeq: support.Sequence(),
+		lastBlock:     lastBlock,
+		registrar:     r,
+	}
+
+	// If this is the genesis block, the lastconfig field may be empty, and, the last config block is necessarily block 0
+	// so no need to initialize lastConfig
+	if lastBlock.Header.Number != 0 {_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[2], 1);
+		var err error
+		bw.lastConfigBlockNum, err = utils.GetLastConfigIndexFromBlock(lastBlock)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[3], 1);
+			logger.Panicf("[channel: %s] Error extracting last config block from block metadata: %s", support.ChainID(), err)
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[1], 1);logger.Debugf("[channel: %s] Creating block writer for tip of chain (blockNumber=%d, lastConfigBlockNum=%d, lastConfigSeq=%d)", support.ChainID(), lastBlock.Header.Number, bw.lastConfigBlockNum, bw.lastConfigSeq)
+	return bw
+}
+
+// CreateNextBlock creates a new block with the next block number, and the given contents.
+func (bw *BlockWriter) CreateNextBlock(messages []*cb.Envelope) *cb.Block {_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[4], 1);
+	previousBlockHash := bw.lastBlock.Header.Hash()
+
+	data := &cb.BlockData{
+		Data: make([][]byte, len(messages)),
+	}
+
+	var err error
+	for i, msg := range messages {_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[6], 1);
+		data.Data[i], err = proto.Marshal(msg)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[7], 1);
+			logger.Panicf("Could not marshal envelope: %s", err)
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[5], 1);block := cb.NewBlock(bw.lastBlock.Header.Number+1, previousBlockHash)
+	block.Header.DataHash = data.Hash()
+	block.Data = data
+
+	return block
+}
+
+// WriteConfigBlock should be invoked for blocks which contain a config transaction.
+// This call will block until the new config has taken effect, then will return
+// while the block is written asynchronously to disk.
+func (bw *BlockWriter) WriteConfigBlock(block *cb.Block, encodedMetadataValue []byte) {_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[8], 1);
+	ctx, err := utils.ExtractEnvelope(block, 0)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[14], 1);
+		logger.Panicf("Told to write a config block, but could not get configtx: %s", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[9], 1);payload, err := utils.UnmarshalPayload(ctx.Payload)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[15], 1);
+		logger.Panicf("Told to write a config block, but configtx payload is invalid: %s", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[10], 1);if payload.Header == nil {_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[16], 1);
+		logger.Panicf("Told to write a config block, but configtx payload header is missing")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[11], 1);chdr, err := utils.UnmarshalChannelHeader(payload.Header.ChannelHeader)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[17], 1);
+		logger.Panicf("Told to write a config block with an invalid channel header: %s", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[12], 1);switch chdr.Type {
+	case int32(cb.HeaderType_ORDERER_TRANSACTION):_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[18], 1);
+		newChannelConfig, err := utils.UnmarshalEnvelope(payload.Data)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[25], 1);
+			logger.Panicf("Told to write a config block with new channel, but did not have config update embedded: %s", err)
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[19], 1);bw.registrar.newChain(newChannelConfig)
+	case int32(cb.HeaderType_CONFIG):_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[20], 1);
+		configEnvelope, err := configtx.UnmarshalConfigEnvelope(payload.Data)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[26], 1);
+			logger.Panicf("Told to write a config block with new channel, but did not have config envelope encoded: %s", err)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[21], 1);err = bw.support.Validate(configEnvelope)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[27], 1);
+			logger.Panicf("Told to write a config block with new config, but could not apply it: %s", err)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[22], 1);bundle, err := bw.support.CreateBundle(chdr.ChannelId, configEnvelope.Config)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[28], 1);
+			logger.Panicf("Told to write a config block with a new config, but could not convert it to a bundle: %s", err)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[23], 1);bw.support.Update(bundle)
+	default:_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[24], 1);
+		logger.Panicf("Told to write a config block with unknown header type: %v", chdr.Type)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[13], 1);bw.WriteBlock(block, encodedMetadataValue)
+}
+
+// WriteBlock should be invoked for blocks which contain normal transactions.
+// It sets the target block as the pending next block, and returns before it is committed.
+// Before returning, it acquires the committing lock, and spawns a go routine which will
+// annotate the block with metadata and signatures, and write the block to the ledger
+// then release the lock.  This allows the calling thread to begin assembling the next block
+// before the commit phase is complete.
+func (bw *BlockWriter) WriteBlock(block *cb.Block, encodedMetadataValue []byte) {_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[29], 1);
+	bw.committingBlock.Lock()
+	bw.lastBlock = block
+
+	go func() {_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[30], 1);
+		defer bw.committingBlock.Unlock()
+		bw.commitBlock(encodedMetadataValue)
+	}()
+}
+
+// commitBlock should only ever be invoked with the bw.committingBlock held
+// this ensures that the encoded config sequence numbers stay in sync
+func (bw *BlockWriter) commitBlock(encodedMetadataValue []byte) {_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[31], 1);
+	// Set the orderer-related metadata field
+	if encodedMetadataValue != nil {_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[34], 1);
+		bw.lastBlock.Metadata.Metadata[cb.BlockMetadataIndex_ORDERER] = utils.MarshalOrPanic(&cb.Metadata{Value: encodedMetadataValue})
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[32], 1);bw.addBlockSignature(bw.lastBlock)
+	bw.addLastConfigSignature(bw.lastBlock)
+
+	err := bw.support.Append(bw.lastBlock)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[35], 1);
+		logger.Panicf("[channel: %s] Could not append block: %s", bw.support.ChainID(), err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[33], 1);logger.Debugf("[channel: %s] Wrote block %d", bw.support.ChainID(), bw.lastBlock.GetHeader().Number)
+}
+
+func (bw *BlockWriter) addBlockSignature(block *cb.Block) {_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[36], 1);
+	blockSignature := &cb.MetadataSignature{
+		SignatureHeader: utils.MarshalOrPanic(utils.NewSignatureHeaderOrPanic(bw.support)),
+	}
+
+	// Note, this value is intentionally nil, as this metadata is only about the signature, there is no additional metadata
+	// information required beyond the fact that the metadata item is signed.
+	blockSignatureValue := []byte(nil)
+
+	blockSignature.Signature = utils.SignOrPanic(bw.support, util.ConcatenateBytes(blockSignatureValue, blockSignature.SignatureHeader, block.Header.Bytes()))
+
+	block.Metadata.Metadata[cb.BlockMetadataIndex_SIGNATURES] = utils.MarshalOrPanic(&cb.Metadata{
+		Value: blockSignatureValue,
+		Signatures: []*cb.MetadataSignature{
+			blockSignature,
+		},
+	})
+}
+
+func (bw *BlockWriter) addLastConfigSignature(block *cb.Block) {_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[37], 1);
+	configSeq := bw.support.Sequence()
+	if configSeq > bw.lastConfigSeq {_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[39], 1);
+		logger.Debugf("[channel: %s] Detected lastConfigSeq transitioning from %d to %d, setting lastConfigBlockNum from %d to %d", bw.support.ChainID(), bw.lastConfigSeq, configSeq, bw.lastConfigBlockNum, block.Header.Number)
+		bw.lastConfigBlockNum = block.Header.Number
+		bw.lastConfigSeq = configSeq
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_663537366331353835343737.Count[38], 1);lastConfigSignature := &cb.MetadataSignature{
+		SignatureHeader: utils.MarshalOrPanic(utils.NewSignatureHeaderOrPanic(bw.support)),
+	}
+
+	lastConfigValue := utils.MarshalOrPanic(&cb.LastConfig{Index: bw.lastConfigBlockNum})
+	logger.Debugf("[channel: %s] About to write block, setting its LAST_CONFIG to %d", bw.support.ChainID(), bw.lastConfigBlockNum)
+
+	lastConfigSignature.Signature = utils.SignOrPanic(bw.support, util.ConcatenateBytes(lastConfigValue, lastConfigSignature.SignatureHeader, block.Header.Bytes()))
+
+	block.Metadata.Metadata[cb.BlockMetadataIndex_LAST_CONFIG] = utils.MarshalOrPanic(&cb.Metadata{
+		Value: lastConfigValue,
+		Signatures: []*cb.MetadataSignature{
+			lastConfigSignature,
+		},
+	})
+}
+
+var GoCover_0_663537366331353835343737 = struct {
+	Count     [40]uint32
+	Pos       [3 * 40]uint32
+	NumStmt   [40]uint16
+} {
+	Pos: [3 * 40]uint32{
+		43, 53, 0x220061, // [0]
+		61, 62, 0xb0002, // [1]
+		53, 56, 0x110022, // [2]
+		56, 58, 0x40011, // [3]
+		66, 74, 0x1f004b, // [4]
+		81, 85, 0xe0002, // [5]
+		74, 76, 0x11001f, // [6]
+		76, 78, 0x40011, // [7]
+		91, 93, 0x100057, // [8]
+		97, 98, 0x100002, // [9]
+		102, 102, 0x1b0002, // [10]
+		106, 107, 0x100002, // [11]
+		111, 111, 0x130002, // [12]
+		139, 139, 0x2c0002, // [13]
+		93, 95, 0x30010, // [14]
+		98, 100, 0x30010, // [15]
+		102, 104, 0x3001b, // [16]
+		107, 109, 0x30010, // [17]
+		112, 114, 0x110030, // [18]
+		117, 117, 0x2a0003, // [19]
+		118, 120, 0x110023, // [20]
+		124, 125, 0x110003, // [21]
+		129, 130, 0x110003, // [22]
+		134, 134, 0x1c0003, // [23]
+		135, 136, 0x58000a, // [24]
+		114, 116, 0x40011, // [25]
+		120, 122, 0x40011, // [26]
+		125, 127, 0x40011, // [27]
+		130, 132, 0x40011, // [28]
+		148, 152, 0xc0051, // [29]
+		152, 155, 0x3000c, // [30]
+		160, 162, 0x210041, // [31]
+		165, 169, 0x100002, // [32]
+		172, 172, 0x660002, // [33]
+		162, 164, 0x30021, // [34]
+		169, 171, 0x30010, // [35]
+		175, 192, 0x2003b, // [36]
+		194, 196, 0x220040, // [37]
+		202, 216, 0x40002, // [38]
+		196, 200, 0x30022, // [39]
+	},
+	NumStmt: [40]uint16{
+		2, // 0
+		2, // 1
+		3, // 2
+		1, // 3
+		4, // 4
+		4, // 5
+		2, // 6
+		1, // 7
+		2, // 8
+		2, // 9
+		1, // 10
+		2, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		2, // 18
+		1, // 19
+		2, // 20
+		2, // 21
+		2, // 22
+		1, // 23
+		1, // 24
+		1, // 25
+		1, // 26
+		1, // 27
+		1, // 28
+		3, // 29
+		2, // 30
+		1, // 31
+		4, // 32
+		1, // 33
+		1, // 34
+		1, // 35
+		4, // 36
+		2, // 37
+		5, // 38
+		3, // 39
+	},
+}
+var _ = _cover_atomic_.LoadUint32

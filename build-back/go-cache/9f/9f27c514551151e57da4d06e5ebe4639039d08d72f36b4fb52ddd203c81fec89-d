@@ -1,0 +1,10 @@
+# test log
+open testdata/signer/cert.pem
+open testdata/signer/8150cb2d09628ccc89727611ebb736189f6482747eff9b8aaaa27e9a382d2e93_sk
+open testdata/signer/non_existent_cert
+open testdata/signer/cert.pem
+open testdata/signer/non_existent_cert
+open testdata/signer/cert.pem
+open testdata/signer/broken_private_key
+open testdata/signer/cert.pem
+open testdata/signer/empty_private_key

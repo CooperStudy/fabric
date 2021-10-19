@@ -1,0 +1,174 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/configtx/util.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package configtx; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/golang/protobuf/proto"
+	cb "github.com/hyperledger/fabric/protos/common"
+	"github.com/hyperledger/fabric/protos/utils"
+)
+
+// UnmarshalConfig attempts to unmarshal bytes to a *cb.Config
+func UnmarshalConfig(data []byte) (*cb.Config, error) {_cover_atomic_.AddUint32(&GoCover_4_346532363364653032376334.Count[0], 1);
+	config := &cb.Config{}
+	err := proto.Unmarshal(data, config)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_346532363364653032376334.Count[2], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_346532363364653032376334.Count[1], 1);return config, nil
+}
+
+// UnmarshalConfigOrPanic attempts to unmarshal bytes to a *cb.Config or panics on error
+func UnmarshalConfigOrPanic(data []byte) *cb.Config {_cover_atomic_.AddUint32(&GoCover_4_346532363364653032376334.Count[3], 1);
+	result, err := UnmarshalConfig(data)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_346532363364653032376334.Count[5], 1);
+		panic(err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_346532363364653032376334.Count[4], 1);return result
+}
+
+// UnmarshalConfigUpdate attempts to unmarshal bytes to a *cb.ConfigUpdate
+func UnmarshalConfigUpdate(data []byte) (*cb.ConfigUpdate, error) {_cover_atomic_.AddUint32(&GoCover_4_346532363364653032376334.Count[6], 1);
+	configUpdate := &cb.ConfigUpdate{}
+	err := proto.Unmarshal(data, configUpdate)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_346532363364653032376334.Count[8], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_346532363364653032376334.Count[7], 1);return configUpdate, nil
+}
+
+// UnmarshalConfigUpdateOrPanic attempts to unmarshal bytes to a *cb.ConfigUpdate or panics on error
+func UnmarshalConfigUpdateOrPanic(data []byte) *cb.ConfigUpdate {_cover_atomic_.AddUint32(&GoCover_4_346532363364653032376334.Count[9], 1);
+	result, err := UnmarshalConfigUpdate(data)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_346532363364653032376334.Count[11], 1);
+		panic(err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_346532363364653032376334.Count[10], 1);return result
+}
+
+// UnmarshalConfigUpdateEnvelope attempts to unmarshal bytes to a *cb.ConfigUpdate
+func UnmarshalConfigUpdateEnvelope(data []byte) (*cb.ConfigUpdateEnvelope, error) {_cover_atomic_.AddUint32(&GoCover_4_346532363364653032376334.Count[12], 1);
+	configUpdateEnvelope := &cb.ConfigUpdateEnvelope{}
+	err := proto.Unmarshal(data, configUpdateEnvelope)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_346532363364653032376334.Count[14], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_346532363364653032376334.Count[13], 1);return configUpdateEnvelope, nil
+}
+
+// UnmarshalConfigUpdateEnvelopeOrPanic attempts to unmarshal bytes to a *cb.ConfigUpdateEnvelope or panics on error
+func UnmarshalConfigUpdateEnvelopeOrPanic(data []byte) *cb.ConfigUpdateEnvelope {_cover_atomic_.AddUint32(&GoCover_4_346532363364653032376334.Count[15], 1);
+	result, err := UnmarshalConfigUpdateEnvelope(data)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_346532363364653032376334.Count[17], 1);
+		panic(err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_346532363364653032376334.Count[16], 1);return result
+}
+
+// UnmarshalConfigEnvelope attempts to unmarshal bytes to a *cb.ConfigEnvelope
+func UnmarshalConfigEnvelope(data []byte) (*cb.ConfigEnvelope, error) {_cover_atomic_.AddUint32(&GoCover_4_346532363364653032376334.Count[18], 1);
+	configEnv := &cb.ConfigEnvelope{}
+	err := proto.Unmarshal(data, configEnv)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_346532363364653032376334.Count[20], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_346532363364653032376334.Count[19], 1);return configEnv, nil
+}
+
+// UnmarshalConfigEnvelopeOrPanic attempts to unmarshal bytes to a *cb.ConfigEnvelope or panics on error
+func UnmarshalConfigEnvelopeOrPanic(data []byte) *cb.ConfigEnvelope {_cover_atomic_.AddUint32(&GoCover_4_346532363364653032376334.Count[21], 1);
+	result, err := UnmarshalConfigEnvelope(data)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_346532363364653032376334.Count[23], 1);
+		panic(err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_346532363364653032376334.Count[22], 1);return result
+}
+
+// UnmarshalConfigUpdateFromPayload unmarshals configuration update from given payload
+func UnmarshalConfigUpdateFromPayload(payload *cb.Payload) (*cb.ConfigUpdate, error) {_cover_atomic_.AddUint32(&GoCover_4_346532363364653032376334.Count[24], 1);
+	configEnv, err := UnmarshalConfigEnvelope(payload.Data)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_346532363364653032376334.Count[27], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_346532363364653032376334.Count[25], 1);configUpdateEnv, err := utils.EnvelopeToConfigUpdate(configEnv.LastUpdate)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_346532363364653032376334.Count[28], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_346532363364653032376334.Count[26], 1);return UnmarshalConfigUpdate(configUpdateEnv.ConfigUpdate)
+}
+
+var GoCover_4_346532363364653032376334 = struct {
+	Count     [29]uint32
+	Pos       [3 * 29]uint32
+	NumStmt   [29]uint16
+} {
+	Pos: [3 * 29]uint32{
+		16, 19, 0x100037, // [0]
+		22, 22, 0x140002, // [1]
+		19, 21, 0x30010, // [2]
+		26, 28, 0x100035, // [3]
+		31, 31, 0xf0002, // [4]
+		28, 29, 0xd0010, // [5]
+		35, 38, 0x100043, // [6]
+		41, 41, 0x1a0002, // [7]
+		38, 40, 0x30010, // [8]
+		45, 47, 0x100041, // [9]
+		50, 50, 0xf0002, // [10]
+		47, 48, 0xd0010, // [11]
+		54, 57, 0x100053, // [12]
+		60, 60, 0x220002, // [13]
+		57, 59, 0x30010, // [14]
+		64, 66, 0x100051, // [15]
+		69, 69, 0xf0002, // [16]
+		66, 67, 0xd0010, // [17]
+		73, 76, 0x100047, // [18]
+		79, 79, 0x170002, // [19]
+		76, 78, 0x30010, // [20]
+		83, 85, 0x100045, // [21]
+		88, 88, 0xf0002, // [22]
+		85, 86, 0xd0010, // [23]
+		92, 94, 0x100056, // [24]
+		97, 98, 0x100002, // [25]
+		102, 102, 0x3c0002, // [26]
+		94, 96, 0x30010, // [27]
+		98, 100, 0x30010, // [28]
+	},
+	NumStmt: [29]uint16{
+		3, // 0
+		1, // 1
+		1, // 2
+		2, // 3
+		1, // 4
+		1, // 5
+		3, // 6
+		1, // 7
+		1, // 8
+		2, // 9
+		1, // 10
+		1, // 11
+		3, // 12
+		1, // 13
+		1, // 14
+		2, // 15
+		1, // 16
+		1, // 17
+		3, // 18
+		1, // 19
+		1, // 20
+		2, // 21
+		1, // 22
+		1, // 23
+		2, // 24
+		2, // 25
+		1, // 26
+		1, // 27
+		1, // 28
+	},
+}
+var _ = _cover_atomic_.LoadUint32

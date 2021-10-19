@@ -1,0 +1,370 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/ledger/kvledger/tests/sample_data_helper.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package tests; import _cover_atomic_ "sync/atomic"
+
+import (
+	"bytes"
+	"encoding/gob"
+	"fmt"
+	"testing"
+
+	"github.com/hyperledger/fabric/core/ledger"
+	protopeer "github.com/hyperledger/fabric/protos/peer"
+	"github.com/stretchr/testify/assert"
+)
+
+type submittedData map[string]*submittedLedgerData
+
+type submittedLedgerData struct {
+	Blocks []*ledger.BlockAndPvtData
+	Txs    []*txAndPvtdata
+}
+
+func (s submittedData) initForLedger(lgrid string) {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[0], 1);
+	ld := s[lgrid]
+	if ld == nil {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[1], 1);
+		ld = &submittedLedgerData{}
+		s[lgrid] = ld
+	}
+}
+
+func (s submittedData) recordSubmittedBlks(lgrid string, blk ...*ledger.BlockAndPvtData) {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[2], 1);
+	s.initForLedger(lgrid)
+	s[lgrid].Blocks = append(s[lgrid].Blocks, blk...)
+}
+
+func (s submittedData) recordSubmittedTxs(lgrid string, tx ...*txAndPvtdata) {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[3], 1);
+	s.initForLedger(lgrid)
+	s[lgrid].Txs = append(s[lgrid].Txs, tx...)
+}
+
+type sampleDataHelper struct {
+	submittedData submittedData
+	assert        *assert.Assertions
+	t             *testing.T
+}
+
+func newSampleDataHelper(t *testing.T) *sampleDataHelper {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[4], 1);
+	return &sampleDataHelper{make(submittedData), assert.New(t), t}
+}
+
+func (d *sampleDataHelper) populateLedger(h *testhelper) {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[5], 1);
+	lgrid := h.lgrid
+	// blk1 deploys 2 chaincodes
+	txdeploy1 := h.simulateDeployTx("cc1", nil)
+	txdeploy2 := h.simulateDeployTx("cc2", nil)
+	blk1 := h.cutBlockAndCommitWithPvtdata()
+
+	// blk2 contains 2 public data txs
+	txdata1 := h.simulateDataTx("txid1", func(s *simulator) {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[14], 1);
+		s.setState("cc1", "key1", d.sampleVal("value01", lgrid))
+		s.setState("cc1", "key2", d.sampleVal("value02", lgrid))
+	})
+
+	_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[6], 1);txdata2 := h.simulateDataTx("txid2", func(s *simulator) {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[15], 1);
+		s.setState("cc2", "key1", d.sampleVal("value03", lgrid))
+		s.setState("cc2", "key2", d.sampleVal("value04", lgrid))
+	})
+	_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[7], 1);blk2 := h.cutBlockAndCommitWithPvtdata()
+
+	// blk3 upgrades both chaincodes
+	txupgrade1 := h.simulateUpgradeTx("cc1", d.sampleCollConf1(lgrid, "cc1"))
+	txupgrade2 := h.simulateUpgradeTx("cc2", d.sampleCollConf1(lgrid, "cc2"))
+	blk3 := h.cutBlockAndCommitWithPvtdata()
+
+	// blk4 contains 2 data txs with private data
+	txdata3 := h.simulateDataTx("txid3", func(s *simulator) {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[16], 1);
+		s.setPvtdata("cc1", "coll1", "key3", d.sampleVal("value05", lgrid))
+		s.setPvtdata("cc1", "coll1", "key4", d.sampleVal("value06", lgrid))
+	})
+	_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[8], 1);txdata4 := h.simulateDataTx("txid4", func(s *simulator) {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[17], 1);
+		s.setPvtdata("cc2", "coll1", "key3", d.sampleVal("value07", lgrid))
+		s.setPvtdata("cc2", "coll1", "key4", d.sampleVal("value08", lgrid))
+	})
+	_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[9], 1);blk4 := h.cutBlockAndCommitWithPvtdata()
+
+	// blk5 upgrades both chaincodes
+	txupgrade3 := h.simulateUpgradeTx("cc1", d.sampleCollConf2(lgrid, "cc1"))
+	txupgrade4 := h.simulateDeployTx("cc2", d.sampleCollConf2(lgrid, "cc2"))
+	blk5 := h.cutBlockAndCommitWithPvtdata()
+
+	// blk6 contains 2 data txs with private data
+	txdata5 := h.simulateDataTx("txid5", func(s *simulator) {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[18], 1);
+		s.setPvtdata("cc1", "coll2", "key3", d.sampleVal("value09", lgrid))
+		s.setPvtdata("cc1", "coll2", "key4", d.sampleVal("value10", lgrid))
+	})
+	_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[10], 1);txdata6 := h.simulateDataTx("txid6", func(s *simulator) {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[19], 1);
+		s.setPvtdata("cc2", "coll2", "key3", d.sampleVal("value11", lgrid))
+		s.setPvtdata("cc2", "coll2", "key4", d.sampleVal("value12", lgrid))
+	})
+	_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[11], 1);blk6 := h.cutBlockAndCommitWithPvtdata()
+
+	// blk7 contains one data txs
+	txdata7 := h.simulateDataTx("txid7", func(s *simulator) {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[20], 1);
+		s.setState("cc1", "key1", d.sampleVal("value13", lgrid))
+		s.DeleteState("cc1", "key2")
+		s.setPvtdata("cc1", "coll1", "key3", d.sampleVal("value14", lgrid))
+		s.DeletePrivateData("cc1", "coll1", "key4")
+	})
+	_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[12], 1);h.simulatedTrans = nil
+
+	// blk8 contains one data txs that should be marked as invalid because of mvcc conflict with tx in blk7
+	txdata8 := h.simulateDataTx("txid8", func(s *simulator) {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[21], 1);
+		s.getState("cc1", "key1")
+		s.setState("cc1", "key1", d.sampleVal("value15", lgrid))
+	})
+	_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[13], 1);blk7 := h.committer.cutBlockAndCommitWithPvtdata(txdata7)
+	blk8 := h.cutBlockAndCommitWithPvtdata()
+
+	d.submittedData.recordSubmittedBlks(lgrid,
+		blk1, blk2, blk3, blk4, blk5, blk6, blk7, blk8)
+	d.submittedData.recordSubmittedTxs(lgrid,
+		txdeploy1, txdeploy2, txdata1, txdata2, txupgrade1, txupgrade2,
+		txdata3, txdata4, txupgrade3, txupgrade4, txdata5, txdata6, txdata7, txdata8)
+}
+
+func (d *sampleDataHelper) serilizeSubmittedData() []byte {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[22], 1);
+	gob.Register(submittedData{})
+	b := bytes.Buffer{}
+	encoder := gob.NewEncoder(&b)
+	d.assert.NoError(encoder.Encode(d.submittedData))
+	by := b.Bytes()
+	d.t.Logf("Serialized submitted data to bytes of len [%d]", len(by))
+	return by
+}
+
+func (d *sampleDataHelper) loadSubmittedData(b []byte) {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[23], 1);
+	gob.Register(submittedData{})
+	sd := make(submittedData)
+	buf := bytes.NewBuffer(b)
+	decoder := gob.NewDecoder(buf)
+	d.assert.NoError(decoder.Decode(&sd))
+	d.t.Logf("Deserialized submitted data from bytes of len [%d], submitted data = %#v", len(b), sd)
+	d.submittedData = sd
+}
+
+func (d *sampleDataHelper) verifyLedgerContent(h *testhelper) {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[24], 1);
+	d.verifyState(h)
+	d.verifyConfigHistory(h)
+	d.verifyBlockAndPvtdata(h)
+	d.verifyGetTransactionByID(h)
+
+	// the submitted data could not be available if the test ledger is loaded from disk in a fresh run
+	// (e.g., a backup of a test lesger from a previous fabric version)
+	if len(d.submittedData) != 0 {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[25], 1);
+		d.t.Log("Verifying using submitted data")
+		d.verifyBlockAndPvtdataUsingSubmittedData(h)
+		d.verifyGetTransactionByIDUsingSubmittedData(h)
+	} else{ _cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[26], 1);{
+		d.t.Log("Skipping verifying using submitted data")
+	}}
+}
+
+func (d *sampleDataHelper) verifyState(h *testhelper) {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[27], 1);
+	lgrid := h.lgrid
+	h.verifyPubState("cc1", "key1", d.sampleVal("value13", lgrid))
+	h.verifyPubState("cc1", "key2", "")
+	h.verifyPvtState("cc1", "coll1", "key3", d.sampleVal("value14", lgrid))
+	h.verifyPvtState("cc1", "coll1", "key4", "")
+	h.verifyPvtState("cc1", "coll2", "key3", d.sampleVal("value09", lgrid))
+	h.verifyPvtState("cc1", "coll2", "key4", d.sampleVal("value10", lgrid))
+
+	h.verifyPubState("cc2", "key1", d.sampleVal("value03", lgrid))
+	h.verifyPubState("cc2", "key2", d.sampleVal("value04", lgrid))
+	h.verifyPvtState("cc2", "coll1", "key3", d.sampleVal("value07", lgrid))
+	h.verifyPvtState("cc2", "coll1", "key4", d.sampleVal("value08", lgrid))
+	h.verifyPvtState("cc2", "coll2", "key3", d.sampleVal("value11", lgrid))
+	h.verifyPvtState("cc2", "coll2", "key4", d.sampleVal("value12", lgrid))
+}
+
+func (d *sampleDataHelper) verifyConfigHistory(h *testhelper) {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[28], 1);
+	lgrid := h.lgrid
+	h.verifyMostRecentCollectionConfigBelow(10, "cc1",
+		&expectedCollConfInfo{5, d.sampleCollConf2(lgrid, "cc1")})
+
+	h.verifyMostRecentCollectionConfigBelow(5, "cc1",
+		&expectedCollConfInfo{3, d.sampleCollConf1(lgrid, "cc1")})
+
+	h.verifyMostRecentCollectionConfigBelow(10, "cc2",
+		&expectedCollConfInfo{5, d.sampleCollConf2(lgrid, "cc2")})
+
+	h.verifyMostRecentCollectionConfigBelow(5, "cc2",
+		&expectedCollConfInfo{3, d.sampleCollConf1(lgrid, "cc2")})
+}
+
+func (d *sampleDataHelper) verifyBlockAndPvtdata(h *testhelper) {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[29], 1);
+	lgrid := h.lgrid
+	h.verifyBlockAndPvtData(2, nil, func(r *retrievedBlockAndPvtdata) {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[31], 1);
+		r.hasNumTx(2)
+		r.hasNoPvtdata()
+	})
+
+	_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[30], 1);h.verifyBlockAndPvtData(4, nil, func(r *retrievedBlockAndPvtdata) {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[32], 1);
+		r.hasNumTx(2)
+		r.pvtdataShouldContain(0, "cc1", "coll1", "key3", d.sampleVal("value05", lgrid))
+		r.pvtdataShouldContain(1, "cc2", "coll1", "key3", d.sampleVal("value07", lgrid))
+	})
+}
+
+func (d *sampleDataHelper) verifyGetTransactionByID(h *testhelper) {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[33], 1);
+	h.verifyTxValidationCode("txid7", protopeer.TxValidationCode_VALID)
+	h.verifyTxValidationCode("txid8", protopeer.TxValidationCode_MVCC_READ_CONFLICT)
+}
+
+func (d *sampleDataHelper) verifyBlockAndPvtdataUsingSubmittedData(h *testhelper) {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[34], 1);
+	lgrid := h.lgrid
+	submittedData := d.submittedData[lgrid]
+	for _, submittedBlk := range submittedData.Blocks {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[35], 1);
+		blkNum := submittedBlk.Block.Header.Number
+		if blkNum != 8 {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[36], 1);
+			h.verifyBlockAndPvtDataSameAs(uint64(blkNum), submittedBlk)
+		} else{ _cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[37], 1);{
+			h.verifyBlockAndPvtData(uint64(8), nil, func(r *retrievedBlockAndPvtdata) {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[38], 1);
+				r.sameBlockHeaderAndData(submittedBlk.Block)
+				r.containsValidationCode(0, protopeer.TxValidationCode_MVCC_READ_CONFLICT)
+			})
+		}}
+	}
+}
+
+func (d *sampleDataHelper) verifyGetTransactionByIDUsingSubmittedData(h *testhelper) {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[39], 1);
+	lgrid := h.lgrid
+	for _, submittedTx := range d.submittedData[lgrid].Txs {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[40], 1);
+		expectedValidationCode := protopeer.TxValidationCode_VALID
+		if submittedTx.Txid == "txid8" {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[42], 1);
+			expectedValidationCode = protopeer.TxValidationCode_MVCC_READ_CONFLICT
+		}
+		_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[41], 1);h.verifyGetTransactionByID(submittedTx.Txid,
+			&protopeer.ProcessedTransaction{TransactionEnvelope: submittedTx.Envelope, ValidationCode: int32(expectedValidationCode)})
+	}
+}
+
+func (d *sampleDataHelper) sampleVal(val, ledgerid string) string {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[43], 1);
+	return fmt.Sprintf("%s:%s", val, ledgerid)
+}
+
+func (d *sampleDataHelper) sampleCollConf1(ledgerid, ccName string) []*collConf {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[44], 1);
+	return []*collConf{
+		{name: "coll1", members: []string{"org1", "org2"}},
+		{name: ledgerid, members: []string{"org1", "org2"}},
+		{name: ccName, members: []string{"org1", "org2"}},
+	}
+}
+
+func (d *sampleDataHelper) sampleCollConf2(ledgerid string, ccName string) []*collConf {_cover_atomic_.AddUint32(&GoCover_3_363234376562373564353161.Count[45], 1);
+	return []*collConf{
+		{name: "coll1", members: []string{"org1", "org2"}},
+		{name: "coll2", members: []string{"org1", "org2"}},
+		{name: ledgerid, members: []string{"org1", "org2"}},
+		{name: ccName, members: []string{"org1", "org2"}},
+	}
+}
+
+var GoCover_3_363234376562373564353161 = struct {
+	Count     [46]uint32
+	Pos       [3 * 46]uint32
+	NumStmt   [46]uint16
+} {
+	Pos: [3 * 46]uint32{
+		27, 29, 0xf0034, // [0]
+		29, 32, 0x3000f, // [1]
+		35, 38, 0x2005a, // [2]
+		40, 43, 0x2004e, // [3]
+		51, 53, 0x2003a, // [4]
+		55, 63, 0x3a003a, // [5]
+		68, 68, 0x3a0002, // [6]
+		72, 80, 0x3a0002, // [7]
+		84, 84, 0x3a0002, // [8]
+		88, 96, 0x3a0002, // [9]
+		100, 100, 0x3a0002, // [10]
+		104, 107, 0x3a0002, // [11]
+		113, 116, 0x3a0002, // [12]
+		120, 127, 0x500002, // [13]
+		63, 66, 0x3003a, // [14]
+		68, 71, 0x3003a, // [15]
+		80, 83, 0x3003a, // [16]
+		84, 87, 0x3003a, // [17]
+		96, 99, 0x3003a, // [18]
+		100, 103, 0x3003a, // [19]
+		107, 112, 0x3003a, // [20]
+		116, 119, 0x3003a, // [21]
+		130, 138, 0x2003b, // [22]
+		140, 148, 0x20038, // [23]
+		150, 158, 0x1f003f, // [24]
+		158, 162, 0x3001f, // [25]
+		162, 164, 0x30008, // [26]
+		167, 182, 0x20037, // [27]
+		184, 197, 0x2003f, // [28]
+		199, 201, 0x440041, // [29]
+		206, 206, 0x440002, // [30]
+		201, 204, 0x30044, // [31]
+		206, 210, 0x30044, // [32]
+		213, 216, 0x20044, // [33]
+		218, 221, 0x340053, // [34]
+		221, 223, 0x120034, // [35]
+		223, 225, 0x40012, // [36]
+		225, 226, 0x4e0009, // [37]
+		226, 229, 0x5004e, // [38]
+		234, 236, 0x390056, // [39]
+		236, 238, 0x220039, // [40]
+		241, 242, 0x7e0003, // [41]
+		238, 240, 0x40022, // [42]
+		246, 248, 0x20043, // [43]
+		250, 256, 0x20051, // [44]
+		258, 265, 0x20058, // [45]
+	},
+	NumStmt: [46]uint16{
+		2, // 0
+		2, // 1
+		2, // 2
+		2, // 3
+		1, // 4
+		5, // 5
+		1, // 6
+		5, // 7
+		1, // 8
+		5, // 9
+		1, // 10
+		2, // 11
+		2, // 12
+		4, // 13
+		2, // 14
+		2, // 15
+		2, // 16
+		2, // 17
+		2, // 18
+		2, // 19
+		4, // 20
+		2, // 21
+		7, // 22
+		7, // 23
+		5, // 24
+		3, // 25
+		1, // 26
+		13, // 27
+		5, // 28
+		2, // 29
+		1, // 30
+		2, // 31
+		3, // 32
+		2, // 33
+		3, // 34
+		2, // 35
+		1, // 36
+		1, // 37
+		2, // 38
+		2, // 39
+		2, // 40
+		1, // 41
+		1, // 42
+		1, // 43
+		1, // 44
+		1, // 45
+	},
+}
+var _ = _cover_atomic_.LoadUint32

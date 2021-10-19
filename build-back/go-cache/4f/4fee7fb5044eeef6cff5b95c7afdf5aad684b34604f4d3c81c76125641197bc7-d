@@ -1,0 +1,7 @@
+core.cover.go
+global.cover.go
+legacy.cover.go
+levels.cover.go
+loggerlevels.cover.go
+logging.cover.go
+zap.cover.go

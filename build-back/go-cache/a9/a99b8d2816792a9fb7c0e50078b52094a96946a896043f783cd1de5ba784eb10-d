@@ -1,0 +1,1133 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/peer/chaincode/common.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package chaincode; import _cover_atomic_ "sync/atomic"
+
+import (
+	"context"
+	"crypto/tls"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"math"
+	"strings"
+	"sync"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/cauthdsl"
+	"github.com/hyperledger/fabric/common/localmsp"
+	"github.com/hyperledger/fabric/common/util"
+	"github.com/hyperledger/fabric/core/chaincode"
+	"github.com/hyperledger/fabric/core/chaincode/shim"
+	"github.com/hyperledger/fabric/core/container"
+	"github.com/hyperledger/fabric/msp"
+	ccapi "github.com/hyperledger/fabric/peer/chaincode/api"
+	"github.com/hyperledger/fabric/peer/common"
+	"github.com/hyperledger/fabric/peer/common/api"
+	pcommon "github.com/hyperledger/fabric/protos/common"
+	ab "github.com/hyperledger/fabric/protos/orderer"
+	pb "github.com/hyperledger/fabric/protos/peer"
+	putils "github.com/hyperledger/fabric/protos/utils"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+)
+
+// checkSpec to see if chaincode resides within current package capture for language.
+func checkSpec(spec *pb.ChaincodeSpec) error {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[0], 1);
+	// Don't allow nil value
+	if spec == nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[2], 1);
+		return errors.New("expected chaincode specification, nil received")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[1], 1);return platformRegistry.ValidateSpec(spec.CCType(), spec.Path())
+}
+
+// getChaincodeDeploymentSpec get chaincode deployment spec given the chaincode spec
+func getChaincodeDeploymentSpec(spec *pb.ChaincodeSpec, crtPkg bool) (*pb.ChaincodeDeploymentSpec, error) {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[3], 1);
+	var codePackageBytes []byte
+	if chaincode.IsDevMode() == false && crtPkg {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[5], 1);
+		var err error
+		if err = checkSpec(spec); err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[7], 1);
+			return nil, err
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[6], 1);codePackageBytes, err = container.GetChaincodePackageBytes(platformRegistry, spec)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[8], 1);
+			err = errors.WithMessage(err, "error getting chaincode package bytes")
+			return nil, err
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[4], 1);chaincodeDeploymentSpec := &pb.ChaincodeDeploymentSpec{ChaincodeSpec: spec, CodePackage: codePackageBytes}
+	return chaincodeDeploymentSpec, nil
+}
+
+// getChaincodeSpec get chaincode spec from the cli cmd pramameters
+func getChaincodeSpec(cmd *cobra.Command) (*pb.ChaincodeSpec, error) {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[9], 1);
+	spec := &pb.ChaincodeSpec{}
+	if err := checkChaincodeCmdParams(cmd); err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[12], 1);
+		// unset usage silence because it's a command line usage error
+		cmd.SilenceUsage = false
+		return spec, err
+	}
+
+	// Build the spec
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[10], 1);input := &pb.ChaincodeInput{}
+	if err := json.Unmarshal([]byte(chaincodeCtorJSON), &input); err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[13], 1);
+		return spec, errors.Wrap(err, "chaincode argument error")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[11], 1);chaincodeLang = strings.ToUpper(chaincodeLang)
+	spec = &pb.ChaincodeSpec{
+		Type:        pb.ChaincodeSpec_Type(pb.ChaincodeSpec_Type_value[chaincodeLang]),
+		ChaincodeId: &pb.ChaincodeID{Path: chaincodePath, Name: chaincodeName, Version: chaincodeVersion},
+		Input:       input,
+	}
+	return spec, nil
+}
+
+func chaincodeInvokeOrQuery(cmd *cobra.Command, invoke bool, cf *ChaincodeCmdFactory) (err error) {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[14], 1);
+	spec, err := getChaincodeSpec(cmd)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[18], 1);
+		return err
+	}
+
+	// call with empty txid to ensure production code generates a txid.
+	// otherwise, tests can explicitly set their own txid
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[15], 1);txID := ""
+
+	proposalResp, err := ChaincodeInvokeOrQuery(
+		spec,
+		channelID,
+		txID,
+		invoke,
+		cf.Signer,
+		cf.Certificate,
+		cf.EndorserClients,
+		cf.DeliverClients,
+		cf.BroadcastClient)
+
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[19], 1);
+		return errors.Errorf("%s - proposal response: %v", err, proposalResp)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[16], 1);if invoke {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[20], 1);
+		logger.Debugf("ESCC invoke result: %v", proposalResp)
+		pRespPayload, err := putils.GetProposalResponsePayload(proposalResp.Payload)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[24], 1);
+			return errors.WithMessage(err, "error while unmarshaling proposal response payload")
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[21], 1);ca, err := putils.GetChaincodeAction(pRespPayload.Extension)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[25], 1);
+			return errors.WithMessage(err, "error while unmarshaling chaincode action")
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[22], 1);if proposalResp.Endorsement == nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[26], 1);
+			return errors.Errorf("endorsement failure during invoke. response: %v", proposalResp.Response)
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[23], 1);logger.Infof("Chaincode invoke successful. result: %v", ca.Response)
+	} else{ _cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[27], 1);{
+		if proposalResp == nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[33], 1);
+			return errors.New("error during query: received nil proposal response")
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[28], 1);if proposalResp.Endorsement == nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[34], 1);
+			return errors.Errorf("endorsement failure during query. response: %v", proposalResp.Response)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[29], 1);if chaincodeQueryRaw && chaincodeQueryHex {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[35], 1);
+			return fmt.Errorf("options --raw (-r) and --hex (-x) are not compatible")
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[30], 1);if chaincodeQueryRaw {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[36], 1);
+			fmt.Println(proposalResp.Response.Payload)
+			return nil
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[31], 1);if chaincodeQueryHex {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[37], 1);
+			fmt.Printf("%x\n", proposalResp.Response.Payload)
+			return nil
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[32], 1);fmt.Println(string(proposalResp.Response.Payload))
+	}}
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[17], 1);return nil
+}
+
+type collectionConfigJson struct {
+	Name           string `json:"name"`
+	Policy         string `json:"policy"`
+	RequiredCount  int32  `json:"requiredPeerCount"`
+	MaxPeerCount   int32  `json:"maxPeerCount"`
+	BlockToLive    uint64 `json:"blockToLive"`
+	MemberOnlyRead bool   `json:"memberOnlyRead"`
+}
+
+// getCollectionConfig retrieves the collection configuration
+// from the supplied file; the supplied file must contain a
+// json-formatted array of collectionConfigJson elements
+func getCollectionConfigFromFile(ccFile string) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[38], 1);
+	fileBytes, err := ioutil.ReadFile(ccFile)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[40], 1);
+		return nil, errors.Wrapf(err, "could not read file '%s'", ccFile)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[39], 1);return getCollectionConfigFromBytes(fileBytes)
+}
+
+// getCollectionConfig retrieves the collection configuration
+// from the supplied byte array; the byte array must contain a
+// json-formatted array of collectionConfigJson elements
+func getCollectionConfigFromBytes(cconfBytes []byte) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[41], 1);
+	cconf := &[]collectionConfigJson{}
+	err := json.Unmarshal(cconfBytes, cconf)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[44], 1);
+		return nil, errors.Wrap(err, "could not parse the collection configuration")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[42], 1);ccarray := make([]*pcommon.CollectionConfig, 0, len(*cconf))
+	for _, cconfitem := range *cconf {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[45], 1);
+		p, err := cauthdsl.FromString(cconfitem.Policy)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[47], 1);
+			return nil, errors.WithMessage(err, fmt.Sprintf("invalid policy %s", cconfitem.Policy))
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[46], 1);cpc := &pcommon.CollectionPolicyConfig{
+			Payload: &pcommon.CollectionPolicyConfig_SignaturePolicy{
+				SignaturePolicy: p,
+			},
+		}
+
+		cc := &pcommon.CollectionConfig{
+			Payload: &pcommon.CollectionConfig_StaticCollectionConfig{
+				StaticCollectionConfig: &pcommon.StaticCollectionConfig{
+					Name:              cconfitem.Name,
+					MemberOrgsPolicy:  cpc,
+					RequiredPeerCount: cconfitem.RequiredCount,
+					MaximumPeerCount:  cconfitem.MaxPeerCount,
+					BlockToLive:       cconfitem.BlockToLive,
+					MemberOnlyRead:    cconfitem.MemberOnlyRead,
+				},
+			},
+		}
+
+		ccarray = append(ccarray, cc)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[43], 1);ccp := &pcommon.CollectionConfigPackage{Config: ccarray}
+	return proto.Marshal(ccp)
+}
+
+func checkChaincodeCmdParams(cmd *cobra.Command) error {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[48], 1);
+	// we need chaincode name for everything, including deploy
+	if chaincodeName == common.UndefinedParamValue {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[52], 1);
+		return errors.Errorf("must supply value for %s name parameter", chainFuncName)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[49], 1);if cmd.Name() == instantiateCmdName || cmd.Name() == installCmdName ||
+		cmd.Name() == upgradeCmdName || cmd.Name() == packageCmdName {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[53], 1);
+		if chaincodeVersion == common.UndefinedParamValue {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[58], 1);
+			return errors.Errorf("chaincode version is not provided for %s", cmd.Name())
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[54], 1);if escc != common.UndefinedParamValue {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[59], 1);
+			logger.Infof("Using escc %s", escc)
+		} else{ _cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[60], 1);{
+			logger.Info("Using default escc")
+			escc = "escc"
+		}}
+
+		_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[55], 1);if vscc != common.UndefinedParamValue {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[61], 1);
+			logger.Infof("Using vscc %s", vscc)
+		} else{ _cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[62], 1);{
+			logger.Info("Using default vscc")
+			vscc = "vscc"
+		}}
+
+		_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[56], 1);if policy != common.UndefinedParamValue {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[63], 1);
+			p, err := cauthdsl.FromString(policy)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[65], 1);
+				return errors.Errorf("invalid policy %s", policy)
+			}
+			_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[64], 1);policyMarshalled = putils.MarshalOrPanic(p)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[57], 1);if collectionsConfigFile != common.UndefinedParamValue {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[66], 1);
+			var err error
+			collectionConfigBytes, err = getCollectionConfigFromFile(collectionsConfigFile)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[67], 1);
+				return errors.WithMessage(err, fmt.Sprintf("invalid collection configuration in file %s", collectionsConfigFile))
+			}
+		}
+	}
+
+	// Check that non-empty chaincode parameters contain only Args as a key.
+	// Type checking is done later when the JSON is actually unmarshaled
+	// into a pb.ChaincodeInput. To better understand what's going
+	// on here with JSON parsing see http://blog.golang.org/json-and-go -
+	// Generic JSON with interface{}
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[50], 1);if chaincodeCtorJSON != "{}" {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[68], 1);
+		var f interface{}
+		err := json.Unmarshal([]byte(chaincodeCtorJSON), &f)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[71], 1);
+			return errors.Wrap(err, "chaincode argument error")
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[69], 1);m := f.(map[string]interface{})
+		sm := make(map[string]interface{})
+		for k := range m {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[72], 1);
+			sm[strings.ToLower(k)] = m[k]
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[70], 1);_, argsPresent := sm["args"]
+		_, funcPresent := sm["function"]
+		if !argsPresent || (len(m) == 2 && !funcPresent) || len(m) > 2 {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[73], 1);
+			return errors.New("non-empty JSON chaincode parameters must contain the following keys: 'Args' or 'Function' and 'Args'")
+		}
+	} else{ _cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[74], 1);{
+		if cmd == nil || (cmd != chaincodeInstallCmd && cmd != chaincodePackageCmd) {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[75], 1);
+			return errors.New("empty JSON chaincode parameters must contain the following keys: 'Args' or 'Function' and 'Args'")
+		}
+	}}
+
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[51], 1);return nil
+}
+
+func validatePeerConnectionParameters(cmdName string) error {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[76], 1);
+	if connectionProfile != common.UndefinedParamValue {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[81], 1);
+		networkConfig, err := common.GetConfig(connectionProfile)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[83], 1);
+			return err
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[82], 1);if len(networkConfig.Channels[channelID].Peers) != 0 {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[84], 1);
+			peerAddresses = []string{}
+			tlsRootCertFiles = []string{}
+			for peer, peerChannelConfig := range networkConfig.Channels[channelID].Peers {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[85], 1);
+				if peerChannelConfig.EndorsingPeer {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[86], 1);
+					peerConfig, ok := networkConfig.Peers[peer]
+					if !ok {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[88], 1);
+						return errors.Errorf("peer '%s' is defined in the channel config but doesn't have associated peer config", peer)
+					}
+					_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[87], 1);peerAddresses = append(peerAddresses, peerConfig.URL)
+					tlsRootCertFiles = append(tlsRootCertFiles, peerConfig.TLSCACerts.Path)
+				}
+			}
+		}
+	}
+
+	// currently only support multiple peer addresses for invoke
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[77], 1);if cmdName != "invoke" && len(peerAddresses) > 1 {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[89], 1);
+		return errors.Errorf("'%s' command can only be executed against one peer. received %d", cmdName, len(peerAddresses))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[78], 1);if len(tlsRootCertFiles) > len(peerAddresses) {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[90], 1);
+		logger.Warningf("received more TLS root cert files (%d) than peer addresses (%d)", len(tlsRootCertFiles), len(peerAddresses))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[79], 1);if viper.GetBool("peer.tls.enabled") {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[91], 1);
+		if len(tlsRootCertFiles) != len(peerAddresses) {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[92], 1);
+			return errors.Errorf("number of peer addresses (%d) does not match the number of TLS root cert files (%d)", len(peerAddresses), len(tlsRootCertFiles))
+		}
+	} else{ _cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[93], 1);{
+		tlsRootCertFiles = nil
+	}}
+
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[80], 1);return nil
+}
+
+// ChaincodeCmdFactory holds the clients used by ChaincodeCmd
+type ChaincodeCmdFactory struct {
+	EndorserClients []pb.EndorserClient
+	DeliverClients  []api.PeerDeliverClient
+	Certificate     tls.Certificate
+	Signer          msp.SigningIdentity
+	BroadcastClient common.BroadcastClient
+}
+
+// InitCmdFactory init the ChaincodeCmdFactory with default clients
+func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) (*ChaincodeCmdFactory, error) {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[94], 1);
+	var err error
+	var endorserClients []pb.EndorserClient
+	var deliverClients []api.PeerDeliverClient
+	if isEndorserRequired {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[99], 1);
+		if err = validatePeerConnectionParameters(cmdName); err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[102], 1);
+			return nil, errors.WithMessage(err, "error validating peer connection parameters")
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[100], 1);for i, address := range peerAddresses {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[103], 1);
+			var tlsRootCertFile string
+			if tlsRootCertFiles != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[107], 1);
+				tlsRootCertFile = tlsRootCertFiles[i]
+			}
+			_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[104], 1);endorserClient, err := common.GetEndorserClientFnc(address, tlsRootCertFile)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[108], 1);
+				return nil, errors.WithMessage(err, fmt.Sprintf("error getting endorser client for %s", cmdName))
+			}
+			_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[105], 1);endorserClients = append(endorserClients, endorserClient)
+			deliverClient, err := common.GetPeerDeliverClientFnc(address, tlsRootCertFile)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[109], 1);
+				return nil, errors.WithMessage(err, fmt.Sprintf("error getting deliver client for %s", cmdName))
+			}
+			_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[106], 1);deliverClients = append(deliverClients, deliverClient)
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[101], 1);if len(endorserClients) == 0 {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[110], 1);
+			return nil, errors.New("no endorser clients retrieved - this might indicate a bug")
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[95], 1);certificate, err := common.GetCertificateFnc()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[111], 1);
+		return nil, errors.WithMessage(err, "error getting client cerificate")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[96], 1);signer, err := common.GetDefaultSignerFnc()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[112], 1);
+		return nil, errors.WithMessage(err, "error getting default signer")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[97], 1);var broadcastClient common.BroadcastClient
+	if isOrdererRequired {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[113], 1);
+		if len(common.OrderingEndpoint) == 0 {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[115], 1);
+			if len(endorserClients) == 0 {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[119], 1);
+				return nil, errors.New("orderer is required, but no ordering endpoint or endorser client supplied")
+			}
+			_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[116], 1);endorserClient := endorserClients[0]
+
+			orderingEndpoints, err := common.GetOrdererEndpointOfChainFnc(channelID, signer, endorserClient)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[120], 1);
+				return nil, errors.WithMessage(err, fmt.Sprintf("error getting channel (%s) orderer endpoint", channelID))
+			}
+			_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[117], 1);if len(orderingEndpoints) == 0 {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[121], 1);
+				return nil, errors.Errorf("no orderer endpoints retrieved for channel %s", channelID)
+			}
+			_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[118], 1);logger.Infof("Retrieved channel (%s) orderer endpoint: %s", channelID, orderingEndpoints[0])
+			// override viper env
+			viper.Set("orderer.address", orderingEndpoints[0])
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[114], 1);broadcastClient, err = common.GetBroadcastClientFnc()
+
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[122], 1);
+			return nil, errors.WithMessage(err, "error getting broadcast client")
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[98], 1);return &ChaincodeCmdFactory{
+		EndorserClients: endorserClients,
+		DeliverClients:  deliverClients,
+		Signer:          signer,
+		BroadcastClient: broadcastClient,
+		Certificate:     certificate,
+	}, nil
+}
+
+// ChaincodeInvokeOrQuery invokes or queries the chaincode. If successful, the
+// INVOKE form prints the ProposalResponse to STDOUT, and the QUERY form prints
+// the query result on STDOUT. A command-line flag (-r, --raw) determines
+// whether the query result is output as raw bytes, or as a printable string.
+// The printable form is optionally (-x, --hex) a hexadecimal representation
+// of the query response. If the query response is NIL, nothing is output.
+//
+// NOTE - Query will likely go away as all interactions with the endorser are
+// Proposal and ProposalResponses
+func ChaincodeInvokeOrQuery(
+	spec *pb.ChaincodeSpec,
+	cID string,
+	txID string,
+	invoke bool,
+	signer msp.SigningIdentity,
+	certificate tls.Certificate,
+	endorserClients []pb.EndorserClient,
+	deliverClients []api.PeerDeliverClient,
+	bc common.BroadcastClient,
+) (*pb.ProposalResponse, error) {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[123], 1);
+	// Build the ChaincodeInvocationSpec message
+	invocation := &pb.ChaincodeInvocationSpec{ChaincodeSpec: spec}
+
+	creator, err := signer.Serialize()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[132], 1);
+		return nil, errors.WithMessage(err, fmt.Sprintf("error serializing identity for %s", signer.GetIdentifier()))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[124], 1);funcName := "invoke"
+	if !invoke {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[133], 1);
+		funcName = "query"
+	}
+
+	// extract the transient field if it exists
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[125], 1);var tMap map[string][]byte
+	if transient != "" {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[134], 1);
+		if err := json.Unmarshal([]byte(transient), &tMap); err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[135], 1);
+			return nil, errors.Wrap(err, "error parsing transient string")
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[126], 1);prop, txid, err := putils.CreateChaincodeProposalWithTxIDAndTransient(pcommon.HeaderType_ENDORSER_TRANSACTION, cID, invocation, creator, txID, tMap)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[136], 1);
+		return nil, errors.WithMessage(err, fmt.Sprintf("error creating proposal for %s", funcName))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[127], 1);signedProp, err := putils.GetSignedProposal(prop, signer)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[137], 1);
+		return nil, errors.WithMessage(err, fmt.Sprintf("error creating signed proposal for %s", funcName))
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[128], 1);var responses []*pb.ProposalResponse
+	for _, endorser := range endorserClients {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[138], 1);
+		proposalResp, err := endorser.ProcessProposal(context.Background(), signedProp)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[140], 1);
+			return nil, errors.WithMessage(err, fmt.Sprintf("error endorsing %s", funcName))
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[139], 1);responses = append(responses, proposalResp)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[129], 1);if len(responses) == 0 {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[141], 1);
+		// this should only happen if some new code has introduced a bug
+		return nil, errors.New("no proposal responses received - this might indicate a bug")
+	}
+	// all responses will be checked when the signed transaction is created.
+	// for now, just set this so we check the first response's status
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[130], 1);proposalResp := responses[0]
+
+	if invoke {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[142], 1);
+		if proposalResp != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[143], 1);
+			if proposalResp.Response.Status >= shim.ERRORTHRESHOLD {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[148], 1);
+				return proposalResp, nil
+			}
+			// assemble a signed transaction (it's an Envelope message)
+			_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[144], 1);env, err := putils.CreateSignedTx(prop, signer, responses...)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[149], 1);
+				return proposalResp, errors.WithMessage(err, "could not assemble transaction")
+			}
+			_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[145], 1);var dg *deliverGroup
+			var ctx context.Context
+			if waitForEvent {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[150], 1);
+				var cancelFunc context.CancelFunc
+				ctx, cancelFunc = context.WithTimeout(context.Background(), waitForEventTimeout)
+				defer cancelFunc()
+
+				dg = newDeliverGroup(deliverClients, peerAddresses, certificate, channelID, txid)
+				// connect to deliver service on all peers
+				err := dg.Connect(ctx)
+				if err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[151], 1);
+					return nil, err
+				}
+			}
+
+			// send the envelope for ordering
+			_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[146], 1);if err = bc.Send(env); err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[152], 1);
+				return proposalResp, errors.WithMessage(err, fmt.Sprintf("error sending transaction for %s", funcName))
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[147], 1);if dg != nil && ctx != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[153], 1);
+				// wait for event that contains the txid from all peers
+				err = dg.Wait(ctx)
+				if err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[154], 1);
+					return nil, err
+				}
+			}
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[131], 1);return proposalResp, nil
+}
+
+// deliverGroup holds all of the information needed to connect
+// to a set of peers to wait for the interested txid to be
+// committed to the ledgers of all peers. This functionality
+// is currently implemented via the peer's DeliverFiltered service.
+// An error from any of the peers/deliver clients will result in
+// the invoke command returning an error. Only the first error that
+// occurs will be set
+type deliverGroup struct {
+	Clients     []*deliverClient
+	Certificate tls.Certificate
+	ChannelID   string
+	TxID        string
+	mutex       sync.Mutex
+	Error       error
+	wg          sync.WaitGroup
+}
+
+// deliverClient holds the client/connection related to a specific
+// peer. The address is included for logging purposes
+type deliverClient struct {
+	Client     api.PeerDeliverClient
+	Connection ccapi.Deliver
+	Address    string
+}
+
+func newDeliverGroup(deliverClients []api.PeerDeliverClient, peerAddresses []string, certificate tls.Certificate, channelID string, txid string) *deliverGroup {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[155], 1);
+	clients := make([]*deliverClient, len(deliverClients))
+	for i, client := range deliverClients {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[157], 1);
+		dc := &deliverClient{
+			Client:  client,
+			Address: peerAddresses[i],
+		}
+		clients[i] = dc
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[156], 1);dg := &deliverGroup{
+		Clients:     clients,
+		Certificate: certificate,
+		ChannelID:   channelID,
+		TxID:        txid,
+	}
+
+	return dg
+}
+
+// Connect waits for all deliver clients in the group to connect to
+// the peer's deliver service, receive an error, or for the context
+// to timeout. An error will be returned whenever even a single
+// deliver client fails to connect to its peer
+func (dg *deliverGroup) Connect(ctx context.Context) error {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[158], 1);
+	dg.wg.Add(len(dg.Clients))
+	for _, client := range dg.Clients {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[161], 1);
+		go dg.ClientConnect(ctx, client)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[159], 1);readyCh := make(chan struct{})
+	go dg.WaitForWG(readyCh)
+
+	select {
+	case <-readyCh:_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[162], 1);
+		if dg.Error != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[164], 1);
+			err := errors.WithMessage(dg.Error, "failed to connect to deliver on all peers")
+			return err
+		}
+	case <-ctx.Done():_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[163], 1);
+		err := errors.New("timed out waiting for connection to deliver on all peers")
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[160], 1);return nil
+}
+
+// ClientConnect sends a deliver seek info envelope using the
+// provided deliver client, setting the deliverGroup's Error
+// field upon any error
+func (dg *deliverGroup) ClientConnect(ctx context.Context, dc *deliverClient) {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[165], 1);
+	defer dg.wg.Done()
+	df, err := dc.Client.DeliverFiltered(ctx)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[167], 1);
+		err = errors.WithMessage(err, fmt.Sprintf("error connecting to deliver filtered at %s", dc.Address))
+		dg.setError(err)
+		return
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[166], 1);defer df.CloseSend()
+	dc.Connection = df
+
+	envelope := createDeliverEnvelope(dg.ChannelID, dg.Certificate)
+	err = df.Send(envelope)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[168], 1);
+		err = errors.WithMessage(err, fmt.Sprintf("error sending deliver seek info envelope to %s", dc.Address))
+		dg.setError(err)
+		return
+	}
+}
+
+// Wait waits for all deliver client connections in the group to
+// either receive a block with the txid, an error, or for the
+// context to timeout
+func (dg *deliverGroup) Wait(ctx context.Context) error {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[169], 1);
+	if len(dg.Clients) == 0 {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[173], 1);
+		return nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[170], 1);dg.wg.Add(len(dg.Clients))
+	for _, client := range dg.Clients {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[174], 1);
+		go dg.ClientWait(client)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[171], 1);readyCh := make(chan struct{})
+	go dg.WaitForWG(readyCh)
+
+	select {
+	case <-readyCh:_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[175], 1);
+		if dg.Error != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[177], 1);
+			err := errors.WithMessage(dg.Error, "failed to receive txid on all peers")
+			return err
+		}
+	case <-ctx.Done():_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[176], 1);
+		err := errors.New("timed out waiting for txid on all peers")
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[172], 1);return nil
+}
+
+// ClientWait waits for the specified deliver client to receive
+// a block event with the requested txid
+func (dg *deliverGroup) ClientWait(dc *deliverClient) {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[178], 1);
+	defer dg.wg.Done()
+	for {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[179], 1);
+		resp, err := dc.Connection.Recv()
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[181], 1);
+			err = errors.WithMessage(err, fmt.Sprintf("error receiving from deliver filtered at %s", dc.Address))
+			dg.setError(err)
+			return
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[180], 1);switch r := resp.Type.(type) {
+		case *pb.DeliverResponse_FilteredBlock:_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[182], 1);
+			filteredTransactions := r.FilteredBlock.FilteredTransactions
+			for _, tx := range filteredTransactions {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[185], 1);
+				if tx.Txid == dg.TxID {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[186], 1);
+					logger.Infof("txid [%s] committed with status (%s) at %s", dg.TxID, tx.TxValidationCode, dc.Address)
+					return
+				}
+			}
+		case *pb.DeliverResponse_Status:_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[183], 1);
+			err = errors.Errorf("deliver completed with status (%s) before txid received", r.Status)
+			dg.setError(err)
+			return
+		default:_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[184], 1);
+			err = errors.Errorf("received unexpected response type (%T) from %s", r, dc.Address)
+			dg.setError(err)
+			return
+		}
+	}
+}
+
+// WaitForWG waits for the deliverGroup's wait group and closes
+// the channel when ready
+func (dg *deliverGroup) WaitForWG(readyCh chan struct{}) {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[187], 1);
+	dg.wg.Wait()
+	close(readyCh)
+}
+
+// setError serializes an error for the deliverGroup
+func (dg *deliverGroup) setError(err error) {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[188], 1);
+	dg.mutex.Lock()
+	dg.Error = err
+	dg.mutex.Unlock()
+}
+
+func createDeliverEnvelope(channelID string, certificate tls.Certificate) *pcommon.Envelope {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[189], 1);
+	var tlsCertHash []byte
+	// check for client certificate and create hash if present
+	if len(certificate.Certificate) > 0 {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[192], 1);
+		tlsCertHash = util.ComputeSHA256(certificate.Certificate[0])
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[190], 1);start := &ab.SeekPosition{
+		Type: &ab.SeekPosition_Newest{
+			Newest: &ab.SeekNewest{},
+		},
+	}
+
+	stop := &ab.SeekPosition{
+		Type: &ab.SeekPosition_Specified{
+			Specified: &ab.SeekSpecified{
+				Number: math.MaxUint64,
+			},
+		},
+	}
+
+	seekInfo := &ab.SeekInfo{
+		Start:    start,
+		Stop:     stop,
+		Behavior: ab.SeekInfo_BLOCK_UNTIL_READY,
+	}
+
+	env, err := putils.CreateSignedEnvelopeWithTLSBinding(
+		pcommon.HeaderType_DELIVER_SEEK_INFO, channelID, localmsp.NewSigner(),
+		seekInfo, int32(0), uint64(0), tlsCertHash)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[193], 1);
+		logger.Errorf("Error signing envelope: %s", err)
+		return nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_316135646539653831366338.Count[191], 1);return env
+}
+
+var GoCover_1_316135646539653831366338 = struct {
+	Count     [194]uint32
+	Pos       [3 * 194]uint32
+	NumStmt   [194]uint16
+} {
+	Pos: [3 * 194]uint32{
+		40, 42, 0x11002e, // [0]
+		46, 46, 0x420002, // [1]
+		42, 44, 0x30011, // [2]
+		50, 52, 0x2e006b, // [3]
+		64, 65, 0x250002, // [4]
+		52, 54, 0x28002e, // [5]
+		58, 59, 0x110003, // [6]
+		54, 56, 0x40028, // [7]
+		59, 62, 0x40011, // [8]
+		69, 71, 0x350046, // [9]
+		78, 79, 0x4a0002, // [10]
+		83, 89, 0x120002, // [11]
+		71, 75, 0x30035, // [12]
+		79, 81, 0x3004a, // [13]
+		92, 94, 0x100063, // [14]
+		100, 113, 0x100002, // [15]
+		117, 117, 0xc0002, // [16]
+		152, 152, 0xc0002, // [17]
+		94, 96, 0x30010, // [18]
+		113, 115, 0x30010, // [19]
+		117, 120, 0x11000c, // [20]
+		123, 124, 0x110003, // [21]
+		127, 127, 0x260003, // [22]
+		130, 130, 0x470003, // [23]
+		120, 122, 0x40011, // [24]
+		124, 126, 0x40011, // [25]
+		127, 129, 0x40026, // [26]
+		131, 132, 0x1a0008, // [27]
+		135, 135, 0x260003, // [28]
+		139, 139, 0x2d0003, // [29]
+		142, 142, 0x180003, // [30]
+		146, 146, 0x180003, // [31]
+		150, 150, 0x350003, // [32]
+		132, 134, 0x4001a, // [33]
+		135, 137, 0x40026, // [34]
+		139, 141, 0x4002d, // [35]
+		142, 145, 0x40018, // [36]
+		146, 149, 0x40018, // [37]
+		167, 169, 0x100041, // [38]
+		173, 173, 0x300002, // [39]
+		169, 171, 0x30010, // [40]
+		179, 182, 0x100046, // [41]
+		186, 187, 0x230002, // [42]
+		215, 216, 0x1b0002, // [43]
+		182, 184, 0x30010, // [44]
+		187, 189, 0x110023, // [45]
+		193, 212, 0x200003, // [46]
+		189, 191, 0x40011, // [47]
+		219, 221, 0x310038, // [48]
+		225, 226, 0x400002, // [49]
+		267, 267, 0x1f0002, // [50]
+		289, 289, 0xc0002, // [51]
+		221, 223, 0x30031, // [52]
+		226, 227, 0x350040, // [53]
+		231, 231, 0x290003, // [54]
+		238, 238, 0x290003, // [55]
+		245, 245, 0x2b0003, // [56]
+		253, 253, 0x3a0003, // [57]
+		227, 229, 0x40035, // [58]
+		231, 233, 0x40029, // [59]
+		233, 236, 0x40009, // [60]
+		238, 240, 0x40029, // [61]
+		240, 243, 0x40009, // [62]
+		245, 247, 0x12002b, // [63]
+		250, 250, 0x2f0004, // [64]
+		247, 249, 0x50012, // [65]
+		253, 256, 0x12003a, // [66]
+		256, 258, 0x50012, // [67]
+		267, 270, 0x11001f, // [68]
+		273, 275, 0x140003, // [69]
+		278, 280, 0x420003, // [70]
+		270, 272, 0x40011, // [71]
+		275, 277, 0x40014, // [72]
+		280, 282, 0x40042, // [73]
+		283, 284, 0x4f0008, // [74]
+		284, 286, 0x4004f, // [75]
+		292, 293, 0x35003d, // [76]
+		315, 315, 0x330002, // [77]
+		319, 319, 0x300002, // [78]
+		323, 323, 0x270002, // [79]
+		331, 331, 0xc0002, // [80]
+		293, 295, 0x110035, // [81]
+		298, 298, 0x380003, // [82]
+		295, 297, 0x40011, // [83]
+		298, 301, 0x510038, // [84]
+		301, 302, 0x280051, // [85]
+		302, 304, 0xd0028, // [86]
+		307, 308, 0x4d0006, // [87]
+		304, 306, 0x7000d, // [88]
+		315, 317, 0x30033, // [89]
+		319, 321, 0x30030, // [90]
+		323, 324, 0x320027, // [91]
+		324, 326, 0x40032, // [92]
+		327, 329, 0x30008, // [93]
+		344, 348, 0x18006f, // [94]
+		372, 373, 0x100002, // [95]
+		377, 378, 0x100002, // [96]
+		382, 383, 0x170002, // [97]
+		408, 414, 0x80002, // [98]
+		348, 349, 0x420018, // [99]
+		352, 352, 0x290003, // [100]
+		368, 368, 0x200003, // [101]
+		349, 351, 0x40042, // [102]
+		352, 354, 0x1f0029, // [103]
+		357, 358, 0x120004, // [104]
+		361, 363, 0x120004, // [105]
+		366, 366, 0x3a0004, // [106]
+		354, 356, 0x5001f, // [107]
+		358, 360, 0x50012, // [108]
+		363, 365, 0x50012, // [109]
+		368, 370, 0x40020, // [110]
+		373, 375, 0x30010, // [111]
+		378, 380, 0x30010, // [112]
+		383, 384, 0x280017, // [113]
+		402, 404, 0x110003, // [114]
+		384, 385, 0x210028, // [115]
+		388, 391, 0x120004, // [116]
+		394, 394, 0x230004, // [117]
+		397, 399, 0x360004, // [118]
+		385, 387, 0x50021, // [119]
+		391, 393, 0x50012, // [120]
+		394, 396, 0x50023, // [121]
+		404, 406, 0x40011, // [122]
+		436, 441, 0x100021, // [123]
+		445, 446, 0xd0002, // [124]
+		451, 452, 0x150002, // [125]
+		458, 459, 0x100002, // [126]
+		463, 464, 0x100002, // [127]
+		467, 468, 0x2b0002, // [128]
+		476, 476, 0x190002, // [129]
+		482, 484, 0xc0002, // [130]
+		524, 524, 0x1a0002, // [131]
+		441, 443, 0x30010, // [132]
+		446, 448, 0x3000d, // [133]
+		452, 453, 0x420015, // [134]
+		453, 455, 0x40042, // [135]
+		459, 461, 0x30010, // [136]
+		464, 466, 0x30010, // [137]
+		468, 470, 0x11002b, // [138]
+		473, 473, 0x2e0003, // [139]
+		470, 472, 0x40011, // [140]
+		476, 479, 0x30019, // [141]
+		484, 485, 0x1a000c, // [142]
+		485, 486, 0x3b001a, // [143]
+		490, 491, 0x120004, // [144]
+		494, 496, 0x140004, // [145]
+		510, 510, 0x260004, // [146]
+		514, 514, 0x1f0004, // [147]
+		486, 488, 0x5003b, // [148]
+		491, 493, 0x50012, // [149]
+		496, 504, 0x130014, // [150]
+		504, 506, 0x60013, // [151]
+		510, 512, 0x50026, // [152]
+		514, 517, 0x13001f, // [153]
+		517, 519, 0x60013, // [154]
+		552, 554, 0x2800a0, // [155]
+		562, 569, 0xb0002, // [156]
+		554, 560, 0x30028, // [157]
+		576, 578, 0x24003c, // [158]
+		581, 584, 0x90002, // [159]
+		595, 595, 0xc0002, // [160]
+		578, 580, 0x30024, // [161]
+		585, 586, 0x160011, // [162]
+		590, 592, 0xd0014, // [163]
+		586, 589, 0x40016, // [164]
+		601, 604, 0x10004f, // [165]
+		609, 614, 0x100002, // [166]
+		604, 608, 0x30010, // [167]
+		614, 618, 0x30010, // [168]
+		624, 625, 0x1a0039, // [169]
+		629, 630, 0x240002, // [170]
+		633, 636, 0x90002, // [171]
+		647, 647, 0xc0002, // [172]
+		625, 627, 0x3001a, // [173]
+		630, 632, 0x30024, // [174]
+		637, 638, 0x160011, // [175]
+		642, 644, 0xd0014, // [176]
+		638, 641, 0x40016, // [177]
+		652, 654, 0x60037, // [178]
+		654, 656, 0x110006, // [179]
+		661, 661, 0x200003, // [180]
+		656, 660, 0x40011, // [181]
+		662, 664, 0x2c002a, // [182]
+		670, 673, 0xa0023, // [183]
+		674, 677, 0xa000b, // [184]
+		664, 665, 0x1b002c, // [185]
+		665, 668, 0x6001b, // [186]
+		684, 687, 0x2003a, // [187]
+		690, 694, 0x2002d, // [188]
+		696, 699, 0x26005d, // [189]
+		703, 726, 0x100002, // [190]
+		731, 731, 0xc0002, // [191]
+		699, 701, 0x30026, // [192]
+		726, 729, 0x30010, // [193]
+	},
+	NumStmt: [194]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		2, // 3
+		2, // 4
+		2, // 5
+		2, // 6
+		1, // 7
+		2, // 8
+		2, // 9
+		2, // 10
+		3, // 11
+		2, // 12
+		1, // 13
+		2, // 14
+		3, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		3, // 20
+		2, // 21
+		1, // 22
+		1, // 23
+		1, // 24
+		1, // 25
+		1, // 26
+		1, // 27
+		1, // 28
+		1, // 29
+		1, // 30
+		1, // 31
+		1, // 32
+		1, // 33
+		1, // 34
+		1, // 35
+		2, // 36
+		2, // 37
+		2, // 38
+		1, // 39
+		1, // 40
+		3, // 41
+		2, // 42
+		2, // 43
+		1, // 44
+		2, // 45
+		3, // 46
+		1, // 47
+		1, // 48
+		1, // 49
+		1, // 50
+		1, // 51
+		1, // 52
+		1, // 53
+		1, // 54
+		1, // 55
+		1, // 56
+		1, // 57
+		1, // 58
+		1, // 59
+		2, // 60
+		1, // 61
+		2, // 62
+		2, // 63
+		1, // 64
+		1, // 65
+		3, // 66
+		1, // 67
+		3, // 68
+		3, // 69
+		3, // 70
+		1, // 71
+		1, // 72
+		1, // 73
+		1, // 74
+		1, // 75
+		1, // 76
+		1, // 77
+		1, // 78
+		1, // 79
+		1, // 80
+		2, // 81
+		1, // 82
+		1, // 83
+		3, // 84
+		1, // 85
+		2, // 86
+		2, // 87
+		1, // 88
+		1, // 89
+		1, // 90
+		1, // 91
+		1, // 92
+		1, // 93
+		4, // 94
+		2, // 95
+		2, // 96
+		2, // 97
+		1, // 98
+		1, // 99
+		1, // 100
+		1, // 101
+		1, // 102
+		2, // 103
+		2, // 104
+		3, // 105
+		1, // 106
+		1, // 107
+		1, // 108
+		1, // 109
+		1, // 110
+		1, // 111
+		1, // 112
+		1, // 113
+		2, // 114
+		1, // 115
+		3, // 116
+		1, // 117
+		2, // 118
+		1, // 119
+		1, // 120
+		1, // 121
+		1, // 122
+		3, // 123
+		2, // 124
+		2, // 125
+		2, // 126
+		2, // 127
+		2, // 128
+		1, // 129
+		2, // 130
+		1, // 131
+		1, // 132
+		1, // 133
+		1, // 134
+		1, // 135
+		1, // 136
+		1, // 137
+		2, // 138
+		1, // 139
+		1, // 140
+		1, // 141
+		1, // 142
+		1, // 143
+		2, // 144
+		3, // 145
+		1, // 146
+		1, // 147
+		1, // 148
+		1, // 149
+		6, // 150
+		1, // 151
+		1, // 152
+		2, // 153
+		1, // 154
+		2, // 155
+		2, // 156
+		2, // 157
+		2, // 158
+		3, // 159
+		1, // 160
+		1, // 161
+		1, // 162
+		2, // 163
+		2, // 164
+		3, // 165
+		5, // 166
+		3, // 167
+		3, // 168
+		1, // 169
+		2, // 170
+		3, // 171
+		1, // 172
+		1, // 173
+		1, // 174
+		1, // 175
+		2, // 176
+		2, // 177
+		2, // 178
+		2, // 179
+		1, // 180
+		3, // 181
+		2, // 182
+		3, // 183
+		3, // 184
+		1, // 185
+		2, // 186
+		2, // 187
+		3, // 188
+		2, // 189
+		5, // 190
+		1, // 191
+		1, // 192
+		2, // 193
+	},
+}
+var _ = _cover_atomic_.LoadUint32

@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package main
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric/peer/chaincode"
 	"github.com/hyperledger/fabric/peer/channel"
 	"github.com/hyperledger/fabric/peer/clilogging"
@@ -26,6 +27,7 @@ var mainCmd = &cobra.Command{
 	Use: "peer"}
 
 func main() {
+	fmt.Println("=================版本1.0.0====================")
 	// For environment variables.
 	//SetEnvPrefix会设置一个环境变量的前缀名
 	viper.SetEnvPrefix(common.CmdRoot)

@@ -1,0 +1,57 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/chaincode/ccproviderimpl.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package chaincode; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric/core/common/ccprovider"
+	pb "github.com/hyperledger/fabric/protos/peer"
+)
+
+// ccProviderImpl is an implementation of the ccprovider.ChaincodeProvider interface
+type CCProviderImpl struct {
+	cs *ChaincodeSupport
+}
+
+func NewProvider(cs *ChaincodeSupport) *CCProviderImpl {_cover_atomic_.AddUint32(&GoCover_1_323839383963343337363361.Count[0], 1);
+	return &CCProviderImpl{cs: cs}
+}
+
+// Execute executes the chaincode given context and spec (invocation or deploy)
+func (c *CCProviderImpl) Execute(txParams *ccprovider.TransactionParams, cccid *ccprovider.CCContext, input *pb.ChaincodeInput) (*pb.Response, *pb.ChaincodeEvent, error) {_cover_atomic_.AddUint32(&GoCover_1_323839383963343337363361.Count[1], 1);
+	return c.cs.Execute(txParams, cccid, input)
+}
+
+// ExecuteLegacyInit executes a chaincode which is not in the LSCC table
+func (c *CCProviderImpl) ExecuteLegacyInit(txParams *ccprovider.TransactionParams, cccid *ccprovider.CCContext, spec *pb.ChaincodeDeploymentSpec) (*pb.Response, *pb.ChaincodeEvent, error) {_cover_atomic_.AddUint32(&GoCover_1_323839383963343337363361.Count[2], 1);
+	return c.cs.ExecuteLegacyInit(txParams, cccid, spec)
+}
+
+// Stop stops the chaincode given context and spec
+func (c *CCProviderImpl) Stop(ccci *ccprovider.ChaincodeContainerInfo) error {_cover_atomic_.AddUint32(&GoCover_1_323839383963343337363361.Count[3], 1);
+	return c.cs.Stop(ccci)
+}
+
+var GoCover_1_323839383963343337363361 = struct {
+	Count     [4]uint32
+	Pos       [3 * 4]uint32
+	NumStmt   [4]uint16
+} {
+	Pos: [3 * 4]uint32{
+		19, 21, 0x20038, // [0]
+		24, 26, 0x200ab, // [1]
+		29, 31, 0x200bd, // [2]
+		34, 36, 0x2004e, // [3]
+	},
+	NumStmt: [4]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+	},
+}
+var _ = _cover_atomic_.LoadUint32

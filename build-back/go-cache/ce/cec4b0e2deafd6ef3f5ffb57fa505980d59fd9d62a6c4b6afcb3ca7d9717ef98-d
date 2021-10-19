@@ -1,0 +1,10 @@
+broadcastclient.cover.go
+common.cover.go
+deliverclient.cover.go
+mockclient.cover.go
+networkconfig.cover.go
+ordererclient.cover.go
+ordererenv.cover.go
+peerclient.cover.go
+peerdeliverclient.cover.go
+./deliverclient_test.go

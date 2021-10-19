@@ -1,0 +1,123 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/orderer/consensus/kafka/config.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package kafka; import _cover_atomic_ "sync/atomic"
+
+import (
+	"crypto/tls"
+	"crypto/x509"
+
+	localconfig "github.com/hyperledger/fabric/orderer/common/localconfig"
+
+	"github.com/Shopify/sarama"
+)
+
+func newBrokerConfig(
+	tlsConfig localconfig.TLS,
+	saslPlain localconfig.SASLPlain,
+	retryOptions localconfig.Retry,
+	kafkaVersion sarama.KafkaVersion,
+	chosenStaticPartition int32) *sarama.Config {_cover_atomic_.AddUint32(&GoCover_2_623633326437306563303132.Count[0], 1);
+
+	// Max. size for request headers, etc. Set in bytes. Too big on purpose.
+	paddingDelta := 1 * 1024 * 1024
+
+	brokerConfig := sarama.NewConfig()
+
+	brokerConfig.Consumer.Retry.Backoff = retryOptions.Consumer.RetryBackoff
+
+	// Allows us to retrieve errors that occur when consuming a channel
+	brokerConfig.Consumer.Return.Errors = true
+
+	brokerConfig.Metadata.Retry.Backoff = retryOptions.Metadata.RetryBackoff
+	brokerConfig.Metadata.Retry.Max = retryOptions.Metadata.RetryMax
+
+	brokerConfig.Net.DialTimeout = retryOptions.NetworkTimeouts.DialTimeout
+	brokerConfig.Net.ReadTimeout = retryOptions.NetworkTimeouts.ReadTimeout
+	brokerConfig.Net.WriteTimeout = retryOptions.NetworkTimeouts.WriteTimeout
+
+	brokerConfig.Net.TLS.Enable = tlsConfig.Enabled
+	if brokerConfig.Net.TLS.Enable {_cover_atomic_.AddUint32(&GoCover_2_623633326437306563303132.Count[3], 1);
+		// create public/private key pair structure
+		keyPair, err := tls.X509KeyPair([]byte(tlsConfig.Certificate), []byte(tlsConfig.PrivateKey))
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_623633326437306563303132.Count[6], 1);
+			logger.Panic("Unable to decode public/private key pair:", err)
+		}
+		// create root CA pool
+		_cover_atomic_.AddUint32(&GoCover_2_623633326437306563303132.Count[4], 1);rootCAs := x509.NewCertPool()
+		for _, certificate := range tlsConfig.RootCAs {_cover_atomic_.AddUint32(&GoCover_2_623633326437306563303132.Count[7], 1);
+			if !rootCAs.AppendCertsFromPEM([]byte(certificate)) {_cover_atomic_.AddUint32(&GoCover_2_623633326437306563303132.Count[8], 1);
+				logger.Panic("Unable to parse the root certificate authority certificates (Kafka.Tls.RootCAs)")
+			}
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_623633326437306563303132.Count[5], 1);brokerConfig.Net.TLS.Config = &tls.Config{
+			Certificates: []tls.Certificate{keyPair},
+			RootCAs:      rootCAs,
+			MinVersion:   tls.VersionTLS12,
+			MaxVersion:   0, // Latest supported TLS version
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_623633326437306563303132.Count[1], 1);brokerConfig.Net.SASL.Enable = saslPlain.Enabled
+	if brokerConfig.Net.SASL.Enable {_cover_atomic_.AddUint32(&GoCover_2_623633326437306563303132.Count[9], 1);
+		brokerConfig.Net.SASL.User = saslPlain.User
+		brokerConfig.Net.SASL.Password = saslPlain.Password
+	}
+
+	// Set equivalent of Kafka producer config max.request.bytes to the default
+	// value of a Kafka broker's socket.request.max.bytes property (100 MiB).
+	_cover_atomic_.AddUint32(&GoCover_2_623633326437306563303132.Count[2], 1);brokerConfig.Producer.MaxMessageBytes = int(sarama.MaxRequestSize) - paddingDelta
+
+	brokerConfig.Producer.Retry.Backoff = retryOptions.Producer.RetryBackoff
+	brokerConfig.Producer.Retry.Max = retryOptions.Producer.RetryMax
+
+	// A partitioner is actually not needed the way we do things now,
+	// but we're adding it now to allow for flexibility in the future.
+	brokerConfig.Producer.Partitioner = newStaticPartitioner(chosenStaticPartition)
+	// Set the level of acknowledgement reliability needed from the broker.
+	// WaitForAll means that the partition leader will wait till all ISRs got
+	// the message before sending back an ACK to the sender.
+	brokerConfig.Producer.RequiredAcks = sarama.WaitForAll
+	// An esoteric setting required by the sarama library, see:
+	// https://github.com/Shopify/sarama/issues/816
+	brokerConfig.Producer.Return.Successes = true
+
+	brokerConfig.Version = kafkaVersion
+
+	return brokerConfig
+}
+
+var GoCover_2_623633326437306563303132 = struct {
+	Count     [10]uint32
+	Pos       [3 * 10]uint32
+	NumStmt   [10]uint16
+} {
+	Pos: [3 * 10]uint32{
+		23, 43, 0x21002e, // [0]
+		63, 64, 0x220002, // [1]
+		71, 89, 0x150002, // [2]
+		43, 46, 0x110021, // [3]
+		50, 51, 0x310003, // [4]
+		56, 61, 0x40003, // [5]
+		46, 48, 0x40011, // [6]
+		51, 52, 0x380031, // [7]
+		52, 54, 0x50038, // [8]
+		64, 67, 0x30022, // [9]
+	},
+	NumStmt: [10]uint16{
+		11, // 0
+		2, // 1
+		8, // 2
+		2, // 3
+		2, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		2, // 9
+	},
+}
+var _ = _cover_atomic_.LoadUint32

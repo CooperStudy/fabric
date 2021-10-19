@@ -1,0 +1,61 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/diag/goroutine.go:1
+/*
+Copyright IBM Corp All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package diag; import _cover_atomic_ "sync/atomic"
+
+import (
+	"bytes"
+	"runtime/pprof"
+)
+
+type Logger interface {
+	Infof(template string, args ...interface{})
+	Errorf(template string, args ...interface{})
+}
+
+func CaptureGoRoutines() (string, error) {_cover_atomic_.AddUint32(&GoCover_0_623161313932633038666337.Count[0], 1);
+	var buf bytes.Buffer
+	err := pprof.Lookup("goroutine").WriteTo(&buf, 2)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_623161313932633038666337.Count[2], 1);
+		return "", err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_623161313932633038666337.Count[1], 1);return buf.String(), nil
+}
+
+func LogGoRoutines(logger Logger) {_cover_atomic_.AddUint32(&GoCover_0_623161313932633038666337.Count[3], 1);
+	output, err := CaptureGoRoutines()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_623161313932633038666337.Count[5], 1);
+		logger.Errorf("failed to capture go routines: %s", err)
+		return
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_623161313932633038666337.Count[4], 1);logger.Infof("Go routines report:\n%s", output)
+}
+
+var GoCover_0_623161313932633038666337 = struct {
+	Count     [6]uint32
+	Pos       [3 * 6]uint32
+	NumStmt   [6]uint16
+} {
+	Pos: [3 * 6]uint32{
+		19, 22, 0x10002a, // [0]
+		25, 25, 0x1a0002, // [1]
+		22, 24, 0x30010, // [2]
+		28, 30, 0x100023, // [3]
+		35, 35, 0x310002, // [4]
+		30, 33, 0x30010, // [5]
+	},
+	NumStmt: [6]uint16{
+		3, // 0
+		1, // 1
+		1, // 2
+		2, // 3
+		1, // 4
+		2, // 5
+	},
+}
+var _ = _cover_atomic_.LoadUint32

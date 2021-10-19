@@ -1,0 +1,4 @@
+plugin_validator.cover.go
+validator.cover.go
+vscc_validator.cover.go
+./txvalidator_test.go

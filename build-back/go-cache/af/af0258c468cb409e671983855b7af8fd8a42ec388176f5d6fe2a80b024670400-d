@@ -1,0 +1,3 @@
+chaincode_package.cover.go
+package_provider.cover.go
+persistence.cover.go

@@ -1,0 +1,193 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/scc/lscc/errors.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package lscc; import _cover_atomic_ "sync/atomic"
+
+import "fmt"
+
+//InvalidFunctionErr invalid function error
+type InvalidFunctionErr string
+
+func (f InvalidFunctionErr) Error() string {_cover_atomic_.AddUint32(&GoCover_1_386331393235373732613932.Count[0], 1);
+	return fmt.Sprintf("invalid function to lscc: %s", string(f))
+}
+
+//InvalidArgsLenErr invalid arguments length error
+type InvalidArgsLenErr int
+
+func (i InvalidArgsLenErr) Error() string {_cover_atomic_.AddUint32(&GoCover_1_386331393235373732613932.Count[1], 1);
+	return fmt.Sprintf("invalid number of arguments to lscc: %d", int(i))
+}
+
+//TXNotFoundErr transaction not found error
+type TXNotFoundErr string
+
+func (t TXNotFoundErr) Error() string {_cover_atomic_.AddUint32(&GoCover_1_386331393235373732613932.Count[2], 1);
+	return fmt.Sprintf("transaction not found: %s", string(t))
+}
+
+//InvalidDeploymentSpecErr invalid chaincode deployment spec error
+type InvalidDeploymentSpecErr string
+
+func (f InvalidDeploymentSpecErr) Error() string {_cover_atomic_.AddUint32(&GoCover_1_386331393235373732613932.Count[3], 1);
+	return fmt.Sprintf("invalid deployment spec: %s", string(f))
+}
+
+//ExistsErr chaincode exists error
+type ExistsErr string
+
+func (t ExistsErr) Error() string {_cover_atomic_.AddUint32(&GoCover_1_386331393235373732613932.Count[4], 1);
+	return fmt.Sprintf("chaincode with name '%s' already exists", string(t))
+}
+
+//NotFoundErr chaincode not registered with LSCC error
+type NotFoundErr string
+
+func (t NotFoundErr) Error() string {_cover_atomic_.AddUint32(&GoCover_1_386331393235373732613932.Count[5], 1);
+	return fmt.Sprintf("could not find chaincode with name '%s'", string(t))
+}
+
+//InvalidChannelNameErr invalid channel name error
+type InvalidChannelNameErr string
+
+func (f InvalidChannelNameErr) Error() string {_cover_atomic_.AddUint32(&GoCover_1_386331393235373732613932.Count[6], 1);
+	return fmt.Sprintf("invalid channel name: %s", string(f))
+}
+
+//InvalidChaincodeNameErr invalid chaincode name error
+type InvalidChaincodeNameErr string
+
+func (f InvalidChaincodeNameErr) Error() string {_cover_atomic_.AddUint32(&GoCover_1_386331393235373732613932.Count[7], 1);
+	return fmt.Sprintf("invalid chaincode name '%s'. Names can only consist of alphanumerics, '_', and '-'", string(f))
+}
+
+//EmptyChaincodeNameErr trying to upgrade to same version of Chaincode
+type EmptyChaincodeNameErr string
+
+func (f EmptyChaincodeNameErr) Error() string {_cover_atomic_.AddUint32(&GoCover_1_386331393235373732613932.Count[8], 1);
+	return fmt.Sprint("chaincode name not provided")
+}
+
+//InvalidVersionErr invalid version error
+type InvalidVersionErr string
+
+func (f InvalidVersionErr) Error() string {_cover_atomic_.AddUint32(&GoCover_1_386331393235373732613932.Count[9], 1);
+	return fmt.Sprintf("invalid chaincode version '%s'. Versions can only consist of alphanumerics, '_',  '-', '+', and '.'", string(f))
+}
+
+//InvalidStatedbArtifactsErr invalid state database artifacts error
+type InvalidStatedbArtifactsErr string
+
+func (f InvalidStatedbArtifactsErr) Error() string {_cover_atomic_.AddUint32(&GoCover_1_386331393235373732613932.Count[10], 1);
+	return fmt.Sprintf("invalid state database artifact: %s", string(f))
+}
+
+//ChaincodeMismatchErr chaincode name from two places don't match
+type ChaincodeMismatchErr string
+
+func (f ChaincodeMismatchErr) Error() string {_cover_atomic_.AddUint32(&GoCover_1_386331393235373732613932.Count[11], 1);
+	return fmt.Sprintf("chaincode name mismatch: %s", string(f))
+}
+
+//EmptyVersionErr empty version error
+type EmptyVersionErr string
+
+func (f EmptyVersionErr) Error() string {_cover_atomic_.AddUint32(&GoCover_1_386331393235373732613932.Count[12], 1);
+	return fmt.Sprintf("version not provided for chaincode with name '%s'", string(f))
+}
+
+//MarshallErr error marshaling/unmarshalling
+type MarshallErr string
+
+func (m MarshallErr) Error() string {_cover_atomic_.AddUint32(&GoCover_1_386331393235373732613932.Count[13], 1);
+	return fmt.Sprintf("error while marshalling: %s", string(m))
+}
+
+//IdenticalVersionErr trying to upgrade to same version of Chaincode
+type IdenticalVersionErr string
+
+func (f IdenticalVersionErr) Error() string {_cover_atomic_.AddUint32(&GoCover_1_386331393235373732613932.Count[14], 1);
+	return fmt.Sprintf("version already exists for chaincode with name '%s'", string(f))
+}
+
+//InvalidCCOnFSError error due to mismatch between fingerprint on lscc and installed CC
+type InvalidCCOnFSError string
+
+func (f InvalidCCOnFSError) Error() string {_cover_atomic_.AddUint32(&GoCover_1_386331393235373732613932.Count[15], 1);
+	return fmt.Sprintf("chaincode fingerprint mismatch: %s", string(f))
+}
+
+//InstantiationPolicyMissing when no existing instantiation policy is found when upgrading CC
+type InstantiationPolicyMissing string
+
+func (f InstantiationPolicyMissing) Error() string {_cover_atomic_.AddUint32(&GoCover_1_386331393235373732613932.Count[16], 1);
+	return "instantiation policy missing"
+}
+
+// CollectionsConfigUpgradesNotAllowed when V1_2 capability is not enabled
+type CollectionsConfigUpgradesNotAllowed string
+
+func (f CollectionsConfigUpgradesNotAllowed) Error() string {_cover_atomic_.AddUint32(&GoCover_1_386331393235373732613932.Count[17], 1);
+	return "as V1_2 capability is not enabled, collection upgrades are not allowed"
+}
+
+// PrivateChannelDataNotAvailable when V1_2 or later capability is not enabled
+type PrivateChannelDataNotAvailable string
+
+func (f PrivateChannelDataNotAvailable) Error() string {_cover_atomic_.AddUint32(&GoCover_1_386331393235373732613932.Count[18], 1);
+	return "as V1_2 or later capability is not enabled, private channel collections and data are not available"
+}
+
+var GoCover_1_386331393235373732613932 = struct {
+	Count     [19]uint32
+	Pos       [3 * 19]uint32
+	NumStmt   [19]uint16
+} {
+	Pos: [3 * 19]uint32{
+		14, 16, 0x2002c, // [0]
+		21, 23, 0x2002b, // [1]
+		28, 30, 0x20027, // [2]
+		35, 37, 0x20032, // [3]
+		42, 44, 0x20023, // [4]
+		49, 51, 0x20025, // [5]
+		56, 58, 0x2002f, // [6]
+		63, 65, 0x20031, // [7]
+		70, 72, 0x2002f, // [8]
+		77, 79, 0x2002b, // [9]
+		84, 86, 0x20034, // [10]
+		91, 93, 0x2002e, // [11]
+		98, 100, 0x20029, // [12]
+		105, 107, 0x20025, // [13]
+		112, 114, 0x2002d, // [14]
+		119, 121, 0x2002c, // [15]
+		126, 128, 0x20034, // [16]
+		133, 135, 0x2003d, // [17]
+		140, 142, 0x20038, // [18]
+	},
+	NumStmt: [19]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+	},
+}
+var _ = _cover_atomic_.LoadUint32

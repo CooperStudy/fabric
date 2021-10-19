@@ -1,0 +1,110 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/peer/peer_impl.go:1
+//
+// Copyright IBM Corp. All Rights Reserved.
+//
+// SPDX-License-Identifier: Apache-2.0
+//
+
+package peer; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric/common/channelconfig"
+	"github.com/hyperledger/fabric/common/metrics"
+	"github.com/hyperledger/fabric/common/policies"
+	"github.com/hyperledger/fabric/core/chaincode/platforms"
+	"github.com/hyperledger/fabric/core/committer/txvalidator"
+	"github.com/hyperledger/fabric/core/common/ccprovider"
+	"github.com/hyperledger/fabric/core/common/sysccprovider"
+	"github.com/hyperledger/fabric/core/ledger"
+	"github.com/hyperledger/fabric/protos/common"
+	pb "github.com/hyperledger/fabric/protos/peer"
+)
+
+// Operations exposes an interface to the package level functions that operated
+// on singletons in the package. This is a step towards moving from package
+// level data for the peer to instance level data.
+type Operations interface {
+	CreateChainFromBlock(cb *common.Block, ccp ccprovider.ChaincodeProvider, sccp sysccprovider.SystemChaincodeProvider) error
+	GetChannelConfig(cid string) channelconfig.Resources
+	GetChannelsInfo() []*pb.ChannelInfo
+	GetCurrConfigBlock(cid string) *common.Block
+	GetLedger(cid string) ledger.PeerLedger
+	GetMSPIDs(cid string) []string
+	GetPolicyManager(cid string) policies.Manager
+	InitChain(cid string)
+	Initialize(init func(string), ccp ccprovider.ChaincodeProvider, sccp sysccprovider.SystemChaincodeProvider, pm txvalidator.PluginMapper, pr *platforms.Registry, deployedCCInfoProvider ledger.DeployedChaincodeInfoProvider, membershipProvider ledger.MembershipInfoProvider, metricsProvider metrics.Provider)
+}
+
+type peerImpl struct {
+	createChainFromBlock func(cb *common.Block, ccp ccprovider.ChaincodeProvider, sccp sysccprovider.SystemChaincodeProvider) error
+	getChannelConfig     func(cid string) channelconfig.Resources
+	getChannelsInfo      func() []*pb.ChannelInfo
+	getCurrConfigBlock   func(cid string) *common.Block
+	getLedger            func(cid string) ledger.PeerLedger
+	getMSPIDs            func(cid string) []string
+	getPolicyManager     func(cid string) policies.Manager
+	initChain            func(cid string)
+	initialize           func(init func(string), ccp ccprovider.ChaincodeProvider, sccp sysccprovider.SystemChaincodeProvider, mapper txvalidator.PluginMapper, pr *platforms.Registry, deployedCCInfoProvider ledger.DeployedChaincodeInfoProvider, membershipProvider ledger.MembershipInfoProvider, metricsProvider metrics.Provider)
+}
+
+// Default provides in implementation of the Peer interface that provides
+// access to the package level state.
+var Default Operations = &peerImpl{
+	createChainFromBlock: CreateChainFromBlock,
+	getChannelConfig:     GetChannelConfig,
+	getChannelsInfo:      GetChannelsInfo,
+	getCurrConfigBlock:   GetCurrConfigBlock,
+	getLedger:            GetLedger,
+	getMSPIDs:            GetMSPIDs,
+	getPolicyManager:     GetPolicyManager,
+	initChain:            InitChain,
+	initialize:           Initialize,
+}
+
+var DefaultSupport Support = &supportImpl{operations: Default}
+
+func (p *peerImpl) CreateChainFromBlock(cb *common.Block, ccp ccprovider.ChaincodeProvider, sccp sysccprovider.SystemChaincodeProvider) error {_cover_atomic_.AddUint32(&GoCover_6_323265356137393664323638.Count[0], 1);
+	return p.createChainFromBlock(cb, ccp, sccp)
+}
+func (p *peerImpl) GetChannelConfig(cid string) channelconfig.Resources {_cover_atomic_.AddUint32(&GoCover_6_323265356137393664323638.Count[1], 1);
+	return p.getChannelConfig(cid)
+}
+func (p *peerImpl) GetChannelsInfo() []*pb.ChannelInfo           {_cover_atomic_.AddUint32(&GoCover_6_323265356137393664323638.Count[2], 1); return p.getChannelsInfo() }
+func (p *peerImpl) GetCurrConfigBlock(cid string) *common.Block  {_cover_atomic_.AddUint32(&GoCover_6_323265356137393664323638.Count[3], 1); return p.getCurrConfigBlock(cid) }
+func (p *peerImpl) GetLedger(cid string) ledger.PeerLedger       {_cover_atomic_.AddUint32(&GoCover_6_323265356137393664323638.Count[4], 1); return p.getLedger(cid) }
+func (p *peerImpl) GetMSPIDs(cid string) []string                {_cover_atomic_.AddUint32(&GoCover_6_323265356137393664323638.Count[5], 1); return p.getMSPIDs(cid) }
+func (p *peerImpl) GetPolicyManager(cid string) policies.Manager {_cover_atomic_.AddUint32(&GoCover_6_323265356137393664323638.Count[6], 1); return p.getPolicyManager(cid) }
+func (p *peerImpl) InitChain(cid string)                         {_cover_atomic_.AddUint32(&GoCover_6_323265356137393664323638.Count[7], 1); p.initChain(cid) }
+func (p *peerImpl) Initialize(init func(string), ccp ccprovider.ChaincodeProvider, sccp sysccprovider.SystemChaincodeProvider, mapper txvalidator.PluginMapper, pr *platforms.Registry, deployedCCInfoProvider ledger.DeployedChaincodeInfoProvider, membershipProvider ledger.MembershipInfoProvider, metricsProvider metrics.Provider) {_cover_atomic_.AddUint32(&GoCover_6_323265356137393664323638.Count[8], 1);
+	p.initialize(init, ccp, sccp, mapper, pr, deployedCCInfoProvider, membershipProvider, metricsProvider)
+}
+
+var GoCover_6_323265356137393664323638 = struct {
+	Count     [9]uint32
+	Pos       [3 * 9]uint32
+	NumStmt   [9]uint16
+} {
+	Pos: [3 * 9]uint32{
+		65, 67, 0x2008f, // [0]
+		68, 70, 0x20049, // [1]
+		71, 71, 0x600042, // [2]
+		72, 72, 0x660042, // [3]
+		73, 73, 0x5d0042, // [4]
+		74, 74, 0x5d0042, // [5]
+		75, 75, 0x640042, // [6]
+		76, 76, 0x560042, // [7]
+		77, 79, 0x2014a, // [8]
+	},
+	NumStmt: [9]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+	},
+}
+var _ = _cover_atomic_.LoadUint32

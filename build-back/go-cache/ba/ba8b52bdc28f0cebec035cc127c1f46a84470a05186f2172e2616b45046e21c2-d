@@ -1,0 +1,1141 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/peer/peer.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package peer; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+	"net"
+	"runtime"
+	"sync"
+
+	"github.com/hyperledger/fabric/common/channelconfig"
+	cc "github.com/hyperledger/fabric/common/config"
+	"github.com/hyperledger/fabric/common/configtx"
+	"github.com/hyperledger/fabric/common/deliver"
+	"github.com/hyperledger/fabric/common/flogging"
+	commonledger "github.com/hyperledger/fabric/common/ledger"
+	"github.com/hyperledger/fabric/common/ledger/blockledger"
+	fileledger "github.com/hyperledger/fabric/common/ledger/blockledger/file"
+	"github.com/hyperledger/fabric/common/metrics"
+	"github.com/hyperledger/fabric/common/policies"
+	"github.com/hyperledger/fabric/core/chaincode/platforms"
+	"github.com/hyperledger/fabric/core/comm"
+	"github.com/hyperledger/fabric/core/committer"
+	"github.com/hyperledger/fabric/core/committer/txvalidator"
+	"github.com/hyperledger/fabric/core/common/ccprovider"
+	"github.com/hyperledger/fabric/core/common/privdata"
+	"github.com/hyperledger/fabric/core/common/sysccprovider"
+	"github.com/hyperledger/fabric/core/ledger"
+	"github.com/hyperledger/fabric/core/ledger/customtx"
+	"github.com/hyperledger/fabric/core/ledger/ledgermgmt"
+	"github.com/hyperledger/fabric/core/transientstore"
+	"github.com/hyperledger/fabric/gossip/api"
+	"github.com/hyperledger/fabric/gossip/service"
+	"github.com/hyperledger/fabric/msp"
+	mspmgmt "github.com/hyperledger/fabric/msp/mgmt"
+	"github.com/hyperledger/fabric/protos/common"
+	pb "github.com/hyperledger/fabric/protos/peer"
+	"github.com/hyperledger/fabric/protos/utils"
+	"github.com/hyperledger/fabric/token/tms/manager"
+	"github.com/hyperledger/fabric/token/transaction"
+	"github.com/pkg/errors"
+	"github.com/spf13/viper"
+	"golang.org/x/sync/semaphore"
+)
+
+var peerLogger = flogging.MustGetLogger("peer")
+
+var peerServer *comm.GRPCServer
+
+var configTxProcessor = newConfigTxProcessor()
+var tokenTxProcessor = &transaction.Processor{
+	TMSManager: &manager.Manager{
+		IdentityDeserializerManager: &manager.FabricIdentityDeserializerManager{}}}
+var ConfigTxProcessors = customtx.Processors{
+	common.HeaderType_CONFIG:            configTxProcessor,
+	common.HeaderType_TOKEN_TRANSACTION: tokenTxProcessor,
+}
+
+// singleton instance to manage credentials for the peer across channel config changes
+var credSupport = comm.GetCredentialSupport()
+
+type gossipSupport struct {
+	channelconfig.Application
+	configtx.Validator
+	channelconfig.Channel
+}
+
+type chainSupport struct {
+	bundleSource *channelconfig.BundleSource
+	channelconfig.Resources
+	channelconfig.Application
+	ledger ledger.PeerLedger
+}
+
+var TransientStoreFactory = &storeProvider{stores: make(map[string]transientstore.Store)}
+
+type storeProvider struct {
+	stores map[string]transientstore.Store
+	transientstore.StoreProvider
+	sync.RWMutex
+}
+
+func (sp *storeProvider) StoreForChannel(channel string) transientstore.Store {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[0], 1);
+	sp.RLock()
+	defer sp.RUnlock()
+	return sp.stores[channel]
+}
+
+func (sp *storeProvider) OpenStore(ledgerID string) (transientstore.Store, error) {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[1], 1);
+	sp.Lock()
+	defer sp.Unlock()
+	if sp.StoreProvider == nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[4], 1);
+		sp.StoreProvider = transientstore.NewStoreProvider()
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[2], 1);store, err := sp.StoreProvider.OpenStore(ledgerID)
+	if err == nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[5], 1);
+		sp.stores[ledgerID] = store
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[3], 1);return store, err
+}
+
+func (cs *chainSupport) Apply(configtx *common.ConfigEnvelope) error {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[6], 1);
+	err := cs.ConfigtxValidator().Validate(configtx)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[9], 1);
+		return err
+	}
+
+	// If the chainSupport is being mocked, this field will be nil
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[7], 1);if cs.bundleSource != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[10], 1);
+		bundle, err := channelconfig.NewBundle(cs.ConfigtxValidator().ChainID(), configtx.Config)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[13], 1);
+			return err
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[11], 1);channelconfig.LogSanityChecks(bundle)
+
+		err = cs.bundleSource.ValidateNew(bundle)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[14], 1);
+			return err
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[12], 1);capabilitiesSupportedOrPanic(bundle)
+
+		cs.bundleSource.Update(bundle)
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[8], 1);return nil
+}
+
+func capabilitiesSupportedOrPanic(res channelconfig.Resources) {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[15], 1);
+	ac, ok := res.ApplicationConfig()
+	if !ok {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[18], 1);
+		peerLogger.Panicf("[channel %s] does not have application config so is incompatible", res.ConfigtxValidator().ChainID())
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[16], 1);if err := ac.Capabilities().Supported(); err != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[19], 1);
+		peerLogger.Panicf("[channel %s] incompatible: %s", res.ConfigtxValidator().ChainID(), err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[17], 1);if err := res.ChannelConfig().Capabilities().Supported(); err != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[20], 1);
+		peerLogger.Panicf("[channel %s] incompatible: %s", res.ConfigtxValidator().ChainID(), err)
+	}
+}
+
+func (cs *chainSupport) Ledger() ledger.PeerLedger {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[21], 1);
+	return cs.ledger
+}
+
+func (cs *chainSupport) GetMSPIDs(cid string) []string {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[22], 1);
+	return GetMSPIDs(cid)
+}
+
+// Sequence passes through to the underlying configtx.Validator
+func (cs *chainSupport) Sequence() uint64 {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[23], 1);
+	sb := cs.bundleSource.StableBundle()
+	return sb.ConfigtxValidator().Sequence()
+}
+
+// Reader returns an iterator to read from the ledger
+func (cs *chainSupport) Reader() blockledger.Reader {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[24], 1);
+	return fileledger.NewFileLedger(fileLedgerBlockStore{cs.ledger})
+}
+
+// Errored returns a channel that can be used to determine
+// if a backing resource has errored. At this point in time,
+// the peer does not have any error conditions that lead to
+// this function signaling that an error has occurred.
+func (cs *chainSupport) Errored() <-chan struct{} {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[25], 1);
+	return nil
+}
+
+// chain is a local struct to manage objects in a chain
+type chain struct {
+	cs        *chainSupport
+	cb        *common.Block
+	committer committer.Committer
+}
+
+// chains is a local map of chainID->chainObject
+var chains = struct {
+	sync.RWMutex
+	list map[string]*chain
+}{list: make(map[string]*chain)}
+
+var chainInitializer func(string)
+
+var pluginMapper txvalidator.PluginMapper
+
+var mockMSPIDGetter func(string) []string
+
+func MockSetMSPIDGetter(mspIDGetter func(string) []string) {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[26], 1);
+	mockMSPIDGetter = mspIDGetter
+}
+
+// validationWorkersSemaphore is the semaphore used to ensure that
+// there are not too many concurrent tx validation goroutines
+var validationWorkersSemaphore *semaphore.Weighted
+
+// Initialize sets up any chains that the peer has from the persistence. This
+// function should be called at the start up when the ledger and gossip
+// ready
+func Initialize(init func(string), ccp ccprovider.ChaincodeProvider, sccp sysccprovider.SystemChaincodeProvider,
+	pm txvalidator.PluginMapper, pr *platforms.Registry, deployedCCInfoProvider ledger.DeployedChaincodeInfoProvider,
+	membershipProvider ledger.MembershipInfoProvider, metricsProvider metrics.Provider) {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[27], 1);
+	nWorkers := viper.GetInt("peer.validatorPoolSize")
+	if nWorkers <= 0 {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[30], 1);
+		nWorkers = runtime.NumCPU()
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[28], 1);validationWorkersSemaphore = semaphore.NewWeighted(int64(nWorkers))
+
+	pluginMapper = pm
+	chainInitializer = init
+
+	var cb *common.Block
+	var ledger ledger.PeerLedger
+	ledgermgmt.Initialize(&ledgermgmt.Initializer{
+		CustomTxProcessors:            ConfigTxProcessors,
+		PlatformRegistry:              pr,
+		DeployedChaincodeInfoProvider: deployedCCInfoProvider,
+		MembershipInfoProvider:        membershipProvider,
+		MetricsProvider:               metricsProvider,
+	})
+	ledgerIds, err := ledgermgmt.GetLedgerIDs()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[31], 1);
+		panic(fmt.Errorf("Error in initializing ledgermgmt: %s", err))
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[29], 1);for _, cid := range ledgerIds {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[32], 1);
+		peerLogger.Infof("Loading chain %s", cid)
+		if ledger, err = ledgermgmt.OpenLedger(cid); err != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[36], 1);
+			peerLogger.Warningf("Failed to load ledger %s(%s)", cid, err)
+			peerLogger.Debugf("Error while loading ledger %s with message %s. We continue to the next ledger rather than abort.", cid, err)
+			continue
+		}
+		_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[33], 1);if cb, err = getCurrConfigBlockFromLedger(ledger); err != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[37], 1);
+			peerLogger.Warningf("Failed to find config block on ledger %s(%s)", cid, err)
+			peerLogger.Debugf("Error while looking for config block on ledger %s with message %s. We continue to the next ledger rather than abort.", cid, err)
+			continue
+		}
+		// Create a chain if we get a valid ledger with config block
+		_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[34], 1);if err = createChain(cid, ledger, cb, ccp, sccp, pm); err != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[38], 1);
+			peerLogger.Warningf("Failed to load chain %s(%s)", cid, err)
+			peerLogger.Debugf("Error reloading chain %s with message %s. We continue to the next chain rather than abort.", cid, err)
+			continue
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[35], 1);InitChain(cid)
+	}
+}
+
+// InitChain takes care to initialize chain after peer joined, for example deploys system CCs
+func InitChain(cid string) {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[39], 1);
+	if chainInitializer != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[40], 1);
+		// Initialize chaincode, namely deploy system CC
+		peerLogger.Debugf("Initializing channel %s", cid)
+		chainInitializer(cid)
+	}
+}
+
+func getCurrConfigBlockFromLedger(ledger ledger.PeerLedger) (*common.Block, error) {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[41], 1);
+	peerLogger.Debugf("Getting config block")
+
+	// get last block.  Last block number is Height-1
+	blockchainInfo, err := ledger.GetBlockchainInfo()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[46], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[42], 1);lastBlock, err := ledger.GetBlockByNumber(blockchainInfo.Height - 1)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[47], 1);
+		return nil, err
+	}
+
+	// get most recent config block location from last block metadata
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[43], 1);configBlockIndex, err := utils.GetLastConfigIndexFromBlock(lastBlock)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[48], 1);
+		return nil, err
+	}
+
+	// get most recent config block
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[44], 1);configBlock, err := ledger.GetBlockByNumber(configBlockIndex)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[49], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[45], 1);peerLogger.Debugf("Got config block[%d]", configBlockIndex)
+	return configBlock, nil
+}
+
+// createChain creates a new chain object and insert it into the chains
+func createChain(cid string, ledger ledger.PeerLedger, cb *common.Block, ccp ccprovider.ChaincodeProvider, sccp sysccprovider.SystemChaincodeProvider, pm txvalidator.PluginMapper) error {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[50], 1);
+	chanConf, err := retrievePersistedChannelConfig(ledger)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[61], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[51], 1);var bundle *channelconfig.Bundle
+
+	if chanConf != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[62], 1);
+		bundle, err = channelconfig.NewBundle(cid, chanConf)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[63], 1);
+			return err
+		}
+	} else{ _cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[64], 1);{
+		// Config was only stored in the statedb starting with v1.1 binaries
+		// so if the config is not found there, extract it manually from the config block
+		envelopeConfig, err := utils.ExtractEnvelope(cb, 0)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[66], 1);
+			return err
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[65], 1);bundle, err = channelconfig.NewBundleFromEnvelope(envelopeConfig)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[67], 1);
+			return err
+		}
+	}}
+
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[52], 1);capabilitiesSupportedOrPanic(bundle)
+
+	channelconfig.LogSanityChecks(bundle)
+
+	gossipEventer := service.GetGossipService().NewConfigEventer()
+
+	gossipCallbackWrapper := func(bundle *channelconfig.Bundle) {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[68], 1);
+		ac, ok := bundle.ApplicationConfig()
+		if !ok {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[70], 1);
+			// TODO, handle a missing ApplicationConfig more gracefully
+			ac = nil
+		}
+		_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[69], 1);gossipEventer.ProcessConfigUpdate(&gossipSupport{
+			Validator:   bundle.ConfigtxValidator(),
+			Application: ac,
+			Channel:     bundle.ChannelConfig(),
+		})
+		service.GetGossipService().SuspectPeers(func(identity api.PeerIdentityType) bool {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[71], 1);
+			// TODO: this is a place-holder that would somehow make the MSP layer suspect
+			// that a given certificate is revoked, or its intermediate CA is revoked.
+			// In the meantime, before we have such an ability, we return true in order
+			// to suspect ALL identities in order to validate all of them.
+			return true
+		})
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[53], 1);trustedRootsCallbackWrapper := func(bundle *channelconfig.Bundle) {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[72], 1);
+		updateTrustedRoots(bundle)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[54], 1);mspCallback := func(bundle *channelconfig.Bundle) {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[73], 1);
+		// TODO remove once all references to mspmgmt are gone from peer code
+		mspmgmt.XXXSetMSPManager(cid, bundle.MSPManager())
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[55], 1);ac, ok := bundle.ApplicationConfig()
+	if !ok {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[74], 1);
+		ac = nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[56], 1);cs := &chainSupport{
+		Application: ac, // TODO, refactor as this is accessible through Manager
+		ledger:      ledger,
+	}
+
+	peerSingletonCallback := func(bundle *channelconfig.Bundle) {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[75], 1);
+		ac, ok := bundle.ApplicationConfig()
+		if !ok {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[77], 1);
+			ac = nil
+		}
+		_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[76], 1);cs.Application = ac
+		cs.Resources = bundle
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[57], 1);cs.bundleSource = channelconfig.NewBundleSource(
+		bundle,
+		gossipCallbackWrapper,
+		trustedRootsCallbackWrapper,
+		mspCallback,
+		peerSingletonCallback,
+	)
+
+	vcs := struct {
+		*chainSupport
+		*semaphore.Weighted
+	}{cs, validationWorkersSemaphore}
+	validator := txvalidator.NewTxValidator(cid, vcs, sccp, pm)
+	c := committer.NewLedgerCommitterReactive(ledger, func(block *common.Block) error {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[78], 1);
+		chainID, err := utils.GetChainIDFromBlock(block)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[80], 1);
+			return err
+		}
+		_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[79], 1);return SetCurrConfigBlock(block, chainID)
+	})
+
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[58], 1);ordererAddresses := bundle.ChannelConfig().OrdererAddresses()
+	if len(ordererAddresses) == 0 {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[81], 1);
+		return errors.New("no ordering service endpoint provided in configuration block")
+	}
+
+	// TODO: does someone need to call Close() on the transientStoreFactory at shutdown of the peer?
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[59], 1);store, err := TransientStoreFactory.OpenStore(bundle.ConfigtxValidator().ChainID())
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[82], 1);
+		return errors.Wrapf(err, "[channel %s] failed opening transient store", bundle.ConfigtxValidator().ChainID())
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[60], 1);csStoreSupport := &CollectionSupport{
+		PeerLedger: ledger,
+	}
+	simpleCollectionStore := privdata.NewSimpleCollectionStore(csStoreSupport)
+
+	service.GetGossipService().InitializeChannel(bundle.ConfigtxValidator().ChainID(), ordererAddresses, service.Support{
+		Validator:            validator,
+		Committer:            c,
+		Store:                store,
+		Cs:                   simpleCollectionStore,
+		IdDeserializeFactory: csStoreSupport,
+	})
+
+	chains.Lock()
+	defer chains.Unlock()
+	chains.list[cid] = &chain{
+		cs:        cs,
+		cb:        cb,
+		committer: c,
+	}
+
+	return nil
+}
+
+// CreateChainFromBlock creates a new chain from config block
+func CreateChainFromBlock(cb *common.Block, ccp ccprovider.ChaincodeProvider, sccp sysccprovider.SystemChaincodeProvider) error {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[83], 1);
+	cid, err := utils.GetChainIDFromBlock(cb)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[86], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[84], 1);var l ledger.PeerLedger
+	if l, err = ledgermgmt.CreateLedger(cb); err != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[87], 1);
+		return errors.WithMessage(err, "cannot create ledger from genesis block")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[85], 1);return createChain(cid, l, cb, ccp, sccp, pluginMapper)
+}
+
+// GetLedger returns the ledger of the chain with chain ID. Note that this
+// call returns nil if chain cid has not been created.
+func GetLedger(cid string) ledger.PeerLedger {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[88], 1);
+	chains.RLock()
+	defer chains.RUnlock()
+	if c, ok := chains.list[cid]; ok {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[90], 1);
+		return c.cs.ledger
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[89], 1);return nil
+}
+
+// GetStableChannelConfig returns the stable channel configuration of the chain with channel ID.
+// Note that this call returns nil if chain cid has not been created.
+func GetStableChannelConfig(cid string) channelconfig.Resources {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[91], 1);
+	chains.RLock()
+	defer chains.RUnlock()
+	if c, ok := chains.list[cid]; ok {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[93], 1);
+		return c.cs.bundleSource.StableBundle()
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[92], 1);return nil
+}
+
+// GetChannelConfig returns the channel configuration of the chain with channel ID. Note that this
+// call returns nil if chain cid has not been created.
+func GetChannelConfig(cid string) channelconfig.Resources {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[94], 1);
+	chains.RLock()
+	defer chains.RUnlock()
+	if c, ok := chains.list[cid]; ok {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[96], 1);
+		return c.cs
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[95], 1);return nil
+}
+
+// GetPolicyManager returns the policy manager of the chain with chain ID. Note that this
+// call returns nil if chain cid has not been created.
+func GetPolicyManager(cid string) policies.Manager {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[97], 1);
+	chains.RLock()
+	defer chains.RUnlock()
+	if c, ok := chains.list[cid]; ok {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[99], 1);
+		return c.cs.PolicyManager()
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[98], 1);return nil
+}
+
+// GetCurrConfigBlock returns the cached config block of the specified chain.
+// Note that this call returns nil if chain cid has not been created.
+func GetCurrConfigBlock(cid string) *common.Block {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[100], 1);
+	chains.RLock()
+	defer chains.RUnlock()
+	if c, ok := chains.list[cid]; ok {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[102], 1);
+		return c.cb
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[101], 1);return nil
+}
+
+// updates the trusted roots for the peer based on updates to channels
+func updateTrustedRoots(cm channelconfig.Resources) {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[103], 1);
+	// this is triggered on per channel basis so first update the roots for the channel
+	peerLogger.Debugf("Updating trusted root authorities for channel %s", cm.ConfigtxValidator().ChainID())
+	var serverConfig comm.ServerConfig
+	var err error
+	// only run is TLS is enabled
+	serverConfig, err = GetServerConfig()
+	if err == nil && serverConfig.SecOpts.UseTLS {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[104], 1);
+		buildTrustedRootsForChain(cm)
+
+		// now iterate over all roots for all app and orderer chains
+		trustedRoots := [][]byte{}
+		credSupport.RLock()
+		defer credSupport.RUnlock()
+		for _, roots := range credSupport.AppRootCAsByChain {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[108], 1);
+			trustedRoots = append(trustedRoots, roots...)
+		}
+		// also need to append statically configured root certs
+		_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[105], 1);if len(serverConfig.SecOpts.ClientRootCAs) > 0 {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[109], 1);
+			trustedRoots = append(trustedRoots, serverConfig.SecOpts.ClientRootCAs...)
+		}
+		_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[106], 1);if len(serverConfig.SecOpts.ServerRootCAs) > 0 {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[110], 1);
+			trustedRoots = append(trustedRoots, serverConfig.SecOpts.ServerRootCAs...)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[107], 1);server := peerServer
+		// now update the client roots for the peerServer
+		if server != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[111], 1);
+			err := server.SetClientRootCAs(trustedRoots)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[112], 1);
+				msg := "Failed to update trusted roots for peer from latest config " +
+					"block.  This peer may not be able to communicate " +
+					"with members of channel %s (%s)"
+				peerLogger.Warningf(msg, cm.ConfigtxValidator().ChainID(), err)
+			}
+		}
+	}
+}
+
+// populates the appRootCAs and orderRootCAs maps by getting the
+// root and intermediate certs for all msps associated with the MSPManager
+func buildTrustedRootsForChain(cm channelconfig.Resources) {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[113], 1);
+	credSupport.Lock()
+	defer credSupport.Unlock()
+
+	appRootCAs := [][]byte{}
+	ordererRootCAs := [][]byte{}
+	appOrgMSPs := make(map[string]struct{})
+	ordOrgMSPs := make(map[string]struct{})
+
+	if ac, ok := cm.ApplicationConfig(); ok {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[117], 1);
+		//loop through app orgs and build map of MSPIDs
+		for _, appOrg := range ac.Organizations() {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[118], 1);
+			appOrgMSPs[appOrg.MSPID()] = struct{}{}
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[114], 1);if ac, ok := cm.OrdererConfig(); ok {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[119], 1);
+		//loop through orderer orgs and build map of MSPIDs
+		for _, ordOrg := range ac.Organizations() {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[120], 1);
+			ordOrgMSPs[ordOrg.MSPID()] = struct{}{}
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[115], 1);cid := cm.ConfigtxValidator().ChainID()
+	peerLogger.Debugf("updating root CAs for channel [%s]", cid)
+	msps, err := cm.MSPManager().GetMSPs()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[121], 1);
+		peerLogger.Errorf("Error getting root CAs for channel %s (%s)", cid, err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[116], 1);if err == nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[122], 1);
+		for k, v := range msps {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[124], 1);
+			// check to see if this is a FABRIC MSP
+			if v.GetType() == msp.FABRIC {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[125], 1);
+				for _, root := range v.GetTLSRootCerts() {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[127], 1);
+					// check to see of this is an app org MSP
+					if _, ok := appOrgMSPs[k]; ok {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[129], 1);
+						peerLogger.Debugf("adding app root CAs for MSP [%s]", k)
+						appRootCAs = append(appRootCAs, root)
+					}
+					// check to see of this is an orderer org MSP
+					_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[128], 1);if _, ok := ordOrgMSPs[k]; ok {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[130], 1);
+						peerLogger.Debugf("adding orderer root CAs for MSP [%s]", k)
+						ordererRootCAs = append(ordererRootCAs, root)
+					}
+				}
+				_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[126], 1);for _, intermediate := range v.GetTLSIntermediateCerts() {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[131], 1);
+					// check to see of this is an app org MSP
+					if _, ok := appOrgMSPs[k]; ok {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[133], 1);
+						peerLogger.Debugf("adding app root CAs for MSP [%s]", k)
+						appRootCAs = append(appRootCAs, intermediate)
+					}
+					// check to see of this is an orderer org MSP
+					_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[132], 1);if _, ok := ordOrgMSPs[k]; ok {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[134], 1);
+						peerLogger.Debugf("adding orderer root CAs for MSP [%s]", k)
+						ordererRootCAs = append(ordererRootCAs, intermediate)
+					}
+				}
+			}
+		}
+		_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[123], 1);credSupport.AppRootCAsByChain[cid] = appRootCAs
+		credSupport.OrdererRootCAsByChain[cid] = ordererRootCAs
+	}
+}
+
+// GetMSPIDs returns the ID of each application MSP defined on this chain
+func GetMSPIDs(cid string) []string {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[135], 1);
+	chains.RLock()
+	defer chains.RUnlock()
+
+	//if mock is set, use it to return MSPIDs
+	//used for tests without a proper join
+	if mockMSPIDGetter != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[138], 1);
+		return mockMSPIDGetter(cid)
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[136], 1);if c, ok := chains.list[cid]; ok {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[139], 1);
+		if c == nil || c.cs == nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[143], 1);
+			return nil
+		}
+		_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[140], 1);ac, ok := c.cs.ApplicationConfig()
+		if !ok || ac.Organizations() == nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[144], 1);
+			return nil
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[141], 1);orgs := ac.Organizations()
+		toret := make([]string, len(orgs))
+		i := 0
+		for _, org := range orgs {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[145], 1);
+			toret[i] = org.MSPID()
+			i++
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[142], 1);return toret
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[137], 1);return nil
+}
+
+// SetCurrConfigBlock sets the current config block of the specified channel
+func SetCurrConfigBlock(block *common.Block, cid string) error {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[146], 1);
+	chains.Lock()
+	defer chains.Unlock()
+	if c, ok := chains.list[cid]; ok {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[148], 1);
+		c.cb = block
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[147], 1);return errors.Errorf("[channel %s] channel not associated with this peer", cid)
+}
+
+// GetLocalIP returns the non loopback local IP of the host
+func GetLocalIP() string {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[149], 1);
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[152], 1);
+		return ""
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[150], 1);for _, address := range addrs {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[153], 1);
+		// check the address type and if it is not a loopback then display it
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[154], 1);
+			if ipnet.IP.To4() != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[155], 1);
+				return ipnet.IP.String()
+			}
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[151], 1);return ""
+}
+
+// GetChannelsInfo returns an array with information about all channels for
+// this peer
+func GetChannelsInfo() []*pb.ChannelInfo {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[156], 1);
+	// array to store metadata for all channels
+	var channelInfoArray []*pb.ChannelInfo
+
+	chains.RLock()
+	defer chains.RUnlock()
+	for key := range chains.list {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[158], 1);
+		channelInfo := &pb.ChannelInfo{ChannelId: key}
+
+		// add this specific chaincode's metadata to the array of all chaincodes
+		channelInfoArray = append(channelInfoArray, channelInfo)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[157], 1);return channelInfoArray
+}
+
+// NewChannelPolicyManagerGetter returns a new instance of ChannelPolicyManagerGetter
+func NewChannelPolicyManagerGetter() policies.ChannelPolicyManagerGetter {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[159], 1);
+	return &channelPolicyManagerGetter{}
+}
+
+type channelPolicyManagerGetter struct{}
+
+func (c *channelPolicyManagerGetter) Manager(channelID string) (policies.Manager, bool) {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[160], 1);
+	policyManager := GetPolicyManager(channelID)
+	return policyManager, policyManager != nil
+}
+
+// NewPeerServer creates an instance of comm.GRPCServer
+// This server is used for peer communications
+func NewPeerServer(listenAddress string, serverConfig comm.ServerConfig) (*comm.GRPCServer, error) {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[161], 1);
+	var err error
+	peerServer, err = comm.NewGRPCServer(listenAddress, serverConfig)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[163], 1);
+		peerLogger.Errorf("Failed to create peer server (%s)", err)
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[162], 1);return peerServer, nil
+}
+
+// TODO: Remove CollectionSupport and respective methonds on them.
+// CollectionSupport is created per chain and is passed to the simple
+// collection store and the gossip. As it is created per chain, there
+// is no need to pass the channelID for both GetQueryExecutorForLedger()
+// and GetIdentityDeserializer(). Note that the cid passed to
+// GetQueryExecutorForLedger is never used. Instead, we can directly
+// pass the ledger.PeerLedger and msp.IdentityDeserializer to the
+// simpleCollectionStore and pass only the msp.IdentityDeserializer to
+// the gossip in createChain() -- FAB-13037
+type CollectionSupport struct {
+	ledger.PeerLedger
+}
+
+func (cs *CollectionSupport) GetQueryExecutorForLedger(cid string) (ledger.QueryExecutor, error) {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[164], 1);
+	return cs.NewQueryExecutor()
+}
+
+func (*CollectionSupport) GetIdentityDeserializer(chainID string) msp.IdentityDeserializer {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[165], 1);
+	return mspmgmt.GetManagerForChain(chainID)
+}
+
+//
+//  Deliver service support structs for the peer
+//
+
+// DeliverChainManager provides access to a channel for performing deliver
+type DeliverChainManager struct {
+}
+
+func (DeliverChainManager) GetChain(chainID string) deliver.Chain {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[166], 1);
+	channel, ok := chains.list[chainID]
+	if !ok {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[168], 1);
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[167], 1);return channel.cs
+}
+
+// fileLedgerBlockStore implements the interface expected by
+// common/ledger/blockledger/file to interact with a file ledger for deliver
+type fileLedgerBlockStore struct {
+	ledger.PeerLedger
+}
+
+func (flbs fileLedgerBlockStore) AddBlock(*common.Block) error {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[169], 1);
+	return nil
+}
+
+func (flbs fileLedgerBlockStore) RetrieveBlocks(startBlockNumber uint64) (commonledger.ResultsIterator, error) {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[170], 1);
+	return flbs.GetBlocksIterator(startBlockNumber)
+}
+
+// NewConfigSupport returns
+func NewConfigSupport() cc.Manager {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[171], 1);
+	return &configSupport{}
+}
+
+type configSupport struct {
+}
+
+// GetChannelConfig returns an instance of a object that represents
+// current channel configuration tree of the specified channel. The
+// ConfigProto method of the returned object can be used to get the
+// proto representing the channel configuration.
+func (*configSupport) GetChannelConfig(channel string) cc.Config {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[172], 1);
+	chains.RLock()
+	defer chains.RUnlock()
+	chain := chains.list[channel]
+	if chain == nil {_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[174], 1);
+		peerLogger.Errorf("[channel %s] channel not associated with this peer", channel)
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_323265356137393664323638.Count[173], 1);return chain.cs.bundleSource.ConfigtxValidator()
+}
+
+var GoCover_5_323265356137393664323638 = struct {
+	Count     [175]uint32
+	Pos       [3 * 175]uint32
+	NumStmt   [175]uint16
+} {
+	Pos: [3 * 175]uint32{
+		87, 91, 0x2004f, // [0]
+		93, 96, 0x1d0053, // [1]
+		99, 100, 0x100002, // [2]
+		103, 103, 0x130002, // [3]
+		96, 98, 0x3001d, // [4]
+		100, 102, 0x30010, // [5]
+		106, 108, 0x100046, // [6]
+		113, 113, 0x1c0002, // [7]
+		130, 130, 0xc0002, // [8]
+		108, 110, 0x30010, // [9]
+		113, 115, 0x11001c, // [10]
+		119, 122, 0x110003, // [11]
+		126, 128, 0x210003, // [12]
+		115, 117, 0x40011, // [13]
+		122, 124, 0x40011, // [14]
+		133, 135, 0x90040, // [15]
+		139, 139, 0x360002, // [16]
+		143, 143, 0x470002, // [17]
+		135, 137, 0x30009, // [18]
+		139, 141, 0x30036, // [19]
+		143, 145, 0x30047, // [20]
+		148, 150, 0x20034, // [21]
+		152, 154, 0x20038, // [22]
+		157, 160, 0x2002b, // [23]
+		163, 165, 0x20035, // [24]
+		171, 173, 0x20033, // [25]
+		194, 196, 0x2003c, // [26]
+		207, 209, 0x130056, // [27]
+		212, 227, 0x100002, // [28]
+		230, 230, 0x200002, // [29]
+		209, 211, 0x30013, // [30]
+		227, 228, 0x410010, // [31]
+		230, 232, 0x3b0020, // [32]
+		237, 237, 0x410003, // [33]
+		243, 243, 0x440003, // [34]
+		249, 249, 0x110003, // [35]
+		232, 235, 0xc003b, // [36]
+		237, 240, 0xc0041, // [37]
+		243, 246, 0xc0044, // [38]
+		254, 255, 0x1d001c, // [39]
+		255, 259, 0x3001d, // [40]
+		262, 267, 0x100054, // [41]
+		270, 271, 0x100002, // [42]
+		276, 277, 0x100002, // [43]
+		282, 283, 0x100002, // [44]
+		287, 288, 0x190002, // [45]
+		267, 269, 0x30010, // [46]
+		271, 273, 0x30010, // [47]
+		277, 279, 0x30010, // [48]
+		283, 285, 0x30010, // [49]
+		292, 294, 0x1000bb, // [50]
+		298, 300, 0x150002, // [51]
+		319, 325, 0x3e0002, // [52]
+		345, 345, 0x440002, // [53]
+		349, 349, 0x340002, // [54]
+		354, 355, 0x90002, // [55]
+		359, 364, 0x3e0002, // [56]
+		373, 386, 0x540002, // [57]
+		394, 395, 0x200002, // [58]
+		400, 401, 0x100002, // [59]
+		404, 425, 0xc0002, // [60]
+		294, 296, 0x30010, // [61]
+		300, 302, 0x110015, // [62]
+		302, 304, 0x40011, // [63]
+		305, 309, 0x110008, // [64]
+		313, 314, 0x110003, // [65]
+		309, 311, 0x40011, // [66]
+		314, 316, 0x40011, // [67]
+		325, 327, 0xa003e, // [68]
+		331, 336, 0x540003, // [69]
+		327, 330, 0x4000a, // [70]
+		336, 342, 0x40054, // [71]
+		345, 347, 0x30044, // [72]
+		349, 352, 0x30034, // [73]
+		355, 357, 0x30009, // [74]
+		364, 366, 0xa003e, // [75]
+		369, 370, 0x180003, // [76]
+		366, 368, 0x4000a, // [77]
+		386, 388, 0x110054, // [78]
+		391, 391, 0x2c0003, // [79]
+		388, 390, 0x40011, // [80]
+		395, 397, 0x30020, // [81]
+		401, 403, 0x30010, // [82]
+		429, 431, 0x100081, // [83]
+		435, 436, 0x360002, // [84]
+		440, 440, 0x390002, // [85]
+		431, 433, 0x30010, // [86]
+		436, 438, 0x30036, // [87]
+		445, 448, 0x23002e, // [88]
+		451, 451, 0xc0002, // [89]
+		448, 450, 0x30023, // [90]
+		456, 459, 0x230041, // [91]
+		462, 462, 0xc0002, // [92]
+		459, 461, 0x30023, // [93]
+		467, 470, 0x23003b, // [94]
+		473, 473, 0xc0002, // [95]
+		470, 472, 0x30023, // [96]
+		478, 481, 0x230034, // [97]
+		484, 484, 0xc0002, // [98]
+		481, 483, 0x30023, // [99]
+		489, 492, 0x230033, // [100]
+		495, 495, 0xc0002, // [101]
+		492, 494, 0x30023, // [102]
+		499, 506, 0x2f0035, // [103]
+		506, 513, 0x37002f, // [104]
+		517, 517, 0x320003, // [105]
+		520, 520, 0x320003, // [106]
+		524, 526, 0x140003, // [107]
+		513, 515, 0x40037, // [108]
+		517, 519, 0x40032, // [109]
+		520, 522, 0x40032, // [110]
+		526, 528, 0x120014, // [111]
+		528, 533, 0x50012, // [112]
+		540, 549, 0x2a003c, // [113]
+		556, 556, 0x260002, // [114]
+		563, 566, 0x100002, // [115]
+		569, 569, 0x100002, // [116]
+		549, 551, 0x2d002a, // [117]
+		551, 553, 0x4002d, // [118]
+		556, 558, 0x2d0026, // [119]
+		558, 560, 0x4002d, // [120]
+		566, 568, 0x30010, // [121]
+		569, 570, 0x1a0010, // [122]
+		599, 600, 0x3a0003, // [123]
+		570, 572, 0x21001a, // [124]
+		572, 573, 0x2e0021, // [125]
+		585, 585, 0x3e0005, // [126]
+		573, 575, 0x24002e, // [127]
+		580, 580, 0x240006, // [128]
+		575, 578, 0x70024, // [129]
+		580, 583, 0x70024, // [130]
+		585, 587, 0x24003e, // [131]
+		592, 592, 0x240006, // [132]
+		587, 590, 0x70024, // [133]
+		592, 595, 0x70024, // [134]
+		605, 611, 0x1c0025, // [135]
+		614, 614, 0x230002, // [136]
+		633, 633, 0xc0002, // [137]
+		611, 613, 0x3001c, // [138]
+		614, 615, 0x1e0023, // [139]
+		618, 619, 0x270003, // [140]
+		623, 626, 0x1c0003, // [141]
+		631, 631, 0xf0003, // [142]
+		615, 617, 0x4001e, // [143]
+		619, 621, 0x40027, // [144]
+		626, 629, 0x4001c, // [145]
+		637, 640, 0x230040, // [146]
+		644, 644, 0x510002, // [147]
+		640, 643, 0x30023, // [148]
+		648, 650, 0x10001a, // [149]
+		653, 653, 0x200002, // [150]
+		661, 661, 0xb0002, // [151]
+		650, 652, 0x30010, // [152]
+		653, 655, 0x460020, // [153]
+		655, 656, 0x1d0046, // [154]
+		656, 658, 0x5001d, // [155]
+		666, 672, 0x1f002a, // [156]
+		679, 679, 0x190002, // [157]
+		672, 677, 0x3001f, // [158]
+		683, 685, 0x2004a, // [159]
+		689, 692, 0x20059, // [160]
+		696, 699, 0x100064, // [161]
+		703, 703, 0x180002, // [162]
+		699, 702, 0x30010, // [163]
+		719, 721, 0x20062, // [164]
+		723, 725, 0x2005c, // [165]
+		735, 737, 0x90043, // [166]
+		740, 740, 0x130002, // [167]
+		737, 739, 0x30009, // [168]
+		749, 751, 0x20040, // [169]
+		753, 755, 0x20070, // [170]
+		758, 760, 0x20024, // [171]
+		769, 773, 0x120042, // [172]
+		777, 777, 0x320002, // [173]
+		773, 776, 0x30012, // [174]
+	},
+	NumStmt: [175]uint16{
+		3, // 0
+		3, // 1
+		2, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		2, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		2, // 10
+		3, // 11
+		2, // 12
+		1, // 13
+		1, // 14
+		2, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		1, // 22
+		2, // 23
+		1, // 24
+		1, // 25
+		1, // 26
+		2, // 27
+		8, // 28
+		1, // 29
+		1, // 30
+		1, // 31
+		2, // 32
+		1, // 33
+		1, // 34
+		1, // 35
+		3, // 36
+		3, // 37
+		3, // 38
+		1, // 39
+		2, // 40
+		3, // 41
+		2, // 42
+		2, // 43
+		2, // 44
+		2, // 45
+		1, // 46
+		1, // 47
+		1, // 48
+		1, // 49
+		2, // 50
+		2, // 51
+		4, // 52
+		1, // 53
+		1, // 54
+		2, // 55
+		2, // 56
+		4, // 57
+		2, // 58
+		2, // 59
+		7, // 60
+		1, // 61
+		2, // 62
+		1, // 63
+		2, // 64
+		2, // 65
+		1, // 66
+		1, // 67
+		2, // 68
+		2, // 69
+		1, // 70
+		1, // 71
+		1, // 72
+		1, // 73
+		1, // 74
+		2, // 75
+		2, // 76
+		1, // 77
+		2, // 78
+		1, // 79
+		1, // 80
+		1, // 81
+		1, // 82
+		2, // 83
+		2, // 84
+		1, // 85
+		1, // 86
+		1, // 87
+		3, // 88
+		1, // 89
+		1, // 90
+		3, // 91
+		1, // 92
+		1, // 93
+		3, // 94
+		1, // 95
+		1, // 96
+		3, // 97
+		1, // 98
+		1, // 99
+		3, // 100
+		1, // 101
+		1, // 102
+		5, // 103
+		5, // 104
+		1, // 105
+		1, // 106
+		2, // 107
+		1, // 108
+		1, // 109
+		1, // 110
+		2, // 111
+		2, // 112
+		7, // 113
+		1, // 114
+		4, // 115
+		1, // 116
+		1, // 117
+		1, // 118
+		1, // 119
+		1, // 120
+		1, // 121
+		1, // 122
+		2, // 123
+		1, // 124
+		1, // 125
+		1, // 126
+		1, // 127
+		1, // 128
+		2, // 129
+		2, // 130
+		1, // 131
+		1, // 132
+		2, // 133
+		2, // 134
+		3, // 135
+		1, // 136
+		1, // 137
+		1, // 138
+		1, // 139
+		2, // 140
+		4, // 141
+		1, // 142
+		1, // 143
+		1, // 144
+		2, // 145
+		3, // 146
+		1, // 147
+		2, // 148
+		2, // 149
+		1, // 150
+		1, // 151
+		1, // 152
+		1, // 153
+		1, // 154
+		1, // 155
+		4, // 156
+		1, // 157
+		2, // 158
+		1, // 159
+		2, // 160
+		3, // 161
+		1, // 162
+		2, // 163
+		1, // 164
+		1, // 165
+		2, // 166
+		1, // 167
+		1, // 168
+		1, // 169
+		1, // 170
+		1, // 171
+		4, // 172
+		1, // 173
+		2, // 174
+	},
+}
+var _ = _cover_atomic_.LoadUint32

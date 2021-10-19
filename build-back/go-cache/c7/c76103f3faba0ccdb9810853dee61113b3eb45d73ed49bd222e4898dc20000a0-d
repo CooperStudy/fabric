@@ -1,0 +1,189 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/tools/configtxlator/rest/configtxlator_handlers.go:1
+/*
+Copyright IBM Corp. 2017 All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+                 http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package rest; import _cover_atomic_ "sync/atomic"
+
+import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/tools/configtxlator/sanitycheck"
+	"github.com/hyperledger/fabric/common/tools/configtxlator/update"
+	cb "github.com/hyperledger/fabric/protos/common"
+)
+
+func fieldBytes(fieldName string, r *http.Request) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_0_303963396262393162343634.Count[0], 1);
+	fieldFile, _, err := r.FormFile(fieldName)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_303963396262393162343634.Count[2], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_303963396262393162343634.Count[1], 1);defer fieldFile.Close()
+
+	return ioutil.ReadAll(fieldFile)
+}
+
+func fieldConfigProto(fieldName string, r *http.Request) (*cb.Config, error) {_cover_atomic_.AddUint32(&GoCover_0_303963396262393162343634.Count[3], 1);
+	fieldBytes, err := fieldBytes(fieldName, r)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_303963396262393162343634.Count[6], 1);
+		return nil, fmt.Errorf("error reading field bytes: %s", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_303963396262393162343634.Count[4], 1);config := &cb.Config{}
+	err = proto.Unmarshal(fieldBytes, config)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_303963396262393162343634.Count[7], 1);
+		return nil, fmt.Errorf("error unmarshaling field bytes: %s", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_303963396262393162343634.Count[5], 1);return config, nil
+}
+
+func ComputeUpdateFromConfigs(w http.ResponseWriter, r *http.Request) {_cover_atomic_.AddUint32(&GoCover_0_303963396262393162343634.Count[8], 1);
+	originalConfig, err := fieldConfigProto("original", r)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_303963396262393162343634.Count[13], 1);
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "Error with field 'original': %s\n", err)
+		return
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_303963396262393162343634.Count[9], 1);updatedConfig, err := fieldConfigProto("updated", r)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_303963396262393162343634.Count[14], 1);
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "Error with field 'updated': %s\n", err)
+		return
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_303963396262393162343634.Count[10], 1);configUpdate, err := update.Compute(originalConfig, updatedConfig)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_303963396262393162343634.Count[15], 1);
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "Error computing update: %s\n", err)
+		return
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_303963396262393162343634.Count[11], 1);configUpdate.ChannelId = r.FormValue("channel")
+
+	encoded, err := proto.Marshal(configUpdate)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_303963396262393162343634.Count[16], 1);
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "Error marshaling config update: %s\n", err)
+		return
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_303963396262393162343634.Count[12], 1);w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Write(encoded)
+}
+
+func SanityCheckConfig(w http.ResponseWriter, r *http.Request) {_cover_atomic_.AddUint32(&GoCover_0_303963396262393162343634.Count[17], 1);
+	buf, err := ioutil.ReadAll(r.Body)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_303963396262393162343634.Count[22], 1);
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintln(w, err)
+		return
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_303963396262393162343634.Count[18], 1);config := &cb.Config{}
+	err = proto.Unmarshal(buf, config)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_303963396262393162343634.Count[23], 1);
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "Error unmarshaling data to common.Config': %s\n", err)
+		return
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_303963396262393162343634.Count[19], 1);fmt.Printf("Sanity checking %+v\n", config)
+	sanityCheckMessages, err := sanitycheck.Check(config)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_303963396262393162343634.Count[24], 1);
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "Error performing sanity check: %s\n", err)
+		return
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_303963396262393162343634.Count[20], 1);resBytes, err := json.Marshal(sanityCheckMessages)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_303963396262393162343634.Count[25], 1);
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "Error marshaling result to JSON: %s\n", err)
+		return
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_303963396262393162343634.Count[21], 1);w.WriteHeader(http.StatusOK)
+	w.Write(resBytes)
+}
+
+var GoCover_0_303963396262393162343634 = struct {
+	Count     [26]uint32
+	Pos       [3 * 26]uint32
+	NumStmt   [26]uint16
+} {
+	Pos: [3 * 26]uint32{
+		31, 33, 0x100044, // [0]
+		36, 38, 0x220002, // [1]
+		33, 35, 0x30010, // [2]
+		41, 43, 0x10004e, // [3]
+		47, 49, 0x100002, // [4]
+		53, 53, 0x140002, // [5]
+		43, 45, 0x30010, // [6]
+		49, 51, 0x30010, // [7]
+		56, 58, 0x100047, // [8]
+		64, 65, 0x100002, // [9]
+		71, 72, 0x100002, // [10]
+		78, 81, 0x100002, // [11]
+		87, 89, 0x120002, // [12]
+		58, 62, 0x30010, // [13]
+		65, 69, 0x30010, // [14]
+		72, 76, 0x30010, // [15]
+		81, 85, 0x30010, // [16]
+		92, 94, 0x100040, // [17]
+		100, 102, 0x100002, // [18]
+		108, 110, 0x100002, // [19]
+		116, 117, 0x100002, // [20]
+		122, 123, 0x130002, // [21]
+		94, 98, 0x30010, // [22]
+		102, 106, 0x30010, // [23]
+		110, 114, 0x30010, // [24]
+		117, 121, 0x30010, // [25]
+	},
+	NumStmt: [26]uint16{
+		2, // 0
+		2, // 1
+		1, // 2
+		2, // 3
+		3, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		2, // 8
+		2, // 9
+		2, // 10
+		3, // 11
+		3, // 12
+		3, // 13
+		3, // 14
+		3, // 15
+		3, // 16
+		2, // 17
+		3, // 18
+		3, // 19
+		2, // 20
+		2, // 21
+		3, // 22
+		3, // 23
+		3, // 24
+		3, // 25
+	},
+}
+var _ = _cover_atomic_.LoadUint32

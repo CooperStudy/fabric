@@ -1,0 +1,109 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/msp/factory.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package msp; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/pkg/errors"
+)
+
+type MSPVersion int
+
+const (
+	MSPv1_0 = iota
+	MSPv1_1
+	MSPv1_3
+)
+
+// NewOpts represent
+type NewOpts interface {
+	// GetVersion returns the MSP's version to be instantiated
+	GetVersion() MSPVersion
+}
+
+// NewBaseOpts is the default base type for all MSP instantiation Opts
+type NewBaseOpts struct {
+	Version MSPVersion
+}
+
+func (o *NewBaseOpts) GetVersion() MSPVersion {_cover_atomic_.AddUint32(&GoCover_2_636433306662306231613333.Count[0], 1);
+	return o.Version
+}
+
+// BCCSPNewOpts contains the options to instantiate a new BCCSP-based (X509) MSP
+type BCCSPNewOpts struct {
+	NewBaseOpts
+}
+
+// IdemixNewOpts contains the options to instantiate a new Idemix-based MSP
+type IdemixNewOpts struct {
+	NewBaseOpts
+}
+
+// New create a new MSP instance depending on the passed Opts
+func New(opts NewOpts) (MSP, error) {_cover_atomic_.AddUint32(&GoCover_2_636433306662306231613333.Count[1], 1);
+	switch opts.(type) {
+	case *BCCSPNewOpts:_cover_atomic_.AddUint32(&GoCover_2_636433306662306231613333.Count[2], 1);
+		switch opts.GetVersion() {
+		case MSPv1_0:_cover_atomic_.AddUint32(&GoCover_2_636433306662306231613333.Count[5], 1);
+			return newBccspMsp(MSPv1_0)
+		case MSPv1_1:_cover_atomic_.AddUint32(&GoCover_2_636433306662306231613333.Count[6], 1);
+			return newBccspMsp(MSPv1_1)
+		case MSPv1_3:_cover_atomic_.AddUint32(&GoCover_2_636433306662306231613333.Count[7], 1);
+			return newBccspMsp(MSPv1_3)
+		default:_cover_atomic_.AddUint32(&GoCover_2_636433306662306231613333.Count[8], 1);
+			return nil, errors.Errorf("Invalid *BCCSPNewOpts. Version not recognized [%v]", opts.GetVersion())
+		}
+	case *IdemixNewOpts:_cover_atomic_.AddUint32(&GoCover_2_636433306662306231613333.Count[3], 1);
+		switch opts.GetVersion() {
+		case MSPv1_3:_cover_atomic_.AddUint32(&GoCover_2_636433306662306231613333.Count[9], 1);
+			return newIdemixMsp(MSPv1_3)
+		case MSPv1_1:_cover_atomic_.AddUint32(&GoCover_2_636433306662306231613333.Count[10], 1);
+			return newIdemixMsp(MSPv1_1)
+		default:_cover_atomic_.AddUint32(&GoCover_2_636433306662306231613333.Count[11], 1);
+			return nil, errors.Errorf("Invalid *IdemixNewOpts. Version not recognized [%v]", opts.GetVersion())
+		}
+	default:_cover_atomic_.AddUint32(&GoCover_2_636433306662306231613333.Count[4], 1);
+		return nil, errors.Errorf("Invalid msp.NewOpts instance. It must be either *BCCSPNewOpts or *IdemixNewOpts. It was [%v]", opts)
+	}
+}
+
+var GoCover_2_636433306662306231613333 = struct {
+	Count     [12]uint32
+	Pos       [3 * 12]uint32
+	NumStmt   [12]uint16
+} {
+	Pos: [3 * 12]uint32{
+		32, 34, 0x2002f, // [0]
+		47, 48, 0x150025, // [1]
+		49, 50, 0x1c0015, // [2]
+		60, 61, 0x1c0016, // [3]
+		69, 70, 0x82000a, // [4]
+		51, 52, 0x1f0010, // [5]
+		53, 54, 0x1f0010, // [6]
+		55, 56, 0x1f0010, // [7]
+		57, 58, 0x66000b, // [8]
+		62, 63, 0x200010, // [9]
+		64, 65, 0x200010, // [10]
+		66, 67, 0x67000b, // [11]
+	},
+	NumStmt: [12]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+	},
+}
+var _ = _cover_atomic_.LoadUint32

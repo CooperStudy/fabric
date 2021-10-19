@@ -1,0 +1,84 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/peer/clilogging/getlogspec.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package clilogging; import _cover_atomic_ "sync/atomic"
+
+import (
+	"context"
+
+	pb "github.com/hyperledger/fabric/protos/peer"
+	"github.com/spf13/cobra"
+)
+
+func getLogSpecCmd(cf *LoggingCmdFactory) *cobra.Command {_cover_atomic_.AddUint32(&GoCover_2_303930383430333338303032.Count[0], 1);
+	var loggingGetLogSpecCmd = &cobra.Command{
+		Use:   "getlogspec",
+		Short: "Returns the active log spec.",
+		Long:  `Returns the active logging specification of the peer.`,
+		RunE: func(cmd *cobra.Command, args []string) error {_cover_atomic_.AddUint32(&GoCover_2_303930383430333338303032.Count[2], 1);
+			return getLogSpec(cf, cmd, args)
+		},
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_303930383430333338303032.Count[1], 1);return loggingGetLogSpecCmd
+}
+
+func getLogSpec(cf *LoggingCmdFactory, cmd *cobra.Command, args []string) (err error) {_cover_atomic_.AddUint32(&GoCover_2_303930383430333338303032.Count[3], 1);
+	err = checkLoggingCmdParams(cmd, args)
+	if err == nil {_cover_atomic_.AddUint32(&GoCover_2_303930383430333338303032.Count[5], 1);
+		// Parsing of the command line is done so silence cmd usage
+		cmd.SilenceUsage = true
+
+		if cf == nil {_cover_atomic_.AddUint32(&GoCover_2_303930383430333338303032.Count[8], 1);
+			cf, err = InitCmdFactory()
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_2_303930383430333338303032.Count[9], 1);
+				return err
+			}
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_303930383430333338303032.Count[6], 1);env := cf.wrapWithEnvelope(&pb.AdminOperation{})
+		logResponse, err := cf.AdminClient.GetLogSpec(context.Background(), env)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_303930383430333338303032.Count[10], 1);
+			return err
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_303930383430333338303032.Count[7], 1);logger.Infof("Current logging spec: %s", logResponse.LogSpec)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_303930383430333338303032.Count[4], 1);return err
+}
+
+var GoCover_2_303930383430333338303032 = struct {
+	Count     [11]uint32
+	Pos       [3 * 11]uint32
+	NumStmt   [11]uint16
+} {
+	Pos: [3 * 11]uint32{
+		16, 21, 0x37003a, // [0]
+		26, 26, 0x1d0002, // [1]
+		21, 23, 0x40037, // [2]
+		29, 31, 0x100057, // [3]
+		48, 48, 0xc0002, // [4]
+		31, 35, 0x100010, // [5]
+		41, 43, 0x110003, // [6]
+		46, 46, 0x400003, // [7]
+		35, 37, 0x120010, // [8]
+		37, 39, 0x50012, // [9]
+		43, 45, 0x40011, // [10]
+	},
+	NumStmt: [11]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		2, // 3
+		1, // 4
+		2, // 5
+		3, // 6
+		1, // 7
+		2, // 8
+		1, // 9
+		1, // 10
+	},
+}
+var _ = _cover_atomic_.LoadUint32

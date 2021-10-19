@@ -1,0 +1,358 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/validator/internal/tx_ops_preparation.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package internal; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/privacyenabledstate"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwsetutil"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/storageutil"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/version"
+	"github.com/hyperledger/fabric/protos/ledger/rwset/kvrwset"
+)
+
+func prepareTxOps(rwset *rwsetutil.TxRwSet, txht *version.Height,
+	precedingUpdates *PubAndHashUpdates, db privacyenabledstate.DB) (txOps, error) {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[0], 1);
+	txops := txOps{}
+	txops.applyTxRwset(rwset)
+	//logger.Debugf("prepareTxOps() txops after applying raw rwset=%#v", spew.Sdump(txops))
+	for ck, keyop := range txops {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[2], 1);
+		// check if the final state of the key, value and metadata, is already present in the transaction, then skip
+		// otherwise we need to retrieve latest state and merge in the current value or metadata update
+		if keyop.isDelete() || keyop.isUpsertAndMetadataUpdate() {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[6], 1);
+			continue
+		}
+
+		// check if only value is updated in the current transaction then merge the metadata from last committed state
+		_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[3], 1);if keyop.isOnlyUpsert() {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[7], 1);
+			latestMetadata, err := retrieveLatestMetadata(ck.ns, ck.coll, ck.key, precedingUpdates, db)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[9], 1);
+				return nil, err
+			}
+			_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[8], 1);keyop.metadata = latestMetadata
+			continue
+		}
+
+		// only metadata is updated in the current transaction. Merge the value from the last committed state
+		// If the key does not exist in the last state, make this key as noop in current transaction
+		_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[4], 1);latestVal, err := retrieveLatestState(ck.ns, ck.coll, ck.key, precedingUpdates, db)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[10], 1);
+			return nil, err
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[5], 1);if latestVal != nil {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[11], 1);
+			keyop.value = latestVal.Value
+		} else{ _cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[12], 1);{
+			delete(txops, ck)
+		}}
+	}
+	//logger.Debugf("prepareTxOps() txops after final processing=%#v", spew.Sdump(txops))
+	_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[1], 1);return txops, nil
+}
+
+// applyTxRwset records the upsertion/deletion of a kv and updatation/deletion
+// of asociated metadata present in a txrwset
+func (txops txOps) applyTxRwset(rwset *rwsetutil.TxRwSet) error {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[13], 1);
+	for _, nsRWSet := range rwset.NsRwSets {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[15], 1);
+		ns := nsRWSet.NameSpace
+		for _, kvWrite := range nsRWSet.KvRwSet.Writes {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[18], 1);
+			txops.applyKVWrite(ns, "", kvWrite)
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[16], 1);for _, kvMetadataWrite := range nsRWSet.KvRwSet.MetadataWrites {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[19], 1);
+			txops.applyMetadata(ns, "", kvMetadataWrite)
+		}
+
+		// apply collection level kvwrite and kvMetadataWrite
+		_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[17], 1);for _, collHashRWset := range nsRWSet.CollHashedRwSets {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[20], 1);
+			coll := collHashRWset.CollectionName
+			for _, hashedWrite := range collHashRWset.HashedRwSet.HashedWrites {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[22], 1);
+				txops.applyKVWrite(ns, coll,
+					&kvrwset.KVWrite{
+						Key:      string(hashedWrite.KeyHash),
+						Value:    hashedWrite.ValueHash,
+						IsDelete: hashedWrite.IsDelete,
+					},
+				)
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[21], 1);for _, metadataWrite := range collHashRWset.HashedRwSet.MetadataWrites {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[23], 1);
+				txops.applyMetadata(ns, coll,
+					&kvrwset.KVMetadataWrite{
+						Key:     string(metadataWrite.KeyHash),
+						Entries: metadataWrite.Entries,
+					},
+				)
+			}
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[14], 1);return nil
+}
+
+// applyKVWrite records upsertion/deletion of a kvwrite
+func (txops txOps) applyKVWrite(ns, coll string, kvWrite *kvrwset.KVWrite) {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[24], 1);
+	if kvWrite.IsDelete {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[25], 1);
+		txops.delete(compositeKey{ns, coll, kvWrite.Key})
+	} else{ _cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[26], 1);{
+		txops.upsert(compositeKey{ns, coll, kvWrite.Key}, kvWrite.Value)
+	}}
+}
+
+// applyMetadata records updatation/deletion of a metadataWrite
+func (txops txOps) applyMetadata(ns, coll string, metadataWrite *kvrwset.KVMetadataWrite) error {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[27], 1);
+	if metadataWrite.Entries == nil {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[29], 1);
+		txops.metadataDelete(compositeKey{ns, coll, metadataWrite.Key})
+	} else{ _cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[30], 1);{
+		metadataBytes, err := storageutil.SerializeMetadata(metadataWrite.Entries)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[32], 1);
+			return err
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[31], 1);txops.metadataUpdate(compositeKey{ns, coll, metadataWrite.Key}, metadataBytes)
+	}}
+	_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[28], 1);return nil
+}
+
+// retrieveLatestState returns the value of the key from the precedingUpdates (if the key was operated upon by a previous tran in the block).
+// If the key not present in the precedingUpdates, then this function, pulls the latest value from statedb
+// TODO FAB-11328, pulling from state for (especially for couchdb) will pay significant performance penalty so a bulkload would be helpful.
+// Further, all the keys that gets written will be required to pull from statedb by vscc for endorsement policy check (in the case of key level
+// endorsement) and hence, the bulkload should be combined
+func retrieveLatestState(ns, coll, key string,
+	precedingUpdates *PubAndHashUpdates, db privacyenabledstate.DB) (*statedb.VersionedValue, error) {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[33], 1);
+	var vv *statedb.VersionedValue
+	var err error
+	if coll == "" {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[36], 1);
+		vv := precedingUpdates.PubUpdates.Get(ns, key)
+		if vv == nil {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[38], 1);
+			vv, err = db.GetState(ns, key)
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[37], 1);return vv, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[34], 1);vv = precedingUpdates.HashUpdates.Get(ns, coll, key)
+	if vv == nil {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[39], 1);
+		vv, err = db.GetValueHash(ns, coll, []byte(key))
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[35], 1);return vv, err
+}
+
+func retrieveLatestMetadata(ns, coll, key string,
+	precedingUpdates *PubAndHashUpdates, db privacyenabledstate.DB) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[40], 1);
+	if coll == "" {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[43], 1);
+		vv := precedingUpdates.PubUpdates.Get(ns, key)
+		if vv != nil {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[45], 1);
+			return vv.Metadata, nil
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[44], 1);return db.GetStateMetadata(ns, key)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[41], 1);vv := precedingUpdates.HashUpdates.Get(ns, coll, key)
+	if vv != nil {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[46], 1);
+		return vv.Metadata, nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[42], 1);return db.GetPrivateDataMetadataByHash(ns, coll, []byte(key))
+}
+
+type keyOpsFlag uint8
+
+const (
+	upsertVal      keyOpsFlag = 1 // 1 << 0
+	metadataUpdate            = 2 // 1 << 1
+	metadataDelete            = 4 // 1 << 2
+	keyDelete                 = 8 // 1 << 3
+)
+
+type compositeKey struct {
+	ns, coll, key string
+}
+
+type txOps map[compositeKey]*keyOps
+
+type keyOps struct {
+	flag     keyOpsFlag
+	value    []byte
+	metadata []byte
+}
+
+////////////////// txOps functions
+
+func (txops txOps) upsert(k compositeKey, val []byte) {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[47], 1);
+	keyops := txops.getOrCreateKeyEntry(k)
+	keyops.flag += upsertVal
+	keyops.value = val
+}
+
+func (txops txOps) delete(k compositeKey) {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[48], 1);
+	keyops := txops.getOrCreateKeyEntry(k)
+	keyops.flag += keyDelete
+}
+
+func (txops txOps) metadataUpdate(k compositeKey, metadata []byte) {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[49], 1);
+	keyops := txops.getOrCreateKeyEntry(k)
+	keyops.flag += metadataUpdate
+	keyops.metadata = metadata
+}
+
+func (txops txOps) metadataDelete(k compositeKey) {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[50], 1);
+	keyops := txops.getOrCreateKeyEntry(k)
+	keyops.flag += metadataDelete
+}
+
+func (txops txOps) getOrCreateKeyEntry(k compositeKey) *keyOps {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[51], 1);
+	keyops, ok := txops[k]
+	if !ok {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[53], 1);
+		keyops = &keyOps{}
+		txops[k] = keyops
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[52], 1);return keyops
+}
+
+////////////////// keyOps functions
+
+func (keyops keyOps) isDelete() bool {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[54], 1);
+	return keyops.flag&(keyDelete) == keyDelete
+}
+
+func (keyops keyOps) isUpsertAndMetadataUpdate() bool {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[55], 1);
+	if keyops.flag&upsertVal == upsertVal {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[57], 1);
+		return keyops.flag&metadataUpdate == metadataUpdate ||
+			keyops.flag&metadataDelete == metadataDelete
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[56], 1);return false
+}
+
+func (keyops keyOps) isOnlyUpsert() bool {_cover_atomic_.AddUint32(&GoCover_0_643566653266313137353532.Count[58], 1);
+	return keyops.flag|upsertVal == upsertVal
+}
+
+var GoCover_0_643566653266313137353532 = struct {
+	Count     [59]uint32
+	Pos       [3 * 59]uint32
+	NumStmt   [59]uint16
+} {
+	Pos: [3 * 59]uint32{
+		19, 23, 0x1f0051, // [0]
+		53, 53, 0x130002, // [1]
+		23, 26, 0x3c001f, // [2]
+		31, 31, 0x1b0003, // [3]
+		42, 43, 0x110003, // [4]
+		46, 46, 0x170003, // [5]
+		26, 27, 0xc003c, // [6]
+		31, 33, 0x12001b, // [7]
+		36, 37, 0xc0004, // [8]
+		33, 35, 0x50012, // [9]
+		43, 45, 0x40011, // [10]
+		46, 48, 0x40017, // [11]
+		48, 50, 0x40009, // [12]
+		58, 59, 0x290041, // [13]
+		91, 91, 0xc0002, // [14]
+		59, 61, 0x320029, // [15]
+		64, 64, 0x420003, // [16]
+		69, 69, 0x3a0003, // [17]
+		61, 63, 0x40032, // [18]
+		64, 66, 0x40042, // [19]
+		69, 71, 0x47003a, // [20]
+		81, 81, 0x4b0004, // [21]
+		71, 79, 0x50047, // [22]
+		81, 88, 0x5004b, // [23]
+		95, 96, 0x16004c, // [24]
+		96, 98, 0x30016, // [25]
+		98, 100, 0x30008, // [26]
+		104, 105, 0x220061, // [27]
+		114, 114, 0xc0002, // [28]
+		105, 107, 0x30022, // [29]
+		107, 109, 0x110008, // [30]
+		112, 112, 0x510003, // [31]
+		109, 111, 0x40011, // [32]
+		123, 126, 0x100063, // [33]
+		134, 135, 0xf0002, // [34]
+		138, 138, 0x100002, // [35]
+		126, 128, 0x100010, // [36]
+		131, 131, 0x110003, // [37]
+		128, 130, 0x40010, // [38]
+		135, 137, 0x3000f, // [39]
+		142, 143, 0x100052, // [40]
+		150, 151, 0xf0002, // [41]
+		154, 154, 0x3f0002, // [42]
+		143, 145, 0x100010, // [43]
+		148, 148, 0x260003, // [44]
+		145, 147, 0x40010, // [45]
+		151, 153, 0x3000f, // [46]
+		180, 184, 0x20037, // [47]
+		186, 189, 0x2002b, // [48]
+		191, 195, 0x20044, // [49]
+		197, 200, 0x20033, // [50]
+		202, 204, 0x90040, // [51]
+		208, 208, 0xf0002, // [52]
+		204, 207, 0x30009, // [53]
+		213, 215, 0x20026, // [54]
+		217, 218, 0x280037, // [55]
+		222, 222, 0xe0002, // [56]
+		218, 221, 0x30028, // [57]
+		225, 227, 0x2002a, // [58]
+	},
+	NumStmt: [59]uint16{
+		3, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		2, // 4
+		1, // 5
+		1, // 6
+		2, // 7
+		2, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		2, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		2, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+		1, // 24
+		1, // 25
+		1, // 26
+		1, // 27
+		1, // 28
+		1, // 29
+		2, // 30
+		1, // 31
+		1, // 32
+		3, // 33
+		2, // 34
+		1, // 35
+		2, // 36
+		1, // 37
+		1, // 38
+		1, // 39
+		1, // 40
+		2, // 41
+		1, // 42
+		2, // 43
+		1, // 44
+		1, // 45
+		1, // 46
+		3, // 47
+		2, // 48
+		3, // 49
+		2, // 50
+		2, // 51
+		1, // 52
+		2, // 53
+		1, // 54
+		1, // 55
+		1, // 56
+		1, // 57
+		1, // 58
+	},
+}
+var _ = _cover_atomic_.LoadUint32

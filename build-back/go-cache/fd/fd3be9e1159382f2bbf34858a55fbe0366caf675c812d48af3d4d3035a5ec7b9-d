@@ -1,0 +1,264 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/orderer/consensus/solo/consensus.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package solo; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/orderer/consensus"
+	cb "github.com/hyperledger/fabric/protos/common"
+)
+
+var logger = flogging.MustGetLogger("orderer.consensus.solo")
+
+type consenter struct{}
+
+type chain struct {
+	support  consensus.ConsenterSupport
+	sendChan chan *message
+	exitChan chan struct{}
+}
+
+type message struct {
+	configSeq uint64
+	normalMsg *cb.Envelope
+	configMsg *cb.Envelope
+}
+
+// New creates a new consenter for the solo consensus scheme.
+// The solo consensus scheme is very simple, and allows only one consenter for a given chain (this process).
+// It accepts messages being delivered via Order/Configure, orders them, and then uses the blockcutter to form the messages
+// into blocks before writing to the given ledger
+func New() consensus.Consenter {_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[0], 1);
+	return &consenter{}
+}
+
+func (solo *consenter) HandleChain(support consensus.ConsenterSupport, metadata *cb.Metadata) (consensus.Chain, error) {_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[1], 1);
+	return newChain(support), nil
+}
+
+func newChain(support consensus.ConsenterSupport) *chain {_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[2], 1);
+	return &chain{
+		support:  support,
+		sendChan: make(chan *message),
+		exitChan: make(chan struct{}),
+	}
+}
+
+func (ch *chain) Start() {_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[3], 1);
+	go ch.main()
+}
+
+func (ch *chain) Halt() {_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[4], 1);
+	select {
+	case <-ch.exitChan:_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[5], 1);
+		// Allow multiple halts without panic
+	default:_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[6], 1);
+		close(ch.exitChan)
+	}
+}
+
+func (ch *chain) WaitReady() error {_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[7], 1);
+	return nil
+}
+
+// Order accepts normal messages for ordering
+func (ch *chain) Order(env *cb.Envelope, configSeq uint64) error {_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[8], 1);
+	select {
+	case ch.sendChan <- &message{
+		configSeq: configSeq,
+		normalMsg: env,
+	}:_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[9], 1);
+		return nil
+	case <-ch.exitChan:_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[10], 1);
+		return fmt.Errorf("Exiting")
+	}
+}
+
+// Configure accepts configuration update messages for ordering
+func (ch *chain) Configure(config *cb.Envelope, configSeq uint64) error {_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[11], 1);
+	select {
+	case ch.sendChan <- &message{
+		configSeq: configSeq,
+		configMsg: config,
+	}:_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[12], 1);
+		return nil
+	case <-ch.exitChan:_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[13], 1);
+		return fmt.Errorf("Exiting")
+	}
+}
+
+// Errored only closes on exit
+func (ch *chain) Errored() <-chan struct{} {_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[14], 1);
+	return ch.exitChan
+}
+
+func (ch *chain) main() {_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[15], 1);
+	var timer <-chan time.Time
+	var err error
+
+	for {_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[16], 1);
+		seq := ch.support.Sequence()
+		err = nil
+		select {
+		case msg := <-ch.sendChan:_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[17], 1);
+			if msg.configMsg == nil {_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[21], 1);
+				// NormalMsg
+				if msg.configSeq < seq {_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[24], 1);
+					_, err = ch.support.ProcessNormalMsg(msg.normalMsg)
+					if err != nil {_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[25], 1);
+						logger.Warningf("Discarding bad normal message: %s", err)
+						continue
+					}
+				}
+				_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[22], 1);batches, pending := ch.support.BlockCutter().Ordered(msg.normalMsg)
+
+				for _, batch := range batches {_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[26], 1);
+					block := ch.support.CreateNextBlock(batch)
+					ch.support.WriteBlock(block, nil)
+				}
+
+				_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[23], 1);switch {
+				case timer != nil && !pending:_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[27], 1);
+					// Timer is already running but there are no messages pending, stop the timer
+					timer = nil
+				case timer == nil && pending:_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[28], 1);
+					// Timer is not already running and there are messages pending, so start it
+					timer = time.After(ch.support.SharedConfig().BatchTimeout())
+					logger.Debugf("Just began %s batch timer", ch.support.SharedConfig().BatchTimeout().String())
+				default:_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[29], 1);
+					// Do nothing when:
+					// 1. Timer is already running and there are messages pending
+					// 2. Timer is not set and there are no messages pending
+				}
+
+			} else{ _cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[30], 1);{
+				// ConfigMsg
+				if msg.configSeq < seq {_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[33], 1);
+					msg.configMsg, _, err = ch.support.ProcessConfigMsg(msg.configMsg)
+					if err != nil {_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[34], 1);
+						logger.Warningf("Discarding bad config message: %s", err)
+						continue
+					}
+				}
+				_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[31], 1);batch := ch.support.BlockCutter().Cut()
+				if batch != nil {_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[35], 1);
+					block := ch.support.CreateNextBlock(batch)
+					ch.support.WriteBlock(block, nil)
+				}
+
+				_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[32], 1);block := ch.support.CreateNextBlock([]*cb.Envelope{msg.configMsg})
+				ch.support.WriteConfigBlock(block, nil)
+				timer = nil
+			}}
+		case <-timer:_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[18], 1);
+			//clear the timer
+			timer = nil
+
+			batch := ch.support.BlockCutter().Cut()
+			if len(batch) == 0 {_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[36], 1);
+				logger.Warningf("Batch timer expired with no pending requests, this might indicate a bug")
+				continue
+			}
+			_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[19], 1);logger.Debugf("Batch timer expired, creating block")
+			block := ch.support.CreateNextBlock(batch)
+			ch.support.WriteBlock(block, nil)
+		case <-ch.exitChan:_cover_atomic_.AddUint32(&GoCover_0_613563346163656531383537.Count[20], 1);
+			logger.Debugf("Exiting")
+			return
+		}
+	}
+}
+
+var GoCover_0_613563346163656531383537 = struct {
+	Count     [37]uint32
+	Pos       [3 * 37]uint32
+	NumStmt   [37]uint16
+} {
+	Pos: [3 * 37]uint32{
+		38, 40, 0x20020, // [0]
+		42, 44, 0x20078, // [1]
+		46, 52, 0x2003a, // [2]
+		54, 56, 0x2001a, // [3]
+		58, 59, 0x90019, // [4]
+		60, 60, 0x150015, // [5]
+		62, 63, 0x15000a, // [6]
+		67, 69, 0x20024, // [7]
+		72, 73, 0x90042, // [8]
+		77, 78, 0xd0004, // [9]
+		79, 80, 0x1f0015, // [10]
+		85, 86, 0x90049, // [11]
+		90, 91, 0xd0004, // [12]
+		92, 93, 0x1f0015, // [13]
+		98, 100, 0x2002c, // [14]
+		102, 106, 0x60019, // [15]
+		106, 109, 0xa0006, // [16]
+		110, 111, 0x1c001d, // [17]
+		160, 165, 0x170010, // [18]
+		169, 171, 0x250004, // [19]
+		172, 174, 0xa0016, // [20]
+		111, 113, 0x1c001c, // [21]
+		120, 122, 0x230005, // [22]
+		127, 127, 0xc0005, // [23]
+		113, 115, 0x14001c, // [24]
+		115, 117, 0xf0014, // [25]
+		122, 125, 0x60023, // [26]
+		128, 130, 0x110023, // [27]
+		131, 134, 0x630022, // [28]
+		135, 135, 0xd000d, // [29]
+		141, 143, 0x1c000a, // [30]
+		150, 151, 0x150005, // [31]
+		156, 158, 0x100005, // [32]
+		143, 145, 0x14001c, // [33]
+		145, 147, 0xf0014, // [34]
+		151, 154, 0x60015, // [35]
+		165, 167, 0xd0017, // [36]
+	},
+	NumStmt: [37]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		0, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		3, // 15
+		3, // 16
+		1, // 17
+		3, // 18
+		3, // 19
+		2, // 20
+		1, // 21
+		2, // 22
+		1, // 23
+		2, // 24
+		2, // 25
+		2, // 26
+		1, // 27
+		2, // 28
+		0, // 29
+		1, // 30
+		2, // 31
+		3, // 32
+		2, // 33
+		2, // 34
+		2, // 35
+		2, // 36
+	},
+}
+var _ = _cover_atomic_.LoadUint32

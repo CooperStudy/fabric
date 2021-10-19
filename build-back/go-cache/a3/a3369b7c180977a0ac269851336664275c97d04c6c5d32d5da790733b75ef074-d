@@ -1,0 +1,308 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb/statecouchdb/commit_handling.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package statecouchdb; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb"
+	"github.com/hyperledger/fabric/core/ledger/ledgerconfig"
+	"github.com/hyperledger/fabric/core/ledger/util/couchdb"
+	"github.com/pkg/errors"
+)
+
+// nsCommittersBuilder implements `batch` interface. Each batch operates on a specific namespace in the updates and
+// builds one or more batches of type subNsCommitter.
+type nsCommittersBuilder struct {
+	updates         map[string]*statedb.VersionedValue
+	db              *couchdb.CouchDatabase
+	revisions       map[string]string
+	subNsCommitters []batch
+}
+
+// subNsCommitter implements `batch` interface. Each batch commits the portion of updates within a namespace assigned to it
+type subNsCommitter struct {
+	db             *couchdb.CouchDatabase
+	batchUpdateMap map[string]*batchableDocument
+}
+
+// buildCommitters build the batches of type subNsCommitter. This functions processes different namespaces in parallel
+func (vdb *VersionedDB) buildCommitters(updates *statedb.UpdateBatch) ([]batch, error) {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[0], 1);
+	namespaces := updates.GetUpdatedNamespaces()
+	var nsCommitterBuilder []batch
+	for _, ns := range namespaces {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[4], 1);
+		nsUpdates := updates.GetUpdates(ns)
+		db, err := vdb.getNamespaceDBHandle(ns)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[7], 1);
+			return nil, err
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[5], 1);nsRevs := vdb.committedDataCache.revs[ns]
+		if nsRevs == nil {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[8], 1);
+			nsRevs = make(nsRevisions)
+		}
+		// for each namespace, construct one builder with the corresponding couchdb handle and couch revisions
+		// that are already loaded into cache (during validation phase)
+		_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[6], 1);nsCommitterBuilder = append(nsCommitterBuilder, &nsCommittersBuilder{updates: nsUpdates, db: db, revisions: nsRevs})
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[1], 1);if err := executeBatches(nsCommitterBuilder); err != nil {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[9], 1);
+		return nil, err
+	}
+	// accumulate results across namespaces (one or more batches of `subNsCommitter` for a namespace from each builder)
+	_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[2], 1);var combinedSubNsCommitters []batch
+	for _, b := range nsCommitterBuilder {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[10], 1);
+		combinedSubNsCommitters = append(combinedSubNsCommitters, b.(*nsCommittersBuilder).subNsCommitters...)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[3], 1);return combinedSubNsCommitters, nil
+}
+
+// execute implements the function in `batch` interface. This function builds one or more `subNsCommitter`s that
+// cover the updates for a namespace
+func (builder *nsCommittersBuilder) execute() error {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[11], 1);
+	if err := addRevisionsForMissingKeys(builder.revisions, builder.db, builder.updates); err != nil {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[15], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[12], 1);maxBacthSize := ledgerconfig.GetMaxBatchUpdateSize()
+	batchUpdateMap := make(map[string]*batchableDocument)
+	for key, vv := range builder.updates {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[16], 1);
+		couchDoc, err := keyValToCouchDoc(&keyValue{key: key, VersionedValue: vv}, builder.revisions[key])
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[18], 1);
+			return err
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[17], 1);batchUpdateMap[key] = &batchableDocument{CouchDoc: *couchDoc, Deleted: vv.Value == nil}
+		if len(batchUpdateMap) == maxBacthSize {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[19], 1);
+			builder.subNsCommitters = append(builder.subNsCommitters, &subNsCommitter{builder.db, batchUpdateMap})
+			batchUpdateMap = make(map[string]*batchableDocument)
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[13], 1);if len(batchUpdateMap) > 0 {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[20], 1);
+		builder.subNsCommitters = append(builder.subNsCommitters, &subNsCommitter{builder.db, batchUpdateMap})
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[14], 1);return nil
+}
+
+// execute implements the function in `batch` interface. This function commits the updates managed by a `subNsCommitter`
+func (committer *subNsCommitter) execute() error {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[21], 1);
+	return commitUpdates(committer.db, committer.batchUpdateMap)
+}
+
+// commitUpdates commits the given updates to couchdb
+func commitUpdates(db *couchdb.CouchDatabase, batchUpdateMap map[string]*batchableDocument) error {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[22], 1);
+	//Add the documents to the batch update array
+	batchUpdateDocs := []*couchdb.CouchDoc{}
+	for _, updateDocument := range batchUpdateMap {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[26], 1);
+		batchUpdateDocument := updateDocument
+		batchUpdateDocs = append(batchUpdateDocs, &batchUpdateDocument.CouchDoc)
+	}
+
+	// Do the bulk update into couchdb. Note that this will do retries if the entire bulk update fails or times out
+	_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[23], 1);batchUpdateResp, err := db.BatchUpdateDocuments(batchUpdateDocs)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[27], 1);
+		return err
+	}
+	// IF INDIVIDUAL DOCUMENTS IN THE BULK UPDATE DID NOT SUCCEED, TRY THEM INDIVIDUALLY
+	// iterate through the response from CouchDB by document
+	_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[24], 1);for _, respDoc := range batchUpdateResp {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[28], 1);
+		// If the document returned an error, retry the individual document
+		if respDoc.Ok != true {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[29], 1);
+			batchUpdateDocument := batchUpdateMap[respDoc.ID]
+			var err error
+			//Remove the "_rev" from the JSON before saving
+			//this will allow the CouchDB retry logic to retry revisions without encountering
+			//a mismatch between the "If-Match" and the "_rev" tag in the JSON
+			if batchUpdateDocument.CouchDoc.JSONValue != nil {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[32], 1);
+				err = removeJSONRevision(&batchUpdateDocument.CouchDoc.JSONValue)
+				if err != nil {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[33], 1);
+					return err
+				}
+			}
+			// Check to see if the document was added to the batch as a delete type document
+			_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[30], 1);if batchUpdateDocument.Deleted {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[34], 1);
+				logger.Warningf("CouchDB batch document delete encountered an problem. Retrying delete for document ID:%s", respDoc.ID)
+				// If this is a deleted document, then retry the delete
+				// If the delete fails due to a document not being found (404 error),
+				// the document has already been deleted and the DeleteDoc will not return an error
+				err = db.DeleteDoc(respDoc.ID, "")
+			} else{ _cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[35], 1);{
+				logger.Warningf("CouchDB batch document update encountered an problem. Retrying update for document ID:%s", respDoc.ID)
+				// Save the individual document to couchdb
+				// Note that this will do retries as needed
+				_, err = db.SaveDoc(respDoc.ID, "", &batchUpdateDocument.CouchDoc)
+			}}
+
+			// If the single document update or delete returns an error, then throw the error
+			_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[31], 1);if err != nil {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[36], 1);
+				errorString := fmt.Sprintf("error saving document ID: %v. Error: %s,  Reason: %s",
+					respDoc.ID, respDoc.Error, respDoc.Reason)
+
+				logger.Errorf(errorString)
+				return errors.WithMessage(err, errorString)
+			}
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[25], 1);return nil
+}
+
+// nsFlusher implements `batch` interface and a batch executes the function `couchdb.EnsureFullCommit()` for the given namespace
+type nsFlusher struct {
+	db *couchdb.CouchDatabase
+}
+
+func (vdb *VersionedDB) ensureFullCommit(dbs []*couchdb.CouchDatabase) error {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[37], 1);
+	var flushers []batch
+	for _, db := range dbs {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[39], 1);
+		flushers = append(flushers, &nsFlusher{db})
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[38], 1);return executeBatches(flushers)
+}
+
+func (f *nsFlusher) execute() error {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[40], 1);
+	dbResponse, err := f.db.EnsureFullCommit()
+	if err != nil || dbResponse.Ok != true {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[42], 1);
+		logger.Errorf("Failed to perform full commit")
+		return errors.New("failed to perform full commit")
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[41], 1);return nil
+}
+
+func addRevisionsForMissingKeys(revisions map[string]string, db *couchdb.CouchDatabase, nsUpdates map[string]*statedb.VersionedValue) error {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[43], 1);
+	var missingKeys []string
+	for key := range nsUpdates {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[47], 1);
+		_, ok := revisions[key]
+		if !ok {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[48], 1);
+			missingKeys = append(missingKeys, key)
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[44], 1);logger.Debugf("Pulling revisions for the [%d] keys for namsespace [%s] that were not part of the readset", len(missingKeys), db.DBName)
+	retrievedMetadata, err := retrieveNsMetadata(db, missingKeys)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[49], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[45], 1);for _, metadata := range retrievedMetadata {_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[50], 1);
+		revisions[metadata.ID] = metadata.Rev
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_613461656536306435636636.Count[46], 1);return nil
+}
+
+//batchableDocument defines a document for a batch
+type batchableDocument struct {
+	CouchDoc couchdb.CouchDoc
+	Deleted  bool
+}
+
+var GoCover_1_613461656536306435636636 = struct {
+	Count     [51]uint32
+	Pos       [3 * 51]uint32
+	NumStmt   [51]uint16
+} {
+	Pos: [3 * 51]uint32{
+		33, 36, 0x200058, // [0]
+		50, 50, 0x3b0002, // [1]
+		54, 55, 0x270002, // [2]
+		58, 58, 0x250002, // [3]
+		36, 39, 0x110020, // [4]
+		42, 43, 0x140003, // [5]
+		48, 48, 0x770003, // [6]
+		39, 41, 0x40011, // [7]
+		43, 45, 0x40014, // [8]
+		50, 52, 0x3003b, // [9]
+		55, 57, 0x30027, // [10]
+		63, 64, 0x630035, // [11]
+		67, 69, 0x270002, // [12]
+		80, 80, 0x1d0002, // [13]
+		83, 83, 0xc0002, // [14]
+		64, 66, 0x30063, // [15]
+		69, 71, 0x110027, // [16]
+		74, 75, 0x2a0003, // [17]
+		71, 73, 0x40011, // [18]
+		75, 78, 0x4002a, // [19]
+		80, 82, 0x3001d, // [20]
+		87, 89, 0x20032, // [21]
+		92, 95, 0x300063, // [22]
+		101, 102, 0x100002, // [23]
+		107, 107, 0x2a0002, // [24]
+		145, 145, 0xc0002, // [25]
+		95, 98, 0x30030, // [26]
+		102, 104, 0x30010, // [27]
+		107, 109, 0x19002a, // [28]
+		109, 115, 0x350019, // [29]
+		122, 122, 0x230004, // [30]
+		136, 136, 0x120004, // [31]
+		115, 117, 0x130035, // [32]
+		117, 119, 0x60013, // [33]
+		122, 128, 0x50023, // [34]
+		128, 133, 0x5000a, // [35]
+		136, 142, 0x50012, // [36]
+		153, 155, 0x19004e, // [37]
+		158, 158, 0x210002, // [38]
+		155, 157, 0x30019, // [39]
+		161, 163, 0x290025, // [40]
+		167, 167, 0xc0002, // [41]
+		163, 166, 0x30029, // [42]
+		170, 172, 0x1d008d, // [43]
+		178, 180, 0x100002, // [44]
+		183, 183, 0x2d0002, // [45]
+		186, 186, 0xc0002, // [46]
+		172, 174, 0xa001d, // [47]
+		174, 176, 0x4000a, // [48]
+		180, 182, 0x30010, // [49]
+		183, 185, 0x3002d, // [50]
+	},
+	NumStmt: [51]uint16{
+		3, // 0
+		1, // 1
+		2, // 2
+		1, // 3
+		3, // 4
+		2, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		3, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		2, // 16
+		2, // 17
+		1, // 18
+		2, // 19
+		1, // 20
+		1, // 21
+		2, // 22
+		2, // 23
+		1, // 24
+		1, // 25
+		2, // 26
+		1, // 27
+		1, // 28
+		3, // 29
+		1, // 30
+		1, // 31
+		2, // 32
+		1, // 33
+		2, // 34
+		2, // 35
+		3, // 36
+		2, // 37
+		1, // 38
+		1, // 39
+		2, // 40
+		1, // 41
+		2, // 42
+		2, // 43
+		3, // 44
+		1, // 45
+		1, // 46
+		2, // 47
+		1, // 48
+		1, // 49
+		1, // 50
+	},
+}
+var _ = _cover_atomic_.LoadUint32

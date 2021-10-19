@@ -1,0 +1,132 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/orderer/consensus/kafka/retry.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package kafka; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+	"time"
+
+	localconfig "github.com/hyperledger/fabric/orderer/common/localconfig"
+)
+
+type retryProcess struct {
+	shortPollingInterval, shortTimeout time.Duration
+	longPollingInterval, longTimeout   time.Duration
+	exit                               chan struct{}
+	channel                            channel
+	msg                                string
+	fn                                 func() error
+}
+
+func newRetryProcess(retryOptions localconfig.Retry, exit chan struct{}, channel channel, msg string, fn func() error) *retryProcess {_cover_atomic_.AddUint32(&GoCover_7_623633326437306563303132.Count[0], 1);
+	return &retryProcess{
+		shortPollingInterval: retryOptions.ShortInterval,
+		shortTimeout:         retryOptions.ShortTotal,
+		longPollingInterval:  retryOptions.LongInterval,
+		longTimeout:          retryOptions.LongTotal,
+		exit:                 exit,
+		channel:              channel,
+		msg:                  msg,
+		fn:                   fn,
+	}
+}
+
+func (rp *retryProcess) retry() error {_cover_atomic_.AddUint32(&GoCover_7_623633326437306563303132.Count[1], 1);
+	if err := rp.try(rp.shortPollingInterval, rp.shortTimeout); err != nil {_cover_atomic_.AddUint32(&GoCover_7_623633326437306563303132.Count[3], 1);
+		logger.Debugf("[channel: %s] Switching to the long retry interval", rp.channel.topic())
+		return rp.try(rp.longPollingInterval, rp.longTimeout)
+	}
+	_cover_atomic_.AddUint32(&GoCover_7_623633326437306563303132.Count[2], 1);return nil
+}
+
+func (rp *retryProcess) try(interval, total time.Duration) (err error) {_cover_atomic_.AddUint32(&GoCover_7_623633326437306563303132.Count[4], 1);
+	// Configuration validation will not allow non-positive ticker values
+	// (which would result in panic). The path below is for those test cases
+	// when we cannot avoid the creation of a retriable process but we wish
+	// to terminate it right away.
+	if rp.shortPollingInterval == 0 {_cover_atomic_.AddUint32(&GoCover_7_623633326437306563303132.Count[7], 1);
+		return fmt.Errorf("illegal value")
+	}
+
+	// If initial operation is successful, we don't bother start retry process
+	_cover_atomic_.AddUint32(&GoCover_7_623633326437306563303132.Count[5], 1);logger.Debugf("[channel: %s] "+rp.msg, rp.channel.topic())
+	if err = rp.fn(); err == nil {_cover_atomic_.AddUint32(&GoCover_7_623633326437306563303132.Count[8], 1);
+		logger.Debugf("[channel: %s] Error is nil, breaking the retry loop", rp.channel.topic())
+		return
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_7_623633326437306563303132.Count[6], 1);logger.Debugf("[channel: %s] Initial attempt failed = %s", rp.channel.topic(), err)
+
+	tickInterval := time.NewTicker(interval)
+	tickTotal := time.NewTicker(total)
+	defer tickTotal.Stop()
+	defer tickInterval.Stop()
+	logger.Debugf("[channel: %s] Retrying every %s for a total of %s", rp.channel.topic(), interval.String(), total.String())
+
+	for {_cover_atomic_.AddUint32(&GoCover_7_623633326437306563303132.Count[9], 1);
+		select {
+		case <-rp.exit:_cover_atomic_.AddUint32(&GoCover_7_623633326437306563303132.Count[10], 1);
+			fmt.Println("exit channel")
+			exitErr := fmt.Errorf("[channel: %s] process asked to exit", rp.channel.topic())
+			logger.Warning(exitErr.Error()) // Log it at the warning level
+			return exitErr
+		case <-tickTotal.C:_cover_atomic_.AddUint32(&GoCover_7_623633326437306563303132.Count[11], 1);
+			return
+		case <-tickInterval.C:_cover_atomic_.AddUint32(&GoCover_7_623633326437306563303132.Count[12], 1);
+			logger.Debugf("[channel: %s] "+rp.msg, rp.channel.topic())
+			if err = rp.fn(); err == nil {_cover_atomic_.AddUint32(&GoCover_7_623633326437306563303132.Count[14], 1);
+				logger.Debugf("[channel: %s] Error is nil, breaking the retry loop", rp.channel.topic())
+				return
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_7_623633326437306563303132.Count[13], 1);logger.Debugf("[channel: %s] Need to retry because process failed = %s", rp.channel.topic(), err)
+		}
+	}
+}
+
+var GoCover_7_623633326437306563303132 = struct {
+	Count     [15]uint32
+	Pos       [3 * 15]uint32
+	NumStmt   [15]uint16
+} {
+	Pos: [3 * 15]uint32{
+		25, 36, 0x20086, // [0]
+		38, 39, 0x490027, // [1]
+		43, 43, 0xc0002, // [2]
+		39, 42, 0x30049, // [3]
+		46, 51, 0x220048, // [4]
+		56, 57, 0x1f0002, // [5]
+		62, 70, 0x60002, // [6]
+		51, 53, 0x30022, // [7]
+		57, 60, 0x3001f, // [8]
+		70, 71, 0xa0006, // [9]
+		72, 76, 0x120012, // [10]
+		77, 78, 0xa0016, // [11]
+		79, 81, 0x210019, // [12]
+		86, 86, 0x650004, // [13]
+		81, 84, 0x50021, // [14]
+	},
+	NumStmt: [15]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		2, // 3
+		1, // 4
+		2, // 5
+		7, // 6
+		1, // 7
+		2, // 8
+		1, // 9
+		4, // 10
+		1, // 11
+		2, // 12
+		1, // 13
+		2, // 14
+	},
+}
+var _ = _cover_atomic_.LoadUint32

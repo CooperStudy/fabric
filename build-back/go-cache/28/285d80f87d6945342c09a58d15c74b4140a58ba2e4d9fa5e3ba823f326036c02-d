@@ -1,0 +1,145 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/txmgr/lockbasedtxmgr/lockbased_query_executer.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package lockbasedtxmgr; import _cover_atomic_ "sync/atomic"
+
+import (
+	commonledger "github.com/hyperledger/fabric/common/ledger"
+	"github.com/hyperledger/fabric/core/ledger"
+)
+
+// LockBasedQueryExecutor is a query executor used in `LockBasedTxMgr`
+type lockBasedQueryExecutor struct {
+	helper *queryHelper
+	txid   string
+}
+
+func newQueryExecutor(txmgr *LockBasedTxMgr, txid string) *lockBasedQueryExecutor {_cover_atomic_.AddUint32(&GoCover_2_386331373365306636336339.Count[0], 1);
+	helper := newQueryHelper(txmgr, nil)
+	logger.Debugf("constructing new query executor txid = [%s]", txid)
+	return &lockBasedQueryExecutor{helper, txid}
+}
+
+// GetState implements method in interface `ledger.QueryExecutor`
+func (q *lockBasedQueryExecutor) GetState(ns string, key string) (val []byte, err error) {_cover_atomic_.AddUint32(&GoCover_2_386331373365306636336339.Count[1], 1);
+	val, _, err = q.helper.getState(ns, key)
+	return
+}
+
+// GetStateMetadata implements method in interface `ledger.QueryExecutor`
+func (q *lockBasedQueryExecutor) GetStateMetadata(namespace, key string) (map[string][]byte, error) {_cover_atomic_.AddUint32(&GoCover_2_386331373365306636336339.Count[2], 1);
+	return q.helper.getStateMetadata(namespace, key)
+}
+
+// GetStateMultipleKeys implements method in interface `ledger.QueryExecutor`
+func (q *lockBasedQueryExecutor) GetStateMultipleKeys(namespace string, keys []string) ([][]byte, error) {_cover_atomic_.AddUint32(&GoCover_2_386331373365306636336339.Count[3], 1);
+	return q.helper.getStateMultipleKeys(namespace, keys)
+}
+
+// GetStateRangeScanIterator implements method in interface `ledger.QueryExecutor`
+// startKey is included in the results and endKey is excluded. An empty startKey refers to the first available key
+// and an empty endKey refers to the last available key. For scanning all the keys, both the startKey and the endKey
+// can be supplied as empty strings. However, a full scan shuold be used judiciously for performance reasons.
+func (q *lockBasedQueryExecutor) GetStateRangeScanIterator(namespace string, startKey string, endKey string) (commonledger.ResultsIterator, error) {_cover_atomic_.AddUint32(&GoCover_2_386331373365306636336339.Count[4], 1);
+	return q.helper.getStateRangeScanIterator(namespace, startKey, endKey)
+}
+
+// GetStateRangeScanIteratorWithMetadata implements method in interface `ledger.QueryExecutor`
+// startKey is included in the results and endKey is excluded. An empty startKey refers to the first available key
+// and an empty endKey refers to the last available key. For scanning all the keys, both the startKey and the endKey
+// can be supplied as empty strings. However, a full scan shuold be used judiciously for performance reasons.
+// metadata is a map of additional query parameters
+func (q *lockBasedQueryExecutor) GetStateRangeScanIteratorWithMetadata(namespace string, startKey string, endKey string, metadata map[string]interface{}) (ledger.QueryResultsIterator, error) {_cover_atomic_.AddUint32(&GoCover_2_386331373365306636336339.Count[5], 1);
+	return q.helper.getStateRangeScanIteratorWithMetadata(namespace, startKey, endKey, metadata)
+}
+
+// ExecuteQuery implements method in interface `ledger.QueryExecutor`
+func (q *lockBasedQueryExecutor) ExecuteQuery(namespace, query string) (commonledger.ResultsIterator, error) {_cover_atomic_.AddUint32(&GoCover_2_386331373365306636336339.Count[6], 1);
+	return q.helper.executeQuery(namespace, query)
+}
+
+// ExecuteQueryWithMetadata implements method in interface `ledger.QueryExecutor`
+func (q *lockBasedQueryExecutor) ExecuteQueryWithMetadata(namespace, query string, metadata map[string]interface{}) (ledger.QueryResultsIterator, error) {_cover_atomic_.AddUint32(&GoCover_2_386331373365306636336339.Count[7], 1);
+	return q.helper.executeQueryWithMetadata(namespace, query, metadata)
+}
+
+// GetPrivateData implements method in interface `ledger.QueryExecutor`
+func (q *lockBasedQueryExecutor) GetPrivateData(namespace, collection, key string) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_2_386331373365306636336339.Count[8], 1);
+	return q.helper.getPrivateData(namespace, collection, key)
+}
+
+// GetPrivateDataMetadata implements method in interface `ledger.QueryExecutor`
+func (q *lockBasedQueryExecutor) GetPrivateDataMetadata(namespace, collection, key string) (map[string][]byte, error) {_cover_atomic_.AddUint32(&GoCover_2_386331373365306636336339.Count[9], 1);
+	return q.helper.getPrivateDataMetadata(namespace, collection, key)
+}
+
+// GetPrivateDataMetadataByHash implements method in interface `ledger.QueryExecutor`
+func (q *lockBasedQueryExecutor) GetPrivateDataMetadataByHash(namespace, collection string, keyhash []byte) (map[string][]byte, error) {_cover_atomic_.AddUint32(&GoCover_2_386331373365306636336339.Count[10], 1);
+	return q.helper.getPrivateDataMetadataByHash(namespace, collection, keyhash)
+}
+
+// GetPrivateDataMultipleKeys implements method in interface `ledger.QueryExecutor`
+func (q *lockBasedQueryExecutor) GetPrivateDataMultipleKeys(namespace, collection string, keys []string) ([][]byte, error) {_cover_atomic_.AddUint32(&GoCover_2_386331373365306636336339.Count[11], 1);
+	return q.helper.getPrivateDataMultipleKeys(namespace, collection, keys)
+}
+
+// GetPrivateDataRangeScanIterator implements method in interface `ledger.QueryExecutor`
+func (q *lockBasedQueryExecutor) GetPrivateDataRangeScanIterator(namespace, collection, startKey, endKey string) (commonledger.ResultsIterator, error) {_cover_atomic_.AddUint32(&GoCover_2_386331373365306636336339.Count[12], 1);
+	return q.helper.getPrivateDataRangeScanIterator(namespace, collection, startKey, endKey)
+}
+
+// ExecuteQueryOnPrivateData implements method in interface `ledger.QueryExecutor`
+func (q *lockBasedQueryExecutor) ExecuteQueryOnPrivateData(namespace, collection, query string) (commonledger.ResultsIterator, error) {_cover_atomic_.AddUint32(&GoCover_2_386331373365306636336339.Count[13], 1);
+	return q.helper.executeQueryOnPrivateData(namespace, collection, query)
+}
+
+// Done implements method in interface `ledger.QueryExecutor`
+func (q *lockBasedQueryExecutor) Done() {_cover_atomic_.AddUint32(&GoCover_2_386331373365306636336339.Count[14], 1);
+	logger.Debugf("Done with transaction simulation / query execution [%s]", q.txid)
+	q.helper.done()
+}
+
+var GoCover_2_386331373365306636336339 = struct {
+	Count     [15]uint32
+	Pos       [3 * 15]uint32
+	NumStmt   [15]uint16
+} {
+	Pos: [3 * 15]uint32{
+		19, 23, 0x20053, // [0]
+		26, 29, 0x2005a, // [1]
+		32, 34, 0x20065, // [2]
+		37, 39, 0x2006a, // [3]
+		45, 47, 0x20094, // [4]
+		54, 56, 0x200c0, // [5]
+		59, 61, 0x2006e, // [6]
+		64, 66, 0x2009a, // [7]
+		69, 71, 0x20064, // [8]
+		74, 76, 0x20077, // [9]
+		79, 81, 0x20088, // [10]
+		84, 86, 0x2007c, // [11]
+		89, 91, 0x20098, // [12]
+		94, 96, 0x20087, // [13]
+		99, 102, 0x20029, // [14]
+	},
+	NumStmt: [15]uint16{
+		3, // 0
+		2, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		2, // 14
+	},
+}
+var _ = _cover_atomic_.LoadUint32

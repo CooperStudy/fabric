@@ -1,0 +1,6 @@
+./compare.go
+./inquire.go
+./merge.go
+./compare_test.go
+./inquire_test.go
+./merge_test.go

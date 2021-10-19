@@ -1,0 +1,5 @@
+api.cover.go
+authcache.cover.go
+service.cover.go
+./authcache_test.go
+./service_test.go

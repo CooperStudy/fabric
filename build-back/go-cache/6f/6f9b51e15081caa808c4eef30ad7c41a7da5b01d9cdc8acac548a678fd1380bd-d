@@ -1,0 +1,134 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/msp/idemix_roles.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+package msp; import _cover_atomic_ "sync/atomic"
+
+import (
+	m "github.com/hyperledger/fabric/protos/msp"
+)
+
+// Role : Represents a IdemixRole
+type Role int32
+
+// The expected roles are 4; We can combine them using a bitmask
+const (
+	MEMBER Role = 1
+	ADMIN  Role = 2
+	CLIENT Role = 4
+	PEER   Role = 8
+	// Next role values: 16, 32, 64 ...
+)
+
+func (role Role) getValue() int {_cover_atomic_.AddUint32(&GoCover_3_636433306662306231613333.Count[0], 1);
+	return int(role)
+}
+
+// CheckRole Prove that the desired role is contained or not in the bitmask
+func checkRole(bitmask int, role Role) bool {_cover_atomic_.AddUint32(&GoCover_3_636433306662306231613333.Count[1], 1);
+	return (bitmask & role.getValue()) == role.getValue()
+}
+
+// GetRoleMaskFromIdemixRoles Receive a list of roles to combine in a single bitmask
+func getRoleMaskFromIdemixRoles(roles []Role) int {_cover_atomic_.AddUint32(&GoCover_3_636433306662306231613333.Count[2], 1);
+	mask := 0
+	for _, role := range roles {_cover_atomic_.AddUint32(&GoCover_3_636433306662306231613333.Count[4], 1);
+		mask = mask | role.getValue()
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_636433306662306231613333.Count[3], 1);return mask
+}
+
+// GetRoleMaskFromMSPRoles Receive a list of roles to combine in a single bitmask
+func getRoleMaskFromMSPRoles(roles []*m.MSPRole) int {_cover_atomic_.AddUint32(&GoCover_3_636433306662306231613333.Count[5], 1);
+	mask := 0
+	for _, role := range roles {_cover_atomic_.AddUint32(&GoCover_3_636433306662306231613333.Count[7], 1);
+		mask = mask | getIdemixRoleFromMSPRole(role)
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_636433306662306231613333.Count[6], 1);return mask
+}
+
+// GetRoleMaskFromIdemixRole return a bitmask for one role
+func GetRoleMaskFromIdemixRole(role Role) int {_cover_atomic_.AddUint32(&GoCover_3_636433306662306231613333.Count[8], 1);
+	return getRoleMaskFromIdemixRoles([]Role{role})
+}
+
+// GetRoleMaskFromMSPRole return a bitmask for one role
+func getRoleMaskFromMSPRole(role *m.MSPRole) int {_cover_atomic_.AddUint32(&GoCover_3_636433306662306231613333.Count[9], 1);
+	return getRoleMaskFromMSPRoles([]*m.MSPRole{role})
+}
+
+// GetIdemixRoleFromMSPRole gets a MSP Role type and returns the integer value
+func getIdemixRoleFromMSPRole(role *m.MSPRole) int {_cover_atomic_.AddUint32(&GoCover_3_636433306662306231613333.Count[10], 1);
+	return getIdemixRoleFromMSPRoleType(role.GetRole())
+}
+
+// GetIdemixRoleFromMSPRoleType gets a MSP role type and returns the integer value
+func getIdemixRoleFromMSPRoleType(rtype m.MSPRole_MSPRoleType) int {_cover_atomic_.AddUint32(&GoCover_3_636433306662306231613333.Count[11], 1);
+	return getIdemixRoleFromMSPRoleValue(int(rtype))
+}
+
+// GetIdemixRoleFromMSPRoleValue Receives a MSP role value and returns the idemix equivalent
+func getIdemixRoleFromMSPRoleValue(role int) int {_cover_atomic_.AddUint32(&GoCover_3_636433306662306231613333.Count[12], 1);
+	switch role {
+	case int(m.MSPRole_ADMIN):_cover_atomic_.AddUint32(&GoCover_3_636433306662306231613333.Count[13], 1);
+		return ADMIN.getValue()
+	case int(m.MSPRole_CLIENT):_cover_atomic_.AddUint32(&GoCover_3_636433306662306231613333.Count[14], 1);
+		return CLIENT.getValue()
+	case int(m.MSPRole_MEMBER):_cover_atomic_.AddUint32(&GoCover_3_636433306662306231613333.Count[15], 1);
+		return MEMBER.getValue()
+	case int(m.MSPRole_PEER):_cover_atomic_.AddUint32(&GoCover_3_636433306662306231613333.Count[16], 1);
+		return PEER.getValue()
+	default:_cover_atomic_.AddUint32(&GoCover_3_636433306662306231613333.Count[17], 1);
+		return MEMBER.getValue()
+	}
+}
+
+var GoCover_3_636433306662306231613333 = struct {
+	Count     [18]uint32
+	Pos       [3 * 18]uint32
+	NumStmt   [18]uint16
+} {
+	Pos: [3 * 18]uint32{
+		24, 26, 0x20021, // [0]
+		29, 31, 0x2002d, // [1]
+		34, 36, 0x1d0033, // [2]
+		39, 39, 0xd0002, // [3]
+		36, 38, 0x3001d, // [4]
+		43, 45, 0x1d0036, // [5]
+		48, 48, 0xd0002, // [6]
+		45, 47, 0x3001d, // [7]
+		52, 54, 0x2002f, // [8]
+		57, 59, 0x20032, // [9]
+		62, 64, 0x20034, // [10]
+		67, 69, 0x20044, // [11]
+		72, 73, 0xe0032, // [12]
+		74, 75, 0x1a001c, // [13]
+		76, 77, 0x1b001d, // [14]
+		78, 79, 0x1b001d, // [15]
+		80, 81, 0x19001b, // [16]
+		82, 83, 0x1b000a, // [17]
+	},
+	NumStmt: [18]uint16{
+		1, // 0
+		1, // 1
+		2, // 2
+		1, // 3
+		1, // 4
+		2, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+	},
+}
+var _ = _cover_atomic_.LoadUint32

@@ -1,0 +1,445 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/msp/mspimplvalidate.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package msp; import _cover_atomic_ "sync/atomic"
+
+import (
+	"bytes"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/asn1"
+	"math/big"
+	"reflect"
+	"time"
+
+	"github.com/pkg/errors"
+)
+
+func (msp *bccspmsp) validateIdentity(id *identity) error {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[0], 1);
+	validationChain, err := msp.getCertificationChainForBCCSPIdentity(id)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[4], 1);
+		return errors.WithMessage(err, "could not obtain certification chain")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[1], 1);err = msp.validateIdentityAgainstChain(id, validationChain)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[5], 1);
+		return errors.WithMessage(err, "could not validate identity against certification chain")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[2], 1);err = msp.internalValidateIdentityOusFunc(id)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[6], 1);
+		return errors.WithMessage(err, "could not validate identity's OUs")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[3], 1);return nil
+}
+
+func (msp *bccspmsp) validateCAIdentity(id *identity) error {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[7], 1);
+	if !id.cert.IsCA {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[11], 1);
+		return errors.New("Only CA identities can be validated")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[8], 1);validationChain, err := msp.getUniqueValidationChain(id.cert, msp.getValidityOptsForCert(id.cert))
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[12], 1);
+		return errors.WithMessage(err, "could not obtain certification chain")
+	}
+	_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[9], 1);if len(validationChain) == 1 {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[13], 1);
+		// validationChain[0] is the root CA certificate
+		return nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[10], 1);return msp.validateIdentityAgainstChain(id, validationChain)
+}
+
+func (msp *bccspmsp) validateTLSCAIdentity(cert *x509.Certificate, opts *x509.VerifyOptions) error {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[14], 1);
+	if !cert.IsCA {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[18], 1);
+		return errors.New("Only CA identities can be validated")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[15], 1);validationChain, err := msp.getUniqueValidationChain(cert, *opts)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[19], 1);
+		return errors.WithMessage(err, "could not obtain certification chain")
+	}
+	_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[16], 1);if len(validationChain) == 1 {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[20], 1);
+		// validationChain[0] is the root CA certificate
+		return nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[17], 1);return msp.validateCertAgainstChain(cert, validationChain)
+}
+
+func (msp *bccspmsp) validateIdentityAgainstChain(id *identity, validationChain []*x509.Certificate) error {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[21], 1);
+	return msp.validateCertAgainstChain(id.cert, validationChain)
+}
+
+func (msp *bccspmsp) validateCertAgainstChain(cert *x509.Certificate, validationChain []*x509.Certificate) error {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[22], 1);
+	// here we know that the identity is valid; now we have to check whether it has been revoked
+
+	// identify the SKI of the CA that signed this cert
+	SKI, err := getSubjectKeyIdentifierFromCert(validationChain[1])
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[25], 1);
+		return errors.WithMessage(err, "could not obtain Subject Key Identifier for signer cert")
+	}
+
+	// check whether one of the CRLs we have has this cert's
+	// SKI as its AuthorityKeyIdentifier
+	_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[23], 1);for _, crl := range msp.CRL {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[26], 1);
+		aki, err := getAuthorityKeyIdentifierFromCrl(crl)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[28], 1);
+			return errors.WithMessage(err, "could not obtain Authority Key Identifier for crl")
+		}
+
+		// check if the SKI of the cert that signed us matches the AKI of any of the CRLs
+		_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[27], 1);if bytes.Equal(aki, SKI) {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[29], 1);
+			// we have a CRL, check whether the serial number is revoked
+			for _, rc := range crl.TBSCertList.RevokedCertificates {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[30], 1);
+				if rc.SerialNumber.Cmp(cert.SerialNumber) == 0 {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[31], 1);
+					// We have found a CRL whose AKI matches the SKI of
+					// the CA (root or intermediate) that signed the
+					// certificate that is under validation. As a
+					// precaution, we verify that said CA is also the
+					// signer of this CRL.
+					err = validationChain[1].CheckCRLSignature(crl)
+					if err != nil {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[33], 1);
+						// the CA cert that signed the certificate
+						// that is under validation did not sign the
+						// candidate CRL - skip
+						mspLogger.Warningf("Invalid signature over the identified CRL, error %+v", err)
+						continue
+					}
+
+					// A CRL also includes a time of revocation so that
+					// the CA can say "this cert is to be revoked starting
+					// from this time"; however here we just assume that
+					// revocation applies instantaneously from the time
+					// the MSP config is committed and used so we will not
+					// make use of that field
+					_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[32], 1);return errors.New("The certificate has been revoked")
+				}
+			}
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[24], 1);return nil
+}
+
+func (msp *bccspmsp) validateIdentityOUsV1(id *identity) error {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[34], 1);
+	// Check that the identity's OUs are compatible with those recognized by this MSP,
+	// meaning that the intersection is not empty.
+	if len(msp.ouIdentifiers) > 0 {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[36], 1);
+		found := false
+
+		for _, OU := range id.GetOrganizationalUnits() {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[38], 1);
+			certificationIDs, exists := msp.ouIdentifiers[OU.OrganizationalUnitIdentifier]
+
+			if exists {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[39], 1);
+				for _, certificationID := range certificationIDs {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[40], 1);
+					if bytes.Equal(certificationID, OU.CertifiersIdentifier) {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[41], 1);
+						found = true
+						break
+					}
+				}
+			}
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[37], 1);if !found {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[42], 1);
+			if len(id.GetOrganizationalUnits()) == 0 {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[44], 1);
+				return errors.New("the identity certificate does not contain an Organizational Unit (OU)")
+			}
+			_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[43], 1);return errors.Errorf("none of the identity's organizational units [%v] are in MSP %s", id.GetOrganizationalUnits(), msp.name)
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[35], 1);return nil
+}
+
+func (msp *bccspmsp) validateIdentityOUsV11(id *identity) error {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[45], 1);
+	// Run the same checks as per V1
+	err := msp.validateIdentityOUsV1(id)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[50], 1);
+		return err
+	}
+
+	// Perform V1_1 additional checks:
+	//
+	// -- Check for OU enforcement
+	_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[46], 1);if !msp.ouEnforcement {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[51], 1);
+		// No enforcement required
+		return nil
+	}
+
+	// Make sure that the identity has only one of the special OUs
+	// used to tell apart clients, peers and orderers.
+	_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[47], 1);counter := 0
+	for _, OU := range id.GetOrganizationalUnits() {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[52], 1);
+		// Is OU.OrganizationalUnitIdentifier one of the special OUs?
+		var nodeOU *OUIdentifier
+		switch OU.OrganizationalUnitIdentifier {
+		case msp.clientOU.OrganizationalUnitIdentifier:_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[55], 1);
+			nodeOU = msp.clientOU
+		case msp.peerOU.OrganizationalUnitIdentifier:_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[56], 1);
+			nodeOU = msp.peerOU
+		default:_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[57], 1);
+			continue
+		}
+
+		// Yes. Then, enforce the certifiers identifier is this is specified.
+		// It is not specified, it means that any certification path is fine.
+		_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[53], 1);if len(nodeOU.CertifiersIdentifier) != 0 && !bytes.Equal(nodeOU.CertifiersIdentifier, OU.CertifiersIdentifier) {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[58], 1);
+			return errors.Errorf("certifiersIdentifier does not match: [%v], MSP: [%s]", id.GetOrganizationalUnits(), msp.name)
+		}
+		_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[54], 1);counter++
+		if counter > 1 {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[59], 1);
+			break
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[48], 1);if counter != 1 {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[60], 1);
+		return errors.Errorf("the identity must be a client, a peer or an orderer identity to be valid, not a combination of them. OUs: [%v], MSP: [%s]", id.GetOrganizationalUnits(), msp.name)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[49], 1);return nil
+}
+
+func (msp *bccspmsp) getValidityOptsForCert(cert *x509.Certificate) x509.VerifyOptions {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[61], 1);
+	// First copy the opts to override the CurrentTime field
+	// in order to make the certificate passing the expiration test
+	// independently from the real local current time.
+	// This is a temporary workaround for FAB-3678
+
+	var tempOpts x509.VerifyOptions
+	tempOpts.Roots = msp.opts.Roots
+	tempOpts.DNSName = msp.opts.DNSName
+	tempOpts.Intermediates = msp.opts.Intermediates
+	tempOpts.KeyUsages = msp.opts.KeyUsages
+	tempOpts.CurrentTime = cert.NotBefore.Add(time.Second)
+
+	return tempOpts
+}
+
+/*
+   This is the definition of the ASN.1 marshalling of AuthorityKeyIdentifier
+   from https://www.ietf.org/rfc/rfc5280.txt
+
+   AuthorityKeyIdentifier ::= SEQUENCE {
+      keyIdentifier             [0] KeyIdentifier           OPTIONAL,
+      authorityCertIssuer       [1] GeneralNames            OPTIONAL,
+      authorityCertSerialNumber [2] CertificateSerialNumber OPTIONAL  }
+
+   KeyIdentifier ::= OCTET STRING
+
+   CertificateSerialNumber  ::=  INTEGER
+
+*/
+
+type authorityKeyIdentifier struct {
+	KeyIdentifier             []byte  `asn1:"optional,tag:0"`
+	AuthorityCertIssuer       []byte  `asn1:"optional,tag:1"`
+	AuthorityCertSerialNumber big.Int `asn1:"optional,tag:2"`
+}
+
+// getAuthorityKeyIdentifierFromCrl returns the Authority Key Identifier
+// for the supplied CRL. The authority key identifier can be used to identify
+// the public key corresponding to the private key which was used to sign the CRL.
+func getAuthorityKeyIdentifierFromCrl(crl *pkix.CertificateList) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[62], 1);
+	aki := authorityKeyIdentifier{}
+
+	for _, ext := range crl.TBSCertList.Extensions {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[64], 1);
+		// Authority Key Identifier is identified by the following ASN.1 tag
+		// authorityKeyIdentifier (2 5 29 35) (see https://tools.ietf.org/html/rfc3280.html)
+		if reflect.DeepEqual(ext.Id, asn1.ObjectIdentifier{2, 5, 29, 35}) {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[65], 1);
+			_, err := asn1.Unmarshal(ext.Value, &aki)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[67], 1);
+				return nil, errors.Wrap(err, "failed to unmarshal AKI")
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[66], 1);return aki.KeyIdentifier, nil
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[63], 1);return nil, errors.New("authorityKeyIdentifier not found in certificate")
+}
+
+// getSubjectKeyIdentifierFromCert returns the Subject Key Identifier for the supplied certificate
+// Subject Key Identifier is an identifier of the public key of this certificate
+func getSubjectKeyIdentifierFromCert(cert *x509.Certificate) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[68], 1);
+	var SKI []byte
+
+	for _, ext := range cert.Extensions {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[70], 1);
+		// Subject Key Identifier is identified by the following ASN.1 tag
+		// subjectKeyIdentifier (2 5 29 14) (see https://tools.ietf.org/html/rfc3280.html)
+		if reflect.DeepEqual(ext.Id, asn1.ObjectIdentifier{2, 5, 29, 14}) {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[71], 1);
+			_, err := asn1.Unmarshal(ext.Value, &SKI)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[73], 1);
+				return nil, errors.Wrap(err, "failed to unmarshal Subject Key Identifier")
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[72], 1);return SKI, nil
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_9_636433306662306231613333.Count[69], 1);return nil, errors.New("subjectKeyIdentifier not found in certificate")
+}
+
+var GoCover_9_636433306662306231613333 = struct {
+	Count     [74]uint32
+	Pos       [3 * 74]uint32
+	NumStmt   [74]uint16
+} {
+	Pos: [3 * 74]uint32{
+		21, 23, 0x10003b, // [0]
+		27, 28, 0x100002, // [1]
+		32, 33, 0x100002, // [2]
+		37, 37, 0xc0002, // [3]
+		23, 25, 0x30010, // [4]
+		28, 30, 0x30010, // [5]
+		33, 35, 0x30010, // [6]
+		40, 41, 0x13003d, // [7]
+		45, 46, 0x100002, // [8]
+		49, 49, 0x1f0002, // [9]
+		54, 54, 0x3e0002, // [10]
+		41, 43, 0x30013, // [11]
+		46, 48, 0x30010, // [12]
+		49, 52, 0x3001f, // [13]
+		57, 58, 0x100064, // [14]
+		62, 63, 0x100002, // [15]
+		66, 66, 0x1f0002, // [16]
+		71, 71, 0x3c0002, // [17]
+		58, 60, 0x30010, // [18]
+		63, 65, 0x30010, // [19]
+		66, 69, 0x3001f, // [20]
+		74, 76, 0x2006c, // [21]
+		78, 83, 0x100072, // [22]
+		89, 89, 0x1e0002, // [23]
+		126, 126, 0xc0002, // [24]
+		83, 85, 0x30010, // [25]
+		89, 91, 0x11001e, // [26]
+		96, 96, 0x1c0003, // [27]
+		91, 93, 0x40011, // [28]
+		96, 98, 0x3b001c, // [29]
+		98, 99, 0x34003b, // [30]
+		99, 106, 0x140034, // [31]
+		120, 120, 0x3b0006, // [32]
+		106, 111, 0xf0014, // [33]
+		129, 132, 0x200040, // [34]
+		156, 156, 0xc0002, // [35]
+		132, 135, 0x320020, // [36]
+		148, 148, 0xd0003, // [37]
+		135, 138, 0xe0032, // [38]
+		138, 139, 0x36000e, // [39]
+		139, 140, 0x3f0036, // [40]
+		140, 142, 0xc003f, // [41]
+		148, 149, 0x2d000d, // [42]
+		152, 152, 0x810004, // [43]
+		149, 151, 0x5002d, // [44]
+		159, 162, 0x100041, // [45]
+		169, 169, 0x180002, // [46]
+		176, 177, 0x310002, // [47]
+		199, 199, 0x120002, // [48]
+		203, 203, 0xc0002, // [49]
+		162, 164, 0x30010, // [50]
+		169, 172, 0x30018, // [51]
+		177, 180, 0x2a0031, // [52]
+		191, 191, 0x720003, // [53]
+		194, 195, 0x120003, // [54]
+		181, 182, 0x190032, // [55]
+		183, 184, 0x170030, // [56]
+		185, 186, 0xc000b, // [57]
+		191, 193, 0x40072, // [58]
+		195, 196, 0x90012, // [59]
+		199, 201, 0x30012, // [60]
+		206, 220, 0x20058, // [61]
+		246, 249, 0x310052, // [62]
+		262, 262, 0x4b0002, // [63]
+		249, 252, 0x450031, // [64]
+		252, 254, 0x120045, // [65]
+		258, 258, 0x210004, // [66]
+		254, 256, 0x50012, // [67]
+		267, 270, 0x26004e, // [68]
+		283, 283, 0x490002, // [69]
+		270, 273, 0x450026, // [70]
+		273, 275, 0x120045, // [71]
+		279, 279, 0x130004, // [72]
+		275, 277, 0x50012, // [73]
+	},
+	NumStmt: [74]uint16{
+		2, // 0
+		2, // 1
+		2, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		2, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		2, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		2, // 22
+		1, // 23
+		1, // 24
+		1, // 25
+		2, // 26
+		1, // 27
+		1, // 28
+		1, // 29
+		1, // 30
+		2, // 31
+		1, // 32
+		2, // 33
+		1, // 34
+		1, // 35
+		2, // 36
+		1, // 37
+		2, // 38
+		1, // 39
+		1, // 40
+		2, // 41
+		1, // 42
+		1, // 43
+		1, // 44
+		2, // 45
+		1, // 46
+		2, // 47
+		1, // 48
+		1, // 49
+		1, // 50
+		1, // 51
+		2, // 52
+		1, // 53
+		2, // 54
+		1, // 55
+		1, // 56
+		1, // 57
+		1, // 58
+		1, // 59
+		1, // 60
+		7, // 61
+		2, // 62
+		1, // 63
+		1, // 64
+		2, // 65
+		1, // 66
+		1, // 67
+		2, // 68
+		1, // 69
+		1, // 70
+		2, // 71
+		1, // 72
+		1, // 73
+	},
+}
+var _ = _cover_atomic_.LoadUint32

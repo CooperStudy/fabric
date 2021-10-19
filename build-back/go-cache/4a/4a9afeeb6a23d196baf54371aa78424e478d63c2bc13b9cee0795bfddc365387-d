@@ -1,0 +1,9 @@
+./factory.go
+./nopkcs11.go
+./opts.go
+./pluginfactory.go
+./swfactory.go
+./factory_test.go
+./opts_test.go
+./pluginfactory_test.go
+./swfactory_test.go

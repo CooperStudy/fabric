@@ -1,0 +1,12 @@
+./ecdsa.go
+./errs.go
+./io.go
+./keys.go
+./slice.go
+./x509.go
+./ecdsa_test.go
+./errs_test.go
+./io_test.go
+./keys_test.go
+./slice_test.go
+./x509_test.go

@@ -1,0 +1,258 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/bccsp/idemix/handlers/nym.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+package handlers; import _cover_atomic_ "sync/atomic"
+
+import (
+	"crypto/sha256"
+
+	"github.com/hyperledger/fabric/bccsp"
+	"github.com/pkg/errors"
+)
+
+// nymSecretKey contains the nym secret key
+type nymSecretKey struct {
+	// SKI of this key
+	ski []byte
+	// sk is the idemix reference to the nym secret
+	sk Big
+	// pk is the idemix reference to the nym public part
+	pk Ecp
+	// exportable if true, sk can be exported via the Bytes function
+	exportable bool
+}
+
+func computeSKI(serialise func() ([]byte, error)) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[0], 1);
+	raw, err := serialise()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[2], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[1], 1);hash := sha256.New()
+	hash.Write(raw)
+	return hash.Sum(nil), nil
+
+}
+
+func NewNymSecretKey(sk Big, pk Ecp, exportable bool) (*nymSecretKey, error) {_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[3], 1);
+	ski, err := computeSKI(sk.Bytes)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[5], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[4], 1);return &nymSecretKey{ski: ski, sk: sk, pk: pk, exportable: exportable}, nil
+}
+
+func (k *nymSecretKey) Bytes() ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[6], 1);
+	if k.exportable {_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[8], 1);
+		return k.sk.Bytes()
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[7], 1);return nil, errors.New("not supported")
+}
+
+func (k *nymSecretKey) SKI() []byte {_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[9], 1);
+	c := make([]byte, len(k.ski))
+	copy(c, k.ski)
+	return c
+}
+
+func (*nymSecretKey) Symmetric() bool {_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[10], 1);
+	return false
+}
+
+func (*nymSecretKey) Private() bool {_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[11], 1);
+	return true
+}
+
+func (k *nymSecretKey) PublicKey() (bccsp.Key, error) {_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[12], 1);
+	ski, err := computeSKI(k.pk.Bytes)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[14], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[13], 1);return &nymPublicKey{ski: ski, pk: k.pk}, nil
+}
+
+type nymPublicKey struct {
+	// SKI of this key
+	ski []byte
+	// pk is the idemix reference to the nym public part
+	pk Ecp
+}
+
+func NewNymPublicKey(pk Ecp) *nymPublicKey {_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[15], 1);
+	return &nymPublicKey{pk: pk}
+}
+
+func (k *nymPublicKey) Bytes() ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[16], 1);
+	return k.pk.Bytes()
+}
+
+func (k *nymPublicKey) SKI() []byte {_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[17], 1);
+	c := make([]byte, len(k.ski))
+	copy(c, k.ski)
+	return c
+}
+
+func (*nymPublicKey) Symmetric() bool {_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[18], 1);
+	return false
+}
+
+func (*nymPublicKey) Private() bool {_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[19], 1);
+	return false
+}
+
+func (k *nymPublicKey) PublicKey() (bccsp.Key, error) {_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[20], 1);
+	return k, nil
+}
+
+// NymKeyDerivation derives nyms
+type NymKeyDerivation struct {
+	// Exportable is a flag to allow an issuer secret key to be marked as Exportable.
+	// If a secret key is marked as Exportable, its Bytes method will return the key's byte representation.
+	Exportable bool
+	// User implements the underlying cryptographic algorithms
+	User User
+}
+
+func (kd *NymKeyDerivation) KeyDeriv(k bccsp.Key, opts bccsp.KeyDerivOpts) (dk bccsp.Key, err error) {_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[21], 1);
+	userSecretKey, ok := k.(*userSecretKey)
+	if !ok {_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[27], 1);
+		return nil, errors.New("invalid key, expected *userSecretKey")
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[22], 1);nymKeyDerivationOpts, ok := opts.(*bccsp.IdemixNymKeyDerivationOpts)
+	if !ok {_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[28], 1);
+		return nil, errors.New("invalid options, expected *IdemixNymKeyDerivationOpts")
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[23], 1);if nymKeyDerivationOpts.IssuerPK == nil {_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[29], 1);
+		return nil, errors.New("invalid options, missing issuer public key")
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[24], 1);issuerPK, ok := nymKeyDerivationOpts.IssuerPK.(*issuerPublicKey)
+	if !ok {_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[30], 1);
+		return nil, errors.New("invalid options, expected IssuerPK as *issuerPublicKey")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[25], 1);Nym, RandNym, err := kd.User.MakeNym(userSecretKey.sk, issuerPK.pk)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[31], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[26], 1);return NewNymSecretKey(RandNym, Nym, kd.Exportable)
+}
+
+// NymPublicKeyImporter imports nym public keys
+type NymPublicKeyImporter struct {
+	// User implements the underlying cryptographic algorithms
+	User User
+}
+
+func (i *NymPublicKeyImporter) KeyImport(raw interface{}, opts bccsp.KeyImportOpts) (k bccsp.Key, err error) {_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[32], 1);
+	bytes, ok := raw.([]byte)
+	if !ok {_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[36], 1);
+		return nil, errors.New("invalid raw, expected byte array")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[33], 1);if len(bytes) == 0 {_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[37], 1);
+		return nil, errors.New("invalid raw, it must not be nil")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[34], 1);pk, err := i.User.NewPublicNymFromBytes(bytes)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[38], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_353738643438356165663564.Count[35], 1);return &nymPublicKey{pk: pk}, nil
+}
+
+var GoCover_3_353738643438356165663564 = struct {
+	Count     [39]uint32
+	Pos       [3 * 39]uint32
+	NumStmt   [39]uint16
+} {
+	Pos: [3 * 39]uint32{
+		27, 29, 0x100043, // [0]
+		33, 35, 0x1b0002, // [1]
+		29, 31, 0x30010, // [2]
+		39, 41, 0x10004e, // [3]
+		45, 45, 0x4d0002, // [4]
+		41, 43, 0x30010, // [5]
+		48, 49, 0x120030, // [6]
+		53, 53, 0x290002, // [7]
+		49, 51, 0x30012, // [8]
+		56, 60, 0x20025, // [9]
+		62, 64, 0x20027, // [10]
+		66, 68, 0x20025, // [11]
+		70, 72, 0x100037, // [12]
+		75, 75, 0x2f0002, // [13]
+		72, 74, 0x30010, // [14]
+		85, 87, 0x2002c, // [15]
+		89, 91, 0x20030, // [16]
+		93, 97, 0x20025, // [17]
+		99, 101, 0x20027, // [18]
+		103, 105, 0x20025, // [19]
+		107, 109, 0x20037, // [20]
+		120, 122, 0x90066, // [21]
+		125, 126, 0x90002, // [22]
+		129, 129, 0x2a0002, // [23]
+		132, 133, 0x90002, // [24]
+		137, 138, 0x100002, // [25]
+		142, 142, 0x350002, // [26]
+		122, 124, 0x30009, // [27]
+		126, 128, 0x30009, // [28]
+		129, 131, 0x3002a, // [29]
+		133, 135, 0x30009, // [30]
+		138, 140, 0x30010, // [31]
+		151, 153, 0x9006e, // [32]
+		157, 157, 0x150002, // [33]
+		161, 162, 0x100002, // [34]
+		166, 166, 0x230002, // [35]
+		153, 155, 0x30009, // [36]
+		157, 159, 0x30015, // [37]
+		162, 164, 0x30010, // [38]
+	},
+	NumStmt: [39]uint16{
+		2, // 0
+		3, // 1
+		1, // 2
+		2, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		3, // 9
+		1, // 10
+		1, // 11
+		2, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		3, // 17
+		1, // 18
+		1, // 19
+		1, // 20
+		2, // 21
+		2, // 22
+		1, // 23
+		2, // 24
+		2, // 25
+		1, // 26
+		1, // 27
+		1, // 28
+		1, // 29
+		1, // 30
+		1, // 31
+		2, // 32
+		1, // 33
+		2, // 34
+		1, // 35
+		1, // 36
+		1, // 37
+		1, // 38
+	},
+}
+var _ = _cover_atomic_.LoadUint32

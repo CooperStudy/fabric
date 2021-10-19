@@ -1,0 +1,244 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/ledger/kvledger/history/historydb/historyleveldb/historyleveldb_query_executer.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package historyleveldb; import _cover_atomic_ "sync/atomic"
+
+import (
+	"bytes"
+
+	commonledger "github.com/hyperledger/fabric/common/ledger"
+	"github.com/hyperledger/fabric/common/ledger/blkstorage"
+	"github.com/hyperledger/fabric/common/ledger/util"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/history/historydb"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwsetutil"
+	"github.com/hyperledger/fabric/core/ledger/ledgerconfig"
+	"github.com/hyperledger/fabric/protos/common"
+	"github.com/hyperledger/fabric/protos/ledger/queryresult"
+	putils "github.com/hyperledger/fabric/protos/utils"
+	"github.com/pkg/errors"
+	"github.com/syndtr/goleveldb/leveldb/iterator"
+)
+
+// LevelHistoryDBQueryExecutor is a query executor against the LevelDB history DB
+type LevelHistoryDBQueryExecutor struct {
+	historyDB  *historyDB
+	blockStore blkstorage.BlockStore
+}
+
+// GetHistoryForKey implements method in interface `ledger.HistoryQueryExecutor`
+func (q *LevelHistoryDBQueryExecutor) GetHistoryForKey(namespace string, key string) (commonledger.ResultsIterator, error) {_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[0], 1);
+
+	if ledgerconfig.IsHistoryDBEnabled() == false {_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[2], 1);
+		return nil, errors.New("history database not enabled")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[1], 1);var compositeStartKey []byte
+	var compositeEndKey []byte
+	compositeStartKey = historydb.ConstructPartialCompositeHistoryKey(namespace, key, false)
+	compositeEndKey = historydb.ConstructPartialCompositeHistoryKey(namespace, key, true)
+
+	// range scan to find any history records starting with namespace~key
+	dbItr := q.historyDB.db.GetIterator(compositeStartKey, compositeEndKey)
+	return newHistoryScanner(compositeStartKey, namespace, key, dbItr, q.blockStore), nil
+}
+
+//historyScanner implements ResultsIterator for iterating through history results
+type historyScanner struct {
+	compositePartialKey []byte //compositePartialKey includes namespace~key
+	namespace           string
+	key                 string
+	dbItr               iterator.Iterator
+	blockStore          blkstorage.BlockStore
+}
+
+func newHistoryScanner(compositePartialKey []byte, namespace string, key string,
+	dbItr iterator.Iterator, blockStore blkstorage.BlockStore) *historyScanner {_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[3], 1);
+	return &historyScanner{compositePartialKey, namespace, key, dbItr, blockStore}
+}
+
+func (scanner *historyScanner) Next() (commonledger.QueryResult, error) {_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[4], 1);
+	for {_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[5], 1);
+		if !scanner.dbItr.Next() {_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[10], 1);
+			return nil, nil
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[6], 1);historyKey := scanner.dbItr.Key() // history key is in the form namespace~key~blocknum~trannum
+
+		// SplitCompositeKey(namespace~key~blocknum~trannum, namespace~key~) will return the blocknum~trannum in second position
+		_, blockNumTranNumBytes := historydb.SplitCompositeHistoryKey(historyKey, scanner.compositePartialKey)
+
+		// check that blockNumTranNumBytes does not contain a nil byte (FAB-11244) - except the last byte.
+		// if this contains a nil byte that indicate that its a different key other than the one we are
+		// scanning the history for. However, the last byte can be nil even for the valid key (indicating the transaction numer being zero)
+		// This is because, if 'blockNumTranNumBytes' really is the suffix of the desired key - only possibility of this containing a nil byte
+		// is the last byte when the transaction number in blockNumTranNumBytes is zero).
+		// On the other hand, if 'blockNumTranNumBytes' really is NOT the suffix of the desired key, then this has to be a prefix
+		// of some other key (other than the desired key) and in this case, there has to be at least one nil byte (other than the last byte),
+		// for the 'last' CompositeKeySep in the composite key
+		// Take an example of two keys "key" and "key\x00" in a namespace ns. The entries for these keys will be
+		// of type "ns-\x00-key-\x00-blkNumTranNumBytes" and ns-\x00-key-\x00-\x00-blkNumTranNumBytes respectively.
+		// "-" in above examples are just for readability. Further, when scanning the range
+		// {ns-\x00-key-\x00 - ns-\x00-key-xff} for getting the history for <ns, key>, the entry for the other key
+		// falls in the range and needs to be ignored
+		if bytes.Contains(blockNumTranNumBytes[:len(blockNumTranNumBytes)-1], historydb.CompositeKeySep) {_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[11], 1);
+			logger.Debugf("Some other key [%#v] found in the range while scanning history for key [%#v]. Skipping...",
+				historyKey, scanner.key)
+			continue
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[7], 1);blockNum, bytesConsumed := util.DecodeOrderPreservingVarUint64(blockNumTranNumBytes[0:])
+		tranNum, _ := util.DecodeOrderPreservingVarUint64(blockNumTranNumBytes[bytesConsumed:])
+		logger.Debugf("Found history record for namespace:%s key:%s at blockNumTranNum %v:%v\n",
+			scanner.namespace, scanner.key, blockNum, tranNum)
+
+		// Get the transaction from block storage that is associated with this history record
+		tranEnvelope, err := scanner.blockStore.RetrieveTxByBlockNumTranNum(blockNum, tranNum)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[12], 1);
+			return nil, err
+		}
+
+		// Get the txid, key write value, timestamp, and delete indicator associated with this transaction
+		_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[8], 1);queryResult, err := getKeyModificationFromTran(tranEnvelope, scanner.namespace, scanner.key)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[13], 1);
+			return nil, err
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[9], 1);logger.Debugf("Found historic key value for namespace:%s key:%s from transaction %s\n",
+			scanner.namespace, scanner.key, queryResult.(*queryresult.KeyModification).TxId)
+		return queryResult, nil
+	}
+}
+
+func (scanner *historyScanner) Close() {_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[14], 1);
+	scanner.dbItr.Release()
+}
+
+// getTxIDandKeyWriteValueFromTran inspects a transaction for writes to a given key
+func getKeyModificationFromTran(tranEnvelope *common.Envelope, namespace string, key string) (commonledger.QueryResult, error) {_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[15], 1);
+	logger.Debugf("Entering getKeyModificationFromTran()\n", namespace, key)
+
+	// extract action from the envelope
+	payload, err := putils.GetPayload(tranEnvelope)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[22], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[16], 1);tx, err := putils.GetTransaction(payload.Data)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[23], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[17], 1);_, respPayload, err := putils.GetPayloads(tx.Actions[0])
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[24], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[18], 1);chdr, err := putils.UnmarshalChannelHeader(payload.Header.ChannelHeader)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[25], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[19], 1);txID := chdr.TxId
+	timestamp := chdr.Timestamp
+
+	txRWSet := &rwsetutil.TxRwSet{}
+
+	// Get the Result from the Action and then Unmarshal
+	// it into a TxReadWriteSet using custom unmarshalling
+	if err = txRWSet.FromProtoBytes(respPayload.Results); err != nil {_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[26], 1);
+		return nil, err
+	}
+
+	// look for the namespace and key by looping through the transaction's ReadWriteSets
+	_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[20], 1);for _, nsRWSet := range txRWSet.NsRwSets {_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[27], 1);
+		if nsRWSet.NameSpace == namespace {_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[28], 1);
+			// got the correct namespace, now find the key write
+			for _, kvWrite := range nsRWSet.KvRwSet.Writes {_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[30], 1);
+				if kvWrite.Key == key {_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[31], 1);
+					return &queryresult.KeyModification{TxId: txID, Value: kvWrite.Value,
+						Timestamp: timestamp, IsDelete: kvWrite.IsDelete}, nil
+				}
+			} // end keys loop
+			_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[29], 1);return nil, errors.New("key not found in namespace's writeset")
+		} // end if
+	} //end namespaces loop
+	_cover_atomic_.AddUint32(&GoCover_1_636263623531636437623730.Count[21], 1);return nil, errors.New("namespace not found in transaction's ReadWriteSets")
+
+}
+
+var GoCover_1_636263623531636437623730 = struct {
+	Count     [32]uint32
+	Pos       [3 * 32]uint32
+	NumStmt   [32]uint16
+} {
+	Pos: [3 * 32]uint32{
+		32, 34, 0x30007c, // [0]
+		38, 45, 0x570002, // [1]
+		34, 36, 0x30030, // [2]
+		58, 60, 0x2004d, // [3]
+		62, 63, 0x60049, // [4]
+		63, 64, 0x1c0006, // [5]
+		67, 85, 0x640003, // [6]
+		90, 97, 0x110003, // [7]
+		102, 103, 0x110003, // [8]
+		106, 108, 0x1a0003, // [9]
+		64, 66, 0x4001c, // [10]
+		85, 88, 0xc0064, // [11]
+		97, 99, 0x40011, // [12]
+		103, 105, 0x40011, // [13]
+		112, 114, 0x20028, // [14]
+		117, 122, 0x100080, // [15]
+		126, 127, 0x100002, // [16]
+		131, 132, 0x100002, // [17]
+		136, 137, 0x100002, // [18]
+		141, 148, 0x430002, // [19]
+		153, 153, 0x2b0002, // [20]
+		165, 165, 0x4e0002, // [21]
+		122, 124, 0x30010, // [22]
+		127, 129, 0x30010, // [23]
+		132, 134, 0x30010, // [24]
+		137, 139, 0x30010, // [25]
+		148, 150, 0x30043, // [26]
+		153, 154, 0x25002b, // [27]
+		154, 156, 0x330025, // [28]
+		162, 162, 0x430004, // [29]
+		156, 157, 0x1b0033, // [30]
+		157, 160, 0x6001b, // [31]
+	},
+	NumStmt: [32]uint16{
+		1, // 0
+		6, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		3, // 6
+		5, // 7
+		2, // 8
+		2, // 9
+		1, // 10
+		2, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		3, // 15
+		2, // 16
+		2, // 17
+		2, // 18
+		4, // 19
+		1, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+		1, // 24
+		1, // 25
+		1, // 26
+		1, // 27
+		1, // 28
+		1, // 29
+		1, // 30
+		1, // 31
+	},
+}
+var _ = _cover_atomic_.LoadUint32

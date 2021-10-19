@@ -1,0 +1,192 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/pvtstatepurgemgmt/expiry_keeper.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package pvtstatepurgemgmt; import _cover_atomic_ "sync/atomic"
+
+import (
+	proto "github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/common/ledger/util"
+	"github.com/hyperledger/fabric/common/ledger/util/leveldbhelper"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/bookkeeping"
+)
+
+var logger = flogging.MustGetLogger("pvtstatepurgemgmt")
+
+const (
+	expiryPrefix = '1'
+)
+
+// expiryInfoKey is used as a key of an entry in the bookkeeper (backed by a leveldb instance)
+type expiryInfoKey struct {
+	committingBlk uint64
+	expiryBlk     uint64
+}
+
+// expiryInfo encapsulates an 'expiryInfoKey' and corresponding private data keys.
+// In another words, this struct encapsulates the keys and key-hashes that are committed by
+// the block number 'expiryInfoKey.committingBlk' and should be expired (and hence purged)
+// with the commit of block number 'expiryInfoKey.expiryBlk'
+type expiryInfo struct {
+	expiryInfoKey *expiryInfoKey
+	pvtdataKeys   *PvtdataKeys
+}
+
+// expiryKeeper is used to keep track of the expired items in the pvtdata space
+type expiryKeeper interface {
+	// updateBookkeeping keeps track of the list of keys and their corresponding expiry block number
+	updateBookkeeping(toTrack []*expiryInfo, toClear []*expiryInfoKey) error
+	// retrieve returns the keys info that are supposed to be expired by the given block number
+	retrieve(expiringAtBlkNum uint64) ([]*expiryInfo, error)
+	// retrieveByExpiryKey retrieves the expiryInfo for given expiryKey
+	retrieveByExpiryKey(expiryKey *expiryInfoKey) (*expiryInfo, error)
+}
+
+func newExpiryKeeper(ledgerid string, provider bookkeeping.Provider) expiryKeeper {_cover_atomic_.AddUint32(&GoCover_0_326462396539336232343931.Count[0], 1);
+	return &expKeeper{provider.GetDBHandle(ledgerid, bookkeeping.PvtdataExpiry)}
+}
+
+type expKeeper struct {
+	db *leveldbhelper.DBHandle
+}
+
+// updateBookkeeping updates the information stored in the bookkeeper
+// 'toTrack' parameter causes new entries in the bookkeeper and  'toClear' parameter contains the entries that
+// are to be removed from the bookkeeper. This function is invoked with the commit of every block. As an
+// example, the commit of the block with block number 50, 'toTrack' parameter may contain following two entries:
+// (1) &expiryInfo{&expiryInfoKey{committingBlk: 50, expiryBlk: 55}, pvtdataKeys....} and
+// (2) &expiryInfo{&expiryInfoKey{committingBlk: 50, expiryBlk: 60}, pvtdataKeys....}
+// The 'pvtdataKeys' in the first entry contains all the keys (and key-hashes) that are to be expired at block 55 (i.e., these collections have a BTL configured to 4)
+// and the 'pvtdataKeys' in second entry contains all the keys (and key-hashes) that are to be expired at block 60 (i.e., these collections have a BTL configured to 9).
+// Similarly, continuing with the above example, the parameter 'toClear' may contain following two entries
+// (1) &expiryInfoKey{committingBlk: 45, expiryBlk: 50} and (2) &expiryInfoKey{committingBlk: 40, expiryBlk: 50}. The first entry was created
+// at the time of the commit of the block number 45 and the second entry was created at the time of the commit of the block number 40, however
+// both are expiring with the commit of block number 50.
+func (ek *expKeeper) updateBookkeeping(toTrack []*expiryInfo, toClear []*expiryInfoKey) error {_cover_atomic_.AddUint32(&GoCover_0_326462396539336232343931.Count[1], 1);
+	updateBatch := leveldbhelper.NewUpdateBatch()
+	for _, expinfo := range toTrack {_cover_atomic_.AddUint32(&GoCover_0_326462396539336232343931.Count[4], 1);
+		k, v, err := encodeKV(expinfo)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_326462396539336232343931.Count[6], 1);
+			return err
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_326462396539336232343931.Count[5], 1);updateBatch.Put(k, v)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_326462396539336232343931.Count[2], 1);for _, expinfokey := range toClear {_cover_atomic_.AddUint32(&GoCover_0_326462396539336232343931.Count[7], 1);
+		updateBatch.Delete(encodeExpiryInfoKey(expinfokey))
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_326462396539336232343931.Count[3], 1);return ek.db.WriteBatch(updateBatch, true)
+}
+
+func (ek *expKeeper) retrieve(expiringAtBlkNum uint64) ([]*expiryInfo, error) {_cover_atomic_.AddUint32(&GoCover_0_326462396539336232343931.Count[8], 1);
+	startKey := encodeExpiryInfoKey(&expiryInfoKey{expiryBlk: expiringAtBlkNum, committingBlk: 0})
+	endKey := encodeExpiryInfoKey(&expiryInfoKey{expiryBlk: expiringAtBlkNum + 1, committingBlk: 0})
+	itr := ek.db.GetIterator(startKey, endKey)
+	defer itr.Release()
+
+	var listExpinfo []*expiryInfo
+	for itr.Next() {_cover_atomic_.AddUint32(&GoCover_0_326462396539336232343931.Count[10], 1);
+		expinfo, err := decodeExpiryInfo(itr.Key(), itr.Value())
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_326462396539336232343931.Count[12], 1);
+			return nil, err
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_326462396539336232343931.Count[11], 1);listExpinfo = append(listExpinfo, expinfo)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_326462396539336232343931.Count[9], 1);return listExpinfo, nil
+}
+
+func (ek *expKeeper) retrieveByExpiryKey(expiryKey *expiryInfoKey) (*expiryInfo, error) {_cover_atomic_.AddUint32(&GoCover_0_326462396539336232343931.Count[13], 1);
+	key := encodeExpiryInfoKey(expiryKey)
+	value, err := ek.db.Get(key)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_326462396539336232343931.Count[15], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_326462396539336232343931.Count[14], 1);return decodeExpiryInfo(key, value)
+}
+
+func encodeKV(expinfo *expiryInfo) (key []byte, value []byte, err error) {_cover_atomic_.AddUint32(&GoCover_0_326462396539336232343931.Count[16], 1);
+	key = encodeExpiryInfoKey(expinfo.expiryInfoKey)
+	value, err = encodeExpiryInfoValue(expinfo.pvtdataKeys)
+	return
+}
+
+func encodeExpiryInfoKey(expinfoKey *expiryInfoKey) []byte {_cover_atomic_.AddUint32(&GoCover_0_326462396539336232343931.Count[17], 1);
+	key := append([]byte{expiryPrefix}, util.EncodeOrderPreservingVarUint64(expinfoKey.expiryBlk)...)
+	return append(key, util.EncodeOrderPreservingVarUint64(expinfoKey.committingBlk)...)
+}
+
+func encodeExpiryInfoValue(pvtdataKeys *PvtdataKeys) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_0_326462396539336232343931.Count[18], 1);
+	return proto.Marshal(pvtdataKeys)
+}
+
+func decodeExpiryInfo(key []byte, value []byte) (*expiryInfo, error) {_cover_atomic_.AddUint32(&GoCover_0_326462396539336232343931.Count[19], 1);
+	expiryBlk, n := util.DecodeOrderPreservingVarUint64(key[1:])
+	committingBlk, _ := util.DecodeOrderPreservingVarUint64(key[n+1:])
+	pvtdataKeys := &PvtdataKeys{}
+	if err := proto.Unmarshal(value, pvtdataKeys); err != nil {_cover_atomic_.AddUint32(&GoCover_0_326462396539336232343931.Count[21], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_326462396539336232343931.Count[20], 1);return &expiryInfo{
+			expiryInfoKey: &expiryInfoKey{committingBlk: committingBlk, expiryBlk: expiryBlk},
+			pvtdataKeys:   pvtdataKeys},
+		nil
+}
+
+var GoCover_0_326462396539336232343931 = struct {
+	Count     [22]uint32
+	Pos       [3 * 22]uint32
+	NumStmt   [22]uint16
+} {
+	Pos: [3 * 22]uint32{
+		48, 50, 0x20053, // [0]
+		68, 70, 0x22005f, // [1]
+		77, 77, 0x250002, // [2]
+		80, 80, 0x2c0002, // [3]
+		70, 72, 0x110022, // [4]
+		75, 75, 0x180003, // [5]
+		72, 74, 0x40011, // [6]
+		77, 79, 0x30025, // [7]
+		83, 90, 0x11004f, // [8]
+		97, 97, 0x190002, // [9]
+		90, 92, 0x110011, // [10]
+		95, 95, 0x2d0003, // [11]
+		92, 94, 0x40011, // [12]
+		100, 103, 0x100059, // [13]
+		106, 106, 0x250002, // [14]
+		103, 105, 0x30010, // [15]
+		109, 113, 0x2004a, // [16]
+		115, 118, 0x2003c, // [17]
+		120, 122, 0x20046, // [18]
+		124, 128, 0x3c0046, // [19]
+		131, 134, 0x60002, // [20]
+		128, 130, 0x3003c, // [21]
+	},
+	NumStmt: [22]uint16{
+		1, // 0
+		2, // 1
+		1, // 2
+		1, // 3
+		2, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		6, // 8
+		1, // 9
+		2, // 10
+		1, // 11
+		1, // 12
+		3, // 13
+		1, // 14
+		1, // 15
+		3, // 16
+		2, // 17
+		1, // 18
+		4, // 19
+		1, // 20
+		1, // 21
+	},
+}
+var _ = _cover_atomic_.LoadUint32

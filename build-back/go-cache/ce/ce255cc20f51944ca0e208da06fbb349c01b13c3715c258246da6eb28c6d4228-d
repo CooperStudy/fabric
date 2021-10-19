@@ -1,0 +1,9 @@
+./client.go
+./config.go
+./connection.go
+./creds.go
+./metrics.go
+./producer.go
+./server.go
+./serverstatshandler.go
+./util.go

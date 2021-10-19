@@ -1,0 +1,146 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/orderer/mocks/common/blockcutter/blockcutter.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package blockcutter; import _cover_atomic_ "sync/atomic"
+
+import (
+	"sync"
+
+	"github.com/hyperledger/fabric/common/flogging"
+	cb "github.com/hyperledger/fabric/protos/common"
+)
+
+var logger = flogging.MustGetLogger("orderer.mocks.common.blockcutter")
+
+// Receiver mocks the blockcutter.Receiver interface
+type Receiver struct {
+	// IsolatedTx causes Ordered returns [][]{curBatch, []{newTx}}, false when set to true
+	IsolatedTx bool
+
+	// CutAncestors causes Ordered returns [][]{curBatch}, true when set to true
+	CutAncestors bool
+
+	// CutNext causes Ordered returns [][]{append(curBatch, newTx)}, false when set to true
+	CutNext bool
+
+	// SkipAppendCurBatch causes Ordered to skip appending to curBatch
+	SkipAppendCurBatch bool
+
+	// Lock to serialize writes access to curBatch
+	mutex sync.Mutex
+
+	// curBatch is the currently outstanding messages in the batch
+	curBatch []*cb.Envelope
+
+	// Block is a channel which is read from before returning from Ordered, it is useful for synchronization
+	// If you do not wish synchronization for whatever reason, simply close the channel
+	Block chan struct{}
+}
+
+// NewReceiver returns the mock blockcutter.Receiver implementation
+func NewReceiver() *Receiver {_cover_atomic_.AddUint32(&GoCover_0_303837313935653430623738.Count[0], 1);
+	return &Receiver{
+		IsolatedTx:   false,
+		CutAncestors: false,
+		CutNext:      false,
+		Block:        make(chan struct{}),
+	}
+}
+
+// Ordered will add or cut the batch according to the state of Receiver, it blocks reading from Block on return
+func (mbc *Receiver) Ordered(env *cb.Envelope) ([][]*cb.Envelope, bool) {_cover_atomic_.AddUint32(&GoCover_0_303837313935653430623738.Count[1], 1);
+	defer func() {_cover_atomic_.AddUint32(&GoCover_0_303837313935653430623738.Count[7], 1);
+		<-mbc.Block
+	}()
+
+	_cover_atomic_.AddUint32(&GoCover_0_303837313935653430623738.Count[2], 1);mbc.mutex.Lock()
+	defer mbc.mutex.Unlock()
+
+	if mbc.IsolatedTx {_cover_atomic_.AddUint32(&GoCover_0_303837313935653430623738.Count[8], 1);
+		logger.Debugf("Receiver: Returning dual batch")
+		res := [][]*cb.Envelope{mbc.curBatch, {env}}
+		mbc.curBatch = nil
+		return res, false
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_303837313935653430623738.Count[3], 1);if mbc.CutAncestors {_cover_atomic_.AddUint32(&GoCover_0_303837313935653430623738.Count[9], 1);
+		logger.Debugf("Receiver: Returning current batch and appending newest env")
+		res := [][]*cb.Envelope{mbc.curBatch}
+		mbc.curBatch = []*cb.Envelope{env}
+		return res, true
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_303837313935653430623738.Count[4], 1);if !mbc.SkipAppendCurBatch {_cover_atomic_.AddUint32(&GoCover_0_303837313935653430623738.Count[10], 1);
+		mbc.curBatch = append(mbc.curBatch, env)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_303837313935653430623738.Count[5], 1);if mbc.CutNext {_cover_atomic_.AddUint32(&GoCover_0_303837313935653430623738.Count[11], 1);
+		logger.Debugf("Receiver: Returning regular batch")
+		res := [][]*cb.Envelope{mbc.curBatch}
+		mbc.curBatch = nil
+		return res, false
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_303837313935653430623738.Count[6], 1);logger.Debugf("Appending to batch")
+	return nil, true
+}
+
+// Cut terminates the current batch, returning it
+func (mbc *Receiver) Cut() []*cb.Envelope {_cover_atomic_.AddUint32(&GoCover_0_303837313935653430623738.Count[12], 1);
+	mbc.mutex.Lock()
+	defer mbc.mutex.Unlock()
+	logger.Debugf("Cutting batch")
+	res := mbc.curBatch
+	mbc.curBatch = nil
+	return res
+}
+
+func (mbc *Receiver) CurBatch() []*cb.Envelope {_cover_atomic_.AddUint32(&GoCover_0_303837313935653430623738.Count[13], 1);
+	mbc.mutex.Lock()
+	defer mbc.mutex.Unlock()
+	return mbc.curBatch
+}
+
+var GoCover_0_303837313935653430623738 = struct {
+	Count     [14]uint32
+	Pos       [3 * 14]uint32
+	NumStmt   [14]uint16
+} {
+	Pos: [3 * 14]uint32{
+		44, 51, 0x2001e, // [0]
+		54, 55, 0xf0049, // [1]
+		59, 62, 0x140002, // [2]
+		69, 69, 0x160002, // [3]
+		76, 76, 0x1d0002, // [4]
+		80, 80, 0x110002, // [5]
+		87, 88, 0x120002, // [6]
+		55, 57, 0x3000f, // [7]
+		62, 67, 0x30014, // [8]
+		69, 74, 0x30016, // [9]
+		76, 78, 0x3001d, // [10]
+		80, 85, 0x30011, // [11]
+		92, 99, 0x2002b, // [12]
+		101, 105, 0x20030, // [13]
+	},
+	NumStmt: [14]uint16{
+		1, // 0
+		1, // 1
+		3, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		2, // 6
+		1, // 7
+		4, // 8
+		4, // 9
+		1, // 10
+		4, // 11
+		6, // 12
+		3, // 13
+	},
+}
+var _ = _cover_atomic_.LoadUint32

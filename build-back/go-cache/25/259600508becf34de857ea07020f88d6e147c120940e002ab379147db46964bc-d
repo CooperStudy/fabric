@@ -1,0 +1,111 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/peer/gossip/sa.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package gossip; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/gossip/api"
+	"github.com/hyperledger/fabric/msp/mgmt"
+)
+
+var saLogger = flogging.MustGetLogger("peer.gossip.sa")
+
+// mspSecurityAdvisor implements the SecurityAdvisor interface
+// using peer's MSPs.
+//
+// In order for the system to be secure it is vital to have the
+// MSPs to be up-to-date. Channels' MSPs are updated via
+// configuration transactions distributed by the ordering service.
+//
+// This implementation assumes that these mechanisms are all in place and working.
+type mspSecurityAdvisor struct {
+	deserializer mgmt.DeserializersManager
+}
+
+// NewSecurityAdvisor creates a new instance of mspSecurityAdvisor
+// that implements MessageCryptoService
+func NewSecurityAdvisor(deserializer mgmt.DeserializersManager) api.SecurityAdvisor {_cover_atomic_.AddUint32(&GoCover_1_353833383835633532363635.Count[0], 1);
+	return &mspSecurityAdvisor{deserializer: deserializer}
+}
+
+// OrgByPeerIdentity returns the OrgIdentityType
+// of a given peer identity.
+// If any error occurs, nil is returned.
+// This method does not validate peerIdentity.
+// This validation is supposed to be done appropriately during the execution flow.
+func (advisor *mspSecurityAdvisor) OrgByPeerIdentity(peerIdentity api.PeerIdentityType) api.OrgIdentityType {_cover_atomic_.AddUint32(&GoCover_1_353833383835633532363635.Count[1], 1);
+	// Validate arguments
+	if len(peerIdentity) == 0 {_cover_atomic_.AddUint32(&GoCover_1_353833383835633532363635.Count[5], 1);
+		saLogger.Error("Invalid Peer Identity. It must be different from nil.")
+
+		return nil
+	}
+
+	// Notice that peerIdentity is assumed to be the serialization of an identity.
+	// So, first step is the identity deserialization
+
+	// TODO: This method should return a structure consisting of two fields:
+	// one of the MSPidentifier of the MSP the identity belongs to,
+	// and then a list of organization units this identity is in possession of.
+	// For gossip use, it is the first part that we would need for now,
+	// namely the identity's MSP identifier be returned (Identity.GetMSPIdentifier())
+
+	// First check against the local MSP.
+	_cover_atomic_.AddUint32(&GoCover_1_353833383835633532363635.Count[2], 1);identity, err := advisor.deserializer.GetLocalDeserializer().DeserializeIdentity([]byte(peerIdentity))
+	if err == nil {_cover_atomic_.AddUint32(&GoCover_1_353833383835633532363635.Count[6], 1);
+		return []byte(identity.GetMSPIdentifier())
+	}
+
+	// Check against managers
+	_cover_atomic_.AddUint32(&GoCover_1_353833383835633532363635.Count[3], 1);for chainID, mspManager := range advisor.deserializer.GetChannelDeserializers() {_cover_atomic_.AddUint32(&GoCover_1_353833383835633532363635.Count[7], 1);
+		// Deserialize identity
+		identity, err := mspManager.DeserializeIdentity([]byte(peerIdentity))
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_353833383835633532363635.Count[9], 1);
+			saLogger.Debugf("Failed deserialization identity [% x] on [%s]: [%s]", peerIdentity, chainID, err)
+			continue
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_353833383835633532363635.Count[8], 1);return []byte(identity.GetMSPIdentifier())
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_353833383835633532363635.Count[4], 1);saLogger.Warningf("Peer Identity [% x] cannot be desirialized. No MSP found able to do that.", peerIdentity)
+
+	return nil
+}
+
+var GoCover_1_353833383835633532363635 = struct {
+	Count     [10]uint32
+	Pos       [3 * 10]uint32
+	NumStmt   [10]uint16
+} {
+	Pos: [3 * 10]uint32{
+		31, 33, 0x20055, // [0]
+		40, 42, 0x1c006d, // [1]
+		58, 59, 0x100002, // [2]
+		64, 64, 0x520002, // [3]
+		75, 77, 0xc0002, // [4]
+		42, 46, 0x3001c, // [5]
+		59, 61, 0x30010, // [6]
+		64, 67, 0x110052, // [7]
+		72, 72, 0x2d0003, // [8]
+		67, 69, 0xc0011, // [9]
+	},
+	NumStmt: [10]uint16{
+		1, // 0
+		1, // 1
+		2, // 2
+		1, // 3
+		2, // 4
+		2, // 5
+		1, // 6
+		2, // 7
+		1, // 8
+		2, // 9
+	},
+}
+var _ = _cover_atomic_.LoadUint32

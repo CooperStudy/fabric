@@ -1,0 +1,591 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/chaincode/shim/ext/entities/entities.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package entities; import _cover_atomic_ "sync/atomic"
+
+import (
+	"encoding/pem"
+	"reflect"
+
+	"github.com/hyperledger/fabric/bccsp"
+	"github.com/pkg/errors"
+)
+
+/**********************/
+/* Struct definitions */
+/**********************/
+
+// BCCSPEntity is an implementation of the Entity interface
+// holding a BCCSP instance
+type BCCSPEntity struct {
+	IDstr string
+	BCCSP bccsp.BCCSP
+}
+
+// BCCSPSignerEntity is an implementation of the SignerEntity interface
+type BCCSPSignerEntity struct {
+	BCCSPEntity
+	SKey  bccsp.Key
+	SOpts bccsp.SignerOpts
+	HOpts bccsp.HashOpts
+}
+
+// BCCSPEncrypterEntity is an implementation of the EncrypterEntity interface
+type BCCSPEncrypterEntity struct {
+	BCCSPEntity
+	EKey  bccsp.Key
+	EOpts bccsp.EncrypterOpts
+	DOpts bccsp.DecrypterOpts
+}
+
+// BCCSPEncrypterSignerEntity is an implementation of the EncrypterSignerEntity interface
+type BCCSPEncrypterSignerEntity struct {
+	BCCSPEncrypterEntity
+	BCCSPSignerEntity
+}
+
+/****************/
+/* Constructors */
+/****************/
+
+// NewAES256EncrypterEntity returns an encrypter entity that is
+// capable of performing AES 256 bit encryption using PKCS#7 padding.
+// Optionally, the IV can be provided in which case it is used during
+// the encryption; othjerwise, a random one is generated.
+func NewAES256EncrypterEntity(ID string, b bccsp.BCCSP, key, IV []byte) (*BCCSPEncrypterEntity, error) {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[0], 1);
+	if b == nil {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[3], 1);
+		return nil, errors.New("nil BCCSP")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[1], 1);k, err := b.KeyImport(key, &bccsp.AES256ImportKeyOpts{Temporary: true})
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[4], 1);
+		return nil, errors.WithMessage(err, "bccspInst.KeyImport failed")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[2], 1);return NewEncrypterEntity(ID, b, k, &bccsp.AESCBCPKCS7ModeOpts{IV: IV}, &bccsp.AESCBCPKCS7ModeOpts{})
+}
+
+// NewEncrypterEntity returns an EncrypterEntity that is capable
+// of performing encryption using i) the supplied BCCSP instance;
+// ii) the supplied encryption key and iii) the supplied encryption
+// and decryption options. The identifier of the entity is supplied
+// as an argument as well - it's the caller's responsibility to
+// choose it in a way that it is meaningful
+func NewEncrypterEntity(ID string, bccsp bccsp.BCCSP, eKey bccsp.Key, eOpts bccsp.EncrypterOpts, dOpts bccsp.DecrypterOpts) (*BCCSPEncrypterEntity, error) {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[5], 1);
+	if ID == "" {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[9], 1);
+		return nil, errors.New("NewEntity error: empty ID")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[6], 1);if bccsp == nil {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[10], 1);
+		return nil, errors.New("NewEntity error: nil bccsp")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[7], 1);if eKey == nil {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[11], 1);
+		return nil, errors.New("NewEntity error: nil keys")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[8], 1);return &BCCSPEncrypterEntity{
+		BCCSPEntity: BCCSPEntity{
+			IDstr: ID,
+			BCCSP: bccsp,
+		},
+		EKey:  eKey,
+		EOpts: eOpts,
+		DOpts: dOpts,
+	}, nil
+}
+
+// NewECDSASignerEntity returns a signer entity that is capable of signing using ECDSA
+func NewECDSASignerEntity(ID string, b bccsp.BCCSP, signKeyBytes []byte) (*BCCSPSignerEntity, error) {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[12], 1);
+	if b == nil {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[16], 1);
+		return nil, errors.New("nil BCCSP")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[13], 1);bl, _ := pem.Decode(signKeyBytes)
+	if bl == nil {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[17], 1);
+		return nil, errors.New("pem.Decode returns nil")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[14], 1);signKey, err := b.KeyImport(bl.Bytes, &bccsp.ECDSAPrivateKeyImportOpts{Temporary: true})
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[18], 1);
+		return nil, errors.WithMessage(err, "bccspInst.KeyImport failed")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[15], 1);return NewSignerEntity(ID, b, signKey, nil, &bccsp.SHA256Opts{})
+}
+
+// NewECDSAVerifierEntity returns a verifier entity that is capable of verifying using ECDSA
+func NewECDSAVerifierEntity(ID string, b bccsp.BCCSP, signKeyBytes []byte) (*BCCSPSignerEntity, error) {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[19], 1);
+	if b == nil {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[23], 1);
+		return nil, errors.New("nil BCCSP")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[20], 1);bl, _ := pem.Decode(signKeyBytes)
+	if bl == nil {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[24], 1);
+		return nil, errors.New("pem.Decode returns nil")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[21], 1);signKey, err := b.KeyImport(bl.Bytes, &bccsp.ECDSAPKIXPublicKeyImportOpts{Temporary: true})
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[25], 1);
+		return nil, errors.WithMessage(err, "bccspInst.KeyImport failed")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[22], 1);return NewSignerEntity(ID, b, signKey, nil, &bccsp.SHA256Opts{})
+}
+
+// NewSignerEntity returns a SignerEntity
+func NewSignerEntity(ID string, bccsp bccsp.BCCSP, sKey bccsp.Key, sOpts bccsp.SignerOpts, hOpts bccsp.HashOpts) (*BCCSPSignerEntity, error) {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[26], 1);
+	if ID == "" {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[30], 1);
+		return nil, errors.New("NewSignerEntity error: empty ID")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[27], 1);if bccsp == nil {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[31], 1);
+		return nil, errors.New("NewSignerEntity error: nil bccsp")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[28], 1);if sKey == nil {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[32], 1);
+		return nil, errors.New("NewSignerEntity error: nil key")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[29], 1);return &BCCSPSignerEntity{
+		BCCSPEntity: BCCSPEntity{
+			IDstr: ID,
+			BCCSP: bccsp,
+		},
+		SKey:  sKey,
+		SOpts: sOpts,
+		HOpts: hOpts,
+	}, nil
+}
+
+// NewAES256EncrypterECDSASignerEntity returns an encrypter entity that is
+// capable of performing AES 256 bit encryption using PKCS#7 padding and
+// signing using ECDSA
+func NewAES256EncrypterECDSASignerEntity(ID string, b bccsp.BCCSP, encKeyBytes, signKeyBytes []byte) (*BCCSPEncrypterSignerEntity, error) {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[33], 1);
+	if b == nil {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[38], 1);
+		return nil, errors.New("nil BCCSP")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[34], 1);encKey, err := b.KeyImport(encKeyBytes, &bccsp.AES256ImportKeyOpts{Temporary: true})
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[39], 1);
+		return nil, errors.WithMessage(err, "bccspInst.KeyImport failed")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[35], 1);bl, _ := pem.Decode(signKeyBytes)
+	if bl == nil {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[40], 1);
+		return nil, errors.New("pem.Decode returns nil")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[36], 1);signKey, err := b.KeyImport(bl.Bytes, &bccsp.ECDSAPrivateKeyImportOpts{Temporary: true})
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[41], 1);
+		return nil, errors.WithMessage(err, "bccspInst.KeyImport failed")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[37], 1);return NewEncrypterSignerEntity(ID, b, encKey, signKey, &bccsp.AESCBCPKCS7ModeOpts{}, &bccsp.AESCBCPKCS7ModeOpts{}, nil, &bccsp.SHA256Opts{})
+}
+
+// NewEncrypterSignerEntity returns an EncrypterSignerEntity
+// (which is also an EncrypterEntity) that is capable of
+// performing encryption AND of generating signatures using
+// i) the supplied BCCSP instance; ii) the supplied encryption
+// and signing keys and iii) the supplied encryption, decryption,
+// signing and hashing options. The identifier of the entity is
+// supplied as an argument as well - it's the caller's responsibility
+// to choose it in a way that it is meaningful
+func NewEncrypterSignerEntity(ID string, bccsp bccsp.BCCSP, eKey, sKey bccsp.Key, eOpts bccsp.EncrypterOpts, dOpts bccsp.DecrypterOpts, sOpts bccsp.SignerOpts, hOpts bccsp.HashOpts) (*BCCSPEncrypterSignerEntity, error) {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[42], 1);
+	if ID == "" {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[46], 1);
+		return nil, errors.New("NewEntity error: empty ID")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[43], 1);if bccsp == nil {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[47], 1);
+		return nil, errors.New("NewEntity error: nil bccsp")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[44], 1);if eKey == nil || sKey == nil {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[48], 1);
+		return nil, errors.New("NewEntity error: nil keys")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[45], 1);return &BCCSPEncrypterSignerEntity{
+		BCCSPEncrypterEntity: BCCSPEncrypterEntity{
+			BCCSPEntity: BCCSPEntity{
+				IDstr: ID,
+				BCCSP: bccsp,
+			},
+			EKey:  eKey,
+			EOpts: eOpts,
+			DOpts: dOpts,
+		},
+		BCCSPSignerEntity: BCCSPSignerEntity{
+			BCCSPEntity: BCCSPEntity{
+				IDstr: ID,
+				BCCSP: bccsp,
+			},
+			SKey:  sKey,
+			SOpts: sOpts,
+			HOpts: hOpts,
+		},
+	}, nil
+}
+
+/***********/
+/* Methods */
+/***********/
+
+func (e *BCCSPEntity) ID() string {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[49], 1);
+	return e.IDstr
+}
+
+func (e *BCCSPEncrypterEntity) Encrypt(plaintext []byte) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[50], 1);
+	return e.BCCSP.Encrypt(e.EKey, plaintext, e.EOpts)
+}
+
+func (e *BCCSPEncrypterEntity) Decrypt(ciphertext []byte) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[51], 1);
+	return e.BCCSP.Decrypt(e.EKey, ciphertext, e.DOpts)
+}
+
+func (this *BCCSPEncrypterEntity) Equals(e Entity) bool {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[52], 1);
+	if that, rightType := e.(*BCCSPEncrypterEntity); rightType {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[54], 1);
+		return compare(this.EKey, that.EKey)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[53], 1);return false
+}
+
+func (pe *BCCSPEncrypterEntity) Public() (Entity, error) {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[55], 1);
+	var err error
+	eKeyPub := pe.EKey
+
+	if !pe.EKey.Symmetric() {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[57], 1);
+		if eKeyPub, err = pe.EKey.PublicKey(); err != nil {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[58], 1);
+			return nil, errors.WithMessage(err, "public error, eKey.PublicKey returned")
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[56], 1);return &BCCSPEncrypterEntity{
+		BCCSPEntity: BCCSPEntity{
+			IDstr: pe.IDstr,
+			BCCSP: pe.BCCSP,
+		},
+		DOpts: pe.DOpts,
+		EOpts: pe.EOpts,
+		EKey:  eKeyPub,
+	}, nil
+}
+
+func (this *BCCSPSignerEntity) Equals(e Entity) bool {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[59], 1);
+	if that, rightType := e.(*BCCSPSignerEntity); rightType {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[61], 1);
+		return compare(this.SKey, that.SKey)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[60], 1);return false
+}
+
+func (e *BCCSPSignerEntity) Public() (Entity, error) {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[62], 1);
+	var err error
+	sKeyPub := e.SKey
+
+	if !e.SKey.Symmetric() {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[64], 1);
+		if sKeyPub, err = e.SKey.PublicKey(); err != nil {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[65], 1);
+			return nil, errors.WithMessage(err, "public error, sKey.PublicKey returned")
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[63], 1);return &BCCSPSignerEntity{
+		BCCSPEntity: BCCSPEntity{
+			IDstr: e.IDstr,
+			BCCSP: e.BCCSP,
+		},
+		HOpts: e.HOpts,
+		SOpts: e.SOpts,
+		SKey:  sKeyPub,
+	}, nil
+}
+
+func (e *BCCSPSignerEntity) Sign(msg []byte) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[66], 1);
+	h, err := e.BCCSP.Hash(msg, e.HOpts)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[68], 1);
+		return nil, errors.WithMessage(err, "sign error: bccsp.Hash returned")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[67], 1);return e.BCCSP.Sign(e.SKey, h, e.SOpts)
+}
+
+func (e *BCCSPSignerEntity) Verify(signature, msg []byte) (bool, error) {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[69], 1);
+	h, err := e.BCCSP.Hash(msg, e.HOpts)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[71], 1);
+		return false, errors.WithMessage(err, "sign error: bccsp.Hash returned")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[70], 1);return e.BCCSP.Verify(e.SKey, signature, h, e.SOpts)
+}
+
+func (pe *BCCSPEncrypterSignerEntity) Public() (Entity, error) {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[72], 1);
+	var err error
+	eKeyPub := pe.EKey
+
+	if !pe.EKey.Symmetric() {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[75], 1);
+		if eKeyPub, err = pe.EKey.PublicKey(); err != nil {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[76], 1);
+			return nil, errors.WithMessage(err, "public error, eKey.PublicKey returned")
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[73], 1);sKeyPub, err := pe.SKey.PublicKey()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[77], 1);
+		return nil, errors.WithMessage(err, "public error, sKey.PublicKey returned")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[74], 1);return &BCCSPEncrypterSignerEntity{
+		BCCSPEncrypterEntity: BCCSPEncrypterEntity{
+			BCCSPEntity: BCCSPEntity{
+				IDstr: pe.BCCSPEncrypterEntity.IDstr,
+				BCCSP: pe.BCCSPEncrypterEntity.BCCSP,
+			},
+			EKey:  eKeyPub,
+			EOpts: pe.EOpts,
+			DOpts: pe.DOpts,
+		},
+		BCCSPSignerEntity: BCCSPSignerEntity{
+			BCCSPEntity: BCCSPEntity{
+				IDstr: pe.BCCSPEncrypterEntity.IDstr,
+				BCCSP: pe.BCCSPEncrypterEntity.BCCSP,
+			},
+			SKey:  sKeyPub,
+			HOpts: pe.HOpts,
+			SOpts: pe.SOpts,
+		},
+	}, nil
+}
+
+func (this *BCCSPEncrypterSignerEntity) Equals(e Entity) bool {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[78], 1);
+	if that, rightType := e.(*BCCSPEncrypterSignerEntity); rightType {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[79], 1);
+		return compare(this.SKey, that.SKey) && compare(this.EKey, that.EKey)
+	} else{ _cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[80], 1);{
+		return false
+	}}
+}
+
+func (e *BCCSPEncrypterSignerEntity) ID() string {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[81], 1);
+	return e.BCCSPEncrypterEntity.ID()
+}
+
+/********************/
+/* Helper functions */
+/********************/
+
+// compare returns true if the two supplied keys are equivalent.
+// If the supplied keys are symmetric keys, we compare their
+// public versions. This is required because when we compare
+// two entities, we might compare the public and the private
+// version of the same entity and expect to be told that the
+// entities are equivalent
+func compare(this, that bccsp.Key) bool {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[82], 1);
+	var err error
+	if this.Private() {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[85], 1);
+		this, err = this.PublicKey()
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[86], 1);
+			return false
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[83], 1);if that.Private() {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[87], 1);
+		that, err = that.PublicKey()
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[88], 1);
+			return false
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_336436626366316266366632.Count[84], 1);return reflect.DeepEqual(this, that)
+}
+
+var GoCover_0_336436626366316266366632 = struct {
+	Count     [89]uint32
+	Pos       [3 * 89]uint32
+	NumStmt   [89]uint16
+} {
+	Pos: [3 * 89]uint32{
+		58, 59, 0xe0068, // [0]
+		63, 64, 0x100002, // [1]
+		68, 68, 0x670002, // [2]
+		59, 61, 0x3000e, // [3]
+		64, 66, 0x30010, // [4]
+		77, 78, 0xe009c, // [5]
+		82, 82, 0x120002, // [6]
+		86, 86, 0x110002, // [7]
+		90, 98, 0x80002, // [8]
+		78, 80, 0x3000e, // [9]
+		82, 84, 0x30012, // [10]
+		86, 88, 0x30011, // [11]
+		102, 103, 0xe0066, // [12]
+		107, 108, 0xf0002, // [13]
+		112, 113, 0x100002, // [14]
+		117, 117, 0x420002, // [15]
+		103, 105, 0x3000e, // [16]
+		108, 110, 0x3000f, // [17]
+		113, 115, 0x30010, // [18]
+		121, 122, 0xe0068, // [19]
+		126, 127, 0xf0002, // [20]
+		131, 132, 0x100002, // [21]
+		136, 136, 0x420002, // [22]
+		122, 124, 0x3000e, // [23]
+		127, 129, 0x3000f, // [24]
+		132, 134, 0x30010, // [25]
+		140, 141, 0xe008e, // [26]
+		145, 145, 0x120002, // [27]
+		149, 149, 0x110002, // [28]
+		153, 161, 0x80002, // [29]
+		141, 143, 0x3000e, // [30]
+		145, 147, 0x30012, // [31]
+		149, 151, 0x30011, // [32]
+		167, 168, 0xe008b, // [33]
+		172, 173, 0x100002, // [34]
+		177, 178, 0xf0002, // [35]
+		182, 183, 0x100002, // [36]
+		187, 187, 0x8f0002, // [37]
+		168, 170, 0x3000e, // [38]
+		173, 175, 0x30010, // [39]
+		178, 180, 0x3000f, // [40]
+		183, 185, 0x30010, // [41]
+		198, 199, 0xe00dc, // [42]
+		203, 203, 0x120002, // [43]
+		207, 207, 0x200002, // [44]
+		211, 230, 0x80002, // [45]
+		199, 201, 0x3000e, // [46]
+		203, 205, 0x30012, // [47]
+		207, 209, 0x30020, // [48]
+		237, 239, 0x20023, // [49]
+		241, 243, 0x2004a, // [50]
+		245, 247, 0x2004b, // [51]
+		249, 250, 0x3d0039, // [52]
+		254, 254, 0xe0002, // [53]
+		250, 252, 0x3003d, // [54]
+		257, 261, 0x1a003a, // [55]
+		267, 275, 0x80002, // [56]
+		261, 262, 0x35001a, // [57]
+		262, 264, 0x40035, // [58]
+		278, 279, 0x3a0036, // [59]
+		283, 283, 0xe0002, // [60]
+		279, 281, 0x3003a, // [61]
+		286, 290, 0x190036, // [62]
+		296, 304, 0x80002, // [63]
+		290, 291, 0x340019, // [64]
+		291, 293, 0x40034, // [65]
+		307, 309, 0x10003e, // [66]
+		313, 313, 0x290002, // [67]
+		309, 311, 0x30010, // [68]
+		316, 318, 0x100049, // [69]
+		322, 322, 0x360002, // [70]
+		318, 320, 0x30010, // [71]
+		325, 329, 0x1a0040, // [72]
+		335, 336, 0x100002, // [73]
+		340, 359, 0x80002, // [74]
+		329, 330, 0x35001a, // [75]
+		330, 332, 0x40035, // [76]
+		336, 338, 0x30010, // [77]
+		362, 363, 0x43003f, // [78]
+		363, 365, 0x30043, // [79]
+		365, 367, 0x30008, // [80]
+		370, 372, 0x20032, // [81]
+		384, 386, 0x140029, // [82]
+		392, 392, 0x140002, // [83]
+		399, 399, 0x260002, // [84]
+		386, 388, 0x110014, // [85]
+		388, 390, 0x40011, // [86]
+		392, 394, 0x110014, // [87]
+		394, 396, 0x40011, // [88]
+	},
+	NumStmt: [89]uint16{
+		1, // 0
+		2, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		2, // 13
+		2, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		2, // 20
+		2, // 21
+		1, // 22
+		1, // 23
+		1, // 24
+		1, // 25
+		1, // 26
+		1, // 27
+		1, // 28
+		1, // 29
+		1, // 30
+		1, // 31
+		1, // 32
+		1, // 33
+		2, // 34
+		2, // 35
+		2, // 36
+		1, // 37
+		1, // 38
+		1, // 39
+		1, // 40
+		1, // 41
+		1, // 42
+		1, // 43
+		1, // 44
+		1, // 45
+		1, // 46
+		1, // 47
+		1, // 48
+		1, // 49
+		1, // 50
+		1, // 51
+		1, // 52
+		1, // 53
+		1, // 54
+		3, // 55
+		1, // 56
+		1, // 57
+		1, // 58
+		1, // 59
+		1, // 60
+		1, // 61
+		3, // 62
+		1, // 63
+		1, // 64
+		1, // 65
+		2, // 66
+		1, // 67
+		1, // 68
+		2, // 69
+		1, // 70
+		1, // 71
+		3, // 72
+		2, // 73
+		1, // 74
+		1, // 75
+		1, // 76
+		1, // 77
+		1, // 78
+		1, // 79
+		1, // 80
+		1, // 81
+		2, // 82
+		1, // 83
+		1, // 84
+		2, // 85
+		1, // 86
+		2, // 87
+		1, // 88
+	},
+}
+var _ = _cover_atomic_.LoadUint32

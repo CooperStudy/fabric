@@ -1,0 +1,2 @@
+logger.cover.go
+./logger_test.go

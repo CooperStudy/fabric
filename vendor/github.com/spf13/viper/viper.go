@@ -29,7 +29,6 @@ import (
 	"reflect"
 	"strings"
 	"time"
-
 	"github.com/kr/pretty"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cast"
@@ -780,8 +779,10 @@ func (v *Viper) ReadInConfig() error {
 	if !stringInSlice(v.getConfigType(), SupportedExts) {
 		return UnsupportedConfigError(v.getConfigType())
 	}
-
+	fmt.Println("===v.getConfigFile()====",v.getConfigFile())
 	file, err := ioutil.ReadFile(v.getConfigFile())
+	
+	
 	if err != nil {
 		return err
 	}

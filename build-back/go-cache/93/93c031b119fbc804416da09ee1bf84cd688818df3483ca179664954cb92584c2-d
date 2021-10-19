@@ -1,0 +1,201 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/orderer/consensus/kafka/logger.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package kafka; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+	"strings"
+	"sync"
+
+	"github.com/Shopify/sarama"
+	"github.com/hyperledger/fabric/common/flogging"
+	"go.uber.org/zap"
+)
+
+var logger = flogging.MustGetLogger("orderer.consensus.kafka")
+var saramaLogger eventLogger
+
+// init initializes the samara logger
+func init() {_cover_atomic_.AddUint32(&GoCover_4_623633326437306563303132.Count[0], 1);
+	loggingProvider := flogging.MustGetLogger("orderer.consensus.kafka.sarama")
+	saramaEventLogger := &saramaLoggerImpl{
+		logger: loggingProvider.WithOptions(zap.AddCallerSkip(3)),
+		eventListenerSupport: &eventListenerSupport{
+			listeners: make(map[string][]chan string),
+		},
+	}
+	sarama.Logger = saramaEventLogger
+	saramaLogger = saramaEventLogger
+}
+
+// init starts a go routine that detects a possible configuration issue
+func init() {_cover_atomic_.AddUint32(&GoCover_4_623633326437306563303132.Count[1], 1);
+	listener := saramaLogger.NewListener("insufficient data to decode packet")
+	go func() {_cover_atomic_.AddUint32(&GoCover_4_623633326437306563303132.Count[2], 1);
+		for {_cover_atomic_.AddUint32(&GoCover_4_623633326437306563303132.Count[3], 1);
+			select {
+			case <-listener:_cover_atomic_.AddUint32(&GoCover_4_623633326437306563303132.Count[4], 1);
+				logger.Critical("Unable to decode a Kafka packet. Usually, this " +
+					"indicates that the Kafka.Version specified in the orderer " +
+					"configuration is incorrectly set to a version which is newer than " +
+					"the actual Kafka broker version.")
+			}
+		}
+	}()
+}
+
+// eventLogger adapts a Logger to the sarama.Logger interface.
+// Additionally, listeners can be registered to be notified when a substring has
+// been logged.
+type eventLogger interface {
+	sarama.StdLogger
+	NewListener(substr string) <-chan string
+	RemoveListener(substr string, listener <-chan string)
+}
+
+type debugger interface {
+	Debug(...interface{})
+}
+
+type saramaLoggerImpl struct {
+	logger               debugger
+	eventListenerSupport *eventListenerSupport
+}
+
+func (l saramaLoggerImpl) Print(args ...interface{}) {_cover_atomic_.AddUint32(&GoCover_4_623633326437306563303132.Count[5], 1);
+	l.print(fmt.Sprint(args...))
+}
+
+func (l saramaLoggerImpl) Printf(format string, args ...interface{}) {_cover_atomic_.AddUint32(&GoCover_4_623633326437306563303132.Count[6], 1);
+	l.print(fmt.Sprintf(format, args...))
+}
+
+func (l saramaLoggerImpl) Println(args ...interface{}) {_cover_atomic_.AddUint32(&GoCover_4_623633326437306563303132.Count[7], 1);
+	l.print(fmt.Sprintln(args...))
+}
+
+func (l saramaLoggerImpl) print(message string) {_cover_atomic_.AddUint32(&GoCover_4_623633326437306563303132.Count[8], 1);
+	l.eventListenerSupport.fire(message)
+	l.logger.Debug(message)
+}
+
+// this should be more than enough for a well behaved listener
+const listenerChanSize = 100
+
+func (l saramaLoggerImpl) NewListener(substr string) <-chan string {_cover_atomic_.AddUint32(&GoCover_4_623633326437306563303132.Count[9], 1);
+	listener := make(chan string, listenerChanSize)
+	l.eventListenerSupport.addListener(substr, listener)
+	return listener
+}
+
+func (l saramaLoggerImpl) RemoveListener(substr string, listener <-chan string) {_cover_atomic_.AddUint32(&GoCover_4_623633326437306563303132.Count[10], 1);
+	l.eventListenerSupport.removeListener(substr, listener)
+}
+
+// eventListenerSupport maintains a map of substrings to a list of listeners
+// interested in receiving a notification when the substring is logged.
+type eventListenerSupport struct {
+	sync.Mutex
+	listeners map[string][]chan string
+}
+
+// addListener adds a listener to the list of listeners for the specified substring
+func (b *eventListenerSupport) addListener(substr string, listener chan string) {_cover_atomic_.AddUint32(&GoCover_4_623633326437306563303132.Count[11], 1);
+	b.Lock()
+	defer b.Unlock()
+	if listeners, ok := b.listeners[substr]; ok {_cover_atomic_.AddUint32(&GoCover_4_623633326437306563303132.Count[12], 1);
+		b.listeners[substr] = append(listeners, listener)
+	} else{ _cover_atomic_.AddUint32(&GoCover_4_623633326437306563303132.Count[13], 1);{
+		b.listeners[substr] = []chan string{listener}
+	}}
+}
+
+// fire sends the specified message to each listener that is registered with
+// a substring contained in the message
+func (b *eventListenerSupport) fire(message string) {_cover_atomic_.AddUint32(&GoCover_4_623633326437306563303132.Count[14], 1);
+	b.Lock()
+	defer b.Unlock()
+	for substr, listeners := range b.listeners {_cover_atomic_.AddUint32(&GoCover_4_623633326437306563303132.Count[15], 1);
+		if strings.Contains(message, substr) {_cover_atomic_.AddUint32(&GoCover_4_623633326437306563303132.Count[16], 1);
+			for _, listener := range listeners {_cover_atomic_.AddUint32(&GoCover_4_623633326437306563303132.Count[17], 1);
+				listener <- message
+			}
+		}
+	}
+}
+
+// addListener removes a listener from the list of listeners for the specified substring
+func (b *eventListenerSupport) removeListener(substr string, listener <-chan string) {_cover_atomic_.AddUint32(&GoCover_4_623633326437306563303132.Count[18], 1);
+	b.Lock()
+	defer b.Unlock()
+	if listeners, ok := b.listeners[substr]; ok {_cover_atomic_.AddUint32(&GoCover_4_623633326437306563303132.Count[19], 1);
+		for i, l := range listeners {_cover_atomic_.AddUint32(&GoCover_4_623633326437306563303132.Count[20], 1);
+			if l == listener {_cover_atomic_.AddUint32(&GoCover_4_623633326437306563303132.Count[21], 1);
+				copy(listeners[i:], listeners[i+1:])
+				listeners[len(listeners)-1] = nil
+				b.listeners[substr] = listeners[:len(listeners)-1]
+			}
+		}
+	}
+}
+
+var GoCover_4_623633326437306563303132 = struct {
+	Count     [22]uint32
+	Pos       [3 * 22]uint32
+	NumStmt   [22]uint16
+} {
+	Pos: [3 * 22]uint32{
+		23, 33, 0x2000d, // [0]
+		36, 38, 0xc000d, // [1]
+		38, 39, 0x7000c, // [2]
+		39, 40, 0xb0007, // [3]
+		41, 45, 0x290014, // [4]
+		69, 71, 0x20036, // [5]
+		73, 75, 0x20046, // [6]
+		77, 79, 0x20038, // [7]
+		81, 84, 0x20031, // [8]
+		89, 93, 0x20044, // [9]
+		95, 97, 0x20051, // [10]
+		107, 110, 0x2e0051, // [11]
+		110, 112, 0x3002e, // [12]
+		112, 114, 0x30008, // [13]
+		119, 122, 0x2d0035, // [14]
+		122, 123, 0x28002d, // [15]
+		123, 124, 0x270028, // [16]
+		124, 126, 0x50027, // [17]
+		132, 135, 0x2e0056, // [18]
+		135, 136, 0x1f002e, // [19]
+		136, 137, 0x15001f, // [20]
+		137, 141, 0x50015, // [21]
+	},
+	NumStmt: [22]uint16{
+		4, // 0
+		2, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		2, // 8
+		3, // 9
+		1, // 10
+		3, // 11
+		1, // 12
+		1, // 13
+		3, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		3, // 18
+		1, // 19
+		1, // 20
+		3, // 21
+	},
+}
+var _ = _cover_atomic_.LoadUint32

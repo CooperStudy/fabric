@@ -1,0 +1,356 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/operations/system.go:1
+/*
+Copyright IBM Corp All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package operations; import _cover_atomic_ "sync/atomic"
+
+import (
+	"context"
+	"crypto/tls"
+	"net"
+	"net/http"
+	"os"
+	"strings"
+	"time"
+
+	kitstatsd "github.com/go-kit/kit/metrics/statsd"
+	"github.com/hyperledger/fabric-lib-go/healthz"
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/common/flogging/httpadmin"
+	"github.com/hyperledger/fabric/common/metrics"
+	"github.com/hyperledger/fabric/common/metrics/disabled"
+	"github.com/hyperledger/fabric/common/metrics/prometheus"
+	"github.com/hyperledger/fabric/common/metrics/statsd"
+	"github.com/hyperledger/fabric/common/metrics/statsd/goruntime"
+	"github.com/hyperledger/fabric/common/util"
+	"github.com/hyperledger/fabric/core/middleware"
+	prom "github.com/prometheus/client_golang/prometheus"
+)
+
+//go:generate counterfeiter -o fakes/logger.go -fake-name Logger . Logger
+
+type Logger interface {
+	Warn(args ...interface{})
+	Warnf(template string, args ...interface{})
+}
+
+type Statsd struct {
+	Network       string
+	Address       string
+	WriteInterval time.Duration
+	Prefix        string
+}
+
+type MetricsOptions struct {
+	Provider string
+	Statsd   *Statsd
+}
+
+type Options struct {
+	Logger        Logger
+	ListenAddress string
+	Metrics       MetricsOptions
+	TLS           TLS
+	Version       string
+}
+
+type System struct {
+	metrics.Provider
+
+	logger          Logger
+	healthHandler   *healthz.HealthHandler
+	options         Options
+	statsd          *kitstatsd.Statsd
+	collectorTicker *time.Ticker
+	sendTicker      *time.Ticker
+	httpServer      *http.Server
+	mux             *http.ServeMux
+	addr            string
+	versionGauge    metrics.Gauge
+}
+
+func NewSystem(o Options) *System {_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[0], 1);
+	logger := o.Logger
+	if logger == nil {_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[2], 1);
+		logger = flogging.MustGetLogger("operations.runner")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[1], 1);system := &System{
+		logger:  logger,
+		options: o,
+	}
+
+	system.initializeServer()
+	system.initializeHealthCheckHandler()
+	system.initializeLoggingHandler()
+	system.initializeMetricsProvider()
+
+	return system
+}
+
+func (s *System) Run(signals <-chan os.Signal, ready chan<- struct{}) error {_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[3], 1);
+	err := s.Start()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[5], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[4], 1);close(ready)
+
+	select {
+	case <-signals:_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[6], 1);
+		return s.Stop()
+	}
+}
+
+func (s *System) Start() error {_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[7], 1);
+	err := s.startMetricsTickers()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[10], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[8], 1);s.versionGauge.With("version", s.options.Version).Set(1)
+
+	listener, err := s.listen()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[11], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[9], 1);s.addr = listener.Addr().String()
+
+	go s.httpServer.Serve(listener)
+
+	return nil
+}
+
+func (s *System) Stop() error {_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[12], 1);
+	if s.collectorTicker != nil {_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[15], 1);
+		s.collectorTicker.Stop()
+		s.collectorTicker = nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[13], 1);if s.sendTicker != nil {_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[16], 1);
+		s.sendTicker.Stop()
+		s.sendTicker = nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[14], 1);ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	return s.httpServer.Shutdown(ctx)
+}
+
+func (s *System) RegisterChecker(component string, checker healthz.HealthChecker) error {_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[17], 1);
+	return s.healthHandler.RegisterChecker(component, checker)
+}
+
+func (s *System) initializeServer() {_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[18], 1);
+	s.mux = http.NewServeMux()
+	s.httpServer = &http.Server{
+		Addr:         s.options.ListenAddress,
+		Handler:      s.mux,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 2 * time.Minute,
+	}
+}
+
+func (s *System) handlerChain(h http.Handler, secure bool) http.Handler {_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[19], 1);
+	if secure {_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[21], 1);
+		return middleware.NewChain(middleware.RequireCert(), middleware.WithRequestID(util.GenerateUUID)).Handler(h)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[20], 1);return middleware.NewChain(middleware.WithRequestID(util.GenerateUUID)).Handler(h)
+}
+
+func (s *System) initializeMetricsProvider() error {_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[22], 1);
+	m := s.options.Metrics
+	providerType := m.Provider
+	switch providerType {
+	case "statsd":_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[23], 1);
+		prefix := m.Statsd.Prefix
+		if prefix != "" && !strings.HasSuffix(prefix, ".") {_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[28], 1);
+			prefix = prefix + "."
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[24], 1);ks := kitstatsd.New(prefix, s)
+		s.Provider = &statsd.Provider{Statsd: ks}
+		s.statsd = ks
+		s.versionGauge = versionGauge(s.Provider)
+		return nil
+
+	case "prometheus":_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[25], 1);
+		s.Provider = &prometheus.Provider{}
+		s.versionGauge = versionGauge(s.Provider)
+		s.mux.Handle("/metrics", s.handlerChain(prom.Handler(), s.options.TLS.Enabled))
+		return nil
+
+	default:_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[26], 1);
+		if providerType != "disabled" {_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[29], 1);
+			s.logger.Warnf("Unknown provider type: %s; metrics disabled", providerType)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[27], 1);s.Provider = &disabled.Provider{}
+		s.versionGauge = versionGauge(s.Provider)
+		return nil
+	}
+}
+
+func (s *System) initializeLoggingHandler() {_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[30], 1);
+	s.mux.Handle("/logspec", s.handlerChain(httpadmin.NewSpecHandler(), s.options.TLS.Enabled))
+}
+
+func (s *System) initializeHealthCheckHandler() {_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[31], 1);
+	s.healthHandler = healthz.NewHealthHandler()
+	s.mux.Handle("/healthz", s.handlerChain(s.healthHandler, false))
+}
+
+func (s *System) startMetricsTickers() error {_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[32], 1);
+	m := s.options.Metrics
+	if s.statsd != nil {_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[34], 1);
+		network := m.Statsd.Network
+		address := m.Statsd.Address
+		c, err := net.Dial(network, address)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[36], 1);
+			return err
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[35], 1);c.Close()
+
+		opts := s.options.Metrics.Statsd
+		writeInterval := opts.WriteInterval
+
+		s.collectorTicker = time.NewTicker(writeInterval / 2)
+		goCollector := goruntime.NewCollector(s.Provider)
+		go goCollector.CollectAndPublish(s.collectorTicker.C)
+
+		s.sendTicker = time.NewTicker(writeInterval)
+		go s.statsd.SendLoop(s.sendTicker.C, network, address)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[33], 1);return nil
+}
+
+func (s *System) listen() (net.Listener, error) {_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[37], 1);
+	listener, err := net.Listen("tcp", s.options.ListenAddress)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[41], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[38], 1);tlsConfig, err := s.options.TLS.Config()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[42], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[39], 1);if tlsConfig != nil {_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[43], 1);
+		listener = tls.NewListener(listener, tlsConfig)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[40], 1);return listener, nil
+}
+
+func (s *System) Addr() string {_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[44], 1);
+	return s.addr
+}
+
+func (s *System) Log(keyvals ...interface{}) error {_cover_atomic_.AddUint32(&GoCover_1_383831363162653633366638.Count[45], 1);
+	s.logger.Warn(keyvals...)
+	return nil
+}
+
+var GoCover_1_383831363162653633366638 = struct {
+	Count     [46]uint32
+	Pos       [3 * 46]uint32
+	NumStmt   [46]uint16
+} {
+	Pos: [3 * 46]uint32{
+		74, 76, 0x130023, // [0]
+		80, 90, 0xf0002, // [1]
+		76, 78, 0x30013, // [2]
+		93, 95, 0x10004d, // [3]
+		99, 101, 0x90002, // [4]
+		95, 97, 0x30010, // [5]
+		102, 103, 0x120011, // [6]
+		107, 109, 0x100020, // [7]
+		113, 116, 0x100002, // [8]
+		119, 123, 0xc0002, // [9]
+		109, 111, 0x30010, // [10]
+		116, 118, 0x30010, // [11]
+		126, 127, 0x1e001f, // [12]
+		131, 131, 0x190002, // [13]
+		135, 138, 0x230002, // [14]
+		127, 130, 0x3001e, // [15]
+		131, 134, 0x30019, // [16]
+		141, 143, 0x20059, // [17]
+		145, 153, 0x20025, // [18]
+		155, 156, 0xc0049, // [19]
+		159, 159, 0x540002, // [20]
+		156, 158, 0x3000c, // [21]
+		162, 165, 0x160034, // [22]
+		166, 168, 0x360010, // [23]
+		172, 176, 0xd0003, // [24]
+		178, 182, 0xd0014, // [25]
+		184, 185, 0x21000a, // [26]
+		189, 191, 0xd0003, // [27]
+		168, 170, 0x40036, // [28]
+		185, 187, 0x40021, // [29]
+		195, 197, 0x2002d, // [30]
+		199, 202, 0x20031, // [31]
+		204, 206, 0x15002e, // [32]
+		226, 226, 0xc0002, // [33]
+		206, 210, 0x110015, // [34]
+		213, 223, 0x390003, // [35]
+		210, 212, 0x40011, // [36]
+		229, 231, 0x100031, // [37]
+		234, 235, 0x100002, // [38]
+		238, 238, 0x160002, // [39]
+		241, 241, 0x160002, // [40]
+		231, 233, 0x30010, // [41]
+		235, 237, 0x30010, // [42]
+		238, 240, 0x30016, // [43]
+		244, 246, 0x20020, // [44]
+		248, 251, 0x20034, // [45]
+	},
+	NumStmt: [46]uint16{
+		2, // 0
+		6, // 1
+		1, // 2
+		2, // 3
+		2, // 4
+		1, // 5
+		1, // 6
+		2, // 7
+		3, // 8
+		3, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		3, // 14
+		2, // 15
+		2, // 16
+		1, // 17
+		2, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		3, // 22
+		2, // 23
+		5, // 24
+		4, // 25
+		1, // 26
+		3, // 27
+		1, // 28
+		1, // 29
+		1, // 30
+		2, // 31
+		2, // 32
+		1, // 33
+		4, // 34
+		8, // 35
+		1, // 36
+		2, // 37
+		2, // 38
+		1, // 39
+		1, // 40
+		1, // 41
+		1, // 42
+		1, // 43
+		1, // 44
+		2, // 45
+	},
+}
+var _ = _cover_atomic_.LoadUint32

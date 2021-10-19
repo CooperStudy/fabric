@@ -1,0 +1,397 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/channelconfig/bundle.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package channelconfig; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric/common/cauthdsl"
+	"github.com/hyperledger/fabric/common/configtx"
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/common/policies"
+	"github.com/hyperledger/fabric/msp"
+	cb "github.com/hyperledger/fabric/protos/common"
+	"github.com/hyperledger/fabric/protos/utils"
+	"github.com/pkg/errors"
+)
+
+var logger = flogging.MustGetLogger("common.channelconfig")
+
+// RootGroupKey is the key for namespacing the channel config, especially for
+// policy evaluation.
+const RootGroupKey = "Channel"
+
+// Bundle is a collection of resources which will always have a consistent
+// view of the channel configuration.  In particular, for a given bundle reference,
+// the config sequence, the policy manager etc. will always return exactly the
+// same value.  The Bundle structure is immutable and will always be replaced in its
+// entirety, with new backing memory.
+type Bundle struct {
+	policyManager   policies.Manager
+	mspManager      msp.MSPManager
+	channelConfig   *ChannelConfig
+	configtxManager configtx.Validator
+}
+
+// PolicyManager returns the policy manager constructed for this config
+func (b *Bundle) PolicyManager() policies.Manager {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[0], 1);
+	return b.policyManager
+}
+
+// MSPManager returns the MSP manager constructed for this config
+func (b *Bundle) MSPManager() msp.MSPManager {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[1], 1);
+	return b.channelConfig.MSPManager()
+}
+
+// ChannelConfig returns the config.Channel for the chain
+func (b *Bundle) ChannelConfig() Channel {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[2], 1);
+	return b.channelConfig
+}
+
+// OrdererConfig returns the config.Orderer for the channel
+// and whether the Orderer config exists
+func (b *Bundle) OrdererConfig() (Orderer, bool) {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[3], 1);
+	result := b.channelConfig.OrdererConfig()
+	return result, result != nil
+}
+
+// ConsortiumsConfig() returns the config.Consortiums for the channel
+// and whether the consortiums config exists
+func (b *Bundle) ConsortiumsConfig() (Consortiums, bool) {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[4], 1);
+	result := b.channelConfig.ConsortiumsConfig()
+	return result, result != nil
+}
+
+// ApplicationConfig returns the configtxapplication.SharedConfig for the channel
+// and whether the Application config exists
+func (b *Bundle) ApplicationConfig() (Application, bool) {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[5], 1);
+	result := b.channelConfig.ApplicationConfig()
+	return result, result != nil
+}
+
+// ConfigtxValidator returns the configtx.Validator for the channel
+func (b *Bundle) ConfigtxValidator() configtx.Validator {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[6], 1);
+	return b.configtxManager
+}
+
+// ValidateNew checks if a new bundle's contained configuration is valid to be derived from the current bundle.
+// This allows checks of the nature "Make sure that the consensus type did not change." which is otherwise
+func (b *Bundle) ValidateNew(nb Resources) error {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[7], 1);
+	if oc, ok := b.OrdererConfig(); ok {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[11], 1);
+		noc, ok := nb.OrdererConfig()
+		if !ok {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[14], 1);
+			return errors.New("Current config has orderer section, but new config does not")
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[12], 1);if oc.ConsensusType() != noc.ConsensusType() {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[15], 1);
+			return errors.Errorf("Attempted to change consensus type from %s to %s", oc.ConsensusType(), noc.ConsensusType())
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[13], 1);for orgName, org := range oc.Organizations() {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[16], 1);
+			norg, ok := noc.Organizations()[orgName]
+			if !ok {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[18], 1);
+				continue
+			}
+			_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[17], 1);mspID := org.MSPID()
+			if mspID != norg.MSPID() {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[19], 1);
+				return errors.Errorf("Orderer org %s attempted to change MSP ID from %s to %s", orgName, mspID, norg.MSPID())
+			}
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[8], 1);if ac, ok := b.ApplicationConfig(); ok {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[20], 1);
+		nac, ok := nb.ApplicationConfig()
+		if !ok {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[22], 1);
+			return errors.New("Current config has application section, but new config does not")
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[21], 1);for orgName, org := range ac.Organizations() {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[23], 1);
+			norg, ok := nac.Organizations()[orgName]
+			if !ok {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[25], 1);
+				continue
+			}
+			_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[24], 1);mspID := org.MSPID()
+			if mspID != norg.MSPID() {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[26], 1);
+				return errors.Errorf("Application org %s attempted to change MSP ID from %s to %s", orgName, mspID, norg.MSPID())
+			}
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[9], 1);if cc, ok := b.ConsortiumsConfig(); ok {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[27], 1);
+		ncc, ok := nb.ConsortiumsConfig()
+		if !ok {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[29], 1);
+			return errors.Errorf("Current config has consortiums section, but new config does not")
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[28], 1);for consortiumName, consortium := range cc.Consortiums() {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[30], 1);
+			nconsortium, ok := ncc.Consortiums()[consortiumName]
+			if !ok {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[32], 1);
+				continue
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[31], 1);for orgName, org := range consortium.Organizations() {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[33], 1);
+				norg, ok := nconsortium.Organizations()[orgName]
+				if !ok {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[35], 1);
+					continue
+				}
+				_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[34], 1);mspID := org.MSPID()
+				if mspID != norg.MSPID() {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[36], 1);
+					return errors.Errorf("Consortium %s org %s attempted to change MSP ID from %s to %s", consortiumName, orgName, mspID, norg.MSPID())
+				}
+			}
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[10], 1);return nil
+}
+
+// NewBundleFromEnvelope wraps the NewBundle function, extracting the needed
+// information from a full configtx
+func NewBundleFromEnvelope(env *cb.Envelope) (*Bundle, error) {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[37], 1);
+	payload, err := utils.UnmarshalPayload(env.Payload)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[42], 1);
+		return nil, errors.Wrap(err, "failed to unmarshal payload from envelope")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[38], 1);configEnvelope, err := configtx.UnmarshalConfigEnvelope(payload.Data)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[43], 1);
+		return nil, errors.Wrap(err, "failed to unmarshal config envelope from payload")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[39], 1);if payload.Header == nil {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[44], 1);
+		return nil, errors.Errorf("envelope header cannot be nil")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[40], 1);chdr, err := utils.UnmarshalChannelHeader(payload.Header.ChannelHeader)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[45], 1);
+		return nil, errors.Wrap(err, "failed to unmarshal channel header")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[41], 1);return NewBundle(chdr.ChannelId, configEnvelope.Config)
+}
+
+// NewBundle creates a new immutable bundle of configuration
+func NewBundle(channelID string, config *cb.Config) (*Bundle, error) {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[46], 1);
+	if err := preValidate(config); err != nil {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[52], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[47], 1);channelConfig, err := NewChannelConfig(config.ChannelGroup)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[53], 1);
+		return nil, errors.Wrap(err, "initializing channelconfig failed")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[48], 1);policyProviderMap := make(map[int32]policies.Provider)
+	for pType := range cb.Policy_PolicyType_name {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[54], 1);
+		rtype := cb.Policy_PolicyType(pType)
+		switch rtype {
+		case cb.Policy_UNKNOWN:_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[55], 1);
+			// Do not register a handler
+		case cb.Policy_SIGNATURE:_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[56], 1);
+			policyProviderMap[pType] = cauthdsl.NewPolicyProvider(channelConfig.MSPManager())
+		case cb.Policy_MSP:_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[57], 1);
+			// Add hook for MSP Handler here
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[49], 1);policyManager, err := policies.NewManagerImpl(RootGroupKey, policyProviderMap, config.ChannelGroup)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[58], 1);
+		return nil, errors.Wrap(err, "initializing policymanager failed")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[50], 1);configtxManager, err := configtx.NewValidatorImpl(channelID, config, RootGroupKey, policyManager)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[59], 1);
+		return nil, errors.Wrap(err, "initializing configtx manager failed")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[51], 1);return &Bundle{
+		policyManager:   policyManager,
+		channelConfig:   channelConfig,
+		configtxManager: configtxManager,
+	}, nil
+}
+
+func preValidate(config *cb.Config) error {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[60], 1);
+	if config == nil {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[64], 1);
+		return errors.New("channelconfig Config cannot be nil")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[61], 1);if config.ChannelGroup == nil {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[65], 1);
+		return errors.New("config must contain a channel group")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[62], 1);if og, ok := config.ChannelGroup.Groups[OrdererGroupKey]; ok {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[66], 1);
+		if _, ok := og.Values[CapabilitiesKey]; !ok {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[67], 1);
+			if _, ok := config.ChannelGroup.Values[CapabilitiesKey]; ok {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[69], 1);
+				return errors.New("cannot enable channel capabilities without orderer support first")
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[68], 1);if ag, ok := config.ChannelGroup.Groups[ApplicationGroupKey]; ok {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[70], 1);
+				if _, ok := ag.Values[CapabilitiesKey]; ok {_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[71], 1);
+					return errors.New("cannot enable application capabilities without orderer support first")
+				}
+			}
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_373339383034363064316135.Count[63], 1);return nil
+}
+
+var GoCover_4_373339383034363064316135 = struct {
+	Count     [72]uint32
+	Pos       [3 * 72]uint32
+	NumStmt   [72]uint16
+} {
+	Pos: [3 * 72]uint32{
+		39, 41, 0x20033, // [0]
+		44, 46, 0x2002e, // [1]
+		49, 51, 0x2002a, // [2]
+		55, 58, 0x20032, // [3]
+		62, 65, 0x2003a, // [4]
+		69, 72, 0x2003a, // [5]
+		75, 77, 0x20039, // [6]
+		81, 82, 0x250032, // [7]
+		104, 104, 0x290002, // [8]
+		122, 122, 0x290002, // [9]
+		147, 147, 0xc0002, // [10]
+		82, 84, 0xa0025, // [11]
+		88, 88, 0x300003, // [12]
+		92, 92, 0x300003, // [13]
+		84, 86, 0x4000a, // [14]
+		88, 90, 0x40030, // [15]
+		92, 94, 0xb0030, // [16]
+		97, 98, 0x1d0004, // [17]
+		94, 95, 0xd000b, // [18]
+		98, 100, 0x5001d, // [19]
+		104, 106, 0xa0029, // [20]
+		110, 110, 0x300003, // [21]
+		106, 108, 0x4000a, // [22]
+		110, 112, 0xb0030, // [23]
+		115, 116, 0x1d0004, // [24]
+		112, 113, 0xd000b, // [25]
+		116, 118, 0x5001d, // [26]
+		122, 124, 0xa0029, // [27]
+		128, 128, 0x3c0003, // [28]
+		124, 126, 0x4000a, // [29]
+		128, 130, 0xb003c, // [30]
+		134, 134, 0x390004, // [31]
+		130, 131, 0xd000b, // [32]
+		134, 136, 0xc0039, // [33]
+		139, 140, 0x1e0005, // [34]
+		136, 137, 0xe000c, // [35]
+		140, 142, 0x6001e, // [36]
+		152, 154, 0x10003f, // [37]
+		158, 159, 0x100002, // [38]
+		163, 163, 0x1b0002, // [39]
+		167, 168, 0x100002, // [40]
+		172, 172, 0x390002, // [41]
+		154, 156, 0x30010, // [42]
+		159, 161, 0x30010, // [43]
+		163, 165, 0x3001b, // [44]
+		168, 170, 0x30010, // [45]
+		176, 177, 0x2c0046, // [46]
+		181, 182, 0x100002, // [47]
+		186, 187, 0x2f0002, // [48]
+		199, 200, 0x100002, // [49]
+		204, 205, 0x100002, // [50]
+		209, 213, 0x80002, // [51]
+		177, 179, 0x3002c, // [52]
+		182, 184, 0x30010, // [53]
+		187, 189, 0x10002f, // [54]
+		190, 190, 0x1a001a, // [55]
+		192, 193, 0x55001c, // [56]
+		194, 194, 0x160016, // [57]
+		200, 202, 0x30010, // [58]
+		205, 207, 0x30010, // [59]
+		216, 217, 0x13002b, // [60]
+		221, 221, 0x200002, // [61]
+		225, 225, 0x3f0002, // [62]
+		239, 239, 0xc0002, // [63]
+		217, 219, 0x30013, // [64]
+		221, 223, 0x30020, // [65]
+		225, 226, 0x2f003f, // [66]
+		226, 227, 0x40002f, // [67]
+		231, 231, 0x450004, // [68]
+		227, 229, 0x50040, // [69]
+		231, 232, 0x300045, // [70]
+		232, 234, 0x60030, // [71]
+	},
+	NumStmt: [72]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		2, // 3
+		2, // 4
+		2, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		2, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		2, // 16
+		2, // 17
+		1, // 18
+		1, // 19
+		2, // 20
+		1, // 21
+		1, // 22
+		2, // 23
+		2, // 24
+		1, // 25
+		1, // 26
+		2, // 27
+		1, // 28
+		1, // 29
+		2, // 30
+		1, // 31
+		1, // 32
+		2, // 33
+		2, // 34
+		1, // 35
+		1, // 36
+		2, // 37
+		2, // 38
+		1, // 39
+		2, // 40
+		1, // 41
+		1, // 42
+		1, // 43
+		1, // 44
+		1, // 45
+		1, // 46
+		2, // 47
+		2, // 48
+		2, // 49
+		2, // 50
+		1, // 51
+		1, // 52
+		1, // 53
+		2, // 54
+		0, // 55
+		1, // 56
+		0, // 57
+		1, // 58
+		1, // 59
+		1, // 60
+		1, // 61
+		1, // 62
+		1, // 63
+		1, // 64
+		1, // 65
+		1, // 66
+		1, // 67
+		1, // 68
+		1, // 69
+		1, // 70
+		1, // 71
+	},
+}
+var _ = _cover_atomic_.LoadUint32

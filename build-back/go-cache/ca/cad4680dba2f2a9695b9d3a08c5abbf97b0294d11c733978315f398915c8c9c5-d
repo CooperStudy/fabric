@@ -1,0 +1,639 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/container/dockercontroller/dockercontroller.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package dockercontroller; import _cover_atomic_ "sync/atomic"
+
+import (
+	"archive/tar"
+	"bufio"
+	"bytes"
+	"compress/gzip"
+	"context"
+	"encoding/hex"
+	"fmt"
+	"io"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/fsouza/go-dockerclient"
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/common/metrics"
+	"github.com/hyperledger/fabric/common/util"
+	"github.com/hyperledger/fabric/core/container"
+	"github.com/hyperledger/fabric/core/container/ccintf"
+	cutil "github.com/hyperledger/fabric/core/container/util"
+	"github.com/pkg/errors"
+	"github.com/spf13/viper"
+)
+
+// ContainerType is the string which the docker container type
+// is registered with the container.VMController
+const ContainerType = "DOCKER"
+
+var (
+	dockerLogger = flogging.MustGetLogger("dockercontroller")
+	hostConfig   *docker.HostConfig
+	vmRegExp     = regexp.MustCompile("[^a-zA-Z0-9-_.]")
+	imageRegExp  = regexp.MustCompile("^[a-z0-9]+(([._-][a-z0-9]+)+)?$")
+)
+
+// getClient returns an instance that implements dockerClient interface
+type getClient func() (dockerClient, error)
+
+// DockerVM is a vm. It is identified by an image id
+type DockerVM struct {
+	getClientFnc getClient
+	PeerID       string
+	NetworkID    string
+	BuildMetrics *BuildMetrics
+}
+
+// dockerClient represents a docker client
+type dockerClient interface {
+	// CreateContainer creates a docker container, returns an error in case of failure
+	CreateContainer(opts docker.CreateContainerOptions) (*docker.Container, error)
+	// UploadToContainer uploads a tar archive to be extracted to a path in the
+	// filesystem of the container.
+	UploadToContainer(id string, opts docker.UploadToContainerOptions) error
+	// StartContainer starts a docker container, returns an error in case of failure
+	StartContainer(id string, cfg *docker.HostConfig) error
+	// AttachToContainer attaches to a docker container, returns an error in case of
+	// failure
+	AttachToContainer(opts docker.AttachToContainerOptions) error
+	// BuildImage builds an image from a tarball's url or a Dockerfile in the input
+	// stream, returns an error in case of failure
+	BuildImage(opts docker.BuildImageOptions) error
+	// RemoveImageExtended removes a docker image by its name or ID, returns an
+	// error in case of failure
+	RemoveImageExtended(id string, opts docker.RemoveImageOptions) error
+	// StopContainer stops a docker container, killing it after the given timeout
+	// (in seconds). Returns an error in case of failure
+	StopContainer(id string, timeout uint) error
+	// KillContainer sends a signal to a docker container, returns an error in
+	// case of failure
+	KillContainer(opts docker.KillContainerOptions) error
+	// RemoveContainer removes a docker container, returns an error in case of failure
+	RemoveContainer(opts docker.RemoveContainerOptions) error
+	// PingWithContext pings the docker daemon. The context object can be used
+	// to cancel the ping request.
+	PingWithContext(context.Context) error
+}
+
+// Provider implements container.VMProvider
+type Provider struct {
+	PeerID       string
+	NetworkID    string
+	BuildMetrics *BuildMetrics
+}
+
+// NewProvider creates a new instance of Provider
+func NewProvider(peerID, networkID string, metricsProvider metrics.Provider) *Provider {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[0], 1);
+	return &Provider{
+		PeerID:       peerID,
+		NetworkID:    networkID,
+		BuildMetrics: NewBuildMetrics(metricsProvider),
+	}
+}
+
+// NewVM creates a new DockerVM instance
+func (p *Provider) NewVM() container.VM {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[1], 1);
+	return NewDockerVM(p.PeerID, p.NetworkID, p.BuildMetrics)
+}
+
+// NewDockerVM returns a new DockerVM instance
+func NewDockerVM(peerID, networkID string, buildMetrics *BuildMetrics) *DockerVM {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[2], 1);
+	return &DockerVM{
+		PeerID:       peerID,
+		NetworkID:    networkID,
+		getClientFnc: getDockerClient,
+		BuildMetrics: buildMetrics,
+	}
+}
+
+func getDockerClient() (dockerClient, error) {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[3], 1);
+	return cutil.NewDockerClient()
+}
+
+func getDockerHostConfig() *docker.HostConfig {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[4], 1);
+	if hostConfig != nil {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[10], 1);
+		return hostConfig
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[5], 1);dockerKey := func(key string) string {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[11], 1); return "vm.docker.hostConfig." + key }
+	_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[6], 1);getInt64 := func(key string) int64 {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[12], 1); return int64(viper.GetInt(dockerKey(key))) }
+
+	_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[7], 1);var logConfig docker.LogConfig
+	err := viper.UnmarshalKey(dockerKey("LogConfig"), &logConfig)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[13], 1);
+		dockerLogger.Warningf("load docker HostConfig.LogConfig failed, error: %s", err.Error())
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[8], 1);networkMode := viper.GetString(dockerKey("NetworkMode"))
+	if networkMode == "" {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[14], 1);
+		networkMode = "host"
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[9], 1);dockerLogger.Debugf("docker container hostconfig NetworkMode: %s", networkMode)
+
+	return &docker.HostConfig{
+		CapAdd:  viper.GetStringSlice(dockerKey("CapAdd")),
+		CapDrop: viper.GetStringSlice(dockerKey("CapDrop")),
+
+		DNS:         viper.GetStringSlice(dockerKey("Dns")),
+		DNSSearch:   viper.GetStringSlice(dockerKey("DnsSearch")),
+		ExtraHosts:  viper.GetStringSlice(dockerKey("ExtraHosts")),
+		NetworkMode: networkMode,
+		IpcMode:     viper.GetString(dockerKey("IpcMode")),
+		PidMode:     viper.GetString(dockerKey("PidMode")),
+		UTSMode:     viper.GetString(dockerKey("UTSMode")),
+		LogConfig:   logConfig,
+
+		ReadonlyRootfs:   viper.GetBool(dockerKey("ReadonlyRootfs")),
+		SecurityOpt:      viper.GetStringSlice(dockerKey("SecurityOpt")),
+		CgroupParent:     viper.GetString(dockerKey("CgroupParent")),
+		Memory:           getInt64("Memory"),
+		MemorySwap:       getInt64("MemorySwap"),
+		MemorySwappiness: getInt64("MemorySwappiness"),
+		OOMKillDisable:   viper.GetBool(dockerKey("OomKillDisable")),
+		CPUShares:        getInt64("CpuShares"),
+		CPUSet:           viper.GetString(dockerKey("Cpuset")),
+		CPUSetCPUs:       viper.GetString(dockerKey("CpusetCPUs")),
+		CPUSetMEMs:       viper.GetString(dockerKey("CpusetMEMs")),
+		CPUQuota:         getInt64("CpuQuota"),
+		CPUPeriod:        getInt64("CpuPeriod"),
+		BlkioWeight:      getInt64("BlkioWeight"),
+	}
+}
+
+func (vm *DockerVM) createContainer(client dockerClient, imageID, containerID string, args, env []string, attachStdout bool) error {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[15], 1);
+	logger := dockerLogger.With("imageID", imageID, "containerID", containerID)
+	logger.Debugw("create container")
+	_, err := client.CreateContainer(docker.CreateContainerOptions{
+		Name: containerID,
+		Config: &docker.Config{
+			Cmd:          args,
+			Image:        imageID,
+			Env:          env,
+			AttachStdout: attachStdout,
+			AttachStderr: attachStdout,
+		},
+		HostConfig: getDockerHostConfig(),
+	})
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[17], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[16], 1);logger.Debugw("created container")
+	return nil
+}
+
+func (vm *DockerVM) deployImage(client dockerClient, ccid ccintf.CCID, reader io.Reader) error {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[18], 1);
+	id, err := vm.GetVMNameForDocker(ccid)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[21], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[19], 1);outputbuf := bytes.NewBuffer(nil)
+	opts := docker.BuildImageOptions{
+		Name:         id,
+		Pull:         viper.GetBool("chaincode.pull"),
+		InputStream:  reader,
+		OutputStream: outputbuf,
+	}
+
+	startTime := time.Now()
+	err = client.BuildImage(opts)
+
+	vm.BuildMetrics.ChaincodeImageBuildDuration.With(
+		"chaincode", ccid.Name+":"+ccid.Version,
+		"success", strconv.FormatBool(err == nil),
+	).Observe(time.Since(startTime).Seconds())
+
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[22], 1);
+		dockerLogger.Errorf("Error building image: %s", err)
+		dockerLogger.Errorf("Build Output:\n********************\n%s\n********************", outputbuf.String())
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[20], 1);dockerLogger.Debugf("Created image: %s", id)
+	return nil
+}
+
+// Start starts a container using a previously created docker image
+func (vm *DockerVM) Start(ccid ccintf.CCID, args, env []string, filesToUpload map[string][]byte, builder container.Builder) error {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[23], 1);
+	imageName, err := vm.GetVMNameForDocker(ccid)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[30], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[24], 1);attachStdout := viper.GetBool("vm.docker.attachStdout")
+	containerName := vm.GetVMName(ccid)
+	logger := dockerLogger.With("imageName", imageName, "containerName", containerName)
+
+	client, err := vm.getClientFnc()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[31], 1);
+		logger.Debugf("failed to get docker client", "error", err)
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[25], 1);vm.stopInternal(client, containerName, 0, false, false)
+
+	err = vm.createContainer(client, imageName, containerName, args, env, attachStdout)
+	if err == docker.ErrNoSuchImage {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[32], 1);
+		reader, err := builder.Build()
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[35], 1);
+			return errors.Wrapf(err, "failed to generate Dockerfile to build %s", containerName)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[33], 1);err = vm.deployImage(client, ccid, reader)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[36], 1);
+			return err
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[34], 1);err = vm.createContainer(client, imageName, containerName, args, env, attachStdout)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[37], 1);
+			logger.Errorf("failed to create container: %s", err)
+			return err
+		}
+	} else{ _cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[38], 1);if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[39], 1);
+		logger.Errorf("create container failed: %s", err)
+		return err
+	}}
+
+	// stream stdout and stderr to chaincode logger
+	_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[26], 1);if attachStdout {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[40], 1);
+		containerLogger := flogging.MustGetLogger("peer.chaincode." + containerName)
+		streamOutput(dockerLogger, client, containerName, containerLogger)
+	}
+
+	// upload specified files to the container before starting it
+	// this can be used for configurations such as TLS key and certs
+	_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[27], 1);if len(filesToUpload) != 0 {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[41], 1);
+		// the docker upload API takes a tar file, so we need to first
+		// consolidate the file entries to a tar
+		payload := bytes.NewBuffer(nil)
+		gw := gzip.NewWriter(payload)
+		tw := tar.NewWriter(gw)
+
+		for path, fileToUpload := range filesToUpload {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[44], 1);
+			cutil.WriteBytesToPackage(path, fileToUpload, tw)
+		}
+
+		// Write the tar file out
+		_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[42], 1);if err := tw.Close(); err != nil {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[45], 1);
+			return fmt.Errorf("Error writing files to upload to Docker instance into a temporary tar blob: %s", err)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[43], 1);gw.Close()
+
+		err := client.UploadToContainer(containerName, docker.UploadToContainerOptions{
+			InputStream:          bytes.NewReader(payload.Bytes()),
+			Path:                 "/",
+			NoOverwriteDirNonDir: false,
+		})
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[46], 1);
+			return fmt.Errorf("Error uploading files to the container instance %s: %s", containerName, err)
+		}
+	}
+
+	// start container with HostConfig was deprecated since v1.10 and removed in v1.2
+	_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[28], 1);err = client.StartContainer(containerName, nil)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[47], 1);
+		dockerLogger.Errorf("start-could not start container: %s", err)
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[29], 1);dockerLogger.Debugf("Started container %s", containerName)
+	return nil
+}
+
+// streamOutput mirrors output from the named container to a fabric logger.
+func streamOutput(logger *flogging.FabricLogger, client dockerClient, containerName string, containerLogger *flogging.FabricLogger) {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[48], 1);
+	// Launch a few go routines to manage output streams from the container.
+	// They will be automatically destroyed when the container exits
+	attached := make(chan struct{})
+	r, w := io.Pipe()
+
+	go func() {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[50], 1);
+		// AttachToContainer will fire off a message on the "attached" channel once the
+		// attachment completes, and then block until the container is terminated.
+		// The returned error is not used outside the scope of this function. Assign the
+		// error to a local variable to prevent clobbering the function variable 'err'.
+		err := client.AttachToContainer(docker.AttachToContainerOptions{
+			Container:    containerName,
+			OutputStream: w,
+			ErrorStream:  w,
+			Logs:         true,
+			Stdout:       true,
+			Stderr:       true,
+			Stream:       true,
+			Success:      attached,
+		})
+
+		// If we get here, the container has terminated.  Send a signal on the pipe
+		// so that downstream may clean up appropriately
+		_ = w.CloseWithError(err)
+	}()
+
+	_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[49], 1);go func() {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[51], 1);
+		defer r.Close() // ensure the pipe reader gets closed
+
+		// Block here until the attachment completes or we timeout
+		select {
+		case <-attached:_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[53], 1); // successful attach
+			close(attached) // close indicates the streams can now be copied
+
+		case <-time.After(10 * time.Second):_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[54], 1);
+			logger.Errorf("Timeout while attaching to IO channel in container %s", containerName)
+			return
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[52], 1);is := bufio.NewReader(r)
+		for {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[55], 1);
+			// Loop forever dumping lines of text into the containerLogger
+			// until the pipe is closed
+			line, err := is.ReadString('\n')
+			switch err {
+			case nil:_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[56], 1);
+				containerLogger.Info(line)
+			case io.EOF:_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[57], 1);
+				logger.Infof("Container %s has closed its IO channel", containerName)
+				return
+			default:_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[58], 1);
+				logger.Errorf("Error reading container output: %s", err)
+				return
+			}
+		}
+	}()
+}
+
+// Stop stops a running chaincode
+func (vm *DockerVM) Stop(ccid ccintf.CCID, timeout uint, dontkill bool, dontremove bool) error {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[59], 1);
+	client, err := vm.getClientFnc()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[61], 1);
+		dockerLogger.Debugf("stop - cannot create client %s", err)
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[60], 1);id := strings.Replace(vm.GetVMName(ccid), ":", "_", -1)
+
+	return vm.stopInternal(client, id, timeout, dontkill, dontremove)
+}
+
+// HealthCheck checks if the DockerVM is able to communicate with the Docker
+// daemon.
+func (vm *DockerVM) HealthCheck(ctx context.Context) error {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[62], 1);
+	client, err := vm.getClientFnc()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[65], 1);
+		return errors.Wrap(err, "failed to connect to Docker daemon")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[63], 1);if err := client.PingWithContext(ctx); err != nil {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[66], 1);
+		return errors.Wrap(err, "failed to ping to Docker daemon")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[64], 1);return nil
+}
+
+func (vm *DockerVM) stopInternal(client dockerClient, id string, timeout uint, dontkill, dontremove bool) error {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[67], 1);
+	logger := dockerLogger.With("id", id)
+
+	logger.Debugw("stopping container")
+	err := client.StopContainer(id, timeout)
+	dockerLogger.Debugw("stop container result", "error", err)
+
+	if !dontkill {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[70], 1);
+		logger.Debugw("killing container")
+		err = client.KillContainer(docker.KillContainerOptions{ID: id})
+		logger.Debugw("kill container result", "error", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[68], 1);if !dontremove {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[71], 1);
+		logger.Debugw("removing container")
+		err = client.RemoveContainer(docker.RemoveContainerOptions{ID: id, Force: true})
+		logger.Debugw("remove container result", "error", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[69], 1);return err
+}
+
+// GetVMName generates the VM name from peer information. It accepts a format
+// function parameter to allow different formatting based on the desired use of
+// the name.
+func (vm *DockerVM) GetVMName(ccid ccintf.CCID) string {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[72], 1);
+	// replace any invalid characters with "-" (either in network id, peer id, or in the
+	// entire name returned by any format function)
+	return vmRegExp.ReplaceAllString(vm.preFormatImageName(ccid), "-")
+}
+
+// GetVMNameForDocker formats the docker image from peer information. This is
+// needed to keep image (repository) names unique in a single host, multi-peer
+// environment (such as a development environment). It computes the hash for the
+// supplied image name and then appends it to the lowercase image name to ensure
+// uniqueness.
+func (vm *DockerVM) GetVMNameForDocker(ccid ccintf.CCID) (string, error) {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[73], 1);
+	name := vm.preFormatImageName(ccid)
+	hash := hex.EncodeToString(util.ComputeSHA256([]byte(name)))
+	saniName := vmRegExp.ReplaceAllString(name, "-")
+	imageName := strings.ToLower(fmt.Sprintf("%s-%s", saniName, hash))
+
+	// Check that name complies with Docker's repository naming rules
+	if !imageRegExp.MatchString(imageName) {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[75], 1);
+		dockerLogger.Errorf("Error constructing Docker VM Name. '%s' breaks Docker's repository naming rules", name)
+		return "", fmt.Errorf("Error constructing Docker VM Name. '%s' breaks Docker's repository naming rules", imageName)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[74], 1);return imageName, nil
+}
+
+func (vm *DockerVM) preFormatImageName(ccid ccintf.CCID) string {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[76], 1);
+	name := ccid.GetName()
+
+	if vm.NetworkID != "" && vm.PeerID != "" {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[78], 1);
+		name = fmt.Sprintf("%s-%s-%s", vm.NetworkID, vm.PeerID, name)
+	} else{ _cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[79], 1);if vm.NetworkID != "" {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[80], 1);
+		name = fmt.Sprintf("%s-%s", vm.NetworkID, name)
+	} else{ _cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[81], 1);if vm.PeerID != "" {_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[82], 1);
+		name = fmt.Sprintf("%s-%s", vm.PeerID, name)
+	}}}
+
+	_cover_atomic_.AddUint32(&GoCover_0_396162306533616530386131.Count[77], 1);return name
+}
+
+var GoCover_0_396162306533616530386131 = struct {
+	Count     [83]uint32
+	Pos       [3 * 83]uint32
+	NumStmt   [83]uint16
+} {
+	Pos: [3 * 83]uint32{
+		95, 101, 0x20058, // [0]
+		104, 106, 0x20029, // [1]
+		109, 116, 0x20052, // [2]
+		118, 120, 0x2002e, // [3]
+		122, 123, 0x17002f, // [4]
+		127, 127, 0x270002, // [5]
+		128, 128, 0x250002, // [6]
+		130, 132, 0x100002, // [7]
+		135, 136, 0x170002, // [8]
+		139, 168, 0x30002, // [9]
+		123, 125, 0x30017, // [10]
+		127, 127, 0x4f0027, // [11]
+		128, 128, 0x530025, // [12]
+		132, 134, 0x30010, // [13]
+		136, 138, 0x30017, // [14]
+		171, 185, 0x100084, // [15]
+		188, 189, 0xc0002, // [16]
+		185, 187, 0x30010, // [17]
+		192, 194, 0x100060, // [18]
+		198, 214, 0x100002, // [19]
+		220, 221, 0xc0002, // [20]
+		194, 196, 0x30010, // [21]
+		214, 218, 0x30010, // [22]
+		225, 227, 0x100083, // [23]
+		231, 236, 0x100002, // [24]
+		241, 244, 0x220002, // [25]
+		266, 266, 0x120002, // [26]
+		273, 273, 0x1d0002, // [27]
+		302, 303, 0x100002, // [28]
+		308, 309, 0xc0002, // [29]
+		227, 229, 0x30010, // [30]
+		236, 239, 0x30010, // [31]
+		244, 246, 0x110022, // [32]
+		250, 251, 0x110003, // [33]
+		255, 256, 0x110003, // [34]
+		246, 248, 0x40011, // [35]
+		251, 253, 0x40011, // [36]
+		256, 259, 0x40011, // [37]
+		260, 260, 0x170008, // [38]
+		260, 263, 0x30017, // [39]
+		266, 269, 0x30012, // [40]
+		273, 280, 0x31001d, // [41]
+		285, 285, 0x240003, // [42]
+		289, 296, 0x110003, // [43]
+		280, 282, 0x40031, // [44]
+		285, 287, 0x40024, // [45]
+		296, 298, 0x40011, // [46]
+		303, 306, 0x30010, // [47]
+		313, 319, 0xc0085, // [48]
+		340, 340, 0xc0002, // [49]
+		319, 338, 0x3000c, // [50]
+		340, 344, 0xa000c, // [51]
+		353, 354, 0x70003, // [52]
+		345, 346, 0x130013, // [53]
+		348, 350, 0xa0027, // [54]
+		354, 358, 0xf0007, // [55]
+		359, 360, 0x1f000d, // [56]
+		361, 363, 0xb0010, // [57]
+		364, 366, 0xb000c, // [58]
+		373, 375, 0x100060, // [59]
+		379, 381, 0x430002, // [60]
+		375, 378, 0x30010, // [61]
+		386, 388, 0x10003c, // [62]
+		391, 391, 0x340002, // [63]
+		394, 394, 0xc0002, // [64]
+		388, 390, 0x30010, // [65]
+		391, 393, 0x30034, // [66]
+		397, 404, 0xf0071, // [67]
+		410, 410, 0x110002, // [68]
+		416, 416, 0xc0002, // [69]
+		404, 408, 0x3000f, // [70]
+		410, 414, 0x30011, // [71]
+		422, 426, 0x20038, // [72]
+		433, 440, 0x29004a, // [73]
+		445, 445, 0x170002, // [74]
+		440, 443, 0x30029, // [75]
+		448, 451, 0x2b0041, // [76]
+		459, 459, 0xd0002, // [77]
+		451, 453, 0x3002b, // [78]
+		453, 453, 0x1f0008, // [79]
+		453, 455, 0x3001f, // [80]
+		455, 455, 0x1c0008, // [81]
+		455, 457, 0x3001c, // [82]
+	},
+	NumStmt: [83]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		3, // 7
+		2, // 8
+		2, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		4, // 15
+		2, // 16
+		1, // 17
+		2, // 18
+		6, // 19
+		2, // 20
+		1, // 21
+		3, // 22
+		2, // 23
+		5, // 24
+		3, // 25
+		1, // 26
+		1, // 27
+		2, // 28
+		2, // 29
+		1, // 30
+		2, // 31
+		2, // 32
+		2, // 33
+		2, // 34
+		1, // 35
+		1, // 36
+		2, // 37
+		1, // 38
+		2, // 39
+		2, // 40
+		4, // 41
+		1, // 42
+		3, // 43
+		1, // 44
+		1, // 45
+		1, // 46
+		2, // 47
+		3, // 48
+		1, // 49
+		2, // 50
+		2, // 51
+		2, // 52
+		1, // 53
+		2, // 54
+		2, // 55
+		1, // 56
+		2, // 57
+		2, // 58
+		2, // 59
+		2, // 60
+		2, // 61
+		2, // 62
+		1, // 63
+		1, // 64
+		1, // 65
+		1, // 66
+		5, // 67
+		1, // 68
+		1, // 69
+		3, // 70
+		3, // 71
+		1, // 72
+		5, // 73
+		1, // 74
+		2, // 75
+		2, // 76
+		1, // 77
+		1, // 78
+		1, // 79
+		1, // 80
+		1, // 81
+		1, // 82
+	},
+}
+var _ = _cover_atomic_.LoadUint32

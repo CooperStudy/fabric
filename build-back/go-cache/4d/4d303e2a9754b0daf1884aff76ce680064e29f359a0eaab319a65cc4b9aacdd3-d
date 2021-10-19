@@ -1,0 +1,547 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/common/ccprovider/sigcdspackage.go:1
+/*
+Copyright IBM Corp. 2017 All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+		 http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package ccprovider; import _cover_atomic_ "sync/atomic"
+
+import (
+	"bytes"
+	"fmt"
+	"io/ioutil"
+	"os"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric/bccsp/factory"
+	"github.com/hyperledger/fabric/core/common/ccpackage"
+	"github.com/hyperledger/fabric/protos/common"
+	pb "github.com/hyperledger/fabric/protos/peer"
+)
+
+//----- SignedCDSData ------
+
+//SignedCDSData is data stored in the LSCC on instantiation of a CC
+//for SignedCDSPackage. This needs to be serialized for ChaincodeData
+//hence the protobuf format
+type SignedCDSData struct {
+	CodeHash      []byte `protobuf:"bytes,1,opt,name=hash"`
+	MetaDataHash  []byte `protobuf:"bytes,2,opt,name=metadatahash"`
+	SignatureHash []byte `protobuf:"bytes,3,opt,name=signaturehash"`
+}
+
+//----implement functions needed from proto.Message for proto's mar/unmarshal functions
+
+//Reset resets
+func (data *SignedCDSData) Reset() {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[0], 1); *data = SignedCDSData{} }
+
+//String converts to string
+func (data *SignedCDSData) String() string {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[1], 1); return proto.CompactTextString(data) }
+
+//ProtoMessage just exists to make proto happy
+func (*SignedCDSData) ProtoMessage() {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[2], 1);}
+
+//Equals data equals other
+func (data *SignedCDSData) Equals(other *SignedCDSData) bool {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[3], 1);
+	return other != nil &&
+		bytes.Equal(data.CodeHash, other.CodeHash) &&
+		bytes.Equal(data.MetaDataHash, other.MetaDataHash) &&
+		bytes.Equal(data.SignatureHash, other.SignatureHash)
+}
+
+//-------- SignedCDSPackage ---------
+
+//SignedCDSPackage encapsulates SignedChaincodeDeploymentSpec.
+type SignedCDSPackage struct {
+	buf      []byte
+	depSpec  *pb.ChaincodeDeploymentSpec
+	sDepSpec *pb.SignedChaincodeDeploymentSpec
+	env      *common.Envelope
+	data     *SignedCDSData
+	datab    []byte
+	id       []byte
+}
+
+// resets data
+func (ccpack *SignedCDSPackage) reset() {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[4], 1);
+	*ccpack = SignedCDSPackage{}
+}
+
+// GetId gets the fingerprint of the chaincode based on package computation
+func (ccpack *SignedCDSPackage) GetId() []byte {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[5], 1);
+	//this has to be after creating a package and initializing it
+	//If those steps fail, GetId() should never be called
+	if ccpack.id == nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[7], 1);
+		panic("GetId called on uninitialized package")
+	}
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[6], 1);return ccpack.id
+}
+
+// GetDepSpec gets the ChaincodeDeploymentSpec from the package
+func (ccpack *SignedCDSPackage) GetDepSpec() *pb.ChaincodeDeploymentSpec {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[8], 1);
+	//this has to be after creating a package and initializing it
+	//If those steps fail, GetDepSpec() should never be called
+	if ccpack.depSpec == nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[10], 1);
+		panic("GetDepSpec called on uninitialized package")
+	}
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[9], 1);return ccpack.depSpec
+}
+
+// GetInstantiationPolicy gets the instantiation policy from the package
+func (ccpack *SignedCDSPackage) GetInstantiationPolicy() []byte {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[11], 1);
+	if ccpack.sDepSpec == nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[13], 1);
+		panic("GetInstantiationPolicy called on uninitialized package")
+	}
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[12], 1);return ccpack.sDepSpec.InstantiationPolicy
+}
+
+// GetDepSpecBytes gets the serialized ChaincodeDeploymentSpec from the package
+func (ccpack *SignedCDSPackage) GetDepSpecBytes() []byte {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[14], 1);
+	//this has to be after creating a package and initializing it
+	//If those steps fail, GetDepSpecBytes() should never be called
+	if ccpack.sDepSpec == nil || ccpack.sDepSpec.ChaincodeDeploymentSpec == nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[16], 1);
+		panic("GetDepSpecBytes called on uninitialized package")
+	}
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[15], 1);return ccpack.sDepSpec.ChaincodeDeploymentSpec
+}
+
+// GetPackageObject gets the ChaincodeDeploymentSpec as proto.Message
+func (ccpack *SignedCDSPackage) GetPackageObject() proto.Message {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[17], 1);
+	return ccpack.env
+}
+
+// GetChaincodeData gets the ChaincodeData
+func (ccpack *SignedCDSPackage) GetChaincodeData() *ChaincodeData {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[18], 1);
+	//this has to be after creating a package and initializing it
+	//If those steps fail, GetChaincodeData() should never be called
+	if ccpack.depSpec == nil || ccpack.datab == nil || ccpack.id == nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[21], 1);
+		panic("GetChaincodeData called on uninitialized package")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[19], 1);var instPolicy []byte
+	if ccpack.sDepSpec != nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[22], 1);
+		instPolicy = ccpack.sDepSpec.InstantiationPolicy
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[20], 1);return &ChaincodeData{
+		Name:                ccpack.depSpec.ChaincodeSpec.ChaincodeId.Name,
+		Version:             ccpack.depSpec.ChaincodeSpec.ChaincodeId.Version,
+		Data:                ccpack.datab,
+		Id:                  ccpack.id,
+		InstantiationPolicy: instPolicy,
+	}
+}
+
+func (ccpack *SignedCDSPackage) getCDSData(scds *pb.SignedChaincodeDeploymentSpec) ([]byte, []byte, *SignedCDSData, error) {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[23], 1);
+	// check for nil argument. It is an assertion that getCDSData
+	// is never called on a package that did not go through/succeed
+	// package initialization.
+	if scds == nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[31], 1);
+		panic("nil cds")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[24], 1);cds := &pb.ChaincodeDeploymentSpec{}
+	err := proto.Unmarshal(scds.ChaincodeDeploymentSpec, cds)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[32], 1);
+		return nil, nil, nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[25], 1);if err = factory.InitFactories(nil); err != nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[33], 1);
+		return nil, nil, nil, fmt.Errorf("Internal error, BCCSP could not be initialized : %s", err)
+	}
+
+	//get the hash object
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[26], 1);hash, err := factory.GetDefault().GetHash(&bccsp.SHAOpts{})
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[34], 1);
+		return nil, nil, nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[27], 1);scdsdata := &SignedCDSData{}
+
+	//get the code hash
+	hash.Write(cds.CodePackage)
+	scdsdata.CodeHash = hash.Sum(nil)
+
+	hash.Reset()
+
+	//get the metadata hash
+	hash.Write([]byte(cds.ChaincodeSpec.ChaincodeId.Name))
+	hash.Write([]byte(cds.ChaincodeSpec.ChaincodeId.Version))
+
+	scdsdata.MetaDataHash = hash.Sum(nil)
+
+	hash.Reset()
+
+	//get the signature hashes
+	if scds.InstantiationPolicy == nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[35], 1);
+		return nil, nil, nil, fmt.Errorf("instantiation policy cannot be nil for chaincode (%s:%s)", cds.ChaincodeSpec.ChaincodeId.Name, cds.ChaincodeSpec.ChaincodeId.Version)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[28], 1);hash.Write(scds.InstantiationPolicy)
+	for _, o := range scds.OwnerEndorsements {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[36], 1);
+		hash.Write(o.Endorser)
+	}
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[29], 1);scdsdata.SignatureHash = hash.Sum(nil)
+
+	//marshall data
+	b, err := proto.Marshal(scdsdata)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[37], 1);
+		return nil, nil, nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[30], 1);hash.Reset()
+
+	//compute the id
+	hash.Write(scdsdata.CodeHash)
+	hash.Write(scdsdata.MetaDataHash)
+	hash.Write(scdsdata.SignatureHash)
+
+	id := hash.Sum(nil)
+
+	return b, id, scdsdata, nil
+}
+
+// ValidateCC returns error if the chaincode is not found or if its not a
+// ChaincodeDeploymentSpec
+func (ccpack *SignedCDSPackage) ValidateCC(ccdata *ChaincodeData) error {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[38], 1);
+	if ccpack.sDepSpec == nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[46], 1);
+		return fmt.Errorf("uninitialized package")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[39], 1);if ccpack.sDepSpec.ChaincodeDeploymentSpec == nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[47], 1);
+		return fmt.Errorf("signed chaincode deployment spec cannot be nil in a package")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[40], 1);if ccpack.depSpec == nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[48], 1);
+		return fmt.Errorf("chaincode deployment spec cannot be nil in a package")
+	}
+
+	// This is a hack. LSCC expects a specific LSCC error when names are invalid so it
+	// has its own validation code. We can't use that error because of import cycles.
+	// Unfortunately, we also need to check if what have makes some sort of sense as
+	// protobuf will gladly deserialize garbage and there are paths where we assume that
+	// a successful unmarshal means everything works but, if it fails, we try to unmarshal
+	// into something different.
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[41], 1);if !isPrintable(ccdata.Name) {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[49], 1);
+		return fmt.Errorf("invalid chaincode name: %q", ccdata.Name)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[42], 1);if ccdata.Name != ccpack.depSpec.ChaincodeSpec.ChaincodeId.Name || ccdata.Version != ccpack.depSpec.ChaincodeSpec.ChaincodeId.Version {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[50], 1);
+		return fmt.Errorf("invalid chaincode data %v (%v)", ccdata, ccpack.depSpec.ChaincodeSpec.ChaincodeId)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[43], 1);otherdata := &SignedCDSData{}
+	err := proto.Unmarshal(ccdata.Data, otherdata)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[51], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[44], 1);if !ccpack.data.Equals(otherdata) {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[52], 1);
+		return fmt.Errorf("data mismatch")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[45], 1);return nil
+}
+
+//InitFromBuffer sets the buffer if valid and returns ChaincodeData
+func (ccpack *SignedCDSPackage) InitFromBuffer(buf []byte) (*ChaincodeData, error) {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[53], 1);
+	//incase ccpack is reused
+	ccpack.reset()
+
+	env := &common.Envelope{}
+	err := proto.Unmarshal(buf, env)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[59], 1);
+		return nil, fmt.Errorf("failed to unmarshal envelope from bytes")
+	}
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[54], 1);cHdr, sDepSpec, err := ccpackage.ExtractSignedCCDepSpec(env)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[60], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[55], 1);if cHdr.Type != int32(common.HeaderType_CHAINCODE_PACKAGE) {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[61], 1);
+		return nil, fmt.Errorf("invalid type of envelope for chaincode package")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[56], 1);depSpec := &pb.ChaincodeDeploymentSpec{}
+	err = proto.Unmarshal(sDepSpec.ChaincodeDeploymentSpec, depSpec)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[62], 1);
+		return nil, fmt.Errorf("error getting deployment spec")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[57], 1);databytes, id, data, err := ccpack.getCDSData(sDepSpec)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[63], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[58], 1);ccpack.buf = buf
+	ccpack.sDepSpec = sDepSpec
+	ccpack.depSpec = depSpec
+	ccpack.env = env
+	ccpack.data = data
+	ccpack.datab = databytes
+	ccpack.id = id
+
+	return ccpack.GetChaincodeData(), nil
+}
+
+//InitFromFS returns the chaincode and its package from the file system
+func (ccpack *SignedCDSPackage) InitFromFS(ccname string, ccversion string) ([]byte, *pb.ChaincodeDeploymentSpec, error) {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[64], 1);
+	return ccpack.InitFromPath(ccname, ccversion, chaincodeInstallPath)
+}
+
+//InitFromPath returns the chaincode and its package from the file system
+func (ccpack *SignedCDSPackage) InitFromPath(ccname string, ccversion string, path string) ([]byte, *pb.ChaincodeDeploymentSpec, error) {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[65], 1);
+	//incase ccpack is reused
+	ccpack.reset()
+
+	buf, err := GetChaincodePackageFromPath(ccname, ccversion, path)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[68], 1);
+		return nil, nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[66], 1);if _, err = ccpack.InitFromBuffer(buf); err != nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[69], 1);
+		return nil, nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[67], 1);return ccpack.buf, ccpack.depSpec, nil
+}
+
+//PutChaincodeToFS - serializes chaincode to a package on the file system
+func (ccpack *SignedCDSPackage) PutChaincodeToFS() error {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[70], 1);
+	if ccpack.buf == nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[79], 1);
+		return fmt.Errorf("uninitialized package")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[71], 1);if ccpack.id == nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[80], 1);
+		return fmt.Errorf("id cannot be nil if buf is not nil")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[72], 1);if ccpack.sDepSpec == nil || ccpack.depSpec == nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[81], 1);
+		return fmt.Errorf("depspec cannot be nil if buf is not nil")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[73], 1);if ccpack.env == nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[82], 1);
+		return fmt.Errorf("env cannot be nil if buf and depspec are not nil")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[74], 1);if ccpack.data == nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[83], 1);
+		return fmt.Errorf("nil data")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[75], 1);if ccpack.datab == nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[84], 1);
+		return fmt.Errorf("nil data bytes")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[76], 1);ccname := ccpack.depSpec.ChaincodeSpec.ChaincodeId.Name
+	ccversion := ccpack.depSpec.ChaincodeSpec.ChaincodeId.Version
+
+	//return error if chaincode exists
+	path := fmt.Sprintf("%s/%s.%s", chaincodeInstallPath, ccname, ccversion)
+	if _, err := os.Stat(path); err == nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[85], 1);
+		return fmt.Errorf("chaincode %s exists", path)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[77], 1);if err := ioutil.WriteFile(path, ccpack.buf, 0644); err != nil {_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[86], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_6_383934626562653839653065.Count[78], 1);return nil
+}
+
+var GoCover_6_383934626562653839653065 = struct {
+	Count     [87]uint32
+	Pos       [3 * 87]uint32
+	NumStmt   [87]uint16
+} {
+	Pos: [3 * 87]uint32{
+		47, 47, 0x3f0024, // [0]
+		50, 50, 0x54002c, // [1]
+		53, 53, 0x280027, // [2]
+		56, 61, 0x2003e, // [3]
+		77, 79, 0x20029, // [4]
+		82, 85, 0x160030, // [5]
+		88, 88, 0x120002, // [6]
+		85, 86, 0x310016, // [7]
+		92, 95, 0x1b004a, // [8]
+		98, 98, 0x170002, // [9]
+		95, 96, 0x36001b, // [10]
+		102, 103, 0x1c0041, // [11]
+		106, 106, 0x2c0002, // [12]
+		103, 104, 0x42001c, // [13]
+		110, 113, 0x4e003a, // [14]
+		116, 116, 0x300002, // [15]
+		113, 114, 0x3b004e, // [16]
+		120, 122, 0x20042, // [17]
+		125, 128, 0x460043, // [18]
+		132, 133, 0x1c0002, // [19]
+		137, 143, 0x30002, // [20]
+		128, 129, 0x3c0046, // [21]
+		133, 135, 0x3001c, // [22]
+		146, 150, 0x11007c, // [23]
+		154, 156, 0x100002, // [24]
+		160, 160, 0x320002, // [25]
+		165, 166, 0x100002, // [26]
+		170, 187, 0x250002, // [27]
+		191, 192, 0x2b0002, // [28]
+		195, 199, 0x100002, // [29]
+		203, 212, 0x1d0002, // [30]
+		150, 151, 0x130011, // [31]
+		156, 158, 0x30010, // [32]
+		160, 162, 0x30032, // [33]
+		166, 168, 0x30010, // [34]
+		187, 189, 0x30025, // [35]
+		192, 194, 0x3002b, // [36]
+		199, 201, 0x30010, // [37]
+		217, 218, 0x1c0049, // [38]
+		222, 222, 0x340002, // [39]
+		226, 226, 0x1b0002, // [40]
+		236, 236, 0x1f0002, // [41]
+		240, 240, 0x880002, // [42]
+		244, 246, 0x100002, // [43]
+		250, 250, 0x240002, // [44]
+		254, 254, 0xc0002, // [45]
+		218, 220, 0x3001c, // [46]
+		222, 224, 0x30034, // [47]
+		226, 228, 0x3001b, // [48]
+		236, 238, 0x3001f, // [49]
+		240, 242, 0x30088, // [50]
+		246, 248, 0x30010, // [51]
+		250, 252, 0x30024, // [52]
+		258, 264, 0x100054, // [53]
+		267, 268, 0x100002, // [54]
+		272, 272, 0x3d0002, // [55]
+		276, 278, 0x100002, // [56]
+		282, 283, 0x100002, // [57]
+		287, 295, 0x270002, // [58]
+		264, 266, 0x30010, // [59]
+		268, 270, 0x30010, // [60]
+		272, 274, 0x3003d, // [61]
+		278, 280, 0x30010, // [62]
+		283, 285, 0x30010, // [63]
+		299, 301, 0x2007a, // [64]
+		304, 309, 0x100089, // [65]
+		313, 313, 0x350002, // [66]
+		317, 317, 0x280002, // [67]
+		309, 311, 0x30010, // [68]
+		313, 315, 0x30035, // [69]
+		321, 322, 0x17003a, // [70]
+		326, 326, 0x160002, // [71]
+		330, 330, 0x350002, // [72]
+		334, 334, 0x170002, // [73]
+		338, 338, 0x180002, // [74]
+		342, 342, 0x190002, // [75]
+		346, 351, 0x290002, // [76]
+		355, 355, 0x410002, // [77]
+		359, 359, 0xc0002, // [78]
+		322, 324, 0x30017, // [79]
+		326, 328, 0x30016, // [80]
+		330, 332, 0x30035, // [81]
+		334, 336, 0x30017, // [82]
+		338, 340, 0x30018, // [83]
+		342, 344, 0x30019, // [84]
+		351, 353, 0x30029, // [85]
+		355, 357, 0x30041, // [86]
+	},
+	NumStmt: [87]uint16{
+		1, // 0
+		1, // 1
+		0, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		2, // 19
+		1, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+		3, // 24
+		1, // 25
+		2, // 26
+		9, // 27
+		2, // 28
+		3, // 29
+		6, // 30
+		1, // 31
+		1, // 32
+		1, // 33
+		1, // 34
+		1, // 35
+		1, // 36
+		1, // 37
+		1, // 38
+		1, // 39
+		1, // 40
+		1, // 41
+		1, // 42
+		3, // 43
+		1, // 44
+		1, // 45
+		1, // 46
+		1, // 47
+		1, // 48
+		1, // 49
+		1, // 50
+		1, // 51
+		1, // 52
+		4, // 53
+		2, // 54
+		1, // 55
+		3, // 56
+		2, // 57
+		8, // 58
+		1, // 59
+		1, // 60
+		1, // 61
+		1, // 62
+		1, // 63
+		1, // 64
+		3, // 65
+		1, // 66
+		1, // 67
+		1, // 68
+		1, // 69
+		1, // 70
+		1, // 71
+		1, // 72
+		1, // 73
+		1, // 74
+		1, // 75
+		4, // 76
+		1, // 77
+		1, // 78
+		1, // 79
+		1, // 80
+		1, // 81
+		1, // 82
+		1, // 83
+		1, // 84
+		1, // 85
+		1, // 86
+	},
+}
+var _ = _cover_atomic_.LoadUint32

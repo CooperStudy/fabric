@@ -1,0 +1,7 @@
+deserializer.cover.go
+mgmt.cover.go
+principal.cover.go
+./deserializer_test.go
+./mgmt_test.go
+./peermsp_test.go
+./principal_test.go

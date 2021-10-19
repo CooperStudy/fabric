@@ -1,0 +1,3 @@
+./color_test.go
+./encoder_test.go
+./formatter_test.go

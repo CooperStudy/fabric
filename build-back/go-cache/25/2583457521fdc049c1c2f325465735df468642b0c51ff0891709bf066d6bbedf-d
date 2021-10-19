@@ -1,0 +1,5 @@
+./stateleveldb.go
+./stateleveldb_test_export.go
+./value_encoding.go
+./stateleveldb_test.go
+./value_encoding_test.go

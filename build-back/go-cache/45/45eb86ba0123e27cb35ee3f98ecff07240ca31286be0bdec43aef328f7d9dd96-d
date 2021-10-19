@@ -1,0 +1,4 @@
+collection.cover.go
+endorsement.cover.go
+./collection_test.go
+./endorsement_test.go

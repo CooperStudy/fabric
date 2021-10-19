@@ -1,0 +1,56 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/token/tms/manager/policy.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package manager; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric/token/identity"
+	"github.com/pkg/errors"
+)
+
+// AllIssuingValidator allows all members of a channel to issue new tokens.
+type AllIssuingValidator struct {
+	Deserializer identity.Deserializer
+}
+
+// Validate returns no error if the passed creator can issue tokens of the passed type,, an error otherwise.
+func (p *AllIssuingValidator) Validate(creator identity.PublicInfo, tokenType string) error {_cover_atomic_.AddUint32(&GoCover_1_616133346533356636316261.Count[0], 1);
+	// Deserialize identity
+	identity, err := p.Deserializer.DeserializeIdentity(creator.Public())
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_616133346533356636316261.Count[3], 1);
+		return errors.Wrapf(err, "identity [0x%x] cannot be deserialised", creator.Public())
+	}
+
+	// Check identity validity - in this simple policy, all valid identities are issuers.
+	_cover_atomic_.AddUint32(&GoCover_1_616133346533356636316261.Count[1], 1);if err := identity.Validate(); err != nil {_cover_atomic_.AddUint32(&GoCover_1_616133346533356636316261.Count[4], 1);
+		return errors.Wrapf(err, "identity [0x%x] cannot be validated", creator.Public())
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_616133346533356636316261.Count[2], 1);return nil
+}
+
+var GoCover_1_616133346533356636316261 = struct {
+	Count     [5]uint32
+	Pos       [3 * 5]uint32
+	NumStmt   [5]uint16
+} {
+	Pos: [3 * 5]uint32{
+		20, 23, 0x10005d, // [0]
+		28, 28, 0x2c0002, // [1]
+		32, 32, 0xc0002, // [2]
+		23, 25, 0x30010, // [3]
+		28, 30, 0x3002c, // [4]
+	},
+	NumStmt: [5]uint16{
+		2, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+	},
+}
+var _ = _cover_atomic_.LoadUint32

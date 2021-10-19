@@ -1,0 +1,8 @@
+./const.go
+./error.go
+./vendor.go
+_cgo_gotypes.go
+params.cgo1.go
+pkcs11.cgo1.go
+types.cgo1.go
+_cgo_import.go

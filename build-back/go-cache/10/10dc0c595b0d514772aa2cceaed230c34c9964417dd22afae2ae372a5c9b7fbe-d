@@ -1,0 +1,102 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/flogging/global.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package flogging; import _cover_atomic_ "sync/atomic"
+
+import (
+	"strings"
+
+	"go.uber.org/zap/zapcore"
+	"google.golang.org/grpc/grpclog"
+)
+
+const (
+	defaultFormat = "%{color}%{time:2006-01-02 15:04:05.000 MST} [%{module}] %{shortfunc} -> %{level:.4s} %{id:03x}%{color:reset} %{message}"
+	defaultLevel  = zapcore.InfoLevel
+)
+
+var Global *Logging
+var logger *FabricLogger
+
+func init() {_cover_atomic_.AddUint32(&GoCover_1_643766633362313436336635.Count[0], 1);
+	logging, err := New(Config{})
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_643766633362313436336635.Count[2], 1);
+		panic(err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643766633362313436336635.Count[1], 1);Global = logging
+	logger = Global.Logger("flogging")
+	grpcLogger := Global.ZapLogger("grpc")
+	grpclog.SetLogger(NewGRPCLogger(grpcLogger))
+}
+
+// Init initializes logging with the provided config.
+func Init(config Config) {_cover_atomic_.AddUint32(&GoCover_1_643766633362313436336635.Count[3], 1);
+	err := Global.Apply(config)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_643766633362313436336635.Count[4], 1);
+		panic(err)
+	}
+}
+
+// Reset sets logging to the defaults defined in this package.
+//
+// Used in tests and in the package init
+func Reset() {_cover_atomic_.AddUint32(&GoCover_1_643766633362313436336635.Count[5], 1);
+	Global.Apply(Config{})
+}
+
+// GetLoggerLevel gets the current logging level for the logger with the
+// provided name.
+func GetLoggerLevel(loggerName string) string {_cover_atomic_.AddUint32(&GoCover_1_643766633362313436336635.Count[6], 1);
+	return strings.ToUpper(Global.Level(loggerName).String())
+}
+
+// MustGetLogger creates a logger with the specified name. If an invalid name
+// is provided, the operation will panic.
+func MustGetLogger(loggerName string) *FabricLogger {_cover_atomic_.AddUint32(&GoCover_1_643766633362313436336635.Count[7], 1);
+	return Global.Logger(loggerName)
+}
+
+// ActivateSpec is used to activate a logging specification.
+func ActivateSpec(spec string) {_cover_atomic_.AddUint32(&GoCover_1_643766633362313436336635.Count[8], 1);
+	err := Global.ActivateSpec(spec)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_643766633362313436336635.Count[9], 1);
+		panic(err)
+	}
+}
+
+var GoCover_1_643766633362313436336635 = struct {
+	Count     [10]uint32
+	Pos       [3 * 10]uint32
+	NumStmt   [10]uint16
+} {
+	Pos: [3 * 10]uint32{
+		24, 26, 0x10000d, // [0]
+		30, 33, 0x2e0002, // [1]
+		26, 27, 0xd0010, // [2]
+		37, 39, 0x10001a, // [3]
+		39, 40, 0xd0010, // [4]
+		47, 49, 0x2000e, // [5]
+		53, 55, 0x2002f, // [6]
+		59, 61, 0x20035, // [7]
+		64, 66, 0x100020, // [8]
+		66, 67, 0xd0010, // [9]
+	},
+	NumStmt: [10]uint16{
+		2, // 0
+		4, // 1
+		1, // 2
+		2, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		2, // 8
+		1, // 9
+	},
+}
+var _ = _cover_atomic_.LoadUint32

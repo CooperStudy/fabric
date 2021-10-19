@@ -1,0 +1,16 @@
+# test log
+open /tmp/idemixca-test/msp/IssuerPublicKey
+open /tmp/idemixca-test/msp/RevocationPublicKey
+open /tmp/idemixca-test/user/SignerConfig
+open /tmp/idemixca-test/msp/IssuerPublicKey
+open /tmp/idemixca-test/msp/RevocationPublicKey
+open /tmp/idemixca-test/user/SignerConfig
+stat /tmp/idemixca-test/user
+open /tmp/idemixca-test/user
+open /tmp/idemixca-test/user/SignerConfig
+open /tmp/idemixca-test/msp/IssuerPublicKey
+open /tmp/idemixca-test/msp/RevocationPublicKey
+open /tmp/idemixca-test/user/SignerConfig
+stat /tmp/idemixca-test/msp
+open /tmp/idemixca-test/msp
+open /tmp/idemixca-test/msp/IssuerPublicKey

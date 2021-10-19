@@ -1,0 +1,161 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/protos/common/common.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package common; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/protos/msp"
+)
+
+func (e *Envelope) StaticallyOpaqueFields() []string {_cover_atomic_.AddUint32(&GoCover_2_643434343036656265656166.Count[0], 1);
+	return []string{"payload"}
+}
+
+func (e *Envelope) StaticallyOpaqueFieldProto(name string) (proto.Message, error) {_cover_atomic_.AddUint32(&GoCover_2_643434343036656265656166.Count[1], 1);
+	if name != e.StaticallyOpaqueFields()[0] {_cover_atomic_.AddUint32(&GoCover_2_643434343036656265656166.Count[3], 1);
+		return nil, fmt.Errorf("not a marshaled field: %s", name)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_643434343036656265656166.Count[2], 1);return &Payload{}, nil
+}
+
+func (p *Payload) VariablyOpaqueFields() []string {_cover_atomic_.AddUint32(&GoCover_2_643434343036656265656166.Count[4], 1);
+	return []string{"data"}
+}
+
+var PayloadDataMap = map[int32]proto.Message{
+	int32(HeaderType_CONFIG):              &ConfigEnvelope{},
+	int32(HeaderType_ORDERER_TRANSACTION): &Envelope{},
+	int32(HeaderType_CONFIG_UPDATE):       &ConfigUpdateEnvelope{},
+	int32(HeaderType_MESSAGE):             &ConfigValue{}, // Only used by broadcast_msg sample client
+}
+
+func (p *Payload) VariablyOpaqueFieldProto(name string) (proto.Message, error) {_cover_atomic_.AddUint32(&GoCover_2_643434343036656265656166.Count[5], 1);
+	if name != p.VariablyOpaqueFields()[0] {_cover_atomic_.AddUint32(&GoCover_2_643434343036656265656166.Count[10], 1);
+		return nil, fmt.Errorf("not a marshaled field: %s", name)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_643434343036656265656166.Count[6], 1);if p.Header == nil {_cover_atomic_.AddUint32(&GoCover_2_643434343036656265656166.Count[11], 1);
+		return nil, fmt.Errorf("cannot determine payload type when header is missing")
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_643434343036656265656166.Count[7], 1);ch := &ChannelHeader{}
+	if err := proto.Unmarshal(p.Header.ChannelHeader, ch); err != nil {_cover_atomic_.AddUint32(&GoCover_2_643434343036656265656166.Count[12], 1);
+		return nil, fmt.Errorf("corrupt channel header: %s", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_643434343036656265656166.Count[8], 1);if msg, ok := PayloadDataMap[ch.Type]; ok {_cover_atomic_.AddUint32(&GoCover_2_643434343036656265656166.Count[13], 1);
+		return proto.Clone(msg), nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_643434343036656265656166.Count[9], 1);return nil, fmt.Errorf("decoding type %v is unimplemented", ch.Type)
+}
+
+func (h *Header) StaticallyOpaqueFields() []string {_cover_atomic_.AddUint32(&GoCover_2_643434343036656265656166.Count[14], 1);
+	return []string{"channel_header", "signature_header"}
+}
+
+func (h *Header) StaticallyOpaqueFieldProto(name string) (proto.Message, error) {_cover_atomic_.AddUint32(&GoCover_2_643434343036656265656166.Count[15], 1);
+	switch name {
+	case h.StaticallyOpaqueFields()[0]:_cover_atomic_.AddUint32(&GoCover_2_643434343036656265656166.Count[16], 1); // channel_header
+		return &ChannelHeader{}, nil
+	case h.StaticallyOpaqueFields()[1]:_cover_atomic_.AddUint32(&GoCover_2_643434343036656265656166.Count[17], 1); // signature_header
+		return &SignatureHeader{}, nil
+	default:_cover_atomic_.AddUint32(&GoCover_2_643434343036656265656166.Count[18], 1);
+		return nil, fmt.Errorf("unknown header field: %s", name)
+	}
+}
+
+func (sh *SignatureHeader) StaticallyOpaqueFields() []string {_cover_atomic_.AddUint32(&GoCover_2_643434343036656265656166.Count[19], 1);
+	return []string{"creator"}
+}
+
+func (sh *SignatureHeader) StaticallyOpaqueFieldProto(name string) (proto.Message, error) {_cover_atomic_.AddUint32(&GoCover_2_643434343036656265656166.Count[20], 1);
+	switch name {
+	case sh.StaticallyOpaqueFields()[0]:_cover_atomic_.AddUint32(&GoCover_2_643434343036656265656166.Count[21], 1); // channel_header
+		return &msp.SerializedIdentity{}, nil
+	default:_cover_atomic_.AddUint32(&GoCover_2_643434343036656265656166.Count[22], 1);
+		return nil, fmt.Errorf("unknown header field: %s", name)
+	}
+}
+
+func (bd *BlockData) StaticallyOpaqueSliceFields() []string {_cover_atomic_.AddUint32(&GoCover_2_643434343036656265656166.Count[23], 1);
+	return []string{"data"}
+}
+
+func (bd *BlockData) StaticallyOpaqueSliceFieldProto(fieldName string, index int) (proto.Message, error) {_cover_atomic_.AddUint32(&GoCover_2_643434343036656265656166.Count[24], 1);
+	if fieldName != bd.StaticallyOpaqueSliceFields()[0] {_cover_atomic_.AddUint32(&GoCover_2_643434343036656265656166.Count[26], 1);
+		return nil, fmt.Errorf("not an opaque slice field: %s", fieldName)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_643434343036656265656166.Count[25], 1);return &Envelope{}, nil
+}
+
+var GoCover_2_643434343036656265656166 = struct {
+	Count     [27]uint32
+	Pos       [3 * 27]uint32
+	NumStmt   [27]uint16
+} {
+	Pos: [3 * 27]uint32{
+		16, 18, 0x20036, // [0]
+		20, 21, 0x2b0053, // [1]
+		24, 24, 0x180002, // [2]
+		21, 23, 0x3002b, // [3]
+		27, 29, 0x20033, // [4]
+		38, 39, 0x290050, // [5]
+		42, 42, 0x150002, // [6]
+		45, 46, 0x440002, // [7]
+		50, 50, 0x2c0002, // [8]
+		53, 53, 0x460002, // [9]
+		39, 41, 0x30029, // [10]
+		42, 44, 0x30015, // [11]
+		46, 48, 0x30044, // [12]
+		50, 52, 0x3002c, // [13]
+		56, 58, 0x20034, // [14]
+		60, 61, 0xe0051, // [15]
+		62, 63, 0x1f0025, // [16]
+		64, 65, 0x210025, // [17]
+		66, 67, 0x3b000a, // [18]
+		71, 73, 0x2003e, // [19]
+		75, 76, 0xe005b, // [20]
+		77, 78, 0x280026, // [21]
+		79, 80, 0x3b000a, // [22]
+		84, 86, 0x2003d, // [23]
+		88, 89, 0x36006a, // [24]
+		93, 93, 0x190002, // [25]
+		89, 91, 0x30036, // [26]
+	},
+	NumStmt: [27]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		2, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+		1, // 24
+		1, // 25
+		1, // 26
+	},
+}
+var _ = _cover_atomic_.LoadUint32

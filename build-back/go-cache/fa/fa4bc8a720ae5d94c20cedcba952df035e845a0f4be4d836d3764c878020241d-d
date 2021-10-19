@@ -1,0 +1,223 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/graph/tree.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package graph; import _cover_atomic_ "sync/atomic"
+
+// Iterator defines an iterator that can be used to traverse vertices
+// of a graph
+type Iterator interface {
+	// Next returns the next element in the iteration order,
+	// or nil if there is no such an element
+	Next() *TreeVertex
+}
+
+// TreeVertex defines a vertex of a tree
+type TreeVertex struct {
+	Id          string        // id identifies uniquely the TreeVertex in the Tree
+	Data        interface{}   // data holds arbitrary data, to be used by the user of the package
+	Descendants []*TreeVertex // descendants are the vertices that this TreeVertex is their parent in the tree
+	Threshold   int           // threshold symbols the count of sub-trees / leaves to pick when creating tree permutations
+}
+
+// NewTreeVertex creates a new vertex with a given unique id and a given arbitrary data
+func NewTreeVertex(id string, data interface{}, descendants ...*TreeVertex) *TreeVertex {_cover_atomic_.AddUint32(&GoCover_3_333364376162323263303436.Count[0], 1);
+	return &TreeVertex{
+		Id:          id,
+		Data:        data,
+		Descendants: descendants,
+	}
+}
+
+// IsLeaf returns whether the given vertex is a leaf
+func (v *TreeVertex) IsLeaf() bool {_cover_atomic_.AddUint32(&GoCover_3_333364376162323263303436.Count[1], 1);
+	return len(v.Descendants) == 0
+}
+
+// AddDescendant creates a new vertex who's parent is the invoker vertex,
+// with a given id and data. Returns the new vertex
+func (v *TreeVertex) AddDescendant(u *TreeVertex) *TreeVertex {_cover_atomic_.AddUint32(&GoCover_3_333364376162323263303436.Count[2], 1);
+	v.Descendants = append(v.Descendants, u)
+	return u
+}
+
+// ToTree creates a Tree who's root vertex is the current vertex
+func (v *TreeVertex) ToTree() *Tree {_cover_atomic_.AddUint32(&GoCover_3_333364376162323263303436.Count[3], 1);
+	return &Tree{
+		Root: v,
+	}
+}
+
+// Find searches for a vertex who's id is the given id.
+// Returns the first vertex it finds with such an Id, or nil if not found
+func (v *TreeVertex) Find(id string) *TreeVertex {_cover_atomic_.AddUint32(&GoCover_3_333364376162323263303436.Count[4], 1);
+	if v.Id == id {_cover_atomic_.AddUint32(&GoCover_3_333364376162323263303436.Count[7], 1);
+		return v
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_333364376162323263303436.Count[5], 1);for _, u := range v.Descendants {_cover_atomic_.AddUint32(&GoCover_3_333364376162323263303436.Count[8], 1);
+		if r := u.Find(id); r != nil {_cover_atomic_.AddUint32(&GoCover_3_333364376162323263303436.Count[9], 1);
+			return r
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_333364376162323263303436.Count[6], 1);return nil
+}
+
+// Exists searches for a vertex who's id is the given id,
+// and returns whether such a vertex was found or not.
+func (v *TreeVertex) Exists(id string) bool {_cover_atomic_.AddUint32(&GoCover_3_333364376162323263303436.Count[10], 1);
+	return v.Find(id) != nil
+}
+
+// Clone clones the tree who's root vertex is the current vertex.
+func (v *TreeVertex) Clone() *TreeVertex {_cover_atomic_.AddUint32(&GoCover_3_333364376162323263303436.Count[11], 1);
+	var descendants []*TreeVertex
+	for _, u := range v.Descendants {_cover_atomic_.AddUint32(&GoCover_3_333364376162323263303436.Count[13], 1);
+		descendants = append(descendants, u.Clone())
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_333364376162323263303436.Count[12], 1);copy := &TreeVertex{
+		Id:          v.Id,
+		Descendants: descendants,
+		Data:        v.Data,
+	}
+	return copy
+}
+
+// replace replaces the sub-tree of the vertex who's id is the given id
+// with a sub-tree who's root vertex is r.
+func (v *TreeVertex) replace(id string, r *TreeVertex) {_cover_atomic_.AddUint32(&GoCover_3_333364376162323263303436.Count[14], 1);
+	if v.Id == id {_cover_atomic_.AddUint32(&GoCover_3_333364376162323263303436.Count[16], 1);
+		v.Descendants = r.Descendants
+		return
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_333364376162323263303436.Count[15], 1);for _, u := range v.Descendants {_cover_atomic_.AddUint32(&GoCover_3_333364376162323263303436.Count[17], 1);
+		u.replace(id, r)
+	}
+}
+
+// Tree defines a Tree of vertices of type TreeVertex
+type Tree struct {
+	Root *TreeVertex
+}
+
+// Permute returns Trees that their vertices and edges all exist in the original tree.
+// The permutations are calculated according to the thresholds of all vertices.
+func (t *Tree) Permute() []*Tree {_cover_atomic_.AddUint32(&GoCover_3_333364376162323263303436.Count[18], 1);
+	return newTreePermutation(t.Root).permute()
+}
+
+// BFS returns an iterator that iterates the vertices
+// in a Breadth-First-Search order
+func (t *Tree) BFS() Iterator {_cover_atomic_.AddUint32(&GoCover_3_333364376162323263303436.Count[19], 1);
+	return newBFSIterator(t.Root)
+}
+
+type bfsIterator struct {
+	*queue
+}
+
+func newBFSIterator(v *TreeVertex) *bfsIterator {_cover_atomic_.AddUint32(&GoCover_3_333364376162323263303436.Count[20], 1);
+	return &bfsIterator{
+		queue: &queue{
+			arr: []*TreeVertex{v},
+		},
+	}
+}
+
+// Next returns the next element in the iteration order,
+// or nil if there is no such an element
+func (bfs *bfsIterator) Next() *TreeVertex {_cover_atomic_.AddUint32(&GoCover_3_333364376162323263303436.Count[21], 1);
+	if len(bfs.arr) == 0 {_cover_atomic_.AddUint32(&GoCover_3_333364376162323263303436.Count[24], 1);
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_333364376162323263303436.Count[22], 1);v := bfs.dequeue()
+	for _, u := range v.Descendants {_cover_atomic_.AddUint32(&GoCover_3_333364376162323263303436.Count[25], 1);
+		bfs.enqueue(u)
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_333364376162323263303436.Count[23], 1);return v
+}
+
+// a primitive implementation of a queue backed by a slice
+type queue struct {
+	arr []*TreeVertex
+}
+
+func (q *queue) enqueue(v *TreeVertex) {_cover_atomic_.AddUint32(&GoCover_3_333364376162323263303436.Count[26], 1);
+	q.arr = append(q.arr, v)
+}
+
+func (q *queue) dequeue() *TreeVertex {_cover_atomic_.AddUint32(&GoCover_3_333364376162323263303436.Count[27], 1);
+	v := q.arr[0]
+	q.arr = q.arr[1:]
+	return v
+}
+
+var GoCover_3_333364376162323263303436 = struct {
+	Count     [28]uint32
+	Pos       [3 * 28]uint32
+	NumStmt   [28]uint16
+} {
+	Pos: [3 * 28]uint32{
+		26, 32, 0x20059, // [0]
+		35, 37, 0x20024, // [1]
+		41, 44, 0x2003f, // [2]
+		47, 51, 0x20025, // [3]
+		55, 56, 0x100032, // [4]
+		59, 59, 0x220002, // [5]
+		64, 64, 0xc0002, // [6]
+		56, 58, 0x30010, // [7]
+		59, 60, 0x200022, // [8]
+		60, 62, 0x40020, // [9]
+		69, 71, 0x2002d, // [10]
+		74, 76, 0x22002a, // [11]
+		79, 84, 0xd0002, // [12]
+		76, 78, 0x30022, // [13]
+		89, 90, 0x100038, // [14]
+		94, 94, 0x220002, // [15]
+		90, 93, 0x30010, // [16]
+		94, 96, 0x30022, // [17]
+		106, 108, 0x20022, // [18]
+		112, 114, 0x2001f, // [19]
+		120, 126, 0x20031, // [20]
+		130, 131, 0x17002c, // [21]
+		134, 135, 0x220002, // [22]
+		138, 138, 0xa0002, // [23]
+		131, 133, 0x30017, // [24]
+		135, 137, 0x30022, // [25]
+		146, 148, 0x20028, // [26]
+		150, 154, 0x20027, // [27]
+	},
+	NumStmt: [28]uint16{
+		1, // 0
+		1, // 1
+		2, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		2, // 11
+		2, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		2, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		2, // 22
+		1, // 23
+		1, // 24
+		1, // 25
+		1, // 26
+		3, // 27
+	},
+}
+var _ = _cover_atomic_.LoadUint32

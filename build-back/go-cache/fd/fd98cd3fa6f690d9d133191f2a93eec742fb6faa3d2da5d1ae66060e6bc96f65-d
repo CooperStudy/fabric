@@ -1,0 +1,17 @@
+./channel.go
+./create.go
+./fetch.go
+./getinfo.go
+./join.go
+./list.go
+./signconfigtx.go
+./update.go
+./channel_test.go
+./create_test.go
+./fetch_test.go
+./flags_test.go
+./getinfo_test.go
+./join_test.go
+./list_test.go
+./signconfigtx_test.go
+./update_test.go

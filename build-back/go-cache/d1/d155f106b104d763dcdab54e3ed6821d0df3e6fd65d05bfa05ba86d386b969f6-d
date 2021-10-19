@@ -1,0 +1,341 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/token/client/deliver_client.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+package client; import _cover_atomic_ "sync/atomic"
+
+import (
+	"context"
+	"crypto/tls"
+	"fmt"
+	"math"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric/bccsp/factory"
+	"github.com/hyperledger/fabric/core/comm"
+	"github.com/hyperledger/fabric/protos/common"
+	ab "github.com/hyperledger/fabric/protos/orderer"
+	pb "github.com/hyperledger/fabric/protos/peer"
+	"github.com/pkg/errors"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/status"
+)
+
+//go:generate counterfeiter -o mock/deliver_filtered.go -fake-name DeliverFiltered . DeliverFiltered
+
+// DeliverFiltered defines the interface that abstracts deliver filtered grpc calls to commit peer
+type DeliverFiltered interface {
+	Send(*common.Envelope) error
+	Recv() (*pb.DeliverResponse, error)
+	CloseSend() error
+}
+
+//go:generate counterfeiter -o mock/deliver_client.go -fake-name DeliverClient . DeliverClient
+
+// DeliverClient defines the interface to create a DeliverFiltered client
+type DeliverClient interface {
+	// NewDeliverFilterd returns a DeliverFiltered
+	NewDeliverFiltered(ctx context.Context, opts ...grpc.CallOption) (DeliverFiltered, error)
+
+	// Certificate returns tls certificate for the deliver client to commit peer
+	Certificate() *tls.Certificate
+}
+
+// deliverClient implements DeliverClient interface
+type deliverClient struct {
+	peerAddr           string
+	serverNameOverride string
+	grpcClient         *comm.GRPCClient
+	conn               *grpc.ClientConn
+}
+
+func NewDeliverClient(config *ClientConfig) (DeliverClient, error) {_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[0], 1);
+	grpcClient, err := createGrpcClient(&config.CommitPeerCfg, config.TlsEnabled)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[3], 1);
+		err = errors.WithMessage(err, fmt.Sprintf("failed to create a GRPCClient to peer %s", config.CommitPeerCfg.Address))
+		logger.Errorf("%s", err)
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[1], 1);conn, err := grpcClient.NewConnection(config.CommitPeerCfg.Address, config.CommitPeerCfg.ServerNameOverride)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[4], 1);
+		return nil, errors.WithMessage(err, fmt.Sprintf("failed to connect to commit peer %s", config.CommitPeerCfg.Address))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[2], 1);return &deliverClient{
+		peerAddr:           config.CommitPeerCfg.Address,
+		serverNameOverride: config.CommitPeerCfg.ServerNameOverride,
+		grpcClient:         grpcClient,
+		conn:               conn,
+	}, nil
+}
+
+// NewDeliverFilterd creates a DeliverFiltered client
+func (d *deliverClient) NewDeliverFiltered(ctx context.Context, opts ...grpc.CallOption) (DeliverFiltered, error) {_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[5], 1);
+	if d.conn != nil {_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[9], 1);
+		// close the old connection because new connection will restart its timeout
+		d.conn.Close()
+	}
+
+	// create a new connection to the peer
+	_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[6], 1);var err error
+	d.conn, err = d.grpcClient.NewConnection(d.peerAddr, d.serverNameOverride)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[10], 1);
+		return nil, errors.WithMessage(err, fmt.Sprintf("failed to connect to commit peer %s", d.peerAddr))
+	}
+
+	// create a new DeliverFiltered
+	_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[7], 1);df, err := pb.NewDeliverClient(d.conn).DeliverFiltered(ctx)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[11], 1);
+		rpcStatus, _ := status.FromError(err)
+		return nil, errors.Wrapf(err, "failed to new a deliver filtered, rpcStatus=%+v", rpcStatus)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[8], 1);return df, nil
+}
+
+func (d *deliverClient) Certificate() *tls.Certificate {_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[12], 1);
+	cert := d.grpcClient.Certificate()
+	return &cert
+}
+
+// create a signed envelope with SeekPosition_Newest for block
+func CreateDeliverEnvelope(channelId string, creator []byte, signer SignerIdentity, cert *tls.Certificate) (*common.Envelope, error) {_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[13], 1);
+	var tlsCertHash []byte
+	var err error
+	// check for client certificate and compute SHA2-256 on certificate if present
+	if cert != nil && len(cert.Certificate) > 0 {_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[18], 1);
+		tlsCertHash, err = factory.GetDefault().Hash(cert.Certificate[0], &bccsp.SHA256Opts{})
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[19], 1);
+			err = errors.New("failed to compute SHA256 on client certificate")
+			logger.Errorf("%s", err)
+			return nil, err
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[14], 1);_, header, err := CreateHeader(common.HeaderType_DELIVER_SEEK_INFO, channelId, creator, tlsCertHash)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[20], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[15], 1);start := &ab.SeekPosition{
+		Type: &ab.SeekPosition_Newest{
+			Newest: &ab.SeekNewest{},
+		},
+	}
+
+	stop := &ab.SeekPosition{
+		Type: &ab.SeekPosition_Specified{
+			Specified: &ab.SeekSpecified{
+				Number: math.MaxUint64,
+			},
+		},
+	}
+
+	seekInfo := &ab.SeekInfo{
+		Start:    start,
+		Stop:     stop,
+		Behavior: ab.SeekInfo_BLOCK_UNTIL_READY,
+	}
+
+	raw, err := proto.Marshal(seekInfo)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[21], 1);
+		return nil, errors.Wrap(err, "error marshaling SeekInfo")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[16], 1);envelope, err := CreateEnvelope(raw, header, signer)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[22], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[17], 1);return envelope, nil
+}
+
+func DeliverSend(df DeliverFiltered, address string, envelope *common.Envelope) error {_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[23], 1);
+	err := df.Send(envelope)
+	df.CloseSend()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[25], 1);
+		return errors.Wrapf(err, "failed to send deliver envelope to peer %s", address)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[24], 1);return nil
+}
+
+func DeliverReceive(df DeliverFiltered, address string, txid string, eventCh chan TxEvent) error {_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[26], 1);
+	event := TxEvent{
+		Txid:       txid,
+		Committed:  false,
+		CommitPeer: address,
+	}
+
+read:
+	for {_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[30], 1);
+		resp, err := df.Recv()
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[32], 1);
+			event.Err = errors.WithMessage(err, fmt.Sprintf("error receiving deliver response from peer %s", address))
+			break read
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[31], 1);switch r := resp.Type.(type) {
+		case *pb.DeliverResponse_FilteredBlock:_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[33], 1);
+			filteredTransactions := r.FilteredBlock.FilteredTransactions
+			for _, tx := range filteredTransactions {_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[36], 1);
+				logger.Debugf("deliverReceive got filteredTransaction for transaction [%s], status [%s]", tx.Txid, tx.TxValidationCode)
+				if tx.Txid == txid {_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[37], 1);
+					if tx.TxValidationCode == pb.TxValidationCode_VALID {_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[39], 1);
+						event.Committed = true
+					} else{ _cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[40], 1);{
+						event.Err = errors.Errorf("transaction [%s] status is not valid: %s", tx.Txid, tx.TxValidationCode)
+					}}
+					_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[38], 1);break read
+				}
+			}
+		case *pb.DeliverResponse_Status:_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[34], 1);
+			event.Err = errors.Errorf("deliver completed with status (%s) before txid %s received from peer %s", r.Status, txid, address)
+			break read
+		default:_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[35], 1);
+			event.Err = errors.Errorf("received unexpected response type (%T) from peer %s", r, address)
+			break read
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[27], 1);if event.Err != nil {_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[41], 1);
+		logger.Errorf("Error: %s", event.Err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[28], 1);select {
+	case eventCh <- event:_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[42], 1);
+		logger.Debugf("Received transaction deliver event %+v", event)
+	default:_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[43], 1);
+		logger.Errorf("Event channel full. Discarding event %+v", event)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[29], 1);return event.Err
+}
+
+// DeliverWaitForResponse waits for either eventChan has value (i.e., response has been received) or ctx is timed out
+// This function assumes that the eventCh is only for the specified txid
+// If an eventCh is shared by multiple transactions, a loop should be used to listen to events from multiple transactions
+func DeliverWaitForResponse(ctx context.Context, eventCh chan TxEvent, txid string) (bool, error) {_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[44], 1);
+	select {
+	case event, _ := <-eventCh:_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[45], 1);
+		if txid == event.Txid {_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[47], 1);
+			return event.Committed, event.Err
+		} else{ _cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[48], 1);{
+			// should never get here
+			return false, errors.Errorf("no event received for txid %s", txid)
+		}}
+	case <-ctx.Done():_cover_atomic_.AddUint32(&GoCover_2_386238643262613636363863.Count[46], 1);
+		err := errors.Errorf("timed out waiting for committing txid %s", txid)
+		logger.Errorf("%s", err)
+		return false, err
+	}
+}
+
+var GoCover_2_386238643262613636363863 = struct {
+	Count     [49]uint32
+	Pos       [3 * 49]uint32
+	NumStmt   [49]uint16
+} {
+	Pos: [3 * 49]uint32{
+		54, 56, 0x100044, // [0]
+		61, 62, 0x100002, // [1]
+		66, 71, 0x80002, // [2]
+		56, 60, 0x30010, // [3]
+		62, 64, 0x30010, // [4]
+		75, 76, 0x130073, // [5]
+		82, 84, 0x100002, // [6]
+		89, 90, 0x100002, // [7]
+		94, 94, 0x100002, // [8]
+		76, 79, 0x30013, // [9]
+		84, 86, 0x30010, // [10]
+		90, 93, 0x30010, // [11]
+		97, 100, 0x20038, // [12]
+		103, 107, 0x2e0086, // [13]
+		116, 117, 0x100002, // [14]
+		121, 142, 0x100002, // [15]
+		146, 147, 0x100002, // [16]
+		151, 151, 0x160002, // [17]
+		107, 109, 0x11002e, // [18]
+		109, 113, 0x40011, // [19]
+		117, 119, 0x30010, // [20]
+		142, 144, 0x30010, // [21]
+		147, 149, 0x30010, // [22]
+		154, 157, 0x100057, // [23]
+		160, 160, 0xc0002, // [24]
+		157, 159, 0x30010, // [25]
+		163, 171, 0x60062, // [26]
+		200, 200, 0x160002, // [27]
+		203, 203, 0x90002, // [28]
+		210, 210, 0x120002, // [29]
+		171, 173, 0x110006, // [30]
+		177, 177, 0x200003, // [31]
+		173, 175, 0xe0011, // [32]
+		178, 180, 0x2c002a, // [33]
+		191, 193, 0xe0023, // [34]
+		194, 196, 0xe000b, // [35]
+		180, 182, 0x18002c, // [36]
+		182, 183, 0x3a0018, // [37]
+		188, 188, 0x100006, // [38]
+		183, 185, 0x7003a, // [39]
+		185, 187, 0x7000c, // [40]
+		200, 202, 0x30016, // [41]
+		204, 205, 0x410018, // [42]
+		206, 207, 0x43000a, // [43]
+		216, 217, 0x90063, // [44]
+		218, 219, 0x19001d, // [45]
+		225, 228, 0x140014, // [46]
+		219, 221, 0x40019, // [47]
+		221, 224, 0x40009, // [48]
+	},
+	NumStmt: [49]uint16{
+		2, // 0
+		2, // 1
+		1, // 2
+		3, // 3
+		1, // 4
+		1, // 5
+		3, // 6
+		2, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		2, // 11
+		2, // 12
+		3, // 13
+		2, // 14
+		5, // 15
+		2, // 16
+		1, // 17
+		2, // 18
+		3, // 19
+		1, // 20
+		1, // 21
+		1, // 22
+		3, // 23
+		1, // 24
+		1, // 25
+		2, // 26
+		1, // 27
+		1, // 28
+		1, // 29
+		2, // 30
+		1, // 31
+		2, // 32
+		2, // 33
+		2, // 34
+		2, // 35
+		2, // 36
+		1, // 37
+		1, // 38
+		1, // 39
+		1, // 40
+		1, // 41
+		1, // 42
+		1, // 43
+		1, // 44
+		1, // 45
+		3, // 46
+		1, // 47
+		1, // 48
+	},
+}
+var _ = _cover_atomic_.LoadUint32

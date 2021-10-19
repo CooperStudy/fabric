@@ -1,0 +1,147 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/mocks/config/orderer.go:1
+/*
+Copyright IBM Corp. 2016 All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package config; import _cover_atomic_ "sync/atomic"
+
+import (
+	"time"
+
+	"github.com/hyperledger/fabric/common/channelconfig"
+	ab "github.com/hyperledger/fabric/protos/orderer"
+)
+
+// Orderer is a mock implementation of channelconfig.Orderer
+type Orderer struct {
+	// ConsensusTypeVal is returned as the result of ConsensusType()
+	ConsensusTypeVal string
+	// ConsensusMetadataVal is returned as the result of ConsensusMetadata()
+	ConsensusMetadataVal []byte
+	// BatchSizeVal is returned as the result of BatchSize()
+	BatchSizeVal *ab.BatchSize
+	// BatchTimeoutVal is returned as the result of BatchTimeout()
+	BatchTimeoutVal time.Duration
+	// KafkaBrokersVal is returned as the result of KafkaBrokers()
+	KafkaBrokersVal []string
+	// MaxChannelsCountVal is returns as the result of MaxChannelsCount()
+	MaxChannelsCountVal uint64
+	// OrganizationsVal is returned as the result of Organizations()
+	OrganizationsVal map[string]channelconfig.Org
+	// CapabilitiesVal is returned as the result of Capabilities()
+	CapabilitiesVal channelconfig.OrdererCapabilities
+}
+
+// ConsensusType returns the ConsensusTypeVal
+func (o *Orderer) ConsensusType() string {_cover_atomic_.AddUint32(&GoCover_2_376432346462643230373733.Count[0], 1);
+	return o.ConsensusTypeVal
+}
+
+// ConsensusMetadata returns the ConsensusMetadataVal
+func (o *Orderer) ConsensusMetadata() []byte {_cover_atomic_.AddUint32(&GoCover_2_376432346462643230373733.Count[1], 1);
+	return o.ConsensusMetadataVal
+}
+
+// BatchSize returns the BatchSizeVal
+func (o *Orderer) BatchSize() *ab.BatchSize {_cover_atomic_.AddUint32(&GoCover_2_376432346462643230373733.Count[2], 1);
+	return o.BatchSizeVal
+}
+
+// BatchTimeout returns the BatchTimeoutVal
+func (o *Orderer) BatchTimeout() time.Duration {_cover_atomic_.AddUint32(&GoCover_2_376432346462643230373733.Count[3], 1);
+	return o.BatchTimeoutVal
+}
+
+// KafkaBrokers returns the KafkaBrokersVal
+func (o *Orderer) KafkaBrokers() []string {_cover_atomic_.AddUint32(&GoCover_2_376432346462643230373733.Count[4], 1);
+	return o.KafkaBrokersVal
+}
+
+// MaxChannelsCount returns the MaxChannelsCountVal
+func (o *Orderer) MaxChannelsCount() uint64 {_cover_atomic_.AddUint32(&GoCover_2_376432346462643230373733.Count[5], 1);
+	return o.MaxChannelsCountVal
+}
+
+// Organizations returns OrganizationsVal
+func (o *Orderer) Organizations() map[string]channelconfig.Org {_cover_atomic_.AddUint32(&GoCover_2_376432346462643230373733.Count[6], 1);
+	return o.OrganizationsVal
+}
+
+// Capabilities returns CapabilitiesVal
+func (o *Orderer) Capabilities() channelconfig.OrdererCapabilities {_cover_atomic_.AddUint32(&GoCover_2_376432346462643230373733.Count[7], 1);
+	return o.CapabilitiesVal
+}
+
+// OrdererCapabilities mocks the channelconfig.OrdererCapabilities interface
+type OrdererCapabilities struct {
+	// SupportedErr is returned by Supported()
+	SupportedErr error
+
+	// PredictableChannelTemplateVal is returned by PredictableChannelTemplate()
+	PredictableChannelTemplateVal bool
+
+	// ResubmissionVal is returned by Resubmission()
+	ResubmissionVal bool
+
+	// ExpirationVal is returned by ExpirationCheck()
+	ExpirationVal bool
+}
+
+// Supported returns SupportedErr
+func (oc *OrdererCapabilities) Supported() error {_cover_atomic_.AddUint32(&GoCover_2_376432346462643230373733.Count[8], 1);
+	return oc.SupportedErr
+}
+
+// PredictableChannelTemplate returns PredictableChannelTemplateVal
+func (oc *OrdererCapabilities) PredictableChannelTemplate() bool {_cover_atomic_.AddUint32(&GoCover_2_376432346462643230373733.Count[9], 1);
+	return oc.PredictableChannelTemplateVal
+}
+
+// Resubmission returns ResubmissionVal
+func (oc *OrdererCapabilities) Resubmission() bool {_cover_atomic_.AddUint32(&GoCover_2_376432346462643230373733.Count[10], 1);
+	return oc.ResubmissionVal
+}
+
+// ExpirationCheck specifies whether the orderer checks for identity expiration checks
+// when validating messages
+func (oc *OrdererCapabilities) ExpirationCheck() bool {_cover_atomic_.AddUint32(&GoCover_2_376432346462643230373733.Count[11], 1);
+	return oc.ExpirationVal
+}
+
+var GoCover_2_376432346462643230373733 = struct {
+	Count     [12]uint32
+	Pos       [3 * 12]uint32
+	NumStmt   [12]uint16
+} {
+	Pos: [3 * 12]uint32{
+		37, 39, 0x2002a, // [0]
+		42, 44, 0x2002e, // [1]
+		47, 49, 0x2002d, // [2]
+		52, 54, 0x20030, // [3]
+		57, 59, 0x2002b, // [4]
+		62, 64, 0x2002d, // [5]
+		67, 69, 0x20040, // [6]
+		72, 74, 0x20044, // [7]
+		92, 94, 0x20032, // [8]
+		97, 99, 0x20042, // [9]
+		102, 104, 0x20034, // [10]
+		108, 110, 0x20037, // [11]
+	},
+	NumStmt: [12]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+	},
+}
+var _ = _cover_atomic_.LoadUint32

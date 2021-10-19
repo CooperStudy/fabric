@@ -1,0 +1,224 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/mocks/msp/noopmsp.go:1
+/*
+Copyright IBM Corp. 2016 All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+		 http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package msp; import _cover_atomic_ "sync/atomic"
+
+import (
+	"time"
+
+	m "github.com/hyperledger/fabric/msp"
+	"github.com/hyperledger/fabric/protos/msp"
+)
+
+type noopmsp struct {
+}
+
+// NewNoopMsp returns a no-op implementation of the MSP interface
+func NewNoopMsp() m.MSP {_cover_atomic_.AddUint32(&GoCover_0_363864336266363361373266.Count[0], 1);
+	return &noopmsp{}
+}
+
+func (msp *noopmsp) Setup(*msp.MSPConfig) error {_cover_atomic_.AddUint32(&GoCover_0_363864336266363361373266.Count[1], 1);
+	return nil
+}
+
+func (msp *noopmsp) GetVersion() m.MSPVersion {_cover_atomic_.AddUint32(&GoCover_0_363864336266363361373266.Count[2], 1);
+	return m.MSPv1_0
+}
+
+func (msp *noopmsp) GetType() m.ProviderType {_cover_atomic_.AddUint32(&GoCover_0_363864336266363361373266.Count[3], 1);
+	return 0
+}
+
+func (msp *noopmsp) GetIdentifier() (string, error) {_cover_atomic_.AddUint32(&GoCover_0_363864336266363361373266.Count[4], 1);
+	return "NOOP", nil
+}
+
+func (msp *noopmsp) GetSigningIdentity(identifier *m.IdentityIdentifier) (m.SigningIdentity, error) {_cover_atomic_.AddUint32(&GoCover_0_363864336266363361373266.Count[5], 1);
+	id, _ := newNoopSigningIdentity()
+	return id, nil
+}
+
+func (msp *noopmsp) GetDefaultSigningIdentity() (m.SigningIdentity, error) {_cover_atomic_.AddUint32(&GoCover_0_363864336266363361373266.Count[6], 1);
+	id, _ := newNoopSigningIdentity()
+	return id, nil
+}
+
+// GetRootCerts returns the root certificates for this MSP
+func (msp *noopmsp) GetRootCerts() []m.Identity {_cover_atomic_.AddUint32(&GoCover_0_363864336266363361373266.Count[7], 1);
+	return nil
+}
+
+// GetIntermediateCerts returns the intermediate root certificates for this MSP
+func (msp *noopmsp) GetIntermediateCerts() []m.Identity {_cover_atomic_.AddUint32(&GoCover_0_363864336266363361373266.Count[8], 1);
+	return nil
+}
+
+// GetTLSRootCerts returns the root certificates for this MSP
+func (msp *noopmsp) GetTLSRootCerts() [][]byte {_cover_atomic_.AddUint32(&GoCover_0_363864336266363361373266.Count[9], 1);
+	return nil
+}
+
+// GetTLSIntermediateCerts returns the intermediate root certificates for this MSP
+func (msp *noopmsp) GetTLSIntermediateCerts() [][]byte {_cover_atomic_.AddUint32(&GoCover_0_363864336266363361373266.Count[10], 1);
+	return nil
+}
+
+func (msp *noopmsp) DeserializeIdentity(serializedID []byte) (m.Identity, error) {_cover_atomic_.AddUint32(&GoCover_0_363864336266363361373266.Count[11], 1);
+	id, _ := newNoopIdentity()
+	return id, nil
+}
+
+func (msp *noopmsp) Validate(id m.Identity) error {_cover_atomic_.AddUint32(&GoCover_0_363864336266363361373266.Count[12], 1);
+	return nil
+}
+
+func (msp *noopmsp) SatisfiesPrincipal(id m.Identity, principal *msp.MSPPrincipal) error {_cover_atomic_.AddUint32(&GoCover_0_363864336266363361373266.Count[13], 1);
+	return nil
+}
+
+// IsWellFormed checks if the given identity can be deserialized into its provider-specific form
+func (msp *noopmsp) IsWellFormed(_ *msp.SerializedIdentity) error {_cover_atomic_.AddUint32(&GoCover_0_363864336266363361373266.Count[14], 1);
+	return nil
+}
+
+type noopidentity struct {
+}
+
+func newNoopIdentity() (m.Identity, error) {_cover_atomic_.AddUint32(&GoCover_0_363864336266363361373266.Count[15], 1);
+	return &noopidentity{}, nil
+}
+
+func (id *noopidentity) Anonymous() bool {_cover_atomic_.AddUint32(&GoCover_0_363864336266363361373266.Count[16], 1);
+	panic("implement me")
+}
+
+func (id *noopidentity) SatisfiesPrincipal(*msp.MSPPrincipal) error {_cover_atomic_.AddUint32(&GoCover_0_363864336266363361373266.Count[17], 1);
+	return nil
+}
+
+func (id *noopidentity) ExpiresAt() time.Time {_cover_atomic_.AddUint32(&GoCover_0_363864336266363361373266.Count[18], 1);
+	return time.Time{}
+}
+
+func (id *noopidentity) GetIdentifier() *m.IdentityIdentifier {_cover_atomic_.AddUint32(&GoCover_0_363864336266363361373266.Count[19], 1);
+	return &m.IdentityIdentifier{Mspid: "NOOP", Id: "Bob"}
+}
+
+func (id *noopidentity) GetMSPIdentifier() string {_cover_atomic_.AddUint32(&GoCover_0_363864336266363361373266.Count[20], 1);
+	return "MSPID"
+}
+
+func (id *noopidentity) Validate() error {_cover_atomic_.AddUint32(&GoCover_0_363864336266363361373266.Count[21], 1);
+	return nil
+}
+
+func (id *noopidentity) GetOrganizationalUnits() []*m.OUIdentifier {_cover_atomic_.AddUint32(&GoCover_0_363864336266363361373266.Count[22], 1);
+	return nil
+}
+
+func (id *noopidentity) Verify(msg []byte, sig []byte) error {_cover_atomic_.AddUint32(&GoCover_0_363864336266363361373266.Count[23], 1);
+	return nil
+}
+
+func (id *noopidentity) Serialize() ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_0_363864336266363361373266.Count[24], 1);
+	return []byte("cert"), nil
+}
+
+type noopsigningidentity struct {
+	noopidentity
+}
+
+func newNoopSigningIdentity() (m.SigningIdentity, error) {_cover_atomic_.AddUint32(&GoCover_0_363864336266363361373266.Count[25], 1);
+	return &noopsigningidentity{}, nil
+}
+
+func (id *noopsigningidentity) Sign(msg []byte) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_0_363864336266363361373266.Count[26], 1);
+	return []byte("signature"), nil
+}
+
+func (id *noopsigningidentity) GetPublicVersion() m.Identity {_cover_atomic_.AddUint32(&GoCover_0_363864336266363361373266.Count[27], 1);
+	return id
+}
+
+var GoCover_0_363864336266363361373266 = struct {
+	Count     [28]uint32
+	Pos       [3 * 28]uint32
+	NumStmt   [28]uint16
+} {
+	Pos: [3 * 28]uint32{
+		30, 32, 0x20019, // [0]
+		34, 36, 0x20031, // [1]
+		38, 40, 0x2002f, // [2]
+		42, 44, 0x2002e, // [3]
+		46, 48, 0x20035, // [4]
+		50, 53, 0x20065, // [5]
+		55, 58, 0x2004c, // [6]
+		61, 63, 0x20031, // [7]
+		66, 68, 0x20039, // [8]
+		71, 73, 0x20030, // [9]
+		76, 78, 0x20038, // [10]
+		80, 83, 0x20052, // [11]
+		85, 87, 0x20033, // [12]
+		89, 91, 0x2005a, // [13]
+		94, 96, 0x20043, // [14]
+		101, 103, 0x2002c, // [15]
+		105, 106, 0x17002a, // [16]
+		109, 111, 0x20045, // [17]
+		113, 115, 0x2002f, // [18]
+		117, 119, 0x2003f, // [19]
+		121, 123, 0x20033, // [20]
+		125, 127, 0x2002a, // [21]
+		129, 131, 0x20044, // [22]
+		133, 135, 0x2003e, // [23]
+		137, 139, 0x20035, // [24]
+		145, 147, 0x2003a, // [25]
+		149, 151, 0x20041, // [26]
+		153, 155, 0x2003e, // [27]
+	},
+	NumStmt: [28]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		2, // 5
+		2, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		2, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+		1, // 24
+		1, // 25
+		1, // 26
+		1, // 27
+	},
+}
+var _ = _cover_atomic_.LoadUint32

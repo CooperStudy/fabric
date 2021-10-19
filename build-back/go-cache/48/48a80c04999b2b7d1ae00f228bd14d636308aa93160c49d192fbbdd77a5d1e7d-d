@@ -1,0 +1,33 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/aclmgmt/aclmgmt.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package aclmgmt; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric/common/flogging"
+)
+
+var aclLogger = flogging.MustGetLogger("aclmgmt")
+
+type ACLProvider interface {
+	//CheckACL checks the ACL for the resource for the channel using the
+	//idinfo. idinfo is an object such as SignedProposal from which an
+	//id can be extracted for testing against a policy
+	CheckACL(resName string, channelID string, idinfo interface{}) error
+}
+
+var GoCover_0_333530613935626133663963 = struct {
+	Count     [0]uint32
+	Pos       [3 * 0]uint32
+	NumStmt   [0]uint16
+} {
+	Pos: [3 * 0]uint32{
+	},
+	NumStmt: [0]uint16{
+	},
+}
+var _ = _cover_atomic_.LoadUint32

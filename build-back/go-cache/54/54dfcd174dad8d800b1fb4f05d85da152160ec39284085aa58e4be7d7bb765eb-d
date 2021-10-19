@@ -1,0 +1,94 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/mocks/configtx/configtx.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package configtx; import _cover_atomic_ "sync/atomic"
+
+import (
+	cb "github.com/hyperledger/fabric/protos/common"
+)
+
+// Validator is a mock implementation of configtx.Validator
+type Validator struct {
+	// ChainIDVal is returned as the result of ChainID()
+	ChainIDVal string
+
+	// SequenceVal is returned as the result of Sequence()
+	SequenceVal uint64
+
+	// ApplyVal is returned by Apply
+	ApplyVal error
+
+	// AppliedConfigUpdateEnvelope is set by Apply
+	AppliedConfigUpdateEnvelope *cb.ConfigEnvelope
+
+	// ValidateVal is returned by Validate
+	ValidateVal error
+
+	// ProposeConfigUpdateError is returned as the error value for ProposeConfigUpdate
+	ProposeConfigUpdateError error
+
+	// ProposeConfigUpdateVal is returns as the value for ProposeConfigUpdate
+	ProposeConfigUpdateVal *cb.ConfigEnvelope
+
+	// ConfigProtoVal is returned as the value for ConfigProtoVal()
+	ConfigProtoVal *cb.Config
+}
+
+// ConfigProto returns the ConfigProtoVal
+func (cm *Validator) ConfigProto() *cb.Config {_cover_atomic_.AddUint32(&GoCover_0_346666323830363835643365.Count[0], 1);
+	return cm.ConfigProtoVal
+}
+
+// ConsensusType returns the ConsensusTypeVal
+func (cm *Validator) ChainID() string {_cover_atomic_.AddUint32(&GoCover_0_346666323830363835643365.Count[1], 1);
+	return cm.ChainIDVal
+}
+
+// BatchSize returns the BatchSizeVal
+func (cm *Validator) Sequence() uint64 {_cover_atomic_.AddUint32(&GoCover_0_346666323830363835643365.Count[2], 1);
+	return cm.SequenceVal
+}
+
+// ProposeConfigUpdate
+func (cm *Validator) ProposeConfigUpdate(update *cb.Envelope) (*cb.ConfigEnvelope, error) {_cover_atomic_.AddUint32(&GoCover_0_346666323830363835643365.Count[3], 1);
+	return cm.ProposeConfigUpdateVal, cm.ProposeConfigUpdateError
+}
+
+// Apply returns ApplyVal
+func (cm *Validator) Apply(configEnv *cb.ConfigEnvelope) error {_cover_atomic_.AddUint32(&GoCover_0_346666323830363835643365.Count[4], 1);
+	cm.AppliedConfigUpdateEnvelope = configEnv
+	return cm.ApplyVal
+}
+
+// Validate returns ValidateVal
+func (cm *Validator) Validate(configEnv *cb.ConfigEnvelope) error {_cover_atomic_.AddUint32(&GoCover_0_346666323830363835643365.Count[5], 1);
+	return cm.ValidateVal
+}
+
+var GoCover_0_346666323830363835643365 = struct {
+	Count     [6]uint32
+	Pos       [3 * 6]uint32
+	NumStmt   [6]uint16
+} {
+	Pos: [3 * 6]uint32{
+		41, 43, 0x2002f, // [0]
+		46, 48, 0x20027, // [1]
+		51, 53, 0x20028, // [2]
+		56, 58, 0x2005b, // [3]
+		61, 64, 0x20040, // [4]
+		67, 69, 0x20043, // [5]
+	},
+	NumStmt: [6]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		2, // 4
+		1, // 5
+	},
+}
+var _ = _cover_atomic_.LoadUint32

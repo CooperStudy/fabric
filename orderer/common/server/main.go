@@ -76,16 +76,32 @@ func Main() {
 		return
 	}
 
+
+
 	conf, err := localconfig.Load()
 	if err != nil {
 		logger.Error("failed to parse config: ", err)
 		os.Exit(1)
 	}
-	initializeLogging()
-	initializeLocalMsp(conf)
 
+	logger.Info("====conf===",*conf)
+
+
+	logger.Info("====initializeLogging:start===")
+	initializeLogging()
+	logger.Info("====initializeLogging:end===")
+
+	logger.Info("====initializeLocalMsp:start===")
+	initializeLocalMsp(conf)
+	logger.Info("====initializeLocalMsp:end===")
+
+	logger.Info("====prettyPrintStruct:start===")
 	prettyPrintStruct(conf)
+	logger.Info("====prettyPrintStruct:end===")
+
+	logger.Info("====Start:start==")
 	Start(fullCmd, conf)
+	logger.Info("====Start:end==")
 }
 
 // Start provides a layer of abstraction for benchmark test
@@ -159,6 +175,7 @@ func initializeLogging() {
 	logger.Info("====initializeLogging===")
 	loggingSpec := os.Getenv("FABRIC_LOGGING_SPEC")
 	loggingFormat := os.Getenv("FABRIC_LOGGING_FORMAT")
+	//日志初始化
 	flogging.Init(flogging.Config{
 		Format:  loggingFormat,
 		Writer:  os.Stderr,

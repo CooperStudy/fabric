@@ -1,0 +1,610 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/orderer/consensus/etcdraft/util.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package etcdraft; import _cover_atomic_ "sync/atomic"
+
+import (
+	"bytes"
+	"encoding/pem"
+
+	"github.com/coreos/etcd/raft"
+	"github.com/coreos/etcd/raft/raftpb"
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/channelconfig"
+	"github.com/hyperledger/fabric/common/configtx"
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/orderer/common/cluster"
+	"github.com/hyperledger/fabric/orderer/common/localconfig"
+	"github.com/hyperledger/fabric/orderer/consensus"
+	"github.com/hyperledger/fabric/protos/common"
+	"github.com/hyperledger/fabric/protos/orderer"
+	"github.com/hyperledger/fabric/protos/orderer/etcdraft"
+	"github.com/hyperledger/fabric/protos/utils"
+	"github.com/pkg/errors"
+)
+
+// MembershipChanges keeps information about membership
+// changes introduced during configuration update
+type MembershipChanges struct {
+	AddedNodes   []*etcdraft.Consenter
+	RemovedNodes []*etcdraft.Consenter
+	TotalChanges uint32
+}
+
+// UpdateRaftMetadataAndConfChange given the membership changes and RaftMetadata method calculates
+// updates to be applied to the raft  cluster configuration in addition updates mapping between
+// consenter and its id within metadata
+func (mc *MembershipChanges) UpdateRaftMetadataAndConfChange(raftMetadata *etcdraft.RaftMetadata) *raftpb.ConfChange {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[0], 1);
+	if mc == nil || mc.TotalChanges == 0 {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[4], 1);
+		return nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[1], 1);var confChange *raftpb.ConfChange
+
+	// producing corresponding raft configuration changes
+	if len(mc.AddedNodes) > 0 {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[5], 1);
+		nodeID := raftMetadata.NextConsenterId
+		raftMetadata.Consenters[nodeID] = mc.AddedNodes[0]
+		raftMetadata.NextConsenterId++
+		confChange = &raftpb.ConfChange{
+			ID:     raftMetadata.ConfChangeCounts,
+			NodeID: nodeID,
+			Type:   raftpb.ConfChangeAddNode,
+		}
+		raftMetadata.ConfChangeCounts++
+		return confChange
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[2], 1);if len(mc.RemovedNodes) > 0 {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[6], 1);
+		for _, c := range mc.RemovedNodes {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[7], 1);
+			for nodeID, node := range raftMetadata.Consenters {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[8], 1);
+				if bytes.Equal(c.ClientTlsCert, node.ClientTlsCert) {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[9], 1);
+					delete(raftMetadata.Consenters, nodeID)
+					confChange = &raftpb.ConfChange{
+						ID:     raftMetadata.ConfChangeCounts,
+						NodeID: nodeID,
+						Type:   raftpb.ConfChangeRemoveNode,
+					}
+					raftMetadata.ConfChangeCounts++
+					break
+				}
+			}
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[3], 1);return confChange
+}
+
+// EndpointconfigFromFromSupport extracts TLS CA certificates and endpoints from the ConsenterSupport
+func EndpointconfigFromFromSupport(support consensus.ConsenterSupport) (*cluster.EndpointConfig, error) {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[10], 1);
+	lastConfigBlock, err := lastConfigBlockFromSupport(support)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[13], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[11], 1);endpointconf, err := cluster.EndpointconfigFromConfigBlock(lastConfigBlock)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[14], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[12], 1);return endpointconf, nil
+}
+
+func lastConfigBlockFromSupport(support consensus.ConsenterSupport) (*common.Block, error) {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[15], 1);
+	lastBlockSeq := support.Height() - 1
+	lastBlock := support.Block(lastBlockSeq)
+	if lastBlock == nil {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[18], 1);
+		return nil, errors.Errorf("unable to retrieve block %d", lastBlockSeq)
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[16], 1);lastConfigBlock, err := LastConfigBlock(lastBlock, support)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[19], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[17], 1);return lastConfigBlock, nil
+}
+
+// LastConfigBlock returns the last config block relative to the given block.
+func LastConfigBlock(block *common.Block, support consensus.ConsenterSupport) (*common.Block, error) {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[20], 1);
+	if block == nil {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[26], 1);
+		return nil, errors.New("nil block")
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[21], 1);if support == nil {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[27], 1);
+		return nil, errors.New("nil support")
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[22], 1);if block.Metadata == nil || len(block.Metadata.Metadata) <= int(common.BlockMetadataIndex_LAST_CONFIG) {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[28], 1);
+		return nil, errors.New("no metadata in block")
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[23], 1);lastConfigBlockNum, err := utils.GetLastConfigIndexFromBlock(block)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[29], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[24], 1);lastConfigBlock := support.Block(lastConfigBlockNum)
+	if lastConfigBlock == nil {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[30], 1);
+		return nil, errors.Errorf("unable to retrieve last config block %d", lastConfigBlockNum)
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[25], 1);return lastConfigBlock, nil
+}
+
+// newBlockPuller creates a new block puller
+func newBlockPuller(support consensus.ConsenterSupport,
+	baseDialer *cluster.PredicateDialer,
+	clusterConfig localconfig.Cluster) (*cluster.BlockPuller, error) {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[31], 1);
+
+	verifyBlockSequence := func(blocks []*common.Block) error {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[36], 1);
+		return cluster.VerifyBlocks(blocks, support)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[32], 1);secureConfig, err := baseDialer.ClientConfig()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[37], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[33], 1);secureConfig.AsyncConnect = false
+	stdDialer := &cluster.StandardDialer{
+		Dialer: cluster.NewTLSPinningDialer(secureConfig),
+	}
+
+	// Extract the TLS CA certs and endpoints from the configuration,
+	endpointConfig, err := EndpointconfigFromFromSupport(support)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[38], 1);
+		return nil, err
+	}
+	// and overwrite them.
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[34], 1);secureConfig.SecOpts.ServerRootCAs = endpointConfig.TLSRootCAs
+	stdDialer.Dialer.SetConfig(secureConfig)
+
+	der, _ := pem.Decode(secureConfig.SecOpts.Certificate)
+	if der == nil {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[39], 1);
+		return nil, errors.Errorf("client certificate isn't in PEM format: %v",
+			string(secureConfig.SecOpts.Certificate))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[35], 1);return &cluster.BlockPuller{
+		VerifyBlockSequence: verifyBlockSequence,
+		Logger:              flogging.MustGetLogger("orderer.common.cluster.puller"),
+		RetryTimeout:        clusterConfig.ReplicationRetryTimeout,
+		MaxTotalBufferBytes: clusterConfig.ReplicationBufferSize,
+		FetchTimeout:        clusterConfig.ReplicationPullTimeout,
+		Endpoints:           endpointConfig.Endpoints,
+		Signer:              support,
+		TLSCert:             der.Bytes,
+		Channel:             support.ChainID(),
+		Dialer:              stdDialer,
+	}, nil
+}
+
+// RaftPeers maps consenters to slice of raft.Peer
+func RaftPeers(consenters map[uint64]*etcdraft.Consenter) []raft.Peer {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[40], 1);
+	var peers []raft.Peer
+
+	for raftID := range consenters {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[42], 1);
+		peers = append(peers, raft.Peer{ID: raftID})
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[41], 1);return peers
+}
+
+// ConsentersToMap maps consenters into set where key is client TLS certificate
+func ConsentersToMap(consenters []*etcdraft.Consenter) map[string]struct{} {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[43], 1);
+	set := map[string]struct{}{}
+	for _, c := range consenters {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[45], 1);
+		set[string(c.ClientTlsCert)] = struct{}{}
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[44], 1);return set
+}
+
+// MembershipByCert convert consenters map into set encapsulated by map
+// where key is client TLS certificate
+func MembershipByCert(consenters map[uint64]*etcdraft.Consenter) map[string]struct{} {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[46], 1);
+	set := map[string]struct{}{}
+	for _, c := range consenters {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[48], 1);
+		set[string(c.ClientTlsCert)] = struct{}{}
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[47], 1);return set
+}
+
+// ComputeMembershipChanges computes membership update based on information about new conseters, returns
+// two slices: a slice of added consenters and a slice of consenters to be removed
+func ComputeMembershipChanges(oldConsenters map[uint64]*etcdraft.Consenter, newConsenters []*etcdraft.Consenter) *MembershipChanges {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[49], 1);
+	result := &MembershipChanges{
+		AddedNodes:   []*etcdraft.Consenter{},
+		RemovedNodes: []*etcdraft.Consenter{},
+	}
+
+	currentConsentersSet := MembershipByCert(oldConsenters)
+	for _, c := range newConsenters {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[52], 1);
+		if _, exists := currentConsentersSet[string(c.ClientTlsCert)]; !exists {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[53], 1);
+			result.AddedNodes = append(result.AddedNodes, c)
+			result.TotalChanges++
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[50], 1);newConsentersSet := ConsentersToMap(newConsenters)
+	for _, c := range oldConsenters {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[54], 1);
+		if _, exists := newConsentersSet[string(c.ClientTlsCert)]; !exists {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[55], 1);
+			result.RemovedNodes = append(result.RemovedNodes, c)
+			result.TotalChanges++
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[51], 1);return result
+}
+
+// MetadataFromConfigValue reads and translates configuration updates from config value into raft metadata
+func MetadataFromConfigValue(configValue *common.ConfigValue) (*etcdraft.Metadata, error) {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[56], 1);
+	consensusTypeValue := &orderer.ConsensusType{}
+	if err := proto.Unmarshal(configValue.Value, consensusTypeValue); err != nil {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[59], 1);
+		return nil, errors.Wrap(err, "failed to unmarshal consensusType config update")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[57], 1);updatedMetadata := &etcdraft.Metadata{}
+	if err := proto.Unmarshal(consensusTypeValue.Metadata, updatedMetadata); err != nil {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[60], 1);
+		return nil, errors.Wrap(err, "failed to unmarshal updated (new) etcdraft metadata configuration")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[58], 1);return updatedMetadata, nil
+}
+
+// MetadataFromConfigUpdate extracts consensus metadata from config update
+func MetadataFromConfigUpdate(update *common.ConfigUpdate) (*etcdraft.Metadata, error) {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[61], 1);
+	if ordererConfigGroup, ok := update.WriteSet.Groups["Orderer"]; ok {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[63], 1);
+		if val, ok := ordererConfigGroup.Values["ConsensusType"]; ok {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[64], 1);
+			return MetadataFromConfigValue(val)
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[62], 1);return nil, nil
+}
+
+// ConfigEnvelopeFromBlock extracts configuration envelop from the block based on the
+// config type, i.e. HeaderType_ORDERER_TRANSACTION or HeaderType_CONFIG
+func ConfigEnvelopeFromBlock(block *common.Block) (*common.Envelope, error) {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[65], 1);
+	if block == nil {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[69], 1);
+		return nil, errors.New("nil block")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[66], 1);envelope, err := utils.ExtractEnvelope(block, 0)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[70], 1);
+		return nil, errors.Wrapf(err, "failed to extract envelop from the block")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[67], 1);channelHeader, err := utils.ChannelHeader(envelope)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[71], 1);
+		return nil, errors.Wrap(err, "cannot extract channel header")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[68], 1);switch channelHeader.Type {
+	case int32(common.HeaderType_ORDERER_TRANSACTION):_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[72], 1);
+		payload, err := utils.UnmarshalPayload(envelope.Payload)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[77], 1);
+			return nil, errors.Wrap(err, "failed to unmarshal envelope to extract config payload for orderer transaction")
+		}
+		_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[73], 1);configEnvelop, err := utils.UnmarshalEnvelope(payload.Data)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[78], 1);
+			return nil, errors.Wrap(err, "failed to unmarshal config envelope for orderer type transaction")
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[74], 1);return configEnvelop, nil
+	case int32(common.HeaderType_CONFIG):_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[75], 1);
+		return envelope, nil
+	default:_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[76], 1);
+		return nil, errors.Errorf("unexpected header type: %v", channelHeader.Type)
+	}
+}
+
+// ConsensusMetadataFromConfigBlock reads consensus metadata updates from the configuration block
+func ConsensusMetadataFromConfigBlock(block *common.Block) (*etcdraft.Metadata, error) {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[79], 1);
+	if block == nil {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[85], 1);
+		return nil, errors.New("nil block")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[80], 1);if !utils.IsConfigBlock(block) {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[86], 1);
+		return nil, errors.New("not a config block")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[81], 1);configEnvelope, err := ConfigEnvelopeFromBlock(block)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[87], 1);
+		return nil, errors.Wrap(err, "cannot read config update")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[82], 1);payload, err := utils.ExtractPayload(configEnvelope)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[88], 1);
+		return nil, errors.Wrap(err, "failed extract payload from config envelope")
+	}
+	// get config update
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[83], 1);configUpdate, err := configtx.UnmarshalConfigUpdateFromPayload(payload)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[89], 1);
+		return nil, errors.Wrap(err, "could not read config update")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[84], 1);return MetadataFromConfigUpdate(configUpdate)
+}
+
+// IsMembershipUpdate checks whenever block is config block and carries
+// raft cluster membership updates
+func IsMembershipUpdate(block *common.Block, currentMetadata *etcdraft.RaftMetadata) (bool, error) {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[90], 1);
+	if !utils.IsConfigBlock(block) {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[94], 1);
+		return false, nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[91], 1);metadata, err := ConsensusMetadataFromConfigBlock(block)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[95], 1);
+		return false, errors.Wrap(err, "error reading consensus metadata")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[92], 1);if metadata != nil {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[96], 1);
+		changes := ComputeMembershipChanges(currentMetadata.Consenters, metadata.Consenters)
+
+		return changes.TotalChanges > 0, nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[93], 1);return false, nil
+}
+
+// ConsenterCertificate denotes a TLS certificate of a consenter
+type ConsenterCertificate []byte
+
+// IsConsenterOfChannel returns whether the caller is a consenter of a channel
+// by inspecting the given configuration block.
+// It returns nil if true, else returns an error.
+func (conCert ConsenterCertificate) IsConsenterOfChannel(configBlock *common.Block) error {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[97], 1);
+	if configBlock == nil {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[104], 1);
+		return errors.New("nil block")
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[98], 1);envelopeConfig, err := utils.ExtractEnvelope(configBlock, 0)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[105], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[99], 1);bundle, err := channelconfig.NewBundleFromEnvelope(envelopeConfig)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[106], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[100], 1);oc, exists := bundle.OrdererConfig()
+	if !exists {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[107], 1);
+		return errors.New("no orderer config in bundle")
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[101], 1);m := &etcdraft.Metadata{}
+	if err := proto.Unmarshal(oc.ConsensusMetadata(), m); err != nil {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[108], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[102], 1);for _, consenter := range m.Consenters {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[109], 1);
+		if bytes.Equal(conCert, consenter.ServerTlsCert) || bytes.Equal(conCert, consenter.ClientTlsCert) {_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[110], 1);
+			return nil
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_643961326533346231666662.Count[103], 1);return cluster.ErrNotInChannel
+}
+
+var GoCover_5_643961326533346231666662 = struct {
+	Count     [111]uint32
+	Pos       [3 * 111]uint32
+	NumStmt   [111]uint16
+} {
+	Pos: [3 * 111]uint32{
+		40, 41, 0x270076, // [0]
+		45, 48, 0x1c0002, // [1]
+		61, 61, 0x1e0002, // [2]
+		78, 78, 0x130002, // [3]
+		41, 43, 0x30027, // [4]
+		48, 59, 0x3001c, // [5]
+		61, 62, 0x25001e, // [6]
+		62, 63, 0x360025, // [7]
+		63, 64, 0x390036, // [8]
+		64, 72, 0xb0039, // [9]
+		82, 84, 0x100069, // [10]
+		87, 88, 0x100002, // [11]
+		91, 91, 0x1a0002, // [12]
+		84, 86, 0x30010, // [13]
+		88, 90, 0x30010, // [14]
+		94, 97, 0x16005c, // [15]
+		100, 101, 0x100002, // [16]
+		104, 104, 0x1d0002, // [17]
+		97, 99, 0x30016, // [18]
+		101, 103, 0x30010, // [19]
+		108, 109, 0x120066, // [20]
+		112, 112, 0x140002, // [21]
+		115, 115, 0x690002, // [22]
+		118, 119, 0x100002, // [23]
+		122, 123, 0x1c0002, // [24]
+		126, 126, 0x1d0002, // [25]
+		109, 111, 0x30012, // [26]
+		112, 114, 0x30014, // [27]
+		115, 117, 0x30069, // [28]
+		119, 121, 0x30010, // [29]
+		123, 125, 0x3001c, // [30]
+		132, 134, 0x3c0043, // [31]
+		138, 139, 0x100002, // [32]
+		142, 149, 0x100002, // [33]
+		153, 157, 0x100002, // [34]
+		162, 173, 0x80002, // [35]
+		134, 136, 0x3003c, // [36]
+		139, 141, 0x30010, // [37]
+		149, 151, 0x30010, // [38]
+		157, 160, 0x30010, // [39]
+		177, 180, 0x210047, // [40]
+		183, 183, 0xe0002, // [41]
+		180, 182, 0x30021, // [42]
+		187, 189, 0x1f004c, // [43]
+		192, 192, 0xc0002, // [44]
+		189, 191, 0x3001f, // [45]
+		197, 199, 0x1f0056, // [46]
+		202, 202, 0xc0002, // [47]
+		199, 201, 0x3001f, // [48]
+		207, 214, 0x220085, // [49]
+		221, 222, 0x220002, // [50]
+		229, 229, 0xf0002, // [51]
+		214, 215, 0x4a0022, // [52]
+		215, 218, 0x4004a, // [53]
+		222, 223, 0x460022, // [54]
+		223, 226, 0x40046, // [55]
+		233, 235, 0x4f005b, // [56]
+		239, 240, 0x560002, // [57]
+		244, 244, 0x1d0002, // [58]
+		235, 237, 0x3004f, // [59]
+		240, 242, 0x30056, // [60]
+		248, 249, 0x450058, // [61]
+		254, 254, 0x110002, // [62]
+		249, 250, 0x400045, // [63]
+		250, 252, 0x40040, // [64]
+		259, 260, 0x12004d, // [65]
+		264, 265, 0x100002, // [66]
+		269, 270, 0x100002, // [67]
+		274, 274, 0x1c0002, // [68]
+		260, 262, 0x30012, // [69]
+		265, 267, 0x30010, // [70]
+		270, 272, 0x30010, // [71]
+		275, 277, 0x110034, // [72]
+		280, 281, 0x110003, // [73]
+		285, 285, 0x1c0003, // [74]
+		286, 287, 0x170027, // [75]
+		288, 289, 0x4e000a, // [76]
+		277, 279, 0x40011, // [77]
+		281, 283, 0x40011, // [78]
+		294, 295, 0x120058, // [79]
+		299, 299, 0x210002, // [80]
+		303, 304, 0x100002, // [81]
+		308, 309, 0x100002, // [82]
+		313, 314, 0x100002, // [83]
+		318, 318, 0x2f0002, // [84]
+		295, 297, 0x30012, // [85]
+		299, 301, 0x30021, // [86]
+		304, 306, 0x30010, // [87]
+		309, 311, 0x30010, // [88]
+		314, 316, 0x30010, // [89]
+		323, 324, 0x210064, // [90]
+		328, 329, 0x100002, // [91]
+		333, 333, 0x150002, // [92]
+		339, 339, 0x130002, // [93]
+		324, 326, 0x30021, // [94]
+		329, 331, 0x30010, // [95]
+		333, 337, 0x30015, // [96]
+		348, 349, 0x18005b, // [97]
+		352, 353, 0x100002, // [98]
+		356, 357, 0x100002, // [99]
+		360, 361, 0xd0002, // [100]
+		364, 365, 0x430002, // [101]
+		369, 369, 0x290002, // [102]
+		374, 374, 0x200002, // [103]
+		349, 351, 0x30018, // [104]
+		353, 355, 0x30010, // [105]
+		357, 359, 0x30010, // [106]
+		361, 363, 0x3000d, // [107]
+		365, 367, 0x30043, // [108]
+		369, 370, 0x650029, // [109]
+		370, 372, 0x40065, // [110]
+	},
+	NumStmt: [111]uint16{
+		1, // 0
+		2, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		6, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		4, // 9
+		2, // 10
+		2, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		3, // 15
+		2, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		1, // 22
+		2, // 23
+		2, // 24
+		1, // 25
+		1, // 26
+		1, // 27
+		1, // 28
+		1, // 29
+		1, // 30
+		1, // 31
+		2, // 32
+		4, // 33
+		4, // 34
+		1, // 35
+		1, // 36
+		1, // 37
+		1, // 38
+		1, // 39
+		2, // 40
+		1, // 41
+		1, // 42
+		2, // 43
+		1, // 44
+		1, // 45
+		2, // 46
+		1, // 47
+		1, // 48
+		3, // 49
+		2, // 50
+		1, // 51
+		1, // 52
+		2, // 53
+		1, // 54
+		2, // 55
+		2, // 56
+		2, // 57
+		1, // 58
+		1, // 59
+		1, // 60
+		1, // 61
+		1, // 62
+		1, // 63
+		1, // 64
+		1, // 65
+		2, // 66
+		2, // 67
+		1, // 68
+		1, // 69
+		1, // 70
+		1, // 71
+		2, // 72
+		2, // 73
+		1, // 74
+		1, // 75
+		1, // 76
+		1, // 77
+		1, // 78
+		1, // 79
+		1, // 80
+		2, // 81
+		2, // 82
+		2, // 83
+		1, // 84
+		1, // 85
+		1, // 86
+		1, // 87
+		1, // 88
+		1, // 89
+		1, // 90
+		2, // 91
+		1, // 92
+		1, // 93
+		1, // 94
+		1, // 95
+		2, // 96
+		1, // 97
+		2, // 98
+		2, // 99
+		2, // 100
+		2, // 101
+		1, // 102
+		1, // 103
+		1, // 104
+		1, // 105
+		1, // 106
+		1, // 107
+		1, // 108
+		1, // 109
+		1, // 110
+	},
+}
+var _ = _cover_atomic_.LoadUint32

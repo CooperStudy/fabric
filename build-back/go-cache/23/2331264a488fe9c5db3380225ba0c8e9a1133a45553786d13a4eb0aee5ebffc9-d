@@ -1,0 +1,72 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/grpclogging/context.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package grpclogging; import _cover_atomic_ "sync/atomic"
+
+import (
+	"context"
+
+	"go.uber.org/zap/zapcore"
+)
+
+type fieldKeyType struct{}
+
+var fieldKey = &fieldKeyType{}
+
+func ZapFields(ctx context.Context) []zapcore.Field {_cover_atomic_.AddUint32(&GoCover_0_643665343532316435366565.Count[0], 1);
+	fields, ok := ctx.Value(fieldKey).([]zapcore.Field)
+	if ok {_cover_atomic_.AddUint32(&GoCover_0_643665343532316435366565.Count[2], 1);
+		return fields
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_643665343532316435366565.Count[1], 1);return nil
+}
+
+func Fields(ctx context.Context) []interface{} {_cover_atomic_.AddUint32(&GoCover_0_643665343532316435366565.Count[3], 1);
+	fields, ok := ctx.Value(fieldKey).([]zapcore.Field)
+	if !ok {_cover_atomic_.AddUint32(&GoCover_0_643665343532316435366565.Count[6], 1);
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_643665343532316435366565.Count[4], 1);genericFields := make([]interface{}, len(fields))
+	for i := range fields {_cover_atomic_.AddUint32(&GoCover_0_643665343532316435366565.Count[7], 1);
+		genericFields[i] = fields[i]
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_643665343532316435366565.Count[5], 1);return genericFields
+}
+
+func WithFields(ctx context.Context, fields []zapcore.Field) context.Context {_cover_atomic_.AddUint32(&GoCover_0_643665343532316435366565.Count[8], 1);
+	return context.WithValue(ctx, fieldKey, fields)
+}
+
+var GoCover_0_643665343532316435366565 = struct {
+	Count     [9]uint32
+	Pos       [3 * 9]uint32
+	NumStmt   [9]uint16
+} {
+	Pos: [3 * 9]uint32{
+		19, 21, 0x80035, // [0]
+		24, 24, 0xc0002, // [1]
+		21, 23, 0x30008, // [2]
+		27, 29, 0x90030, // [3]
+		32, 33, 0x180002, // [4]
+		36, 36, 0x160002, // [5]
+		29, 31, 0x30009, // [6]
+		33, 35, 0x30018, // [7]
+		39, 41, 0x2004e, // [8]
+	},
+	NumStmt: [9]uint16{
+		2, // 0
+		1, // 1
+		1, // 2
+		2, // 3
+		2, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+	},
+}
+var _ = _cover_atomic_.LoadUint32

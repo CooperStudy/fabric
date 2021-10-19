@@ -1,0 +1,4 @@
+./chaincode_package_test.go
+./package_provider_test.go
+./persistence_suite_test.go
+./persistence_test.go

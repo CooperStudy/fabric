@@ -1,0 +1,823 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/msp/mspimplsetup.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package msp; import _cover_atomic_ "sync/atomic"
+
+import (
+	"bytes"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"fmt"
+	"time"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/bccsp"
+	m "github.com/hyperledger/fabric/protos/msp"
+	errors "github.com/pkg/errors"
+)
+
+func (msp *bccspmsp) getCertifiersIdentifier(certRaw []byte) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[0], 1);
+	// 1. check that certificate is registered in msp.rootCerts or msp.intermediateCerts
+	cert, err := msp.getCertFromPem(certRaw)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[8], 1);
+		return nil, fmt.Errorf("Failed getting certificate for [%v]: [%s]", certRaw, err)
+	}
+
+	// 2. Sanitize it to ensure like for like comparison
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[1], 1);cert, err = msp.sanitizeCert(cert)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[9], 1);
+		return nil, fmt.Errorf("sanitizeCert failed %s", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[2], 1);found := false
+	root := false
+	// Search among root certificates
+	for _, v := range msp.rootCerts {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[10], 1);
+		if v.(*identity).cert.Equal(cert) {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[11], 1);
+			found = true
+			root = true
+			break
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[3], 1);if !found {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[12], 1);
+		// Search among root intermediate certificates
+		for _, v := range msp.intermediateCerts {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[13], 1);
+			if v.(*identity).cert.Equal(cert) {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[14], 1);
+				found = true
+				break
+			}
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[4], 1);if !found {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[15], 1);
+		// Certificate not valid, reject configuration
+		return nil, fmt.Errorf("Failed adding OU. Certificate [%v] not in root or intermediate certs.", cert)
+	}
+
+	// 3. get the certification path for it
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[5], 1);var certifiersIdentifier []byte
+	var chain []*x509.Certificate
+	if root {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[16], 1);
+		chain = []*x509.Certificate{cert}
+	} else{ _cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[17], 1);{
+		chain, err = msp.getValidationChain(cert, true)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[18], 1);
+			return nil, fmt.Errorf("Failed computing validation chain for [%v]. [%s]", cert, err)
+		}
+	}}
+
+	// 4. compute the hash of the certification path
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[6], 1);certifiersIdentifier, err = msp.getCertificationChainIdentifierFromChain(chain)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[19], 1);
+		return nil, fmt.Errorf("Failed computing Certifiers Identifier for [%v]. [%s]", certRaw, err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[7], 1);return certifiersIdentifier, nil
+
+}
+
+func (msp *bccspmsp) setupCrypto(conf *m.FabricMSPConfig) error {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[20], 1);
+	msp.cryptoConfig = conf.CryptoConfig
+	if msp.cryptoConfig == nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[24], 1);
+		// Move to defaults
+		msp.cryptoConfig = &m.FabricCryptoConfig{
+			SignatureHashFamily:            bccsp.SHA2,
+			IdentityIdentifierHashFunction: bccsp.SHA256,
+		}
+		mspLogger.Debugf("CryptoConfig was nil. Move to defaults.")
+	}
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[21], 1);if msp.cryptoConfig.SignatureHashFamily == "" {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[25], 1);
+		msp.cryptoConfig.SignatureHashFamily = bccsp.SHA2
+		mspLogger.Debugf("CryptoConfig.SignatureHashFamily was nil. Move to defaults.")
+	}
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[22], 1);if msp.cryptoConfig.IdentityIdentifierHashFunction == "" {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[26], 1);
+		msp.cryptoConfig.IdentityIdentifierHashFunction = bccsp.SHA256
+		mspLogger.Debugf("CryptoConfig.IdentityIdentifierHashFunction was nil. Move to defaults.")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[23], 1);return nil
+}
+
+func (msp *bccspmsp) setupCAs(conf *m.FabricMSPConfig) error {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[27], 1);
+	// make and fill the set of CA certs - we expect them to be there
+	if len(conf.RootCerts) == 0 {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[35], 1);
+		return errors.New("expected at least one CA certificate")
+	}
+
+	// pre-create the verify options with roots and intermediates.
+	// This is needed to make certificate sanitation working.
+	// Recall that sanitization is applied also to root CA and intermediate
+	// CA certificates. After their sanitization is done, the opts
+	// will be recreated using the sanitized certs.
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[28], 1);msp.opts = &x509.VerifyOptions{Roots: x509.NewCertPool(), Intermediates: x509.NewCertPool()}
+	for _, v := range conf.RootCerts {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[36], 1);
+		cert, err := msp.getCertFromPem(v)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[38], 1);
+			return err
+		}
+		_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[37], 1);msp.opts.Roots.AddCert(cert)
+	}
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[29], 1);for _, v := range conf.IntermediateCerts {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[39], 1);
+		cert, err := msp.getCertFromPem(v)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[41], 1);
+			return err
+		}
+		_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[40], 1);msp.opts.Intermediates.AddCert(cert)
+	}
+
+	// Load root and intermediate CA identities
+	// Recall that when an identity is created, its certificate gets sanitized
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[30], 1);msp.rootCerts = make([]Identity, len(conf.RootCerts))
+	for i, trustedCert := range conf.RootCerts {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[42], 1);
+		id, _, err := msp.getIdentityFromConf(trustedCert)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[44], 1);
+			return err
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[43], 1);msp.rootCerts[i] = id
+	}
+
+	// make and fill the set of intermediate certs (if present)
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[31], 1);msp.intermediateCerts = make([]Identity, len(conf.IntermediateCerts))
+	for i, trustedCert := range conf.IntermediateCerts {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[45], 1);
+		id, _, err := msp.getIdentityFromConf(trustedCert)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[47], 1);
+			return err
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[46], 1);msp.intermediateCerts[i] = id
+	}
+
+	// root CA and intermediate CA certificates are sanitized, they can be reimported
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[32], 1);msp.opts = &x509.VerifyOptions{Roots: x509.NewCertPool(), Intermediates: x509.NewCertPool()}
+	for _, id := range msp.rootCerts {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[48], 1);
+		msp.opts.Roots.AddCert(id.(*identity).cert)
+	}
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[33], 1);for _, id := range msp.intermediateCerts {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[49], 1);
+		msp.opts.Intermediates.AddCert(id.(*identity).cert)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[34], 1);return nil
+}
+
+func (msp *bccspmsp) setupAdmins(conf *m.FabricMSPConfig) error {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[50], 1);
+	// make and fill the set of admin certs (if present)
+	msp.admins = make([]Identity, len(conf.Admins))
+	for i, admCert := range conf.Admins {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[52], 1);
+		id, _, err := msp.getIdentityFromConf(admCert)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[54], 1);
+			return err
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[53], 1);msp.admins[i] = id
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[51], 1);return nil
+}
+
+func (msp *bccspmsp) setupCRLs(conf *m.FabricMSPConfig) error {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[55], 1);
+	// setup the CRL (if present)
+	msp.CRL = make([]*pkix.CertificateList, len(conf.RevocationList))
+	for i, crlbytes := range conf.RevocationList {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[57], 1);
+		crl, err := x509.ParseCRL(crlbytes)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[59], 1);
+			return errors.Wrap(err, "could not parse RevocationList")
+		}
+
+		// TODO: pre-verify the signature on the CRL and create a map
+		//       of CA certs to respective CRLs so that later upon
+		//       validation we can already look up the CRL given the
+		//       chain of the certificate to be validated
+
+		_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[58], 1);msp.CRL[i] = crl
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[56], 1);return nil
+}
+
+func (msp *bccspmsp) finalizeSetupCAs() error {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[60], 1);
+	// ensure that our CAs are properly formed and that they are valid
+	for _, id := range append(append([]Identity{}, msp.rootCerts...), msp.intermediateCerts...) {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[63], 1);
+		if !id.(*identity).cert.IsCA {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[66], 1);
+			return errors.Errorf("CA Certificate did not have the CA attribute, (SN: %x)", id.(*identity).cert.SerialNumber)
+		}
+		_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[64], 1);if _, err := getSubjectKeyIdentifierFromCert(id.(*identity).cert); err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[67], 1);
+			return errors.WithMessage(err, fmt.Sprintf("CA Certificate problem with Subject Key Identifier extension, (SN: %x)", id.(*identity).cert.SerialNumber))
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[65], 1);if err := msp.validateCAIdentity(id.(*identity)); err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[68], 1);
+			return errors.WithMessage(err, fmt.Sprintf("CA Certificate is not valid, (SN: %s)", id.(*identity).cert.SerialNumber))
+		}
+	}
+
+	// populate certificationTreeInternalNodesMap to mark the internal nodes of the
+	// certification tree
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[61], 1);msp.certificationTreeInternalNodesMap = make(map[string]bool)
+	for _, id := range append([]Identity{}, msp.intermediateCerts...) {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[69], 1);
+		chain, err := msp.getUniqueValidationChain(id.(*identity).cert, msp.getValidityOptsForCert(id.(*identity).cert))
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[71], 1);
+			return errors.WithMessage(err, fmt.Sprintf("failed getting validation chain, (SN: %s)", id.(*identity).cert.SerialNumber))
+		}
+
+		// Recall chain[0] is id.(*identity).id so it does not count as a parent
+		_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[70], 1);for i := 1; i < len(chain); i++ {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[72], 1);
+			msp.certificationTreeInternalNodesMap[string(chain[i].Raw)] = true
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[62], 1);return nil
+}
+
+func (msp *bccspmsp) setupNodeOUs(config *m.FabricMSPConfig) error {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[73], 1);
+	if config.FabricNodeOus != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[75], 1);
+
+		msp.ouEnforcement = config.FabricNodeOus.Enable
+
+		// ClientOU
+		msp.clientOU = &OUIdentifier{OrganizationalUnitIdentifier: config.FabricNodeOus.ClientOuIdentifier.OrganizationalUnitIdentifier}
+		if len(config.FabricNodeOus.ClientOuIdentifier.Certificate) != 0 {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[77], 1);
+			certifiersIdentifier, err := msp.getCertifiersIdentifier(config.FabricNodeOus.ClientOuIdentifier.Certificate)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[79], 1);
+				return err
+			}
+			_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[78], 1);msp.clientOU.CertifiersIdentifier = certifiersIdentifier
+		}
+
+		// PeerOU
+		_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[76], 1);msp.peerOU = &OUIdentifier{OrganizationalUnitIdentifier: config.FabricNodeOus.PeerOuIdentifier.OrganizationalUnitIdentifier}
+		if len(config.FabricNodeOus.PeerOuIdentifier.Certificate) != 0 {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[80], 1);
+			certifiersIdentifier, err := msp.getCertifiersIdentifier(config.FabricNodeOus.PeerOuIdentifier.Certificate)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[82], 1);
+				return err
+			}
+			_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[81], 1);msp.peerOU.CertifiersIdentifier = certifiersIdentifier
+		}
+
+	} else{ _cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[83], 1);{
+		msp.ouEnforcement = false
+	}}
+
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[74], 1);return nil
+}
+
+func (msp *bccspmsp) setupSigningIdentity(conf *m.FabricMSPConfig) error {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[84], 1);
+	if conf.SigningIdentity != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[86], 1);
+		sid, err := msp.getSigningIdentityFromConf(conf.SigningIdentity)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[89], 1);
+			return err
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[87], 1);expirationTime := sid.ExpiresAt()
+		now := time.Now()
+		if expirationTime.After(now) {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[90], 1);
+			mspLogger.Debug("Signing identity expires at", expirationTime)
+		} else{ _cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[91], 1);if expirationTime.IsZero() {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[92], 1);
+			mspLogger.Debug("Signing identity has no known expiration time")
+		} else{ _cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[93], 1);{
+			return errors.Errorf("signing identity expired %v ago", now.Sub(expirationTime))
+		}}}
+
+		_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[88], 1);msp.signer = sid
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[85], 1);return nil
+}
+
+func (msp *bccspmsp) setupOUs(conf *m.FabricMSPConfig) error {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[94], 1);
+	msp.ouIdentifiers = make(map[string][][]byte)
+	for _, ou := range conf.OrganizationalUnitIdentifiers {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[96], 1);
+
+		certifiersIdentifier, err := msp.getCertifiersIdentifier(ou.Certificate)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[99], 1);
+			return errors.WithMessage(err, fmt.Sprintf("failed getting certificate for [%v]", ou))
+		}
+
+		// Check for duplicates
+		_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[97], 1);found := false
+		for _, id := range msp.ouIdentifiers[ou.OrganizationalUnitIdentifier] {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[100], 1);
+			if bytes.Equal(id, certifiersIdentifier) {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[101], 1);
+				mspLogger.Warningf("Duplicate found in ou identifiers [%s, %v]", ou.OrganizationalUnitIdentifier, id)
+				found = true
+				break
+			}
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[98], 1);if !found {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[102], 1);
+			// No duplicates found, add it
+			msp.ouIdentifiers[ou.OrganizationalUnitIdentifier] = append(
+				msp.ouIdentifiers[ou.OrganizationalUnitIdentifier],
+				certifiersIdentifier,
+			)
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[95], 1);return nil
+}
+
+func (msp *bccspmsp) setupTLSCAs(conf *m.FabricMSPConfig) error {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[103], 1);
+
+	opts := &x509.VerifyOptions{Roots: x509.NewCertPool(), Intermediates: x509.NewCertPool()}
+
+	// Load TLS root and intermediate CA identities
+	msp.tlsRootCerts = make([][]byte, len(conf.TlsRootCerts))
+	rootCerts := make([]*x509.Certificate, len(conf.TlsRootCerts))
+	for i, trustedCert := range conf.TlsRootCerts {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[107], 1);
+		cert, err := msp.getCertFromPem(trustedCert)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[109], 1);
+			return err
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[108], 1);rootCerts[i] = cert
+		msp.tlsRootCerts[i] = trustedCert
+		opts.Roots.AddCert(cert)
+	}
+
+	// make and fill the set of intermediate certs (if present)
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[104], 1);msp.tlsIntermediateCerts = make([][]byte, len(conf.TlsIntermediateCerts))
+	intermediateCerts := make([]*x509.Certificate, len(conf.TlsIntermediateCerts))
+	for i, trustedCert := range conf.TlsIntermediateCerts {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[110], 1);
+		cert, err := msp.getCertFromPem(trustedCert)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[112], 1);
+			return err
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[111], 1);intermediateCerts[i] = cert
+		msp.tlsIntermediateCerts[i] = trustedCert
+		opts.Intermediates.AddCert(cert)
+	}
+
+	// ensure that our CAs are properly formed and that they are valid
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[105], 1);for _, cert := range append(append([]*x509.Certificate{}, rootCerts...), intermediateCerts...) {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[113], 1);
+		if cert == nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[117], 1);
+			continue
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[114], 1);if !cert.IsCA {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[118], 1);
+			return errors.Errorf("CA Certificate did not have the CA attribute, (SN: %x)", cert.SerialNumber)
+		}
+		_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[115], 1);if _, err := getSubjectKeyIdentifierFromCert(cert); err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[119], 1);
+			return errors.WithMessage(err, fmt.Sprintf("CA Certificate problem with Subject Key Identifier extension, (SN: %x)", cert.SerialNumber))
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[116], 1);if err := msp.validateTLSCAIdentity(cert, opts); err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[120], 1);
+			return errors.WithMessage(err, fmt.Sprintf("CA Certificate is not valid, (SN: %s)", cert.SerialNumber))
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[106], 1);return nil
+}
+
+func (msp *bccspmsp) setupV1(conf1 *m.FabricMSPConfig) error {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[121], 1);
+	err := msp.preSetupV1(conf1)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[124], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[122], 1);err = msp.postSetupV1(conf1)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[125], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[123], 1);return nil
+}
+
+func (msp *bccspmsp) preSetupV1(conf *m.FabricMSPConfig) error {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[126], 1);
+	// setup crypto config
+	if err := msp.setupCrypto(conf); err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[135], 1);
+		return err
+	}
+
+	// Setup CAs
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[127], 1);if err := msp.setupCAs(conf); err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[136], 1);
+		return err
+	}
+
+	// Setup Admins
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[128], 1);if err := msp.setupAdmins(conf); err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[137], 1);
+		return err
+	}
+
+	// Setup CRLs
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[129], 1);if err := msp.setupCRLs(conf); err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[138], 1);
+		return err
+	}
+
+	// Finalize setup of the CAs
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[130], 1);if err := msp.finalizeSetupCAs(); err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[139], 1);
+		return err
+	}
+
+	// setup the signer (if present)
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[131], 1);if err := msp.setupSigningIdentity(conf); err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[140], 1);
+		return err
+	}
+
+	// setup TLS CAs
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[132], 1);if err := msp.setupTLSCAs(conf); err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[141], 1);
+		return err
+	}
+
+	// setup the OUs
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[133], 1);if err := msp.setupOUs(conf); err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[142], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[134], 1);return nil
+}
+
+func (msp *bccspmsp) postSetupV1(conf *m.FabricMSPConfig) error {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[143], 1);
+	// make sure that admins are valid members as well
+	// this way, when we validate an admin MSP principal
+	// we can simply check for exact match of certs
+	for i, admin := range msp.admins {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[145], 1);
+		err := admin.Validate()
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[146], 1);
+			return errors.WithMessage(err, fmt.Sprintf("admin %d is invalid", i))
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[144], 1);return nil
+}
+
+func (msp *bccspmsp) setupV11(conf *m.FabricMSPConfig) error {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[147], 1);
+	err := msp.preSetupV1(conf)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[151], 1);
+		return err
+	}
+
+	// setup NodeOUs
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[148], 1);if err := msp.setupNodeOUs(conf); err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[152], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[149], 1);err = msp.postSetupV11(conf)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[153], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[150], 1);return nil
+}
+
+func (msp *bccspmsp) postSetupV11(conf *m.FabricMSPConfig) error {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[154], 1);
+	// Check for OU enforcement
+	if !msp.ouEnforcement {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[158], 1);
+		// No enforcement required. Call post setup as per V1
+		return msp.postSetupV1(conf)
+	}
+
+	// Check that admins are clients
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[155], 1);principalBytes, err := proto.Marshal(&m.MSPRole{Role: m.MSPRole_CLIENT, MspIdentifier: msp.name})
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[159], 1);
+		return errors.Wrapf(err, "failed creating MSPRole_CLIENT")
+	}
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[156], 1);principal := &m.MSPPrincipal{
+		PrincipalClassification: m.MSPPrincipal_ROLE,
+		Principal:               principalBytes}
+	for i, admin := range msp.admins {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[160], 1);
+		err = admin.SatisfiesPrincipal(principal)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[161], 1);
+			return errors.WithMessage(err, fmt.Sprintf("admin %d is invalid", i))
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_8_636433306662306231613333.Count[157], 1);return nil
+}
+
+var GoCover_8_636433306662306231613333 = struct {
+	Count     [162]uint32
+	Pos       [3 * 162]uint32
+	NumStmt   [162]uint16
+} {
+	Pos: [3 * 162]uint32{
+		22, 25, 0x10004e, // [0]
+		30, 31, 0x100002, // [1]
+		35, 38, 0x220002, // [2]
+		45, 45, 0xc0002, // [3]
+		54, 54, 0xc0002, // [4]
+		60, 62, 0xa0002, // [5]
+		72, 73, 0x100002, // [6]
+		77, 77, 0x220002, // [7]
+		25, 27, 0x30010, // [8]
+		31, 33, 0x30010, // [9]
+		38, 39, 0x250022, // [10]
+		39, 42, 0x90025, // [11]
+		45, 47, 0x2b000c, // [12]
+		47, 48, 0x26002b, // [13]
+		48, 50, 0xa0026, // [14]
+		54, 57, 0x3000c, // [15]
+		62, 64, 0x3000a, // [16]
+		64, 66, 0x110008, // [17]
+		66, 68, 0x40011, // [18]
+		73, 75, 0x30010, // [19]
+		81, 83, 0x1d0041, // [20]
+		91, 91, 0x300002, // [21]
+		95, 95, 0x3b0002, // [22]
+		100, 100, 0xc0002, // [23]
+		83, 90, 0x3001d, // [24]
+		91, 94, 0x30030, // [25]
+		95, 98, 0x3003b, // [26]
+		103, 105, 0x1e003e, // [27]
+		114, 115, 0x230002, // [28]
+		122, 122, 0x2b0002, // [29]
+		132, 133, 0x2d0002, // [30]
+		143, 144, 0x350002, // [31]
+		154, 155, 0x230002, // [32]
+		158, 158, 0x2b0002, // [33]
+		162, 162, 0xc0002, // [34]
+		105, 107, 0x3001e, // [35]
+		115, 117, 0x110023, // [36]
+		120, 120, 0x1f0003, // [37]
+		117, 119, 0x40011, // [38]
+		122, 124, 0x11002b, // [39]
+		127, 127, 0x270003, // [40]
+		124, 126, 0x40011, // [41]
+		133, 135, 0x11002d, // [42]
+		139, 139, 0x180003, // [43]
+		135, 137, 0x40011, // [44]
+		144, 146, 0x110035, // [45]
+		150, 150, 0x200003, // [46]
+		146, 148, 0x40011, // [47]
+		155, 157, 0x30023, // [48]
+		158, 160, 0x3002b, // [49]
+		165, 168, 0x260041, // [50]
+		177, 177, 0xc0002, // [51]
+		168, 170, 0x110026, // [52]
+		174, 174, 0x150003, // [53]
+		170, 172, 0x40011, // [54]
+		180, 183, 0x2f003f, // [55]
+		197, 197, 0xc0002, // [56]
+		183, 185, 0x11002f, // [57]
+		194, 194, 0x130003, // [58]
+		185, 187, 0x40011, // [59]
+		200, 202, 0x5e002f, // [60]
+		217, 218, 0x440002, // [61]
+		230, 230, 0xc0002, // [62]
+		202, 203, 0x20005e, // [63]
+		206, 206, 0x510003, // [64]
+		210, 210, 0x400003, // [65]
+		203, 205, 0x40020, // [66]
+		206, 208, 0x40051, // [67]
+		210, 212, 0x40040, // [68]
+		218, 220, 0x110044, // [69]
+		225, 225, 0x230003, // [70]
+		220, 222, 0x40011, // [71]
+		225, 227, 0x40023, // [72]
+		233, 234, 0x210044, // [73]
+		262, 262, 0xc0002, // [74]
+		234, 240, 0x440021, // [75]
+		249, 250, 0x420003, // [76]
+		240, 242, 0x120044, // [77]
+		245, 245, 0x3c0004, // [78]
+		242, 244, 0x50012, // [79]
+		250, 252, 0x120042, // [80]
+		255, 255, 0x3a0004, // [81]
+		252, 254, 0x50012, // [82]
+		258, 260, 0x30008, // [83]
+		265, 266, 0x21004a, // [84]
+		285, 285, 0xc0002, // [85]
+		266, 268, 0x110021, // [86]
+		272, 274, 0x200003, // [87]
+		282, 282, 0x130003, // [88]
+		268, 270, 0x40011, // [89]
+		274, 276, 0x40020, // [90]
+		276, 276, 0x250009, // [91]
+		276, 278, 0x40025, // [92]
+		278, 280, 0x40009, // [93]
+		288, 290, 0x38003e, // [94]
+		316, 316, 0xc0002, // [95]
+		290, 293, 0x110038, // [96]
+		298, 299, 0x490003, // [97]
+		307, 307, 0xd0003, // [98]
+		293, 295, 0x40011, // [99]
+		299, 300, 0x2d0049, // [100]
+		300, 303, 0xa002d, // [101]
+		307, 313, 0x4000d, // [102]
+		319, 326, 0x300041, // [103]
+		338, 340, 0x380002, // [104]
+		352, 352, 0x610002, // [105]
+		369, 369, 0xc0002, // [106]
+		326, 328, 0x110030, // [107]
+		332, 334, 0x1b0003, // [108]
+		328, 330, 0x40011, // [109]
+		340, 342, 0x110038, // [110]
+		346, 348, 0x230003, // [111]
+		342, 344, 0x40011, // [112]
+		352, 353, 0x120061, // [113]
+		357, 357, 0x110003, // [114]
+		360, 360, 0x420003, // [115]
+		364, 364, 0x3f0003, // [116]
+		353, 354, 0xc0012, // [117]
+		357, 359, 0x40011, // [118]
+		360, 362, 0x40042, // [119]
+		364, 366, 0x4003f, // [120]
+		372, 374, 0x10003e, // [121]
+		378, 379, 0x100002, // [122]
+		383, 383, 0xc0002, // [123]
+		374, 376, 0x30010, // [124]
+		379, 381, 0x30010, // [125]
+		386, 388, 0x2e0040, // [126]
+		393, 393, 0x2b0002, // [127]
+		398, 398, 0x2e0002, // [128]
+		403, 403, 0x2c0002, // [129]
+		408, 408, 0x2f0002, // [130]
+		413, 413, 0x370002, // [131]
+		418, 418, 0x2e0002, // [132]
+		423, 423, 0x2b0002, // [133]
+		427, 427, 0xc0002, // [134]
+		388, 390, 0x3002e, // [135]
+		393, 395, 0x3002b, // [136]
+		398, 400, 0x3002e, // [137]
+		403, 405, 0x3002c, // [138]
+		408, 410, 0x3002f, // [139]
+		413, 415, 0x30037, // [140]
+		418, 420, 0x3002e, // [141]
+		423, 425, 0x3002b, // [142]
+		430, 434, 0x230041, // [143]
+		441, 441, 0xc0002, // [144]
+		434, 436, 0x110023, // [145]
+		436, 438, 0x40011, // [146]
+		444, 446, 0x10003e, // [147]
+		451, 451, 0x2f0002, // [148]
+		455, 456, 0x100002, // [149]
+		460, 460, 0xc0002, // [150]
+		446, 448, 0x30010, // [151]
+		451, 453, 0x3002f, // [152]
+		456, 458, 0x30010, // [153]
+		463, 465, 0x180042, // [154]
+		471, 472, 0x100002, // [155]
+		475, 478, 0x230002, // [156]
+		485, 485, 0xc0002, // [157]
+		465, 468, 0x30018, // [158]
+		472, 474, 0x30010, // [159]
+		478, 480, 0x110023, // [160]
+		480, 482, 0x40011, // [161]
+	},
+	NumStmt: [162]uint16{
+		2, // 0
+		2, // 1
+		3, // 2
+		1, // 3
+		1, // 4
+		3, // 5
+		2, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		3, // 11
+		1, // 12
+		1, // 13
+		2, // 14
+		1, // 15
+		1, // 16
+		2, // 17
+		1, // 18
+		1, // 19
+		2, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+		2, // 24
+		2, // 25
+		2, // 26
+		1, // 27
+		2, // 28
+		1, // 29
+		2, // 30
+		2, // 31
+		2, // 32
+		1, // 33
+		1, // 34
+		1, // 35
+		2, // 36
+		1, // 37
+		1, // 38
+		2, // 39
+		1, // 40
+		1, // 41
+		2, // 42
+		1, // 43
+		1, // 44
+		2, // 45
+		1, // 46
+		1, // 47
+		1, // 48
+		1, // 49
+		2, // 50
+		1, // 51
+		2, // 52
+		1, // 53
+		1, // 54
+		2, // 55
+		1, // 56
+		2, // 57
+		1, // 58
+		1, // 59
+		1, // 60
+		2, // 61
+		1, // 62
+		1, // 63
+		1, // 64
+		1, // 65
+		1, // 66
+		1, // 67
+		1, // 68
+		2, // 69
+		1, // 70
+		1, // 71
+		1, // 72
+		1, // 73
+		1, // 74
+		3, // 75
+		2, // 76
+		2, // 77
+		1, // 78
+		1, // 79
+		2, // 80
+		1, // 81
+		1, // 82
+		1, // 83
+		1, // 84
+		1, // 85
+		2, // 86
+		3, // 87
+		1, // 88
+		1, // 89
+		1, // 90
+		1, // 91
+		1, // 92
+		1, // 93
+		2, // 94
+		1, // 95
+		2, // 96
+		2, // 97
+		1, // 98
+		1, // 99
+		1, // 100
+		3, // 101
+		1, // 102
+		4, // 103
+		3, // 104
+		1, // 105
+		1, // 106
+		2, // 107
+		3, // 108
+		1, // 109
+		2, // 110
+		3, // 111
+		1, // 112
+		1, // 113
+		1, // 114
+		1, // 115
+		1, // 116
+		1, // 117
+		1, // 118
+		1, // 119
+		1, // 120
+		2, // 121
+		2, // 122
+		1, // 123
+		1, // 124
+		1, // 125
+		1, // 126
+		1, // 127
+		1, // 128
+		1, // 129
+		1, // 130
+		1, // 131
+		1, // 132
+		1, // 133
+		1, // 134
+		1, // 135
+		1, // 136
+		1, // 137
+		1, // 138
+		1, // 139
+		1, // 140
+		1, // 141
+		1, // 142
+		1, // 143
+		1, // 144
+		2, // 145
+		1, // 146
+		2, // 147
+		1, // 148
+		2, // 149
+		1, // 150
+		1, // 151
+		1, // 152
+		1, // 153
+		1, // 154
+		2, // 155
+		2, // 156
+		1, // 157
+		1, // 158
+		1, // 159
+		2, // 160
+		1, // 161
+	},
+}
+var _ = _cover_atomic_.LoadUint32

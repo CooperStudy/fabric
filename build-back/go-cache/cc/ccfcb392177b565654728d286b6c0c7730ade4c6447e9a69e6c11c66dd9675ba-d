@@ -1,0 +1,9 @@
+chaincode.cover.go
+handler.cover.go
+inprocstream.cover.go
+interfaces.cover.go
+mockstub.cover.go
+response.cover.go
+./inprocstream_test.go
+./mockstub_test.go
+./shim_test.go

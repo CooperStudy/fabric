@@ -1,0 +1,143 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/ledger/blockledger/util.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package blockledger; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/golang/protobuf/proto"
+	cb "github.com/hyperledger/fabric/protos/common"
+	ab "github.com/hyperledger/fabric/protos/orderer"
+)
+
+var closedChan chan struct{}
+
+func init() {_cover_atomic_.AddUint32(&GoCover_1_643666666665346134636534.Count[0], 1);
+	closedChan = make(chan struct{})
+	close(closedChan)
+}
+
+// NotFoundErrorIterator simply always returns an error of cb.Status_NOT_FOUND,
+// and is generally useful for implementations of the Reader interface
+type NotFoundErrorIterator struct{}
+
+// Next returns nil, cb.Status_NOT_FOUND
+func (nfei *NotFoundErrorIterator) Next() (*cb.Block, cb.Status) {_cover_atomic_.AddUint32(&GoCover_1_643666666665346134636534.Count[1], 1);
+	return nil, cb.Status_NOT_FOUND
+}
+
+// ReadyChan returns a closed channel
+func (nfei *NotFoundErrorIterator) ReadyChan() <-chan struct{} {_cover_atomic_.AddUint32(&GoCover_1_643666666665346134636534.Count[2], 1);
+	return closedChan
+}
+
+// Close does nothing
+func (nfei *NotFoundErrorIterator) Close() {_cover_atomic_.AddUint32(&GoCover_1_643666666665346134636534.Count[3], 1);}
+
+// CreateNextBlock provides a utility way to construct the next block from
+// contents and metadata for a given ledger
+// XXX This will need to be modified to accept marshaled envelopes
+//     to accommodate non-deterministic marshaling
+func CreateNextBlock(rl Reader, messages []*cb.Envelope) *cb.Block {_cover_atomic_.AddUint32(&GoCover_1_643666666665346134636534.Count[4], 1);
+	var nextBlockNumber uint64
+	var previousBlockHash []byte
+
+	if rl.Height() > 0 {_cover_atomic_.AddUint32(&GoCover_1_643666666665346134636534.Count[7], 1);
+		it, _ := rl.Iterator(&ab.SeekPosition{
+			Type: &ab.SeekPosition_Newest{
+				Newest: &ab.SeekNewest{},
+			},
+		})
+		block, status := it.Next()
+		if status != cb.Status_SUCCESS {_cover_atomic_.AddUint32(&GoCover_1_643666666665346134636534.Count[9], 1);
+			panic("Error seeking to newest block for chain with non-zero height")
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_643666666665346134636534.Count[8], 1);nextBlockNumber = block.Header.Number + 1
+		previousBlockHash = block.Header.Hash()
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643666666665346134636534.Count[5], 1);data := &cb.BlockData{
+		Data: make([][]byte, len(messages)),
+	}
+
+	var err error
+	for i, msg := range messages {_cover_atomic_.AddUint32(&GoCover_1_643666666665346134636534.Count[10], 1);
+		data.Data[i], err = proto.Marshal(msg)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_643666666665346134636534.Count[11], 1);
+			panic(err)
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643666666665346134636534.Count[6], 1);block := cb.NewBlock(nextBlockNumber, previousBlockHash)
+	block.Header.DataHash = data.Hash()
+	block.Data = data
+
+	return block
+}
+
+// GetBlock is a utility method for retrieving a single block
+func GetBlock(rl Reader, index uint64) *cb.Block {_cover_atomic_.AddUint32(&GoCover_1_643666666665346134636534.Count[12], 1);
+	iterator, _ := rl.Iterator(&ab.SeekPosition{
+		Type: &ab.SeekPosition_Specified{
+			Specified: &ab.SeekSpecified{Number: index},
+		},
+	})
+	if iterator == nil {_cover_atomic_.AddUint32(&GoCover_1_643666666665346134636534.Count[15], 1);
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_643666666665346134636534.Count[13], 1);defer iterator.Close()
+	block, status := iterator.Next()
+	if status != cb.Status_SUCCESS {_cover_atomic_.AddUint32(&GoCover_1_643666666665346134636534.Count[16], 1);
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_643666666665346134636534.Count[14], 1);return block
+}
+
+var GoCover_1_643666666665346134636534 = struct {
+	Count     [17]uint32
+	Pos       [3 * 17]uint32
+	NumStmt   [17]uint16
+} {
+	Pos: [3 * 17]uint32{
+		17, 20, 0x2000d, // [0]
+		27, 29, 0x20042, // [1]
+		32, 34, 0x20040, // [2]
+		37, 37, 0x2e002d, // [3]
+		43, 47, 0x150044, // [4]
+		61, 66, 0x1f0002, // [5]
+		73, 77, 0xe0002, // [6]
+		47, 54, 0x220015, // [7]
+		57, 58, 0x2a0003, // [8]
+		54, 55, 0x490022, // [9]
+		66, 68, 0x11001f, // [10]
+		68, 69, 0xe0011, // [11]
+		81, 87, 0x150032, // [12]
+		90, 92, 0x210002, // [13]
+		95, 95, 0xe0002, // [14]
+		87, 89, 0x30015, // [15]
+		92, 94, 0x30021, // [16]
+	},
+	NumStmt: [17]uint16{
+		2, // 0
+		1, // 1
+		1, // 2
+		0, // 3
+		3, // 4
+		3, // 5
+		4, // 6
+		3, // 7
+		2, // 8
+		1, // 9
+		2, // 10
+		1, // 11
+		2, // 12
+		3, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+	},
+}
+var _ = _cover_atomic_.LoadUint32

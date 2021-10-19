@@ -1,0 +1,363 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/chaincode/platforms/util/utils.go:1
+/*
+Copyright IBM Corp. 2016 All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+		 http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package util; import _cover_atomic_ "sync/atomic"
+
+import (
+	"archive/tar"
+	"bytes"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+
+	docker "github.com/fsouza/go-dockerclient"
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/common/util"
+	cutil "github.com/hyperledger/fabric/core/container/util"
+)
+
+var logger = flogging.MustGetLogger("chaincode.platform.util")
+
+//ComputeHash computes contents hash based on previous hash
+func ComputeHash(contents []byte, hash []byte) []byte {_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[0], 1);
+	newSlice := make([]byte, len(hash)+len(contents))
+
+	//copy the contents
+	copy(newSlice[0:len(contents)], contents[:])
+
+	//add the previous hash
+	copy(newSlice[len(contents):], hash[:])
+
+	//compute new hash
+	hash = util.ComputeSHA256(newSlice)
+
+	return hash
+}
+
+//HashFilesInDir computes h=hash(h,file bytes) for each file in a directory
+//Directory entries are traversed recursively. In the end a single
+//hash value is returned for the entire directory structure
+func HashFilesInDir(rootDir string, dir string, hash []byte, tw *tar.Writer) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[1], 1);
+	currentDir := filepath.Join(rootDir, dir)
+	logger.Debugf("hashFiles %s", currentDir)
+	//ReadDir returns sorted list of files in dir
+	fis, err := ioutil.ReadDir(currentDir)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[4], 1);
+		return hash, fmt.Errorf("ReadDir failed %s\n", err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[2], 1);for _, fi := range fis {_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[5], 1);
+		name := filepath.Join(dir, fi.Name())
+		if fi.IsDir() {_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[8], 1);
+			var err error
+			hash, err = HashFilesInDir(rootDir, name, hash, tw)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[10], 1);
+				return hash, err
+			}
+			_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[9], 1);continue
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[6], 1);fqp := filepath.Join(rootDir, name)
+		buf, err := ioutil.ReadFile(fqp)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[11], 1);
+			logger.Errorf("Error reading %s\n", err)
+			return hash, err
+		}
+
+		//get the new hash from file contents
+		_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[7], 1);hash = ComputeHash(buf, hash)
+
+		if tw != nil {_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[12], 1);
+			is := bytes.NewReader(buf)
+			if err = cutil.WriteStreamToPackage(is, fqp, filepath.Join("src", name), tw); err != nil {_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[13], 1);
+				return hash, fmt.Errorf("Error adding file to tar %s", err)
+			}
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[3], 1);return hash, nil
+}
+
+//IsCodeExist checks the chaincode if exists
+func IsCodeExist(tmppath string) error {_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[14], 1);
+	file, err := os.Open(tmppath)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[18], 1);
+		return fmt.Errorf("Could not open file %s", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[15], 1);fi, err := file.Stat()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[19], 1);
+		return fmt.Errorf("Could not stat file %s", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[16], 1);if !fi.IsDir() {_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[20], 1);
+		return fmt.Errorf("File %s is not dir\n", file.Name())
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[17], 1);return nil
+}
+
+type DockerBuildOptions struct {
+	Image        string
+	Env          []string
+	Cmd          string
+	InputStream  io.Reader
+	OutputStream io.Writer
+}
+
+//-------------------------------------------------------------------------------------------
+// DockerBuild
+//-------------------------------------------------------------------------------------------
+// This function allows a "pass-through" build of chaincode within a docker container as
+// an alternative to using standard "docker build" + Dockerfile mechanisms.  The plain docker
+// build is somewhat limiting due to the resulting image that is a superset composition of
+// the build-time and run-time environments.  This superset can be problematic on several
+// fronts, such as a bloated image size, and additional security exposure associated with
+// applications that are not needed, etc.
+//
+// Therefore, this mechanism creates a pipeline consisting of an ephemeral docker
+// container that accepts source code as input, runs some function (e.g. "go build"), and
+// outputs the result.  The intention is that this output will be consumed as the basis of
+// a streamlined container by installing the output into a downstream docker-build based on
+// an appropriate minimal image.
+//
+// The input parameters are fairly simple:
+//      - Image:        (optional) The builder image to use or "chaincode.builder"
+//      - Env:          (optional) environment variables for the build environment.
+//      - Cmd:          The command to execute inside the container.
+//      - InputStream:  A tarball of files that will be expanded into /chaincode/input.
+//      - OutputStream: A tarball of files that will be gathered from /chaincode/output
+//                      after successful execution of Cmd.
+//-------------------------------------------------------------------------------------------
+func DockerBuild(opts DockerBuildOptions) error {_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[21], 1);
+	client, err := cutil.NewDockerClient()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[33], 1);
+		return fmt.Errorf("Error creating docker client: %s", err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[22], 1);if opts.Image == "" {_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[34], 1);
+		opts.Image = cutil.GetDockerfileFromConfig("chaincode.builder")
+		if opts.Image == "" {_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[35], 1);
+			return fmt.Errorf("No image provided and \"chaincode.builder\" default does not exist")
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[23], 1);logger.Debugf("Attempting build with image %s", opts.Image)
+
+	//-----------------------------------------------------------------------------------
+	// Ensure the image exists locally, or pull it from a registry if it doesn't
+	//-----------------------------------------------------------------------------------
+	_, err = client.InspectImage(opts.Image)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[36], 1);
+		logger.Debugf("Image %s does not exist locally, attempt pull", opts.Image)
+
+		err = client.PullImage(docker.PullImageOptions{Repository: opts.Image}, docker.AuthConfiguration{})
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[37], 1);
+			return fmt.Errorf("Failed to pull %s: %s", opts.Image, err)
+		}
+	}
+
+	//-----------------------------------------------------------------------------------
+	// Create an ephemeral container, armed with our Env/Cmd
+	//-----------------------------------------------------------------------------------
+	_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[24], 1);container, err := client.CreateContainer(docker.CreateContainerOptions{
+		Config: &docker.Config{
+			Image:        opts.Image,
+			Env:          opts.Env,
+			Cmd:          []string{"/bin/sh", "-c", opts.Cmd},
+			AttachStdout: true,
+			AttachStderr: true,
+		},
+	})
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[38], 1);
+		return fmt.Errorf("Error creating container: %s", err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[25], 1);defer client.RemoveContainer(docker.RemoveContainerOptions{ID: container.ID})
+
+	//-----------------------------------------------------------------------------------
+	// Upload our input stream
+	//-----------------------------------------------------------------------------------
+	err = client.UploadToContainer(container.ID, docker.UploadToContainerOptions{
+		Path:        "/chaincode/input",
+		InputStream: opts.InputStream,
+	})
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[39], 1);
+		return fmt.Errorf("Error uploading input to container: %s", err)
+	}
+
+	//-----------------------------------------------------------------------------------
+	// Attach stdout buffer to capture possible compilation errors
+	//-----------------------------------------------------------------------------------
+	_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[26], 1);stdout := bytes.NewBuffer(nil)
+	cw, err := client.AttachToContainerNonBlocking(docker.AttachToContainerOptions{
+		Container:    container.ID,
+		OutputStream: stdout,
+		ErrorStream:  stdout,
+		Logs:         true,
+		Stdout:       true,
+		Stderr:       true,
+		Stream:       true,
+	})
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[40], 1);
+		return fmt.Errorf("Error attaching to container: %s", err)
+	}
+
+	//-----------------------------------------------------------------------------------
+	// Launch the actual build, realizing the Env/Cmd specified at container creation
+	//-----------------------------------------------------------------------------------
+	_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[27], 1);err = client.StartContainer(container.ID, nil)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[41], 1);
+		cw.Close()
+		return fmt.Errorf("Error executing build: %s \"%s\"", err, stdout.String())
+	}
+
+	//-----------------------------------------------------------------------------------
+	// Wait for the build to complete and gather the return value
+	//-----------------------------------------------------------------------------------
+	_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[28], 1);retval, err := client.WaitContainer(container.ID)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[42], 1);
+		cw.Close()
+		return fmt.Errorf("Error waiting for container to complete: %s", err)
+	}
+
+	// Wait for stream copying to complete before accessing stdout.
+	_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[29], 1);cw.Close()
+	if err := cw.Wait(); err != nil {_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[43], 1);
+		logger.Errorf("attach wait failed: %s", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[30], 1);if retval > 0 {_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[44], 1);
+		return fmt.Errorf("Error returned from build: %d \"%s\"", retval, stdout.String())
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[31], 1);logger.Debugf("Build output is %s", stdout.String())
+
+	//-----------------------------------------------------------------------------------
+	// Finally, download the result
+	//-----------------------------------------------------------------------------------
+	err = client.DownloadFromContainer(container.ID, docker.DownloadFromContainerOptions{
+		Path:         "/chaincode/output/.",
+		OutputStream: opts.OutputStream,
+	})
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[45], 1);
+		return fmt.Errorf("Error downloading output: %s", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_383739626335383637346331.Count[32], 1);return nil
+}
+
+var GoCover_0_383739626335383637346331 = struct {
+	Count     [46]uint32
+	Pos       [3 * 46]uint32
+	NumStmt   [46]uint16
+} {
+	Pos: [3 * 46]uint32{
+		37, 50, 0x20037, // [0]
+		55, 60, 0x10005e, // [1]
+		63, 63, 0x190002, // [2]
+		90, 90, 0x120002, // [3]
+		60, 62, 0x30010, // [4]
+		63, 65, 0x110019, // [5]
+		73, 75, 0x110003, // [6]
+		81, 83, 0x100003, // [7]
+		65, 68, 0x120011, // [8]
+		71, 71, 0xc0004, // [9]
+		68, 70, 0x50012, // [10]
+		75, 78, 0x40011, // [11]
+		83, 85, 0x5d0010, // [12]
+		85, 87, 0x5005d, // [13]
+		94, 96, 0x100028, // [14]
+		100, 101, 0x100002, // [15]
+		105, 105, 0x110002, // [16]
+		109, 109, 0xc0002, // [17]
+		96, 98, 0x30010, // [18]
+		101, 103, 0x30010, // [19]
+		105, 107, 0x30011, // [20]
+		144, 146, 0x100031, // [21]
+		149, 149, 0x160002, // [22]
+		156, 162, 0x100002, // [23]
+		174, 183, 0x100002, // [24]
+		186, 195, 0x100002, // [25]
+		202, 212, 0x100002, // [26]
+		219, 220, 0x100002, // [27]
+		228, 229, 0x100002, // [28]
+		235, 236, 0x220002, // [29]
+		240, 240, 0x100002, // [30]
+		244, 253, 0x100002, // [31]
+		257, 257, 0xc0002, // [32]
+		146, 148, 0x30010, // [33]
+		149, 151, 0x170016, // [34]
+		151, 153, 0x40017, // [35]
+		162, 166, 0x110010, // [36]
+		166, 168, 0x40011, // [37]
+		183, 185, 0x30010, // [38]
+		195, 197, 0x30010, // [39]
+		212, 214, 0x30010, // [40]
+		220, 223, 0x30010, // [41]
+		229, 232, 0x30010, // [42]
+		236, 238, 0x30022, // [43]
+		240, 242, 0x30010, // [44]
+		253, 255, 0x30010, // [45]
+	},
+	NumStmt: [46]uint16{
+		5, // 0
+		4, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		2, // 5
+		3, // 6
+		2, // 7
+		3, // 8
+		1, // 9
+		1, // 10
+		2, // 11
+		2, // 12
+		1, // 13
+		2, // 14
+		2, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		1, // 20
+		2, // 21
+		1, // 22
+		3, // 23
+		2, // 24
+		3, // 25
+		3, // 26
+		2, // 27
+		2, // 28
+		2, // 29
+		1, // 30
+		3, // 31
+		1, // 32
+		1, // 33
+		2, // 34
+		1, // 35
+		3, // 36
+		1, // 37
+		1, // 38
+		1, // 39
+		1, // 40
+		2, // 41
+		2, // 42
+		1, // 43
+		1, // 44
+		1, // 45
+	},
+}
+var _ = _cover_atomic_.LoadUint32

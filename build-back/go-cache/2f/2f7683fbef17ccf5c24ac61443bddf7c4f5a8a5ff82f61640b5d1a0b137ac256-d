@@ -1,0 +1,121 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/flogging/httpadmin/spec.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package httpadmin; import _cover_atomic_ "sync/atomic"
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+
+	"github.com/hyperledger/fabric/common/flogging"
+)
+
+//go:generate counterfeiter -o fakes/logging.go -fake-name Logging . Logging
+
+type Logging interface {
+	ActivateSpec(spec string) error
+	Spec() string
+}
+
+type LogSpec struct {
+	Spec string `json:"spec,omitempty"`
+}
+
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
+func NewSpecHandler() *SpecHandler {_cover_atomic_.AddUint32(&GoCover_0_383735306538626530353039.Count[0], 1);
+	return &SpecHandler{
+		Logging: flogging.Global,
+		Logger:  flogging.MustGetLogger("flogging.httpadmin"),
+	}
+}
+
+type SpecHandler struct {
+	Logging Logging
+	Logger  *flogging.FabricLogger
+}
+
+func (h *SpecHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {_cover_atomic_.AddUint32(&GoCover_0_383735306538626530353039.Count[1], 1);
+	switch req.Method {
+	case http.MethodPut:_cover_atomic_.AddUint32(&GoCover_0_383735306538626530353039.Count[2], 1);
+		var logSpec LogSpec
+		decoder := json.NewDecoder(req.Body)
+		if err := decoder.Decode(&logSpec); err != nil {_cover_atomic_.AddUint32(&GoCover_0_383735306538626530353039.Count[7], 1);
+			h.sendResponse(resp, http.StatusBadRequest, err)
+			return
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_383735306538626530353039.Count[3], 1);req.Body.Close()
+
+		if err := h.Logging.ActivateSpec(logSpec.Spec); err != nil {_cover_atomic_.AddUint32(&GoCover_0_383735306538626530353039.Count[8], 1);
+			h.sendResponse(resp, http.StatusBadRequest, err)
+			return
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_383735306538626530353039.Count[4], 1);resp.WriteHeader(http.StatusNoContent)
+
+	case http.MethodGet:_cover_atomic_.AddUint32(&GoCover_0_383735306538626530353039.Count[5], 1);
+		h.sendResponse(resp, http.StatusOK, &LogSpec{Spec: h.Logging.Spec()})
+
+	default:_cover_atomic_.AddUint32(&GoCover_0_383735306538626530353039.Count[6], 1);
+		err := fmt.Errorf("invalid request method: %s", req.Method)
+		h.sendResponse(resp, http.StatusBadRequest, err)
+	}
+}
+
+func (h *SpecHandler) sendResponse(resp http.ResponseWriter, code int, payload interface{}) {_cover_atomic_.AddUint32(&GoCover_0_383735306538626530353039.Count[9], 1);
+	encoder := json.NewEncoder(resp)
+	if err, ok := payload.(error); ok {_cover_atomic_.AddUint32(&GoCover_0_383735306538626530353039.Count[11], 1);
+		payload = &ErrorResponse{Error: err.Error()}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_383735306538626530353039.Count[10], 1);resp.WriteHeader(code)
+
+	resp.Header().Set("Content-Type", "application/json")
+	if err := encoder.Encode(payload); err != nil {_cover_atomic_.AddUint32(&GoCover_0_383735306538626530353039.Count[12], 1);
+		h.Logger.Errorw("failed to encode payload", "error", err)
+	}
+}
+
+var GoCover_0_383735306538626530353039 = struct {
+	Count     [13]uint32
+	Pos       [3 * 13]uint32
+	NumStmt   [13]uint16
+} {
+	Pos: [3 * 13]uint32{
+		32, 37, 0x20024, // [0]
+		44, 45, 0x14004e, // [1]
+		46, 49, 0x320016, // [2]
+		53, 55, 0x3e0003, // [3]
+		59, 59, 0x290003, // [4]
+		61, 62, 0x480016, // [5]
+		64, 66, 0x33000a, // [6]
+		49, 52, 0x40032, // [7]
+		55, 58, 0x4003e, // [8]
+		70, 72, 0x24005d, // [9]
+		76, 79, 0x300002, // [10]
+		72, 74, 0x30024, // [11]
+		79, 81, 0x30030, // [12]
+	},
+	NumStmt: [13]uint16{
+		1, // 0
+		1, // 1
+		3, // 2
+		2, // 3
+		1, // 4
+		1, // 5
+		2, // 6
+		2, // 7
+		2, // 8
+		2, // 9
+		3, // 10
+		1, // 11
+		1, // 12
+	},
+}
+var _ = _cover_atomic_.LoadUint32

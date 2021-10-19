@@ -1,0 +1,12 @@
+client.cover.go
+config.cover.go
+connection.cover.go
+creds.cover.go
+metrics.cover.go
+producer.cover.go
+server.cover.go
+serverstatshandler.cover.go
+util.cover.go
+./config_test.go
+./connection_test.go
+./producer_test.go

@@ -1,0 +1,5 @@
+configtxlator_handlers.cover.go
+protolator_handlers.cover.go
+router.cover.go
+./configtxlator_handlers_test.go
+./protolator_handlers_test.go

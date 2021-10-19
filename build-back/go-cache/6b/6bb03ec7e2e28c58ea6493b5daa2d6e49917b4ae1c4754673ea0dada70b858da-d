@@ -1,0 +1,108 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/crypto/tlsgen/ca.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package tlsgen; import _cover_atomic_ "sync/atomic"
+
+import (
+	"crypto"
+	"crypto/x509"
+)
+
+// CertKeyPair denotes a TLS certificate and corresponding key,
+// both PEM encoded
+type CertKeyPair struct {
+	// Cert is the certificate, PEM encoded
+	Cert []byte
+	// Key is the key corresponding to the certificate, PEM encoded
+	Key []byte
+
+	crypto.Signer
+	TLSCert *x509.Certificate
+}
+
+// CA defines a certificate authority that can generate
+// certificates signed by it
+type CA interface {
+	// CertBytes returns the certificate of the CA in PEM encoding
+	CertBytes() []byte
+
+	// newCertKeyPair returns a certificate and private key pair and nil,
+	// or nil, error in case of failure
+	// The certificate is signed by the CA and is used for TLS client authentication
+	NewClientCertKeyPair() (*CertKeyPair, error)
+
+	// NewServerCertKeyPair returns a CertKeyPair and nil,
+	// with a given custom SAN.
+	// The certificate is signed by the CA.
+	// Returns nil, error in case of failure
+	NewServerCertKeyPair(host string) (*CertKeyPair, error)
+}
+
+type ca struct {
+	caCert *CertKeyPair
+}
+
+func NewCA() (CA, error) {_cover_atomic_.AddUint32(&GoCover_0_393766613163373164663732.Count[0], 1);
+	c := &ca{}
+	var err error
+	c.caCert, err = newCertKeyPair(true, false, "", nil, nil)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393766613163373164663732.Count[2], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_393766613163373164663732.Count[1], 1);return c, nil
+}
+
+// CertBytes returns the certificate of the CA in PEM encoding
+func (c *ca) CertBytes() []byte {_cover_atomic_.AddUint32(&GoCover_0_393766613163373164663732.Count[3], 1);
+	return c.caCert.Cert
+}
+
+// newClientCertKeyPair returns a certificate and private key pair and nil,
+// or nil, error in case of failure
+// The certificate is signed by the CA and is used as a client TLS certificate
+func (c *ca) NewClientCertKeyPair() (*CertKeyPair, error) {_cover_atomic_.AddUint32(&GoCover_0_393766613163373164663732.Count[4], 1);
+	return newCertKeyPair(false, false, "", c.caCert.Signer, c.caCert.TLSCert)
+}
+
+// newServerCertKeyPair returns a certificate and private key pair and nil,
+// or nil, error in case of failure
+// The certificate is signed by the CA and is used as a server TLS certificate
+func (c *ca) NewServerCertKeyPair(host string) (*CertKeyPair, error) {_cover_atomic_.AddUint32(&GoCover_0_393766613163373164663732.Count[5], 1);
+	keypair, err := newCertKeyPair(false, true, host, c.caCert.Signer, c.caCert.TLSCert)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_393766613163373164663732.Count[7], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_393766613163373164663732.Count[6], 1);return keypair, nil
+}
+
+var GoCover_0_393766613163373164663732 = struct {
+	Count     [8]uint32
+	Pos       [3 * 8]uint32
+	NumStmt   [8]uint16
+} {
+	Pos: [3 * 8]uint32{
+		48, 52, 0x10001a, // [0]
+		55, 55, 0xf0002, // [1]
+		52, 54, 0x30010, // [2]
+		59, 61, 0x20021, // [3]
+		66, 68, 0x2003b, // [4]
+		73, 75, 0x100046, // [5]
+		78, 78, 0x150002, // [6]
+		75, 77, 0x30010, // [7]
+	},
+	NumStmt: [8]uint16{
+		4, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		2, // 5
+		1, // 6
+		1, // 7
+	},
+}
+var _ = _cover_atomic_.LoadUint32

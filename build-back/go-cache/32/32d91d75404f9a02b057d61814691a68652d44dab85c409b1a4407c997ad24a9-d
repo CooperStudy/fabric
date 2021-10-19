@@ -1,0 +1,207 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/deliverservice/mocks/orderer.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package mocks; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+	"net"
+	"sync/atomic"
+	"testing"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/protos/common"
+	"github.com/hyperledger/fabric/protos/orderer"
+	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc"
+)
+
+type Orderer struct {
+	net.Listener
+	*grpc.Server
+	nextExpectedSeek uint64
+	t                *testing.T
+	blockChannel     chan uint64
+	stopChan         chan struct{}
+	failFlag         int32
+	connCount        uint32
+}
+
+func NewOrderer(port int, t *testing.T) *Orderer {_cover_atomic_.AddUint32(&GoCover_1_613063393561623965343237.Count[0], 1);
+	srv := grpc.NewServer()
+	lsnr, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_613063393561623965343237.Count[2], 1);
+		panic(err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_613063393561623965343237.Count[1], 1);o := &Orderer{Server: srv,
+		Listener:         lsnr,
+		t:                t,
+		nextExpectedSeek: uint64(1),
+		blockChannel:     make(chan uint64, 1),
+		stopChan:         make(chan struct{}, 1),
+	}
+	orderer.RegisterAtomicBroadcastServer(srv, o)
+	go srv.Serve(lsnr)
+	return o
+}
+
+func (o *Orderer) Shutdown() {_cover_atomic_.AddUint32(&GoCover_1_613063393561623965343237.Count[3], 1);
+	o.stopChan <- struct{}{}
+	o.Server.Stop()
+	o.Listener.Close()
+}
+
+func (o *Orderer) Fail() {_cover_atomic_.AddUint32(&GoCover_1_613063393561623965343237.Count[4], 1);
+	atomic.StoreInt32(&o.failFlag, int32(1))
+	o.blockChannel <- 0
+}
+
+func (o *Orderer) Resurrect() {_cover_atomic_.AddUint32(&GoCover_1_613063393561623965343237.Count[5], 1);
+	atomic.StoreInt32(&o.failFlag, int32(0))
+	for {_cover_atomic_.AddUint32(&GoCover_1_613063393561623965343237.Count[6], 1);
+		select {
+		case <-o.blockChannel:_cover_atomic_.AddUint32(&GoCover_1_613063393561623965343237.Count[7], 1);
+			continue
+		default:_cover_atomic_.AddUint32(&GoCover_1_613063393561623965343237.Count[8], 1);
+			return
+		}
+	}
+}
+
+func (o *Orderer) ConnCount() int {_cover_atomic_.AddUint32(&GoCover_1_613063393561623965343237.Count[9], 1);
+	return int(atomic.LoadUint32(&o.connCount))
+}
+
+func (o *Orderer) hasFailed() bool {_cover_atomic_.AddUint32(&GoCover_1_613063393561623965343237.Count[10], 1);
+	return atomic.LoadInt32(&o.failFlag) == int32(1)
+}
+
+func (*Orderer) Broadcast(orderer.AtomicBroadcast_BroadcastServer) error {_cover_atomic_.AddUint32(&GoCover_1_613063393561623965343237.Count[11], 1);
+	panic("Should not have ben called")
+}
+
+func (o *Orderer) SetNextExpectedSeek(seq uint64) {_cover_atomic_.AddUint32(&GoCover_1_613063393561623965343237.Count[12], 1);
+	atomic.StoreUint64(&o.nextExpectedSeek, uint64(seq))
+}
+
+func (o *Orderer) SendBlock(seq uint64) {_cover_atomic_.AddUint32(&GoCover_1_613063393561623965343237.Count[13], 1);
+	o.blockChannel <- seq
+}
+
+func (o *Orderer) Deliver(stream orderer.AtomicBroadcast_DeliverServer) error {_cover_atomic_.AddUint32(&GoCover_1_613063393561623965343237.Count[14], 1);
+	atomic.AddUint32(&o.connCount, 1)
+	defer atomic.AddUint32(&o.connCount, ^uint32(0))
+	envlp, err := stream.Recv()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_613063393561623965343237.Count[17], 1);
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_613063393561623965343237.Count[15], 1);if o.hasFailed() {_cover_atomic_.AddUint32(&GoCover_1_613063393561623965343237.Count[18], 1);
+		return stream.Send(statusUnavailable())
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_613063393561623965343237.Count[16], 1);payload := &common.Payload{}
+	proto.Unmarshal(envlp.Payload, payload)
+	seekInfo := &orderer.SeekInfo{}
+	proto.Unmarshal(payload.Data, seekInfo)
+	assert.True(o.t, seekInfo.Behavior == orderer.SeekInfo_BLOCK_UNTIL_READY)
+	assert.Equal(o.t, atomic.LoadUint64(&o.nextExpectedSeek), seekInfo.Start.GetSpecified().Number)
+
+	for {_cover_atomic_.AddUint32(&GoCover_1_613063393561623965343237.Count[19], 1);
+		select {
+		case <-o.stopChan:_cover_atomic_.AddUint32(&GoCover_1_613063393561623965343237.Count[20], 1);
+			return nil
+		case seq := <-o.blockChannel:_cover_atomic_.AddUint32(&GoCover_1_613063393561623965343237.Count[21], 1);
+			if o.hasFailed() {_cover_atomic_.AddUint32(&GoCover_1_613063393561623965343237.Count[23], 1);
+				return stream.Send(statusUnavailable())
+			}
+			_cover_atomic_.AddUint32(&GoCover_1_613063393561623965343237.Count[22], 1);o.sendBlock(stream, seq)
+		}
+	}
+
+}
+
+func statusUnavailable() *orderer.DeliverResponse {_cover_atomic_.AddUint32(&GoCover_1_613063393561623965343237.Count[24], 1);
+	return &orderer.DeliverResponse{
+		Type: &orderer.DeliverResponse_Status{
+			Status: common.Status_SERVICE_UNAVAILABLE,
+		},
+	}
+}
+
+func (o *Orderer) sendBlock(stream orderer.AtomicBroadcast_DeliverServer, seq uint64) {_cover_atomic_.AddUint32(&GoCover_1_613063393561623965343237.Count[25], 1);
+	block := &common.Block{
+		Header: &common.BlockHeader{
+			Number: seq,
+		},
+	}
+	stream.Send(&orderer.DeliverResponse{
+		Type: &orderer.DeliverResponse_Block{Block: block},
+	})
+}
+
+var GoCover_1_613063393561623965343237 = struct {
+	Count     [26]uint32
+	Pos       [3 * 26]uint32
+	NumStmt   [26]uint16
+} {
+	Pos: [3 * 26]uint32{
+		33, 36, 0x100032, // [0]
+		39, 48, 0xa0002, // [1]
+		36, 37, 0xd0010, // [2]
+		51, 55, 0x2001e, // [3]
+		57, 60, 0x2001a, // [4]
+		62, 64, 0x6001f, // [5]
+		64, 65, 0xa0006, // [6]
+		66, 67, 0xc0019, // [7]
+		68, 69, 0xa000b, // [8]
+		74, 76, 0x20023, // [9]
+		78, 80, 0x20024, // [10]
+		82, 83, 0x25004a, // [11]
+		86, 88, 0x20033, // [12]
+		90, 92, 0x20029, // [13]
+		94, 98, 0x10004f, // [14]
+		101, 101, 0x130002, // [15]
+		104, 111, 0x60002, // [16]
+		98, 100, 0x30010, // [17]
+		101, 103, 0x30013, // [18]
+		111, 112, 0xa0006, // [19]
+		113, 114, 0xe0015, // [20]
+		115, 116, 0x150020, // [21]
+		119, 119, 0x1c0004, // [22]
+		116, 118, 0x50015, // [23]
+		125, 131, 0x20033, // [24]
+		133, 142, 0x20057, // [25]
+	},
+	NumStmt: [26]uint16{
+		3, // 0
+		4, // 1
+		1, // 2
+		3, // 3
+		2, // 4
+		2, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		4, // 14
+		1, // 15
+		7, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+		1, // 24
+		2, // 25
+	},
+}
+var _ = _cover_atomic_.LoadUint32

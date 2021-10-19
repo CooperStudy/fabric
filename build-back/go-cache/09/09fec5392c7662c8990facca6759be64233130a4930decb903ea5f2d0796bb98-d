@@ -1,0 +1,456 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/discovery/service.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package discovery; import _cover_atomic_ "sync/atomic"
+
+import (
+	"bytes"
+	"context"
+	"encoding/hex"
+	"fmt"
+
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/common/util"
+	"github.com/hyperledger/fabric/core/comm"
+	common2 "github.com/hyperledger/fabric/gossip/common"
+	discovery2 "github.com/hyperledger/fabric/gossip/discovery"
+	"github.com/hyperledger/fabric/protos/common"
+	"github.com/hyperledger/fabric/protos/discovery"
+	"github.com/pkg/errors"
+)
+
+var (
+	logger = flogging.MustGetLogger("discovery")
+)
+
+var accessDenied = wrapError(errors.New("access denied"))
+
+// certHashExtractor extracts the TLS certificate from a given context
+// and returns its hash
+type certHashExtractor func(ctx context.Context) []byte
+
+// dispatcher defines a function that dispatches a query
+type dispatcher func(q *discovery.Query) *discovery.QueryResult
+
+type service struct {
+	config             Config
+	channelDispatchers map[discovery.QueryType]dispatcher
+	localDispatchers   map[discovery.QueryType]dispatcher
+	auth               *authCache
+	Support
+}
+
+// Config defines the configuration of the discovery service
+type Config struct {
+	TLS                          bool
+	AuthCacheEnabled             bool
+	AuthCacheMaxSize             int
+	AuthCachePurgeRetentionRatio float64
+}
+
+// String returns a string representation of this Config
+func (c Config) String() string {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[0], 1);
+	if c.AuthCacheEnabled {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[2], 1);
+		return fmt.Sprintf("TLS: %t, authCacheMaxSize: %d, authCachePurgeRatio: %f", c.TLS, c.AuthCacheMaxSize, c.AuthCachePurgeRetentionRatio)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[1], 1);return fmt.Sprintf("TLS: %t, auth cache disabled", c.TLS)
+}
+
+// peerMapping maps PKI-IDs to Peers
+type peerMapping map[string]*discovery.Peer
+
+// NewService creates a new discovery service instance
+func NewService(config Config, sup Support) *service {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[3], 1);
+	s := &service{
+		auth: newAuthCache(sup, authCacheConfig{
+			enabled:             config.AuthCacheEnabled,
+			maxCacheSize:        config.AuthCacheMaxSize,
+			purgeRetentionRatio: config.AuthCachePurgeRetentionRatio,
+		}),
+		Support: sup,
+	}
+	s.channelDispatchers = map[discovery.QueryType]dispatcher{
+		discovery.ConfigQueryType:         s.configQuery,
+		discovery.ChaincodeQueryType:      s.chaincodeQuery,
+		discovery.PeerMembershipQueryType: s.channelMembershipResponse,
+	}
+	s.localDispatchers = map[discovery.QueryType]dispatcher{
+		discovery.LocalMembershipQueryType: s.localMembershipResponse,
+	}
+	logger.Info("Created with config", config)
+	return s
+}
+
+func (s *service) Discover(ctx context.Context, request *discovery.SignedRequest) (*discovery.Response, error) {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[4], 1);
+	addr := util.ExtractRemoteAddress(ctx)
+	req, err := validateStructure(ctx, request, s.config.TLS, comm.ExtractCertificateHashFromContext)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[7], 1);
+		logger.Warningf("Request from %s is malformed or invalid: %v", addr, err)
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[5], 1);logger.Debugf("Processing request from %s: %v", addr, req)
+	var res []*discovery.QueryResult
+	for _, q := range req.Queries {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[8], 1);
+		res = append(res, s.processQuery(q, request, req.Authentication.ClientIdentity, addr))
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[6], 1);logger.Debugf("Returning to %s a response containing: %v", addr, res)
+	return &discovery.Response{
+		Results: res,
+	}, nil
+}
+
+func (s *service) processQuery(query *discovery.Query, request *discovery.SignedRequest, identity []byte, addr string) *discovery.QueryResult {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[9], 1);
+	if query.Channel != "" && !s.ChannelExists(query.Channel) {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[12], 1);
+		logger.Warning("got query for channel", query.Channel, "from", addr, "but it doesn't exist")
+		return accessDenied
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[10], 1);if err := s.auth.EligibleForService(query.Channel, common.SignedData{
+		Data:      request.Payload,
+		Signature: request.Signature,
+		Identity:  identity,
+	}); err != nil {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[13], 1);
+		logger.Warning("got query for channel", query.Channel, "from", addr, "but it isn't eligible:", err)
+		return accessDenied
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[11], 1);return s.dispatch(query)
+}
+
+func (s *service) dispatch(q *discovery.Query) *discovery.QueryResult {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[14], 1);
+	dispatchers := s.channelDispatchers
+	// Ensure local queries are routed only to channel-less dispatchers
+	if q.Channel == "" {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[17], 1);
+		dispatchers = s.localDispatchers
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[15], 1);dispatchQuery, exists := dispatchers[q.GetType()]
+	if !exists {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[18], 1);
+		return wrapError(errors.New("unknown or missing request type"))
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[16], 1);return dispatchQuery(q)
+}
+
+func (s *service) chaincodeQuery(q *discovery.Query) *discovery.QueryResult {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[19], 1);
+	if err := validateCCQuery(q.GetCcQuery()); err != nil {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[22], 1);
+		return wrapError(err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[20], 1);var descriptors []*discovery.EndorsementDescriptor
+	for _, interest := range q.GetCcQuery().Interests {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[23], 1);
+		desc, err := s.PeersForEndorsement(common2.ChainID(q.Channel), interest)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[25], 1);
+			logger.Errorf("Failed constructing descriptor for chaincode %s,: %v", interest, err)
+			return wrapError(errors.Errorf("failed constructing descriptor for %v", interest))
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[24], 1);descriptors = append(descriptors, desc)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[21], 1);return &discovery.QueryResult{
+		Result: &discovery.QueryResult_CcQueryRes{
+			CcQueryRes: &discovery.ChaincodeQueryResult{
+				Content: descriptors,
+			},
+		},
+	}
+}
+
+func (s *service) configQuery(q *discovery.Query) *discovery.QueryResult {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[26], 1);
+	conf, err := s.Config(q.Channel)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[28], 1);
+		logger.Errorf("Failed fetching config for channel %s: %v", q.Channel, err)
+		return wrapError(errors.Errorf("failed fetching config for channel %s", q.Channel))
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[27], 1);return &discovery.QueryResult{
+		Result: &discovery.QueryResult_ConfigResult{
+			ConfigResult: conf,
+		},
+	}
+}
+
+func wrapPeerResponse(peersByOrg map[string]*discovery.Peers) *discovery.QueryResult {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[29], 1);
+	return &discovery.QueryResult{
+		Result: &discovery.QueryResult_Members{
+			Members: &discovery.PeerMembershipResult{
+				PeersByOrg: peersByOrg,
+			},
+		},
+	}
+}
+
+func (s *service) channelMembershipResponse(q *discovery.Query) *discovery.QueryResult {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[30], 1);
+	chanPeers, err := s.PeersAuthorizedByCriteria(common2.ChainID(q.Channel), q.GetPeerQuery().Filter)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[33], 1);
+		return wrapError(err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[31], 1);membersByOrgs := make(map[string]*discovery.Peers)
+	chanPeerByID := discovery2.Members(chanPeers).ByID()
+	for org, ids2Peers := range s.computeMembership(q) {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[34], 1);
+		membersByOrgs[org] = &discovery.Peers{}
+		for id, peer := range ids2Peers {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[35], 1);
+			// Check if the peer is in the channel view
+			stateInfoMsg, exists := chanPeerByID[string(id)]
+			// If the peer isn't in the channel view, skip it and don't include it in the response
+			if !exists {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[37], 1);
+				continue
+			}
+			_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[36], 1);peer.StateInfo = stateInfoMsg.Envelope
+			membersByOrgs[org].Peers = append(membersByOrgs[org].Peers, peer)
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[32], 1);return wrapPeerResponse(membersByOrgs)
+}
+
+func (s *service) localMembershipResponse(q *discovery.Query) *discovery.QueryResult {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[38], 1);
+	membersByOrgs := make(map[string]*discovery.Peers)
+	for org, ids2Peers := range s.computeMembership(q) {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[40], 1);
+		membersByOrgs[org] = &discovery.Peers{}
+		for _, peer := range ids2Peers {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[41], 1);
+			membersByOrgs[org].Peers = append(membersByOrgs[org].Peers, peer)
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[39], 1);return wrapPeerResponse(membersByOrgs)
+}
+
+func (s *service) computeMembership(_ *discovery.Query) map[string]peerMapping {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[42], 1);
+	peersByOrg := make(map[string]peerMapping)
+	peerAliveInfo := discovery2.Members(s.Peers()).ByID()
+	for org, peerIdentities := range s.IdentityInfo().ByOrg() {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[44], 1);
+		peersForCurrentOrg := make(peerMapping)
+		peersByOrg[org] = peersForCurrentOrg
+		for _, id := range peerIdentities {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[45], 1);
+			// Check peer exists in alive membership view
+			aliveInfo, exists := peerAliveInfo[string(id.PKIId)]
+			if !exists {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[47], 1);
+				continue
+			}
+			_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[46], 1);peersForCurrentOrg[string(id.PKIId)] = &discovery.Peer{
+				Identity:       id.Identity,
+				MembershipInfo: aliveInfo.Envelope,
+			}
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[43], 1);return peersByOrg
+}
+
+// validateStructure validates that the request contains all the needed fields and that they are computed correctly
+func validateStructure(ctx context.Context, request *discovery.SignedRequest, tlsEnabled bool, certHashFromContext certHashExtractor) (*discovery.Request, error) {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[48], 1);
+	if request == nil {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[56], 1);
+		return nil, errors.New("nil request")
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[49], 1);req, err := request.ToRequest()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[57], 1);
+		return nil, errors.Wrap(err, "failed parsing request")
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[50], 1);if req.Authentication == nil {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[58], 1);
+		return nil, errors.New("access denied, no authentication info in request")
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[51], 1);if len(req.Authentication.ClientIdentity) == 0 {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[59], 1);
+		return nil, errors.New("access denied, client identity wasn't supplied")
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[52], 1);if !tlsEnabled {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[60], 1);
+		return req, nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[53], 1);computedHash := certHashFromContext(ctx)
+	if len(computedHash) == 0 {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[61], 1);
+		return nil, errors.New("client didn't send a TLS certificate")
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[54], 1);if !bytes.Equal(computedHash, req.Authentication.ClientTlsCertHash) {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[62], 1);
+		claimed := hex.EncodeToString(req.Authentication.ClientTlsCertHash)
+		logger.Warningf("client claimed TLS hash %s doesn't match computed TLS hash from gRPC stream %s", claimed, hex.EncodeToString(computedHash))
+		return nil, errors.New("client claimed TLS hash doesn't match computed TLS hash from gRPC stream")
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[55], 1);return req, nil
+}
+
+func validateCCQuery(ccQuery *discovery.ChaincodeQuery) error {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[63], 1);
+	if len(ccQuery.Interests) == 0 {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[66], 1);
+		return errors.New("chaincode query must have at least one chaincode interest")
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[64], 1);for _, interest := range ccQuery.Interests {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[67], 1);
+		if interest == nil {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[70], 1);
+			return errors.New("chaincode interest is nil")
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[68], 1);if len(interest.Chaincodes) == 0 {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[71], 1);
+			return errors.New("chaincode interest must contain at least one chaincode")
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[69], 1);for _, cc := range interest.Chaincodes {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[72], 1);
+			if cc.Name == "" {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[73], 1);
+				return errors.New("chaincode name in interest cannot be empty")
+			}
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[65], 1);return nil
+}
+
+func wrapError(err error) *discovery.QueryResult {_cover_atomic_.AddUint32(&GoCover_2_303564613738346231343033.Count[74], 1);
+	return &discovery.QueryResult{
+		Result: &discovery.QueryResult_Error{
+			Error: &discovery.Error{
+				Content: err.Error(),
+			},
+		},
+	}
+}
+
+var GoCover_2_303564613738346231343033 = struct {
+	Count     [75]uint32
+	Pos       [3 * 75]uint32
+	NumStmt   [75]uint16
+} {
+	Pos: [3 * 75]uint32{
+		55, 56, 0x180021, // [0]
+		59, 59, 0x3b0002, // [1]
+		56, 58, 0x30018, // [2]
+		66, 85, 0x20036, // [3]
+		87, 90, 0x100070, // [4]
+		94, 96, 0x200002, // [5]
+		99, 102, 0x80002, // [6]
+		90, 93, 0x30010, // [7]
+		96, 98, 0x30020, // [8]
+		105, 106, 0x3c008f, // [9]
+		110, 114, 0x110002, // [10]
+		118, 118, 0x1a0002, // [11]
+		106, 109, 0x3003c, // [12]
+		114, 117, 0x30011, // [13]
+		121, 124, 0x150047, // [14]
+		127, 128, 0xd0002, // [15]
+		131, 131, 0x190002, // [16]
+		124, 126, 0x30015, // [17]
+		128, 130, 0x3000d, // [18]
+		134, 135, 0x38004d, // [19]
+		138, 139, 0x340002, // [20]
+		148, 154, 0x30002, // [21]
+		135, 137, 0x30038, // [22]
+		139, 141, 0x110034, // [23]
+		145, 145, 0x2a0003, // [24]
+		141, 144, 0x40011, // [25]
+		157, 159, 0x10004a, // [26]
+		163, 167, 0x30002, // [27]
+		159, 162, 0x30010, // [28]
+		170, 178, 0x20056, // [29]
+		180, 182, 0x100058, // [30]
+		185, 187, 0x350002, // [31]
+		200, 200, 0x280002, // [32]
+		182, 184, 0x30010, // [33]
+		187, 189, 0x230035, // [34]
+		189, 193, 0xf0023, // [35]
+		196, 197, 0x450004, // [36]
+		193, 194, 0xd000f, // [37]
+		203, 205, 0x350056, // [38]
+		211, 211, 0x280002, // [39]
+		205, 207, 0x220035, // [40]
+		207, 209, 0x40022, // [41]
+		214, 217, 0x3c0050, // [42]
+		232, 232, 0x130002, // [43]
+		217, 220, 0x25003c, // [44]
+		220, 223, 0xf0025, // [45]
+		226, 229, 0x50004, // [46]
+		223, 224, 0xd000f, // [47]
+		236, 237, 0x1400a3, // [48]
+		240, 241, 0x100002, // [49]
+		244, 244, 0x1f0002, // [50]
+		247, 247, 0x310002, // [51]
+		250, 250, 0x110002, // [52]
+		253, 254, 0x1c0002, // [53]
+		257, 257, 0x460002, // [54]
+		262, 262, 0x110002, // [55]
+		237, 239, 0x30014, // [56]
+		241, 243, 0x30010, // [57]
+		244, 246, 0x3001f, // [58]
+		247, 249, 0x30031, // [59]
+		250, 252, 0x30011, // [60]
+		254, 256, 0x3001c, // [61]
+		257, 261, 0x30046, // [62]
+		265, 266, 0x21003f, // [63]
+		269, 269, 0x2d0002, // [64]
+		282, 282, 0xc0002, // [65]
+		266, 268, 0x30021, // [66]
+		269, 270, 0x16002d, // [67]
+		273, 273, 0x240003, // [68]
+		276, 276, 0x2a0003, // [69]
+		270, 272, 0x40016, // [70]
+		273, 275, 0x40024, // [71]
+		276, 277, 0x15002a, // [72]
+		277, 279, 0x50015, // [73]
+		285, 293, 0x20032, // [74]
+	},
+	NumStmt: [75]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		5, // 3
+		3, // 4
+		3, // 5
+		2, // 6
+		2, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		2, // 12
+		2, // 13
+		2, // 14
+		2, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		2, // 20
+		1, // 21
+		1, // 22
+		2, // 23
+		1, // 24
+		2, // 25
+		2, // 26
+		1, // 27
+		2, // 28
+		1, // 29
+		2, // 30
+		3, // 31
+		1, // 32
+		1, // 33
+		2, // 34
+		2, // 35
+		2, // 36
+		1, // 37
+		2, // 38
+		1, // 39
+		2, // 40
+		1, // 41
+		3, // 42
+		1, // 43
+		3, // 44
+		2, // 45
+		1, // 46
+		1, // 47
+		1, // 48
+		2, // 49
+		1, // 50
+		1, // 51
+		1, // 52
+		2, // 53
+		1, // 54
+		1, // 55
+		1, // 56
+		1, // 57
+		1, // 58
+		1, // 59
+		1, // 60
+		1, // 61
+		3, // 62
+		1, // 63
+		1, // 64
+		1, // 65
+		1, // 66
+		1, // 67
+		1, // 68
+		1, // 69
+		1, // 70
+		1, // 71
+		1, // 72
+		1, // 73
+		1, // 74
+	},
+}
+var _ = _cover_atomic_.LoadUint32

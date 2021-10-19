@@ -1,0 +1,93 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/container/inproccontroller/inprocstream.go:1
+/*
+Copyright IBM Corp. 2016 All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+		 http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package inproccontroller; import _cover_atomic_ "sync/atomic"
+
+import (
+	"errors"
+	"fmt"
+
+	pb "github.com/hyperledger/fabric/protos/peer"
+)
+
+//SendPanicFailure
+type SendPanicFailure string
+
+func (e SendPanicFailure) Error() string {_cover_atomic_.AddUint32(&GoCover_1_626139323335613336336265.Count[0], 1);
+	return fmt.Sprintf("send failure %s", string(e))
+}
+
+// PeerChaincodeStream interface for stream between Peer and chaincode instance.
+type inProcStream struct {
+	recv <-chan *pb.ChaincodeMessage
+	send chan<- *pb.ChaincodeMessage
+}
+
+func newInProcStream(recv <-chan *pb.ChaincodeMessage, send chan<- *pb.ChaincodeMessage) *inProcStream {_cover_atomic_.AddUint32(&GoCover_1_626139323335613336336265.Count[1], 1);
+	return &inProcStream{recv, send}
+}
+
+func (s *inProcStream) Send(msg *pb.ChaincodeMessage) (err error) {_cover_atomic_.AddUint32(&GoCover_1_626139323335613336336265.Count[2], 1);
+	//send may happen on a closed channel when the system is
+	//shutting down. Just catch the exception and return error
+	defer func() {_cover_atomic_.AddUint32(&GoCover_1_626139323335613336336265.Count[4], 1);
+		if r := recover(); r != nil {_cover_atomic_.AddUint32(&GoCover_1_626139323335613336336265.Count[5], 1);
+			err = SendPanicFailure(fmt.Sprintf("%s", r))
+			return
+		}
+	}()
+	_cover_atomic_.AddUint32(&GoCover_1_626139323335613336336265.Count[3], 1);s.send <- msg
+	return
+}
+
+func (s *inProcStream) Recv() (*pb.ChaincodeMessage, error) {_cover_atomic_.AddUint32(&GoCover_1_626139323335613336336265.Count[6], 1);
+	msg, ok := <-s.recv
+	if !ok {_cover_atomic_.AddUint32(&GoCover_1_626139323335613336336265.Count[8], 1);
+		return nil, errors.New("channel is closed")
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_626139323335613336336265.Count[7], 1);return msg, nil
+}
+
+var GoCover_1_626139323335613336336265 = struct {
+	Count     [9]uint32
+	Pos       [3 * 9]uint32
+	NumStmt   [9]uint16
+} {
+	Pos: [3 * 9]uint32{
+		29, 31, 0x2002a, // [0]
+		39, 41, 0x20068, // [1]
+		43, 46, 0xf0043, // [2]
+		52, 53, 0x80002, // [3]
+		46, 47, 0x1f000f, // [4]
+		47, 50, 0x4001f, // [5]
+		56, 58, 0x9003d, // [6]
+		61, 61, 0x110002, // [7]
+		58, 60, 0x30009, // [8]
+	},
+	NumStmt: [9]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		2, // 3
+		1, // 4
+		2, // 5
+		2, // 6
+		1, // 7
+		1, // 8
+	},
+}
+var _ = _cover_atomic_.LoadUint32

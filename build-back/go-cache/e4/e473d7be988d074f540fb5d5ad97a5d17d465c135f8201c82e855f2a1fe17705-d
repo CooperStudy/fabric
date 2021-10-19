@@ -1,0 +1,179 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/cclifecycle/util.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package cc; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/chaincode"
+	"github.com/hyperledger/fabric/core/common/ccprovider"
+	"github.com/hyperledger/fabric/core/common/privdata"
+	"github.com/pkg/errors"
+)
+
+var (
+	// AcceptAll returns a predicate that accepts all Metadata
+	AcceptAll ChaincodePredicate = func(cc chaincode.Metadata) bool {_cover_atomic_.AddUint32(&GoCover_2_303966633866396236633762.Count[0], 1);
+		return true
+	}
+)
+
+// ChaincodePredicate accepts or rejects chaincode based on its metadata
+type ChaincodePredicate func(cc chaincode.Metadata) bool
+
+// DeployedChaincodes retrieves the metadata of the given deployed chaincodes
+func DeployedChaincodes(q Query, filter ChaincodePredicate, loadCollections bool, chaincodes ...string) (chaincode.MetadataSet, error) {_cover_atomic_.AddUint32(&GoCover_2_303966633866396236633762.Count[1], 1);
+	defer q.Done()
+
+	var res chaincode.MetadataSet
+	for _, cc := range chaincodes {_cover_atomic_.AddUint32(&GoCover_2_303966633866396236633762.Count[3], 1);
+		data, err := q.GetState("lscc", cc)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_303966633866396236633762.Count[10], 1);
+			Logger.Error("Failed querying lscc namespace:", err)
+			return nil, errors.WithStack(err)
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_303966633866396236633762.Count[4], 1);if len(data) == 0 {_cover_atomic_.AddUint32(&GoCover_2_303966633866396236633762.Count[11], 1);
+			Logger.Info("Chaincode", cc, "isn't instantiated")
+			continue
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_303966633866396236633762.Count[5], 1);ccInfo, err := extractCCInfo(data)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_303966633866396236633762.Count[12], 1);
+			Logger.Error("Failed extracting chaincode info about", cc, "from LSCC returned payload. Error:", err)
+			continue
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_303966633866396236633762.Count[6], 1);if ccInfo.Name != cc {_cover_atomic_.AddUint32(&GoCover_2_303966633866396236633762.Count[13], 1);
+			Logger.Error("Chaincode", cc, "is listed in LSCC as", ccInfo.Name)
+			continue
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_2_303966633866396236633762.Count[7], 1);instCC := chaincode.Metadata{
+			Name:    ccInfo.Name,
+			Version: ccInfo.Version,
+			Id:      ccInfo.Id,
+			Policy:  ccInfo.Policy,
+		}
+
+		if !filter(instCC) {_cover_atomic_.AddUint32(&GoCover_2_303966633866396236633762.Count[14], 1);
+			Logger.Debug("Filtered out", instCC)
+			continue
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_2_303966633866396236633762.Count[8], 1);if loadCollections {_cover_atomic_.AddUint32(&GoCover_2_303966633866396236633762.Count[15], 1);
+			key := privdata.BuildCollectionKVSKey(cc)
+			collectionData, err := q.GetState("lscc", key)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_2_303966633866396236633762.Count[17], 1);
+				Logger.Errorf("Failed querying lscc namespace for %s: %v", key, err)
+				return nil, errors.WithStack(err)
+			}
+			_cover_atomic_.AddUint32(&GoCover_2_303966633866396236633762.Count[16], 1);instCC.CollectionsConfig = collectionData
+			Logger.Debug("Retrieved collection config for", cc, "from", key)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_2_303966633866396236633762.Count[9], 1);res = append(res, instCC)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_303966633866396236633762.Count[2], 1);Logger.Debug("Returning", res)
+	return res, nil
+}
+
+func deployedCCToNameVersion(cc chaincode.Metadata) nameVersion {_cover_atomic_.AddUint32(&GoCover_2_303966633866396236633762.Count[18], 1);
+	return nameVersion{
+		name:    cc.Name,
+		version: cc.Version,
+	}
+}
+
+func extractCCInfo(data []byte) (*ccprovider.ChaincodeData, error) {_cover_atomic_.AddUint32(&GoCover_2_303966633866396236633762.Count[19], 1);
+	cd := &ccprovider.ChaincodeData{}
+	if err := proto.Unmarshal(data, cd); err != nil {_cover_atomic_.AddUint32(&GoCover_2_303966633866396236633762.Count[21], 1);
+		return nil, errors.Wrap(err, "failed unmarshaling lscc read value into ChaincodeData")
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_303966633866396236633762.Count[20], 1);return cd, nil
+}
+
+type nameVersion struct {
+	name    string
+	version string
+}
+
+func installedCCToNameVersion(cc chaincode.InstalledChaincode) nameVersion {_cover_atomic_.AddUint32(&GoCover_2_303966633866396236633762.Count[22], 1);
+	return nameVersion{
+		name:    cc.Name,
+		version: cc.Version,
+	}
+}
+
+func names(installedChaincodes []chaincode.InstalledChaincode) []string {_cover_atomic_.AddUint32(&GoCover_2_303966633866396236633762.Count[23], 1);
+	var ccs []string
+	for _, cc := range installedChaincodes {_cover_atomic_.AddUint32(&GoCover_2_303966633866396236633762.Count[25], 1);
+		ccs = append(ccs, cc.Name)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_303966633866396236633762.Count[24], 1);return ccs
+}
+
+var GoCover_2_303966633866396236633762 = struct {
+	Count     [26]uint32
+	Pos       [3 * 26]uint32
+	NumStmt   [26]uint16
+} {
+	Pos: [3 * 26]uint32{
+		19, 21, 0x30042, // [0]
+		28, 32, 0x200088, // [1]
+		77, 78, 0x110002, // [2]
+		32, 34, 0x110020, // [3]
+		38, 38, 0x150003, // [4]
+		42, 43, 0x110003, // [5]
+		47, 47, 0x180003, // [6]
+		52, 59, 0x160003, // [7]
+		64, 64, 0x160003, // [8]
+		75, 75, 0x1c0003, // [9]
+		34, 37, 0x40011, // [10]
+		38, 40, 0xc0015, // [11]
+		43, 45, 0xc0011, // [12]
+		47, 49, 0xc0018, // [13]
+		59, 61, 0xc0016, // [14]
+		64, 67, 0x120016, // [15]
+		71, 72, 0x440004, // [16]
+		67, 70, 0x50012, // [17]
+		81, 86, 0x20041, // [18]
+		88, 90, 0x320044, // [19]
+		93, 93, 0x100002, // [20]
+		90, 92, 0x30032, // [21]
+		101, 106, 0x2004c, // [22]
+		108, 110, 0x290049, // [23]
+		113, 113, 0xc0002, // [24]
+		110, 112, 0x30029, // [25]
+	},
+	NumStmt: [26]uint16{
+		1, // 0
+		3, // 1
+		2, // 2
+		2, // 3
+		1, // 4
+		2, // 5
+		1, // 6
+		2, // 7
+		1, // 8
+		1, // 9
+		2, // 10
+		2, // 11
+		2, // 12
+		2, // 13
+		2, // 14
+		3, // 15
+		2, // 16
+		2, // 17
+		1, // 18
+		2, // 19
+		1, // 20
+		1, // 21
+		1, // 22
+		2, // 23
+		1, // 24
+		1, // 25
+	},
+}
+var _ = _cover_atomic_.LoadUint32

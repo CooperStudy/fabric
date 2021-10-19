@@ -1,0 +1,53 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/tools/cryptogen/metadata/metadata.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package metadata; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+	"runtime"
+)
+
+// package-scoped variables
+
+// Package version
+const Version = "1.4.0"
+
+var CommitSHA string
+
+// package-scoped constants
+
+// Program name
+const ProgramName = "cryptogen"
+
+func GetVersionInfo() string {_cover_atomic_.AddUint32(&GoCover_0_313663366233326162393463.Count[0], 1);
+	if CommitSHA == "" {_cover_atomic_.AddUint32(&GoCover_0_313663366233326162393463.Count[2], 1);
+		CommitSHA = "development build"
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_313663366233326162393463.Count[1], 1);return fmt.Sprintf("%s:\n Version: %s\n Commit SHA: %s\n Go version: %s\n OS/Arch: %s",
+		ProgramName, Version, CommitSHA, runtime.Version(),
+		fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH))
+}
+
+var GoCover_0_313663366233326162393463 = struct {
+	Count     [3]uint32
+	Pos       [3 * 3]uint32
+	NumStmt   [3]uint16
+} {
+	Pos: [3 * 3]uint32{
+		26, 27, 0x15001e, // [0]
+		31, 33, 0x360002, // [1]
+		27, 29, 0x30015, // [2]
+	},
+	NumStmt: [3]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+	},
+}
+var _ = _cover_atomic_.LoadUint32

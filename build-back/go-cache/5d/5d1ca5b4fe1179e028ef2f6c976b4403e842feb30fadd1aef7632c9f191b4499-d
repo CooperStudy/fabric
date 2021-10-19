@@ -1,0 +1,10 @@
+./batcher.go
+./certstore.go
+./chanstate.go
+./gossip.go
+./gossip_impl.go
+./anchor_test.go
+./batcher_test.go
+./certstore_test.go
+./gossip_test.go
+./orgs_test.go

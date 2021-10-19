@@ -1,0 +1,179 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/aclmgmt/defaultaclprovider.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package aclmgmt; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+
+	"github.com/hyperledger/fabric/common/policies"
+	"github.com/hyperledger/fabric/core/aclmgmt/resources"
+	"github.com/hyperledger/fabric/core/peer"
+	"github.com/hyperledger/fabric/core/policy"
+	"github.com/hyperledger/fabric/msp/mgmt"
+	"github.com/hyperledger/fabric/protos/common"
+	pb "github.com/hyperledger/fabric/protos/peer"
+)
+
+const (
+	CHANNELREADERS = policies.ChannelApplicationReaders
+	CHANNELWRITERS = policies.ChannelApplicationWriters
+)
+
+//defaultACLProvider used if resource-based ACL Provider is not provided or
+//if it does not contain a policy for the named resource
+type defaultACLProvider struct {
+	policyChecker policy.PolicyChecker
+
+	//peer wide policy (currently not used)
+	pResourcePolicyMap map[string]string
+
+	//channel specific policy
+	cResourcePolicyMap map[string]string
+}
+
+func NewDefaultACLProvider() ACLProvider {_cover_atomic_.AddUint32(&GoCover_2_333530613935626133663963.Count[0], 1);
+	d := &defaultACLProvider{}
+	d.initialize()
+
+	return d
+}
+
+func (d *defaultACLProvider) initialize() {_cover_atomic_.AddUint32(&GoCover_2_333530613935626133663963.Count[1], 1);
+	d.policyChecker = policy.NewPolicyChecker(
+		peer.NewChannelPolicyManagerGetter(),
+		mgmt.GetLocalMSP(),
+		mgmt.NewLocalMSPPrincipalGetter(),
+	)
+
+	d.pResourcePolicyMap = make(map[string]string)
+	d.cResourcePolicyMap = make(map[string]string)
+
+	//-------------- LSCC --------------
+	//p resources (implemented by the chaincode currently)
+	d.pResourcePolicyMap[resources.Lscc_Install] = ""
+	d.pResourcePolicyMap[resources.Lscc_GetInstalledChaincodes] = ""
+
+	//c resources
+	d.cResourcePolicyMap[resources.Lscc_Deploy] = ""  //ACL check covered by PROPOSAL
+	d.cResourcePolicyMap[resources.Lscc_Upgrade] = "" //ACL check covered by PROPOSAL
+	d.cResourcePolicyMap[resources.Lscc_ChaincodeExists] = CHANNELREADERS
+	d.cResourcePolicyMap[resources.Lscc_GetDeploymentSpec] = CHANNELREADERS
+	d.cResourcePolicyMap[resources.Lscc_GetChaincodeData] = CHANNELREADERS
+	d.cResourcePolicyMap[resources.Lscc_GetInstantiatedChaincodes] = CHANNELREADERS
+	d.cResourcePolicyMap[resources.Lscc_GetCollectionsConfig] = CHANNELREADERS
+
+	//-------------- QSCC --------------
+	//p resources (none)
+
+	//c resources
+	d.cResourcePolicyMap[resources.Qscc_GetChainInfo] = CHANNELREADERS
+	d.cResourcePolicyMap[resources.Qscc_GetBlockByNumber] = CHANNELREADERS
+	d.cResourcePolicyMap[resources.Qscc_GetBlockByHash] = CHANNELREADERS
+	d.cResourcePolicyMap[resources.Qscc_GetTransactionByID] = CHANNELREADERS
+	d.cResourcePolicyMap[resources.Qscc_GetBlockByTxID] = CHANNELREADERS
+
+	//--------------- CSCC resources -----------
+	//p resources (implemented by the chaincode currently)
+	d.pResourcePolicyMap[resources.Cscc_JoinChain] = ""
+	d.pResourcePolicyMap[resources.Cscc_GetChannels] = ""
+
+	//c resources
+	d.cResourcePolicyMap[resources.Cscc_GetConfigBlock] = CHANNELREADERS
+	d.cResourcePolicyMap[resources.Cscc_GetConfigTree] = CHANNELREADERS
+	d.cResourcePolicyMap[resources.Cscc_SimulateConfigTreeUpdate] = CHANNELWRITERS
+
+	//---------------- non-scc resources ------------
+	//Peer resources
+	d.cResourcePolicyMap[resources.Peer_Propose] = CHANNELWRITERS
+	d.cResourcePolicyMap[resources.Peer_ChaincodeToChaincode] = CHANNELWRITERS
+	d.cResourcePolicyMap[resources.Token_Issue] = CHANNELWRITERS
+	d.cResourcePolicyMap[resources.Token_Transfer] = CHANNELWRITERS
+	d.cResourcePolicyMap[resources.Token_List] = CHANNELREADERS
+
+	//Event resources
+	d.cResourcePolicyMap[resources.Event_Block] = CHANNELREADERS
+	d.cResourcePolicyMap[resources.Event_FilteredBlock] = CHANNELREADERS
+}
+
+//this should cover an exhaustive list of everything called from the peer
+func (d *defaultACLProvider) defaultPolicy(resName string, cprovider bool) string {_cover_atomic_.AddUint32(&GoCover_2_333530613935626133663963.Count[2], 1);
+	var pol string
+	if cprovider {_cover_atomic_.AddUint32(&GoCover_2_333530613935626133663963.Count[4], 1);
+		pol = d.cResourcePolicyMap[resName]
+	} else{ _cover_atomic_.AddUint32(&GoCover_2_333530613935626133663963.Count[5], 1);{
+		pol = d.pResourcePolicyMap[resName]
+	}}
+	_cover_atomic_.AddUint32(&GoCover_2_333530613935626133663963.Count[3], 1);return pol
+}
+
+//CheckACL provides default (v 1.0) behavior by mapping resources to their ACL for a channel
+func (d *defaultACLProvider) CheckACL(resName string, channelID string, idinfo interface{}) error {_cover_atomic_.AddUint32(&GoCover_2_333530613935626133663963.Count[6], 1);
+	policy := d.defaultPolicy(resName, true)
+	if policy == "" {_cover_atomic_.AddUint32(&GoCover_2_333530613935626133663963.Count[8], 1);
+		aclLogger.Errorf("Unmapped policy for %s", resName)
+		return fmt.Errorf("Unmapped policy for %s", resName)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_333530613935626133663963.Count[7], 1);switch typedData := idinfo.(type) {
+	case *pb.SignedProposal:_cover_atomic_.AddUint32(&GoCover_2_333530613935626133663963.Count[9], 1);
+		return d.policyChecker.CheckPolicy(channelID, policy, typedData)
+	case *common.Envelope:_cover_atomic_.AddUint32(&GoCover_2_333530613935626133663963.Count[10], 1);
+		sd, err := typedData.AsSignedData()
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_333530613935626133663963.Count[14], 1);
+			return err
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_333530613935626133663963.Count[11], 1);return d.policyChecker.CheckPolicyBySignedData(channelID, policy, sd)
+	case []*common.SignedData:_cover_atomic_.AddUint32(&GoCover_2_333530613935626133663963.Count[12], 1);
+		return d.policyChecker.CheckPolicyBySignedData(channelID, policy, typedData)
+	default:_cover_atomic_.AddUint32(&GoCover_2_333530613935626133663963.Count[13], 1);
+		aclLogger.Errorf("Unmapped id on checkACL %s", resName)
+		return fmt.Errorf("Unknown id on checkACL %s", resName)
+	}
+}
+
+var GoCover_2_333530613935626133663963 = struct {
+	Count     [15]uint32
+	Pos       [3 * 15]uint32
+	NumStmt   [15]uint16
+} {
+	Pos: [3 * 15]uint32{
+		38, 43, 0x2002a, // [0]
+		45, 100, 0x2002b, // [1]
+		103, 105, 0xf0053, // [2]
+		110, 110, 0xc0002, // [3]
+		105, 107, 0x3000f, // [4]
+		107, 109, 0x30008, // [5]
+		114, 116, 0x120063, // [6]
+		121, 121, 0x240002, // [7]
+		116, 119, 0x30012, // [8]
+		122, 123, 0x43001a, // [9]
+		124, 126, 0x110018, // [10]
+		129, 129, 0x480003, // [11]
+		130, 131, 0x4f001c, // [12]
+		132, 134, 0x3a000a, // [13]
+		126, 128, 0x40011, // [14]
+	},
+	NumStmt: [15]uint16{
+		3, // 0
+		29, // 1
+		2, // 2
+		1, // 3
+		1, // 4
+		1, // 5
+		2, // 6
+		1, // 7
+		2, // 8
+		1, // 9
+		2, // 10
+		1, // 11
+		1, // 12
+		2, // 13
+		1, // 14
+	},
+}
+var _ = _cover_atomic_.LoadUint32

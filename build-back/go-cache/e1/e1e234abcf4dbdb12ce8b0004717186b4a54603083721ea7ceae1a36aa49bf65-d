@@ -1,0 +1,258 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/chaincode/container_runtime.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package chaincode; import _cover_atomic_ "sync/atomic"
+
+import (
+	"bytes"
+	"fmt"
+	"sort"
+	"strings"
+
+	"github.com/hyperledger/fabric/core/chaincode/accesscontrol"
+	"github.com/hyperledger/fabric/core/chaincode/platforms"
+	"github.com/hyperledger/fabric/core/common/ccprovider"
+	"github.com/hyperledger/fabric/core/container"
+	"github.com/hyperledger/fabric/core/container/ccintf"
+	pb "github.com/hyperledger/fabric/protos/peer"
+	"github.com/pkg/errors"
+)
+
+// Processor processes vm and container requests.
+type Processor interface {
+	Process(vmtype string, req container.VMCReq) error
+}
+
+// CertGenerator generates client certificates for chaincode.
+type CertGenerator interface {
+	// Generate returns a certificate and private key and associates
+	// the hash of the certificates with the given chaincode name
+	Generate(ccName string) (*accesscontrol.CertAndPrivKeyPair, error)
+}
+
+// ContainerRuntime is responsible for managing containerized chaincode.
+type ContainerRuntime struct {
+	CertGenerator    CertGenerator
+	Processor        Processor
+	CACert           []byte
+	CommonEnv        []string
+	PeerAddress      string
+	PlatformRegistry *platforms.Registry
+}
+
+// Start launches chaincode in a runtime environment.
+func (c *ContainerRuntime) Start(ccci *ccprovider.ChaincodeContainerInfo, codePackage []byte) error {_cover_atomic_.AddUint32(&GoCover_4_323839383963343337363361.Count[0], 1);
+	cname := ccci.Name + ":" + ccci.Version
+
+	lc, err := c.LaunchConfig(cname, ccci.Type)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_323839383963343337363361.Count[3], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_323839383963343337363361.Count[1], 1);chaincodeLogger.Debugf("start container: %s", cname)
+	chaincodeLogger.Debugf("start container with args: %s", strings.Join(lc.Args, " "))
+	chaincodeLogger.Debugf("start container with env:\n\t%s", strings.Join(lc.Envs, "\n\t"))
+
+	scr := container.StartContainerReq{
+		Builder: &container.PlatformBuilder{
+			Type:             ccci.Type,
+			Name:             ccci.Name,
+			Version:          ccci.Version,
+			Path:             ccci.Path,
+			CodePackage:      codePackage,
+			PlatformRegistry: c.PlatformRegistry,
+		},
+		Args:          lc.Args,
+		Env:           lc.Envs,
+		FilesToUpload: lc.Files,
+		CCID: ccintf.CCID{
+			Name:    ccci.Name,
+			Version: ccci.Version,
+		},
+	}
+
+	if err := c.Processor.Process(ccci.ContainerType, scr); err != nil {_cover_atomic_.AddUint32(&GoCover_4_323839383963343337363361.Count[4], 1);
+		return errors.WithMessage(err, "error starting container")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_323839383963343337363361.Count[2], 1);return nil
+}
+
+// Stop terminates chaincode and its container runtime environment.
+func (c *ContainerRuntime) Stop(ccci *ccprovider.ChaincodeContainerInfo) error {_cover_atomic_.AddUint32(&GoCover_4_323839383963343337363361.Count[5], 1);
+	scr := container.StopContainerReq{
+		CCID: ccintf.CCID{
+			Name:    ccci.Name,
+			Version: ccci.Version,
+		},
+		Timeout:    0,
+		Dontremove: false,
+	}
+
+	if err := c.Processor.Process(ccci.ContainerType, scr); err != nil {_cover_atomic_.AddUint32(&GoCover_4_323839383963343337363361.Count[7], 1);
+		return errors.WithMessage(err, "error stopping container")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_323839383963343337363361.Count[6], 1);return nil
+}
+
+const (
+	// Mutual TLS auth client key and cert paths in the chaincode container
+	TLSClientKeyPath      string = "/etc/hyperledger/fabric/client.key"
+	TLSClientCertPath     string = "/etc/hyperledger/fabric/client.crt"
+	TLSClientRootCertPath string = "/etc/hyperledger/fabric/peer.crt"
+)
+
+func (c *ContainerRuntime) getTLSFiles(keyPair *accesscontrol.CertAndPrivKeyPair) map[string][]byte {_cover_atomic_.AddUint32(&GoCover_4_323839383963343337363361.Count[8], 1);
+	if keyPair == nil {_cover_atomic_.AddUint32(&GoCover_4_323839383963343337363361.Count[10], 1);
+		return nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_323839383963343337363361.Count[9], 1);return map[string][]byte{
+		TLSClientKeyPath:      []byte(keyPair.Key),
+		TLSClientCertPath:     []byte(keyPair.Cert),
+		TLSClientRootCertPath: c.CACert,
+	}
+}
+
+// LaunchConfig holds chaincode launch arguments, environment variables, and files.
+type LaunchConfig struct {
+	Args  []string
+	Envs  []string
+	Files map[string][]byte
+}
+
+// LaunchConfig creates the LaunchConfig for chaincode running in a container.
+func (c *ContainerRuntime) LaunchConfig(cname string, ccType string) (*LaunchConfig, error) {_cover_atomic_.AddUint32(&GoCover_4_323839383963343337363361.Count[11], 1);
+	var lc LaunchConfig
+
+	// common environment variables
+	lc.Envs = append(c.CommonEnv, "CORE_CHAINCODE_ID_NAME="+cname)
+
+	// language specific arguments
+	switch ccType {
+	case pb.ChaincodeSpec_GOLANG.String(), pb.ChaincodeSpec_CAR.String():_cover_atomic_.AddUint32(&GoCover_4_323839383963343337363361.Count[14], 1);
+		lc.Args = []string{"chaincode", fmt.Sprintf("-peer.address=%s", c.PeerAddress)}
+	case pb.ChaincodeSpec_JAVA.String():_cover_atomic_.AddUint32(&GoCover_4_323839383963343337363361.Count[15], 1);
+		lc.Args = []string{"/root/chaincode-java/start", "--peerAddress", c.PeerAddress}
+	case pb.ChaincodeSpec_NODE.String():_cover_atomic_.AddUint32(&GoCover_4_323839383963343337363361.Count[16], 1);
+		lc.Args = []string{"/bin/sh", "-c", fmt.Sprintf("cd /usr/local/src; npm start -- --peer.address %s", c.PeerAddress)}
+	default:_cover_atomic_.AddUint32(&GoCover_4_323839383963343337363361.Count[17], 1);
+		return nil, errors.Errorf("unknown chaincodeType: %s", ccType)
+	}
+
+	// Pass TLS options to chaincode
+	_cover_atomic_.AddUint32(&GoCover_4_323839383963343337363361.Count[12], 1);if c.CertGenerator != nil {_cover_atomic_.AddUint32(&GoCover_4_323839383963343337363361.Count[18], 1);
+		certKeyPair, err := c.CertGenerator.Generate(cname)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_4_323839383963343337363361.Count[21], 1);
+			return nil, errors.WithMessage(err, fmt.Sprintf("failed to generate TLS certificates for %s", cname))
+		}
+		_cover_atomic_.AddUint32(&GoCover_4_323839383963343337363361.Count[19], 1);lc.Files = c.getTLSFiles(certKeyPair)
+		if lc.Files == nil {_cover_atomic_.AddUint32(&GoCover_4_323839383963343337363361.Count[22], 1);
+			return nil, errors.Errorf("failed to acquire TLS certificates for %s", cname)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_4_323839383963343337363361.Count[20], 1);lc.Envs = append(lc.Envs, "CORE_PEER_TLS_ENABLED=true")
+		lc.Envs = append(lc.Envs, fmt.Sprintf("CORE_TLS_CLIENT_KEY_PATH=%s", TLSClientKeyPath))
+		lc.Envs = append(lc.Envs, fmt.Sprintf("CORE_TLS_CLIENT_CERT_PATH=%s", TLSClientCertPath))
+		lc.Envs = append(lc.Envs, fmt.Sprintf("CORE_PEER_TLS_ROOTCERT_FILE=%s", TLSClientRootCertPath))
+	} else{ _cover_atomic_.AddUint32(&GoCover_4_323839383963343337363361.Count[23], 1);{
+		lc.Envs = append(lc.Envs, "CORE_PEER_TLS_ENABLED=false")
+	}}
+
+	_cover_atomic_.AddUint32(&GoCover_4_323839383963343337363361.Count[13], 1);chaincodeLogger.Debugf("launchConfig: %s", lc.String())
+
+	return &lc, nil
+}
+
+func (lc *LaunchConfig) String() string {_cover_atomic_.AddUint32(&GoCover_4_323839383963343337363361.Count[24], 1);
+	buf := &bytes.Buffer{}
+	if len(lc.Args) > 0 {_cover_atomic_.AddUint32(&GoCover_4_323839383963343337363361.Count[27], 1);
+		fmt.Fprintf(buf, "executable:%q,", lc.Args[0])
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_323839383963343337363361.Count[25], 1);fileNames := []string{}
+	for k := range lc.Files {_cover_atomic_.AddUint32(&GoCover_4_323839383963343337363361.Count[28], 1);
+		fileNames = append(fileNames, k)
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_323839383963343337363361.Count[26], 1);sort.Strings(fileNames)
+
+	fmt.Fprintf(buf, "Args:[%s],", strings.Join(lc.Args, ","))
+	fmt.Fprintf(buf, "Envs:[%s],", strings.Join(lc.Envs, ","))
+	fmt.Fprintf(buf, "Files:%v", fileNames)
+	return buf.String()
+}
+
+var GoCover_4_323839383963343337363361 = struct {
+	Count     [29]uint32
+	Pos       [3 * 29]uint32
+	NumStmt   [29]uint16
+} {
+	Pos: [3 * 29]uint32{
+		47, 51, 0x100065, // [0]
+		55, 77, 0x450002, // [1]
+		81, 81, 0xc0002, // [2]
+		51, 53, 0x30010, // [3]
+		77, 79, 0x30045, // [4]
+		85, 95, 0x450050, // [5]
+		99, 99, 0xc0002, // [6]
+		95, 97, 0x30045, // [7]
+		109, 110, 0x140065, // [8]
+		114, 118, 0x30002, // [9]
+		110, 112, 0x30014, // [10]
+		129, 136, 0x10005d, // [11]
+		148, 148, 0x1c0002, // [12]
+		166, 168, 0x110002, // [13]
+		137, 138, 0x520047, // [14]
+		139, 140, 0x530026, // [15]
+		141, 142, 0x770026, // [16]
+		143, 144, 0x41000a, // [17]
+		148, 150, 0x11001c, // [18]
+		153, 154, 0x160003, // [19]
+		158, 161, 0x620003, // [20]
+		150, 152, 0x40011, // [21]
+		154, 156, 0x40016, // [22]
+		162, 164, 0x30008, // [23]
+		171, 173, 0x160029, // [24]
+		177, 178, 0x1a0002, // [25]
+		181, 186, 0x150002, // [26]
+		173, 175, 0x30016, // [27]
+		178, 180, 0x3001a, // [28]
+	},
+	NumStmt: [29]uint16{
+		3, // 0
+		5, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		2, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		3, // 11
+		1, // 12
+		2, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		2, // 18
+		2, // 19
+		4, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+		2, // 24
+		2, // 25
+		5, // 26
+		1, // 27
+		1, // 28
+	},
+}
+var _ = _cover_atomic_.LoadUint32

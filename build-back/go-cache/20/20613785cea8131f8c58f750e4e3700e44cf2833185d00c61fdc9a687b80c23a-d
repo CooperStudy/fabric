@@ -1,0 +1,83 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/orderer/mocks/util/util.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package util; import _cover_atomic_ "sync/atomic"
+
+import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
+	"math/big"
+)
+
+// GenerateMockPublicPrivateKeyPairPEM returns public/private key pair encoded
+// as PEM strings.
+func GenerateMockPublicPrivateKeyPairPEM(isCA bool) (string, string, error) {_cover_atomic_.AddUint32(&GoCover_0_326565396331363732373863.Count[0], 1);
+	privateKey, err := rsa.GenerateKey(rand.Reader, 1024)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_326565396331363732373863.Count[4], 1);
+		return "", "", err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_326565396331363732373863.Count[1], 1);privateKeyPEM := string(pem.EncodeToMemory(
+		&pem.Block{
+			Type:  "RSA PRIVATE KEY",
+			Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
+		},
+	))
+
+	template := x509.Certificate{
+		SerialNumber: big.NewInt(100),
+		Subject: pkix.Name{
+			Organization: []string{"Hyperledger Fabric"},
+		},
+	}
+	if isCA {_cover_atomic_.AddUint32(&GoCover_0_326565396331363732373863.Count[5], 1);
+		template.IsCA = true
+		template.KeyUsage |= x509.KeyUsageCertSign
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_326565396331363732373863.Count[2], 1);publicKeyCert, err := x509.CreateCertificate(rand.Reader, &template, &template, privateKey.Public(), privateKey)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_326565396331363732373863.Count[6], 1);
+		return "", "", err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_326565396331363732373863.Count[3], 1);publicKeyCertPEM := string(pem.EncodeToMemory(
+		&pem.Block{
+			Type:  "CERTIFICATE",
+			Bytes: publicKeyCert,
+		},
+	))
+
+	return publicKeyCertPEM, privateKeyPEM, nil
+}
+
+var GoCover_0_326565396331363732373863 = struct {
+	Count     [7]uint32
+	Pos       [3 * 7]uint32
+	NumStmt   [7]uint16
+} {
+	Pos: [3 * 7]uint32{
+		20, 22, 0x10004d, // [0]
+		25, 38, 0xa0002, // [1]
+		43, 44, 0x100002, // [2]
+		48, 55, 0x2d0002, // [3]
+		22, 24, 0x30010, // [4]
+		38, 41, 0x3000a, // [5]
+		44, 46, 0x30010, // [6]
+	},
+	NumStmt: [7]uint16{
+		2, // 0
+		3, // 1
+		2, // 2
+		2, // 3
+		1, // 4
+		2, // 5
+		1, // 6
+	},
+}
+var _ = _cover_atomic_.LoadUint32

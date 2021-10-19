@@ -1,0 +1,605 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/committer/txvalidator/vscc_validator.go:1
+/*
+ *
+ * Copyright IBM Corp. All Rights Reserved.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ * /
+ *
+ */
+
+package txvalidator; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/cauthdsl"
+	commonerrors "github.com/hyperledger/fabric/common/errors"
+	coreUtil "github.com/hyperledger/fabric/common/util"
+	"github.com/hyperledger/fabric/core/common/ccprovider"
+	"github.com/hyperledger/fabric/core/common/sysccprovider"
+	"github.com/hyperledger/fabric/core/handlers/validation/api"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwsetutil"
+	"github.com/hyperledger/fabric/protos/common"
+	"github.com/hyperledger/fabric/protos/peer"
+	"github.com/hyperledger/fabric/protos/utils"
+	"github.com/pkg/errors"
+)
+
+// VsccValidatorImpl is the implementation used to call
+// the vscc chaincode and validate block transactions
+type VsccValidatorImpl struct {
+	chainID         string
+	support         Support
+	sccprovider     sysccprovider.SystemChaincodeProvider
+	pluginValidator *PluginValidator
+}
+
+// newVSCCValidator creates new vscc validator
+func newVSCCValidator(chainID string, support Support, sccp sysccprovider.SystemChaincodeProvider, pluginValidator *PluginValidator) *VsccValidatorImpl {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[0], 1);
+	return &VsccValidatorImpl{
+		chainID:         chainID,
+		support:         support,
+		sccprovider:     sccp,
+		pluginValidator: pluginValidator,
+	}
+}
+
+// VSCCValidateTx executes vscc validation for transaction
+func (v *VsccValidatorImpl) VSCCValidateTx(seq int, payload *common.Payload, envBytes []byte, block *common.Block) (error, peer.TxValidationCode) {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[1], 1);
+	chainID := v.chainID
+	logger.Debugf("[%s] VSCCValidateTx starts for bytes %p", chainID, envBytes)
+
+	// get header extensions so we have the chaincode ID
+	hdrExt, err := utils.GetChaincodeHeaderExtension(payload.Header)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[14], 1);
+		return err, peer.TxValidationCode_BAD_HEADER_EXTENSION
+	}
+
+	// get channel header
+	_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[2], 1);chdr, err := utils.UnmarshalChannelHeader(payload.Header.ChannelHeader)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[15], 1);
+		return err, peer.TxValidationCode_BAD_CHANNEL_HEADER
+	}
+
+	/* obtain the list of namespaces we're writing stuff to;
+	   at first, we establish a few facts about this invocation:
+	   1) which namespaces does it write to?
+	   2) does it write to LSCC's namespace?
+	   3) does it write to any cc that cannot be invoked? */
+	_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[3], 1);writesToLSCC := false
+	writesToNonInvokableSCC := false
+	respPayload, err := utils.GetActionFromEnvelope(envBytes)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[16], 1);
+		return errors.WithMessage(err, "GetActionFromEnvelope failed"), peer.TxValidationCode_BAD_RESPONSE_PAYLOAD
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[4], 1);txRWSet := &rwsetutil.TxRwSet{}
+	if err = txRWSet.FromProtoBytes(respPayload.Results); err != nil {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[17], 1);
+		return errors.WithMessage(err, "txRWSet.FromProtoBytes failed"), peer.TxValidationCode_BAD_RWSET
+	}
+
+	// Verify the header extension and response payload contain the ChaincodeId
+	_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[5], 1);if hdrExt.ChaincodeId == nil {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[18], 1);
+		return errors.New("nil ChaincodeId in header extension"), peer.TxValidationCode_INVALID_OTHER_REASON
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[6], 1);if respPayload.ChaincodeId == nil {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[19], 1);
+		return errors.New("nil ChaincodeId in ChaincodeAction"), peer.TxValidationCode_INVALID_OTHER_REASON
+	}
+
+	// get name and version of the cc we invoked
+	_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[7], 1);ccID := hdrExt.ChaincodeId.Name
+	ccVer := respPayload.ChaincodeId.Version
+
+	// sanity check on ccID
+	if ccID == "" {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[20], 1);
+		err = errors.New("invalid chaincode ID")
+		logger.Errorf("%+v", err)
+		return err, peer.TxValidationCode_INVALID_OTHER_REASON
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[8], 1);if ccID != respPayload.ChaincodeId.Name {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[21], 1);
+		err = errors.Errorf("inconsistent ccid info (%s/%s)", ccID, respPayload.ChaincodeId.Name)
+		logger.Errorf("%+v", err)
+		return err, peer.TxValidationCode_INVALID_OTHER_REASON
+	}
+	// sanity check on ccver
+	_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[9], 1);if ccVer == "" {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[22], 1);
+		err = errors.New("invalid chaincode version")
+		logger.Errorf("%+v", err)
+		return err, peer.TxValidationCode_INVALID_OTHER_REASON
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[10], 1);var wrNamespace []string
+	alwaysEnforceOriginalNamespace := v.support.Capabilities().V1_2Validation()
+	if alwaysEnforceOriginalNamespace {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[23], 1);
+		wrNamespace = append(wrNamespace, ccID)
+		if respPayload.Events != nil {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[24], 1);
+			ccEvent := &peer.ChaincodeEvent{}
+			if err = proto.Unmarshal(respPayload.Events, ccEvent); err != nil {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[26], 1);
+				return errors.Wrapf(err, "invalid chaincode event"), peer.TxValidationCode_INVALID_OTHER_REASON
+			}
+			_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[25], 1);if ccEvent.ChaincodeId != ccID {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[27], 1);
+				return errors.Errorf("chaincode event chaincode id does not match chaincode action chaincode id"), peer.TxValidationCode_INVALID_OTHER_REASON
+			}
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[11], 1);for _, ns := range txRWSet.NsRwSets {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[28], 1);
+		if !v.txWritesToNamespace(ns) {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[33], 1);
+			continue
+		}
+
+		// Check to make sure we did not already populate this chaincode
+		// name to avoid checking the same namespace twice
+		_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[29], 1);if ns.NameSpace != ccID || !alwaysEnforceOriginalNamespace {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[34], 1);
+			wrNamespace = append(wrNamespace, ns.NameSpace)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[30], 1);if !writesToLSCC && ns.NameSpace == "lscc" {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[35], 1);
+			writesToLSCC = true
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[31], 1);if !writesToNonInvokableSCC && v.sccprovider.IsSysCCAndNotInvokableCC2CC(ns.NameSpace) {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[36], 1);
+			writesToNonInvokableSCC = true
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[32], 1);if !writesToNonInvokableSCC && v.sccprovider.IsSysCCAndNotInvokableExternal(ns.NameSpace) {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[37], 1);
+			writesToNonInvokableSCC = true
+		}
+	}
+
+	// we've gathered all the info required to proceed to validation;
+	// validation will behave differently depending on the type of
+	// chaincode (system vs. application)
+
+	_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[12], 1);if !v.sccprovider.IsSysCC(ccID) {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[38], 1);
+		// if we're here, we know this is an invocation of an application chaincode;
+		// first of all, we make sure that:
+		// 1) we don't write to LSCC - an application chaincode is free to invoke LSCC
+		//    for instance to get information about itself or another chaincode; however
+		//    these legitimate invocations only ready from LSCC's namespace; currently
+		//    only two functions of LSCC write to its namespace: deploy and upgrade and
+		//    neither should be used by an application chaincode
+		if writesToLSCC {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[41], 1);
+			return errors.Errorf("chaincode %s attempted to write to the namespace of LSCC", ccID),
+				peer.TxValidationCode_ILLEGAL_WRITESET
+		}
+		// 2) we don't write to the namespace of a chaincode that we cannot invoke - if
+		//    the chaincode cannot be invoked in the first place, there's no legitimate
+		//    way in which a transaction has a write set that writes to it; additionally
+		//    we don't have any means of verifying whether the transaction had the rights
+		//    to perform that write operation because in v1, system chaincodes do not have
+		//    any endorsement policies to speak of. So if the chaincode can't be invoked
+		//    it can't be written to by an invocation of an application chaincode
+		_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[39], 1);if writesToNonInvokableSCC {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[42], 1);
+			return errors.Errorf("chaincode %s attempted to write to the namespace of a system chaincode that cannot be invoked", ccID),
+				peer.TxValidationCode_ILLEGAL_WRITESET
+		}
+
+		// validate *EACH* read write set according to its chaincode's endorsement policy
+		_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[40], 1);for _, ns := range wrNamespace {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[43], 1);
+			// Get latest chaincode version, vscc and validate policy
+			txcc, vscc, policy, err := v.GetInfoForValidate(chdr, ns)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[46], 1);
+				logger.Errorf("GetInfoForValidate for txId = %s returned error: %+v", chdr.TxId, err)
+				return err, peer.TxValidationCode_INVALID_OTHER_REASON
+			}
+
+			// if the namespace corresponds to the cc that was originally
+			// invoked, we check that the version of the cc that was
+			// invoked corresponds to the version that lscc has returned
+			_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[44], 1);if ns == ccID && txcc.ChaincodeVersion != ccVer {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[47], 1);
+				err = errors.Errorf("chaincode %s:%s/%s didn't match %s:%s/%s in lscc", ccID, ccVer, chdr.ChannelId, txcc.ChaincodeName, txcc.ChaincodeVersion, chdr.ChannelId)
+				logger.Errorf("%+v", err)
+				return err, peer.TxValidationCode_EXPIRED_CHAINCODE
+			}
+
+			// do VSCC validation
+			_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[45], 1);ctx := &Context{
+				Seq:       seq,
+				Envelope:  envBytes,
+				Block:     block,
+				TxID:      chdr.TxId,
+				Channel:   chdr.ChannelId,
+				Namespace: ns,
+				Policy:    policy,
+				VSCCName:  vscc.ChaincodeName,
+			}
+			if err = v.VSCCValidateTxForCC(ctx); err != nil {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[48], 1);
+				switch err.(type) {
+				case *commonerrors.VSCCEndorsementPolicyError:_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[49], 1);
+					return err, peer.TxValidationCode_ENDORSEMENT_POLICY_FAILURE
+				default:_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[50], 1);
+					return err, peer.TxValidationCode_INVALID_OTHER_REASON
+				}
+			}
+		}
+	} else{ _cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[51], 1);{
+		// make sure that we can invoke this system chaincode - if the chaincode
+		// cannot be invoked through a proposal to this peer, we have to drop the
+		// transaction; if we didn't, we wouldn't know how to decide whether it's
+		// valid or not because in v1, system chaincodes have no endorsement policy
+		if v.sccprovider.IsSysCCAndNotInvokableExternal(ccID) {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[54], 1);
+			return errors.Errorf("committing an invocation of cc %s is illegal", ccID),
+				peer.TxValidationCode_ILLEGAL_WRITESET
+		}
+
+		// Get latest chaincode version, vscc and validate policy
+		_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[52], 1);_, vscc, policy, err := v.GetInfoForValidate(chdr, ccID)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[55], 1);
+			logger.Errorf("GetInfoForValidate for txId = %s returned error: %+v", chdr.TxId, err)
+			return err, peer.TxValidationCode_INVALID_OTHER_REASON
+		}
+
+		// validate the transaction as an invocation of this system chaincode;
+		// vscc will have to do custom validation for this system chaincode
+		// currently, VSCC does custom validation for LSCC only; if an hlf
+		// user creates a new system chaincode which is invokable from the outside
+		// they have to modify VSCC to provide appropriate validation
+		_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[53], 1);ctx := &Context{
+			Seq:       seq,
+			Envelope:  envBytes,
+			Block:     block,
+			TxID:      chdr.TxId,
+			Channel:   chdr.ChannelId,
+			Namespace: ccID,
+			Policy:    policy,
+			VSCCName:  vscc.ChaincodeName,
+		}
+		if err = v.VSCCValidateTxForCC(ctx); err != nil {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[56], 1);
+			switch err.(type) {
+			case *commonerrors.VSCCEndorsementPolicyError:_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[57], 1);
+				return err, peer.TxValidationCode_ENDORSEMENT_POLICY_FAILURE
+			default:_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[58], 1);
+				return err, peer.TxValidationCode_INVALID_OTHER_REASON
+			}
+		}
+	}}
+	_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[13], 1);logger.Debugf("[%s] VSCCValidateTx completes env bytes %p", chainID, envBytes)
+	return nil, peer.TxValidationCode_VALID
+}
+
+func (v *VsccValidatorImpl) VSCCValidateTxForCC(ctx *Context) error {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[59], 1);
+	logger.Debug("Validating", ctx, "with plugin")
+	err := v.pluginValidator.ValidateWithPlugin(ctx)
+	if err == nil {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[62], 1);
+		return nil
+	}
+	// If the error is a pluggable validation execution error, cast it to the common errors ExecutionFailureError.
+	_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[60], 1);if e, isExecutionError := err.(*validation.ExecutionFailureError); isExecutionError {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[63], 1);
+		return &commonerrors.VSCCExecutionFailureError{Err: e}
+	}
+	// Else, treat it as an endorsement error.
+	_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[61], 1);return &commonerrors.VSCCEndorsementPolicyError{Err: err}
+}
+
+func (v *VsccValidatorImpl) getCDataForCC(chid, ccid string) (ccprovider.ChaincodeDefinition, error) {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[64], 1);
+	l := v.support.Ledger()
+	if l == nil {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[72], 1);
+		return nil, errors.New("nil ledger instance")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[65], 1);qe, err := l.NewQueryExecutor()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[73], 1);
+		return nil, errors.WithMessage(err, "could not retrieve QueryExecutor")
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[66], 1);defer qe.Done()
+
+	bytes, err := qe.GetState("lscc", ccid)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[74], 1);
+		return nil, &commonerrors.VSCCInfoLookupFailureError{
+			Reason: fmt.Sprintf("Could not retrieve state for chaincode %s, error %s", ccid, err),
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[67], 1);if bytes == nil {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[75], 1);
+		return nil, errors.Errorf("lscc's state for [%s] not found.", ccid)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[68], 1);cd := &ccprovider.ChaincodeData{}
+	err = proto.Unmarshal(bytes, cd)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[76], 1);
+		return nil, errors.Wrap(err, "unmarshalling ChaincodeQueryResponse failed")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[69], 1);if cd.Vscc == "" {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[77], 1);
+		return nil, errors.Errorf("lscc's state for [%s] is invalid, vscc field must be set", ccid)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[70], 1);if len(cd.Policy) == 0 {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[78], 1);
+		return nil, errors.Errorf("lscc's state for [%s] is invalid, policy field must be set", ccid)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[71], 1);return cd, err
+}
+
+// GetInfoForValidate gets the ChaincodeInstance(with latest version) of tx, vscc and policy from lscc
+func (v *VsccValidatorImpl) GetInfoForValidate(chdr *common.ChannelHeader, ccID string) (*sysccprovider.ChaincodeInstance, *sysccprovider.ChaincodeInstance, []byte, error) {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[79], 1);
+	cc := &sysccprovider.ChaincodeInstance{
+		ChainID:          chdr.ChannelId,
+		ChaincodeName:    ccID,
+		ChaincodeVersion: coreUtil.GetSysCCVersion(),
+	}
+	vscc := &sysccprovider.ChaincodeInstance{
+		ChainID:          chdr.ChannelId,
+		ChaincodeName:    "vscc",                     // default vscc for system chaincodes
+		ChaincodeVersion: coreUtil.GetSysCCVersion(), // Get vscc version
+	}
+	var policy []byte
+	var err error
+	if !v.sccprovider.IsSysCC(ccID) {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[81], 1);
+		// when we are validating a chaincode that is not a
+		// system CC, we need to ask the CC to give us the name
+		// of VSCC and of the policy that should be used
+
+		// obtain name of the VSCC and the policy
+		cd, err := v.getCDataForCC(chdr.ChannelId, ccID)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[83], 1);
+			msg := fmt.Sprintf("Unable to get chaincode data from ledger for txid %s, due to %s", chdr.TxId, err)
+			logger.Errorf(msg)
+			return nil, nil, nil, err
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[82], 1);cc.ChaincodeName = cd.CCName()
+		cc.ChaincodeVersion = cd.CCVersion()
+		vscc.ChaincodeName, policy = cd.Validation()
+	} else{ _cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[84], 1);{
+		// when we are validating a system CC, we use the default
+		// VSCC and a default policy that requires one signature
+		// from any of the members of the channel
+		p := cauthdsl.SignedByAnyMember(v.support.GetMSPIDs(chdr.ChannelId))
+		policy, err = utils.Marshal(p)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[85], 1);
+			return nil, nil, nil, err
+		}
+	}}
+
+	_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[80], 1);return cc, vscc, policy, nil
+}
+
+// txWritesToNamespace returns true if the supplied NsRwSet
+// performs a ledger write
+func (v *VsccValidatorImpl) txWritesToNamespace(ns *rwsetutil.NsRwSet) bool {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[86], 1);
+	// check for public writes first
+	if ns.KvRwSet != nil && len(ns.KvRwSet.Writes) > 0 {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[90], 1);
+		return true
+	}
+
+	// only look at collection data if we support that capability
+	_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[87], 1);if v.support.Capabilities().PrivateChannelData() {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[91], 1);
+		// check for private writes for all collections
+		for _, c := range ns.CollHashedRwSets {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[92], 1);
+			if c.HashedRwSet != nil && len(c.HashedRwSet.HashedWrites) > 0 {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[94], 1);
+				return true
+			}
+
+			// only look at private metadata writes if we support that capability
+			_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[93], 1);if v.support.Capabilities().KeyLevelEndorsement() {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[95], 1);
+				// private metadata updates
+				if c.HashedRwSet != nil && len(c.HashedRwSet.MetadataWrites) > 0 {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[96], 1);
+					return true
+				}
+			}
+		}
+	}
+
+	// only look at metadata writes if we support that capability
+	_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[88], 1);if v.support.Capabilities().KeyLevelEndorsement() {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[97], 1);
+		// public metadata updates
+		if ns.KvRwSet != nil && len(ns.KvRwSet.MetadataWrites) > 0 {_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[98], 1);
+			return true
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_653337613337663834376338.Count[89], 1);return false
+}
+
+var GoCover_2_653337613337663834376338 = struct {
+	Count     [99]uint32
+	Pos       [3 * 99]uint32
+	NumStmt   [99]uint16
+} {
+	Pos: [3 * 99]uint32{
+		39, 46, 0x20099, // [0]
+		49, 55, 0x100093, // [1]
+		60, 61, 0x100002, // [2]
+		70, 73, 0x100002, // [3]
+		76, 77, 0x430002, // [4]
+		82, 82, 0x1f0002, // [5]
+		86, 86, 0x240002, // [6]
+		91, 95, 0x100002, // [7]
+		100, 100, 0x2a0002, // [8]
+		106, 106, 0x110002, // [9]
+		112, 114, 0x240002, // [10]
+		127, 127, 0x260002, // [11]
+		155, 155, 0x220002, // [12]
+		258, 259, 0x290002, // [13]
+		55, 57, 0x30010, // [14]
+		61, 63, 0x30010, // [15]
+		73, 75, 0x30010, // [16]
+		77, 79, 0x30043, // [17]
+		82, 84, 0x3001f, // [18]
+		86, 88, 0x30024, // [19]
+		95, 99, 0x30010, // [20]
+		100, 104, 0x3002a, // [21]
+		106, 110, 0x30011, // [22]
+		114, 116, 0x200024, // [23]
+		116, 118, 0x460020, // [24]
+		121, 121, 0x230004, // [25]
+		118, 120, 0x50046, // [26]
+		121, 123, 0x50023, // [27]
+		127, 128, 0x210026, // [28]
+		134, 134, 0x3e0003, // [29]
+		138, 138, 0x2e0003, // [30]
+		142, 142, 0x5a0003, // [31]
+		146, 146, 0x5d0003, // [32]
+		128, 129, 0xc0021, // [33]
+		134, 136, 0x4003e, // [34]
+		138, 140, 0x4002e, // [35]
+		142, 144, 0x4005a, // [36]
+		146, 148, 0x4005d, // [37]
+		155, 163, 0x130022, // [38]
+		174, 174, 0x1e0003, // [39]
+		180, 180, 0x220003, // [40]
+		163, 166, 0x40013, // [41]
+		174, 177, 0x4001e, // [42]
+		180, 183, 0x120022, // [43]
+		191, 191, 0x340004, // [44]
+		198, 208, 0x340004, // [45]
+		183, 186, 0x50012, // [46]
+		191, 195, 0x50034, // [47]
+		208, 209, 0x170034, // [48]
+		210, 211, 0x420033, // [49]
+		212, 213, 0x3c000d, // [50]
+		217, 222, 0x390008, // [51]
+		228, 229, 0x110003, // [52]
+		239, 249, 0x330003, // [53]
+		222, 225, 0x40039, // [54]
+		229, 232, 0x40011, // [55]
+		249, 250, 0x160033, // [56]
+		251, 252, 0x410032, // [57]
+		253, 254, 0x3b000c, // [58]
+		262, 265, 0x100045, // [59]
+		269, 269, 0x560002, // [60]
+		273, 273, 0x3b0002, // [61]
+		265, 267, 0x30010, // [62]
+		269, 271, 0x30056, // [63]
+		276, 278, 0xe0066, // [64]
+		282, 283, 0x100002, // [65]
+		286, 289, 0x100002, // [66]
+		295, 295, 0x120002, // [67]
+		299, 301, 0x100002, // [68]
+		305, 305, 0x130002, // [69]
+		309, 309, 0x190002, // [70]
+		313, 313, 0x100002, // [71]
+		278, 280, 0x3000e, // [72]
+		283, 285, 0x30010, // [73]
+		289, 293, 0x30010, // [74]
+		295, 297, 0x30012, // [75]
+		301, 303, 0x30010, // [76]
+		305, 307, 0x30013, // [77]
+		309, 311, 0x30019, // [78]
+		317, 330, 0x2200ad, // [79]
+		356, 356, 0x1e0002, // [80]
+		330, 337, 0x110022, // [81]
+		342, 344, 0x2f0003, // [82]
+		337, 341, 0x40011, // [83]
+		345, 351, 0x110008, // [84]
+		351, 353, 0x40011, // [85]
+		361, 363, 0x35004d, // [86]
+		368, 368, 0x330002, // [87]
+		386, 386, 0x340002, // [88]
+		393, 393, 0xe0002, // [89]
+		363, 365, 0x30035, // [90]
+		368, 370, 0x290033, // [91]
+		370, 371, 0x430029, // [92]
+		376, 376, 0x360004, // [93]
+		371, 373, 0x50043, // [94]
+		376, 378, 0x460036, // [95]
+		378, 380, 0x60046, // [96]
+		386, 388, 0x3e0034, // [97]
+		388, 390, 0x4003e, // [98]
+	},
+	NumStmt: [99]uint16{
+		1, // 0
+		4, // 1
+		2, // 2
+		4, // 3
+		2, // 4
+		1, // 5
+		1, // 6
+		3, // 7
+		1, // 8
+		1, // 9
+		3, // 10
+		1, // 11
+		1, // 12
+		2, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		3, // 20
+		3, // 21
+		3, // 22
+		2, // 23
+		2, // 24
+		1, // 25
+		1, // 26
+		1, // 27
+		1, // 28
+		1, // 29
+		1, // 30
+		1, // 31
+		1, // 32
+		1, // 33
+		1, // 34
+		1, // 35
+		1, // 36
+		1, // 37
+		1, // 38
+		1, // 39
+		1, // 40
+		1, // 41
+		1, // 42
+		2, // 43
+		1, // 44
+		2, // 45
+		2, // 46
+		3, // 47
+		1, // 48
+		1, // 49
+		1, // 50
+		1, // 51
+		2, // 52
+		2, // 53
+		1, // 54
+		2, // 55
+		1, // 56
+		1, // 57
+		1, // 58
+		3, // 59
+		1, // 60
+		1, // 61
+		1, // 62
+		1, // 63
+		2, // 64
+		2, // 65
+		3, // 66
+		1, // 67
+		3, // 68
+		1, // 69
+		1, // 70
+		1, // 71
+		1, // 72
+		1, // 73
+		1, // 74
+		1, // 75
+		1, // 76
+		1, // 77
+		1, // 78
+		5, // 79
+		1, // 80
+		2, // 81
+		3, // 82
+		3, // 83
+		3, // 84
+		1, // 85
+		1, // 86
+		1, // 87
+		1, // 88
+		1, // 89
+		1, // 90
+		1, // 91
+		1, // 92
+		1, // 93
+		1, // 94
+		1, // 95
+		1, // 96
+		1, // 97
+		1, // 98
+	},
+}
+var _ = _cover_atomic_.LoadUint32

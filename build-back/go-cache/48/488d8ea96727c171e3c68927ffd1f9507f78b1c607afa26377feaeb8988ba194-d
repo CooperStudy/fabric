@@ -1,0 +1,106 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/handlers/endorsement/builtin/default_endorsement.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package builtin; import _cover_atomic_ "sync/atomic"
+
+import (
+	. "github.com/hyperledger/fabric/core/handlers/endorsement/api"
+	. "github.com/hyperledger/fabric/core/handlers/endorsement/api/identities"
+	"github.com/hyperledger/fabric/protos/peer"
+	"github.com/pkg/errors"
+)
+
+// DefaultEndorsementFactory returns an endorsement plugin factory which returns plugins
+// that behave as the default endorsement system chaincode
+type DefaultEndorsementFactory struct {
+}
+
+// New returns an endorsement plugin that behaves as the default endorsement system chaincode
+func (*DefaultEndorsementFactory) New() Plugin {_cover_atomic_.AddUint32(&GoCover_0_613337346463353065393464.Count[0], 1);
+	return &DefaultEndorsement{}
+}
+
+// DefaultEndorsement is an endorsement plugin that behaves as the default endorsement system chaincode
+type DefaultEndorsement struct {
+	SigningIdentityFetcher
+}
+
+// Endorse signs the given payload(ProposalResponsePayload bytes), and optionally mutates it.
+// Returns:
+// The Endorsement: A signature over the payload, and an identity that is used to verify the signature
+// The payload that was given as input (could be modified within this function)
+// Or error on failure
+func (e *DefaultEndorsement) Endorse(prpBytes []byte, sp *peer.SignedProposal) (*peer.Endorsement, []byte, error) {_cover_atomic_.AddUint32(&GoCover_0_613337346463353065393464.Count[1], 1);
+	signer, err := e.SigningIdentityForRequest(sp)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_613337346463353065393464.Count[5], 1);
+		return nil, nil, errors.Wrap(err, "failed fetching signing identity")
+	}
+	// serialize the signing identity
+	_cover_atomic_.AddUint32(&GoCover_0_613337346463353065393464.Count[2], 1);identityBytes, err := signer.Serialize()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_613337346463353065393464.Count[6], 1);
+		return nil, nil, errors.Wrapf(err, "could not serialize the signing identity")
+	}
+
+	// sign the concatenation of the proposal response and the serialized endorser identity with this endorser's key
+	_cover_atomic_.AddUint32(&GoCover_0_613337346463353065393464.Count[3], 1);signature, err := signer.Sign(append(prpBytes, identityBytes...))
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_613337346463353065393464.Count[7], 1);
+		return nil, nil, errors.Wrapf(err, "could not sign the proposal response payload")
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_613337346463353065393464.Count[4], 1);endorsement := &peer.Endorsement{Signature: signature, Endorser: identityBytes}
+	return endorsement, prpBytes, nil
+}
+
+// Init injects dependencies into the instance of the Plugin
+func (e *DefaultEndorsement) Init(dependencies ...Dependency) error {_cover_atomic_.AddUint32(&GoCover_0_613337346463353065393464.Count[8], 1);
+	for _, dep := range dependencies {_cover_atomic_.AddUint32(&GoCover_0_613337346463353065393464.Count[10], 1);
+		sIDFetcher, isSigningIdentityFetcher := dep.(SigningIdentityFetcher)
+		if !isSigningIdentityFetcher {_cover_atomic_.AddUint32(&GoCover_0_613337346463353065393464.Count[12], 1);
+			continue
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_613337346463353065393464.Count[11], 1);e.SigningIdentityFetcher = sIDFetcher
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_613337346463353065393464.Count[9], 1);return errors.New("could not find SigningIdentityFetcher in dependencies")
+}
+
+var GoCover_0_613337346463353065393464 = struct {
+	Count     [13]uint32
+	Pos       [3 * 13]uint32
+	NumStmt   [13]uint16
+} {
+	Pos: [3 * 13]uint32{
+		22, 24, 0x20030, // [0]
+		36, 38, 0x100073, // [1]
+		42, 43, 0x100002, // [2]
+		48, 49, 0x100002, // [3]
+		52, 53, 0x230002, // [4]
+		38, 40, 0x30010, // [5]
+		43, 45, 0x30010, // [6]
+		49, 51, 0x30010, // [7]
+		57, 58, 0x230045, // [8]
+		66, 66, 0x4c0002, // [9]
+		58, 60, 0x200023, // [10]
+		63, 64, 0xd0003, // [11]
+		60, 61, 0xc0020, // [12]
+	},
+	NumStmt: [13]uint16{
+		1, // 0
+		2, // 1
+		2, // 2
+		2, // 3
+		2, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		2, // 10
+		2, // 11
+		1, // 12
+	},
+}
+var _ = _cover_atomic_.LoadUint32

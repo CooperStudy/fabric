@@ -1,0 +1,7 @@
+./api.go
+./client.go
+./selection.go
+./signer.go
+./client_test.go
+./selection_test.go
+./signer_test.go

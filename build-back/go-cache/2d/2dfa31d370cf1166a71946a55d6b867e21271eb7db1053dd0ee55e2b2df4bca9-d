@@ -1,0 +1,255 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/orderer/common/multichannel/chainsupport.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package multichannel; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric/common/channelconfig"
+	"github.com/hyperledger/fabric/common/crypto"
+	"github.com/hyperledger/fabric/common/ledger/blockledger"
+	"github.com/hyperledger/fabric/common/policies"
+	"github.com/hyperledger/fabric/orderer/common/blockcutter"
+	"github.com/hyperledger/fabric/orderer/common/msgprocessor"
+	"github.com/hyperledger/fabric/orderer/consensus"
+	cb "github.com/hyperledger/fabric/protos/common"
+	"github.com/hyperledger/fabric/protos/utils"
+	"github.com/pkg/errors"
+)
+
+// ChainSupport holds the resources for a particular channel.
+type ChainSupport struct {
+	*ledgerResources
+	msgprocessor.Processor
+	*BlockWriter
+	consensus.Chain
+	cutter blockcutter.Receiver
+	crypto.LocalSigner
+}
+
+func newChainSupport(
+	registrar *Registrar,
+	ledgerResources *ledgerResources,
+	consenters map[string]consensus.Consenter,
+	signer crypto.LocalSigner,
+	blockcutterMetrics *blockcutter.Metrics,
+) *ChainSupport {_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[0], 1);
+	// Read in the last block and metadata for the channel
+	lastBlock := blockledger.GetBlock(ledgerResources, ledgerResources.Height()-1)
+
+	metadata, err := utils.GetMetadataFromBlock(lastBlock, cb.BlockMetadataIndex_ORDERER)
+	// Assuming a block created with cb.NewBlock(), this should not
+	// error even if the orderer metadata is an empty byte slice
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[4], 1);
+		logger.Fatalf("[channel: %s] Error extracting orderer metadata: %s", ledgerResources.ConfigtxValidator().ChainID(), err)
+	}
+
+	// Construct limited support needed as a parameter for additional support
+	_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[1], 1);cs := &ChainSupport{
+		ledgerResources: ledgerResources,
+		LocalSigner:     signer,
+		cutter: blockcutter.NewReceiverImpl(
+			ledgerResources.ConfigtxValidator().ChainID(),
+			ledgerResources,
+			blockcutterMetrics,
+		),
+	}
+
+	// Set up the msgprocessor
+	cs.Processor = msgprocessor.NewStandardChannel(cs, msgprocessor.CreateStandardChannelFilters(cs))
+
+	// Set up the block writer
+	cs.BlockWriter = newBlockWriter(lastBlock, registrar, cs)
+
+	// Set up the consenter
+	consenterType := ledgerResources.SharedConfig().ConsensusType()
+	consenter, ok := consenters[consenterType]
+	if !ok {_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[5], 1);
+		logger.Panicf("Error retrieving consenter of type: %s", consenterType)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[2], 1);cs.Chain, err = consenter.HandleChain(cs, metadata)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[6], 1);
+		logger.Panicf("[channel: %s] Error creating consenter: %s", cs.ChainID(), err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[3], 1);logger.Debugf("[channel: %s] Done creating channel support resources", cs.ChainID())
+
+	return cs
+}
+
+// Block returns a block with the following number,
+// or nil if such a block doesn't exist.
+func (cs *ChainSupport) Block(number uint64) *cb.Block {_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[7], 1);
+	if cs.Height() <= number {_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[9], 1);
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[8], 1);return blockledger.GetBlock(cs.Reader(), number)
+}
+
+func (cs *ChainSupport) Reader() blockledger.Reader {_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[10], 1);
+	return cs
+}
+
+// Signer returns the crypto.Localsigner for this channel.
+func (cs *ChainSupport) Signer() crypto.LocalSigner {_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[11], 1);
+	return cs
+}
+
+func (cs *ChainSupport) start() {_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[12], 1);
+	cs.Chain.Start()
+}
+
+// BlockCutter returns the blockcutter.Receiver instance for this channel.
+func (cs *ChainSupport) BlockCutter() blockcutter.Receiver {_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[13], 1);
+	return cs.cutter
+}
+
+// Validate passes through to the underlying configtx.Validator
+func (cs *ChainSupport) Validate(configEnv *cb.ConfigEnvelope) error {_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[14], 1);
+	return cs.ConfigtxValidator().Validate(configEnv)
+}
+
+// ProposeConfigUpdate passes through to the underlying configtx.Validator
+func (cs *ChainSupport) ProposeConfigUpdate(configtx *cb.Envelope) (*cb.ConfigEnvelope, error) {_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[15], 1);
+	env, err := cs.ConfigtxValidator().ProposeConfigUpdate(configtx)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[19], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[16], 1);bundle, err := cs.CreateBundle(cs.ChainID(), env.Config)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[20], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[17], 1);if err = checkResources(bundle); err != nil {_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[21], 1);
+		return nil, errors.Wrap(err, "config update is not compatible")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[18], 1);return env, cs.ValidateNew(bundle)
+}
+
+// ChainID passes through to the underlying configtx.Validator
+func (cs *ChainSupport) ChainID() string {_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[22], 1);
+	return cs.ConfigtxValidator().ChainID()
+}
+
+// ConfigProto passes through to the underlying configtx.Validator
+func (cs *ChainSupport) ConfigProto() *cb.Config {_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[23], 1);
+	return cs.ConfigtxValidator().ConfigProto()
+}
+
+// Sequence passes through to the underlying configtx.Validator
+func (cs *ChainSupport) Sequence() uint64 {_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[24], 1);
+	return cs.ConfigtxValidator().Sequence()
+}
+
+// VerifyBlockSignature verifies a signature of a block.
+// It has an optional argument of a configuration envelope
+// which would make the block verification to use validation rules
+// based on the given configuration in the ConfigEnvelope.
+// If the config envelope passed is nil, then the validation rules used
+// are the ones that were applied at commit of previous blocks.
+func (cs *ChainSupport) VerifyBlockSignature(sd []*cb.SignedData, envelope *cb.ConfigEnvelope) error {_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[25], 1);
+	policyMgr := cs.PolicyManager()
+	// If the envelope passed isn't nil, we should use a different policy manager.
+	if envelope != nil {_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[29], 1);
+		bundle, err := channelconfig.NewBundle(cs.ChainID(), envelope.Config)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[31], 1);
+			return err
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[30], 1);policyMgr = bundle.PolicyManager()
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[26], 1);policy, exists := policyMgr.GetPolicy(policies.BlockValidation)
+	if !exists {_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[32], 1);
+		return errors.Errorf("policy %s wasn't found", policies.BlockValidation)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[27], 1);err := policy.Evaluate(sd)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[33], 1);
+		return errors.Wrap(err, "block verification failed")
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_663537366331353835343737.Count[28], 1);return nil
+}
+
+var GoCover_1_663537366331353835343737 = struct {
+	Count     [34]uint32
+	Pos       [3 * 34]uint32
+	NumStmt   [34]uint16
+} {
+	Pos: [3 * 34]uint32{
+		38, 45, 0x100011, // [0]
+		50, 69, 0x90002, // [1]
+		73, 74, 0x100002, // [2]
+		78, 80, 0xb0002, // [3]
+		45, 47, 0x30010, // [4]
+		69, 71, 0x30009, // [5]
+		74, 76, 0x30010, // [6]
+		85, 86, 0x1b0038, // [7]
+		89, 89, 0x320002, // [8]
+		86, 88, 0x3001b, // [9]
+		92, 94, 0x20035, // [10]
+		97, 99, 0x20035, // [11]
+		101, 103, 0x20021, // [12]
+		106, 108, 0x2003c, // [13]
+		111, 113, 0x20046, // [14]
+		116, 118, 0x100060, // [15]
+		122, 123, 0x100002, // [16]
+		127, 127, 0x2e0002, // [17]
+		131, 131, 0x240002, // [18]
+		118, 120, 0x30010, // [19]
+		123, 125, 0x30010, // [20]
+		127, 129, 0x3002e, // [21]
+		135, 137, 0x2002a, // [22]
+		140, 142, 0x20032, // [23]
+		145, 147, 0x2002b, // [24]
+		155, 158, 0x150066, // [25]
+		165, 166, 0xd0002, // [26]
+		169, 170, 0x100002, // [27]
+		173, 173, 0xc0002, // [28]
+		158, 160, 0x110015, // [29]
+		163, 163, 0x250003, // [30]
+		160, 162, 0x40011, // [31]
+		166, 168, 0x3000d, // [32]
+		170, 172, 0x30010, // [33]
+	},
+	NumStmt: [34]uint16{
+		3, // 0
+		6, // 1
+		2, // 2
+		2, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		2, // 15
+		2, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+		1, // 24
+		2, // 25
+		2, // 26
+		2, // 27
+		1, // 28
+		2, // 29
+		1, // 30
+		1, // 31
+		1, // 32
+		1, // 33
+	},
+}
+var _ = _cover_atomic_.LoadUint32

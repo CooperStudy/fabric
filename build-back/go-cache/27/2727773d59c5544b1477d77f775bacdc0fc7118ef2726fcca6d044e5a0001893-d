@@ -1,0 +1,5 @@
+./extensions.go
+./message.pb.go
+./compatibility_test.go
+./extensions_test.go
+./message_test.go

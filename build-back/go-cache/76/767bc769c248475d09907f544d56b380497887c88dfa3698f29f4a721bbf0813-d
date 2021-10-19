@@ -1,0 +1,4 @@
+cli.cover.go
+config.cover.go
+./cli_test.go
+./config_test.go

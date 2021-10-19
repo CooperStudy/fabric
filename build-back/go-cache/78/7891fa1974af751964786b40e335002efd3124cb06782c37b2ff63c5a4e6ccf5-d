@@ -1,0 +1,813 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/discovery/endorsement/endorsement.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package endorsement; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+
+	"github.com/hyperledger/fabric/common/chaincode"
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/common/graph"
+	"github.com/hyperledger/fabric/common/policies"
+	"github.com/hyperledger/fabric/common/policies/inquire"
+	"github.com/hyperledger/fabric/gossip/api"
+	"github.com/hyperledger/fabric/gossip/common"
+	. "github.com/hyperledger/fabric/gossip/discovery"
+	"github.com/hyperledger/fabric/protos/discovery"
+	"github.com/hyperledger/fabric/protos/msp"
+	"github.com/pkg/errors"
+)
+
+var (
+	logger = flogging.MustGetLogger("discovery.endorsement")
+)
+
+type principalEvaluator interface {
+	// SatisfiesPrincipal returns whether a given peer identity satisfies a certain principal
+	// on a given channel
+	SatisfiesPrincipal(channel string, identity []byte, principal *msp.MSPPrincipal) error
+}
+
+type chaincodeMetadataFetcher interface {
+	// ChaincodeMetadata returns the metadata of the chaincode as appears in the ledger,
+	// or nil if the channel doesn't exist, or the chaincode isn't found in the ledger
+	Metadata(channel string, cc string, loadCollections bool) *chaincode.Metadata
+}
+
+type policyFetcher interface {
+	// PolicyByChaincode returns a policy that can be inquired which identities
+	// satisfy it
+	PolicyByChaincode(channel string, cc string) policies.InquireablePolicy
+}
+
+type gossipSupport interface {
+	// IdentityInfo returns identity information about peers
+	IdentityInfo() api.PeerIdentitySet
+
+	// PeersOfChannel returns the NetworkMembers considered alive
+	// and also subscribed to the channel given
+	PeersOfChannel(common.ChainID) Members
+
+	// Peers returns the NetworkMembers considered alive
+	Peers() Members
+}
+
+type endorsementAnalyzer struct {
+	gossipSupport
+	principalEvaluator
+	policyFetcher
+	chaincodeMetadataFetcher
+}
+
+// NewEndorsementAnalyzer constructs an NewEndorsementAnalyzer out of the given support
+func NewEndorsementAnalyzer(gs gossipSupport, pf policyFetcher, pe principalEvaluator, mf chaincodeMetadataFetcher) *endorsementAnalyzer {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[0], 1);
+	return &endorsementAnalyzer{
+		gossipSupport:            gs,
+		policyFetcher:            pf,
+		principalEvaluator:       pe,
+		chaincodeMetadataFetcher: mf,
+	}
+}
+
+type peerPrincipalEvaluator func(member NetworkMember, principal *msp.MSPPrincipal) bool
+
+// PeersForEndorsement returns an EndorsementDescriptor for a given set of peers, channel, and chaincode
+func (ea *endorsementAnalyzer) PeersForEndorsement(chainID common.ChainID, interest *discovery.ChaincodeInterest) (*discovery.EndorsementDescriptor, error) {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[1], 1);
+	chanMembership, err := ea.PeersAuthorizedByCriteria(chainID, interest)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[4], 1);
+		return nil, errors.WithStack(err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[2], 1);channelMembersById := chanMembership.ByID()
+	// Choose only the alive messages of those that have joined the channel
+	aliveMembership := ea.Peers().Intersect(chanMembership)
+	membersById := aliveMembership.ByID()
+	// Compute a mapping between the PKI-IDs of members to their identities
+	identitiesOfMembers := computeIdentitiesOfMembers(ea.IdentityInfo(), membersById)
+	principalsSets, err := ea.computePrincipalSets(chainID, interest)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[5], 1);
+		logger.Warningf("Principal set computation failed: %v", err)
+		return nil, errors.WithStack(err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[3], 1);return ea.computeEndorsementResponse(&context{
+		chaincode:           interest.Chaincodes[0].Name,
+		channel:             string(chainID),
+		principalsSets:      principalsSets,
+		channelMembersById:  channelMembersById,
+		aliveMembership:     aliveMembership,
+		identitiesOfMembers: identitiesOfMembers,
+	})
+}
+
+func (ea *endorsementAnalyzer) PeersAuthorizedByCriteria(chainID common.ChainID, interest *discovery.ChaincodeInterest) (Members, error) {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[6], 1);
+	peersOfChannel := ea.PeersOfChannel(chainID)
+	if interest == nil || len(interest.Chaincodes) == 0 {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[9], 1);
+		return peersOfChannel, nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[7], 1);identities := ea.IdentityInfo()
+	identitiesByID := identities.ByID()
+	metadataAndCollectionFilters, err := loadMetadataAndFilters(metadataAndFilterContext{
+		identityInfoByID: identitiesByID,
+		interest:         interest,
+		chainID:          chainID,
+		evaluator:        ea,
+		fetch:            ea,
+	})
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[10], 1);
+		return nil, errors.WithStack(err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[8], 1);metadata := metadataAndCollectionFilters.md
+	// Filter out peers that don't have the chaincode installed on them
+	chanMembership := peersOfChannel.Filter(peersWithChaincode(metadata...))
+	// Filter out peers that aren't authorized by the collection configs of the chaincode invocation chain
+	return chanMembership.Filter(metadataAndCollectionFilters.isMemberAuthorized), nil
+}
+
+type context struct {
+	chaincode           string
+	channel             string
+	aliveMembership     Members
+	principalsSets      []policies.PrincipalSet
+	channelMembersById  map[string]NetworkMember
+	identitiesOfMembers memberIdentities
+}
+
+func (ea *endorsementAnalyzer) computeEndorsementResponse(ctx *context) (*discovery.EndorsementDescriptor, error) {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[11], 1);
+	// mapPrincipalsToGroups returns a mapping from principals to their corresponding groups.
+	// groups are just human readable representations that mask the principals behind them
+	principalGroups := mapPrincipalsToGroups(ctx.principalsSets)
+	// principalsToPeersGraph computes a bipartite graph (V1 U V2 , E)
+	// such that V1 is the peers, V2 are the principals,
+	// and each e=(peer,principal) is in E if the peer satisfies the principal
+	satGraph := principalsToPeersGraph(principalAndPeerData{
+		members: ctx.aliveMembership,
+		pGrps:   principalGroups,
+	}, ea.satisfiesPrincipal(ctx.channel, ctx.identitiesOfMembers))
+
+	layouts := computeLayouts(ctx.principalsSets, principalGroups, satGraph)
+	if len(layouts) == 0 {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[13], 1);
+		return nil, errors.New("cannot satisfy any principal combination")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[12], 1);criteria := &peerMembershipCriteria{
+		possibleLayouts: layouts,
+		satGraph:        satGraph,
+		chanMemberById:  ctx.channelMembersById,
+		idOfMembers:     ctx.identitiesOfMembers,
+	}
+
+	return &discovery.EndorsementDescriptor{
+		Chaincode:         ctx.chaincode,
+		Layouts:           layouts,
+		EndorsersByGroups: endorsersByGroup(criteria),
+	}, nil
+}
+
+func (ea *endorsementAnalyzer) computePrincipalSets(chainID common.ChainID, interest *discovery.ChaincodeInterest) (policies.PrincipalSets, error) {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[14], 1);
+	var inquireablePolicies []policies.InquireablePolicy
+	for _, chaincode := range interest.Chaincodes {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[18], 1);
+		pol := ea.PolicyByChaincode(string(chainID), chaincode.Name)
+		if pol == nil {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[20], 1);
+			logger.Debug("Policy for chaincode '", chaincode, "'doesn't exist")
+			return nil, errors.New("policy not found")
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[19], 1);inquireablePolicies = append(inquireablePolicies, pol)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[15], 1);var cpss []inquire.ComparablePrincipalSets
+
+	for _, policy := range inquireablePolicies {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[21], 1);
+		var cmpsets inquire.ComparablePrincipalSets
+		for _, ps := range policy.SatisfiedBy() {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[24], 1);
+			cps := inquire.NewComparablePrincipalSet(ps)
+			if cps == nil {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[26], 1);
+				return nil, errors.New("failed creating a comparable principal set")
+			}
+			_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[25], 1);cmpsets = append(cmpsets, cps)
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[22], 1);if len(cmpsets) == 0 {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[27], 1);
+			return nil, errors.New("chaincode isn't installed on sufficient organizations required by the endorsement policy")
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[23], 1);cpss = append(cpss, cmpsets)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[16], 1);cps, err := mergePrincipalSets(cpss)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[28], 1);
+		return nil, errors.WithStack(err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[17], 1);return cps.ToPrincipalSets(), nil
+}
+
+type metadataAndFilterContext struct {
+	chainID          common.ChainID
+	interest         *discovery.ChaincodeInterest
+	fetch            chaincodeMetadataFetcher
+	identityInfoByID map[string]api.PeerIdentityInfo
+	evaluator        principalEvaluator
+}
+
+// metadataAndColFilter holds metadata and member filters
+type metadataAndColFilter struct {
+	md                 []*chaincode.Metadata
+	isMemberAuthorized memberFilter
+}
+
+func loadMetadataAndFilters(ctx metadataAndFilterContext) (*metadataAndColFilter, error) {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[29], 1);
+	var metadata []*chaincode.Metadata
+	var filters []identityFilter
+
+	for _, chaincode := range ctx.interest.Chaincodes {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[31], 1);
+		ccMD := ctx.fetch.Metadata(string(ctx.chainID), chaincode.Name, len(chaincode.CollectionNames) > 0)
+		if ccMD == nil {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[36], 1);
+			return nil, errors.Errorf("No metadata was found for chaincode %s in channel %s", chaincode.Name, string(ctx.chainID))
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[32], 1);metadata = append(metadata, ccMD)
+		if len(chaincode.CollectionNames) == 0 {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[37], 1);
+			continue
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[33], 1);principalSetByCollections, err := principalsFromCollectionConfig(ccMD.CollectionsConfig)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[38], 1);
+			logger.Warningf("Failed initializing collection filter for chaincode %s: %v", chaincode.Name, err)
+			return nil, errors.WithStack(err)
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[34], 1);filter, err := principalSetByCollections.toIdentityFilter(string(ctx.chainID), ctx.evaluator, chaincode)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[39], 1);
+			logger.Warningf("Failed computing collection principal sets for chaincode %s due to %v", chaincode.Name, err)
+			return nil, errors.WithStack(err)
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[35], 1);filters = append(filters, filter)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[30], 1);return computeFiltersWithMetadata(filters, metadata, ctx.identityInfoByID), nil
+}
+
+func computeFiltersWithMetadata(filters identityFilters, metadata []*chaincode.Metadata, identityInfoByID map[string]api.PeerIdentityInfo) *metadataAndColFilter {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[40], 1);
+	if len(filters) == 0 {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[42], 1);
+		return &metadataAndColFilter{
+			md:                 metadata,
+			isMemberAuthorized: noopMemberFilter,
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[41], 1);filter := filters.combine().toMemberFilter(identityInfoByID)
+	return &metadataAndColFilter{
+		isMemberAuthorized: filter,
+		md:                 metadata,
+	}
+}
+
+// identityFilter accepts or rejects peer identities
+type identityFilter func(api.PeerIdentityType) bool
+
+// identityFilters aggregates multiple identityFilters
+type identityFilters []identityFilter
+
+// memberFilter accepts or rejects NetworkMembers
+type memberFilter func(member NetworkMember) bool
+
+// noopMemberFilter accepts every NetworkMember
+func noopMemberFilter(_ NetworkMember) bool {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[43], 1);
+	return true
+}
+
+// combine combines all identityFilters into a single identityFilter which only accepts identities
+// which all the original filters accept
+func (filters identityFilters) combine() identityFilter {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[44], 1);
+	return func(identity api.PeerIdentityType) bool {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[45], 1);
+		for _, f := range filters {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[47], 1);
+			if !f(identity) {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[48], 1);
+				return false
+			}
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[46], 1);return true
+	}
+}
+
+// toMemberFilter converts this identityFilter to a memberFilter based on the given mapping
+// from PKI-ID as strings, to PeerIdentityInfo which holds the peer identities
+func (idf identityFilter) toMemberFilter(identityInfoByID map[string]api.PeerIdentityInfo) memberFilter {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[49], 1);
+	return func(member NetworkMember) bool {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[50], 1);
+		identity, exists := identityInfoByID[string(member.PKIid)]
+		if !exists {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[52], 1);
+			return false
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[51], 1);return idf(identity.Identity)
+	}
+}
+
+func (ea *endorsementAnalyzer) satisfiesPrincipal(channel string, identitiesOfMembers memberIdentities) peerPrincipalEvaluator {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[53], 1);
+	return func(member NetworkMember, principal *msp.MSPPrincipal) bool {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[54], 1);
+		err := ea.SatisfiesPrincipal(channel, identitiesOfMembers.identityByPKIID(member.PKIid), principal)
+		if err == nil {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[56], 1);
+			// TODO: log the principals in a human readable form
+			logger.Debug(member, "satisfies principal", principal)
+			return true
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[55], 1);logger.Debug(member, "doesn't satisfy principal", principal, ":", err)
+		return false
+	}
+}
+
+type peerMembershipCriteria struct {
+	satGraph        *principalPeerGraph
+	idOfMembers     memberIdentities
+	chanMemberById  map[string]NetworkMember
+	possibleLayouts layouts
+}
+
+// endorsersByGroup computes a map from groups to peers.
+// Each group included, is found in some layout, which means
+// that there is some principal combination that includes the corresponding
+// group.
+// This means that if a group isn't included in the result, there is no
+// principal combination (that includes the principal corresponding to the group),
+// such that there are enough peers to satisfy the principal combination.
+func endorsersByGroup(criteria *peerMembershipCriteria) map[string]*discovery.Peers {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[57], 1);
+	satGraph := criteria.satGraph
+	idOfMembers := criteria.idOfMembers
+	chanMemberById := criteria.chanMemberById
+	includedGroups := criteria.possibleLayouts.groupsSet()
+
+	res := make(map[string]*discovery.Peers)
+	// Map endorsers to their corresponding groups.
+	// Iterate the principals, and put the peers into each group that corresponds with a principal vertex
+	for grp, principalVertex := range satGraph.principalVertices {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[59], 1);
+		if _, exists := includedGroups[grp]; !exists {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[61], 1);
+			// If the current group is not found in any layout, skip the corresponding principal
+			continue
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[60], 1);peerList := &discovery.Peers{}
+		res[grp] = peerList
+		for _, peerVertex := range principalVertex.Neighbors() {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[62], 1);
+			member := peerVertex.Data.(NetworkMember)
+			peerList.Peers = append(peerList.Peers, &discovery.Peer{
+				Identity:       idOfMembers.identityByPKIID(member.PKIid),
+				StateInfo:      chanMemberById[string(member.PKIid)].Envelope,
+				MembershipInfo: member.Envelope,
+			})
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[58], 1);return res
+}
+
+// computeLayouts computes all possible principal combinations
+// that can be used to satisfy the endorsement policy, given a graph
+// of available peers that maps each peer to a principal it satisfies.
+// Each such a combination is called a layout, because it maps
+// a group (alias for a principal) to a threshold of peers that need to endorse,
+// and that satisfy the corresponding principal.
+func computeLayouts(principalsSets []policies.PrincipalSet, principalGroups principalGroupMapper, satGraph *principalPeerGraph) []*discovery.Layout {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[63], 1);
+	var layouts []*discovery.Layout
+	// principalsSets is a collection of combinations of principals,
+	// such that each combination (given enough peers) satisfies the endorsement policy.
+	for _, principalSet := range principalsSets {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[65], 1);
+		layout := &discovery.Layout{
+			QuantitiesByGroup: make(map[string]uint32),
+		}
+		// Since principalsSet has repetitions, we first
+		// compute a mapping from the principal to repetitions in the set.
+		for principal, plurality := range principalSet.UniqueSet() {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[67], 1);
+			key := principalKey{
+				cls:       int32(principal.PrincipalClassification),
+				principal: string(principal.Principal),
+			}
+			// We map the principal to a group, which is an alias for the principal.
+			layout.QuantitiesByGroup[principalGroups.group(key)] = uint32(plurality)
+		}
+		// Check that the layout can be satisfied with the current known peers
+		// This is done by iterating the current layout, and ensuring that
+		// each principal vertex is connected to at least <plurality> peer vertices.
+		_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[66], 1);if isLayoutSatisfied(layout.QuantitiesByGroup, satGraph) {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[68], 1);
+			// If so, then add the layout to the layouts, since we have enough peers to satisfy the
+			// principal combination
+			layouts = append(layouts, layout)
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[64], 1);return layouts
+}
+
+func isLayoutSatisfied(layout map[string]uint32, satGraph *principalPeerGraph) bool {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[69], 1);
+	for grp, plurality := range layout {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[71], 1);
+		// Do we have more than <plurality> peers connected to the principal?
+		if len(satGraph.principalVertices[grp].Neighbors()) < int(plurality) {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[72], 1);
+			return false
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[70], 1);return true
+}
+
+type principalPeerGraph struct {
+	peerVertices      []*graph.Vertex
+	principalVertices map[string]*graph.Vertex
+}
+
+type principalAndPeerData struct {
+	members Members
+	pGrps   principalGroupMapper
+}
+
+func principalsToPeersGraph(data principalAndPeerData, satisfiesPrincipal peerPrincipalEvaluator) *principalPeerGraph {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[73], 1);
+	// Create the peer vertices
+	peerVertices := make([]*graph.Vertex, len(data.members))
+	for i, member := range data.members {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[77], 1);
+		peerVertices[i] = graph.NewVertex(string(member.PKIid), member)
+	}
+
+	// Create the principal vertices
+	_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[74], 1);principalVertices := make(map[string]*graph.Vertex)
+	for pKey, grp := range data.pGrps {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[78], 1);
+		principalVertices[grp] = graph.NewVertex(grp, pKey.toPrincipal())
+	}
+
+	// Connect principals and peers
+	_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[75], 1);for _, principalVertex := range principalVertices {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[79], 1);
+		for _, peerVertex := range peerVertices {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[80], 1);
+			// If the current peer satisfies the principal, connect their corresponding vertices with an edge
+			principal := principalVertex.Data.(*msp.MSPPrincipal)
+			member := peerVertex.Data.(NetworkMember)
+			if satisfiesPrincipal(member, principal) {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[81], 1);
+				peerVertex.AddNeighbor(principalVertex)
+			}
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[76], 1);return &principalPeerGraph{
+		peerVertices:      peerVertices,
+		principalVertices: principalVertices,
+	}
+}
+
+func mapPrincipalsToGroups(principalsSets []policies.PrincipalSet) principalGroupMapper {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[82], 1);
+	groupMapper := make(principalGroupMapper)
+	totalPrincipals := make(map[principalKey]struct{})
+	for _, principalSet := range principalsSets {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[85], 1);
+		for _, principal := range principalSet {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[86], 1);
+			totalPrincipals[principalKey{
+				principal: string(principal.Principal),
+				cls:       int32(principal.PrincipalClassification),
+			}] = struct{}{}
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[83], 1);for principal := range totalPrincipals {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[87], 1);
+		groupMapper.group(principal)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[84], 1);return groupMapper
+}
+
+type memberIdentities map[string]api.PeerIdentityType
+
+func (m memberIdentities) identityByPKIID(id common.PKIidType) api.PeerIdentityType {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[88], 1);
+	return m[string(id)]
+}
+
+func computeIdentitiesOfMembers(identitySet api.PeerIdentitySet, members map[string]NetworkMember) memberIdentities {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[89], 1);
+	identitiesByPKIID := make(map[string]api.PeerIdentityType)
+	identitiesOfMembers := make(map[string]api.PeerIdentityType, len(members))
+	for _, identity := range identitySet {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[92], 1);
+		identitiesByPKIID[string(identity.PKIId)] = identity.Identity
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[90], 1);for _, member := range members {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[93], 1);
+		if identity, exists := identitiesByPKIID[string(member.PKIid)]; exists {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[94], 1);
+			identitiesOfMembers[string(member.PKIid)] = identity
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[91], 1);return identitiesOfMembers
+}
+
+// principalGroupMapper maps principals to names of groups
+type principalGroupMapper map[principalKey]string
+
+func (mapper principalGroupMapper) group(principal principalKey) string {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[95], 1);
+	if grp, exists := mapper[principal]; exists {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[97], 1);
+		return grp
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[96], 1);grp := fmt.Sprintf("G%d", len(mapper))
+	mapper[principal] = grp
+	return grp
+}
+
+type principalKey struct {
+	cls       int32
+	principal string
+}
+
+func (pk principalKey) toPrincipal() *msp.MSPPrincipal {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[98], 1);
+	return &msp.MSPPrincipal{
+		PrincipalClassification: msp.MSPPrincipal_Classification(pk.cls),
+		Principal:               []byte(pk.principal),
+	}
+}
+
+// layouts is an aggregation of several layouts
+type layouts []*discovery.Layout
+
+// groupsSet returns a set of groups that the layouts contain
+func (l layouts) groupsSet() map[string]struct{} {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[99], 1);
+	m := make(map[string]struct{})
+	for _, layout := range l {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[101], 1);
+		for grp := range layout.QuantitiesByGroup {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[102], 1);
+			m[grp] = struct{}{}
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[100], 1);return m
+}
+
+func peersWithChaincode(metadata ...*chaincode.Metadata) func(member NetworkMember) bool {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[103], 1);
+	return func(member NetworkMember) bool {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[104], 1);
+		if member.Properties == nil {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[107], 1);
+			return false
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[105], 1);for _, ccMD := range metadata {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[108], 1);
+			var found bool
+			for _, cc := range member.Properties.Chaincodes {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[110], 1);
+				if cc.Name == ccMD.Name && cc.Version == ccMD.Version {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[111], 1);
+					found = true
+				}
+			}
+			_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[109], 1);if !found {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[112], 1);
+				return false
+			}
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[106], 1);return true
+	}
+}
+
+func mergePrincipalSets(cpss []inquire.ComparablePrincipalSets) (inquire.ComparablePrincipalSets, error) {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[113], 1);
+	// Obtain the first ComparablePrincipalSet first
+	var cps inquire.ComparablePrincipalSets
+	cps, cpss, err := popComparablePrincipalSets(cpss)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[116], 1);
+		return nil, errors.WithStack(err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[114], 1);for _, cps2 := range cpss {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[117], 1);
+		cps = inquire.Merge(cps, cps2)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[115], 1);return cps, nil
+}
+
+func popComparablePrincipalSets(sets []inquire.ComparablePrincipalSets) (inquire.ComparablePrincipalSets, []inquire.ComparablePrincipalSets, error) {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[118], 1);
+	if len(sets) == 0 {_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[120], 1);
+		return nil, nil, errors.New("no principal sets remained after filtering")
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_373735616263316337623136.Count[119], 1);cps, cpss := sets[0], sets[1:]
+	return cps, cpss, nil
+}
+
+var GoCover_1_373735616263316337623136 = struct {
+	Count     [121]uint32
+	Pos       [3 * 121]uint32
+	NumStmt   [121]uint16
+} {
+	Pos: [3 * 121]uint32{
+		67, 74, 0x2008a, // [0]
+		79, 81, 0x10009d, // [1]
+		84, 91, 0x100002, // [2]
+		96, 103, 0x40002, // [3]
+		81, 83, 0x30010, // [4]
+		91, 94, 0x30010, // [5]
+		106, 108, 0x36008a, // [6]
+		111, 120, 0x100002, // [7]
+		123, 127, 0x540002, // [8]
+		108, 110, 0x30036, // [9]
+		120, 122, 0x30010, // [10]
+		139, 152, 0x170073, // [11]
+		156, 167, 0x80002, // [12]
+		152, 154, 0x30017, // [13]
+		170, 172, 0x300094, // [14]
+		181, 183, 0x2d0002, // [15]
+		198, 199, 0x100002, // [16]
+		203, 203, 0x230002, // [17]
+		172, 174, 0x110030, // [18]
+		178, 178, 0x390003, // [19]
+		174, 177, 0x40011, // [20]
+		183, 185, 0x2b002d, // [21]
+		192, 192, 0x180003, // [22]
+		195, 195, 0x1f0003, // [23]
+		185, 187, 0x12002b, // [24]
+		190, 190, 0x220004, // [25]
+		187, 189, 0x50012, // [26]
+		192, 194, 0x40018, // [27]
+		199, 201, 0x30010, // [28]
+		220, 224, 0x34005a, // [29]
+		246, 246, 0x510002, // [30]
+		224, 226, 0x120034, // [31]
+		229, 230, 0x2a0003, // [32]
+		233, 234, 0x110003, // [33]
+		238, 239, 0x110003, // [34]
+		243, 243, 0x240003, // [35]
+		226, 228, 0x40012, // [36]
+		230, 231, 0xc002a, // [37]
+		234, 237, 0x40011, // [38]
+		239, 242, 0x40011, // [39]
+		249, 250, 0x1700a2, // [40]
+		256, 260, 0x30002, // [41]
+		250, 255, 0x30017, // [42]
+		273, 275, 0x2002d, // [43]
+		279, 280, 0x320039, // [44]
+		280, 281, 0x1d0032, // [45]
+		286, 286, 0xe0003, // [46]
+		281, 282, 0x14001d, // [47]
+		282, 284, 0x50014, // [48]
+		292, 293, 0x290069, // [49]
+		293, 295, 0xe0029, // [50]
+		298, 298, 0x200003, // [51]
+		295, 297, 0x4000e, // [52]
+		302, 303, 0x460080, // [53]
+		303, 305, 0x110046, // [54]
+		310, 311, 0xf0003, // [55]
+		305, 309, 0x40011, // [56]
+		329, 338, 0x3f0055, // [57]
+		354, 354, 0xc0002, // [58]
+		338, 339, 0x30003f, // [59]
+		343, 345, 0x3a0003, // [60]
+		339, 341, 0xc0030, // [61]
+		345, 352, 0x4003a, // [62]
+		363, 367, 0x2e0095, // [63]
+		390, 390, 0x100002, // [64]
+		367, 373, 0x3e002e, // [65]
+		384, 384, 0x3c0003, // [66]
+		373, 380, 0x4003e, // [67]
+		384, 388, 0x4003c, // [68]
+		393, 394, 0x250055, // [69]
+		400, 400, 0xd0002, // [70]
+		394, 396, 0x480025, // [71]
+		396, 398, 0x40048, // [72]
+		413, 416, 0x260077, // [73]
+		421, 422, 0x240002, // [74]
+		427, 427, 0x340002, // [75]
+		437, 440, 0x30002, // [76]
+		416, 418, 0x30026, // [77]
+		422, 424, 0x30024, // [78]
+		427, 428, 0x2b0034, // [79]
+		428, 432, 0x2d002b, // [80]
+		432, 434, 0x5002d, // [81]
+		443, 446, 0x2e0059, // [82]
+		454, 454, 0x290002, // [83]
+		457, 457, 0x140002, // [84]
+		446, 447, 0x2a002e, // [85]
+		447, 452, 0x4002a, // [86]
+		454, 456, 0x30029, // [87]
+		462, 464, 0x20055, // [88]
+		466, 469, 0x270075, // [89]
+		472, 472, 0x210002, // [90]
+		477, 477, 0x1c0002, // [91]
+		469, 471, 0x30027, // [92]
+		472, 473, 0x4a0021, // [93]
+		473, 475, 0x4004a, // [94]
+		483, 484, 0x2e0049, // [95]
+		487, 489, 0xc0002, // [96]
+		484, 486, 0x3002e, // [97]
+		497, 502, 0x20038, // [98]
+		508, 510, 0x1b0032, // [99]
+		515, 515, 0xa0002, // [100]
+		510, 511, 0x2d001b, // [101]
+		511, 513, 0x4002d, // [102]
+		518, 519, 0x29005a, // [103]
+		519, 520, 0x1f0029, // [104]
+		523, 523, 0x210003, // [105]
+		534, 534, 0xe0003, // [106]
+		520, 522, 0x4001f, // [107]
+		523, 525, 0x340021, // [108]
+		530, 530, 0xe0004, // [109]
+		525, 526, 0x3b0034, // [110]
+		526, 528, 0x6003b, // [111]
+		530, 532, 0x5000e, // [112]
+		538, 542, 0x10006a, // [113]
+		546, 546, 0x1c0002, // [114]
+		549, 549, 0x110002, // [115]
+		542, 544, 0x30010, // [116]
+		546, 548, 0x3001c, // [117]
+		552, 553, 0x140095, // [118]
+		556, 557, 0x170002, // [119]
+		553, 555, 0x30014, // [120]
+	},
+	NumStmt: [121]uint16{
+		1, // 0
+		2, // 1
+		6, // 2
+		1, // 3
+		1, // 4
+		2, // 5
+		2, // 6
+		4, // 7
+		3, // 8
+		1, // 9
+		1, // 10
+		4, // 11
+		2, // 12
+		1, // 13
+		2, // 14
+		2, // 15
+		2, // 16
+		1, // 17
+		2, // 18
+		1, // 19
+		2, // 20
+		2, // 21
+		1, // 22
+		1, // 23
+		2, // 24
+		1, // 25
+		1, // 26
+		1, // 27
+		1, // 28
+		3, // 29
+		1, // 30
+		2, // 31
+		2, // 32
+		2, // 33
+		2, // 34
+		1, // 35
+		1, // 36
+		1, // 37
+		2, // 38
+		2, // 39
+		1, // 40
+		2, // 41
+		1, // 42
+		1, // 43
+		1, // 44
+		1, // 45
+		1, // 46
+		1, // 47
+		1, // 48
+		1, // 49
+		2, // 50
+		1, // 51
+		1, // 52
+		1, // 53
+		2, // 54
+		2, // 55
+		2, // 56
+		6, // 57
+		1, // 58
+		1, // 59
+		3, // 60
+		1, // 61
+		2, // 62
+		2, // 63
+		1, // 64
+		2, // 65
+		1, // 66
+		2, // 67
+		1, // 68
+		1, // 69
+		1, // 70
+		1, // 71
+		1, // 72
+		2, // 73
+		2, // 74
+		1, // 75
+		1, // 76
+		1, // 77
+		1, // 78
+		1, // 79
+		3, // 80
+		1, // 81
+		3, // 82
+		1, // 83
+		1, // 84
+		1, // 85
+		1, // 86
+		1, // 87
+		1, // 88
+		3, // 89
+		1, // 90
+		1, // 91
+		1, // 92
+		1, // 93
+		1, // 94
+		1, // 95
+		3, // 96
+		1, // 97
+		1, // 98
+		2, // 99
+		1, // 100
+		1, // 101
+		1, // 102
+		1, // 103
+		1, // 104
+		1, // 105
+		1, // 106
+		1, // 107
+		2, // 108
+		1, // 109
+		1, // 110
+		1, // 111
+		1, // 112
+		3, // 113
+		1, // 114
+		1, // 115
+		1, // 116
+		1, // 117
+		1, // 118
+		2, // 119
+		1, // 120
+	},
+}
+var _ = _cover_atomic_.LoadUint32

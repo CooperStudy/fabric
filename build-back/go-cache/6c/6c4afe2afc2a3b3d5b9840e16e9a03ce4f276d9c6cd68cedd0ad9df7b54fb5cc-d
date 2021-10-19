@@ -1,0 +1,141 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/policies/inquire/inquire.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package inquire; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/common/graph"
+	"github.com/hyperledger/fabric/common/policies"
+	"github.com/hyperledger/fabric/protos/common"
+)
+
+var logger = flogging.MustGetLogger("policies.inquire")
+
+type inquireableSignaturePolicy struct {
+	sigPol *common.SignaturePolicyEnvelope
+}
+
+// NewInquireableSignaturePolicy creates a signature policy that can be inquired,
+// from a policy and a signature policy.
+func NewInquireableSignaturePolicy(sigPol *common.SignaturePolicyEnvelope) policies.InquireablePolicy {_cover_atomic_.AddUint32(&GoCover_1_666534393065343133333939.Count[0], 1);
+	return &inquireableSignaturePolicy{
+		sigPol: sigPol,
+	}
+}
+
+// SatisfiedBy returns a slice of PrincipalSets that each of them
+// satisfies the policy.
+func (isp *inquireableSignaturePolicy) SatisfiedBy() []policies.PrincipalSet {_cover_atomic_.AddUint32(&GoCover_1_666534393065343133333939.Count[1], 1);
+	rootId := fmt.Sprintf("%d", 0)
+	root := graph.NewTreeVertex(rootId, isp.sigPol.Rule)
+	computePolicyTree(root)
+	var res []policies.PrincipalSet
+	for _, perm := range root.ToTree().Permute() {_cover_atomic_.AddUint32(&GoCover_1_666534393065343133333939.Count[3], 1);
+		principalSet := principalsOfTree(perm, isp.sigPol.Identities)
+		if len(principalSet) == 0 {_cover_atomic_.AddUint32(&GoCover_1_666534393065343133333939.Count[5], 1);
+			return nil
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_666534393065343133333939.Count[4], 1);res = append(res, principalSet)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_666534393065343133333939.Count[2], 1);return res
+}
+
+func principalsOfTree(tree *graph.Tree, principals policies.PrincipalSet) policies.PrincipalSet {_cover_atomic_.AddUint32(&GoCover_1_666534393065343133333939.Count[6], 1);
+	var principalSet policies.PrincipalSet
+	i := tree.BFS()
+	for {_cover_atomic_.AddUint32(&GoCover_1_666534393065343133333939.Count[8], 1);
+		v := i.Next()
+		if v == nil {_cover_atomic_.AddUint32(&GoCover_1_666534393065343133333939.Count[11], 1);
+			break
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_666534393065343133333939.Count[9], 1);if !v.IsLeaf() {_cover_atomic_.AddUint32(&GoCover_1_666534393065343133333939.Count[12], 1);
+			continue
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_666534393065343133333939.Count[10], 1);pol := v.Data.(*common.SignaturePolicy)
+		switch principalIndex := pol.Type.(type) {
+		case *common.SignaturePolicy_SignedBy:_cover_atomic_.AddUint32(&GoCover_1_666534393065343133333939.Count[13], 1);
+			if len(principals) <= int(principalIndex.SignedBy) {_cover_atomic_.AddUint32(&GoCover_1_666534393065343133333939.Count[16], 1);
+				logger.Warning("Failed computing principalsOfTree, index out of bounds")
+				return nil
+			}
+			_cover_atomic_.AddUint32(&GoCover_1_666534393065343133333939.Count[14], 1);principal := principals[principalIndex.SignedBy]
+			principalSet = append(principalSet, principal)
+		default:_cover_atomic_.AddUint32(&GoCover_1_666534393065343133333939.Count[15], 1);
+			// Leaf vertex is not of type SignedBy
+			logger.Warning("Leaf vertex", v.Id, "is of type", pol.GetType())
+			return nil
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_666534393065343133333939.Count[7], 1);return principalSet
+}
+
+func computePolicyTree(v *graph.TreeVertex) {_cover_atomic_.AddUint32(&GoCover_1_666534393065343133333939.Count[17], 1);
+	sigPol := v.Data.(*common.SignaturePolicy)
+	if p := sigPol.GetNOutOf(); p != nil {_cover_atomic_.AddUint32(&GoCover_1_666534393065343133333939.Count[18], 1);
+		v.Threshold = int(p.N)
+		for i, rule := range p.Rules {_cover_atomic_.AddUint32(&GoCover_1_666534393065343133333939.Count[19], 1);
+			id := fmt.Sprintf("%s.%d", v.Id, i)
+			u := v.AddDescendant(graph.NewTreeVertex(id, rule))
+			computePolicyTree(u)
+		}
+	}
+}
+
+var GoCover_1_666534393065343133333939 = struct {
+	Count     [20]uint32
+	Pos       [3 * 20]uint32
+	NumStmt   [20]uint16
+} {
+	Pos: [3 * 20]uint32{
+		26, 30, 0x20067, // [0]
+		34, 39, 0x2f004e, // [1]
+		46, 46, 0xc0002, // [2]
+		39, 41, 0x1d002f, // [3]
+		44, 44, 0x220003, // [4]
+		41, 43, 0x4001d, // [5]
+		49, 52, 0x60061, // [6]
+		75, 75, 0x150002, // [7]
+		52, 54, 0xf0006, // [8]
+		57, 57, 0x120003, // [9]
+		60, 61, 0x2c0003, // [10]
+		54, 55, 0x9000f, // [11]
+		57, 58, 0xc0012, // [12]
+		62, 63, 0x370029, // [13]
+		67, 68, 0x320004, // [14]
+		69, 72, 0xe000b, // [15]
+		63, 66, 0x50037, // [16]
+		78, 80, 0x27002d, // [17]
+		80, 82, 0x200027, // [18]
+		82, 86, 0x40020, // [19]
+	},
+	NumStmt: [20]uint16{
+		1, // 0
+		5, // 1
+		1, // 2
+		2, // 3
+		1, // 4
+		1, // 5
+		3, // 6
+		1, // 7
+		2, // 8
+		1, // 9
+		2, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		2, // 14
+		2, // 15
+		2, // 16
+		2, // 17
+		2, // 18
+		3, // 19
+	},
+}
+var _ = _cover_atomic_.LoadUint32

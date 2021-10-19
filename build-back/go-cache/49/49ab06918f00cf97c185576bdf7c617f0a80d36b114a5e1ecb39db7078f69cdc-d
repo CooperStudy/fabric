@@ -1,0 +1,178 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb/statecouchdb/metadata_retrieval.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package statecouchdb; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+
+	"github.com/hyperledger/fabric/core/ledger/ledgerconfig"
+	"github.com/hyperledger/fabric/core/ledger/util/couchdb"
+)
+
+// nsMetadataRetriever implements `batch` interface and wraps the function `retrieveNsMetadata`
+// for allowing parallel execution of this function for different namespaces
+type nsMetadataRetriever struct {
+	ns              string
+	db              *couchdb.CouchDatabase
+	keys            []string
+	executionResult []*couchdb.DocMetadata
+}
+
+// subNsMetadataRetriever implements `batch` interface and wraps the function `couchdb.BatchRetrieveDocumentMetadata`
+// for allowing parallel execution of this function for different sets of keys within a namespace.
+// Different sets of keys is exeptected to be created based on configuration `ledgerconfig.GetMaxBatchUpdateSize()`
+type subNsMetadataRetriever nsMetadataRetriever
+
+// retrievedMetadata retrievs the metadata for a collection of `namespace-keys` combination
+func (vdb *VersionedDB) retrieveMetadata(nsKeysMap map[string][]string) (map[string][]*couchdb.DocMetadata, error) {_cover_atomic_.AddUint32(&GoCover_3_613461656536306435636636.Count[0], 1);
+	// consturct one batch per namespace
+	nsMetadataRetrievers := []batch{}
+	for ns, keys := range nsKeysMap {_cover_atomic_.AddUint32(&GoCover_3_613461656536306435636636.Count[4], 1);
+		db, err := vdb.getNamespaceDBHandle(ns)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_3_613461656536306435636636.Count[6], 1);
+			return nil, err
+		}
+		_cover_atomic_.AddUint32(&GoCover_3_613461656536306435636636.Count[5], 1);nsMetadataRetrievers = append(nsMetadataRetrievers, &nsMetadataRetriever{ns: ns, db: db, keys: keys})
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_613461656536306435636636.Count[1], 1);if err := executeBatches(nsMetadataRetrievers); err != nil {_cover_atomic_.AddUint32(&GoCover_3_613461656536306435636636.Count[7], 1);
+		return nil, err
+	}
+	// accumulate results from each batch
+	_cover_atomic_.AddUint32(&GoCover_3_613461656536306435636636.Count[2], 1);executionResults := make(map[string][]*couchdb.DocMetadata)
+	for _, r := range nsMetadataRetrievers {_cover_atomic_.AddUint32(&GoCover_3_613461656536306435636636.Count[8], 1);
+		nsMetadataRetriever := r.(*nsMetadataRetriever)
+		executionResults[nsMetadataRetriever.ns] = nsMetadataRetriever.executionResult
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_613461656536306435636636.Count[3], 1);return executionResults, nil
+}
+
+// retrieveNsMetadata retrieves metadata for a given namespace
+func retrieveNsMetadata(db *couchdb.CouchDatabase, keys []string) ([]*couchdb.DocMetadata, error) {_cover_atomic_.AddUint32(&GoCover_3_613461656536306435636636.Count[9], 1);
+	// consturct one batch per group of keys based on maxBacthSize
+	maxBacthSize := ledgerconfig.GetMaxBatchUpdateSize()
+	batches := []batch{}
+	remainingKeys := keys
+	for {_cover_atomic_.AddUint32(&GoCover_3_613461656536306435636636.Count[13], 1);
+		numKeys := minimum(maxBacthSize, len(remainingKeys))
+		if numKeys == 0 {_cover_atomic_.AddUint32(&GoCover_3_613461656536306435636636.Count[15], 1);
+			break
+		}
+		_cover_atomic_.AddUint32(&GoCover_3_613461656536306435636636.Count[14], 1);batch := &subNsMetadataRetriever{db: db, keys: remainingKeys[:numKeys]}
+		batches = append(batches, batch)
+		remainingKeys = remainingKeys[numKeys:]
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_613461656536306435636636.Count[10], 1);if err := executeBatches(batches); err != nil {_cover_atomic_.AddUint32(&GoCover_3_613461656536306435636636.Count[16], 1);
+		return nil, err
+	}
+	// accumulate results from each batch
+	_cover_atomic_.AddUint32(&GoCover_3_613461656536306435636636.Count[11], 1);var executionResults []*couchdb.DocMetadata
+	for _, b := range batches {_cover_atomic_.AddUint32(&GoCover_3_613461656536306435636636.Count[17], 1);
+		executionResults = append(executionResults, b.(*subNsMetadataRetriever).executionResult...)
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_613461656536306435636636.Count[12], 1);return executionResults, nil
+}
+
+func (r *nsMetadataRetriever) execute() error {_cover_atomic_.AddUint32(&GoCover_3_613461656536306435636636.Count[18], 1);
+	var err error
+	if r.executionResult, err = retrieveNsMetadata(r.db, r.keys); err != nil {_cover_atomic_.AddUint32(&GoCover_3_613461656536306435636636.Count[20], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_613461656536306435636636.Count[19], 1);return nil
+}
+
+func (r *nsMetadataRetriever) String() string {_cover_atomic_.AddUint32(&GoCover_3_613461656536306435636636.Count[21], 1);
+	return fmt.Sprintf("nsMetadataRetriever:ns=%s, num keys=%d", r.ns, len(r.keys))
+}
+
+func (b *subNsMetadataRetriever) execute() error {_cover_atomic_.AddUint32(&GoCover_3_613461656536306435636636.Count[22], 1);
+	var err error
+	if b.executionResult, err = b.db.BatchRetrieveDocumentMetadata(b.keys); err != nil {_cover_atomic_.AddUint32(&GoCover_3_613461656536306435636636.Count[24], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_613461656536306435636636.Count[23], 1);return nil
+}
+
+func (b *subNsMetadataRetriever) String() string {_cover_atomic_.AddUint32(&GoCover_3_613461656536306435636636.Count[25], 1);
+	return fmt.Sprintf("subNsMetadataRetriever:ns=%s, num keys=%d", b.ns, len(b.keys))
+}
+
+func minimum(a, b int) int {_cover_atomic_.AddUint32(&GoCover_3_613461656536306435636636.Count[26], 1);
+	if a < b {_cover_atomic_.AddUint32(&GoCover_3_613461656536306435636636.Count[28], 1);
+		return a
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_613461656536306435636636.Count[27], 1);return b
+}
+
+var GoCover_3_613461656536306435636636 = struct {
+	Count     [29]uint32
+	Pos       [3 * 29]uint32
+	NumStmt   [29]uint16
+} {
+	Pos: [3 * 29]uint32{
+		30, 33, 0x220074, // [0]
+		40, 40, 0x3d0002, // [1]
+		44, 45, 0x290002, // [2]
+		49, 49, 0x1e0002, // [3]
+		33, 35, 0x110022, // [4]
+		38, 38, 0x680003, // [5]
+		35, 37, 0x40011, // [6]
+		40, 42, 0x3003d, // [7]
+		45, 48, 0x30029, // [8]
+		53, 58, 0x60063, // [9]
+		67, 67, 0x300002, // [10]
+		71, 72, 0x1c0002, // [11]
+		75, 75, 0x1e0002, // [12]
+		58, 60, 0x130006, // [13]
+		63, 65, 0x2a0003, // [14]
+		60, 61, 0x90013, // [15]
+		67, 69, 0x30030, // [16]
+		72, 74, 0x3001c, // [17]
+		78, 80, 0x4b002f, // [18]
+		83, 83, 0xc0002, // [19]
+		80, 82, 0x3004b, // [20]
+		86, 88, 0x2002f, // [21]
+		90, 92, 0x550032, // [22]
+		95, 95, 0xc0002, // [23]
+		92, 94, 0x30055, // [24]
+		98, 100, 0x20032, // [25]
+		102, 103, 0xb001c, // [26]
+		106, 106, 0xa0002, // [27]
+		103, 105, 0x3000b, // [28]
+	},
+	NumStmt: [29]uint16{
+		2, // 0
+		1, // 1
+		2, // 2
+		1, // 3
+		2, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		2, // 8
+		4, // 9
+		1, // 10
+		2, // 11
+		1, // 12
+		2, // 13
+		3, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		2, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		2, // 22
+		1, // 23
+		1, // 24
+		1, // 25
+		1, // 26
+		1, // 27
+		1, // 28
+	},
+}
+var _ = _cover_atomic_.LoadUint32

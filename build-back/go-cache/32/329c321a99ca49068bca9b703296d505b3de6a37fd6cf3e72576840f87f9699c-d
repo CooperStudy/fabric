@@ -1,0 +1,1457 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/orderer/consensus/etcdraft/chain.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package etcdraft; import _cover_atomic_ "sync/atomic"
+
+import (
+	"bytes"
+	"context"
+	"encoding/pem"
+	"fmt"
+	"sync"
+	"sync/atomic"
+	"time"
+
+	"code.cloudfoundry.org/clock"
+	"github.com/coreos/etcd/raft"
+	"github.com/coreos/etcd/raft/raftpb"
+	"github.com/coreos/etcd/wal"
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/configtx"
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/orderer/common/cluster"
+	"github.com/hyperledger/fabric/orderer/consensus"
+	"github.com/hyperledger/fabric/protos/common"
+	"github.com/hyperledger/fabric/protos/orderer"
+	"github.com/hyperledger/fabric/protos/orderer/etcdraft"
+	"github.com/hyperledger/fabric/protos/utils"
+	"github.com/pkg/errors"
+)
+
+// DefaultSnapshotCatchUpEntries is the default number of entries
+// to preserve in memory when a snapshot is taken. This is for
+// slow followers to catch up.
+const DefaultSnapshotCatchUpEntries = uint64(500)
+
+//go:generate mockery -dir . -name Configurator -case underscore -output ./mocks/
+
+// Configurator is used to configure the communication layer
+// when the chain starts.
+type Configurator interface {
+	Configure(channel string, newNodes []cluster.RemoteNode)
+}
+
+//go:generate counterfeiter -o mocks/mock_rpc.go . RPC
+
+// RPC is used to mock the transport layer in tests.
+type RPC interface {
+	Step(dest uint64, msg *orderer.StepRequest) (*orderer.StepResponse, error)
+	SendSubmit(dest uint64, request *orderer.SubmitRequest) error
+}
+
+//go:generate counterfeiter -o mocks/mock_blockpuller.go . BlockPuller
+
+// BlockPuller is used to pull blocks from other OSN
+type BlockPuller interface {
+	PullBlock(seq uint64) *common.Block
+	Close()
+}
+
+type block struct {
+	b *common.Block
+
+	// i is the etcd/raft entry Index associated with block.
+	// it is persisted as block metatdata so we know where
+	// to continue rafting upon reboot.
+	i uint64
+}
+
+// Options contains all the configurations relevant to the chain.
+type Options struct {
+	RaftID uint64
+
+	Clock clock.Clock
+
+	WALDir       string
+	SnapDir      string
+	SnapInterval uint64
+
+	// This is configurable mainly for testing purpose. Users are not
+	// expected to alter this. Instead, DefaultSnapshotCatchUpEntries is used.
+	SnapshotCatchUpEntries uint64
+
+	MemoryStorage MemoryStorage
+	Logger        *flogging.FabricLogger
+
+	TickInterval    time.Duration
+	ElectionTick    int
+	HeartbeatTick   int
+	MaxSizePerMsg   uint64
+	MaxInflightMsgs int
+
+	RaftMetadata *etcdraft.RaftMetadata
+}
+
+// Chain implements consensus.Chain interface.
+type Chain struct {
+	configurator Configurator
+
+	// access to `SendSubmit` should be serialzed because gRPC is not thread-safe
+	submitLock sync.Mutex
+	rpc        RPC
+
+	raftID    uint64
+	channelID string
+
+	submitC  chan *orderer.SubmitRequest
+	commitC  chan block
+	observeC chan<- uint64         // Notifies external observer on leader change (passed in optionally as an argument for tests)
+	haltC    chan struct{}         // Signals to goroutines that the chain is halting
+	doneC    chan struct{}         // Closes when the chain halts
+	resignC  chan struct{}         // Notifies node that it is no longer the leader
+	startC   chan struct{}         // Closes when the node is started
+	snapC    chan *raftpb.Snapshot // Signal to catch up with snapshot
+
+	configChangeAppliedC   chan struct{} // Notifies that a Raft configuration change has been applied
+	configChangeInProgress bool          // Flag to indicate node waiting for Raft config change to be applied
+	raftMetadataLock       sync.RWMutex
+
+	clock clock.Clock // Tests can inject a fake clock
+
+	support      consensus.ConsenterSupport
+	BlockCreator *blockCreator
+
+	leader       uint64
+	appliedIndex uint64
+
+	// needed by snapshotting
+	lastSnapBlockNum uint64
+	syncLock         sync.Mutex       // Protects the manipulation of syncC
+	syncC            chan struct{}    // Indicate sync in progress
+	confState        raftpb.ConfState // Etcdraft requires ConfState to be persisted within snapshot
+	puller           BlockPuller      // Deliver client to pull blocks from other OSNs
+
+	fresh bool // indicate if this is a fresh raft node
+
+	node    raft.Node
+	storage *RaftStorage
+	opts    Options
+
+	logger *flogging.FabricLogger
+}
+
+// NewChain constructs a chain object.
+func NewChain(
+	support consensus.ConsenterSupport,
+	opts Options,
+	conf Configurator,
+	rpc RPC,
+	puller BlockPuller,
+	observeC chan<- uint64) (*Chain, error) {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[0], 1);
+
+	lg := opts.Logger.With("channel", support.ChainID(), "node", opts.RaftID)
+
+	fresh := !wal.Exist(opts.WALDir)
+
+	appliedi := opts.RaftMetadata.RaftIndex
+	storage, err := CreateStorage(lg, appliedi, opts.WALDir, opts.SnapDir, opts.MemoryStorage)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[4], 1);
+		return nil, errors.Errorf("failed to restore persisted raft data: %s", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[1], 1);if opts.SnapshotCatchUpEntries == 0 {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[5], 1);
+		storage.SnapshotCatchUpEntries = DefaultSnapshotCatchUpEntries
+	} else{ _cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[6], 1);{
+		storage.SnapshotCatchUpEntries = opts.SnapshotCatchUpEntries
+	}}
+
+	// get block number in last snapshot, if exists
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[2], 1);var snapBlkNum uint64
+	if s := storage.Snapshot(); !raft.IsEmptySnap(s) {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[7], 1);
+		b := utils.UnmarshalBlockOrPanic(s.Data)
+		snapBlkNum = b.Header.Number
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[3], 1);lastBlock := support.Block(support.Height() - 1)
+
+	return &Chain{
+		configurator:         conf,
+		rpc:                  rpc,
+		channelID:            support.ChainID(),
+		raftID:               opts.RaftID,
+		submitC:              make(chan *orderer.SubmitRequest),
+		commitC:              make(chan block),
+		haltC:                make(chan struct{}),
+		doneC:                make(chan struct{}),
+		resignC:              make(chan struct{}),
+		startC:               make(chan struct{}),
+		syncC:                make(chan struct{}),
+		snapC:                make(chan *raftpb.Snapshot),
+		configChangeAppliedC: make(chan struct{}),
+		observeC:             observeC,
+		support:              support,
+		fresh:                fresh,
+		BlockCreator:         newBlockCreator(lastBlock, lg),
+		appliedIndex:         appliedi,
+		lastSnapBlockNum:     snapBlkNum,
+		puller:               puller,
+		clock:                opts.Clock,
+		logger:               lg,
+		storage:              storage,
+		opts:                 opts,
+	}, nil
+}
+
+// Start instructs the orderer to begin serving the chain and keep it current.
+func (c *Chain) Start() {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[8], 1);
+	c.logger.Infof("Starting Raft node")
+
+	// DO NOT use Applied option in config, see https://github.com/etcd-io/etcd/issues/10217
+	// We guard against replay of written blocks in `entriesToApply` instead.
+	config := &raft.Config{
+		ID:              c.raftID,
+		ElectionTick:    c.opts.ElectionTick,
+		HeartbeatTick:   c.opts.HeartbeatTick,
+		MaxSizePerMsg:   c.opts.MaxSizePerMsg,
+		MaxInflightMsgs: c.opts.MaxInflightMsgs,
+		Logger:          c.logger,
+		Storage:         c.opts.MemoryStorage,
+		// PreVote prevents reconnected node from disturbing network.
+		// See etcd/raft doc for more details.
+		PreVote:                   true,
+		DisableProposalForwarding: true, // This prevents blocks from being accidentally proposed by followers
+	}
+
+	if err := c.configureComm(); err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[11], 1);
+		c.logger.Errorf("Failed to start chain, aborting: +%v", err)
+		close(c.doneC)
+		return
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[9], 1);raftPeers := RaftPeers(c.opts.RaftMetadata.Consenters)
+
+	if c.fresh {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[12], 1);
+		c.logger.Info("starting new raft node")
+		c.node = raft.StartNode(config, raftPeers)
+	} else{ _cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[13], 1);{
+		c.logger.Info("restarting raft node")
+		c.node = raft.RestartNode(config)
+	}}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[10], 1);close(c.startC)
+
+	go c.serveRaft()
+	go c.serveRequest()
+}
+
+// Order submits normal type transactions for ordering.
+func (c *Chain) Order(env *common.Envelope, configSeq uint64) error {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[14], 1);
+	return c.Submit(&orderer.SubmitRequest{LastValidationSeq: configSeq, Content: env, Channel: c.channelID}, 0)
+}
+
+// Configure submits config type transactions for ordering.
+func (c *Chain) Configure(env *common.Envelope, configSeq uint64) error {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[15], 1);
+	if err := c.checkConfigUpdateValidity(env); err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[17], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[16], 1);return c.Submit(&orderer.SubmitRequest{LastValidationSeq: configSeq, Content: env, Channel: c.channelID}, 0)
+}
+
+// Validate the config update for being of Type A or Type B as described in the design doc.
+func (c *Chain) checkConfigUpdateValidity(ctx *common.Envelope) error {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[18], 1);
+	var err error
+	payload, err := utils.UnmarshalPayload(ctx.Payload)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[21], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[19], 1);chdr, err := utils.UnmarshalChannelHeader(payload.Header.ChannelHeader)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[22], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[20], 1);switch chdr.Type {
+	case int32(common.HeaderType_ORDERER_TRANSACTION):_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[23], 1);
+		return nil
+	case int32(common.HeaderType_CONFIG):_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[24], 1);
+		configUpdate, err := configtx.UnmarshalConfigUpdateFromPayload(payload)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[28], 1);
+			return err
+		}
+
+		// Check that only the ConsensusType is updated in the write-set
+		_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[25], 1);if ordererConfigGroup, ok := configUpdate.WriteSet.Groups["Orderer"]; ok {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[29], 1);
+			if val, ok := ordererConfigGroup.Values["ConsensusType"]; ok {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[30], 1);
+				return c.checkConsentersSet(val)
+			}
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[26], 1);return nil
+
+	default:_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[27], 1);
+		return errors.Errorf("config transaction has unknown header type")
+	}
+}
+
+// WaitReady blocks when the chain:
+// - is catching up with other nodes using snapshot
+//
+// In any other case, it returns right away.
+func (c *Chain) WaitReady() error {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[31], 1);
+	if err := c.isRunning(); err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[34], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[32], 1);c.syncLock.Lock()
+	ch := c.syncC
+	c.syncLock.Unlock()
+
+	select {
+	case <-ch:_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[35], 1);
+	case <-c.doneC:_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[36], 1);
+		return errors.Errorf("chain is stopped")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[33], 1);return nil
+}
+
+// Errored returns a channel that closes when the chain stops.
+func (c *Chain) Errored() <-chan struct{} {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[37], 1);
+	return c.doneC
+}
+
+// Halt stops the chain.
+func (c *Chain) Halt() {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[38], 1);
+	select {
+	case <-c.startC:_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[41], 1);
+	default:_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[42], 1);
+		c.logger.Warnf("Attempted to halt a chain that has not started")
+		return
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[39], 1);select {
+	case c.haltC <- struct{}{}:_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[43], 1);
+	case <-c.doneC:_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[44], 1);
+		return
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[40], 1);<-c.doneC
+}
+
+func (c *Chain) isRunning() error {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[45], 1);
+	select {
+	case <-c.startC:_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[48], 1);
+	default:_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[49], 1);
+		return errors.Errorf("chain is not started")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[46], 1);select {
+	case <-c.doneC:_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[50], 1);
+		return errors.Errorf("chain is stopped")
+	default:_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[51], 1);
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[47], 1);return nil
+}
+
+// Step passes the given StepRequest message to the raft.Node instance
+func (c *Chain) Step(req *orderer.StepRequest, sender uint64) error {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[52], 1);
+	if err := c.isRunning(); err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[56], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[53], 1);stepMsg := &raftpb.Message{}
+	if err := proto.Unmarshal(req.Payload, stepMsg); err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[57], 1);
+		return fmt.Errorf("failed to unmarshal StepRequest payload to Raft Message: %s", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[54], 1);if err := c.node.Step(context.TODO(), *stepMsg); err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[58], 1);
+		return fmt.Errorf("failed to process Raft Step message: %s", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[55], 1);return nil
+}
+
+// Submit forwards the incoming request to:
+// - the local serveRequest goroutine if this is leader
+// - the actual leader via the transport mechanism
+// The call fails if there's no leader elected yet.
+func (c *Chain) Submit(req *orderer.SubmitRequest, sender uint64) error {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[59], 1);
+	if err := c.isRunning(); err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[63], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[60], 1);lead := atomic.LoadUint64(&c.leader)
+
+	if lead == raft.None {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[64], 1);
+		return errors.Errorf("no Raft leader")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[61], 1);if lead == c.raftID {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[65], 1);
+		select {
+		case c.submitC <- req:_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[66], 1);
+			return nil
+		case <-c.doneC:_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[67], 1);
+			return errors.Errorf("chain is stopped")
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[62], 1);c.logger.Debugf("Forwarding submit request to Raft leader %d", lead)
+	c.submitLock.Lock()
+	defer c.submitLock.Unlock()
+	return c.rpc.SendSubmit(lead, req)
+}
+
+func (c *Chain) serveRequest() {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[68], 1);
+	ticking := false
+	timer := c.clock.NewTimer(time.Second)
+	// we need a stopped timer rather than nil,
+	// because we will be select waiting on timer.C()
+	if !timer.Stop() {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[73], 1);
+		<-timer.C()
+	}
+
+	// if timer is already started, this is a no-op
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[69], 1);start := func() {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[74], 1);
+		if !ticking {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[75], 1);
+			ticking = true
+			timer.Reset(c.support.SharedConfig().BatchTimeout())
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[70], 1);stop := func() {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[76], 1);
+		if !timer.Stop() && ticking {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[78], 1);
+			// we only need to drain the channel if the timer expired (not explicitly stopped)
+			<-timer.C()
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[77], 1);ticking = false
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[71], 1);if s := c.storage.Snapshot(); !raft.IsEmptySnap(s) {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[79], 1);
+		if err := c.catchUp(&s); err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[80], 1);
+			c.logger.Errorf("Failed to recover from snapshot taken at Term %d and Index %d: %s",
+				s.Metadata.Term, s.Metadata.Index, err)
+		}
+	} else{ _cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[81], 1);{
+		close(c.syncC)
+	}}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[72], 1);for {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[82], 1);
+		select {
+		case msg := <-c.submitC:_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[83], 1);
+			batches, pending, err := c.ordered(msg)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[92], 1);
+				c.logger.Errorf("Failed to order message: %s", err)
+			}
+			_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[84], 1);if pending {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[93], 1);
+				start() // no-op if timer is already started
+			} else{ _cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[94], 1);{
+				stop()
+			}}
+
+			_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[85], 1);if err := c.commitBatches(batches...); err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[95], 1);
+				c.logger.Errorf("Failed to commit block: %s", err)
+			}
+
+		case b := <-c.commitC:_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[86], 1);
+			c.writeBlock(b)
+
+		case <-c.resignC:_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[87], 1);
+			_ = c.support.BlockCutter().Cut()
+			c.BlockCreator.resetCreatedBlocks()
+			stop()
+
+		case <-timer.C():_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[88], 1);
+			ticking = false
+
+			batch := c.support.BlockCutter().Cut()
+			if len(batch) == 0 {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[96], 1);
+				c.logger.Warningf("Batch timer expired with no pending requests, this might indicate a bug")
+				continue
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[89], 1);c.logger.Debugf("Batch timer expired, creating block")
+			if err := c.commitBatches(batch); err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[97], 1);
+				c.logger.Errorf("Failed to commit block: %s", err)
+			}
+
+		case sn := <-c.snapC:_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[90], 1);
+			if err := c.catchUp(sn); err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[98], 1);
+				c.logger.Errorf("Failed to recover from snapshot taken at Term %d and Index %d: %s",
+					sn.Metadata.Term, sn.Metadata.Index, err)
+			}
+
+		case <-c.doneC:_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[91], 1);
+			c.logger.Infof("Stop serving requests")
+			return
+		}
+	}
+}
+
+func (c *Chain) writeBlock(b block) {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[99], 1);
+	c.BlockCreator.commitBlock(b.b)
+	if utils.IsConfigBlock(b.b) {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[101], 1);
+		if err := c.writeConfigBlock(b); err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[103], 1);
+			c.logger.Panicf("failed to write configuration block, %+v", err)
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[102], 1);return
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[100], 1);c.raftMetadataLock.Lock()
+	c.opts.RaftMetadata.RaftIndex = b.i
+	m := utils.MarshalOrPanic(c.opts.RaftMetadata)
+	c.raftMetadataLock.Unlock()
+
+	c.support.WriteBlock(b.b, m)
+}
+
+// Orders the envelope in the `msg` content. SubmitRequest.
+// Returns
+//   -- batches [][]*common.Envelope; the batches cut,
+//   -- pending bool; if there are envelopes pending to be ordered,
+//   -- err error; the error encountered, if any.
+// It takes care of config messages as well as the revalidation of messages if the config sequence has advanced.
+func (c *Chain) ordered(msg *orderer.SubmitRequest) (batches [][]*common.Envelope, pending bool, err error) {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[104], 1);
+	seq := c.support.Sequence()
+
+	if c.isConfig(msg.Content) {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[107], 1);
+		// ConfigMsg
+		if msg.LastValidationSeq < seq {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[110], 1);
+			msg.Content, _, err = c.support.ProcessConfigMsg(msg.Content)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[111], 1);
+				return nil, true, errors.Errorf("bad config message: %s", err)
+			}
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[108], 1);batch := c.support.BlockCutter().Cut()
+		batches = [][]*common.Envelope{}
+		if len(batch) != 0 {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[112], 1);
+			batches = append(batches, batch)
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[109], 1);batches = append(batches, []*common.Envelope{msg.Content})
+		return batches, false, nil
+	}
+	// it is a normal message
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[105], 1);if msg.LastValidationSeq < seq {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[113], 1);
+		if _, err := c.support.ProcessNormalMsg(msg.Content); err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[114], 1);
+			return nil, true, errors.Errorf("bad normal message: %s", err)
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[106], 1);batches, pending = c.support.BlockCutter().Ordered(msg.Content)
+	return batches, pending, nil
+
+}
+
+func (c *Chain) commitBatches(batches ...[]*common.Envelope) error {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[115], 1);
+	for _, batch := range batches {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[117], 1);
+		b := c.BlockCreator.createNextBlock(batch)
+		data := utils.MarshalOrPanic(b)
+		if err := c.node.Propose(context.TODO(), data); err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[119], 1);
+			return errors.Errorf("failed to propose data to Raft node: %s", err)
+		}
+
+		// if it is config block, then wait for the commit of the block
+		_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[118], 1);if utils.IsConfigBlock(b) {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[120], 1);
+			// we need the loop to account for the normal blocks that might be in-flight before the arrival of the config block
+		commitConfigLoop:
+			for {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[121], 1);
+				select {
+				case block := <-c.commitC:_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[122], 1);
+					c.writeBlock(block)
+					// since this is the config block that have been looking for, we break out of the loop
+					if bytes.Equal(b.Header.Bytes(), block.b.Header.Bytes()) {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[125], 1);
+						break commitConfigLoop
+					}
+
+				case <-c.resignC:_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[123], 1);
+					return errors.Errorf("aborted block committing: lost leadership")
+
+				case <-c.doneC:_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[124], 1);
+					return nil
+				}
+			}
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[116], 1);return nil
+}
+
+func (c *Chain) catchUp(snap *raftpb.Snapshot) error {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[126], 1);
+	b, err := utils.UnmarshalBlock(snap.Data)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[131], 1);
+		return errors.Errorf("failed to unmarshal snapshot data to block: %s", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[127], 1);c.logger.Infof("Catching up with snapshot taken at block %d", b.Header.Number)
+
+	next := c.support.Height()
+	if next > b.Header.Number {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[132], 1);
+		c.logger.Warnf("Snapshot is at block %d, local block number is %d, no sync needed", b.Header.Number, next-1)
+		return nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[128], 1);c.syncLock.Lock()
+	c.syncC = make(chan struct{})
+	c.syncLock.Unlock()
+	defer func() {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[133], 1);
+		close(c.syncC)
+		c.puller.Close()
+	}()
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[129], 1);for next <= b.Header.Number {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[134], 1);
+		block := c.puller.PullBlock(next)
+		if block == nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[137], 1);
+			return errors.Errorf("failed to fetch block %d from cluster", next)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[135], 1);c.BlockCreator.commitBlock(block)
+		if utils.IsConfigBlock(block) {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[138], 1);
+			c.support.WriteConfigBlock(block, nil)
+		} else{ _cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[139], 1);{
+			c.support.WriteBlock(block, nil)
+		}}
+
+		_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[136], 1);next++
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[130], 1);c.logger.Infof("Finished syncing with cluster up to block %d (incl.)", b.Header.Number)
+	return nil
+}
+
+func (c *Chain) serveRaft() {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[140], 1);
+	ticker := c.clock.NewTicker(c.opts.TickInterval)
+
+	for {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[141], 1);
+		select {
+		case <-ticker.C():_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[142], 1);
+			c.node.Tick()
+
+		case rd := <-c.node.Ready():_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[143], 1);
+			if err := c.storage.Store(rd.Entries, rd.HardState, rd.Snapshot); err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[147], 1);
+				c.logger.Panicf("Failed to persist etcd/raft data: %s", err)
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[144], 1);if !raft.IsEmptySnap(rd.Snapshot) {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[148], 1);
+				c.snapC <- &rd.Snapshot
+
+				b := utils.UnmarshalBlockOrPanic(rd.Snapshot.Data)
+				c.lastSnapBlockNum = b.Header.Number
+				c.confState = rd.Snapshot.Metadata.ConfState
+				c.appliedIndex = rd.Snapshot.Metadata.Index
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[145], 1);c.apply(rd.CommittedEntries)
+			c.node.Advance()
+
+			// TODO(jay_guo) leader can write to disk in parallel with replicating
+			// to the followers and them writing to their disks. Check 10.2.1 in thesis
+			c.send(rd.Messages)
+
+			if rd.SoftState != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[149], 1);
+				newLead := atomic.LoadUint64(&rd.SoftState.Lead)
+				lead := atomic.LoadUint64(&c.leader)
+				if newLead != lead {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[150], 1);
+					c.logger.Infof("Raft leader changed: %d -> %d", lead, newLead)
+					atomic.StoreUint64(&c.leader, newLead)
+
+					if lead == c.raftID {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[153], 1);
+						c.resignC <- struct{}{}
+					}
+
+					// becoming a leader and configuration change is in progress
+					_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[151], 1);if newLead == c.raftID && c.configChangeInProgress {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[154], 1);
+						// need to read recent config updates of replica set
+						// and finish reconfiguration
+						c.handleReconfigurationFailover()
+					}
+
+					// notify external observer
+					_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[152], 1);select {
+					case c.observeC <- newLead:_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[155], 1);
+					default:_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[156], 1);
+					}
+				}
+			}
+
+		case <-c.haltC:_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[146], 1);
+			ticker.Stop()
+			c.node.Stop()
+			c.storage.Close()
+			c.logger.Infof("Raft node stopped")
+			close(c.doneC) // close after all the artifacts are closed
+			return
+		}
+	}
+}
+
+func (c *Chain) apply(ents []raftpb.Entry) {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[157], 1);
+	if len(ents) == 0 {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[162], 1);
+		return
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[158], 1);if ents[0].Index > c.appliedIndex+1 {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[163], 1);
+		c.logger.Panicf("first index of committed entry[%d] should <= appliedIndex[%d]+1", ents[0].Index, c.appliedIndex)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[159], 1);var appliedb uint64
+	var position int
+	for i := range ents {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[164], 1);
+		switch ents[i].Type {
+		case raftpb.EntryNormal:_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[166], 1);
+			// We need to strictly avoid re-applying normal entries,
+			// otherwise we are writing the same block twice.
+			if len(ents[i].Data) == 0 || ents[i].Index <= c.appliedIndex {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[172], 1);
+				break
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[167], 1);b := utils.UnmarshalBlockOrPanic(ents[i].Data)
+			// need to check whenever given block carries updates
+			// which will lead to membership change and eventually
+			// to the cluster reconfiguration
+			c.raftMetadataLock.RLock()
+			m := c.opts.RaftMetadata
+			c.raftMetadataLock.RUnlock()
+
+			isConfigMembershipUpdate, err := IsMembershipUpdate(b, m)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[173], 1);
+				c.logger.Warnf("Error while attempting to determine membership update, due to %s", err)
+			}
+			// if error occurred isConfigMembershipUpdate will be false, hence will skip setting config change in
+			// progress
+			_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[168], 1);if isConfigMembershipUpdate {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[174], 1);
+				// set flag config change is progress only if config block
+				// and has updates for raft replica set
+				c.configChangeInProgress = true
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[169], 1);c.commitC <- block{b, ents[i].Index}
+
+			appliedb = b.Header.Number
+			position = i
+
+		case raftpb.EntryConfChange:_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[170], 1);
+			var cc raftpb.ConfChange
+			if err := cc.Unmarshal(ents[i].Data); err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[175], 1);
+				c.logger.Warnf("Failed to unmarshal ConfChange data: %s", err)
+				continue
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[171], 1);c.confState = *c.node.ApplyConfChange(cc)
+
+			if c.configChangeInProgress {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[176], 1);
+				// signal that config changes has been applied
+				c.configChangeAppliedC <- struct{}{}
+				// set flag back
+				c.configChangeInProgress = false
+			}
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[165], 1);if ents[i].Index > c.appliedIndex {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[177], 1);
+			c.appliedIndex = ents[i].Index
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[160], 1);if c.opts.SnapInterval == 0 || appliedb == 0 {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[178], 1);
+		// snapshot is not enabled (SnapInterval == 0) or
+		// no block has been written (appliedb == 0) in this round
+		return
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[161], 1);if appliedb-c.lastSnapBlockNum >= c.opts.SnapInterval {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[179], 1);
+		c.logger.Infof("Taking snapshot at block %d, last snapshotted block number is %d", appliedb, c.lastSnapBlockNum)
+		if err := c.storage.TakeSnapshot(c.appliedIndex, &c.confState, ents[position].Data); err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[181], 1);
+			c.logger.Fatalf("Failed to create snapshot at index %d", c.appliedIndex)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[180], 1);c.lastSnapBlockNum = appliedb
+	}
+}
+
+func (c *Chain) send(msgs []raftpb.Message) {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[182], 1);
+	for _, msg := range msgs {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[183], 1);
+		if msg.To == 0 {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[186], 1);
+			continue
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[184], 1);status := raft.SnapshotFinish
+
+		msgBytes := utils.MarshalOrPanic(&msg)
+		_, err := c.rpc.Step(msg.To, &orderer.StepRequest{Channel: c.support.ChainID(), Payload: msgBytes})
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[187], 1);
+			// TODO We should call ReportUnreachable if message delivery fails
+			c.logger.Errorf("Failed to send StepRequest to %d, because: %s", msg.To, err)
+
+			status = raft.SnapshotFailure
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[185], 1);if msg.Type == raftpb.MsgSnap {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[188], 1);
+			c.node.ReportSnapshot(msg.To, status)
+		}
+	}
+}
+
+func (c *Chain) isConfig(env *common.Envelope) bool {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[189], 1);
+	h, err := utils.ChannelHeader(env)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[191], 1);
+		c.logger.Panicf("failed to extract channel header from envelope")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[190], 1);return h.Type == int32(common.HeaderType_CONFIG) || h.Type == int32(common.HeaderType_ORDERER_TRANSACTION)
+}
+
+func (c *Chain) configureComm() error {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[192], 1);
+	nodes, err := c.remotePeers()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[194], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[193], 1);c.configurator.Configure(c.channelID, nodes)
+	return nil
+}
+
+func (c *Chain) remotePeers() ([]cluster.RemoteNode, error) {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[195], 1);
+	var nodes []cluster.RemoteNode
+	for raftID, consenter := range c.opts.RaftMetadata.Consenters {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[197], 1);
+		// No need to know yourself
+		if raftID == c.raftID {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[201], 1);
+			continue
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[198], 1);serverCertAsDER, err := c.pemToDER(consenter.ServerTlsCert, raftID, "server")
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[202], 1);
+			return nil, errors.WithStack(err)
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[199], 1);clientCertAsDER, err := c.pemToDER(consenter.ClientTlsCert, raftID, "client")
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[203], 1);
+			return nil, errors.WithStack(err)
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[200], 1);nodes = append(nodes, cluster.RemoteNode{
+			ID:            raftID,
+			Endpoint:      fmt.Sprintf("%s:%d", consenter.Host, consenter.Port),
+			ServerTLSCert: serverCertAsDER,
+			ClientTLSCert: clientCertAsDER,
+		})
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[196], 1);return nodes, nil
+}
+
+func (c *Chain) pemToDER(pemBytes []byte, id uint64, certType string) ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[204], 1);
+	bl, _ := pem.Decode(pemBytes)
+	if bl == nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[206], 1);
+		c.logger.Errorf("Rejecting PEM block of %s TLS cert for node %d, offending PEM is: %s", certType, id, string(pemBytes))
+		return nil, errors.Errorf("invalid PEM block")
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[205], 1);return bl.Bytes, nil
+}
+
+// checkConsentersSet validates correctness of the consenters set provided within configuration value
+func (c *Chain) checkConsentersSet(configValue *common.ConfigValue) error {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[207], 1);
+	// read metadata update from configuration
+	updatedMetadata, err := MetadataFromConfigValue(configValue)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[210], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[208], 1);c.raftMetadataLock.RLock()
+	changes := ComputeMembershipChanges(c.opts.RaftMetadata.Consenters, updatedMetadata.Consenters)
+	c.raftMetadataLock.RUnlock()
+
+	if changes.TotalChanges > 1 {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[211], 1);
+		return errors.New("update of more than one consenters at a time is not supported")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[209], 1);return nil
+}
+
+// updateMembership updates raft metadata with new membership changes, apply raft changes to replica set
+// by proposing config change and blocking until it get applied
+func (c *Chain) updateMembership(metadata *etcdraft.RaftMetadata, change *raftpb.ConfChange) error {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[212], 1);
+	lead := atomic.LoadUint64(&c.leader)
+	// leader to propose configuration change
+	if lead == c.raftID {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[214], 1);
+		// ProposeConfChange returns error only if node being stopped.
+		if err := c.node.ProposeConfChange(context.TODO(), *change); err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[215], 1);
+			c.logger.Warnf("Failed to propose configuration update to Raft node: %s", err)
+			return nil
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[213], 1);var err error
+
+	for {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[216], 1);
+		select {
+		case <-c.configChangeAppliedC:_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[217], 1); // Raft configuration changes of the raft cluster has been applied
+			// update metadata once we have block committed
+			c.raftMetadataLock.Lock()
+			c.opts.RaftMetadata = metadata
+			c.raftMetadataLock.Unlock()
+
+			// now we need to reconfigure the communication layer with new updates
+			return c.configureComm()
+		case <-c.resignC:_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[218], 1);
+			c.logger.Debug("Raft cluster leader has changed, new leader should re-propose Raft config change based on last config block")
+		case <-c.doneC:_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[219], 1);
+			c.logger.Debug("Shutting down node, aborting config change update")
+			return err
+		}
+	}
+}
+
+// writeConfigBlock writes configuration blocks into the ledger in
+// addition extracts updates about raft replica set and if there
+// are changes updates cluster membership as well
+func (c *Chain) writeConfigBlock(b block) error {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[220], 1);
+	metadata, raftMetadata := c.newRaftMetadata(b.b)
+
+	var changes *MembershipChanges
+	if metadata != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[223], 1);
+		changes = ComputeMembershipChanges(raftMetadata.Consenters, metadata.Consenters)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[221], 1);confChange := changes.UpdateRaftMetadataAndConfChange(raftMetadata)
+	raftMetadata.RaftIndex = b.i
+
+	raftMetadataBytes := utils.MarshalOrPanic(raftMetadata)
+	// write block with metadata
+	c.support.WriteConfigBlock(b.b, raftMetadataBytes)
+	if confChange != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[224], 1);
+		if err := c.updateMembership(raftMetadata, confChange); err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[225], 1);
+			return errors.Wrap(err, "failed to update Raft with consenters membership changes")
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[222], 1);return nil
+}
+
+// handleReconfigurationFailover read last configuration block and proposes
+// new raft configuration
+func (c *Chain) handleReconfigurationFailover() {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[226], 1);
+	b := c.support.Block(c.support.Height() - 1)
+	if b == nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[230], 1);
+		c.logger.Panic("nil block, failed to read last written block")
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[227], 1);if !utils.IsConfigBlock(b) {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[231], 1);
+		// a node (leader or follower) leaving updateMembership in context of serverReq go routine,
+		// *iff* configuration entry has appeared and successfully applied.
+		// while it's blocked in updateMembership, it cannot commit any other block,
+		// therefore we guarantee the last block is config block
+		c.logger.Panic("while handling reconfiguration failover last expected block should be configuration")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[228], 1);metadata, raftMetadata := c.newRaftMetadata(b)
+
+	var changes *MembershipChanges
+	if metadata != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[232], 1);
+		changes = ComputeMembershipChanges(raftMetadata.Consenters, metadata.Consenters)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[229], 1);confChange := changes.UpdateRaftMetadataAndConfChange(raftMetadata)
+	if err := c.node.ProposeConfChange(context.TODO(), *confChange); err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[233], 1);
+		c.logger.Warnf("failed to propose configuration update to Raft node: %s", err)
+	}
+}
+
+// newRaftMetadata extract raft metadata from the configuration block
+func (c *Chain) newRaftMetadata(block *common.Block) (*etcdraft.Metadata, *etcdraft.RaftMetadata) {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[234], 1);
+	metadata, err := ConsensusMetadataFromConfigBlock(block)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[237], 1);
+		c.logger.Panicf("error reading consensus metadata: %s", err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[235], 1);c.raftMetadataLock.RLock()
+	raftMetadata := proto.Clone(c.opts.RaftMetadata).(*etcdraft.RaftMetadata)
+	// proto.Clone doesn't copy an empty map, hence need to initialize it after
+	// cloning
+	if raftMetadata.Consenters == nil {_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[238], 1);
+		raftMetadata.Consenters = map[uint64]*etcdraft.Consenter{}
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_643961326533346231666662.Count[236], 1);c.raftMetadataLock.RUnlock()
+	return metadata, raftMetadata
+}
+
+var GoCover_1_643961326533346231666662 = struct {
+	Count     [239]uint32
+	Pos       [3 * 239]uint32
+	NumStmt   [239]uint16
+} {
+	Pos: [3 * 239]uint32{
+		153, 161, 0x10002a, // [0]
+		165, 165, 0x260002, // [1]
+		172, 173, 0x330002, // [2]
+		178, 205, 0x80002, // [3]
+		161, 163, 0x30010, // [4]
+		165, 167, 0x30026, // [5]
+		167, 169, 0x30008, // [6]
+		173, 176, 0x30033, // [7]
+		209, 228, 0x2a0019, // [8]
+		234, 236, 0xd0002, // [9]
+		244, 247, 0x150002, // [10]
+		228, 232, 0x3002a, // [11]
+		236, 239, 0x3000d, // [12]
+		239, 242, 0x30008, // [13]
+		251, 253, 0x20045, // [14]
+		256, 257, 0x390049, // [15]
+		260, 260, 0x6e0002, // [16]
+		257, 259, 0x30039, // [17]
+		264, 267, 0x100047, // [18]
+		270, 271, 0x100002, // [19]
+		275, 275, 0x130002, // [20]
+		267, 269, 0x30010, // [21]
+		271, 273, 0x30010, // [22]
+		276, 277, 0xd0034, // [23]
+		278, 280, 0x110027, // [24]
+		285, 285, 0x4c0003, // [25]
+		290, 290, 0xd0003, // [26]
+		292, 293, 0x45000a, // [27]
+		280, 282, 0x40011, // [28]
+		285, 286, 0x41004c, // [29]
+		286, 288, 0x50041, // [30]
+		301, 302, 0x260023, // [31]
+		306, 310, 0x90002, // [32]
+		316, 316, 0xc0002, // [33]
+		302, 304, 0x30026, // [34]
+		311, 311, 0xc000c, // [35]
+		312, 313, 0x2b0011, // [36]
+		320, 322, 0x2002b, // [37]
+		325, 326, 0x90018, // [38]
+		333, 333, 0x90002, // [39]
+		338, 338, 0xb0002, // [40]
+		327, 327, 0x120012, // [41]
+		328, 330, 0x9000a, // [42]
+		334, 334, 0x1d001d, // [43]
+		335, 336, 0x90011, // [44]
+		341, 342, 0x90023, // [45]
+		348, 348, 0x90002, // [46]
+		354, 354, 0xc0002, // [47]
+		343, 343, 0x120012, // [48]
+		344, 345, 0x2f000a, // [49]
+		349, 350, 0x2b0011, // [50]
+		351, 351, 0xa000a, // [51]
+		358, 359, 0x260045, // [52]
+		363, 364, 0x3e0002, // [53]
+		368, 368, 0x3e0002, // [54]
+		372, 372, 0xc0002, // [55]
+		359, 361, 0x30026, // [56]
+		364, 366, 0x3003e, // [57]
+		368, 370, 0x3003e, // [58]
+		379, 380, 0x260049, // [59]
+		384, 386, 0x170002, // [60]
+		390, 390, 0x160002, // [61]
+		399, 402, 0x240002, // [62]
+		380, 382, 0x30026, // [63]
+		386, 388, 0x30017, // [64]
+		390, 391, 0xa0016, // [65]
+		392, 393, 0xe0019, // [66]
+		394, 395, 0x2c0012, // [67]
+		405, 410, 0x130020, // [68]
+		415, 415, 0x120002, // [69]
+		422, 422, 0x110002, // [70]
+		430, 430, 0x350002, // [71]
+		439, 439, 0x60002, // [72]
+		410, 412, 0x30013, // [73]
+		415, 416, 0xf0012, // [74]
+		416, 419, 0x4000f, // [75]
+		422, 423, 0x1f0011, // [76]
+		427, 427, 0x120003, // [77]
+		423, 426, 0x4001f, // [78]
+		430, 431, 0x270035, // [79]
+		431, 434, 0x40027, // [80]
+		435, 437, 0x30008, // [81]
+		439, 440, 0xa0006, // [82]
+		441, 443, 0x12001b, // [83]
+		446, 446, 0xf0004, // [84]
+		452, 452, 0x360004, // [85]
+		456, 457, 0x130019, // [86]
+		459, 462, 0xa0014, // [87]
+		464, 468, 0x170014, // [88]
+		473, 474, 0x310004, // [89]
+		478, 479, 0x280018, // [90]
+		484, 486, 0xa0012, // [91]
+		443, 445, 0x50012, // [92]
+		446, 448, 0x5000f, // [93]
+		448, 450, 0x5000a, // [94]
+		452, 454, 0x50036, // [95]
+		468, 470, 0xd0017, // [96]
+		474, 476, 0x50031, // [97]
+		479, 482, 0x50028, // [98]
+		491, 493, 0x1e0025, // [99]
+		500, 505, 0x1e0002, // [100]
+		493, 494, 0x2f001e, // [101]
+		497, 497, 0x90003, // [102]
+		494, 496, 0x4002f, // [103]
+		514, 517, 0x1d006d, // [104]
+		534, 534, 0x210002, // [105]
+		539, 540, 0x1e0002, // [106]
+		517, 519, 0x22001d, // [107]
+		525, 527, 0x160003, // [108]
+		530, 531, 0x1d0003, // [109]
+		519, 521, 0x120022, // [110]
+		521, 523, 0x50012, // [111]
+		527, 529, 0x40016, // [112]
+		534, 535, 0x440021, // [113]
+		535, 537, 0x40044, // [114]
+		544, 545, 0x200044, // [115]
+		575, 575, 0xc0002, // [116]
+		545, 548, 0x3e0020, // [117]
+		553, 553, 0x1d0003, // [118]
+		548, 550, 0x4003e, // [119]
+		553, 556, 0x8001d, // [120]
+		556, 557, 0xc0008, // [121]
+		558, 561, 0x3f001f, // [122]
+		565, 566, 0x470016, // [123]
+		568, 569, 0x100014, // [124]
+		561, 562, 0x1d003f, // [125]
+		578, 580, 0x100036, // [126]
+		584, 587, 0x1c0002, // [127]
+		592, 595, 0xf0002, // [128]
+		600, 600, 0x1e0002, // [129]
+		616, 617, 0xc0002, // [130]
+		580, 582, 0x30010, // [131]
+		587, 590, 0x3001c, // [132]
+		595, 598, 0x3000f, // [133]
+		600, 602, 0x13001e, // [134]
+		606, 607, 0x210003, // [135]
+		613, 613, 0x90003, // [136]
+		602, 604, 0x40013, // [137]
+		607, 609, 0x40021, // [138]
+		609, 611, 0x40009, // [139]
+		620, 623, 0x6001d, // [140]
+		623, 624, 0xa0006, // [141]
+		625, 626, 0x110015, // [142]
+		628, 629, 0x51001f, // [143]
+		633, 633, 0x260004, // [144]
+		642, 649, 0x1b0004, // [145]
+		675, 681, 0xa0012, // [146]
+		629, 631, 0x50051, // [147]
+		633, 640, 0x50026, // [148]
+		649, 652, 0x18001b, // [149]
+		652, 656, 0x1a0018, // [150]
+		661, 661, 0x390006, // [151]
+		668, 668, 0xd0006, // [152]
+		656, 658, 0x7001a, // [153]
+		661, 665, 0x70039, // [154]
+		669, 669, 0x210021, // [155]
+		670, 670, 0xe000e, // [156]
+		686, 687, 0x14002c, // [157]
+		691, 691, 0x260002, // [158]
+		695, 697, 0x160002, // [159]
+		753, 753, 0x2f0002, // [160]
+		759, 759, 0x380002, // [161]
+		687, 689, 0x30014, // [162]
+		691, 693, 0x30026, // [163]
+		697, 698, 0x170016, // [164]
+		748, 748, 0x250003, // [165]
+		699, 702, 0x41001b, // [166]
+		706, 715, 0x120004, // [167]
+		720, 720, 0x200004, // [168]
+		726, 729, 0x100004, // [169]
+		731, 733, 0x35001f, // [170]
+		738, 740, 0x200004, // [171]
+		702, 703, 0xa0041, // [172]
+		715, 717, 0x50012, // [173]
+		720, 724, 0x50020, // [174]
+		733, 735, 0xd0035, // [175]
+		740, 745, 0x50020, // [176]
+		748, 750, 0x40025, // [177]
+		753, 757, 0x3002f, // [178]
+		759, 761, 0x630038, // [179]
+		765, 765, 0x200003, // [180]
+		761, 763, 0x40063, // [181]
+		769, 770, 0x1b002d, // [182]
+		770, 771, 0x12001b, // [183]
+		775, 779, 0x110003, // [184]
+		786, 786, 0x210003, // [185]
+		771, 772, 0xc0012, // [186]
+		779, 784, 0x40011, // [187]
+		786, 788, 0x40021, // [188]
+		792, 794, 0x100035, // [189]
+		798, 798, 0x6c0002, // [190]
+		794, 796, 0x30010, // [191]
+		801, 803, 0x100027, // [192]
+		807, 808, 0xc0002, // [193]
+		803, 805, 0x30010, // [194]
+		811, 813, 0x40003d, // [195]
+		833, 833, 0x130002, // [196]
+		813, 815, 0x190040, // [197]
+		818, 819, 0x110003, // [198]
+		822, 823, 0x110003, // [199]
+		826, 831, 0x50003, // [200]
+		815, 816, 0xc0019, // [201]
+		819, 821, 0x40011, // [202]
+		823, 825, 0x40011, // [203]
+		836, 838, 0xf0057, // [204]
+		842, 842, 0x160002, // [205]
+		838, 841, 0x3000f, // [206]
+		846, 849, 0x10004b, // [207]
+		853, 857, 0x1e0002, // [208]
+		861, 861, 0xc0002, // [209]
+		849, 851, 0x30010, // [210]
+		857, 859, 0x3001e, // [211]
+		866, 869, 0x160064, // [212]
+		877, 879, 0x60002, // [213]
+		869, 871, 0x4b0016, // [214]
+		871, 874, 0x4004b, // [215]
+		879, 880, 0xa0006, // [216]
+		881, 888, 0x1c0021, // [217]
+		889, 890, 0x810014, // [218]
+		891, 893, 0xe0012, // [219]
+		901, 905, 0x150031, // [220]
+		909, 915, 0x170002, // [221]
+		920, 920, 0xc0002, // [222]
+		905, 907, 0x30015, // [223]
+		915, 916, 0x460017, // [224]
+		916, 918, 0x40046, // [225]
+		925, 927, 0xe0031, // [226]
+		930, 930, 0x1d0002, // [227]
+		938, 941, 0x150002, // [228]
+		945, 946, 0x4e0002, // [229]
+		927, 929, 0x3000e, // [230]
+		930, 936, 0x3001d, // [231]
+		941, 943, 0x30015, // [232]
+		946, 948, 0x3004e, // [233]
+		952, 954, 0x100063, // [234]
+		957, 961, 0x240002, // [235]
+		964, 965, 0x1f0002, // [236]
+		954, 956, 0x30010, // [237]
+		961, 963, 0x30024, // [238]
+	},
+	NumStmt: [239]uint16{
+		5, // 0
+		1, // 1
+		2, // 2
+		2, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		2, // 7
+		3, // 8
+		2, // 9
+		3, // 10
+		3, // 11
+		2, // 12
+		2, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		3, // 18
+		2, // 19
+		1, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+		2, // 24
+		1, // 25
+		1, // 26
+		1, // 27
+		1, // 28
+		1, // 29
+		1, // 30
+		1, // 31
+		4, // 32
+		1, // 33
+		1, // 34
+		0, // 35
+		1, // 36
+		1, // 37
+		1, // 38
+		1, // 39
+		1, // 40
+		0, // 41
+		2, // 42
+		0, // 43
+		1, // 44
+		1, // 45
+		1, // 46
+		1, // 47
+		0, // 48
+		1, // 49
+		1, // 50
+		0, // 51
+		1, // 52
+		2, // 53
+		1, // 54
+		1, // 55
+		1, // 56
+		1, // 57
+		1, // 58
+		1, // 59
+		2, // 60
+		1, // 61
+		4, // 62
+		1, // 63
+		1, // 64
+		1, // 65
+		1, // 66
+		1, // 67
+		3, // 68
+		1, // 69
+		1, // 70
+		1, // 71
+		1, // 72
+		1, // 73
+		1, // 74
+		2, // 75
+		1, // 76
+		1, // 77
+		1, // 78
+		1, // 79
+		1, // 80
+		1, // 81
+		1, // 82
+		2, // 83
+		1, // 84
+		1, // 85
+		1, // 86
+		3, // 87
+		3, // 88
+		2, // 89
+		1, // 90
+		2, // 91
+		1, // 92
+		1, // 93
+		1, // 94
+		1, // 95
+		2, // 96
+		1, // 97
+		1, // 98
+		2, // 99
+		5, // 100
+		1, // 101
+		1, // 102
+		1, // 103
+		2, // 104
+		1, // 105
+		2, // 106
+		1, // 107
+		3, // 108
+		2, // 109
+		2, // 110
+		1, // 111
+		1, // 112
+		1, // 113
+		1, // 114
+		1, // 115
+		1, // 116
+		3, // 117
+		1, // 118
+		1, // 119
+		1, // 120
+		1, // 121
+		2, // 122
+		1, // 123
+		1, // 124
+		1, // 125
+		2, // 126
+		3, // 127
+		4, // 128
+		1, // 129
+		2, // 130
+		1, // 131
+		2, // 132
+		2, // 133
+		2, // 134
+		2, // 135
+		1, // 136
+		1, // 137
+		1, // 138
+		1, // 139
+		2, // 140
+		1, // 141
+		1, // 142
+		1, // 143
+		1, // 144
+		4, // 145
+		6, // 146
+		1, // 147
+		5, // 148
+		3, // 149
+		3, // 150
+		1, // 151
+		1, // 152
+		1, // 153
+		1, // 154
+		0, // 155
+		0, // 156
+		1, // 157
+		1, // 158
+		3, // 159
+		1, // 160
+		1, // 161
+		1, // 162
+		1, // 163
+		1, // 164
+		1, // 165
+		1, // 166
+		6, // 167
+		1, // 168
+		3, // 169
+		2, // 170
+		2, // 171
+		1, // 172
+		1, // 173
+		1, // 174
+		2, // 175
+		2, // 176
+		1, // 177
+		1, // 178
+		2, // 179
+		1, // 180
+		1, // 181
+		1, // 182
+		1, // 183
+		4, // 184
+		1, // 185
+		1, // 186
+		2, // 187
+		1, // 188
+		2, // 189
+		1, // 190
+		1, // 191
+		2, // 192
+		2, // 193
+		1, // 194
+		2, // 195
+		1, // 196
+		1, // 197
+		2, // 198
+		2, // 199
+		1, // 200
+		1, // 201
+		1, // 202
+		1, // 203
+		2, // 204
+		1, // 205
+		2, // 206
+		2, // 207
+		4, // 208
+		1, // 209
+		1, // 210
+		1, // 211
+		2, // 212
+		2, // 213
+		1, // 214
+		2, // 215
+		1, // 216
+		4, // 217
+		1, // 218
+		2, // 219
+		3, // 220
+		5, // 221
+		1, // 222
+		1, // 223
+		1, // 224
+		1, // 225
+		2, // 226
+		1, // 227
+		3, // 228
+		2, // 229
+		1, // 230
+		1, // 231
+		1, // 232
+		1, // 233
+		2, // 234
+		3, // 235
+		2, // 236
+		1, // 237
+		1, // 238
+	},
+}
+var _ = _cover_atomic_.LoadUint32

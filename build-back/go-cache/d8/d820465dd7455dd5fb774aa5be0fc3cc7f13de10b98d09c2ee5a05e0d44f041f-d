@@ -1,0 +1,211 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/crypto/tlsgen/key.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package tlsgen; import _cover_atomic_ "sync/atomic"
+
+import (
+	"crypto"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/base64"
+	"encoding/pem"
+	"math/big"
+	"net"
+	"time"
+)
+
+func (p *CertKeyPair) PrivKeyString() string {_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[0], 1);
+	return base64.StdEncoding.EncodeToString(p.Key)
+}
+
+func (p *CertKeyPair) PubKeyString() string {_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[1], 1);
+	return base64.StdEncoding.EncodeToString(p.Cert)
+}
+
+func newPrivKey() (*ecdsa.PrivateKey, []byte, error) {_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[2], 1);
+	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[5], 1);
+		return nil, nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[3], 1);privBytes, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[6], 1);
+		return nil, nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[4], 1);return privateKey, privBytes, nil
+}
+
+func newCertTemplate() (x509.Certificate, error) {_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[7], 1);
+	sn, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[9], 1);
+		return x509.Certificate{}, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[8], 1);return x509.Certificate{
+		Subject:      pkix.Name{SerialNumber: sn.String()},
+		NotBefore:    time.Now().Add(time.Hour * (-24)),
+		NotAfter:     time.Now().Add(time.Hour * 24),
+		KeyUsage:     x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		SerialNumber: sn,
+	}, nil
+}
+
+func newCertKeyPair(isCA bool, isServer bool, host string, certSigner crypto.Signer, parent *x509.Certificate) (*CertKeyPair, error) {_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[10], 1);
+	privateKey, privBytes, err := newPrivKey()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[18], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[11], 1);template, err := newCertTemplate()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[19], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[12], 1);tenYearsFromNow := time.Now().Add(time.Hour * 24 * 365 * 10)
+	if isCA {_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[20], 1);
+		template.NotAfter = tenYearsFromNow
+		template.IsCA = true
+		template.KeyUsage |= x509.KeyUsageCertSign | x509.KeyUsageCRLSign
+		template.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageAny}
+		template.BasicConstraintsValid = true
+	} else{ _cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[21], 1);{
+		template.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}
+	}}
+	_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[13], 1);if isServer {_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[22], 1);
+		template.NotAfter = tenYearsFromNow
+		template.ExtKeyUsage = append(template.ExtKeyUsage, x509.ExtKeyUsageServerAuth)
+		if ip := net.ParseIP(host); ip != nil {_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[23], 1);
+			template.IPAddresses = append(template.IPAddresses, ip)
+		} else{ _cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[24], 1);{
+			template.DNSNames = append(template.DNSNames, host)
+		}}
+	}
+	// If no parent cert, it's a self signed cert
+	_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[14], 1);if parent == nil || certSigner == nil {_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[25], 1);
+		parent = &template
+		certSigner = privateKey
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[15], 1);rawBytes, err := x509.CreateCertificate(rand.Reader, &template, parent, &privateKey.PublicKey, certSigner)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[26], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[16], 1);pubKey := encodePEM("CERTIFICATE", rawBytes)
+
+	block, _ := pem.Decode(pubKey)
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[27], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[17], 1);privKey := encodePEM("EC PRIVATE KEY", privBytes)
+	return &CertKeyPair{
+		Key:     privKey,
+		Cert:    pubKey,
+		Signer:  privateKey,
+		TLSCert: cert,
+	}, nil
+}
+
+func encodePEM(keyType string, data []byte) []byte {_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[28], 1);
+	return pem.EncodeToMemory(&pem.Block{Type: keyType, Bytes: data})
+}
+
+// CertKeyPairFromString converts the given strings in base64 encoding to a CertKeyPair
+func CertKeyPairFromString(privKey string, pubKey string) (*CertKeyPair, error) {_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[29], 1);
+	priv, err := base64.StdEncoding.DecodeString(privKey)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[32], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[30], 1);pub, err := base64.StdEncoding.DecodeString(pubKey)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[33], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_393766613163373164663732.Count[31], 1);return &CertKeyPair{
+		Key:  priv,
+		Cert: pub,
+	}, nil
+}
+
+var GoCover_1_393766613163373164663732 = struct {
+	Count     [34]uint32
+	Pos       [3 * 34]uint32
+	NumStmt   [34]uint16
+} {
+	Pos: [3 * 34]uint32{
+		23, 25, 0x2002e, // [0]
+		27, 29, 0x2002d, // [1]
+		31, 33, 0x100036, // [2]
+		36, 37, 0x100002, // [3]
+		40, 40, 0x230002, // [4]
+		33, 35, 0x30010, // [5]
+		37, 39, 0x30010, // [6]
+		43, 45, 0x100032, // [7]
+		48, 54, 0x80002, // [8]
+		45, 47, 0x30010, // [9]
+		57, 59, 0x100086, // [10]
+		63, 64, 0x100002, // [11]
+		68, 69, 0xa0002, // [12]
+		78, 78, 0xe0002, // [13]
+		88, 88, 0x280002, // [14]
+		92, 93, 0x100002, // [15]
+		96, 100, 0x100002, // [16]
+		103, 109, 0x80002, // [17]
+		59, 61, 0x30010, // [18]
+		64, 66, 0x30010, // [19]
+		69, 75, 0x3000a, // [20]
+		75, 77, 0x30008, // [21]
+		78, 81, 0x29000e, // [22]
+		81, 83, 0x40029, // [23]
+		83, 85, 0x40009, // [24]
+		88, 91, 0x30028, // [25]
+		93, 95, 0x30010, // [26]
+		100, 102, 0x30010, // [27]
+		112, 114, 0x20034, // [28]
+		117, 119, 0x100051, // [29]
+		122, 123, 0x100002, // [30]
+		126, 129, 0x80002, // [31]
+		119, 121, 0x30010, // [32]
+		123, 125, 0x30010, // [33]
+	},
+	NumStmt: [34]uint16{
+		1, // 0
+		1, // 1
+		2, // 2
+		2, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		2, // 7
+		1, // 8
+		1, // 9
+		2, // 10
+		2, // 11
+		2, // 12
+		1, // 13
+		1, // 14
+		2, // 15
+		4, // 16
+		2, // 17
+		1, // 18
+		1, // 19
+		5, // 20
+		1, // 21
+		3, // 22
+		1, // 23
+		1, // 24
+		2, // 25
+		1, // 26
+		1, // 27
+		1, // 28
+		2, // 29
+		2, // 30
+		1, // 31
+		1, // 32
+		1, // 33
+	},
+}
+var _ = _cover_atomic_.LoadUint32

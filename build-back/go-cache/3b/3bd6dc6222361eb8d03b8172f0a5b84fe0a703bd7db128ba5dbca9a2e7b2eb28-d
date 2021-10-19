@@ -1,0 +1,311 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/flogging/logging.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package flogging; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+	"io"
+	"os"
+	"sync"
+
+	"github.com/hyperledger/fabric/common/flogging/fabenc"
+	logging "github.com/op/go-logging"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+)
+
+// Config is used to provide dependencies to a Logging instance.
+type Config struct {
+	// Format is the log record format specifier for the Logging instance. If the
+	// spec is the string "json", log records will be formatted as JSON. Any
+	// other string will be provided to the FormatEncoder. Please see
+	// fabenc.ParseFormat for details on the supported verbs.
+	//
+	// If Format is not provided, a default format that provides basic information will
+	// be used.
+	Format string
+
+	// LogSpec determines the log levels that are enabled for the logging system. The
+	// spec must be in a format that can be processed by ActivateSpec.
+	//
+	// If LogSpec is not provided, loggers will be enabled at the INFO level.
+	LogSpec string
+
+	// Writer is the sink for encoded and formatted log records.
+	//
+	// If a Writer is not provided, os.Stderr will be used as the log sink.
+	Writer io.Writer
+}
+
+// Logging maintains the state associated with the fabric logging system. It is
+// intended to bridge between the legacy logging infrastructure built around
+// go-logging and the structured, level logging provided by zap.
+type Logging struct {
+	*LoggerLevels
+
+	mutex          sync.RWMutex
+	encoding       Encoding
+	encoderConfig  zapcore.EncoderConfig
+	multiFormatter *fabenc.MultiFormatter
+	writer         zapcore.WriteSyncer
+}
+
+// New creates a new logging system and initializes it with the provided
+// configuration.
+func New(c Config) (*Logging, error) {_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[0], 1);
+	encoderConfig := zap.NewProductionEncoderConfig()
+	encoderConfig.NameKey = "name"
+
+	s := &Logging{
+		LoggerLevels: &LoggerLevels{
+			defaultLevel: defaultLevel,
+		},
+		encoderConfig:  encoderConfig,
+		multiFormatter: fabenc.NewMultiFormatter(),
+	}
+
+	err := s.Apply(c)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[2], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[1], 1);return s, nil
+}
+
+// Apply applies the provided configuration to the logging system.
+func (s *Logging) Apply(c Config) error {_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[3], 1);
+	err := s.SetFormat(c.Format)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[10], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[4], 1);if c.LogSpec == "" {_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[11], 1);
+		c.LogSpec = os.Getenv("FABRIC_LOGGING_SPEC")
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[5], 1);if c.LogSpec == "" {_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[12], 1);
+		c.LogSpec = defaultLevel.String()
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[6], 1);err = s.LoggerLevels.ActivateSpec(c.LogSpec)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[13], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[7], 1);if c.Writer == nil {_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[14], 1);
+		c.Writer = os.Stderr
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[8], 1);s.SetWriter(c.Writer)
+
+	var formatter logging.Formatter
+	if s.Encoding() == JSON {_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[15], 1);
+		formatter = SetFormat(defaultFormat)
+	} else{ _cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[16], 1);{
+		formatter = SetFormat(c.Format)
+	}}
+
+	_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[9], 1);InitBackend(formatter, c.Writer)
+
+	return nil
+}
+
+// SetFormat updates how log records are formatted and encoded. Log entries
+// created after this method has completed will use the new format.
+//
+// An error is returned if the log format specification cannot be parsed.
+func (s *Logging) SetFormat(format string) error {_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[17], 1);
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	if format == "" {_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[21], 1);
+		format = defaultFormat
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[18], 1);if format == "json" {_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[22], 1);
+		s.encoding = JSON
+		return nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[19], 1);formatters, err := fabenc.ParseFormat(format)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[23], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[20], 1);s.multiFormatter.SetFormatters(formatters)
+	s.encoding = CONSOLE
+
+	return nil
+}
+
+// SetWriter controls which writer formatted log records are written to.
+// Writers, with the exception of an *os.File, need to be safe for concurrent
+// use by multiple go routines.
+func (s *Logging) SetWriter(w io.Writer) {_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[24], 1);
+	var sw zapcore.WriteSyncer
+	switch t := w.(type) {
+	case *os.File:_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[26], 1);
+		sw = zapcore.Lock(t)
+	case zapcore.WriteSyncer:_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[27], 1);
+		sw = t
+	default:_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[28], 1);
+		sw = zapcore.AddSync(w)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[25], 1);s.mutex.Lock()
+	s.writer = sw
+	s.mutex.Unlock()
+}
+
+// Write satisfies the io.Write contract. It delegates to the writer argument
+// of SetWriter or the Writer field of Config. The Core uses this when encoding
+// log records.
+func (s *Logging) Write(b []byte) (int, error) {_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[29], 1);
+	s.mutex.RLock()
+	w := s.writer
+	s.mutex.RUnlock()
+
+	return w.Write(b)
+}
+
+// Sync satisfies the zapcore.WriteSyncer interface. It is used by the Core to
+// flush log records before terminating the process.
+func (s *Logging) Sync() error {_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[30], 1);
+	s.mutex.RLock()
+	w := s.writer
+	s.mutex.RUnlock()
+
+	return w.Sync()
+}
+
+// Encoding satisfies the Encoding interface. It determines whether the JSON or
+// CONSOLE encoder should be used by the Core when log records are written.
+func (s *Logging) Encoding() Encoding {_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[31], 1);
+	s.mutex.RLock()
+	e := s.encoding
+	s.mutex.RUnlock()
+	return e
+}
+
+// ZapLogger instantiates a new zap.Logger with the specified name. The name is
+// used to determine which log levels are enabled.
+func (s *Logging) ZapLogger(name string) *zap.Logger {_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[32], 1);
+	if !isValidLoggerName(name) {_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[35], 1);
+		panic(fmt.Sprintf("invalid logger name: %s", name))
+	}
+
+	// always return true here because the core's Check()
+	// method computes the level for the logger name based
+	// on the active logging spec
+	_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[33], 1);levelEnabler := zap.LevelEnablerFunc(func(l zapcore.Level) bool {_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[36], 1); return true })
+
+	_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[34], 1);s.mutex.RLock()
+	core := &Core{
+		LevelEnabler: levelEnabler,
+		Levels:       s.LoggerLevels,
+		Encoders: map[Encoding]zapcore.Encoder{
+			JSON:    zapcore.NewJSONEncoder(s.encoderConfig),
+			CONSOLE: fabenc.NewFormatEncoder(s.multiFormatter),
+		},
+		Selector: s,
+		Output:   s,
+	}
+	s.mutex.RUnlock()
+
+	return NewZapLogger(core).Named(name)
+}
+
+// Logger instantiates a new FabricLogger with the specified name. The name is
+// used to determine which log levels are enabled.
+func (s *Logging) Logger(name string) *FabricLogger {_cover_atomic_.AddUint32(&GoCover_5_643766633362313436336635.Count[37], 1);
+	zl := s.ZapLogger(name)
+	return NewFabricLogger(zl)
+}
+
+var GoCover_5_643766633362313436336635 = struct {
+	Count     [38]uint32
+	Pos       [3 * 38]uint32
+	NumStmt   [38]uint16
+} {
+	Pos: [3 * 38]uint32{
+		59, 72, 0x100026, // [0]
+		75, 75, 0xf0002, // [1]
+		72, 74, 0x30010, // [2]
+		79, 81, 0x100029, // [3]
+		85, 85, 0x150002, // [4]
+		88, 88, 0x150002, // [5]
+		92, 93, 0x100002, // [6]
+		97, 97, 0x150002, // [7]
+		100, 103, 0x1a0002, // [8]
+		109, 111, 0xc0002, // [9]
+		81, 83, 0x30010, // [10]
+		85, 87, 0x30015, // [11]
+		88, 90, 0x30015, // [12]
+		93, 95, 0x30010, // [13]
+		97, 99, 0x30015, // [14]
+		103, 105, 0x3001a, // [15]
+		105, 107, 0x30008, // [16]
+		118, 121, 0x120032, // [17]
+		125, 125, 0x160002, // [18]
+		130, 131, 0x100002, // [19]
+		134, 137, 0xc0002, // [20]
+		121, 123, 0x30012, // [21]
+		125, 128, 0x30016, // [22]
+		131, 133, 0x30010, // [23]
+		143, 145, 0x17002a, // [24]
+		154, 156, 0x120002, // [25]
+		146, 147, 0x170010, // [26]
+		148, 149, 0x9001b, // [27]
+		150, 151, 0x1a000a, // [28]
+		162, 168, 0x20030, // [29]
+		172, 178, 0x20020, // [30]
+		182, 187, 0x20027, // [31]
+		191, 192, 0x1e0036, // [32]
+		199, 199, 0x420002, // [33]
+		201, 214, 0x270002, // [34]
+		192, 193, 0x36001e, // [35]
+		199, 199, 0x510042, // [36]
+		219, 222, 0x20035, // [37]
+	},
+	NumStmt: [38]uint16{
+		5, // 0
+		1, // 1
+		1, // 2
+		2, // 3
+		1, // 4
+		1, // 5
+		2, // 6
+		1, // 7
+		3, // 8
+		2, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		3, // 17
+		1, // 18
+		2, // 19
+		3, // 20
+		1, // 21
+		2, // 22
+		1, // 23
+		2, // 24
+		3, // 25
+		1, // 26
+		1, // 27
+		1, // 28
+		4, // 29
+		4, // 30
+		4, // 31
+		1, // 32
+		1, // 33
+		4, // 34
+		1, // 35
+		1, // 36
+		2, // 37
+	},
+}
+var _ = _cover_atomic_.LoadUint32

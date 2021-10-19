@@ -1,0 +1,58 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/peer/support.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package peer; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric/common/channelconfig"
+)
+
+var supportFactory SupportFactory
+
+// SupportFactory is a factory of Support interfaces
+type SupportFactory interface {
+	// NewSupport returns a Support interface
+	NewSupport() Support
+}
+
+// Support gives access to peer resources and avoids calls to static methods
+type Support interface {
+	// GetApplicationConfig returns the configtxapplication.SharedConfig for the channel
+	// and whether the Application config exists
+	GetApplicationConfig(cid string) (channelconfig.Application, bool)
+}
+
+type supportImpl struct {
+	operations Operations
+}
+
+func (s *supportImpl) GetApplicationConfig(cid string) (channelconfig.Application, bool) {_cover_atomic_.AddUint32(&GoCover_7_323265356137393664323638.Count[0], 1);
+	cc := s.operations.GetChannelConfig(cid)
+	if cc == nil {_cover_atomic_.AddUint32(&GoCover_7_323265356137393664323638.Count[2], 1);
+		return nil, false
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_7_323265356137393664323638.Count[1], 1);return cc.ApplicationConfig()
+}
+
+var GoCover_7_323265356137393664323638 = struct {
+	Count     [3]uint32
+	Pos       [3 * 3]uint32
+	NumStmt   [3]uint16
+} {
+	Pos: [3 * 3]uint32{
+		32, 34, 0xf005a, // [0]
+		38, 38, 0x1f0002, // [1]
+		34, 36, 0x3000f, // [2]
+	},
+	NumStmt: [3]uint16{
+		2, // 0
+		1, // 1
+		1, // 2
+	},
+}
+var _ = _cover_atomic_.LoadUint32

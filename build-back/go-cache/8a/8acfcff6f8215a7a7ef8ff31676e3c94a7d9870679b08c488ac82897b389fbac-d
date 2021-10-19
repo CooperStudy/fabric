@@ -1,0 +1,146 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/chaincode/accesscontrol/mapper.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package accesscontrol; import _cover_atomic_ "sync/atomic"
+
+import (
+	"context"
+	"sync"
+	"time"
+
+	"github.com/hyperledger/fabric/common/crypto/tlsgen"
+	"github.com/hyperledger/fabric/common/util"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/peer"
+)
+
+var ttl = time.Minute * 10
+
+type certHash string
+
+type KeyGenFunc func() (*tlsgen.CertKeyPair, error)
+
+type certMapper struct {
+	keyGen KeyGenFunc
+	sync.RWMutex
+	m map[certHash]string
+}
+
+func newCertMapper(keyGen KeyGenFunc) *certMapper {_cover_atomic_.AddUint32(&GoCover_2_373330356164386336643838.Count[0], 1);
+	return &certMapper{
+		keyGen: keyGen,
+		m:      make(map[certHash]string),
+	}
+}
+
+func (r *certMapper) lookup(h certHash) string {_cover_atomic_.AddUint32(&GoCover_2_373330356164386336643838.Count[1], 1);
+	r.RLock()
+	defer r.RUnlock()
+	return r.m[h]
+}
+
+func (r *certMapper) register(hash certHash, name string) {_cover_atomic_.AddUint32(&GoCover_2_373330356164386336643838.Count[2], 1);
+	r.Lock()
+	defer r.Unlock()
+	r.m[hash] = name
+	time.AfterFunc(ttl, func() {_cover_atomic_.AddUint32(&GoCover_2_373330356164386336643838.Count[3], 1);
+		r.purge(hash)
+	})
+}
+
+func (r *certMapper) purge(hash certHash) {_cover_atomic_.AddUint32(&GoCover_2_373330356164386336643838.Count[4], 1);
+	r.Lock()
+	defer r.Unlock()
+	delete(r.m, hash)
+}
+
+func (r *certMapper) genCert(name string) (*tlsgen.CertKeyPair, error) {_cover_atomic_.AddUint32(&GoCover_2_373330356164386336643838.Count[5], 1);
+	keyPair, err := r.keyGen()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_373330356164386336643838.Count[7], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_373330356164386336643838.Count[6], 1);hash := util.ComputeSHA256(keyPair.TLSCert.Raw)
+	r.register(certHash(hash), name)
+	return keyPair, nil
+}
+
+// ExtractCertificateHash extracts the hash of the certificate from the stream
+func extractCertificateHashFromContext(ctx context.Context) []byte {_cover_atomic_.AddUint32(&GoCover_2_373330356164386336643838.Count[8], 1);
+	pr, extracted := peer.FromContext(ctx)
+	if !extracted {_cover_atomic_.AddUint32(&GoCover_2_373330356164386336643838.Count[14], 1);
+		return nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_373330356164386336643838.Count[9], 1);authInfo := pr.AuthInfo
+	if authInfo == nil {_cover_atomic_.AddUint32(&GoCover_2_373330356164386336643838.Count[15], 1);
+		return nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_373330356164386336643838.Count[10], 1);tlsInfo, isTLSConn := authInfo.(credentials.TLSInfo)
+	if !isTLSConn {_cover_atomic_.AddUint32(&GoCover_2_373330356164386336643838.Count[16], 1);
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_373330356164386336643838.Count[11], 1);certs := tlsInfo.State.PeerCertificates
+	if len(certs) == 0 {_cover_atomic_.AddUint32(&GoCover_2_373330356164386336643838.Count[17], 1);
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_373330356164386336643838.Count[12], 1);raw := certs[0].Raw
+	if len(raw) == 0 {_cover_atomic_.AddUint32(&GoCover_2_373330356164386336643838.Count[18], 1);
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_373330356164386336643838.Count[13], 1);return util.ComputeSHA256(raw)
+}
+
+var GoCover_2_373330356164386336643838 = struct {
+	Count     [19]uint32
+	Pos       [3 * 19]uint32
+	NumStmt   [19]uint16
+} {
+	Pos: [3 * 19]uint32{
+		32, 37, 0x20033, // [0]
+		39, 43, 0x20030, // [1]
+		45, 49, 0x1d003b, // [2]
+		49, 51, 0x3001d, // [3]
+		54, 58, 0x2002b, // [4]
+		60, 62, 0x100048, // [5]
+		65, 67, 0x150002, // [6]
+		62, 64, 0x30010, // [7]
+		71, 73, 0x100044, // [8]
+		77, 78, 0x150002, // [9]
+		82, 83, 0x100002, // [10]
+		86, 87, 0x150002, // [11]
+		90, 91, 0x130002, // [12]
+		94, 94, 0x200002, // [13]
+		73, 75, 0x30010, // [14]
+		78, 80, 0x30015, // [15]
+		83, 85, 0x30010, // [16]
+		87, 89, 0x30015, // [17]
+		91, 93, 0x30013, // [18]
+	},
+	NumStmt: [19]uint16{
+		1, // 0
+		3, // 1
+		4, // 2
+		1, // 3
+		3, // 4
+		2, // 5
+		3, // 6
+		1, // 7
+		2, // 8
+		2, // 9
+		2, // 10
+		2, // 11
+		2, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+	},
+}
+var _ = _cover_atomic_.LoadUint32

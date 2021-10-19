@@ -1,0 +1,264 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/endorser/support.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package endorser; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+
+	"github.com/hyperledger/fabric/common/channelconfig"
+	"github.com/hyperledger/fabric/common/crypto"
+	"github.com/hyperledger/fabric/core/aclmgmt"
+	"github.com/hyperledger/fabric/core/aclmgmt/resources"
+	"github.com/hyperledger/fabric/core/chaincode"
+	"github.com/hyperledger/fabric/core/common/ccprovider"
+	"github.com/hyperledger/fabric/core/handlers/decoration"
+	. "github.com/hyperledger/fabric/core/handlers/endorsement/api/identities"
+	"github.com/hyperledger/fabric/core/handlers/library"
+	"github.com/hyperledger/fabric/core/ledger"
+	"github.com/hyperledger/fabric/core/peer"
+	"github.com/hyperledger/fabric/core/scc"
+	"github.com/hyperledger/fabric/protos/common"
+	pb "github.com/hyperledger/fabric/protos/peer"
+	"github.com/pkg/errors"
+)
+
+// SupportImpl provides an implementation of the endorser.Support interface
+// issuing calls to various static methods of the peer
+type SupportImpl struct {
+	*PluginEndorser
+	crypto.SignerSupport
+	Peer             peer.Operations
+	PeerSupport      peer.Support
+	ChaincodeSupport *chaincode.ChaincodeSupport
+	SysCCProvider    *scc.Provider
+	ACLProvider      aclmgmt.ACLProvider
+}
+
+func (s *SupportImpl) NewQueryCreator(channel string) (QueryCreator, error) {_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[0], 1);
+	lgr := s.Peer.GetLedger(channel)
+	if lgr == nil {_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[2], 1);
+		return nil, errors.Errorf("channel %s doesn't exist", channel)
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[1], 1);return lgr, nil
+}
+
+func (s *SupportImpl) SigningIdentityForRequest(*pb.SignedProposal) (SigningIdentity, error) {_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[3], 1);
+	return s.SignerSupport, nil
+}
+
+// IsSysCCAndNotInvokableExternal returns true if the supplied chaincode is
+// ia system chaincode and it NOT invokable
+func (s *SupportImpl) IsSysCCAndNotInvokableExternal(name string) bool {_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[4], 1);
+	return s.SysCCProvider.IsSysCCAndNotInvokableExternal(name)
+}
+
+// GetTxSimulator returns the transaction simulator for the specified ledger
+// a client may obtain more than one such simulator; they are made unique
+// by way of the supplied txid
+func (s *SupportImpl) GetTxSimulator(ledgername string, txid string) (ledger.TxSimulator, error) {_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[5], 1);
+	lgr := s.Peer.GetLedger(ledgername)
+	if lgr == nil {_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[7], 1);
+		return nil, errors.Errorf("Channel does not exist: %s", ledgername)
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[6], 1);return lgr.NewTxSimulator(txid)
+}
+
+// GetHistoryQueryExecutor gives handle to a history query executor for the
+// specified ledger
+func (s *SupportImpl) GetHistoryQueryExecutor(ledgername string) (ledger.HistoryQueryExecutor, error) {_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[8], 1);
+	lgr := s.Peer.GetLedger(ledgername)
+	if lgr == nil {_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[10], 1);
+		return nil, errors.Errorf("Channel does not exist: %s", ledgername)
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[9], 1);return lgr.NewHistoryQueryExecutor()
+}
+
+// GetTransactionByID retrieves a transaction by id
+func (s *SupportImpl) GetTransactionByID(chid, txID string) (*pb.ProcessedTransaction, error) {_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[11], 1);
+	lgr := s.Peer.GetLedger(chid)
+	if lgr == nil {_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[14], 1);
+		return nil, errors.Errorf("failed to look up the ledger for Channel %s", chid)
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[12], 1);tx, err := lgr.GetTransactionByID(txID)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[15], 1);
+		return nil, errors.WithMessage(err, "GetTransactionByID failed")
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[13], 1);return tx, nil
+}
+
+// GetLedgerHeight returns ledger height for given channelID
+func (s *SupportImpl) GetLedgerHeight(channelID string) (uint64, error) {_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[16], 1);
+	lgr := s.Peer.GetLedger(channelID)
+	if lgr == nil {_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[19], 1);
+		return 0, errors.Errorf("failed to look up the ledger for Channel %s", channelID)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[17], 1);info, err := lgr.GetBlockchainInfo()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[20], 1);
+		return 0, errors.Wrap(err, fmt.Sprintf("failed to obtain information for Channel %s", channelID))
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[18], 1);return info.Height, nil
+}
+
+// IsSysCC returns true if the name matches a system chaincode's
+// system chaincode names are system, chain wide
+func (s *SupportImpl) IsSysCC(name string) bool {_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[21], 1);
+	return s.SysCCProvider.IsSysCC(name)
+}
+
+// GetChaincode returns the CCPackage from the fs
+func (s *SupportImpl) GetChaincodeDeploymentSpecFS(cds *pb.ChaincodeDeploymentSpec) (*pb.ChaincodeDeploymentSpec, error) {_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[22], 1);
+	ccpack, err := ccprovider.GetChaincodeFromFS(cds.ChaincodeSpec.ChaincodeId.Name, cds.ChaincodeSpec.ChaincodeId.Version)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[24], 1);
+		return nil, errors.Wrapf(err, "could not get chaincode from fs")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[23], 1);return ccpack.GetDepSpec(), nil
+}
+
+// ExecuteInit a deployment proposal and return the chaincode response
+func (s *SupportImpl) ExecuteLegacyInit(txParams *ccprovider.TransactionParams, cid, name, version, txid string, signedProp *pb.SignedProposal, prop *pb.Proposal, cds *pb.ChaincodeDeploymentSpec) (*pb.Response, *pb.ChaincodeEvent, error) {_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[25], 1);
+	cccid := &ccprovider.CCContext{
+		Name:    name,
+		Version: version,
+	}
+
+	return s.ChaincodeSupport.ExecuteLegacyInit(txParams, cccid, cds)
+}
+
+// Execute a proposal and return the chaincode response
+func (s *SupportImpl) Execute(txParams *ccprovider.TransactionParams, cid, name, version, txid string, signedProp *pb.SignedProposal, prop *pb.Proposal, input *pb.ChaincodeInput) (*pb.Response, *pb.ChaincodeEvent, error) {_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[26], 1);
+	cccid := &ccprovider.CCContext{
+		Name:    name,
+		Version: version,
+	}
+
+	// decorate the chaincode input
+	decorators := library.InitRegistry(library.Config{}).Lookup(library.Decoration).([]decoration.Decorator)
+	input.Decorations = make(map[string][]byte)
+	input = decoration.Apply(prop, input, decorators...)
+	txParams.ProposalDecorations = input.Decorations
+
+	return s.ChaincodeSupport.Execute(txParams, cccid, input)
+}
+
+// GetChaincodeDefinition returns ccprovider.ChaincodeDefinition for the chaincode with the supplied name
+func (s *SupportImpl) GetChaincodeDefinition(chaincodeName string, txsim ledger.QueryExecutor) (ccprovider.ChaincodeDefinition, error) {_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[27], 1);
+	return s.ChaincodeSupport.Lifecycle.ChaincodeDefinition(chaincodeName, txsim)
+}
+
+// CheckACL checks the ACL for the resource for the Channel using the
+// SignedProposal from which an id can be extracted for testing against a policy
+func (s *SupportImpl) CheckACL(signedProp *pb.SignedProposal, chdr *common.ChannelHeader, shdr *common.SignatureHeader, hdrext *pb.ChaincodeHeaderExtension) error {_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[28], 1);
+	return s.ACLProvider.CheckACL(resources.Peer_Propose, chdr.ChannelId, signedProp)
+}
+
+// IsJavaCC returns true if the CDS package bytes describe a chaincode
+// that requires the java runtime environment to execute
+func (s *SupportImpl) IsJavaCC(buf []byte) (bool, error) {_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[29], 1);
+	//the inner dep spec will contain the type
+	ccpack, err := ccprovider.GetCCPackage(buf)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[31], 1);
+		return false, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[30], 1);cds := ccpack.GetDepSpec()
+	return (cds.ChaincodeSpec.Type == pb.ChaincodeSpec_JAVA), nil
+}
+
+// CheckInstantiationPolicy returns an error if the instantiation in the supplied
+// ChaincodeDefinition differs from the instantiation policy stored on the ledger
+func (s *SupportImpl) CheckInstantiationPolicy(name, version string, cd ccprovider.ChaincodeDefinition) error {_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[32], 1);
+	return ccprovider.CheckInstantiationPolicy(name, version, cd.(*ccprovider.ChaincodeData))
+}
+
+// GetApplicationConfig returns the configtxapplication.SharedConfig for the Channel
+// and whether the Application config exists
+func (s *SupportImpl) GetApplicationConfig(cid string) (channelconfig.Application, bool) {_cover_atomic_.AddUint32(&GoCover_4_306432633236306362313365.Count[33], 1);
+	return s.PeerSupport.GetApplicationConfig(cid)
+}
+
+var GoCover_4_306432633236306362313365 = struct {
+	Count     [34]uint32
+	Pos       [3 * 34]uint32
+	NumStmt   [34]uint16
+} {
+	Pos: [3 * 34]uint32{
+		41, 43, 0x10004d, // [0]
+		46, 46, 0x110002, // [1]
+		43, 45, 0x30010, // [2]
+		49, 51, 0x2005e, // [3]
+		55, 57, 0x20048, // [4]
+		62, 64, 0x100062, // [5]
+		67, 67, 0x210002, // [6]
+		64, 66, 0x30010, // [7]
+		72, 74, 0x100067, // [8]
+		77, 77, 0x260002, // [9]
+		74, 76, 0x30010, // [10]
+		81, 83, 0x10005f, // [11]
+		86, 87, 0x100002, // [12]
+		90, 90, 0x100002, // [13]
+		83, 85, 0x30010, // [14]
+		87, 89, 0x30010, // [15]
+		94, 96, 0x100049, // [16]
+		100, 101, 0x100002, // [17]
+		105, 105, 0x190002, // [18]
+		96, 98, 0x30010, // [19]
+		101, 103, 0x30010, // [20]
+		110, 112, 0x20031, // [21]
+		115, 117, 0x10007a, // [22]
+		121, 121, 0x210002, // [23]
+		117, 119, 0x30010, // [24]
+		125, 132, 0x200ef, // [25]
+		135, 148, 0x200de, // [26]
+		151, 153, 0x20088, // [27]
+		157, 159, 0x200a4, // [28]
+		163, 166, 0x10003a, // [29]
+		169, 170, 0x3f0002, // [30]
+		166, 168, 0x30010, // [31]
+		175, 177, 0x2006f, // [32]
+		181, 183, 0x2005a, // [33]
+	},
+	NumStmt: [34]uint16{
+		2, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		2, // 5
+		1, // 6
+		1, // 7
+		2, // 8
+		1, // 9
+		1, // 10
+		2, // 11
+		2, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		2, // 16
+		2, // 17
+		1, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		2, // 22
+		1, // 23
+		1, // 24
+		2, // 25
+		6, // 26
+		1, // 27
+		1, // 28
+		2, // 29
+		2, // 30
+		1, // 31
+		1, // 32
+		1, // 33
+	},
+}
+var _ = _cover_atomic_.LoadUint32

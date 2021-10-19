@@ -1,0 +1,10 @@
+# test log
+getenv TMPDIR
+stat /tmp
+stat /blah-2021-09-23T16:38:44.538207607+08:00
+getenv FABRIC_CFG_PATH
+getenv PWD
+stat /etc/hyperledger/fabric
+getenv FABRIC_CFG_PATH
+getenv PWD
+stat /etc/hyperledger/fabric

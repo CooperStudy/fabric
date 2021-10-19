@@ -1,0 +1,328 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/peer/chaincode/install.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package chaincode; import _cover_atomic_ "sync/atomic"
+
+import (
+	"context"
+	"fmt"
+	"io/ioutil"
+
+	"github.com/pkg/errors"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/core/common/ccpackage"
+	"github.com/hyperledger/fabric/core/common/ccprovider"
+	"github.com/hyperledger/fabric/peer/common"
+	pcommon "github.com/hyperledger/fabric/protos/common"
+	pb "github.com/hyperledger/fabric/protos/peer"
+	"github.com/hyperledger/fabric/protos/utils"
+	"github.com/spf13/cobra"
+)
+
+var chaincodeInstallCmd *cobra.Command
+
+const installCmdName = "install"
+
+const installDesc = "Package the specified chaincode into a deployment spec and save it on the peer's path."
+
+// installCmd returns the cobra command for Chaincode Deploy
+func installCmd(cf *ChaincodeCmdFactory) *cobra.Command {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[0], 1);
+	chaincodeInstallCmd = &cobra.Command{
+		Use:       "install",
+		Short:     fmt.Sprint(installDesc),
+		Long:      fmt.Sprint(installDesc),
+		ValidArgs: []string{"1"},
+		RunE: func(cmd *cobra.Command, args []string) error {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[2], 1);
+			var ccpackfile string
+			if len(args) > 0 {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[4], 1);
+				ccpackfile = args[0]
+			}
+			_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[3], 1);return chaincodeInstall(cmd, ccpackfile, cf)
+		},
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[1], 1);flagList := []string{
+		"lang",
+		"ctor",
+		"path",
+		"name",
+		"version",
+		"peerAddresses",
+		"tlsRootCertFiles",
+		"connectionProfile",
+	}
+	attachFlags(chaincodeInstallCmd, flagList)
+
+	return chaincodeInstallCmd
+}
+
+//install the depspec to "peer.address"
+func install(msg proto.Message, cf *ChaincodeCmdFactory) error {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[5], 1);
+	creator, err := cf.Signer.Serialize()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[11], 1);
+		return fmt.Errorf("Error serializing identity for %s: %s", cf.Signer.GetIdentifier(), err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[6], 1);prop, _, err := utils.CreateInstallProposalFromCDS(msg, creator)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[12], 1);
+		return fmt.Errorf("Error creating proposal  %s: %s", chainFuncName, err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[7], 1);var signedProp *pb.SignedProposal
+	signedProp, err = utils.GetSignedProposal(prop, cf.Signer)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[13], 1);
+		return fmt.Errorf("Error creating signed proposal  %s: %s", chainFuncName, err)
+	}
+
+	// install is currently only supported for one peer
+	_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[8], 1);proposalResponse, err := cf.EndorserClients[0].ProcessProposal(context.Background(), signedProp)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[14], 1);
+		return fmt.Errorf("Error endorsing %s: %s", chainFuncName, err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[9], 1);if proposalResponse != nil {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[15], 1);
+		if proposalResponse.Response.Status != int32(pcommon.Status_SUCCESS) {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[17], 1);
+			return errors.Errorf("Bad response: %d - %s", proposalResponse.Response.Status, proposalResponse.Response.Message)
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[16], 1);logger.Infof("Installed remotely %v", proposalResponse)
+	} else{ _cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[18], 1);{
+		return errors.New("Error during install: received nil proposal response")
+	}}
+
+	_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[10], 1);return nil
+}
+
+//genChaincodeDeploymentSpec creates ChaincodeDeploymentSpec as the package to install
+func genChaincodeDeploymentSpec(cmd *cobra.Command, chaincodeName, chaincodeVersion string) (*pb.ChaincodeDeploymentSpec, error) {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[19], 1);
+	if existed, _ := ccprovider.ChaincodePackageExists(chaincodeName, chaincodeVersion); existed {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[23], 1);
+		return nil, fmt.Errorf("chaincode %s:%s already exists", chaincodeName, chaincodeVersion)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[20], 1);spec, err := getChaincodeSpec(cmd)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[24], 1);
+		return nil, err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[21], 1);cds, err := getChaincodeDeploymentSpec(spec, true)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[25], 1);
+		return nil, fmt.Errorf("error getting chaincode code %s: %s", chaincodeName, err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[22], 1);return cds, nil
+}
+
+//getPackageFromFile get the chaincode package from file and the extracted ChaincodeDeploymentSpec
+func getPackageFromFile(ccpackfile string) (proto.Message, *pb.ChaincodeDeploymentSpec, error) {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[26], 1);
+	b, err := ioutil.ReadFile(ccpackfile)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[30], 1);
+		return nil, nil, err
+	}
+
+	//the bytes should be a valid package (CDS or SignedCDS)
+	_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[27], 1);ccpack, err := ccprovider.GetCCPackage(b)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[31], 1);
+		return nil, nil, err
+	}
+
+	//either CDS or Envelope
+	_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[28], 1);o := ccpack.GetPackageObject()
+
+	//try CDS first
+	cds, ok := o.(*pb.ChaincodeDeploymentSpec)
+	if !ok || cds == nil {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[32], 1);
+		//try Envelope next
+		env, ok := o.(*pcommon.Envelope)
+		if !ok || env == nil {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[35], 1);
+			return nil, nil, fmt.Errorf("error extracting valid chaincode package")
+		}
+
+		//this will check for a valid package Envelope
+		_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[33], 1);_, sCDS, err := ccpackage.ExtractSignedCCDepSpec(env)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[36], 1);
+			return nil, nil, fmt.Errorf("error extracting valid signed chaincode package(%s)", err)
+		}
+
+		//...and get the CDS at last
+		_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[34], 1);cds, err = utils.GetChaincodeDeploymentSpec(sCDS.ChaincodeDeploymentSpec, platformRegistry)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[37], 1);
+			return nil, nil, fmt.Errorf("error extracting chaincode deployment spec(%s)", err)
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[29], 1);return o, cds, nil
+}
+
+// chaincodeInstall installs the chaincode. If remoteinstall, does it via a lscc call
+func chaincodeInstall(cmd *cobra.Command, ccpackfile string, cf *ChaincodeCmdFactory) error {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[38], 1);
+	// Parsing of the command line is done so silence cmd usage
+	cmd.SilenceUsage = true
+
+	var err error
+	if cf == nil {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[41], 1);
+		cf, err = InitCmdFactory(cmd.Name(), true, false)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[42], 1);
+			return err
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[39], 1);var ccpackmsg proto.Message
+	if ccpackfile == "" {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[43], 1);
+		if chaincodePath == common.UndefinedParamValue || chaincodeVersion == common.UndefinedParamValue || chaincodeName == common.UndefinedParamValue {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[45], 1);
+			return fmt.Errorf("Must supply value for %s name, path and version parameters.", chainFuncName)
+		}
+		//generate a raw ChaincodeDeploymentSpec
+		_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[44], 1);ccpackmsg, err = genChaincodeDeploymentSpec(cmd, chaincodeName, chaincodeVersion)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[46], 1);
+			return err
+		}
+	} else{ _cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[47], 1);{
+		//read in a package generated by the "package" sub-command (and perhaps signed
+		//by multiple owners with the "signpackage" sub-command)
+		var cds *pb.ChaincodeDeploymentSpec
+		ccpackmsg, cds, err = getPackageFromFile(ccpackfile)
+
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[50], 1);
+			return err
+		}
+
+		//get the chaincode details from cds
+		_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[48], 1);cName := cds.ChaincodeSpec.ChaincodeId.Name
+		cVersion := cds.ChaincodeSpec.ChaincodeId.Version
+
+		//if user provided chaincodeName, use it for validation
+		if chaincodeName != "" && chaincodeName != cName {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[51], 1);
+			return fmt.Errorf("chaincode name %s does not match name %s in package", chaincodeName, cName)
+		}
+
+		//if user provided chaincodeVersion, use it for validation
+		_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[49], 1);if chaincodeVersion != "" && chaincodeVersion != cVersion {_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[52], 1);
+			return fmt.Errorf("chaincode version %s does not match version %s in packages", chaincodeVersion, cVersion)
+		}
+	}}
+
+	_cover_atomic_.AddUint32(&GoCover_2_316135646539653831366338.Count[40], 1);err = install(ccpackmsg, cf)
+
+	return err
+}
+
+var GoCover_2_316135646539653831366338 = struct {
+	Count     [53]uint32
+	Pos       [3 * 53]uint32
+	NumStmt   [53]uint16
+} {
+	Pos: [3 * 53]uint32{
+		33, 39, 0x370039, // [0]
+		47, 59, 0x1c0002, // [1]
+		39, 41, 0x150037, // [2]
+		44, 44, 0x300004, // [3]
+		41, 43, 0x50015, // [4]
+		63, 65, 0x100040, // [5]
+		69, 70, 0x100002, // [6]
+		74, 76, 0x100002, // [7]
+		81, 82, 0x100002, // [8]
+		86, 86, 0x1d0002, // [9]
+		95, 95, 0xc0002, // [10]
+		65, 67, 0x30010, // [11]
+		70, 72, 0x30010, // [12]
+		76, 78, 0x30010, // [13]
+		82, 84, 0x30010, // [14]
+		86, 87, 0x48001d, // [15]
+		90, 90, 0x3a0003, // [16]
+		87, 89, 0x40048, // [17]
+		91, 93, 0x30008, // [18]
+		99, 100, 0x5f0082, // [19]
+		104, 105, 0x100002, // [20]
+		109, 110, 0x100002, // [21]
+		114, 114, 0x110002, // [22]
+		100, 102, 0x3005f, // [23]
+		105, 107, 0x30010, // [24]
+		110, 112, 0x30010, // [25]
+		118, 120, 0x100060, // [26]
+		125, 126, 0x100002, // [27]
+		131, 135, 0x170002, // [28]
+		155, 155, 0x140002, // [29]
+		120, 122, 0x30010, // [30]
+		126, 128, 0x30010, // [31]
+		135, 138, 0x180017, // [32]
+		143, 144, 0x110003, // [33]
+		149, 150, 0x110003, // [34]
+		138, 140, 0x40018, // [35]
+		144, 146, 0x40011, // [36]
+		150, 152, 0x40011, // [37]
+		159, 164, 0xf005d, // [38]
+		171, 172, 0x160002, // [39]
+		206, 208, 0xc0002, // [40]
+		164, 166, 0x11000f, // [41]
+		166, 168, 0x40011, // [42]
+		172, 173, 0x930016, // [43]
+		177, 178, 0x110003, // [44]
+		173, 175, 0x40093, // [45]
+		178, 180, 0x40011, // [46]
+		181, 187, 0x110008, // [47]
+		192, 196, 0x340003, // [48]
+		201, 201, 0x3d0003, // [49]
+		187, 189, 0x40011, // [50]
+		196, 198, 0x40034, // [51]
+		201, 203, 0x4003d, // [52]
+	},
+	NumStmt: [53]uint16{
+		1, // 0
+		3, // 1
+		2, // 2
+		1, // 3
+		1, // 4
+		2, // 5
+		2, // 6
+		3, // 7
+		2, // 8
+		1, // 9
+		1, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		2, // 20
+		2, // 21
+		1, // 22
+		1, // 23
+		1, // 24
+		1, // 25
+		2, // 26
+		2, // 27
+		3, // 28
+		1, // 29
+		1, // 30
+		1, // 31
+		2, // 32
+		2, // 33
+		2, // 34
+		1, // 35
+		1, // 36
+		1, // 37
+		3, // 38
+		2, // 39
+		2, // 40
+		2, // 41
+		1, // 42
+		1, // 43
+		2, // 44
+		1, // 45
+		1, // 46
+		3, // 47
+		3, // 48
+		1, // 49
+		1, // 50
+		1, // 51
+		1, // 52
+	},
+}
+var _ = _cover_atomic_.LoadUint32

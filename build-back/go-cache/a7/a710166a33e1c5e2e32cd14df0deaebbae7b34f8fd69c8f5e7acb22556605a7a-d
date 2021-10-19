@@ -1,0 +1,133 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/chaincode/config.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package chaincode; import _cover_atomic_ "sync/atomic"
+
+import (
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/hyperledger/fabric/common/flogging"
+	logging "github.com/op/go-logging"
+	"github.com/spf13/viper"
+)
+
+const (
+	defaultExecutionTimeout = 30 * time.Second
+	minimumStartupTimeout   = 5 * time.Second
+)
+
+type Config struct {
+	TLSEnabled     bool
+	Keepalive      time.Duration
+	ExecuteTimeout time.Duration
+	StartupTimeout time.Duration
+	LogFormat      string
+	LogLevel       string
+	ShimLogLevel   string
+}
+
+func GlobalConfig() *Config {_cover_atomic_.AddUint32(&GoCover_3_323839383963343337363361.Count[0], 1);
+	c := &Config{}
+	c.load()
+	return c
+}
+
+func (c *Config) load() {_cover_atomic_.AddUint32(&GoCover_3_323839383963343337363361.Count[1], 1);
+	viper.SetEnvPrefix("CORE")
+	viper.AutomaticEnv()
+	replacer := strings.NewReplacer(".", "_")
+	viper.SetEnvKeyReplacer(replacer)
+
+	c.TLSEnabled = viper.GetBool("peer.tls.enabled")
+
+	c.Keepalive = toSeconds(viper.GetString("chaincode.keepalive"), 0)
+	c.ExecuteTimeout = viper.GetDuration("chaincode.executetimeout")
+	if c.ExecuteTimeout < time.Second {_cover_atomic_.AddUint32(&GoCover_3_323839383963343337363361.Count[4], 1);
+		c.ExecuteTimeout = defaultExecutionTimeout
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_323839383963343337363361.Count[2], 1);c.StartupTimeout = viper.GetDuration("chaincode.startuptimeout")
+	if c.StartupTimeout < minimumStartupTimeout {_cover_atomic_.AddUint32(&GoCover_3_323839383963343337363361.Count[5], 1);
+		c.StartupTimeout = minimumStartupTimeout
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_323839383963343337363361.Count[3], 1);c.LogFormat = viper.GetString("chaincode.logging.format")
+	c.LogLevel = getLogLevelFromViper("chaincode.logging.level")
+	c.ShimLogLevel = getLogLevelFromViper("chaincode.logging.shim")
+}
+
+func toSeconds(s string, def int) time.Duration {_cover_atomic_.AddUint32(&GoCover_3_323839383963343337363361.Count[6], 1);
+	seconds, err := strconv.Atoi(s)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_323839383963343337363361.Count[8], 1);
+		return time.Duration(def) * time.Second
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_323839383963343337363361.Count[7], 1);return time.Duration(seconds) * time.Second
+}
+
+// getLogLevelFromViper gets the chaincode container log levels from viper
+func getLogLevelFromViper(key string) string {_cover_atomic_.AddUint32(&GoCover_3_323839383963343337363361.Count[9], 1);
+	levelString := viper.GetString(key)
+	_, err := logging.LogLevel(levelString)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_323839383963343337363361.Count[11], 1);
+		chaincodeLogger.Warningf("%s has invalid log level %s. defaulting to %s", key, levelString, flogging.DefaultLevel())
+		levelString = flogging.DefaultLevel()
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_323839383963343337363361.Count[10], 1);return levelString
+}
+
+// DevModeUserRunsChaincode enables chaincode execution in a development
+// environment
+const DevModeUserRunsChaincode string = "dev"
+
+// IsDevMode returns true if the peer was configured with development-mode
+// enabled.
+func IsDevMode() bool {_cover_atomic_.AddUint32(&GoCover_3_323839383963343337363361.Count[12], 1);
+	mode := viper.GetString("chaincode.mode")
+
+	return mode == DevModeUserRunsChaincode
+}
+
+var GoCover_3_323839383963343337363361 = struct {
+	Count     [13]uint32
+	Pos       [3 * 13]uint32
+	NumStmt   [13]uint16
+} {
+	Pos: [3 * 13]uint32{
+		34, 38, 0x2001d, // [0]
+		40, 50, 0x240019, // [1]
+		53, 54, 0x2e0002, // [2]
+		58, 60, 0x410002, // [3]
+		50, 52, 0x30024, // [4]
+		54, 56, 0x3002e, // [5]
+		63, 65, 0x100031, // [6]
+		69, 69, 0x2d0002, // [7]
+		65, 67, 0x30010, // [8]
+		73, 76, 0x10002e, // [9]
+		81, 81, 0x140002, // [10]
+		76, 79, 0x30010, // [11]
+		90, 94, 0x20017, // [12]
+	},
+	NumStmt: [13]uint16{
+		3, // 0
+		8, // 1
+		2, // 2
+		3, // 3
+		1, // 4
+		1, // 5
+		2, // 6
+		1, // 7
+		1, // 8
+		3, // 9
+		1, // 10
+		2, // 11
+		2, // 12
+	},
+}
+var _ = _cover_atomic_.LoadUint32

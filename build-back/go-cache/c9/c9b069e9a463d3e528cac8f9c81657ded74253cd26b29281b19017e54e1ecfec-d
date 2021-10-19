@@ -1,0 +1,84 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/ledger/kvledger/history/historydb/histmgr_helper.go:1
+/*
+Copyright IBM Corp. 2016 All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+		 http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package historydb; import _cover_atomic_ "sync/atomic"
+
+import (
+	"bytes"
+
+	"github.com/hyperledger/fabric/common/ledger/util"
+)
+
+// CompositeKeySep is a nil byte used as a separator between different components of a composite key
+var CompositeKeySep = []byte{0x00}
+
+//ConstructCompositeHistoryKey builds the History Key of namespace~key~blocknum~trannum
+// using an order preserving encoding so that history query results are ordered by height
+func ConstructCompositeHistoryKey(ns string, key string, blocknum uint64, trannum uint64) []byte {_cover_atomic_.AddUint32(&GoCover_0_633033653463613938333830.Count[0], 1);
+
+	var compositeKey []byte
+	compositeKey = append(compositeKey, []byte(ns)...)
+	compositeKey = append(compositeKey, CompositeKeySep...)
+	compositeKey = append(compositeKey, []byte(key)...)
+	compositeKey = append(compositeKey, CompositeKeySep...)
+	compositeKey = append(compositeKey, util.EncodeOrderPreservingVarUint64(blocknum)...)
+	compositeKey = append(compositeKey, util.EncodeOrderPreservingVarUint64(trannum)...)
+
+	return compositeKey
+}
+
+//ConstructPartialCompositeHistoryKey builds a partial History Key namespace~key~
+// for use in history key range queries
+func ConstructPartialCompositeHistoryKey(ns string, key string, endkey bool) []byte {_cover_atomic_.AddUint32(&GoCover_0_633033653463613938333830.Count[1], 1);
+	var compositeKey []byte
+	compositeKey = append(compositeKey, []byte(ns)...)
+	compositeKey = append(compositeKey, CompositeKeySep...)
+	compositeKey = append(compositeKey, []byte(key)...)
+	compositeKey = append(compositeKey, CompositeKeySep...)
+	if endkey {_cover_atomic_.AddUint32(&GoCover_0_633033653463613938333830.Count[3], 1);
+		compositeKey = append(compositeKey, []byte{0xff}...)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_633033653463613938333830.Count[2], 1);return compositeKey
+}
+
+//SplitCompositeHistoryKey splits the key bytes using a separator
+func SplitCompositeHistoryKey(bytesToSplit []byte, separator []byte) ([]byte, []byte) {_cover_atomic_.AddUint32(&GoCover_0_633033653463613938333830.Count[4], 1);
+	split := bytes.SplitN(bytesToSplit, separator, 2)
+	return split[0], split[1]
+}
+
+var GoCover_0_633033653463613938333830 = struct {
+	Count     [5]uint32
+	Pos       [3 * 5]uint32
+	NumStmt   [5]uint16
+} {
+	Pos: [3 * 5]uint32{
+		30, 41, 0x20062, // [0]
+		45, 51, 0xc0055, // [1]
+		54, 54, 0x150002, // [2]
+		51, 53, 0x3000c, // [3]
+		58, 61, 0x20057, // [4]
+	},
+	NumStmt: [5]uint16{
+		8, // 0
+		6, // 1
+		1, // 2
+		1, // 3
+		2, // 4
+	},
+}
+var _ = _cover_atomic_.LoadUint32

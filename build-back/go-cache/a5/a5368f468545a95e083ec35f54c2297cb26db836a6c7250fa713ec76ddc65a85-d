@@ -1,0 +1,6 @@
+./client_suite_test.go
+./client_test.go
+./deliver_client_test.go
+./orderer_client_test.go
+./prover_test.go
+./tx_submitter_test.go

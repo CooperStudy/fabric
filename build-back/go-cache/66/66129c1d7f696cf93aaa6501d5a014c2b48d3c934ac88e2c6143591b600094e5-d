@@ -1,0 +1,136 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/grpcmetrics/interceptor.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package grpcmetrics; import _cover_atomic_ "sync/atomic"
+
+import (
+	"context"
+	"strings"
+	"time"
+
+	"github.com/hyperledger/fabric/common/metrics"
+	"google.golang.org/grpc"
+)
+
+type UnaryMetrics struct {
+	RequestDuration   metrics.Histogram
+	RequestsReceived  metrics.Counter
+	RequestsCompleted metrics.Counter
+}
+
+func UnaryServerInterceptor(um *UnaryMetrics) grpc.UnaryServerInterceptor {_cover_atomic_.AddUint32(&GoCover_0_383537633839366330636536.Count[0], 1);
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {_cover_atomic_.AddUint32(&GoCover_0_383537633839366330636536.Count[1], 1);
+		service, method := serviceMethod(info.FullMethod)
+		um.RequestsReceived.With("service", service, "method", method).Add(1)
+
+		startTime := time.Now()
+		resp, err := handler(ctx, req)
+		duration := time.Since(startTime)
+
+		um.RequestDuration.With(
+			"service", service, "method", method, "code", grpc.Code(err).String(),
+		).Observe(duration.Seconds())
+		um.RequestsCompleted.With("service", service, "method", method, "code", grpc.Code(err).String()).Add(1)
+
+		return resp, err
+	}
+}
+
+type StreamMetrics struct {
+	RequestDuration   metrics.Histogram
+	RequestsReceived  metrics.Counter
+	RequestsCompleted metrics.Counter
+	MessagesSent      metrics.Counter
+	MessagesReceived  metrics.Counter
+}
+
+func StreamServerInterceptor(sm *StreamMetrics) grpc.StreamServerInterceptor {_cover_atomic_.AddUint32(&GoCover_0_383537633839366330636536.Count[2], 1);
+	return func(svc interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {_cover_atomic_.AddUint32(&GoCover_0_383537633839366330636536.Count[3], 1);
+		sm := sm
+		service, method := serviceMethod(info.FullMethod)
+		sm.RequestsReceived.With("service", service, "method", method).Add(1)
+
+		wrappedStream := &serverStream{
+			ServerStream:     stream,
+			messagesSent:     sm.MessagesSent.With("service", service, "method", method),
+			messagesReceived: sm.MessagesReceived.With("service", service, "method", method),
+		}
+
+		startTime := time.Now()
+		err := handler(svc, wrappedStream)
+		duration := time.Since(startTime)
+
+		sm.RequestDuration.With(
+			"service", service, "method", method, "code", grpc.Code(err).String(),
+		).Observe(duration.Seconds())
+		sm.RequestsCompleted.With("service", service, "method", method, "code", grpc.Code(err).String()).Add(1)
+
+		return err
+	}
+}
+
+func serviceMethod(fullMethod string) (service, method string) {_cover_atomic_.AddUint32(&GoCover_0_383537633839366330636536.Count[4], 1);
+	normalizedMethod := strings.Replace(fullMethod, ".", "_", -1)
+	parts := strings.SplitN(normalizedMethod, "/", -1)
+	if len(parts) != 3 {_cover_atomic_.AddUint32(&GoCover_0_383537633839366330636536.Count[6], 1);
+		return "unknown", "unknown"
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_383537633839366330636536.Count[5], 1);return parts[1], parts[2]
+}
+
+type serverStream struct {
+	grpc.ServerStream
+	messagesSent     metrics.Counter
+	messagesReceived metrics.Counter
+}
+
+func (ss *serverStream) SendMsg(msg interface{}) error {_cover_atomic_.AddUint32(&GoCover_0_383537633839366330636536.Count[7], 1);
+	ss.messagesSent.Add(1)
+	return ss.ServerStream.SendMsg(msg)
+}
+
+func (ss *serverStream) RecvMsg(msg interface{}) error {_cover_atomic_.AddUint32(&GoCover_0_383537633839366330636536.Count[8], 1);
+	err := ss.ServerStream.RecvMsg(msg)
+	if err == nil {_cover_atomic_.AddUint32(&GoCover_0_383537633839366330636536.Count[10], 1);
+		ss.messagesReceived.Add(1)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_383537633839366330636536.Count[9], 1);return err
+}
+
+var GoCover_0_383537633839366330636536 = struct {
+	Count     [11]uint32
+	Pos       [3 * 11]uint32
+	NumStmt   [11]uint16
+} {
+	Pos: [3 * 11]uint32{
+		24, 25, 0x80004b, // [0]
+		25, 39, 0x30080, // [1]
+		50, 51, 0x78004e, // [2]
+		51, 72, 0x30078, // [3]
+		75, 78, 0x150040, // [4]
+		81, 81, 0x1b0002, // [5]
+		78, 80, 0x30015, // [6]
+		90, 93, 0x20038, // [7]
+		95, 97, 0x100038, // [8]
+		100, 100, 0xc0002, // [9]
+		97, 99, 0x30010, // [10]
+	},
+	NumStmt: [11]uint16{
+		1, // 0
+		8, // 1
+		1, // 2
+		10, // 3
+		3, // 4
+		1, // 5
+		1, // 6
+		2, // 7
+		2, // 8
+		1, // 9
+		1, // 10
+	},
+}
+var _ = _cover_atomic_.LoadUint32

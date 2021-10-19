@@ -1,0 +1,291 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/common/policies/inquire/compare.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package inquire; import _cover_atomic_ "sync/atomic"
+
+import (
+	"bytes"
+	"fmt"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/policies"
+	"github.com/hyperledger/fabric/protos/msp"
+)
+
+// ComparablePrincipal defines an MSPPrincipal that can be compared to other principals
+type ComparablePrincipal struct {
+	principal *msp.MSPPrincipal
+	ou        *msp.OrganizationUnit
+	role      *msp.MSPRole
+	mspID     string
+}
+
+// NewComparablePrincipal creates a ComparablePrincipal out of the given MSPPrincipal.
+// Returns nil if a failure occurs.
+func NewComparablePrincipal(principal *msp.MSPPrincipal) *ComparablePrincipal {_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[0], 1);
+	if principal == nil {_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[3], 1);
+		logger.Warning("Principal is nil")
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[1], 1);cp := &ComparablePrincipal{
+		principal: principal,
+	}
+	switch principal.PrincipalClassification {
+	case msp.MSPPrincipal_ROLE:_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[4], 1);
+		return cp.ToRole()
+	case msp.MSPPrincipal_ORGANIZATION_UNIT:_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[5], 1);
+		return cp.ToOURole()
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[2], 1);mapping := msp.MSPPrincipal_Classification_name[int32(principal.PrincipalClassification)]
+	logger.Warning("Received an unsupported principal type:", principal.PrincipalClassification, "mapped to", mapping)
+	return nil
+}
+
+// IsFound returns whether the ComparablePrincipal is found among the given set of ComparablePrincipals
+// For the ComparablePrincipal x to be found, there needs to be some ComparablePrincipal y in the set
+// such that x.IsA(y) will be true.
+func (cp *ComparablePrincipal) IsFound(set ...*ComparablePrincipal) bool {_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[6], 1);
+	for _, cp2 := range set {_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[8], 1);
+		if cp.IsA(cp2) {_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[9], 1);
+			return true
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[7], 1);return false
+}
+
+// IsA determines whether all identities that satisfy this ComparablePrincipal
+// also satisfy the other ComparablePrincipal.
+// Example: if this ComparablePrincipal is a Peer role,
+// and the other ComparablePrincipal is a Member role, then
+// all identities that satisfy this ComparablePrincipal (are peers)
+// also satisfy the other principal (are members).
+func (cp *ComparablePrincipal) IsA(other *ComparablePrincipal) bool {_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[10], 1);
+	this := cp
+
+	if other == nil {_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[17], 1);
+		return false
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[11], 1);if this.principal == nil || other.principal == nil {_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[18], 1);
+		logger.Warning("Used an un-initialized ComparablePrincipal")
+		return false
+	}
+	// Compare the MSP ID
+	_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[12], 1);if this.mspID != other.mspID {_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[19], 1);
+		return false
+	}
+
+	// If the other Principal is a member, then any role or OU role
+	// fits, because every role or OU role is also a member of the MSP
+	_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[13], 1);if other.role != nil && other.role.Role == msp.MSPRole_MEMBER {_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[20], 1);
+		return true
+	}
+
+	// Check if we're both OU roles
+	_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[14], 1);if this.ou != nil && other.ou != nil {_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[21], 1);
+		sameOU := this.ou.OrganizationalUnitIdentifier == other.ou.OrganizationalUnitIdentifier
+		sameIssuer := bytes.Equal(this.ou.CertifiersIdentifier, other.ou.CertifiersIdentifier)
+		return sameOU && sameIssuer
+	}
+
+	// Check if we're both the same MSP Role
+	_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[15], 1);if this.role != nil && other.role != nil {_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[22], 1);
+		return this.role.Role == other.role.Role
+	}
+
+	// Else, we can't say anything, because we have no knowledge
+	// about the OUs that make up the MSP roles - so return false
+	_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[16], 1);return false
+}
+
+// ToOURole converts this ComparablePrincipal to OU principal, and returns nil on failure
+func (cp *ComparablePrincipal) ToOURole() *ComparablePrincipal {_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[23], 1);
+	ouRole := &msp.OrganizationUnit{}
+	err := proto.Unmarshal(cp.principal.Principal, ouRole)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[25], 1);
+		logger.Warning("Failed unmarshaling principal:", err)
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[24], 1);cp.mspID = ouRole.MspIdentifier
+	cp.ou = ouRole
+	return cp
+}
+
+// ToRole converts this ComparablePrincipal to MSP Role, and returns nil if the conversion failed
+func (cp *ComparablePrincipal) ToRole() *ComparablePrincipal {_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[26], 1);
+	mspRole := &msp.MSPRole{}
+	err := proto.Unmarshal(cp.principal.Principal, mspRole)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[28], 1);
+		logger.Warning("Failed unmarshaling principal:", err)
+		return nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[27], 1);cp.mspID = mspRole.MspIdentifier
+	cp.role = mspRole
+	return cp
+}
+
+// ComparablePrincipalSet aggregates ComparablePrincipals
+type ComparablePrincipalSet []*ComparablePrincipal
+
+// ToPrincipalSet converts this ComparablePrincipalSet to a PrincipalSet
+func (cps ComparablePrincipalSet) ToPrincipalSet() policies.PrincipalSet {_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[29], 1);
+	var res policies.PrincipalSet
+	for _, cp := range cps {_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[31], 1);
+		res = append(res, cp.principal)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[30], 1);return res
+}
+
+// String returns a string representation of this ComparablePrincipalSet
+func (cps ComparablePrincipalSet) String() string {_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[32], 1);
+	buff := bytes.Buffer{}
+	buff.WriteString("[")
+	for i, cp := range cps {_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[34], 1);
+		buff.WriteString(cp.mspID)
+		buff.WriteString(".")
+		if cp.role != nil {_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[37], 1);
+			buff.WriteString(fmt.Sprintf("%v", cp.role.Role))
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[35], 1);if cp.ou != nil {_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[38], 1);
+			buff.WriteString(fmt.Sprintf("%v", cp.ou.OrganizationalUnitIdentifier))
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[36], 1);if i < len(cps)-1 {_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[39], 1);
+			buff.WriteString(", ")
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[33], 1);buff.WriteString("]")
+	return buff.String()
+}
+
+// NewComparablePrincipalSet constructs a ComparablePrincipalSet out of the given PrincipalSet
+func NewComparablePrincipalSet(set policies.PrincipalSet) ComparablePrincipalSet {_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[40], 1);
+	var res ComparablePrincipalSet
+	for _, principal := range set {_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[42], 1);
+		cp := NewComparablePrincipal(principal)
+		if cp == nil {_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[44], 1);
+			return nil
+		}
+		_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[43], 1);res = append(res, cp)
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[41], 1);return res
+}
+
+// Clone returns a copy of this ComparablePrincipalSet
+func (cps ComparablePrincipalSet) Clone() ComparablePrincipalSet {_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[45], 1);
+	res := make(ComparablePrincipalSet, len(cps))
+	for i, cp := range cps {_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[47], 1);
+		res[i] = cp
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_666534393065343133333939.Count[46], 1);return res
+}
+
+var GoCover_0_666534393065343133333939 = struct {
+	Count     [48]uint32
+	Pos       [3 * 48]uint32
+	NumStmt   [48]uint16
+} {
+	Pos: [3 * 48]uint32{
+		28, 29, 0x16004f, // [0]
+		33, 36, 0x2b0002, // [1]
+		42, 44, 0xc0002, // [2]
+		29, 32, 0x30016, // [3]
+		37, 38, 0x15001d, // [4]
+		39, 40, 0x17002a, // [5]
+		50, 51, 0x1a004a, // [6]
+		56, 56, 0xe0002, // [7]
+		51, 52, 0x12001a, // [8]
+		52, 54, 0x40012, // [9]
+		65, 68, 0x120045, // [10]
+		71, 71, 0x350002, // [11]
+		76, 76, 0x1f0002, // [12]
+		82, 82, 0x400002, // [13]
+		87, 87, 0x270002, // [14]
+		94, 94, 0x2b0002, // [15]
+		100, 100, 0xe0002, // [16]
+		68, 70, 0x30012, // [17]
+		71, 74, 0x30035, // [18]
+		76, 78, 0x3001f, // [19]
+		82, 84, 0x30040, // [20]
+		87, 91, 0x30027, // [21]
+		94, 96, 0x3002b, // [22]
+		104, 107, 0x100040, // [23]
+		111, 113, 0xb0002, // [24]
+		107, 110, 0x30010, // [25]
+		117, 120, 0x10003e, // [26]
+		124, 126, 0xb0002, // [27]
+		120, 123, 0x30010, // [28]
+		133, 135, 0x19004a, // [29]
+		138, 138, 0xc0002, // [30]
+		135, 137, 0x30019, // [31]
+		142, 145, 0x190033, // [32]
+		158, 159, 0x160002, // [33]
+		145, 148, 0x150019, // [34]
+		151, 151, 0x130003, // [35]
+		154, 154, 0x150003, // [36]
+		148, 150, 0x40015, // [37]
+		151, 153, 0x40013, // [38]
+		154, 156, 0x40015, // [39]
+		163, 165, 0x200052, // [40]
+		172, 172, 0xc0002, // [41]
+		165, 167, 0x100020, // [42]
+		170, 170, 0x180003, // [43]
+		167, 169, 0x40010, // [44]
+		176, 178, 0x190042, // [45]
+		181, 181, 0xc0002, // [46]
+		178, 180, 0x30019, // [47]
+	},
+	NumStmt: [48]uint16{
+		1, // 0
+		2, // 1
+		3, // 2
+		2, // 3
+		1, // 4
+		1, // 5
+		1, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		2, // 10
+		1, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		1, // 15
+		1, // 16
+		1, // 17
+		2, // 18
+		1, // 19
+		1, // 20
+		3, // 21
+		1, // 22
+		3, // 23
+		3, // 24
+		2, // 25
+		3, // 26
+		3, // 27
+		2, // 28
+		2, // 29
+		1, // 30
+		1, // 31
+		3, // 32
+		2, // 33
+		3, // 34
+		1, // 35
+		1, // 36
+		1, // 37
+		1, // 38
+		1, // 39
+		2, // 40
+		1, // 41
+		2, // 42
+		1, // 43
+		1, // 44
+		2, // 45
+		1, // 46
+		1, // 47
+	},
+}
+var _ = _cover_atomic_.LoadUint32

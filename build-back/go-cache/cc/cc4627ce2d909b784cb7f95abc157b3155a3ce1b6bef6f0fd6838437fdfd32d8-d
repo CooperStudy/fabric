@@ -1,0 +1,44 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/container/dockercontroller/metrics.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package dockercontroller; import _cover_atomic_ "sync/atomic"
+
+import "github.com/hyperledger/fabric/common/metrics"
+
+var (
+	chaincodeImageBuildDuration = metrics.HistogramOpts{
+		Namespace:    "dockercontroller",
+		Name:         "chaincode_container_build_duration",
+		Help:         "The time to build a chaincode image in seconds.",
+		LabelNames:   []string{"chaincode", "success"},
+		StatsdFormat: "%{#fqname}.%{chaincode}.%{success}",
+	}
+)
+
+type BuildMetrics struct {
+	ChaincodeImageBuildDuration metrics.Histogram
+}
+
+func NewBuildMetrics(p metrics.Provider) *BuildMetrics {_cover_atomic_.AddUint32(&GoCover_1_396162306533616530386131.Count[0], 1);
+	return &BuildMetrics{
+		ChaincodeImageBuildDuration: p.NewHistogram(chaincodeImageBuildDuration),
+	}
+}
+
+var GoCover_1_396162306533616530386131 = struct {
+	Count     [1]uint32
+	Pos       [3 * 1]uint32
+	NumStmt   [1]uint16
+} {
+	Pos: [3 * 1]uint32{
+		25, 29, 0x20038, // [0]
+	},
+	NumStmt: [1]uint16{
+		1, // 0
+	},
+}
+var _ = _cover_atomic_.LoadUint32

@@ -1,0 +1,314 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/ledger/kvledger/history/historydb/historyleveldb/historyleveldb.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package historyleveldb; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/common/ledger/blkstorage"
+	"github.com/hyperledger/fabric/common/ledger/util/leveldbhelper"
+	"github.com/hyperledger/fabric/core/ledger"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/history/historydb"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwsetutil"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/version"
+	"github.com/hyperledger/fabric/core/ledger/ledgerconfig"
+	"github.com/hyperledger/fabric/core/ledger/util"
+	"github.com/hyperledger/fabric/protos/common"
+	putils "github.com/hyperledger/fabric/protos/utils"
+)
+
+var logger = flogging.MustGetLogger("historyleveldb")
+
+var savePointKey = []byte{0x00}
+var emptyValue = []byte{}
+
+// HistoryDBProvider implements interface HistoryDBProvider
+type HistoryDBProvider struct {
+	dbProvider *leveldbhelper.Provider
+}
+
+// NewHistoryDBProvider instantiates HistoryDBProvider
+func NewHistoryDBProvider() *HistoryDBProvider {_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[0], 1);
+	dbPath := ledgerconfig.GetHistoryLevelDBPath()
+	logger.Debugf("constructing HistoryDBProvider dbPath=%s", dbPath)
+	dbProvider := leveldbhelper.NewProvider(&leveldbhelper.Conf{DBPath: dbPath})
+	return &HistoryDBProvider{dbProvider}
+}
+
+// GetDBHandle gets the handle to a named database
+func (provider *HistoryDBProvider) GetDBHandle(dbName string) (historydb.HistoryDB, error) {_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[1], 1);
+	return newHistoryDB(provider.dbProvider.GetDBHandle(dbName), dbName), nil
+}
+
+// Close closes the underlying db
+func (provider *HistoryDBProvider) Close() {_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[2], 1);
+	provider.dbProvider.Close()
+}
+
+// historyDB implements HistoryDB interface
+type historyDB struct {
+	db     *leveldbhelper.DBHandle
+	dbName string
+}
+
+// newHistoryDB constructs an instance of HistoryDB
+func newHistoryDB(db *leveldbhelper.DBHandle, dbName string) *historyDB {_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[3], 1);
+	return &historyDB{db, dbName}
+}
+
+// Open implements method in HistoryDB interface
+func (historyDB *historyDB) Open() error {_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[4], 1);
+	// do nothing because shared db is used
+	return nil
+}
+
+// Close implements method in HistoryDB interface
+func (historyDB *historyDB) Close() {_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[5], 1);
+	// do nothing because shared db is used
+}
+
+// Commit implements method in HistoryDB interface
+func (historyDB *historyDB) Commit(block *common.Block) error {_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[6], 1);
+
+	blockNo := block.Header.Number
+	//Set the starting tranNo to 0
+	var tranNo uint64
+
+	dbBatch := leveldbhelper.NewUpdateBatch()
+
+	logger.Debugf("Channel [%s]: Updating history database for blockNo [%v] with [%d] transactions",
+		historyDB.dbName, blockNo, len(block.Data.Data))
+
+	// Get the invalidation byte array for the block
+	txsFilter := util.TxValidationFlags(block.Metadata.Metadata[common.BlockMetadataIndex_TRANSACTIONS_FILTER])
+
+	// write each tran's write set to history db
+	for _, envBytes := range block.Data.Data {_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[9], 1);
+
+		// If the tran is marked as invalid, skip it
+		if txsFilter.IsInvalid(int(tranNo)) {_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[15], 1);
+			logger.Debugf("Channel [%s]: Skipping history write for invalid transaction number %d",
+				historyDB.dbName, tranNo)
+			tranNo++
+			continue
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[10], 1);env, err := putils.GetEnvelopeFromBlock(envBytes)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[16], 1);
+			return err
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[11], 1);payload, err := putils.GetPayload(env)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[17], 1);
+			return err
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[12], 1);chdr, err := putils.UnmarshalChannelHeader(payload.Header.ChannelHeader)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[18], 1);
+			return err
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[13], 1);if common.HeaderType(chdr.Type) == common.HeaderType_ENDORSER_TRANSACTION {_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[19], 1);
+
+			// extract actions from the envelope message
+			respPayload, err := putils.GetActionFromEnvelope(envBytes)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[22], 1);
+				return err
+			}
+
+			//preparation for extracting RWSet from transaction
+			_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[20], 1);txRWSet := &rwsetutil.TxRwSet{}
+
+			// Get the Result from the Action and then Unmarshal
+			// it into a TxReadWriteSet using custom unmarshalling
+			if err = txRWSet.FromProtoBytes(respPayload.Results); err != nil {_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[23], 1);
+				return err
+			}
+			// for each transaction, loop through the namespaces and writesets
+			// and add a history record for each write
+			_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[21], 1);for _, nsRWSet := range txRWSet.NsRwSets {_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[24], 1);
+				ns := nsRWSet.NameSpace
+
+				for _, kvWrite := range nsRWSet.KvRwSet.Writes {_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[25], 1);
+					writeKey := kvWrite.Key
+
+					//composite key for history records is in the form ns~key~blockNo~tranNo
+					compositeHistoryKey := historydb.ConstructCompositeHistoryKey(ns, writeKey, blockNo, tranNo)
+
+					// No value is required, write an empty byte array (emptyValue) since Put() of nil is not allowed
+					dbBatch.Put(compositeHistoryKey, emptyValue)
+				}
+			}
+
+		} else{ _cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[26], 1);{
+			logger.Debugf("Skipping transaction [%d] since it is not an endorsement transaction\n", tranNo)
+		}}
+		_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[14], 1);tranNo++
+	}
+
+	// add savepoint for recovery purpose
+	_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[7], 1);height := version.NewHeight(blockNo, tranNo)
+	dbBatch.Put(savePointKey, height.ToBytes())
+
+	// write the block's history records and savepoint to LevelDB
+	// Setting snyc to true as a precaution, false may be an ok optimization after further testing.
+	if err := historyDB.db.WriteBatch(dbBatch, true); err != nil {_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[27], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[8], 1);logger.Debugf("Channel [%s]: Updates committed to history database for blockNo [%v]", historyDB.dbName, blockNo)
+	return nil
+}
+
+// NewHistoryQueryExecutor implements method in HistoryDB interface
+func (historyDB *historyDB) NewHistoryQueryExecutor(blockStore blkstorage.BlockStore) (ledger.HistoryQueryExecutor, error) {_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[28], 1);
+	return &LevelHistoryDBQueryExecutor{historyDB, blockStore}, nil
+}
+
+// GetBlockNumFromSavepoint implements method in HistoryDB interface
+func (historyDB *historyDB) GetLastSavepoint() (*version.Height, error) {_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[29], 1);
+	versionBytes, err := historyDB.db.Get(savePointKey)
+	if err != nil || versionBytes == nil {_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[31], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[30], 1);height, _ := version.NewHeightFromBytes(versionBytes)
+	return height, nil
+}
+
+// ShouldRecover implements method in interface kvledger.Recoverer
+func (historyDB *historyDB) ShouldRecover(lastAvailableBlock uint64) (bool, uint64, error) {_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[32], 1);
+	if !ledgerconfig.IsHistoryDBEnabled() {_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[36], 1);
+		return false, 0, nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[33], 1);savepoint, err := historyDB.GetLastSavepoint()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[37], 1);
+		return false, 0, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[34], 1);if savepoint == nil {_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[38], 1);
+		return true, 0, nil
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[35], 1);return savepoint.BlockNum != lastAvailableBlock, savepoint.BlockNum + 1, nil
+}
+
+// CommitLostBlock implements method in interface kvledger.Recoverer
+func (historyDB *historyDB) CommitLostBlock(blockAndPvtdata *ledger.BlockAndPvtData) error {_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[39], 1);
+	block := blockAndPvtdata.Block
+
+	// log every 1000th block at Info level so that history rebuild progress can be tracked in production envs.
+	if block.Header.Number%1000 == 0 {_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[42], 1);
+		logger.Infof("Recommitting block [%d] to history database", block.Header.Number)
+	} else{ _cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[43], 1);{
+		logger.Debugf("Recommitting block [%d] to history database", block.Header.Number)
+	}}
+
+	_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[40], 1);if err := historyDB.Commit(block); err != nil {_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[44], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_0_636263623531636437623730.Count[41], 1);return nil
+}
+
+var GoCover_0_636263623531636437623730 = struct {
+	Count     [45]uint32
+	Pos       [3 * 45]uint32
+	NumStmt   [45]uint16
+} {
+	Pos: [3 * 45]uint32{
+		34, 39, 0x20030, // [0]
+		42, 44, 0x2005c, // [1]
+		47, 49, 0x2002c, // [2]
+		58, 60, 0x20049, // [3]
+		63, 66, 0x2002a, // [4]
+		69, 71, 0x20026, // [5]
+		74, 89, 0x2b003f, // [6]
+		153, 158, 0x3f0002, // [7]
+		162, 163, 0xc0002, // [8]
+		89, 92, 0x27002b, // [9]
+		99, 100, 0x110003, // [10]
+		104, 105, 0x110003, // [11]
+		109, 110, 0x110003, // [12]
+		114, 114, 0x4d0003, // [13]
+		149, 149, 0xb0003, // [14]
+		92, 96, 0xc0027, // [15]
+		100, 102, 0x40011, // [16]
+		105, 107, 0x40011, // [17]
+		110, 112, 0x40011, // [18]
+		114, 118, 0x12004d, // [19]
+		123, 127, 0x450004, // [20]
+		132, 132, 0x2d0004, // [21]
+		118, 120, 0x50012, // [22]
+		127, 129, 0x50045, // [23]
+		132, 135, 0x34002d, // [24]
+		135, 143, 0x60034, // [25]
+		146, 148, 0x40009, // [26]
+		158, 160, 0x3003f, // [27]
+		167, 169, 0x2007c, // [28]
+		172, 174, 0x270049, // [29]
+		177, 178, 0x140002, // [30]
+		174, 176, 0x30027, // [31]
+		182, 183, 0x28005c, // [32]
+		186, 187, 0x100002, // [33]
+		190, 190, 0x160002, // [34]
+		193, 193, 0x4e0002, // [35]
+		183, 185, 0x30028, // [36]
+		187, 189, 0x30010, // [37]
+		190, 192, 0x30016, // [38]
+		197, 201, 0x23005c, // [39]
+		207, 207, 0x300002, // [40]
+		210, 210, 0xc0002, // [41]
+		201, 203, 0x30023, // [42]
+		203, 205, 0x30008, // [43]
+		207, 209, 0x30030, // [44]
+	},
+	NumStmt: [45]uint16{
+		4, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		0, // 5
+		6, // 6
+		3, // 7
+		2, // 8
+		1, // 9
+		2, // 10
+		2, // 11
+		2, // 12
+		1, // 13
+		1, // 14
+		3, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		2, // 19
+		2, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+		2, // 24
+		3, // 25
+		1, // 26
+		1, // 27
+		1, // 28
+		2, // 29
+		2, // 30
+		1, // 31
+		1, // 32
+		2, // 33
+		1, // 34
+		1, // 35
+		1, // 36
+		1, // 37
+		1, // 38
+		2, // 39
+		1, // 40
+		1, // 41
+		1, // 42
+		1, // 43
+		1, // 44
+	},
+}
+var _ = _cover_atomic_.LoadUint32

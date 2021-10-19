@@ -1,0 +1,50 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/bccsp/idemix/bridge/math.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+package bridge; import _cover_atomic_ "sync/atomic"
+
+import (
+	"github.com/hyperledger/fabric-amcl/amcl/FP256BN"
+	"github.com/hyperledger/fabric/idemix"
+)
+
+// Big encapsulate an amcl big integer
+type Big struct {
+	E *FP256BN.BIG
+}
+
+func (b *Big) Bytes() ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_3_373430303738666139356161.Count[0], 1);
+	return idemix.BigToBytes(b.E), nil
+}
+
+// Ecp encapsulate an amcl elliptic curve point
+type Ecp struct {
+	E *FP256BN.ECP
+}
+
+func (o *Ecp) Bytes() ([]byte, error) {_cover_atomic_.AddUint32(&GoCover_3_373430303738666139356161.Count[1], 1);
+	var res []byte
+	res = append(res, idemix.BigToBytes(o.E.GetX())...)
+	res = append(res, idemix.BigToBytes(o.E.GetY())...)
+
+	return res, nil
+}
+
+var GoCover_3_373430303738666139356161 = struct {
+	Count     [2]uint32
+	Pos       [3 * 2]uint32
+	NumStmt   [2]uint16
+} {
+	Pos: [3 * 2]uint32{
+		18, 20, 0x20027, // [0]
+		27, 33, 0x20027, // [1]
+	},
+	NumStmt: [2]uint16{
+		1, // 0
+		4, // 1
+	},
+}
+var _ = _cover_atomic_.LoadUint32

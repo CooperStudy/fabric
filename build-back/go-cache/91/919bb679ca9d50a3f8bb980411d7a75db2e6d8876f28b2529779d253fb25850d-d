@@ -1,0 +1,7 @@
+client.cover.go
+config.cover.go
+deliver_client.cover.go
+msp.cover.go
+orderer_client.cover.go
+prover.cover.go
+tx_submitter.cover.go

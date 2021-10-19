@@ -1,0 +1,98 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/bccsp/sw/keygen.go:1
+/*
+Copyright IBM Corp. 2017 All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+		 http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package sw; import _cover_atomic_ "sync/atomic"
+
+import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/rsa"
+	"fmt"
+
+	"github.com/hyperledger/fabric/bccsp"
+)
+
+type ecdsaKeyGenerator struct {
+	curve elliptic.Curve
+}
+
+func (kg *ecdsaKeyGenerator) KeyGen(opts bccsp.KeyGenOpts) (bccsp.Key, error) {_cover_atomic_.AddUint32(&GoCover_12_613964656536343766303630.Count[0], 1);
+	privKey, err := ecdsa.GenerateKey(kg.curve, rand.Reader)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_12_613964656536343766303630.Count[2], 1);
+		return nil, fmt.Errorf("Failed generating ECDSA key for [%v]: [%s]", kg.curve, err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_12_613964656536343766303630.Count[1], 1);return &ecdsaPrivateKey{privKey}, nil
+}
+
+type aesKeyGenerator struct {
+	length int
+}
+
+func (kg *aesKeyGenerator) KeyGen(opts bccsp.KeyGenOpts) (bccsp.Key, error) {_cover_atomic_.AddUint32(&GoCover_12_613964656536343766303630.Count[3], 1);
+	lowLevelKey, err := GetRandomBytes(int(kg.length))
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_12_613964656536343766303630.Count[5], 1);
+		return nil, fmt.Errorf("Failed generating AES %d key [%s]", kg.length, err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_12_613964656536343766303630.Count[4], 1);return &aesPrivateKey{lowLevelKey, false}, nil
+}
+
+type rsaKeyGenerator struct {
+	length int
+}
+
+func (kg *rsaKeyGenerator) KeyGen(opts bccsp.KeyGenOpts) (bccsp.Key, error) {_cover_atomic_.AddUint32(&GoCover_12_613964656536343766303630.Count[6], 1);
+	lowLevelKey, err := rsa.GenerateKey(rand.Reader, int(kg.length))
+
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_12_613964656536343766303630.Count[8], 1);
+		return nil, fmt.Errorf("Failed generating RSA %d key [%s]", kg.length, err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_12_613964656536343766303630.Count[7], 1);return &rsaPrivateKey{lowLevelKey}, nil
+}
+
+var GoCover_12_613964656536343766303630 = struct {
+	Count     [9]uint32
+	Pos       [3 * 9]uint32
+	NumStmt   [9]uint16
+} {
+	Pos: [3 * 9]uint32{
+		33, 35, 0x10004f, // [0]
+		39, 39, 0x270002, // [1]
+		35, 37, 0x30010, // [2]
+		46, 48, 0x10004d, // [3]
+		52, 52, 0x300002, // [4]
+		48, 50, 0x30010, // [5]
+		59, 62, 0x10004d, // [6]
+		66, 66, 0x290002, // [7]
+		62, 64, 0x30010, // [8]
+	},
+	NumStmt: [9]uint16{
+		2, // 0
+		1, // 1
+		1, // 2
+		2, // 3
+		1, // 4
+		1, // 5
+		2, // 6
+		1, // 7
+		1, // 8
+	},
+}
+var _ = _cover_atomic_.LoadUint32

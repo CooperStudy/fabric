@@ -1,0 +1,4 @@
+ca.cover.go
+key.cover.go
+./ca_test.go
+./key_test.go

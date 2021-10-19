@@ -1,0 +1,13 @@
+./command.go
+./components.go
+./config.go
+./configblock.go
+./configtx_template.go
+./core_template.go
+./crypto_template.go
+./deploy.go
+./discover.go
+./network.go
+./orderer_template.go
+./standard_networks.go
+./templates.go

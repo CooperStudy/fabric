@@ -1,0 +1,2698 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/core/ledger/util/couchdb/couchdb.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package couchdb; import _cover_atomic_ "sync/atomic"
+
+import (
+	"bytes"
+	"compress/gzip"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"log"
+	"mime"
+	"mime/multipart"
+	"net/http"
+	"net/http/httputil"
+	"net/textproto"
+	"net/url"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
+	"unicode/utf8"
+
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/core/ledger/ledgerconfig"
+	"github.com/pkg/errors"
+	"go.uber.org/zap/zapcore"
+)
+
+var logger = flogging.MustGetLogger("couchdb")
+
+//time between retry attempts in milliseconds
+const retryWaitTime = 125
+
+// DBOperationResponse is body for successful database calls.
+type DBOperationResponse struct {
+	Ok  bool
+	id  string
+	rev string
+}
+
+// DBInfo is body for database information.
+type DBInfo struct {
+	DbName    string `json:"db_name"`
+	UpdateSeq string `json:"update_seq"`
+	Sizes     struct {
+		File     int `json:"file"`
+		External int `json:"external"`
+		Active   int `json:"active"`
+	} `json:"sizes"`
+	PurgeSeq int `json:"purge_seq"`
+	Other    struct {
+		DataSize int `json:"data_size"`
+	} `json:"other"`
+	DocDelCount       int    `json:"doc_del_count"`
+	DocCount          int    `json:"doc_count"`
+	DiskSize          int    `json:"disk_size"`
+	DiskFormatVersion int    `json:"disk_format_version"`
+	DataSize          int    `json:"data_size"`
+	CompactRunning    bool   `json:"compact_running"`
+	InstanceStartTime string `json:"instance_start_time"`
+}
+
+//ConnectionInfo is a structure for capturing the database info and version
+type ConnectionInfo struct {
+	Couchdb string `json:"couchdb"`
+	Version string `json:"version"`
+	Vendor  struct {
+		Name string `json:"name"`
+	} `json:"vendor"`
+}
+
+//RangeQueryResponse is used for processing REST range query responses from CouchDB
+type RangeQueryResponse struct {
+	TotalRows int32 `json:"total_rows"`
+	Offset    int32 `json:"offset"`
+	Rows      []struct {
+		ID    string `json:"id"`
+		Key   string `json:"key"`
+		Value struct {
+			Rev string `json:"rev"`
+		} `json:"value"`
+		Doc json.RawMessage `json:"doc"`
+	} `json:"rows"`
+}
+
+//QueryResponse is used for processing REST query responses from CouchDB
+type QueryResponse struct {
+	Warning  string            `json:"warning"`
+	Docs     []json.RawMessage `json:"docs"`
+	Bookmark string            `json:"bookmark"`
+}
+
+// DocMetadata is used for capturing CouchDB document header info,
+// used to capture id, version, rev and attachments returned in the query from CouchDB
+type DocMetadata struct {
+	ID              string                     `json:"_id"`
+	Rev             string                     `json:"_rev"`
+	Version         string                     `json:"~version"`
+	AttachmentsInfo map[string]*AttachmentInfo `json:"_attachments"`
+}
+
+//DocID is a minimal structure for capturing the ID from a query result
+type DocID struct {
+	ID string `json:"_id"`
+}
+
+//QueryResult is used for returning query results from CouchDB
+type QueryResult struct {
+	ID          string
+	Value       []byte
+	Attachments []*AttachmentInfo
+}
+
+//CouchConnectionDef contains parameters
+type CouchConnectionDef struct {
+	URL                   string
+	Username              string
+	Password              string
+	MaxRetries            int
+	MaxRetriesOnStartup   int
+	RequestTimeout        time.Duration
+	CreateGlobalChangesDB bool
+}
+
+//CouchInstance represents a CouchDB instance
+type CouchInstance struct {
+	conf   CouchConnectionDef //connection configuration
+	client *http.Client       // a client to connect to this instance
+	stats  *stats
+}
+
+//CouchDatabase represents a database within a CouchDB instance
+type CouchDatabase struct {
+	CouchInstance    *CouchInstance //connection configuration
+	DBName           string
+	IndexWarmCounter int
+}
+
+//DBReturn contains an error reported by CouchDB
+type DBReturn struct {
+	StatusCode int    `json:"status_code"`
+	Error      string `json:"error"`
+	Reason     string `json:"reason"`
+}
+
+//CreateIndexResponse contains an the index creation response from CouchDB
+type CreateIndexResponse struct {
+	Result string `json:"result"`
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+}
+
+//AttachmentInfo contains the definition for an attached file for couchdb
+type AttachmentInfo struct {
+	Name            string
+	ContentType     string `json:"content_type"`
+	Length          uint64
+	AttachmentBytes []byte `json:"data"`
+}
+
+//FileDetails defines the structure needed to send an attachment to couchdb
+type FileDetails struct {
+	Follows     bool   `json:"follows"`
+	ContentType string `json:"content_type"`
+	Length      int    `json:"length"`
+}
+
+//CouchDoc defines the structure for a JSON document value
+type CouchDoc struct {
+	JSONValue   []byte
+	Attachments []*AttachmentInfo
+}
+
+//BatchRetrieveDocMetadataResponse is used for processing REST batch responses from CouchDB
+type BatchRetrieveDocMetadataResponse struct {
+	Rows []struct {
+		ID          string `json:"id"`
+		DocMetadata struct {
+			ID      string `json:"_id"`
+			Rev     string `json:"_rev"`
+			Version string `json:"~version"`
+		} `json:"doc"`
+	} `json:"rows"`
+}
+
+//BatchUpdateResponse defines a structure for batch update response
+type BatchUpdateResponse struct {
+	ID     string `json:"id"`
+	Error  string `json:"error"`
+	Reason string `json:"reason"`
+	Ok     bool   `json:"ok"`
+	Rev    string `json:"rev"`
+}
+
+//Base64Attachment contains the definition for an attached file for couchdb
+type Base64Attachment struct {
+	ContentType    string `json:"content_type"`
+	AttachmentData string `json:"data"`
+}
+
+//IndexResult contains the definition for a couchdb index
+type IndexResult struct {
+	DesignDocument string `json:"designdoc"`
+	Name           string `json:"name"`
+	Definition     string `json:"definition"`
+}
+
+//DatabaseSecurity contains the definition for CouchDB database security
+type DatabaseSecurity struct {
+	Admins struct {
+		Names []string `json:"names"`
+		Roles []string `json:"roles"`
+	} `json:"admins"`
+	Members struct {
+		Names []string `json:"names"`
+		Roles []string `json:"roles"`
+	} `json:"members"`
+}
+
+// closeResponseBody discards the body and then closes it to enable returning it to
+// connection pool
+func closeResponseBody(resp *http.Response) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[0], 1);
+	if resp != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[1], 1);
+		io.Copy(ioutil.Discard, resp.Body) // discard whatever is remaining of body
+		resp.Body.Close()
+	}
+}
+
+//CreateConnectionDefinition for a new client connection
+func CreateConnectionDefinition(couchDBAddress, username, password string, maxRetries,
+	maxRetriesOnStartup int, requestTimeout time.Duration, createGlobalChangesDB bool) (*CouchConnectionDef, error) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[2], 1);
+
+	logger.Debugf("Entering CreateConnectionDefinition()")
+
+	connectURL := &url.URL{
+		Host:   couchDBAddress,
+		Scheme: "http",
+	}
+
+	//parse the constructed URL to verify no errors
+	finalURL, err := url.Parse(connectURL.String())
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[4], 1);
+		logger.Errorf("URL parse error: %s", err)
+		return nil, errors.Wrapf(err, "error parsing connect URL: %s", connectURL)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[3], 1);logger.Debugf("Created database configuration  URL=[%s]", finalURL.String())
+	logger.Debugf("Exiting CreateConnectionDefinition()")
+
+	//return an object containing the connection information
+	return &CouchConnectionDef{finalURL.String(), username, password, maxRetries,
+		maxRetriesOnStartup, requestTimeout, createGlobalChangesDB}, nil
+
+}
+
+//CreateDatabaseIfNotExist method provides function to create database
+func (dbclient *CouchDatabase) CreateDatabaseIfNotExist() error {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[5], 1);
+
+	logger.Debugf("[%s] Entering CreateDatabaseIfNotExist()", dbclient.DBName)
+
+	dbInfo, couchDBReturn, err := dbclient.GetDatabaseInfo()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[11], 1);
+		if couchDBReturn == nil || couchDBReturn.StatusCode != 404 {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[12], 1);
+			return err
+		}
+	}
+
+	//If the dbInfo returns populated and status code is 200, then the database exists
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[6], 1);if dbInfo != nil && couchDBReturn.StatusCode == 200 {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[13], 1);
+
+		//Apply database security if needed
+		errSecurity := dbclient.applyDatabasePermissions()
+		if errSecurity != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[15], 1);
+			return errSecurity
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[14], 1);logger.Debugf("[%s] Database already exists", dbclient.DBName)
+
+		logger.Debugf("[%s] Exiting CreateDatabaseIfNotExist()", dbclient.DBName)
+
+		return nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[7], 1);logger.Debugf("[%s] Database does not exist.", dbclient.DBName)
+
+	connectURL, err := url.Parse(dbclient.CouchInstance.conf.URL)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[16], 1);
+		logger.Errorf("URL parse error: %s", err)
+		return errors.Wrapf(err, "error parsing CouchDB URL: %s", dbclient.CouchInstance.conf.URL)
+	}
+
+	//get the number of retries
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[8], 1);maxRetries := dbclient.CouchInstance.conf.MaxRetries
+
+	//process the URL with a PUT, creates the database
+	resp, _, err := dbclient.handleRequest(http.MethodPut, "CreateDatabaseIfNotExist", connectURL, nil, "", "", maxRetries, true, nil)
+
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[17], 1);
+
+		// Check to see if the database exists
+		// Even though handleRequest() returned an error, the
+		// database may have been created and a false error
+		// returned due to a timeout or race condition.
+		// Do a final check to see if the database really got created.
+		dbInfo, couchDBReturn, errDbInfo := dbclient.GetDatabaseInfo()
+		//If there is no error, then the database exists,  return without an error
+		if errDbInfo == nil && dbInfo != nil && couchDBReturn.StatusCode == 200 {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[19], 1);
+
+			errSecurity := dbclient.applyDatabasePermissions()
+			if errSecurity != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[21], 1);
+				return errSecurity
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[20], 1);logger.Infof("[%s] Created state database", dbclient.DBName)
+			logger.Debugf("[%s] Exiting CreateDatabaseIfNotExist()", dbclient.DBName)
+			return nil
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[18], 1);return err
+
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[9], 1);defer closeResponseBody(resp)
+
+	errSecurity := dbclient.applyDatabasePermissions()
+	if errSecurity != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[22], 1);
+		return errSecurity
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[10], 1);logger.Infof("Created state database %s", dbclient.DBName)
+
+	logger.Debugf("[%s] Exiting CreateDatabaseIfNotExist()", dbclient.DBName)
+
+	return nil
+
+}
+
+//applyDatabaseSecurity
+func (dbclient *CouchDatabase) applyDatabasePermissions() error {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[23], 1);
+
+	//If the username and password are not set, then skip applying permissions
+	if dbclient.CouchInstance.conf.Username == "" && dbclient.CouchInstance.conf.Password == "" {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[26], 1);
+		return nil
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[24], 1);securityPermissions := &DatabaseSecurity{}
+
+	securityPermissions.Admins.Names = append(securityPermissions.Admins.Names, dbclient.CouchInstance.conf.Username)
+	securityPermissions.Members.Names = append(securityPermissions.Members.Names, dbclient.CouchInstance.conf.Username)
+
+	err := dbclient.ApplyDatabaseSecurity(securityPermissions)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[27], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[25], 1);return nil
+}
+
+//GetDatabaseInfo method provides function to retrieve database information
+func (dbclient *CouchDatabase) GetDatabaseInfo() (*DBInfo, *DBReturn, error) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[28], 1);
+
+	connectURL, err := url.Parse(dbclient.CouchInstance.conf.URL)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[32], 1);
+		logger.Errorf("URL parse error: %s", err)
+		return nil, nil, errors.Wrapf(err, "error parsing CouchDB URL: %s", dbclient.CouchInstance.conf.URL)
+	}
+
+	//get the number of retries
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[29], 1);maxRetries := dbclient.CouchInstance.conf.MaxRetries
+
+	resp, couchDBReturn, err := dbclient.handleRequest(http.MethodGet, "GetDatabaseInfo", connectURL, nil, "", "", maxRetries, true, nil)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[33], 1);
+		return nil, couchDBReturn, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[30], 1);defer closeResponseBody(resp)
+
+	dbResponse := &DBInfo{}
+	decodeErr := json.NewDecoder(resp.Body).Decode(&dbResponse)
+	if decodeErr != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[34], 1);
+		return nil, nil, errors.Wrap(decodeErr, "error decoding response body")
+	}
+
+	// trace the database info response
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[31], 1);logger.Debugw("GetDatabaseInfo()", "dbResponseJSON", dbResponse)
+
+	return dbResponse, couchDBReturn, nil
+
+}
+
+//VerifyCouchConfig method provides function to verify the connection information
+func (couchInstance *CouchInstance) VerifyCouchConfig() (*ConnectionInfo, *DBReturn, error) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[35], 1);
+
+	logger.Debugf("Entering VerifyCouchConfig()")
+	defer logger.Debugf("Exiting VerifyCouchConfig()")
+
+	connectURL, err := url.Parse(couchInstance.conf.URL)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[40], 1);
+		logger.Errorf("URL parse error: %s", err)
+		return nil, nil, errors.Wrapf(err, "error parsing couch instance URL: %s", couchInstance.conf.URL)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[36], 1);connectURL.Path = "/"
+
+	//get the number of retries for startup
+	maxRetriesOnStartup := couchInstance.conf.MaxRetriesOnStartup
+
+	resp, couchDBReturn, err := couchInstance.handleRequest(http.MethodGet, "", "VerifyCouchConfig", connectURL, nil,
+		couchInstance.conf.Username, couchInstance.conf.Password, maxRetriesOnStartup, true, nil)
+
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[41], 1);
+		return nil, couchDBReturn, errors.WithMessage(err, "unable to connect to CouchDB, check the hostname and port")
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[37], 1);defer closeResponseBody(resp)
+
+	dbResponse := &ConnectionInfo{}
+	decodeErr := json.NewDecoder(resp.Body).Decode(&dbResponse)
+	if decodeErr != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[42], 1);
+		return nil, nil, errors.Wrap(decodeErr, "error decoding response body")
+	}
+
+	// trace the database info response
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[38], 1);logger.Debugw("VerifyConnection() dbResponseJSON: %s", dbResponse)
+
+	//check to see if the system databases exist
+	//Verifying the existence of the system database accomplishes two steps
+	//1.  Ensures the system databases are created
+	//2.  Verifies the username password provided in the CouchDB config are valid for system admin
+	err = CreateSystemDatabasesIfNotExist(couchInstance)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[43], 1);
+		logger.Errorf("Unable to connect to CouchDB, error: %s. Check the admin username and password.", err)
+		return nil, nil, errors.WithMessage(err, "unable to connect to CouchDB. Check the admin username and password")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[39], 1);return dbResponse, couchDBReturn, nil
+}
+
+//DropDatabase provides method to drop an existing database
+func (dbclient *CouchDatabase) DropDatabase() (*DBOperationResponse, error) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[44], 1);
+	dbName := dbclient.DBName
+
+	logger.Debugf("[%s] Entering DropDatabase()", dbName)
+
+	connectURL, err := url.Parse(dbclient.CouchInstance.conf.URL)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[50], 1);
+		logger.Errorf("URL parse error: %s", err)
+		return nil, errors.Wrapf(err, "error parsing CouchDB URL: %s", dbclient.CouchInstance.conf.URL)
+	}
+
+	//get the number of retries
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[45], 1);maxRetries := dbclient.CouchInstance.conf.MaxRetries
+
+	resp, _, err := dbclient.handleRequest(http.MethodDelete, "DropDatabase", connectURL, nil, "", "", maxRetries, true, nil)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[51], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[46], 1);defer closeResponseBody(resp)
+
+	dbResponse := &DBOperationResponse{}
+	decodeErr := json.NewDecoder(resp.Body).Decode(&dbResponse)
+	if decodeErr != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[52], 1);
+		return nil, errors.Wrap(decodeErr, "error decoding response body")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[47], 1);if dbResponse.Ok == true {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[53], 1);
+		logger.Debugf("[%s] Dropped database", dbclient.DBName)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[48], 1);logger.Debugf("[%s] Exiting DropDatabase()", dbclient.DBName)
+
+	if dbResponse.Ok == true {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[54], 1);
+
+		return dbResponse, nil
+
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[49], 1);return dbResponse, errors.New("error dropping database")
+
+}
+
+// EnsureFullCommit calls _ensure_full_commit for explicit fsync
+func (dbclient *CouchDatabase) EnsureFullCommit() (*DBOperationResponse, error) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[55], 1);
+	dbName := dbclient.DBName
+
+	logger.Debugf("[%s] Entering EnsureFullCommit()", dbName)
+
+	connectURL, err := url.Parse(dbclient.CouchInstance.conf.URL)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[61], 1);
+		logger.Errorf("URL parse error: %s", err)
+		return nil, errors.Wrapf(err, "error parsing CouchDB URL: %s", dbclient.CouchInstance.conf.URL)
+	}
+
+	//get the number of retries
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[56], 1);maxRetries := dbclient.CouchInstance.conf.MaxRetries
+
+	resp, _, err := dbclient.handleRequest(http.MethodPost, "EnsureFullCommit", connectURL, nil, "", "", maxRetries, true, nil, "_ensure_full_commit")
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[62], 1);
+		logger.Errorf("Failed to invoke couchdb _ensure_full_commit. Error: %+v", err)
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[57], 1);defer closeResponseBody(resp)
+
+	dbResponse := &DBOperationResponse{}
+	decodeErr := json.NewDecoder(resp.Body).Decode(&dbResponse)
+	if decodeErr != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[63], 1);
+		return nil, errors.Wrap(decodeErr, "error decoding response body")
+	}
+
+	//Check to see if autoWarmIndexes is enabled
+	//If autoWarmIndexes is enabled, indexes will be refreshed after the number of blocks
+	//in GetWarmIndexesAfterNBlocks() have been committed to the state database
+	//Check to see if the number of blocks committed exceeds the threshold for index warming
+	//Use a go routine to launch WarmIndexAllIndexes(), this will execute as a background process
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[58], 1);if ledgerconfig.IsAutoWarmIndexesEnabled() {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[64], 1);
+
+		if dbclient.IndexWarmCounter >= ledgerconfig.GetWarmIndexesAfterNBlocks() {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[66], 1);
+			go dbclient.runWarmIndexAllIndexes()
+			dbclient.IndexWarmCounter = 0
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[65], 1);dbclient.IndexWarmCounter++
+
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[59], 1);logger.Debugf("[%s] Exiting EnsureFullCommit()", dbclient.DBName)
+
+	if dbResponse.Ok == true {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[67], 1);
+
+		return dbResponse, nil
+
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[60], 1);return dbResponse, errors.New("error syncing database")
+}
+
+//SaveDoc method provides a function to save a document, id and byte array
+func (dbclient *CouchDatabase) SaveDoc(id string, rev string, couchDoc *CouchDoc) (string, error) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[68], 1);
+	dbName := dbclient.DBName
+
+	logger.Debugf("[%s] Entering SaveDoc() id=[%s]", dbName, id)
+
+	if !utf8.ValidString(id) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[74], 1);
+		return "", errors.Errorf("doc id [%x] not a valid utf8 string", id)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[69], 1);saveURL, err := url.Parse(dbclient.CouchInstance.conf.URL)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[75], 1);
+		logger.Errorf("URL parse error: %s", err)
+		return "", errors.Wrapf(err, "error parsing CouchDB URL: %s", dbclient.CouchInstance.conf.URL)
+	}
+
+	//Set up a buffer for the data to be pushed to couchdb
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[70], 1);data := []byte{}
+
+	//Set up a default boundary for use by multipart if sending attachments
+	defaultBoundary := ""
+
+	//Create a flag for shared connections.  This is set to false for zero length attachments
+	keepConnectionOpen := true
+
+	//check to see if attachments is nil, if so, then this is a JSON only
+	if couchDoc.Attachments == nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[76], 1);
+
+		//Test to see if this is a valid JSON
+		if IsJSON(string(couchDoc.JSONValue)) != true {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[78], 1);
+			return "", errors.New("JSON format is not valid")
+		}
+
+		// if there are no attachments, then use the bytes passed in as the JSON
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[77], 1);data = couchDoc.JSONValue
+
+	} else{ _cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[79], 1);{ // there are attachments
+
+		//attachments are included, create the multipart definition
+		multipartData, multipartBoundary, err3 := createAttachmentPart(couchDoc, defaultBoundary)
+		if err3 != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[82], 1);
+			return "", err3
+		}
+
+		//If there is a zero length attachment, do not keep the connection open
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[80], 1);for _, attach := range couchDoc.Attachments {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[83], 1);
+			if attach.Length < 1 {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[84], 1);
+				keepConnectionOpen = false
+			}
+		}
+
+		//Set the data buffer to the data from the create multi-part data
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[81], 1);data = multipartData.Bytes()
+
+		//Set the default boundary to the value generated in the multipart creation
+		defaultBoundary = multipartBoundary
+
+	}}
+
+	//get the number of retries
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[71], 1);maxRetries := dbclient.CouchInstance.conf.MaxRetries
+
+	//handle the request for saving document with a retry if there is a revision conflict
+	resp, _, err := dbclient.handleRequestWithRevisionRetry(id, http.MethodPut, dbName, "SaveDoc", saveURL, data, rev, defaultBoundary, maxRetries, keepConnectionOpen, nil)
+
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[85], 1);
+		return "", err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[72], 1);defer closeResponseBody(resp)
+
+	//get the revision and return
+	revision, err := getRevisionHeader(resp)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[86], 1);
+		return "", err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[73], 1);logger.Debugf("[%s] Exiting SaveDoc()", dbclient.DBName)
+
+	return revision, nil
+
+}
+
+//getDocumentRevision will return the revision if the document exists, otherwise it will return ""
+func (dbclient *CouchDatabase) getDocumentRevision(id string) string {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[87], 1);
+
+	var rev = ""
+
+	//See if the document already exists, we need the rev for saves and deletes
+	_, revdoc, err := dbclient.ReadDoc(id)
+	if err == nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[89], 1);
+		//set the revision to the rev returned from the document read
+		rev = revdoc
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[88], 1);return rev
+}
+
+func createAttachmentPart(couchDoc *CouchDoc, defaultBoundary string) (bytes.Buffer, string, error) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[90], 1);
+
+	//Create a buffer for writing the result
+	writeBuffer := new(bytes.Buffer)
+
+	// read the attachment and save as an attachment
+	writer := multipart.NewWriter(writeBuffer)
+
+	//retrieve the boundary for the multipart
+	defaultBoundary = writer.Boundary()
+
+	fileAttachments := map[string]FileDetails{}
+
+	for _, attachment := range couchDoc.Attachments {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[97], 1);
+		fileAttachments[attachment.Name] = FileDetails{true, attachment.ContentType, len(attachment.AttachmentBytes)}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[91], 1);attachmentJSONMap := map[string]interface{}{
+		"_attachments": fileAttachments}
+
+	//Add any data uploaded with the files
+	if couchDoc.JSONValue != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[98], 1);
+
+		//create a generic map
+		genericMap := make(map[string]interface{})
+
+		//unmarshal the data into the generic map
+		decoder := json.NewDecoder(bytes.NewBuffer(couchDoc.JSONValue))
+		decoder.UseNumber()
+		decodeErr := decoder.Decode(&genericMap)
+		if decodeErr != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[100], 1);
+			return *writeBuffer, "", errors.Wrap(decodeErr, "error decoding json data")
+		}
+
+		//add all key/values to the attachmentJSONMap
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[99], 1);for jsonKey, jsonValue := range genericMap {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[101], 1);
+			attachmentJSONMap[jsonKey] = jsonValue
+		}
+
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[92], 1);filesForUpload, err := json.Marshal(attachmentJSONMap)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[102], 1);
+		return *writeBuffer, "", errors.Wrap(err, "error marshalling json data")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[93], 1);logger.Debugf(string(filesForUpload))
+
+	//create the header for the JSON
+	header := make(textproto.MIMEHeader)
+	header.Set("Content-Type", "application/json")
+
+	part, err := writer.CreatePart(header)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[103], 1);
+		return *writeBuffer, defaultBoundary, errors.Wrap(err, "error creating multipart")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[94], 1);part.Write(filesForUpload)
+
+	for _, attachment := range couchDoc.Attachments {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[104], 1);
+
+		header := make(textproto.MIMEHeader)
+		part, err2 := writer.CreatePart(header)
+		if err2 != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[106], 1);
+			return *writeBuffer, defaultBoundary, errors.Wrap(err2, "error creating multipart")
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[105], 1);part.Write(attachment.AttachmentBytes)
+
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[95], 1);err = writer.Close()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[107], 1);
+		return *writeBuffer, defaultBoundary, errors.Wrap(err, "error closing multipart writer")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[96], 1);return *writeBuffer, defaultBoundary, nil
+
+}
+
+func getRevisionHeader(resp *http.Response) (string, error) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[108], 1);
+
+	if resp == nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[111], 1);
+		return "", errors.New("no response received from CouchDB")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[109], 1);revision := resp.Header.Get("Etag")
+
+	if revision == "" {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[112], 1);
+		return "", errors.New("no revision tag detected")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[110], 1);reg := regexp.MustCompile(`"([^"]*)"`)
+	revisionNoQuotes := reg.ReplaceAllString(revision, "${1}")
+	return revisionNoQuotes, nil
+
+}
+
+//ReadDoc method provides function to retrieve a document and its revision
+//from the database by id
+func (dbclient *CouchDatabase) ReadDoc(id string) (*CouchDoc, string, error) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[113], 1);
+	var couchDoc CouchDoc
+	attachments := []*AttachmentInfo{}
+	dbName := dbclient.DBName
+
+	logger.Debugf("[%s] Entering ReadDoc()  id=[%s]", dbName, id)
+	if !utf8.ValidString(id) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[121], 1);
+		return nil, "", errors.Errorf("doc id [%x] not a valid utf8 string", id)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[114], 1);readURL, err := url.Parse(dbclient.CouchInstance.conf.URL)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[122], 1);
+		logger.Errorf("URL parse error: %s", err)
+		return nil, "", errors.Wrapf(err, "error parsing CouchDB URL: %s", dbclient.CouchInstance.conf.URL)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[115], 1);query := readURL.Query()
+	query.Add("attachments", "true")
+
+	//get the number of retries
+	maxRetries := dbclient.CouchInstance.conf.MaxRetries
+
+	resp, couchDBReturn, err := dbclient.handleRequest(http.MethodGet, "ReadDoc", readURL, nil, "", "", maxRetries, true, &query, id)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[123], 1);
+		if couchDBReturn != nil && couchDBReturn.StatusCode == 404 {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[125], 1);
+			logger.Debugf("[%s] Document not found (404), returning nil value instead of 404 error", dbclient.DBName)
+			// non-existent document should return nil value instead of a 404 error
+			// for details see https://github.com/hyperledger-archives/fabric/issues/936
+			return nil, "", nil
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[124], 1);logger.Debugf("[%s] couchDBReturn=%v\n", dbclient.DBName, couchDBReturn)
+		return nil, "", err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[116], 1);defer closeResponseBody(resp)
+
+	//Get the media type from the Content-Type header
+	mediaType, params, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[126], 1);
+		log.Fatal(err)
+	}
+
+	//Get the revision from header
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[117], 1);revision, err := getRevisionHeader(resp)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[127], 1);
+		return nil, "", err
+	}
+
+	//check to see if the is multipart,  handle as attachment if multipart is detected
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[118], 1);if strings.HasPrefix(mediaType, "multipart/") {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[128], 1);
+		//Set up the multipart reader based on the boundary
+		multipartReader := multipart.NewReader(resp.Body, params["boundary"])
+		for {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[130], 1);
+			p, err := multipartReader.NextPart()
+			if err == io.EOF {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[133], 1);
+				break // processed all parts
+			}
+			_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[131], 1);if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[134], 1);
+				return nil, "", errors.Wrap(err, "error reading next multipart")
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[132], 1);defer p.Close()
+
+			logger.Debugf("[%s] part header=%s", dbclient.DBName, p.Header)
+			switch p.Header.Get("Content-Type") {
+			case "application/json":_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[135], 1);
+				partdata, err := ioutil.ReadAll(p)
+				if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[138], 1);
+					return nil, "", errors.Wrap(err, "error reading multipart data")
+				}
+				_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[136], 1);couchDoc.JSONValue = partdata
+			default:_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[137], 1);
+
+				//Create an attachment structure and load it
+				attachment := &AttachmentInfo{}
+				attachment.ContentType = p.Header.Get("Content-Type")
+				contentDispositionParts := strings.Split(p.Header.Get("Content-Disposition"), ";")
+				if strings.TrimSpace(contentDispositionParts[0]) == "attachment" {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[139], 1);
+					switch p.Header.Get("Content-Encoding") {
+					case "gzip":_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[140], 1); //See if the part is gzip encoded
+
+						var respBody []byte
+
+						gr, err := gzip.NewReader(p)
+						if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[145], 1);
+							return nil, "", errors.Wrap(err, "error creating gzip reader")
+						}
+						_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[141], 1);respBody, err = ioutil.ReadAll(gr)
+						if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[146], 1);
+							return nil, "", errors.Wrap(err, "error reading gzip data")
+						}
+
+						_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[142], 1);logger.Debugf("[%s] Retrieved attachment data", dbclient.DBName)
+						attachment.AttachmentBytes = respBody
+						attachment.Length = uint64(len(attachment.AttachmentBytes))
+						attachment.Name = p.FileName()
+						attachments = append(attachments, attachment)
+
+					default:_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[143], 1);
+
+						//retrieve the data,  this is not gzip
+						partdata, err := ioutil.ReadAll(p)
+						if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[147], 1);
+							return nil, "", errors.Wrap(err, "error reading multipart data")
+						}
+						_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[144], 1);logger.Debugf("[%s] Retrieved attachment data", dbclient.DBName)
+						attachment.AttachmentBytes = partdata
+						attachment.Length = uint64(len(attachment.AttachmentBytes))
+						attachment.Name = p.FileName()
+						attachments = append(attachments, attachment)
+
+					} // end content-encoding switch
+				} // end if attachment
+			} // end content-type switch
+		} // for all multiparts
+
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[129], 1);couchDoc.Attachments = attachments
+
+		return &couchDoc, revision, nil
+	}
+
+	//handle as JSON document
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[119], 1);couchDoc.JSONValue, err = ioutil.ReadAll(resp.Body)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[148], 1);
+		return nil, "", errors.Wrap(err, "error reading response body")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[120], 1);logger.Debugf("[%s] Exiting ReadDoc()", dbclient.DBName)
+	return &couchDoc, revision, nil
+}
+
+//ReadDocRange method provides function to a range of documents based on the start and end keys
+//startKey and endKey can also be empty strings.  If startKey and endKey are empty, all documents are returned
+//This function provides a limit option to specify the max number of entries and is supplied by config.
+//Skip is reserved for possible future future use.
+func (dbclient *CouchDatabase) ReadDocRange(startKey, endKey string, limit int32) ([]*QueryResult, string, error) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[149], 1);
+	dbName := dbclient.DBName
+	logger.Debugf("[%s] Entering ReadDocRange()  startKey=%s, endKey=%s", dbName, startKey, endKey)
+
+	var results []*QueryResult
+
+	rangeURL, err := url.Parse(dbclient.CouchInstance.conf.URL)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[159], 1);
+		logger.Errorf("URL parse error: %s", err)
+		return nil, "", errors.Wrapf(err, "error parsing CouchDB URL: %s", dbclient.CouchInstance.conf.URL)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[150], 1);queryParms := rangeURL.Query()
+	//Increment the limit by 1 to see if there are more qualifying records
+	queryParms.Set("limit", strconv.FormatInt(int64(limit+1), 10))
+	queryParms.Add("include_docs", "true")
+	queryParms.Add("inclusive_end", "false") // endkey should be exclusive to be consistent with goleveldb
+	queryParms.Add("attachments", "true")    // get the attachments as well
+
+	//Append the startKey if provided
+	if startKey != "" {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[160], 1);
+		if startKey, err = encodeForJSON(startKey); err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[162], 1);
+			return nil, "", err
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[161], 1);queryParms.Add("startkey", "\""+startKey+"\"")
+	}
+
+	//Append the endKey if provided
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[151], 1);if endKey != "" {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[163], 1);
+		var err error
+		if endKey, err = encodeForJSON(endKey); err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[165], 1);
+			return nil, "", err
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[164], 1);queryParms.Add("endkey", "\""+endKey+"\"")
+	}
+
+	//get the number of retries
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[152], 1);maxRetries := dbclient.CouchInstance.conf.MaxRetries
+
+	resp, _, err := dbclient.handleRequest(http.MethodGet, "RangeDocRange", rangeURL, nil, "", "", maxRetries, true, &queryParms, "_all_docs")
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[166], 1);
+		return nil, "", err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[153], 1);defer closeResponseBody(resp)
+
+	if logger.IsEnabledFor(zapcore.DebugLevel) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[167], 1);
+		dump, err2 := httputil.DumpResponse(resp, true)
+		if err2 != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[169], 1);
+			log.Fatal(err2)
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[168], 1);logger.Debugf("[%s] %s", dbclient.DBName, dump)
+	}
+
+	//handle as JSON document
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[154], 1);jsonResponseRaw, err := ioutil.ReadAll(resp.Body)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[170], 1);
+		return nil, "", errors.Wrap(err, "error reading response body")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[155], 1);var jsonResponse = &RangeQueryResponse{}
+	err2 := json.Unmarshal(jsonResponseRaw, &jsonResponse)
+	if err2 != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[171], 1);
+		return nil, "", errors.Wrap(err2, "error unmarshalling json data")
+	}
+
+	//if an additional record is found, then reduce the count by 1
+	//and populate the nextStartKey
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[156], 1);if jsonResponse.TotalRows > limit {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[172], 1);
+		jsonResponse.TotalRows = limit
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[157], 1);logger.Debugf("[%s] Total Rows: %d", dbclient.DBName, jsonResponse.TotalRows)
+
+	//Use the next endKey as the starting default for the nextStartKey
+	nextStartKey := endKey
+
+	for index, row := range jsonResponse.Rows {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[173], 1);
+
+		var docMetadata = &DocMetadata{}
+		err3 := json.Unmarshal(row.Doc, &docMetadata)
+		if err3 != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[176], 1);
+			return nil, "", errors.Wrap(err3, "error unmarshalling json data")
+		}
+
+		//if there is an extra row for the nextStartKey, then do not add the row to the result set
+		//and populate the nextStartKey variable
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[174], 1);if int32(index) >= jsonResponse.TotalRows {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[177], 1);
+			nextStartKey = docMetadata.ID
+			continue
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[175], 1);if docMetadata.AttachmentsInfo != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[178], 1);
+
+			logger.Debugf("[%s] Adding JSON document and attachments for id: %s", dbclient.DBName, docMetadata.ID)
+
+			attachments := []*AttachmentInfo{}
+			for attachmentName, attachment := range docMetadata.AttachmentsInfo {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[180], 1);
+				attachment.Name = attachmentName
+
+				attachments = append(attachments, attachment)
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[179], 1);var addDocument = &QueryResult{docMetadata.ID, row.Doc, attachments}
+			results = append(results, addDocument)
+
+		} else{ _cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[181], 1);{
+
+			logger.Debugf("[%s] Adding json docment for id: %s", dbclient.DBName, docMetadata.ID)
+
+			var addDocument = &QueryResult{docMetadata.ID, row.Doc, nil}
+			results = append(results, addDocument)
+
+		}}
+
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[158], 1);logger.Debugf("[%s] Exiting ReadDocRange()", dbclient.DBName)
+
+	return results, nextStartKey, nil
+
+}
+
+//DeleteDoc method provides function to delete a document from the database by id
+func (dbclient *CouchDatabase) DeleteDoc(id, rev string) error {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[182], 1);
+	dbName := dbclient.DBName
+
+	logger.Debugf("[%s] Entering DeleteDoc()  id=%s", dbName, id)
+
+	deleteURL, err := url.Parse(dbclient.CouchInstance.conf.URL)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[185], 1);
+		logger.Errorf("URL parse error: %s", err)
+		return errors.Wrapf(err, "error parsing CouchDB URL: %s", dbclient.CouchInstance.conf.URL)
+	}
+
+	//get the number of retries
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[183], 1);maxRetries := dbclient.CouchInstance.conf.MaxRetries
+
+	//handle the request for saving document with a retry if there is a revision conflict
+	resp, couchDBReturn, err := dbclient.handleRequestWithRevisionRetry(id, http.MethodDelete, dbName, "DeleteDoc",
+		deleteURL, nil, "", "", maxRetries, true, nil)
+
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[186], 1);
+		if couchDBReturn != nil && couchDBReturn.StatusCode == 404 {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[188], 1);
+			logger.Debugf("[%s] Document not found (404), returning nil value instead of 404 error", dbclient.DBName)
+			// non-existent document should return nil value instead of a 404 error
+			// for details see https://github.com/hyperledger-archives/fabric/issues/936
+			return nil
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[187], 1);return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[184], 1);defer closeResponseBody(resp)
+
+	logger.Debugf("[%s] Exiting DeleteDoc()", dbclient.DBName)
+
+	return nil
+
+}
+
+//QueryDocuments method provides function for processing a query
+func (dbclient *CouchDatabase) QueryDocuments(query string) ([]*QueryResult, string, error) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[189], 1);
+	dbName := dbclient.DBName
+
+	logger.Debugf("[%s] Entering QueryDocuments()  query=%s", dbName, query)
+
+	var results []*QueryResult
+
+	queryURL, err := url.Parse(dbclient.CouchInstance.conf.URL)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[197], 1);
+		logger.Errorf("URL parse error: %s", err)
+		return nil, "", errors.Wrapf(err, "error parsing CouchDB URL: %s", dbclient.CouchInstance.conf.URL)
+	}
+
+	//get the number of retries
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[190], 1);maxRetries := dbclient.CouchInstance.conf.MaxRetries
+
+	resp, _, err := dbclient.handleRequest(http.MethodPost, "QueryDocuments", queryURL, []byte(query), "", "", maxRetries, true, nil, "_find")
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[198], 1);
+		return nil, "", err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[191], 1);defer closeResponseBody(resp)
+
+	if logger.IsEnabledFor(zapcore.DebugLevel) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[199], 1);
+		dump, err2 := httputil.DumpResponse(resp, true)
+		if err2 != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[201], 1);
+			log.Fatal(err2)
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[200], 1);logger.Debugf("[%s] %s", dbclient.DBName, dump)
+	}
+
+	//handle as JSON document
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[192], 1);jsonResponseRaw, err := ioutil.ReadAll(resp.Body)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[202], 1);
+		return nil, "", errors.Wrap(err, "error reading response body")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[193], 1);var jsonResponse = &QueryResponse{}
+
+	err2 := json.Unmarshal(jsonResponseRaw, &jsonResponse)
+	if err2 != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[203], 1);
+		return nil, "", errors.Wrap(err2, "error unmarshalling json data")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[194], 1);if jsonResponse.Warning != "" {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[204], 1);
+		logger.Warnf("The query [%s] caused the following warning: [%s]", query, jsonResponse.Warning)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[195], 1);for _, row := range jsonResponse.Docs {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[205], 1);
+
+		var docMetadata = &DocMetadata{}
+		err3 := json.Unmarshal(row, &docMetadata)
+		if err3 != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[207], 1);
+			return nil, "", errors.Wrap(err3, "error unmarshalling json data")
+		}
+
+		// JSON Query results never have attachments
+		// The If block below will never be executed
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[206], 1);if docMetadata.AttachmentsInfo != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[208], 1);
+
+			logger.Debugf("[%s] Adding JSON docment and attachments for id: %s", dbclient.DBName, docMetadata.ID)
+
+			couchDoc, _, err := dbclient.ReadDoc(docMetadata.ID)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[210], 1);
+				return nil, "", err
+			}
+			_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[209], 1);var addDocument = &QueryResult{ID: docMetadata.ID, Value: couchDoc.JSONValue, Attachments: couchDoc.Attachments}
+			results = append(results, addDocument)
+
+		} else{ _cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[211], 1);{
+			logger.Debugf("[%s] Adding json docment for id: %s", dbclient.DBName, docMetadata.ID)
+			var addDocument = &QueryResult{ID: docMetadata.ID, Value: row, Attachments: nil}
+
+			results = append(results, addDocument)
+
+		}}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[196], 1);logger.Debugf("[%s] Exiting QueryDocuments()", dbclient.DBName)
+
+	return results, jsonResponse.Bookmark, nil
+
+}
+
+// ListIndex method lists the defined indexes for a database
+func (dbclient *CouchDatabase) ListIndex() ([]*IndexResult, error) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[212], 1);
+
+	//IndexDefinition contains the definition for a couchdb index
+	type indexDefinition struct {
+		DesignDocument string          `json:"ddoc"`
+		Name           string          `json:"name"`
+		Type           string          `json:"type"`
+		Definition     json.RawMessage `json:"def"`
+	}
+
+	//ListIndexResponse contains the definition for listing couchdb indexes
+	type listIndexResponse struct {
+		TotalRows int               `json:"total_rows"`
+		Indexes   []indexDefinition `json:"indexes"`
+	}
+
+	dbName := dbclient.DBName
+	logger.Debug("[%s] Entering ListIndex()", dbName)
+
+	indexURL, err := url.Parse(dbclient.CouchInstance.conf.URL)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[218], 1);
+		logger.Errorf("URL parse error: %s", err)
+		return nil, errors.Wrapf(err, "error parsing CouchDB URL: %s", dbclient.CouchInstance.conf.URL)
+	}
+
+	//get the number of retries
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[213], 1);maxRetries := dbclient.CouchInstance.conf.MaxRetries
+
+	resp, _, err := dbclient.handleRequest(http.MethodGet, "ListIndex", indexURL, nil, "", "", maxRetries, true, nil, "_index")
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[219], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[214], 1);defer closeResponseBody(resp)
+
+	//handle as JSON document
+	jsonResponseRaw, err := ioutil.ReadAll(resp.Body)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[220], 1);
+		return nil, errors.Wrap(err, "error reading response body")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[215], 1);var jsonResponse = &listIndexResponse{}
+
+	err2 := json.Unmarshal(jsonResponseRaw, jsonResponse)
+	if err2 != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[221], 1);
+		return nil, errors.Wrap(err2, "error unmarshalling json data")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[216], 1);var results []*IndexResult
+
+	for _, row := range jsonResponse.Indexes {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[222], 1);
+
+		//if the DesignDocument does not begin with "_design/", then this is a system
+		//level index and is not meaningful and cannot be edited or deleted
+		designDoc := row.DesignDocument
+		s := strings.SplitAfterN(designDoc, "_design/", 2)
+		if len(s) > 1 {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[223], 1);
+			designDoc = s[1]
+
+			//Add the index definition to the results
+			var addIndexResult = &IndexResult{DesignDocument: designDoc, Name: row.Name, Definition: fmt.Sprintf("%s", row.Definition)}
+			results = append(results, addIndexResult)
+		}
+
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[217], 1);logger.Debugf("[%s] Exiting ListIndex()", dbclient.DBName)
+
+	return results, nil
+
+}
+
+// CreateIndex method provides a function creating an index
+func (dbclient *CouchDatabase) CreateIndex(indexdefinition string) (*CreateIndexResponse, error) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[224], 1);
+	dbName := dbclient.DBName
+
+	logger.Debugf("[%s] Entering CreateIndex()  indexdefinition=%s", dbName, indexdefinition)
+
+	//Test to see if this is a valid JSON
+	if IsJSON(indexdefinition) != true {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[232], 1);
+		return nil, errors.New("JSON format is not valid")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[225], 1);indexURL, err := url.Parse(dbclient.CouchInstance.conf.URL)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[233], 1);
+		logger.Errorf("URL parse error: %s", err)
+		return nil, errors.Wrapf(err, "error parsing CouchDB URL: %s", dbclient.CouchInstance.conf.URL)
+	}
+
+	//get the number of retries
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[226], 1);maxRetries := dbclient.CouchInstance.conf.MaxRetries
+
+	resp, _, err := dbclient.handleRequest(http.MethodPost, "CreateIndex", indexURL, []byte(indexdefinition), "", "", maxRetries, true, nil, "_index")
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[234], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[227], 1);defer closeResponseBody(resp)
+
+	if resp == nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[235], 1);
+		return nil, errors.New("invalid response received from CouchDB")
+	}
+
+	//Read the response body
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[228], 1);respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[236], 1);
+		return nil, errors.Wrap(err, "error reading response body")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[229], 1);couchDBReturn := &CreateIndexResponse{}
+
+	jsonBytes := []byte(respBody)
+
+	//unmarshal the response
+	err = json.Unmarshal(jsonBytes, &couchDBReturn)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[237], 1);
+		return nil, errors.Wrap(err, "error unmarshalling json data")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[230], 1);if couchDBReturn.Result == "created" {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[238], 1);
+
+		logger.Infof("Created CouchDB index [%s] in state database [%s] using design document [%s]", couchDBReturn.Name, dbclient.DBName, couchDBReturn.ID)
+
+		return couchDBReturn, nil
+
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[231], 1);logger.Infof("Updated CouchDB index [%s] in state database [%s] using design document [%s]", couchDBReturn.Name, dbclient.DBName, couchDBReturn.ID)
+
+	return couchDBReturn, nil
+}
+
+// DeleteIndex method provides a function deleting an index
+func (dbclient *CouchDatabase) DeleteIndex(designdoc, indexname string) error {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[239], 1);
+	dbName := dbclient.DBName
+
+	logger.Debugf("[%s] Entering DeleteIndex()  designdoc=%s  indexname=%s", dbName, designdoc, indexname)
+
+	indexURL, err := url.Parse(dbclient.CouchInstance.conf.URL)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[242], 1);
+		logger.Errorf("URL parse error: %s", err)
+		return errors.Wrapf(err, "error parsing CouchDB URL: %s", dbclient.CouchInstance.conf.URL)
+	}
+
+	//get the number of retries
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[240], 1);maxRetries := dbclient.CouchInstance.conf.MaxRetries
+
+	resp, _, err := dbclient.handleRequest(http.MethodDelete, "DeleteIndex", indexURL, nil, "", "", maxRetries, true, nil, "_index", designdoc, "json", indexname)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[243], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[241], 1);defer closeResponseBody(resp)
+
+	return nil
+
+}
+
+//WarmIndex method provides a function for warming a single index
+func (dbclient *CouchDatabase) WarmIndex(designdoc, indexname string) error {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[244], 1);
+	dbName := dbclient.DBName
+
+	logger.Debugf("[%s] Entering WarmIndex()  designdoc=%s  indexname=%s", dbName, designdoc, indexname)
+
+	indexURL, err := url.Parse(dbclient.CouchInstance.conf.URL)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[247], 1);
+		logger.Errorf("URL parse error: %s", err)
+		return errors.Wrapf(err, "error parsing CouchDB URL: %s", dbclient.CouchInstance.conf.URL)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[245], 1);queryParms := indexURL.Query()
+	//Query parameter that allows the execution of the URL to return immediately
+	//The update_after will cause the index update to run after the URL returns
+	queryParms.Add("stale", "update_after")
+
+	//get the number of retries
+	maxRetries := dbclient.CouchInstance.conf.MaxRetries
+
+	resp, _, err := dbclient.handleRequest(http.MethodGet, "WarmIndex", indexURL, nil, "", "", maxRetries, true, &queryParms, "_design", designdoc, "_view", indexname)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[248], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[246], 1);defer closeResponseBody(resp)
+
+	return nil
+
+}
+
+//runWarmIndexAllIndexes is a wrapper for WarmIndexAllIndexes to catch and report any errors
+func (dbclient *CouchDatabase) runWarmIndexAllIndexes() {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[249], 1);
+
+	err := dbclient.WarmIndexAllIndexes()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[250], 1);
+		logger.Errorf("Error detected during WarmIndexAllIndexes(): %+v", err)
+	}
+
+}
+
+//WarmIndexAllIndexes method provides a function for warming all indexes for a database
+func (dbclient *CouchDatabase) WarmIndexAllIndexes() error {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[251], 1);
+
+	logger.Debugf("[%s] Entering WarmIndexAllIndexes()", dbclient.DBName)
+
+	//Retrieve all indexes
+	listResult, err := dbclient.ListIndex()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[254], 1);
+		return err
+	}
+
+	//For each index definition, execute an index refresh
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[252], 1);for _, elem := range listResult {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[255], 1);
+
+		err := dbclient.WarmIndex(elem.DesignDocument, elem.Name)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[256], 1);
+			return err
+		}
+
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[253], 1);logger.Debugf("[%s] Exiting WarmIndexAllIndexes()", dbclient.DBName)
+
+	return nil
+
+}
+
+//GetDatabaseSecurity method provides function to retrieve the security config for a database
+func (dbclient *CouchDatabase) GetDatabaseSecurity() (*DatabaseSecurity, error) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[257], 1);
+	dbName := dbclient.DBName
+
+	logger.Debugf("[%s] Entering GetDatabaseSecurity()", dbName)
+
+	securityURL, err := url.Parse(dbclient.CouchInstance.conf.URL)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[262], 1);
+		logger.Errorf("URL parse error: %s", err)
+		return nil, errors.Wrapf(err, "error parsing CouchDB URL: %s", dbclient.CouchInstance.conf.URL)
+	}
+
+	//get the number of retries
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[258], 1);maxRetries := dbclient.CouchInstance.conf.MaxRetries
+
+	resp, _, err := dbclient.handleRequest(http.MethodGet, "GetDatabaseSecurity", securityURL, nil, "", "", maxRetries, true, nil, "_security")
+
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[263], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[259], 1);defer closeResponseBody(resp)
+
+	//handle as JSON document
+	jsonResponseRaw, err := ioutil.ReadAll(resp.Body)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[264], 1);
+		return nil, errors.Wrap(err, "error reading response body")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[260], 1);var jsonResponse = &DatabaseSecurity{}
+
+	err2 := json.Unmarshal(jsonResponseRaw, jsonResponse)
+	if err2 != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[265], 1);
+		return nil, errors.Wrap(err2, "error unmarshalling json data")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[261], 1);logger.Debugf("[%s] Exiting GetDatabaseSecurity()", dbclient.DBName)
+
+	return jsonResponse, nil
+
+}
+
+//ApplyDatabaseSecurity method provides function to update the security config for a database
+func (dbclient *CouchDatabase) ApplyDatabaseSecurity(databaseSecurity *DatabaseSecurity) error {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[266], 1);
+	dbName := dbclient.DBName
+
+	logger.Debugf("[%s] Entering ApplyDatabaseSecurity()", dbName)
+
+	securityURL, err := url.Parse(dbclient.CouchInstance.conf.URL)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[274], 1);
+		logger.Errorf("URL parse error: %s", err)
+		return errors.Wrapf(err, "error parsing CouchDB URL: %s", dbclient.CouchInstance.conf.URL)
+	}
+
+	//Ensure all of the arrays are initialized to empty arrays instead of nil
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[267], 1);if databaseSecurity.Admins.Names == nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[275], 1);
+		databaseSecurity.Admins.Names = make([]string, 0)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[268], 1);if databaseSecurity.Admins.Roles == nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[276], 1);
+		databaseSecurity.Admins.Roles = make([]string, 0)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[269], 1);if databaseSecurity.Members.Names == nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[277], 1);
+		databaseSecurity.Members.Names = make([]string, 0)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[270], 1);if databaseSecurity.Members.Roles == nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[278], 1);
+		databaseSecurity.Members.Roles = make([]string, 0)
+	}
+
+	//get the number of retries
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[271], 1);maxRetries := dbclient.CouchInstance.conf.MaxRetries
+
+	databaseSecurityJSON, err := json.Marshal(databaseSecurity)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[279], 1);
+		return errors.Wrap(err, "error unmarshalling json data")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[272], 1);logger.Debugf("[%s] Applying security to database: %s", dbclient.DBName, string(databaseSecurityJSON))
+
+	resp, _, err := dbclient.handleRequest(http.MethodPut, "ApplyDatabaseSecurity", securityURL, databaseSecurityJSON, "", "", maxRetries, true, nil, "_security")
+
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[280], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[273], 1);defer closeResponseBody(resp)
+
+	logger.Debugf("[%s] Exiting ApplyDatabaseSecurity()", dbclient.DBName)
+
+	return nil
+
+}
+
+//BatchRetrieveDocumentMetadata - batch method to retrieve document metadata for  a set of keys,
+// including ID, couchdb revision number, and ledger version
+func (dbclient *CouchDatabase) BatchRetrieveDocumentMetadata(keys []string) ([]*DocMetadata, error) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[281], 1);
+
+	logger.Debugf("[%s] Entering BatchRetrieveDocumentMetadata()  keys=%s", dbclient.DBName, keys)
+
+	batchRetrieveURL, err := url.Parse(dbclient.CouchInstance.conf.URL)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[289], 1);
+		logger.Errorf("URL parse error: %s", err)
+		return nil, errors.Wrapf(err, "error parsing CouchDB URL: %s", dbclient.CouchInstance.conf.URL)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[282], 1);queryParms := batchRetrieveURL.Query()
+
+	// While BatchRetrieveDocumentMetadata() does not return the entire document,
+	// for reads/writes, we do need to get document so that we can get the ledger version of the key.
+	// TODO For blind writes we do not need to get the version, therefore when we bulk get
+	// the revision numbers for the write keys that were not represented in read set
+	// (the second time BatchRetrieveDocumentMetadata is called during block processing),
+	// we could set include_docs to false to optimize the response.
+	queryParms.Add("include_docs", "true")
+
+	keymap := make(map[string]interface{})
+
+	keymap["keys"] = keys
+
+	jsonKeys, err := json.Marshal(keymap)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[290], 1);
+		return nil, errors.Wrap(err, "error marshalling json data")
+	}
+
+	//get the number of retries
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[283], 1);maxRetries := dbclient.CouchInstance.conf.MaxRetries
+
+	resp, _, err := dbclient.handleRequest(http.MethodPost, "BatchRetrieveDocumentMetadata", batchRetrieveURL, jsonKeys, "", "", maxRetries, true, &queryParms, "_all_docs")
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[291], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[284], 1);defer closeResponseBody(resp)
+
+	if logger.IsEnabledFor(zapcore.DebugLevel) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[292], 1);
+		dump, _ := httputil.DumpResponse(resp, false)
+		// compact debug log by replacing carriage return / line feed with dashes to separate http headers
+		logger.Debugf("[%s] HTTP Response: %s", dbclient.DBName, bytes.Replace(dump, []byte{0x0d, 0x0a}, []byte{0x20, 0x7c, 0x20}, -1))
+	}
+
+	//handle as JSON document
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[285], 1);jsonResponseRaw, err := ioutil.ReadAll(resp.Body)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[293], 1);
+		return nil, errors.Wrap(err, "error reading response body")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[286], 1);var jsonResponse = &BatchRetrieveDocMetadataResponse{}
+
+	err2 := json.Unmarshal(jsonResponseRaw, &jsonResponse)
+	if err2 != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[294], 1);
+		return nil, errors.Wrap(err2, "error unmarshalling json data")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[287], 1);docMetadataArray := []*DocMetadata{}
+
+	for _, row := range jsonResponse.Rows {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[295], 1);
+		docMetadata := &DocMetadata{ID: row.ID, Rev: row.DocMetadata.Rev, Version: row.DocMetadata.Version}
+		docMetadataArray = append(docMetadataArray, docMetadata)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[288], 1);logger.Debugf("[%s] Exiting BatchRetrieveDocumentMetadata()", dbclient.DBName)
+
+	return docMetadataArray, nil
+
+}
+
+//BatchUpdateDocuments - batch method to batch update documents
+func (dbclient *CouchDatabase) BatchUpdateDocuments(documents []*CouchDoc) ([]*BatchUpdateResponse, error) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[296], 1);
+	dbName := dbclient.DBName
+
+	if logger.IsEnabledFor(zapcore.DebugLevel) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[305], 1);
+		documentIdsString, err := printDocumentIds(documents)
+		if err == nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[306], 1);
+			logger.Debugf("[%s] Entering BatchUpdateDocuments()  document ids=[%s]", dbName, documentIdsString)
+		} else{ _cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[307], 1);{
+			logger.Debugf("[%s] Entering BatchUpdateDocuments()  Could not print document ids due to error: %+v", dbName, err)
+		}}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[297], 1);batchUpdateURL, err := url.Parse(dbclient.CouchInstance.conf.URL)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[308], 1);
+		logger.Errorf("URL parse error: %s", err)
+		return nil, errors.Wrapf(err, "error parsing CouchDB URL: %s", dbclient.CouchInstance.conf.URL)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[298], 1);documentMap := make(map[string]interface{})
+
+	var jsonDocumentMap []interface{}
+
+	for _, jsonDocument := range documents {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[309], 1);
+
+		//create a document map
+		var document = make(map[string]interface{})
+
+		//unmarshal the JSON component of the CouchDoc into the document
+		err = json.Unmarshal(jsonDocument.JSONValue, &document)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[312], 1);
+			return nil, errors.Wrap(err, "error unmarshalling json data")
+		}
+
+		//iterate through any attachments
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[310], 1);if len(jsonDocument.Attachments) > 0 {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[313], 1);
+
+			//create a file attachment map
+			fileAttachment := make(map[string]interface{})
+
+			//for each attachment, create a Base64Attachment, name the attachment,
+			//add the content type and base64 encode the attachment
+			for _, attachment := range jsonDocument.Attachments {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[315], 1);
+				fileAttachment[attachment.Name] = Base64Attachment{attachment.ContentType,
+					base64.StdEncoding.EncodeToString(attachment.AttachmentBytes)}
+			}
+
+			//add attachments to the document
+			_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[314], 1);document["_attachments"] = fileAttachment
+
+		}
+
+		//Append the document to the map of documents
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[311], 1);jsonDocumentMap = append(jsonDocumentMap, document)
+
+	}
+
+	//Add the documents to the "docs" item
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[299], 1);documentMap["docs"] = jsonDocumentMap
+
+	bulkDocsJSON, err := json.Marshal(documentMap)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[316], 1);
+		return nil, errors.Wrap(err, "error marshalling json data")
+	}
+
+	//get the number of retries
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[300], 1);maxRetries := dbclient.CouchInstance.conf.MaxRetries
+
+	resp, _, err := dbclient.handleRequest(http.MethodPost, "BatchUpdateDocuments", batchUpdateURL, bulkDocsJSON, "", "", maxRetries, true, nil, "_bulk_docs")
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[317], 1);
+		return nil, err
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[301], 1);defer closeResponseBody(resp)
+
+	if logger.IsEnabledFor(zapcore.DebugLevel) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[318], 1);
+		dump, _ := httputil.DumpResponse(resp, false)
+		// compact debug log by replacing carriage return / line feed with dashes to separate http headers
+		logger.Debugf("[%s] HTTP Response: %s", dbclient.DBName, bytes.Replace(dump, []byte{0x0d, 0x0a}, []byte{0x20, 0x7c, 0x20}, -1))
+	}
+
+	//handle as JSON document
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[302], 1);jsonResponseRaw, err := ioutil.ReadAll(resp.Body)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[319], 1);
+		return nil, errors.Wrap(err, "error reading response body")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[303], 1);var jsonResponse = []*BatchUpdateResponse{}
+	err2 := json.Unmarshal(jsonResponseRaw, &jsonResponse)
+	if err2 != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[320], 1);
+		return nil, errors.Wrap(err2, "error unmarshalling json data")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[304], 1);logger.Debugf("[%s] Exiting BatchUpdateDocuments() _bulk_docs response=[%s]", dbclient.DBName, string(jsonResponseRaw))
+
+	return jsonResponse, nil
+
+}
+
+//handleRequestWithRevisionRetry method is a generic http request handler with
+//a retry for document revision conflict errors,
+//which may be detected during saves or deletes that timed out from client http perspective,
+//but which eventually succeeded in couchdb
+func (dbclient *CouchDatabase) handleRequestWithRevisionRetry(id, method, dbName, functionName string, connectURL *url.URL, data []byte, rev string,
+	multipartBoundary string, maxRetries int, keepConnectionOpen bool, queryParms *url.Values) (*http.Response, *DBReturn, error) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[321], 1);
+
+	//Initialize a flag for the revision conflict
+	revisionConflictDetected := false
+	var resp *http.Response
+	var couchDBReturn *DBReturn
+	var errResp error
+
+	//attempt the http request for the max number of retries
+	//In this case, the retry is to catch problems where a client timeout may miss a
+	//successful CouchDB update and cause a document revision conflict on a retry in handleRequest
+	for attempts := 0; attempts <= maxRetries; attempts++ {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[323], 1);
+
+		//if the revision was not passed in, or if a revision conflict is detected on prior attempt,
+		//query CouchDB for the document revision
+		if rev == "" || revisionConflictDetected {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[325], 1);
+			rev = dbclient.getDocumentRevision(id)
+		}
+
+		//handle the request for saving/deleting the couchdb data
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[324], 1);resp, couchDBReturn, errResp = dbclient.CouchInstance.handleRequest(method, dbName, functionName, connectURL,
+			data, rev, multipartBoundary, maxRetries, keepConnectionOpen, queryParms, id)
+
+		//If there was a 409 conflict error during the save/delete, log it and retry it.
+		//Otherwise, break out of the retry loop
+		if couchDBReturn != nil && couchDBReturn.StatusCode == 409 {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[326], 1);
+			logger.Warningf("CouchDB document revision conflict detected, retrying. Attempt:%v", attempts+1)
+			revisionConflictDetected = true
+		} else{ _cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[327], 1);{
+			break
+		}}
+	}
+
+	// return the handleRequest results
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[322], 1);return resp, couchDBReturn, errResp
+}
+
+func (dbclient *CouchDatabase) handleRequest(method, functionName string, connectURL *url.URL, data []byte, rev, multipartBoundary string,
+	maxRetries int, keepConnectionOpen bool, queryParms *url.Values, pathElements ...string) (*http.Response, *DBReturn, error) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[328], 1);
+
+	return dbclient.CouchInstance.handleRequest(
+		method, dbclient.DBName, functionName, connectURL, data, rev, multipartBoundary,
+		maxRetries, keepConnectionOpen, queryParms, pathElements...,
+	)
+}
+
+//handleRequest method is a generic http request handler.
+// If it returns an error, it ensures that the response body is closed, else it is the
+// callee's responsibility to close response correctly.
+// Any http error or CouchDB error (4XX or 500) will result in a golang error getting returned
+func (couchInstance *CouchInstance) handleRequest(method, dbName, functionName string, connectURL *url.URL, data []byte, rev string,
+	multipartBoundary string, maxRetries int, keepConnectionOpen bool, queryParms *url.Values, pathElements ...string) (*http.Response, *DBReturn, error) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[329], 1);
+
+	logger.Debugf("Entering handleRequest()  method=%s  url=%v  dbName=%s", method, connectURL, dbName)
+
+	//create the return objects for couchDB
+	var resp *http.Response
+	var errResp error
+	couchDBReturn := &DBReturn{}
+	defer couchInstance.recordMetric(time.Now(), dbName, functionName, couchDBReturn)
+
+	//set initial wait duration for retries
+	waitDuration := retryWaitTime * time.Millisecond
+
+	if maxRetries < 0 {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[336], 1);
+		return nil, nil, errors.New("number of retries must be zero or greater")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[330], 1);requestURL := constructCouchDBUrl(connectURL, dbName, pathElements...)
+
+	if queryParms != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[337], 1);
+		requestURL.RawQuery = queryParms.Encode()
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[331], 1);logger.Debugf("Request URL: %s", requestURL)
+
+	//attempt the http request for the max number of retries
+	// if maxRetries is 0, the database creation will be attempted once and will
+	//    return an error if unsuccessful
+	// if maxRetries is 3 (default), a maximum of 4 attempts (one attempt with 3 retries)
+	//    will be made with warning entries for unsuccessful attempts
+	for attempts := 0; attempts <= maxRetries; attempts++ {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[338], 1);
+
+		//Set up a buffer for the payload data
+		payloadData := new(bytes.Buffer)
+
+		payloadData.ReadFrom(bytes.NewReader(data))
+
+		//Create request based on URL for couchdb operation
+		req, err := http.NewRequest(method, requestURL.String(), payloadData)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[348], 1);
+			return nil, nil, errors.Wrap(err, "error creating http request")
+		}
+
+		//set the request to close on completion if shared connections are not allowSharedConnection
+		//Current CouchDB has a problem with zero length attachments, do not allow the connection to be reused.
+		//Apache JIRA item for CouchDB   https://issues.apache.org/jira/browse/COUCHDB-3394
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[339], 1);if !keepConnectionOpen {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[349], 1);
+			req.Close = true
+		}
+
+		//add content header for PUT
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[340], 1);if method == http.MethodPut || method == http.MethodPost || method == http.MethodDelete {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[350], 1);
+
+			//If the multipartBoundary is not set, then this is a JSON and content-type should be set
+			//to application/json.   Else, this is contains an attachment and needs to be multipart
+			if multipartBoundary == "" {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[352], 1);
+				req.Header.Set("Content-Type", "application/json")
+			} else{ _cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[353], 1);{
+				req.Header.Set("Content-Type", "multipart/related;boundary=\""+multipartBoundary+"\"")
+			}}
+
+			//check to see if the revision is set,  if so, pass as a header
+			_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[351], 1);if rev != "" {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[354], 1);
+				req.Header.Set("If-Match", rev)
+			}
+		}
+
+		//add content header for PUT
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[341], 1);if method == http.MethodPut || method == http.MethodPost {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[355], 1);
+			req.Header.Set("Accept", "application/json")
+		}
+
+		//add content header for GET
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[342], 1);if method == http.MethodGet {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[356], 1);
+			req.Header.Set("Accept", "multipart/related")
+		}
+
+		//If username and password are set the use basic auth
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[343], 1);if couchInstance.conf.Username != "" && couchInstance.conf.Password != "" {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[357], 1);
+			//req.Header.Set("Authorization", "Basic YWRtaW46YWRtaW5w")
+			req.SetBasicAuth(couchInstance.conf.Username, couchInstance.conf.Password)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[344], 1);if logger.IsEnabledFor(zapcore.DebugLevel) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[358], 1);
+			dump, _ := httputil.DumpRequestOut(req, false)
+			// compact debug log by replacing carriage return / line feed with dashes to separate http headers
+			logger.Debugf("HTTP Request: %s", bytes.Replace(dump, []byte{0x0d, 0x0a}, []byte{0x20, 0x7c, 0x20}, -1))
+		}
+
+		//Execute http request
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[345], 1);resp, errResp = couchInstance.client.Do(req)
+
+		//check to see if the return from CouchDB is valid
+		if invalidCouchDBReturn(resp, errResp) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[359], 1);
+			continue
+		}
+
+		//if there is no golang http error and no CouchDB 500 error, then drop out of the retry
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[346], 1);if errResp == nil && resp != nil && resp.StatusCode < 500 {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[360], 1);
+			// if this is an error, then populate the couchDBReturn
+			if resp.StatusCode >= 400 {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[362], 1);
+				//Read the response body and close it for next attempt
+				jsonError, err := ioutil.ReadAll(resp.Body)
+				if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[364], 1);
+					return nil, nil, errors.Wrap(err, "error reading response body")
+				}
+				_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[363], 1);defer closeResponseBody(resp)
+
+				errorBytes := []byte(jsonError)
+				//Unmarshal the response
+				err = json.Unmarshal(errorBytes, &couchDBReturn)
+				if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[365], 1);
+					return nil, nil, errors.Wrap(err, "error unmarshalling json data")
+				}
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[361], 1);break
+		}
+
+		// If the maxRetries is greater than 0, then log the retry info
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[347], 1);if maxRetries > 0 {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[366], 1);
+
+			//if this is an unexpected golang http error, log the error and retry
+			if errResp != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[368], 1);
+
+				//Log the error with the retry count and continue
+				logger.Warningf("Retrying couchdb request in %s. Attempt:%v  Error:%v",
+					waitDuration.String(), attempts+1, errResp.Error())
+
+				//otherwise this is an unexpected 500 error from CouchDB. Log the error and retry.
+			} else{ _cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[369], 1);{
+				//Read the response body and close it for next attempt
+				jsonError, err := ioutil.ReadAll(resp.Body)
+				defer closeResponseBody(resp)
+				if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[372], 1);
+					return nil, nil, errors.Wrap(err, "error reading response body")
+				}
+
+				_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[370], 1);errorBytes := []byte(jsonError)
+				//Unmarshal the response
+				err = json.Unmarshal(errorBytes, &couchDBReturn)
+				if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[373], 1);
+					return nil, nil, errors.Wrap(err, "error unmarshalling json data")
+				}
+
+				//Log the 500 error with the retry count and continue
+				_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[371], 1);logger.Warningf("Retrying couchdb request in %s. Attempt:%v  Couch DB Error:%s,  Status Code:%v  Reason:%v",
+					waitDuration.String(), attempts+1, couchDBReturn.Error, resp.Status, couchDBReturn.Reason)
+
+			}}
+			//sleep for specified sleep time, then retry
+			_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[367], 1);time.Sleep(waitDuration)
+
+			//backoff, doubling the retry time for next attempt
+			waitDuration *= 2
+
+		}
+
+	} // end retry loop
+
+	//if a golang http error is still present after retries are exhausted, return the error
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[332], 1);if errResp != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[374], 1);
+		return nil, couchDBReturn, errResp
+	}
+
+	//This situation should not occur according to the golang spec.
+	//if this error returned (errResp) from an http call, then the resp should be not nil,
+	//this is a structure and StatusCode is an int
+	//This is meant to provide a more graceful error if this should occur
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[333], 1);if invalidCouchDBReturn(resp, errResp) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[375], 1);
+		return nil, nil, errors.New("unable to connect to CouchDB, check the hostname and port.")
+	}
+
+	//set the return code for the couchDB request
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[334], 1);couchDBReturn.StatusCode = resp.StatusCode
+
+	// check to see if the status code from couchdb is 400 or higher
+	// response codes 4XX and 500 will be treated as errors -
+	// golang error will be created from the couchDBReturn contents and both will be returned
+	if resp.StatusCode >= 400 {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[376], 1);
+
+		// if the status code is 400 or greater, log and return an error
+		logger.Debugf("Error handling CouchDB request. Error:%s,  Status Code:%v,  Reason:%s",
+			couchDBReturn.Error, resp.StatusCode, couchDBReturn.Reason)
+
+		return nil, couchDBReturn, errors.Errorf("error handling CouchDB request. Error:%s,  Status Code:%v,  Reason:%s",
+			couchDBReturn.Error, resp.StatusCode, couchDBReturn.Reason)
+
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[335], 1);logger.Debugf("Exiting handleRequest()")
+
+	//If no errors, then return the http response and the couchdb return object
+	return resp, couchDBReturn, nil
+}
+
+func (ci *CouchInstance) recordMetric(startTime time.Time, dbName, api string, couchDBReturn *DBReturn) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[377], 1);
+	ci.stats.observeProcessingTime(startTime, dbName, api, strconv.Itoa(couchDBReturn.StatusCode))
+}
+
+//invalidCouchDBResponse checks to make sure either a valid response or error is returned
+func invalidCouchDBReturn(resp *http.Response, errResp error) bool {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[378], 1);
+	if resp == nil && errResp == nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[380], 1);
+		return true
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[379], 1);return false
+}
+
+//IsJSON tests a string to determine if a valid JSON
+func IsJSON(s string) bool {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[381], 1);
+	var js map[string]interface{}
+	return json.Unmarshal([]byte(s), &js) == nil
+}
+
+// encodePathElement uses Golang for url path encoding, additionally:
+// '/' is replaced by %2F, otherwise path encoding will treat as path separator and ignore it
+// '+' is replaced by %2B, otherwise path encoding will ignore it, while CouchDB will unencode the plus as a space
+// Note that all other URL special characters have been tested successfully without need for special handling
+func encodePathElement(str string) string {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[382], 1);
+
+	u := &url.URL{}
+	u.Path = str
+	encodedStr := u.EscapedPath() // url encode using golang url path encoding rules
+	encodedStr = strings.Replace(encodedStr, "/", "%2F", -1)
+	encodedStr = strings.Replace(encodedStr, "+", "%2B", -1)
+
+	return encodedStr
+}
+
+func encodeForJSON(str string) (string, error) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[383], 1);
+	buf := &bytes.Buffer{}
+	encoder := json.NewEncoder(buf)
+	if err := encoder.Encode(str); err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[385], 1);
+		return "", errors.Wrap(err, "error encoding json data")
+	}
+	// Encode adds double quotes to string and terminates with \n - stripping them as bytes as they are all ascii(0-127)
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[384], 1);buffer := buf.Bytes()
+	return string(buffer[1 : len(buffer)-2]), nil
+}
+
+// printDocumentIds is a convenience method to print readable log entries for arrays of pointers
+// to couch document IDs
+func printDocumentIds(documentPointers []*CouchDoc) (string, error) {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[386], 1);
+
+	documentIds := []string{}
+
+	for _, documentPointer := range documentPointers {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[388], 1);
+		docMetadata := &DocMetadata{}
+		err := json.Unmarshal(documentPointer.JSONValue, &docMetadata)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[390], 1);
+			return "", errors.Wrap(err, "error unmarshalling json data")
+		}
+		_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[389], 1);documentIds = append(documentIds, docMetadata.ID)
+	}
+	_cover_atomic_.AddUint32(&GoCover_1_646532663132623064613838.Count[387], 1);return strings.Join(documentIds, ","), nil
+}
+
+var GoCover_1_646532663132623064613838 = struct {
+	Count     [391]uint32
+	Pos       [3 * 391]uint32
+	NumStmt   [391]uint16
+} {
+	Pos: [3 * 391]uint32{
+		228, 229, 0x11002d, // [0]
+		229, 232, 0x30011, // [1]
+		237, 248, 0x100072, // [2]
+		253, 258, 0x430002, // [3]
+		248, 251, 0x30010, // [4]
+		263, 268, 0x100041, // [5]
+		275, 275, 0x360002, // [6]
+		290, 293, 0x100002, // [7]
+		299, 304, 0x100002, // [8]
+		328, 331, 0x180002, // [9]
+		335, 339, 0xc0002, // [10]
+		268, 269, 0x3e0010, // [11]
+		269, 271, 0x4003e, // [12]
+		275, 279, 0x190036, // [13]
+		283, 287, 0xd0003, // [14]
+		279, 281, 0x40019, // [15]
+		293, 296, 0x30010, // [16]
+		304, 313, 0x4b0010, // [17]
+		325, 325, 0xd0003, // [18]
+		313, 316, 0x1a004b, // [19]
+		320, 322, 0xe0004, // [20]
+		316, 318, 0x5001a, // [21]
+		331, 333, 0x30018, // [22]
+		344, 347, 0x5e0041, // [23]
+		351, 357, 0x100002, // [24]
+		361, 361, 0xc0002, // [25]
+		347, 349, 0x3005e, // [26]
+		357, 359, 0x30010, // [27]
+		365, 368, 0x10004e, // [28]
+		374, 377, 0x100002, // [29]
+		380, 384, 0x160002, // [30]
+		389, 391, 0x270002, // [31]
+		368, 371, 0x30010, // [32]
+		377, 379, 0x30010, // [33]
+		384, 386, 0x30016, // [34]
+		396, 402, 0x10005d, // [35]
+		406, 414, 0x100002, // [36]
+		417, 421, 0x160002, // [37]
+		426, 433, 0x100002, // [38]
+		438, 438, 0x270002, // [39]
+		402, 405, 0x30010, // [40]
+		414, 416, 0x30010, // [41]
+		421, 423, 0x30016, // [42]
+		433, 436, 0x30010, // [43]
+		442, 448, 0x10004d, // [44]
+		454, 457, 0x100002, // [45]
+		460, 464, 0x160002, // [46]
+		468, 468, 0x1b0002, // [47]
+		472, 474, 0x1b0002, // [48]
+		480, 480, 0x3a0002, // [49]
+		448, 451, 0x30010, // [50]
+		457, 459, 0x30010, // [51]
+		464, 466, 0x30016, // [52]
+		468, 470, 0x3001b, // [53]
+		474, 478, 0x3001b, // [54]
+		485, 491, 0x100051, // [55]
+		497, 500, 0x100002, // [56]
+		504, 508, 0x160002, // [57]
+		517, 517, 0x2d0002, // [58]
+		527, 529, 0x1b0002, // [59]
+		535, 535, 0x390002, // [60]
+		491, 494, 0x30010, // [61]
+		500, 503, 0x30010, // [62]
+		508, 510, 0x30016, // [63]
+		517, 519, 0x4d002d, // [64]
+		523, 523, 0x1e0003, // [65]
+		519, 522, 0x4004d, // [66]
+		529, 533, 0x3001b, // [67]
+		539, 544, 0x1b0063, // [68]
+		548, 549, 0x100002, // [69]
+		555, 564, 0x210002, // [70]
+		598, 603, 0x100002, // [71]
+		606, 610, 0x100002, // [72]
+		614, 616, 0x160002, // [73]
+		544, 546, 0x3001b, // [74]
+		549, 552, 0x30010, // [75]
+		564, 567, 0x310021, // [76]
+		572, 572, 0x1c0003, // [77]
+		567, 569, 0x40031, // [78]
+		574, 578, 0x120008, // [79]
+		583, 583, 0x2f0003, // [80]
+		590, 593, 0x260003, // [81]
+		578, 580, 0x40012, // [82]
+		583, 584, 0x19002f, // [83]
+		584, 586, 0x50019, // [84]
+		603, 605, 0x30010, // [85]
+		610, 612, 0x30010, // [86]
+		621, 627, 0x100046, // [87]
+		631, 631, 0xc0002, // [88]
+		627, 630, 0x30010, // [89]
+		634, 647, 0x320065, // [90]
+		651, 655, 0x1f0002, // [91]
+		675, 676, 0x100002, // [92]
+		680, 687, 0x100002, // [93]
+		691, 693, 0x320002, // [94]
+		704, 705, 0x100002, // [95]
+		709, 709, 0x2b0002, // [96]
+		647, 649, 0x30032, // [97]
+		655, 664, 0x17001f, // [98]
+		669, 669, 0x2e0003, // [99]
+		664, 666, 0x40017, // [100]
+		669, 671, 0x4002e, // [101]
+		676, 678, 0x30010, // [102]
+		687, 689, 0x30010, // [103]
+		693, 697, 0x120032, // [104]
+		700, 700, 0x290003, // [105]
+		697, 699, 0x40012, // [106]
+		705, 707, 0x30010, // [107]
+		713, 715, 0x11003d, // [108]
+		719, 721, 0x140002, // [109]
+		725, 727, 0x1e0002, // [110]
+		715, 717, 0x30011, // [111]
+		721, 723, 0x30014, // [112]
+		733, 739, 0x1b004e, // [113]
+		743, 744, 0x100002, // [114]
+		749, 756, 0x100002, // [115]
+		766, 770, 0x100002, // [116]
+		775, 776, 0x100002, // [117]
+		781, 781, 0x300002, // [118]
+		854, 855, 0x100002, // [119]
+		859, 860, 0x210002, // [120]
+		739, 741, 0x3001b, // [121]
+		744, 747, 0x30010, // [122]
+		756, 757, 0x3e0010, // [123]
+		763, 764, 0x160003, // [124]
+		757, 762, 0x4003e, // [125]
+		770, 772, 0x30010, // [126]
+		776, 778, 0x30010, // [127]
+		781, 784, 0x70030, // [128]
+		848, 850, 0x220003, // [129]
+		784, 786, 0x150007, // [130]
+		789, 789, 0x120004, // [131]
+		793, 796, 0x280004, // [132]
+		786, 787, 0xa0015, // [133]
+		789, 791, 0x50012, // [134]
+		797, 799, 0x13001c, // [135]
+		802, 802, 0x220005, // [136]
+		803, 809, 0x46000c, // [137]
+		799, 801, 0x60013, // [138]
+		809, 810, 0x2e0046, // [139]
+		811, 816, 0x150012, // [140]
+		819, 820, 0x150007, // [141]
+		824, 828, 0x340007, // [142]
+		830, 834, 0x15000e, // [143]
+		837, 841, 0x340007, // [144]
+		816, 818, 0x80015, // [145]
+		820, 822, 0x80015, // [146]
+		834, 836, 0x80015, // [147]
+		855, 857, 0x30010, // [148]
+		867, 874, 0x100073, // [149]
+		879, 887, 0x140002, // [150]
+		895, 895, 0x120002, // [151]
+		904, 907, 0x100002, // [152]
+		910, 912, 0x2d0002, // [153]
+		921, 922, 0x100002, // [154]
+		926, 928, 0x110002, // [155]
+		934, 934, 0x240002, // [156]
+		938, 943, 0x2c0002, // [157]
+		983, 985, 0x230002, // [158]
+		874, 877, 0x30010, // [159]
+		887, 888, 0x3a0014, // [160]
+		891, 891, 0x310003, // [161]
+		888, 890, 0x4003a, // [162]
+		895, 897, 0x360012, // [163]
+		900, 900, 0x2d0003, // [164]
+		897, 899, 0x40036, // [165]
+		907, 909, 0x30010, // [166]
+		912, 914, 0x12002d, // [167]
+		917, 917, 0x320003, // [168]
+		914, 916, 0x40012, // [169]
+		922, 924, 0x30010, // [170]
+		928, 930, 0x30011, // [171]
+		934, 936, 0x30024, // [172]
+		943, 947, 0x12002c, // [173]
+		953, 953, 0x2d0003, // [174]
+		958, 958, 0x290003, // [175]
+		947, 949, 0x40012, // [176]
+		953, 955, 0xc002d, // [177]
+		958, 963, 0x480029, // [178]
+		969, 970, 0x2a0004, // [179]
+		963, 967, 0x50048, // [180]
+		972, 979, 0x40009, // [181]
+		990, 996, 0x100040, // [182]
+		1002, 1008, 0x100002, // [183]
+		1017, 1021, 0xc0002, // [184]
+		996, 999, 0x30010, // [185]
+		1008, 1009, 0x3e0010, // [186]
+		1015, 1015, 0xd0003, // [187]
+		1009, 1014, 0x4003e, // [188]
+		1026, 1034, 0x10005d, // [189]
+		1040, 1043, 0x100002, // [190]
+		1046, 1048, 0x2d0002, // [191]
+		1057, 1058, 0x100002, // [192]
+		1062, 1065, 0x110002, // [193]
+		1069, 1069, 0x200002, // [194]
+		1073, 1073, 0x280002, // [195]
+		1103, 1105, 0x2c0002, // [196]
+		1034, 1037, 0x30010, // [197]
+		1043, 1045, 0x30010, // [198]
+		1048, 1050, 0x12002d, // [199]
+		1053, 1053, 0x320003, // [200]
+		1050, 1052, 0x40012, // [201]
+		1058, 1060, 0x30010, // [202]
+		1065, 1067, 0x30011, // [203]
+		1069, 1071, 0x30020, // [204]
+		1073, 1077, 0x120028, // [205]
+		1083, 1083, 0x290003, // [206]
+		1077, 1079, 0x40012, // [207]
+		1083, 1088, 0x120029, // [208]
+		1091, 1092, 0x2a0004, // [209]
+		1088, 1090, 0x50012, // [210]
+		1094, 1100, 0x40009, // [211]
+		1110, 1130, 0x100044, // [212]
+		1136, 1139, 0x100002, // [213]
+		1142, 1146, 0x100002, // [214]
+		1150, 1153, 0x110002, // [215]
+		1157, 1159, 0x2b0002, // [216]
+		1175, 1177, 0x150002, // [217]
+		1130, 1133, 0x30010, // [218]
+		1139, 1141, 0x30010, // [219]
+		1146, 1148, 0x30010, // [220]
+		1153, 1155, 0x30011, // [221]
+		1159, 1165, 0x11002b, // [222]
+		1165, 1171, 0x40011, // [223]
+		1182, 1188, 0x250062, // [224]
+		1192, 1193, 0x100002, // [225]
+		1199, 1202, 0x100002, // [226]
+		1205, 1207, 0x110002, // [227]
+		1212, 1213, 0x100002, // [228]
+		1217, 1223, 0x100002, // [229]
+		1227, 1227, 0x270002, // [230]
+		1235, 1237, 0x1b0002, // [231]
+		1188, 1190, 0x30025, // [232]
+		1193, 1196, 0x30010, // [233]
+		1202, 1204, 0x30010, // [234]
+		1207, 1209, 0x30011, // [235]
+		1213, 1215, 0x30010, // [236]
+		1223, 1225, 0x30010, // [237]
+		1227, 1233, 0x30027, // [238]
+		1241, 1247, 0x10004f, // [239]
+		1253, 1256, 0x100002, // [240]
+		1259, 1261, 0xc0002, // [241]
+		1247, 1250, 0x30010, // [242]
+		1256, 1258, 0x30010, // [243]
+		1266, 1272, 0x10004d, // [244]
+		1277, 1286, 0x100002, // [245]
+		1289, 1291, 0xc0002, // [246]
+		1272, 1275, 0x30010, // [247]
+		1286, 1288, 0x30010, // [248]
+		1296, 1299, 0x100039, // [249]
+		1299, 1301, 0x30010, // [250]
+		1306, 1312, 0x10003c, // [251]
+		1317, 1317, 0x220002, // [252]
+		1326, 1328, 0xc0002, // [253]
+		1312, 1314, 0x30010, // [254]
+		1317, 1320, 0x110022, // [255]
+		1320, 1322, 0x40011, // [256]
+		1333, 1339, 0x100051, // [257]
+		1345, 1349, 0x100002, // [258]
+		1352, 1356, 0x100002, // [259]
+		1360, 1363, 0x110002, // [260]
+		1367, 1369, 0x1a0002, // [261]
+		1339, 1342, 0x30010, // [262]
+		1349, 1351, 0x30010, // [263]
+		1356, 1358, 0x30010, // [264]
+		1363, 1365, 0x30011, // [265]
+		1374, 1380, 0x100060, // [266]
+		1386, 1386, 0x2a0002, // [267]
+		1389, 1389, 0x2a0002, // [268]
+		1392, 1392, 0x2b0002, // [269]
+		1395, 1395, 0x2b0002, // [270]
+		1400, 1403, 0x100002, // [271]
+		1407, 1411, 0x100002, // [272]
+		1414, 1418, 0xc0002, // [273]
+		1380, 1383, 0x30010, // [274]
+		1386, 1388, 0x3002a, // [275]
+		1389, 1391, 0x3002a, // [276]
+		1392, 1394, 0x3002b, // [277]
+		1395, 1397, 0x3002b, // [278]
+		1403, 1405, 0x30010, // [279]
+		1411, 1413, 0x30010, // [280]
+		1424, 1429, 0x100065, // [281]
+		1434, 1449, 0x100002, // [282]
+		1454, 1457, 0x100002, // [283]
+		1460, 1462, 0x2d0002, // [284]
+		1469, 1470, 0x100002, // [285]
+		1474, 1477, 0x110002, // [286]
+		1481, 1483, 0x280002, // [287]
+		1488, 1490, 0x1e0002, // [288]
+		1429, 1432, 0x30010, // [289]
+		1449, 1451, 0x30010, // [290]
+		1457, 1459, 0x30010, // [291]
+		1462, 1466, 0x3002d, // [292]
+		1470, 1472, 0x30010, // [293]
+		1477, 1479, 0x30011, // [294]
+		1483, 1486, 0x30028, // [295]
+		1495, 1498, 0x2d006c, // [296]
+		1507, 1508, 0x100002, // [297]
+		1513, 1517, 0x290002, // [298]
+		1552, 1555, 0x100002, // [299]
+		1560, 1563, 0x100002, // [300]
+		1566, 1568, 0x2d0002, // [301]
+		1575, 1576, 0x100002, // [302]
+		1580, 1582, 0x110002, // [303]
+		1586, 1588, 0x1a0002, // [304]
+		1498, 1500, 0x11002d, // [305]
+		1500, 1502, 0x40011, // [306]
+		1502, 1504, 0x40009, // [307]
+		1508, 1511, 0x30010, // [308]
+		1517, 1524, 0x110029, // [309]
+		1529, 1529, 0x280003, // [310]
+		1547, 1547, 0x360003, // [311]
+		1524, 1526, 0x40011, // [312]
+		1529, 1536, 0x380028, // [313]
+		1542, 1542, 0x2d0004, // [314]
+		1536, 1539, 0x50038, // [315]
+		1555, 1557, 0x30010, // [316]
+		1563, 1565, 0x30010, // [317]
+		1568, 1572, 0x3002d, // [318]
+		1576, 1578, 0x30010, // [319]
+		1582, 1584, 0x30011, // [320]
+		1597, 1608, 0x380080, // [321]
+		1631, 1631, 0x250002, // [322]
+		1608, 1612, 0x2c0038, // [323]
+		1617, 1622, 0x3e0003, // [324]
+		1612, 1614, 0x4002c, // [325]
+		1622, 1625, 0x4003e, // [326]
+		1625, 1626, 0x90009, // [327]
+		1635, 1641, 0x2007e, // [328]
+		1648, 1661, 0x140098, // [329]
+		1665, 1667, 0x170002, // [330]
+		1671, 1678, 0x380002, // [331]
+		1809, 1809, 0x140002, // [332]
+		1817, 1817, 0x290002, // [333]
+		1822, 1827, 0x1c0002, // [334]
+		1838, 1841, 0x210002, // [335]
+		1661, 1663, 0x30014, // [336]
+		1667, 1669, 0x30017, // [337]
+		1678, 1687, 0x110038, // [338]
+		1694, 1694, 0x1a0003, // [339]
+		1699, 1699, 0x5b0003, // [340]
+		1716, 1716, 0x3c0003, // [341]
+		1721, 1721, 0x1f0003, // [342]
+		1726, 1726, 0x4d0003, // [343]
+		1731, 1731, 0x2e0003, // [344]
+		1738, 1741, 0x2a0003, // [345]
+		1746, 1746, 0x3d0003, // [346]
+		1768, 1768, 0x150003, // [347]
+		1687, 1689, 0x40011, // [348]
+		1694, 1696, 0x4001a, // [349]
+		1699, 1703, 0x1f005b, // [350]
+		1710, 1710, 0x110004, // [351]
+		1703, 1705, 0x5001f, // [352]
+		1705, 1707, 0x5000a, // [353]
+		1710, 1712, 0x50011, // [354]
+		1716, 1718, 0x4003c, // [355]
+		1721, 1723, 0x4001f, // [356]
+		1726, 1729, 0x4004d, // [357]
+		1731, 1735, 0x4002e, // [358]
+		1741, 1742, 0xc002a, // [359]
+		1746, 1748, 0x1e003d, // [360]
+		1764, 1764, 0x90004, // [361]
+		1748, 1751, 0x13001e, // [362]
+		1754, 1759, 0x130005, // [363]
+		1751, 1753, 0x60013, // [364]
+		1759, 1761, 0x60013, // [365]
+		1768, 1771, 0x160015, // [366]
+		1799, 1802, 0x150004, // [367]
+		1771, 1778, 0x50016, // [368]
+		1778, 1782, 0x13000a, // [369]
+		1786, 1789, 0x130005, // [370]
+		1794, 1795, 0x600005, // [371]
+		1782, 1784, 0x60013, // [372]
+		1789, 1791, 0x60013, // [373]
+		1809, 1811, 0x30014, // [374]
+		1817, 1819, 0x30029, // [375]
+		1827, 1836, 0x3001c, // [376]
+		1844, 1846, 0x20069, // [377]
+		1849, 1850, 0x230044, // [378]
+		1853, 1853, 0xe0002, // [379]
+		1850, 1852, 0x30023, // [380]
+		1857, 1860, 0x2001c, // [381]
+		1866, 1875, 0x2002b, // [382]
+		1877, 1880, 0x2c0030, // [383]
+		1884, 1885, 0x2f0002, // [384]
+		1880, 1882, 0x3002c, // [385]
+		1890, 1894, 0x330045, // [386]
+		1902, 1902, 0x2c0002, // [387]
+		1894, 1897, 0x110033, // [388]
+		1900, 1900, 0x340003, // [389]
+		1897, 1899, 0x40011, // [390]
+	},
+	NumStmt: [391]uint16{
+		1, // 0
+		2, // 1
+		4, // 2
+		3, // 3
+		2, // 4
+		3, // 5
+		1, // 6
+		3, // 7
+		3, // 8
+		3, // 9
+		3, // 10
+		1, // 11
+		1, // 12
+		2, // 13
+		3, // 14
+		1, // 15
+		2, // 16
+		2, // 17
+		1, // 18
+		2, // 19
+		3, // 20
+		1, // 21
+		1, // 22
+		1, // 23
+		5, // 24
+		1, // 25
+		1, // 26
+		1, // 27
+		2, // 28
+		3, // 29
+		4, // 30
+		2, // 31
+		2, // 32
+		1, // 33
+		1, // 34
+		4, // 35
+		4, // 36
+		4, // 37
+		3, // 38
+		1, // 39
+		2, // 40
+		1, // 41
+		1, // 42
+		2, // 43
+		4, // 44
+		3, // 45
+		4, // 46
+		1, // 47
+		2, // 48
+		1, // 49
+		2, // 50
+		1, // 51
+		1, // 52
+		1, // 53
+		1, // 54
+		4, // 55
+		3, // 56
+		4, // 57
+		1, // 58
+		2, // 59
+		1, // 60
+		2, // 61
+		2, // 62
+		1, // 63
+		1, // 64
+		1, // 65
+		2, // 66
+		1, // 67
+		3, // 68
+		2, // 69
+		4, // 70
+		3, // 71
+		3, // 72
+		2, // 73
+		1, // 74
+		2, // 75
+		1, // 76
+		1, // 77
+		1, // 78
+		2, // 79
+		1, // 80
+		2, // 81
+		1, // 82
+		1, // 83
+		1, // 84
+		1, // 85
+		1, // 86
+		3, // 87
+		1, // 88
+		1, // 89
+		5, // 90
+		2, // 91
+		2, // 92
+		5, // 93
+		2, // 94
+		2, // 95
+		1, // 96
+		1, // 97
+		5, // 98
+		1, // 99
+		1, // 100
+		1, // 101
+		1, // 102
+		1, // 103
+		3, // 104
+		1, // 105
+		1, // 106
+		1, // 107
+		1, // 108
+		2, // 109
+		3, // 110
+		1, // 111
+		1, // 112
+		5, // 113
+		2, // 114
+		5, // 115
+		3, // 116
+		2, // 117
+		1, // 118
+		2, // 119
+		2, // 120
+		1, // 121
+		2, // 122
+		1, // 123
+		2, // 124
+		2, // 125
+		1, // 126
+		1, // 127
+		2, // 128
+		2, // 129
+		2, // 130
+		1, // 131
+		3, // 132
+		1, // 133
+		1, // 134
+		2, // 135
+		1, // 136
+		4, // 137
+		1, // 138
+		1, // 139
+		3, // 140
+		2, // 141
+		5, // 142
+		2, // 143
+		5, // 144
+		1, // 145
+		1, // 146
+		1, // 147
+		1, // 148
+		5, // 149
+		6, // 150
+		1, // 151
+		3, // 152
+		2, // 153
+		2, // 154
+		3, // 155
+		1, // 156
+		3, // 157
+		2, // 158
+		2, // 159
+		1, // 160
+		1, // 161
+		1, // 162
+		2, // 163
+		1, // 164
+		1, // 165
+		1, // 166
+		2, // 167
+		1, // 168
+		1, // 169
+		1, // 170
+		1, // 171
+		1, // 172
+		3, // 173
+		1, // 174
+		1, // 175
+		1, // 176
+		2, // 177
+		3, // 178
+		2, // 179
+		2, // 180
+		3, // 181
+		4, // 182
+		3, // 183
+		3, // 184
+		2, // 185
+		1, // 186
+		1, // 187
+		2, // 188
+		5, // 189
+		3, // 190
+		2, // 191
+		2, // 192
+		3, // 193
+		1, // 194
+		1, // 195
+		2, // 196
+		2, // 197
+		1, // 198
+		2, // 199
+		1, // 200
+		1, // 201
+		1, // 202
+		1, // 203
+		1, // 204
+		3, // 205
+		1, // 206
+		1, // 207
+		3, // 208
+		2, // 209
+		1, // 210
+		3, // 211
+		6, // 212
+		3, // 213
+		3, // 214
+		3, // 215
+		2, // 216
+		2, // 217
+		2, // 218
+		1, // 219
+		1, // 220
+		1, // 221
+		3, // 222
+		3, // 223
+		3, // 224
+		2, // 225
+		3, // 226
+		2, // 227
+		2, // 228
+		4, // 229
+		1, // 230
+		2, // 231
+		1, // 232
+		2, // 233
+		1, // 234
+		1, // 235
+		1, // 236
+		1, // 237
+		2, // 238
+		4, // 239
+		3, // 240
+		2, // 241
+		2, // 242
+		1, // 243
+		4, // 244
+		5, // 245
+		2, // 246
+		2, // 247
+		1, // 248
+		2, // 249
+		1, // 250
+		3, // 251
+		1, // 252
+		2, // 253
+		1, // 254
+		2, // 255
+		1, // 256
+		4, // 257
+		3, // 258
+		3, // 259
+		3, // 260
+		2, // 261
+		2, // 262
+		1, // 263
+		1, // 264
+		1, // 265
+		4, // 266
+		1, // 267
+		1, // 268
+		1, // 269
+		1, // 270
+		3, // 271
+		3, // 272
+		3, // 273
+		2, // 274
+		1, // 275
+		1, // 276
+		1, // 277
+		1, // 278
+		1, // 279
+		1, // 280
+		3, // 281
+		6, // 282
+		3, // 283
+		2, // 284
+		2, // 285
+		3, // 286
+		2, // 287
+		2, // 288
+		2, // 289
+		1, // 290
+		1, // 291
+		2, // 292
+		1, // 293
+		1, // 294
+		2, // 295
+		2, // 296
+		2, // 297
+		3, // 298
+		3, // 299
+		3, // 300
+		2, // 301
+		2, // 302
+		3, // 303
+		2, // 304
+		2, // 305
+		1, // 306
+		1, // 307
+		2, // 308
+		3, // 309
+		1, // 310
+		1, // 311
+		1, // 312
+		2, // 313
+		1, // 314
+		1, // 315
+		1, // 316
+		1, // 317
+		2, // 318
+		1, // 319
+		1, // 320
+		5, // 321
+		1, // 322
+		1, // 323
+		2, // 324
+		1, // 325
+		2, // 326
+		1, // 327
+		1, // 328
+		7, // 329
+		2, // 330
+		2, // 331
+		1, // 332
+		1, // 333
+		2, // 334
+		2, // 335
+		1, // 336
+		1, // 337
+		4, // 338
+		1, // 339
+		1, // 340
+		1, // 341
+		1, // 342
+		1, // 343
+		1, // 344
+		2, // 345
+		1, // 346
+		1, // 347
+		1, // 348
+		1, // 349
+		1, // 350
+		1, // 351
+		1, // 352
+		1, // 353
+		1, // 354
+		1, // 355
+		1, // 356
+		1, // 357
+		2, // 358
+		1, // 359
+		1, // 360
+		1, // 361
+		2, // 362
+		4, // 363
+		1, // 364
+		1, // 365
+		1, // 366
+		2, // 367
+		1, // 368
+		3, // 369
+		3, // 370
+		1, // 371
+		1, // 372
+		1, // 373
+		1, // 374
+		1, // 375
+		2, // 376
+		1, // 377
+		1, // 378
+		1, // 379
+		1, // 380
+		2, // 381
+		6, // 382
+		3, // 383
+		2, // 384
+		1, // 385
+		2, // 386
+		1, // 387
+		3, // 388
+		1, // 389
+		1, // 390
+	},
+}
+var _ = _cover_atomic_.LoadUint32

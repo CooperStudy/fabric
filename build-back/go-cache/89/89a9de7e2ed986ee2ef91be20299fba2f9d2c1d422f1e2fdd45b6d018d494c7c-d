@@ -1,0 +1,4 @@
+lscc_validation_logic.cover.go
+validation_logic.cover.go
+validator.cover.go
+./validation_logic_test.go

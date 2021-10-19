@@ -1,0 +1,3 @@
+./gendoc_suite_test.go
+./options_test.go
+./table_test.go

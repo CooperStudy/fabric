@@ -1,0 +1,1247 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/peer/node/start.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package node; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+	"net"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/cauthdsl"
+	ccdef "github.com/hyperledger/fabric/common/chaincode"
+	"github.com/hyperledger/fabric/common/crypto/tlsgen"
+	"github.com/hyperledger/fabric/common/deliver"
+	"github.com/hyperledger/fabric/common/flogging"
+	"github.com/hyperledger/fabric/common/grpclogging"
+	"github.com/hyperledger/fabric/common/grpcmetrics"
+	"github.com/hyperledger/fabric/common/localmsp"
+	"github.com/hyperledger/fabric/common/metadata"
+	"github.com/hyperledger/fabric/common/metrics"
+	"github.com/hyperledger/fabric/common/policies"
+	"github.com/hyperledger/fabric/common/viperutil"
+	"github.com/hyperledger/fabric/core/aclmgmt"
+	"github.com/hyperledger/fabric/core/aclmgmt/resources"
+	"github.com/hyperledger/fabric/core/admin"
+	"github.com/hyperledger/fabric/core/cclifecycle"
+	"github.com/hyperledger/fabric/core/chaincode"
+	"github.com/hyperledger/fabric/core/chaincode/accesscontrol"
+	"github.com/hyperledger/fabric/core/chaincode/lifecycle"
+	"github.com/hyperledger/fabric/core/chaincode/persistence"
+	"github.com/hyperledger/fabric/core/chaincode/platforms"
+	"github.com/hyperledger/fabric/core/chaincode/platforms/car"
+	"github.com/hyperledger/fabric/core/chaincode/platforms/golang"
+	"github.com/hyperledger/fabric/core/chaincode/platforms/java"
+	"github.com/hyperledger/fabric/core/chaincode/platforms/node"
+	"github.com/hyperledger/fabric/core/comm"
+	"github.com/hyperledger/fabric/core/committer/txvalidator"
+	"github.com/hyperledger/fabric/core/common/ccprovider"
+	"github.com/hyperledger/fabric/core/common/privdata"
+	"github.com/hyperledger/fabric/core/container"
+	"github.com/hyperledger/fabric/core/container/dockercontroller"
+	"github.com/hyperledger/fabric/core/container/inproccontroller"
+	"github.com/hyperledger/fabric/core/endorser"
+	authHandler "github.com/hyperledger/fabric/core/handlers/auth"
+	endorsement2 "github.com/hyperledger/fabric/core/handlers/endorsement/api"
+	endorsement3 "github.com/hyperledger/fabric/core/handlers/endorsement/api/identities"
+	"github.com/hyperledger/fabric/core/handlers/library"
+	"github.com/hyperledger/fabric/core/handlers/validation/api"
+	"github.com/hyperledger/fabric/core/ledger/cceventmgmt"
+	"github.com/hyperledger/fabric/core/ledger/ledgermgmt"
+	"github.com/hyperledger/fabric/core/operations"
+	"github.com/hyperledger/fabric/core/peer"
+	"github.com/hyperledger/fabric/core/scc"
+	"github.com/hyperledger/fabric/core/scc/cscc"
+	"github.com/hyperledger/fabric/core/scc/lscc"
+	"github.com/hyperledger/fabric/core/scc/qscc"
+	"github.com/hyperledger/fabric/discovery"
+	"github.com/hyperledger/fabric/discovery/endorsement"
+	discsupport "github.com/hyperledger/fabric/discovery/support"
+	discacl "github.com/hyperledger/fabric/discovery/support/acl"
+	ccsupport "github.com/hyperledger/fabric/discovery/support/chaincode"
+	"github.com/hyperledger/fabric/discovery/support/config"
+	"github.com/hyperledger/fabric/discovery/support/gossip"
+	gossipcommon "github.com/hyperledger/fabric/gossip/common"
+	"github.com/hyperledger/fabric/gossip/service"
+	"github.com/hyperledger/fabric/msp"
+	"github.com/hyperledger/fabric/msp/mgmt"
+	peergossip "github.com/hyperledger/fabric/peer/gossip"
+	"github.com/hyperledger/fabric/peer/version"
+	cb "github.com/hyperledger/fabric/protos/common"
+	common2 "github.com/hyperledger/fabric/protos/common"
+	discprotos "github.com/hyperledger/fabric/protos/discovery"
+	pb "github.com/hyperledger/fabric/protos/peer"
+	"github.com/hyperledger/fabric/protos/token"
+	"github.com/hyperledger/fabric/protos/transientstore"
+	"github.com/hyperledger/fabric/protos/utils"
+	"github.com/hyperledger/fabric/token/server"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"google.golang.org/grpc"
+)
+
+const (
+	chaincodeAddrKey       = "peer.chaincodeAddress"
+	chaincodeListenAddrKey = "peer.chaincodeListenAddress"
+	defaultChaincodePort   = 7052
+)
+
+var chaincodeDevMode bool
+
+func startCmd() *cobra.Command {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[0], 1);
+	// Set the flags on the node start command.
+	flags := nodeStartCmd.Flags()
+	flags.BoolVarP(&chaincodeDevMode, "peer-chaincodedev", "", false,
+		"Whether peer in chaincode development mode")
+
+	return nodeStartCmd
+}
+
+var nodeStartCmd = &cobra.Command{
+	Use:   "start",
+	Short: "Starts the node.",
+	Long:  `Starts a node that interacts with the network.`,
+	RunE: func(cmd *cobra.Command, args []string) error {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[1], 1);
+		if len(args) != 0 {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[3], 1);
+			return fmt.Errorf("trailing args detected")
+		}
+		// Parsing of the command line is done so silence cmd usage
+		_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[2], 1);cmd.SilenceUsage = true
+		return serve(args)
+	},
+}
+
+func serve(args []string) error {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[4], 1);
+	// currently the peer only works with the standard MSP
+	// because in certain scenarios the MSP has to make sure
+	// that from a single credential you only have a single 'identity'.
+	// Idemix does not support this *YET* but it can be easily
+	// fixed to support it. For now, we just make sure that
+	// the peer only comes up with the standard MSP
+	mspType := mgmt.GetLocalMSP().GetType()
+	if mspType != msp.FABRIC {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[28], 1);
+		panic("Unsupported msp type " + msp.ProviderTypeToString(mspType))
+	}
+
+	// Trace RPCs with the golang.org/x/net/trace package. This was moved out of
+	// the deliver service connection factory as it has process wide implications
+	// and was racy with respect to initialization of gRPC clients and servers.
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[5], 1);grpc.EnableTracing = true
+
+	logger.Infof("Starting %s", version.GetInfo())
+
+	//startup aclmgmt with default ACL providers (resource based and default 1.0 policies based).
+	//Users can pass in their own ACLProvider to RegisterACLProvider (currently unit tests do this)
+	aclProvider := aclmgmt.NewACLProvider(
+		aclmgmt.ResourceGetter(peer.GetStableChannelConfig),
+	)
+
+	pr := platforms.NewRegistry(
+		&golang.Platform{},
+		&node.Platform{},
+		&java.Platform{},
+		&car.Platform{},
+	)
+
+	deployedCCInfoProvider := &lscc.DeployedCCInfoProvider{}
+
+	identityDeserializerFactory := func(chainID string) msp.IdentityDeserializer {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[29], 1);
+		return mgmt.GetManagerForChain(chainID)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[6], 1);opsSystem := newOperationsSystem()
+	err := opsSystem.Start()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[30], 1);
+		return errors.WithMessage(err, "failed to initialize operations subystems")
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[7], 1);defer opsSystem.Stop()
+
+	metricsProvider := opsSystem.Provider
+
+	membershipInfoProvider := privdata.NewMembershipInfoProvider(createSelfSignedData(), identityDeserializerFactory)
+	//initialize resource management exit
+	ledgermgmt.Initialize(
+		&ledgermgmt.Initializer{
+			CustomTxProcessors:            peer.ConfigTxProcessors,
+			PlatformRegistry:              pr,
+			DeployedChaincodeInfoProvider: deployedCCInfoProvider,
+			MembershipInfoProvider:        membershipInfoProvider,
+			MetricsProvider:               metricsProvider,
+		},
+	)
+
+	// Parameter overrides must be processed before any parameters are
+	// cached. Failures to cache cause the server to terminate immediately.
+	if chaincodeDevMode {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[31], 1);
+		logger.Info("Running in chaincode development mode")
+		logger.Info("Disable loading validity system chaincode")
+
+		viper.Set("chaincode.mode", chaincode.DevModeUserRunsChaincode)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[8], 1);if err := peer.CacheConfiguration(); err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[32], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[9], 1);peerEndpoint, err := peer.GetPeerEndpoint()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[33], 1);
+		err = fmt.Errorf("Failed to get Peer Endpoint: %s", err)
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[10], 1);peerHost, _, err := net.SplitHostPort(peerEndpoint.Address)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[34], 1);
+		return fmt.Errorf("peer address is not in the format of host:port: %v", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[11], 1);listenAddr := viper.GetString("peer.listenAddress")
+	serverConfig, err := peer.GetServerConfig()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[35], 1);
+		logger.Fatalf("Error loading secure config for peer (%s)", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[12], 1);serverConfig.Logger = flogging.MustGetLogger("core.comm").With("server", "PeerServer")
+	serverConfig.MetricsProvider = metricsProvider
+	serverConfig.UnaryInterceptors = append(
+		serverConfig.UnaryInterceptors,
+		grpcmetrics.UnaryServerInterceptor(grpcmetrics.NewUnaryMetrics(metricsProvider)),
+		grpclogging.UnaryServerInterceptor(flogging.MustGetLogger("comm.grpc.server").Zap()),
+	)
+	serverConfig.StreamInterceptors = append(
+		serverConfig.StreamInterceptors,
+		grpcmetrics.StreamServerInterceptor(grpcmetrics.NewStreamMetrics(metricsProvider)),
+		grpclogging.StreamServerInterceptor(flogging.MustGetLogger("comm.grpc.server").Zap()),
+	)
+
+	peerServer, err := peer.NewPeerServer(listenAddr, serverConfig)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[36], 1);
+		logger.Fatalf("Failed to create peer server (%s)", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[13], 1);if serverConfig.SecOpts.UseTLS {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[37], 1);
+		logger.Info("Starting peer with TLS enabled")
+		// set up credential support
+		cs := comm.GetCredentialSupport()
+		cs.ServerRootCAs = serverConfig.SecOpts.ServerRootCAs
+
+		// set the cert to use if client auth is requested by remote endpoints
+		clientCert, err := peer.GetClientCertificate()
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[39], 1);
+			logger.Fatalf("Failed to set TLS client certificate (%s)", err)
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[38], 1);comm.GetCredentialSupport().SetClientCertificate(clientCert)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[14], 1);mutualTLS := serverConfig.SecOpts.UseTLS && serverConfig.SecOpts.RequireClientCert
+	policyCheckerProvider := func(resourceName string) deliver.PolicyCheckerFunc {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[40], 1);
+		return func(env *cb.Envelope, channelID string) error {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[41], 1);
+			return aclProvider.CheckACL(resourceName, channelID, env)
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[15], 1);abServer := peer.NewDeliverEventsServer(mutualTLS, policyCheckerProvider, &peer.DeliverChainManager{}, metricsProvider)
+	pb.RegisterDeliverServer(peerServer.Server(), abServer)
+
+	// Initialize chaincode service
+	chaincodeSupport, ccp, sccp, packageProvider := startChaincodeServer(peerHost, aclProvider, pr, opsSystem)
+
+	logger.Debugf("Running peer")
+
+	// Start the Admin server
+	startAdminServer(listenAddr, peerServer.Server(), metricsProvider)
+
+	privDataDist := func(channel string, txID string, privateData *transientstore.TxPvtReadWriteSetWithConfigInfo, blkHt uint64) error {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[42], 1);
+		return service.GetGossipService().DistributePrivateData(channel, txID, privateData, blkHt)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[16], 1);signingIdentity := mgmt.GetLocalSigningIdentityOrPanic()
+	serializedIdentity, err := signingIdentity.Serialize()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[43], 1);
+		logger.Panicf("Failed serializing self identity: %v", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[17], 1);libConf := library.Config{}
+	if err = viperutil.EnhancedExactUnmarshalKey("peer.handlers", &libConf); err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[44], 1);
+		return errors.WithMessage(err, "could not load YAML config")
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[18], 1);reg := library.InitRegistry(libConf)
+
+	authFilters := reg.Lookup(library.Auth).([]authHandler.Filter)
+	endorserSupport := &endorser.SupportImpl{
+		SignerSupport:    signingIdentity,
+		Peer:             peer.Default,
+		PeerSupport:      peer.DefaultSupport,
+		ChaincodeSupport: chaincodeSupport,
+		SysCCProvider:    sccp,
+		ACLProvider:      aclProvider,
+	}
+	endorsementPluginsByName := reg.Lookup(library.Endorsement).(map[string]endorsement2.PluginFactory)
+	validationPluginsByName := reg.Lookup(library.Validation).(map[string]validation.PluginFactory)
+	signingIdentityFetcher := (endorsement3.SigningIdentityFetcher)(endorserSupport)
+	channelStateRetriever := endorser.ChannelStateRetriever(endorserSupport)
+	pluginMapper := endorser.MapBasedPluginMapper(endorsementPluginsByName)
+	pluginEndorser := endorser.NewPluginEndorser(&endorser.PluginSupport{
+		ChannelStateRetriever:   channelStateRetriever,
+		TransientStoreRetriever: peer.TransientStoreFactory,
+		PluginMapper:            pluginMapper,
+		SigningIdentityFetcher:  signingIdentityFetcher,
+	})
+	endorserSupport.PluginEndorser = pluginEndorser
+	serverEndorser := endorser.NewEndorserServer(privDataDist, endorserSupport, pr)
+	auth := authHandler.ChainFilters(serverEndorser, authFilters...)
+	// Register the Endorser server
+	pb.RegisterEndorserServer(peerServer.Server(), auth)
+
+	policyMgr := peer.NewChannelPolicyManagerGetter()
+
+	// Initialize gossip component
+	err = initGossipService(policyMgr, peerServer, serializedIdentity, peerEndpoint.Address)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[45], 1);
+		return err
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[19], 1);defer service.GetGossipService().Stop()
+
+	// register prover grpc service
+	// FAB-12971 disable prover service before v1.4 cut. Will uncomment after v1.4 cut
+	// err = registerProverService(peerServer, aclProvider, signingIdentity)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// initialize system chaincodes
+
+	// deploy system chaincodes
+	sccp.DeploySysCCs("", ccp)
+	logger.Infof("Deployed system chaincodes")
+
+	installedCCs := func() ([]ccdef.InstalledChaincode, error) {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[46], 1);
+		return packageProvider.ListInstalledChaincodes()
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[20], 1);lifecycle, err := cc.NewLifeCycle(cc.Enumerate(installedCCs))
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[47], 1);
+		logger.Panicf("Failed creating lifecycle: +%v", err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[21], 1);onUpdate := cc.HandleMetadataUpdate(func(channel string, chaincodes ccdef.MetadataSet) {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[48], 1);
+		service.GetGossipService().UpdateChaincodes(chaincodes.AsChaincodes(), gossipcommon.ChainID(channel))
+	})
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[22], 1);lifecycle.AddListener(onUpdate)
+
+	// this brings up all the channels
+	peer.Initialize(func(cid string) {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[49], 1);
+		logger.Debugf("Deploying system CC, for channel <%s>", cid)
+		sccp.DeploySysCCs(cid, ccp)
+		sub, err := lifecycle.NewChannelSubscription(cid, cc.QueryCreatorFunc(func() (cc.Query, error) {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[52], 1);
+			return peer.GetLedger(cid).NewQueryExecutor()
+		}))
+		_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[50], 1);if err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[53], 1);
+			logger.Panicf("Failed subscribing to chaincode lifecycle updates")
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[51], 1);cceventmgmt.GetMgr().Register(cid, sub)
+	}, ccp, sccp, txvalidator.MapBasedPluginMapper(validationPluginsByName),
+		pr, deployedCCInfoProvider, membershipInfoProvider, metricsProvider)
+
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[23], 1);if viper.GetBool("peer.discovery.enabled") {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[54], 1);
+		registerDiscoveryService(peerServer, policyMgr, lifecycle)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[24], 1);networkID := viper.GetString("peer.networkId")
+
+	logger.Infof("Starting peer with ID=[%s], network ID=[%s], address=[%s]", peerEndpoint.Id, networkID, peerEndpoint.Address)
+
+	// Get configuration before starting go routines to avoid
+	// racing in tests
+	profileEnabled := viper.GetBool("peer.profile.enabled")
+	profileListenAddress := viper.GetString("peer.profile.listenAddress")
+
+	// Start the grpc server. Done in a goroutine so we can deploy the
+	// genesis block if needed.
+	serve := make(chan error)
+
+	go func() {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[55], 1);
+		var grpcErr error
+		if grpcErr = peerServer.Start(); grpcErr != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[57], 1);
+			grpcErr = fmt.Errorf("grpc server exited with error: %s", grpcErr)
+		} else{ _cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[58], 1);{
+			logger.Info("peer server exited")
+		}}
+		_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[56], 1);serve <- grpcErr
+	}()
+
+	// Start profiling http endpoint if enabled
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[25], 1);if profileEnabled {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[59], 1);
+		go func() {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[60], 1);
+			logger.Infof("Starting profiling server with listenAddress = %s", profileListenAddress)
+			if profileErr := http.ListenAndServe(profileListenAddress, nil); profileErr != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[61], 1);
+				logger.Errorf("Error starting profiler: %s", profileErr)
+			}
+		}()
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[26], 1);go handleSignals(addPlatformSignals(map[os.Signal]func(){
+		syscall.SIGINT:  func() {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[62], 1); serve <- nil },
+		syscall.SIGTERM: func() {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[63], 1); serve <- nil },
+	}))
+
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[27], 1);logger.Infof("Started peer with ID=[%s], network ID=[%s], address=[%s]", peerEndpoint.Id, networkID, peerEndpoint.Address)
+
+	// Block until grpc server exits
+	return <-serve
+}
+
+func handleSignals(handlers map[os.Signal]func()) {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[64], 1);
+	var signals []os.Signal
+	for sig := range handlers {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[66], 1);
+		signals = append(signals, sig)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[65], 1);signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, signals...)
+
+	for sig := range signalChan {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[67], 1);
+		logger.Infof("Received signal: %d (%s)", sig, sig)
+		handlers[sig]()
+	}
+}
+
+func localPolicy(policyObject proto.Message) policies.Policy {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[68], 1);
+	localMSP := mgmt.GetLocalMSP()
+	pp := cauthdsl.NewPolicyProvider(localMSP)
+	policy, _, err := pp.NewPolicy(utils.MarshalOrPanic(policyObject))
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[70], 1);
+		logger.Panicf("Failed creating local policy: +%v", err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[69], 1);return policy
+}
+
+func createSelfSignedData() common2.SignedData {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[71], 1);
+	sId := mgmt.GetLocalSigningIdentityOrPanic()
+	msg := make([]byte, 32)
+	sig, err := sId.Sign(msg)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[74], 1);
+		logger.Panicf("Failed creating self signed data because message signing failed: %v", err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[72], 1);peerIdentity, err := sId.Serialize()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[75], 1);
+		logger.Panicf("Failed creating self signed data because peer identity couldn't be serialized: %v", err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[73], 1);return common2.SignedData{
+		Data:      msg,
+		Signature: sig,
+		Identity:  peerIdentity,
+	}
+}
+
+func registerDiscoveryService(peerServer *comm.GRPCServer, polMgr policies.ChannelPolicyManagerGetter, lc *cc.Lifecycle) {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[76], 1);
+	mspID := viper.GetString("peer.localMspId")
+	localAccessPolicy := localPolicy(cauthdsl.SignedByAnyAdmin([]string{mspID}))
+	if viper.GetBool("peer.discovery.orgMembersAllowedAccess") {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[78], 1);
+		localAccessPolicy = localPolicy(cauthdsl.SignedByAnyMember([]string{mspID}))
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[77], 1);channelVerifier := discacl.NewChannelVerifier(policies.ChannelApplicationWriters, polMgr)
+	acl := discacl.NewDiscoverySupport(channelVerifier, localAccessPolicy, discacl.ChannelConfigGetterFunc(peer.GetStableChannelConfig))
+	gSup := gossip.NewDiscoverySupport(service.GetGossipService())
+	ccSup := ccsupport.NewDiscoverySupport(lc)
+	ea := endorsement.NewEndorsementAnalyzer(gSup, ccSup, acl, lc)
+	confSup := config.NewDiscoverySupport(config.CurrentConfigBlockGetterFunc(peer.GetCurrConfigBlock))
+	support := discsupport.NewDiscoverySupport(acl, gSup, ea, confSup, acl)
+	svc := discovery.NewService(discovery.Config{
+		TLS:                          peerServer.TLSEnabled(),
+		AuthCacheEnabled:             viper.GetBool("peer.discovery.authCacheEnabled"),
+		AuthCacheMaxSize:             viper.GetInt("peer.discovery.authCacheMaxSize"),
+		AuthCachePurgeRetentionRatio: viper.GetFloat64("peer.discovery.authCachePurgeRetentionRatio"),
+	}, support)
+	logger.Info("Discovery service activated")
+	discprotos.RegisterDiscoveryServer(peerServer.Server(), svc)
+}
+
+//create a CC listener using peer.chaincodeListenAddress (and if that's not set use peer.peerAddress)
+func createChaincodeServer(ca tlsgen.CA, peerHostname string) (srv *comm.GRPCServer, ccEndpoint string, err error) {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[79], 1);
+	// before potentially setting chaincodeListenAddress, compute chaincode endpoint at first
+	ccEndpoint, err = computeChaincodeEndpoint(peerHostname)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[86], 1);
+		if chaincode.IsDevMode() {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[87], 1);
+			// if any error for dev mode, we use 0.0.0.0:7052
+			ccEndpoint = fmt.Sprintf("%s:%d", "0.0.0.0", defaultChaincodePort)
+			logger.Warningf("use %s as chaincode endpoint because of error in computeChaincodeEndpoint: %s", ccEndpoint, err)
+		} else{ _cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[88], 1);{
+			// for non-dev mode, we have to return error
+			logger.Errorf("Error computing chaincode endpoint: %s", err)
+			return nil, "", err
+		}}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[80], 1);host, _, err := net.SplitHostPort(ccEndpoint)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[89], 1);
+		logger.Panic("Chaincode service host", ccEndpoint, "isn't a valid hostname:", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[81], 1);cclistenAddress := viper.GetString(chaincodeListenAddrKey)
+	if cclistenAddress == "" {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[90], 1);
+		cclistenAddress = fmt.Sprintf("%s:%d", peerHostname, defaultChaincodePort)
+		logger.Warningf("%s is not set, using %s", chaincodeListenAddrKey, cclistenAddress)
+		viper.Set(chaincodeListenAddrKey, cclistenAddress)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[82], 1);config, err := peer.GetServerConfig()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[91], 1);
+		logger.Errorf("Error getting server config: %s", err)
+		return nil, "", err
+	}
+
+	// set the logger for the server
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[83], 1);config.Logger = flogging.MustGetLogger("core.comm").With("server", "ChaincodeServer")
+
+	// Override TLS configuration if TLS is applicable
+	if config.SecOpts.UseTLS {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[92], 1);
+		// Create a self-signed TLS certificate with a SAN that matches the computed chaincode endpoint
+		certKeyPair, err := ca.NewServerCertKeyPair(host)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[94], 1);
+			logger.Panicf("Failed generating TLS certificate for chaincode service: +%v", err)
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[93], 1);config.SecOpts = &comm.SecureOptions{
+			UseTLS: true,
+			// Require chaincode shim to authenticate itself
+			RequireClientCert: true,
+			// Trust only client certificates signed by ourselves
+			ClientRootCAs: [][]byte{ca.CertBytes()},
+			// Use our own self-signed TLS certificate and key
+			Certificate: certKeyPair.Cert,
+			Key:         certKeyPair.Key,
+			// No point in specifying server root CAs since this TLS config is only used for
+			// a gRPC server and not a client
+			ServerRootCAs: nil,
+		}
+	}
+
+	// Chaincode keepalive options - static for now
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[84], 1);chaincodeKeepaliveOptions := &comm.KeepaliveOptions{
+		ServerInterval:    time.Duration(2) * time.Hour,    // 2 hours - gRPC default
+		ServerTimeout:     time.Duration(20) * time.Second, // 20 sec - gRPC default
+		ServerMinInterval: time.Duration(1) * time.Minute,  // match ClientInterval
+	}
+	config.KaOpts = chaincodeKeepaliveOptions
+
+	srv, err = comm.NewGRPCServer(cclistenAddress, config)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[95], 1);
+		logger.Errorf("Error creating GRPC server: %s", err)
+		return nil, "", err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[85], 1);return srv, ccEndpoint, nil
+}
+
+// computeChaincodeEndpoint will utilize chaincode address, chaincode listen
+// address (these two are from viper) and peer address to compute chaincode endpoint.
+// There could be following cases of computing chaincode endpoint:
+// Case A: if chaincodeAddrKey is set, use it if not "0.0.0.0" (or "::")
+// Case B: else if chaincodeListenAddrKey is set and not "0.0.0.0" or ("::"), use it
+// Case C: else use peer address if not "0.0.0.0" (or "::")
+// Case D: else return error
+func computeChaincodeEndpoint(peerHostname string) (ccEndpoint string, err error) {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[96], 1);
+	logger.Infof("Entering computeChaincodeEndpoint with peerHostname: %s", peerHostname)
+	// set this to the host/ip the chaincode will resolve to. It could be
+	// the same address as the peer (such as in the sample docker env using
+	// the container name as the host name across the board)
+	ccEndpoint = viper.GetString(chaincodeAddrKey)
+	if ccEndpoint == "" {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[98], 1);
+		// the chaincodeAddrKey is not set, try to get the address from listener
+		// (may finally use the peer address)
+		ccEndpoint = viper.GetString(chaincodeListenAddrKey)
+		if ccEndpoint == "" {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[99], 1);
+			// Case C: chaincodeListenAddrKey is not set, use peer address
+			peerIp := net.ParseIP(peerHostname)
+			if peerIp != nil && peerIp.IsUnspecified() {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[101], 1);
+				// Case D: all we have is "0.0.0.0" or "::" which chaincode cannot connect to
+				logger.Errorf("ChaincodeAddress and chaincodeListenAddress are nil and peerIP is %s", peerIp)
+				return "", errors.New("invalid endpoint for chaincode to connect")
+			}
+
+			// use peerAddress:defaultChaincodePort
+			_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[100], 1);ccEndpoint = fmt.Sprintf("%s:%d", peerHostname, defaultChaincodePort)
+
+		} else{ _cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[102], 1);{
+			// Case B: chaincodeListenAddrKey is set
+			host, port, err := net.SplitHostPort(ccEndpoint)
+			if err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[104], 1);
+				logger.Errorf("ChaincodeAddress is nil and fail to split chaincodeListenAddress: %s", err)
+				return "", err
+			}
+
+			_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[103], 1);ccListenerIp := net.ParseIP(host)
+			// ignoring other values such as Multicast address etc ...as the server
+			// wouldn't start up with this address anyway
+			if ccListenerIp != nil && ccListenerIp.IsUnspecified() {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[105], 1);
+				// Case C: if "0.0.0.0" or "::", we have to use peer address with the listen port
+				peerIp := net.ParseIP(peerHostname)
+				if peerIp != nil && peerIp.IsUnspecified() {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[107], 1);
+					// Case D: all we have is "0.0.0.0" or "::" which chaincode cannot connect to
+					logger.Error("ChaincodeAddress is nil while both chaincodeListenAddressIP and peerIP are 0.0.0.0")
+					return "", errors.New("invalid endpoint for chaincode to connect")
+				}
+				_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[106], 1);ccEndpoint = fmt.Sprintf("%s:%s", peerHostname, port)
+			}
+
+		}}
+
+	} else{ _cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[108], 1);{
+		// Case A: the chaincodeAddrKey is set
+		if host, _, err := net.SplitHostPort(ccEndpoint); err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[109], 1);
+			logger.Errorf("Fail to split chaincodeAddress: %s", err)
+			return "", err
+		} else{ _cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[110], 1);{
+			ccIP := net.ParseIP(host)
+			if ccIP != nil && ccIP.IsUnspecified() {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[111], 1);
+				logger.Errorf("ChaincodeAddress' IP cannot be %s in non-dev mode", ccIP)
+				return "", errors.New("invalid endpoint for chaincode to connect")
+			}
+		}}
+	}}
+
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[97], 1);logger.Infof("Exit with ccEndpoint: %s", ccEndpoint)
+	return ccEndpoint, nil
+}
+
+//NOTE - when we implement JOIN we will no longer pass the chainID as param
+//The chaincode support will come up without registering system chaincodes
+//which will be registered only during join phase.
+func registerChaincodeSupport(
+	grpcServer *comm.GRPCServer,
+	ccEndpoint string,
+	ca tlsgen.CA,
+	packageProvider *persistence.PackageProvider,
+	aclProvider aclmgmt.ACLProvider,
+	pr *platforms.Registry,
+	lifecycleSCC *lifecycle.SCC,
+	ops *operations.System,
+) (*chaincode.ChaincodeSupport, ccprovider.ChaincodeProvider, *scc.Provider) {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[112], 1);
+	//get user mode
+	userRunsCC := chaincode.IsDevMode()
+	tlsEnabled := viper.GetBool("peer.tls.enabled")
+
+	authenticator := accesscontrol.NewAuthenticator(ca)
+	ipRegistry := inproccontroller.NewRegistry()
+
+	sccp := scc.NewProvider(peer.Default, peer.DefaultSupport, ipRegistry)
+	lsccInst := lscc.New(sccp, aclProvider, pr)
+
+	dockerProvider := dockercontroller.NewProvider(
+		viper.GetString("peer.id"),
+		viper.GetString("peer.networkId"),
+		ops.Provider,
+	)
+	dockerVM := dockercontroller.NewDockerVM(
+		dockerProvider.PeerID,
+		dockerProvider.NetworkID,
+		dockerProvider.BuildMetrics,
+	)
+
+	err := ops.RegisterChecker("docker", dockerVM)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[116], 1);
+		logger.Panicf("failed to register docker health check: %s", err)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[113], 1);chaincodeSupport := chaincode.NewChaincodeSupport(
+		chaincode.GlobalConfig(),
+		ccEndpoint,
+		userRunsCC,
+		ca.CertBytes(),
+		authenticator,
+		packageProvider,
+		lsccInst,
+		aclProvider,
+		container.NewVMController(
+			map[string]container.VMProvider{
+				dockercontroller.ContainerType: dockerProvider,
+				inproccontroller.ContainerType: ipRegistry,
+			},
+		),
+		sccp,
+		pr,
+		peer.DefaultSupport,
+		ops.Provider,
+	)
+	ipRegistry.ChaincodeSupport = chaincodeSupport
+	ccp := chaincode.NewProvider(chaincodeSupport)
+
+	ccSrv := pb.ChaincodeSupportServer(chaincodeSupport)
+	if tlsEnabled {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[117], 1);
+		ccSrv = authenticator.Wrap(ccSrv)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[114], 1);csccInst := cscc.New(ccp, sccp, aclProvider)
+	qsccInst := qscc.New(aclProvider)
+
+	//Now that chaincode is initialized, register all system chaincodes.
+	sccs := scc.CreatePluginSysCCs(sccp)
+	for _, cc := range append([]scc.SelfDescribingSysCC{lsccInst, csccInst, qsccInst, lifecycleSCC}, sccs...) {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[118], 1);
+		sccp.RegisterSysCC(cc)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[115], 1);pb.RegisterChaincodeSupportServer(grpcServer.Server(), ccSrv)
+
+	return chaincodeSupport, ccp, sccp
+}
+
+// startChaincodeServer will finish chaincode related initialization, including:
+// 1) setup local chaincode install path
+// 2) create chaincode specific tls CA
+// 3) start the chaincode specific gRPC listening service
+func startChaincodeServer(
+	peerHost string,
+	aclProvider aclmgmt.ACLProvider,
+	pr *platforms.Registry,
+	ops *operations.System,
+) (*chaincode.ChaincodeSupport, ccprovider.ChaincodeProvider, *scc.Provider, *persistence.PackageProvider) {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[119], 1);
+	// Setup chaincode path
+	chaincodeInstallPath := ccprovider.GetChaincodeInstallPathFromViper()
+	ccprovider.SetChaincodesPath(chaincodeInstallPath)
+
+	ccPackageParser := &persistence.ChaincodePackageParser{}
+	ccStore := &persistence.Store{
+		Path:       chaincodeInstallPath,
+		ReadWriter: &persistence.FilesystemIO{},
+	}
+
+	packageProvider := &persistence.PackageProvider{
+		LegacyPP: &ccprovider.CCInfoFSImpl{},
+		Store:    ccStore,
+	}
+
+	lifecycleSCC := &lifecycle.SCC{
+		Protobuf: &lifecycle.ProtobufImpl{},
+		Functions: &lifecycle.Lifecycle{
+			PackageParser:  ccPackageParser,
+			ChaincodeStore: ccStore,
+		},
+	}
+
+	// Create a self-signed CA for chaincode service
+	ca, err := tlsgen.NewCA()
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[122], 1);
+		logger.Panic("Failed creating authentication layer:", err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[120], 1);ccSrv, ccEndpoint, err := createChaincodeServer(ca, peerHost)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[123], 1);
+		logger.Panicf("Failed to create chaincode server: %s", err)
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[121], 1);chaincodeSupport, ccp, sccp := registerChaincodeSupport(
+		ccSrv,
+		ccEndpoint,
+		ca,
+		packageProvider,
+		aclProvider,
+		pr,
+		lifecycleSCC,
+		ops,
+	)
+	go ccSrv.Start()
+	return chaincodeSupport, ccp, sccp, packageProvider
+}
+
+func adminHasSeparateListener(peerListenAddr string, adminListenAddress string) bool {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[124], 1);
+	// By default, admin listens on the same port as the peer data service
+	if adminListenAddress == "" {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[128], 1);
+		return false
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[125], 1);_, peerPort, err := net.SplitHostPort(peerListenAddr)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[129], 1);
+		logger.Panicf("Failed parsing peer listen address")
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[126], 1);_, adminPort, err := net.SplitHostPort(adminListenAddress)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[130], 1);
+		logger.Panicf("Failed parsing admin listen address")
+	}
+	// Admin service has a separate listener in case it doesn't match the peer's
+	// configured service
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[127], 1);return adminPort != peerPort
+}
+
+func startAdminServer(peerListenAddr string, peerServer *grpc.Server, metricsProvider metrics.Provider) {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[131], 1);
+	adminListenAddress := viper.GetString("peer.adminService.listenAddress")
+	separateLsnrForAdmin := adminHasSeparateListener(peerListenAddr, adminListenAddress)
+	mspID := viper.GetString("peer.localMspId")
+	adminPolicy := localPolicy(cauthdsl.SignedByAnyAdmin([]string{mspID}))
+	gRPCService := peerServer
+	if separateLsnrForAdmin {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[133], 1);
+		logger.Info("Creating gRPC server for admin service on", adminListenAddress)
+		serverConfig, err := peer.GetServerConfig()
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[136], 1);
+			logger.Fatalf("Error loading secure config for admin service (%s)", err)
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[134], 1);serverConfig.Logger = flogging.MustGetLogger("core.comm").With("server", "AdminServer")
+		serverConfig.MetricsProvider = metricsProvider
+		serverConfig.UnaryInterceptors = append(
+			serverConfig.UnaryInterceptors,
+			grpcmetrics.UnaryServerInterceptor(grpcmetrics.NewUnaryMetrics(metricsProvider)),
+			grpclogging.UnaryServerInterceptor(flogging.MustGetLogger("comm.grpc.server").Zap()),
+		)
+		serverConfig.StreamInterceptors = append(
+			serverConfig.StreamInterceptors,
+			grpcmetrics.StreamServerInterceptor(grpcmetrics.NewStreamMetrics(metricsProvider)),
+			grpclogging.StreamServerInterceptor(flogging.MustGetLogger("comm.grpc.server").Zap()),
+		)
+		adminServer, err := peer.NewPeerServer(adminListenAddress, serverConfig)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[137], 1);
+			logger.Fatalf("Failed to create admin server (%s)", err)
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[135], 1);gRPCService = adminServer.Server()
+		defer func() {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[138], 1);
+			go adminServer.Start()
+		}()
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[132], 1);pb.RegisterAdminServer(gRPCService, admin.NewAdminServer(adminPolicy))
+}
+
+// secureDialOpts is the callback function for secure dial options for gossip service
+func secureDialOpts() []grpc.DialOption {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[139], 1);
+	var dialOpts []grpc.DialOption
+	// set max send/recv msg sizes
+	dialOpts = append(
+		dialOpts,
+		grpc.WithDefaultCallOptions(
+			grpc.MaxCallRecvMsgSize(comm.MaxRecvMsgSize),
+			grpc.MaxCallSendMsgSize(comm.MaxSendMsgSize)))
+	// set the keepalive options
+	kaOpts := comm.DefaultKeepaliveOptions
+	if viper.IsSet("peer.keepalive.client.interval") {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[143], 1);
+		kaOpts.ClientInterval = viper.GetDuration("peer.keepalive.client.interval")
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[140], 1);if viper.IsSet("peer.keepalive.client.timeout") {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[144], 1);
+		kaOpts.ClientTimeout = viper.GetDuration("peer.keepalive.client.timeout")
+	}
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[141], 1);dialOpts = append(dialOpts, comm.ClientKeepaliveOptions(kaOpts)...)
+
+	if viper.GetBool("peer.tls.enabled") {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[145], 1);
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(comm.GetCredentialSupport().GetPeerCredentials()))
+	} else{ _cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[146], 1);{
+		dialOpts = append(dialOpts, grpc.WithInsecure())
+	}}
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[142], 1);return dialOpts
+}
+
+// initGossipService will initialize the gossip service by:
+// 1. Enable TLS if configured;
+// 2. Init the message crypto service;
+// 3. Init the security advisor;
+// 4. Init gossip related struct.
+func initGossipService(policyMgr policies.ChannelPolicyManagerGetter, peerServer *comm.GRPCServer, serializedIdentity []byte, peerAddr string) error {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[147], 1);
+	var certs *gossipcommon.TLSCertificates
+	if peerServer.TLSEnabled() {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[149], 1);
+		serverCert := peerServer.ServerCertificate()
+		clientCert, err := peer.GetClientCertificate()
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[151], 1);
+			return errors.Wrap(err, "failed obtaining client certificates")
+		}
+		_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[150], 1);certs = &gossipcommon.TLSCertificates{}
+		certs.TLSServerCert.Store(&serverCert)
+		certs.TLSClientCert.Store(&clientCert)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[148], 1);messageCryptoService := peergossip.NewMCS(
+		policyMgr,
+		localmsp.NewSigner(),
+		mgmt.NewDeserializersManager(),
+	)
+	secAdv := peergossip.NewSecurityAdvisor(mgmt.NewDeserializersManager())
+	bootstrap := viper.GetStringSlice("peer.gossip.bootstrap")
+
+	return service.InitGossipService(
+		serializedIdentity,
+		peerAddr,
+		peerServer.Server(),
+		certs,
+		messageCryptoService,
+		secAdv,
+		secureDialOpts,
+		bootstrap...,
+	)
+}
+
+func newOperationsSystem() *operations.System {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[152], 1);
+	return operations.NewSystem(operations.Options{
+		Logger:        flogging.MustGetLogger("peer.operations"),
+		ListenAddress: viper.GetString("operations.listenAddress"),
+		Metrics: operations.MetricsOptions{
+			Provider: viper.GetString("metrics.provider"),
+			Statsd: &operations.Statsd{
+				Network:       viper.GetString("metrics.statsd.network"),
+				Address:       viper.GetString("metrics.statsd.address"),
+				WriteInterval: viper.GetDuration("metrics.statsd.writeInterval"),
+				Prefix:        viper.GetString("metrics.statsd.prefix"),
+			},
+		},
+		TLS: operations.TLS{
+			Enabled:            viper.GetBool("operations.tls.enabled"),
+			CertFile:           viper.GetString("operations.tls.cert.file"),
+			KeyFile:            viper.GetString("operations.tls.key.file"),
+			ClientCertRequired: viper.GetBool("operations.tls.clientAuthRequired"),
+			ClientCACertFiles:  viper.GetStringSlice("operations.tls.clientRootCAs.files"),
+		},
+		Version: metadata.Version,
+	})
+}
+
+func registerProverService(peerServer *comm.GRPCServer, aclProvider aclmgmt.ACLProvider, signingIdentity msp.SigningIdentity) error {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[153], 1);
+	policyChecker := &server.PolicyBasedAccessControl{
+		ACLProvider: aclProvider,
+		ACLResources: &server.ACLResources{
+			IssueTokens:    resources.Token_Issue,
+			TransferTokens: resources.Token_Transfer,
+			ListTokens:     resources.Token_List,
+		},
+	}
+
+	responseMarshaler, err := server.NewResponseMarshaler(signingIdentity)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[155], 1);
+		logger.Errorf("Failed to create prover service: %s", err)
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_2_396561323639393132633863.Count[154], 1);prover := &server.Prover{
+		CapabilityChecker: &server.TokenCapabilityChecker{
+			PeerOps: peer.Default,
+		},
+		Marshaler:     responseMarshaler,
+		PolicyChecker: policyChecker,
+		TMSManager: &server.Manager{
+			LedgerManager: &server.PeerLedgerManager{},
+		},
+	}
+	token.RegisterProverServer(peerServer.Server(), prover)
+	return nil
+}
+
+var GoCover_2_396561323639393132633863 = struct {
+	Count     [156]uint32
+	Pos       [3 * 156]uint32
+	NumStmt   [156]uint16
+} {
+	Pos: [3 * 156]uint32{
+		100, 107, 0x20020, // [0]
+		113, 114, 0x150036, // [1]
+		118, 119, 0x150003, // [2]
+		114, 116, 0x40015, // [3]
+		123, 131, 0x1b0021, // [4]
+		138, 157, 0x4f0002, // [5]
+		161, 163, 0x100002, // [6]
+		166, 184, 0x160002, // [7]
+		191, 191, 0x320002, // [8]
+		195, 196, 0x100002, // [9]
+		201, 202, 0x100002, // [10]
+		206, 208, 0x100002, // [11]
+		212, 226, 0x100002, // [12]
+		230, 230, 0x210002, // [13]
+		244, 245, 0x4f0002, // [14]
+		251, 262, 0x850002, // [15]
+		266, 268, 0x100002, // [16]
+		272, 273, 0x560002, // [17]
+		276, 308, 0x100002, // [18]
+		311, 326, 0x3d0002, // [19]
+		329, 330, 0x100002, // [20]
+		333, 333, 0x590002, // [21]
+		336, 339, 0x230002, // [22]
+		352, 352, 0x2d0002, // [23]
+		356, 369, 0xc0002, // [24]
+		380, 380, 0x140002, // [25]
+		389, 390, 0x1b0002, // [26]
+		394, 397, 0x100002, // [27]
+		131, 132, 0x45001b, // [28]
+		157, 159, 0x3004f, // [29]
+		163, 165, 0x30010, // [30]
+		184, 189, 0x30016, // [31]
+		191, 193, 0x30032, // [32]
+		196, 199, 0x30010, // [33]
+		202, 204, 0x30010, // [34]
+		208, 210, 0x30010, // [35]
+		226, 228, 0x30010, // [36]
+		230, 238, 0x110021, // [37]
+		241, 241, 0x3f0003, // [38]
+		238, 240, 0x40011, // [39]
+		245, 246, 0x39004f, // [40]
+		246, 248, 0x40039, // [41]
+		262, 264, 0x30085, // [42]
+		268, 270, 0x30010, // [43]
+		273, 275, 0x30056, // [44]
+		308, 310, 0x30010, // [45]
+		326, 328, 0x3003d, // [46]
+		330, 332, 0x30010, // [47]
+		333, 335, 0x30059, // [48]
+		339, 342, 0x620023, // [49]
+		345, 345, 0x110003, // [50]
+		348, 348, 0x2a0003, // [51]
+		342, 344, 0x40062, // [52]
+		345, 347, 0x40011, // [53]
+		352, 354, 0x3002d, // [54]
+		369, 371, 0x33000c, // [55]
+		376, 376, 0x130003, // [56]
+		371, 373, 0x40033, // [57]
+		373, 375, 0x40009, // [58]
+		380, 381, 0xd0014, // [59]
+		381, 383, 0x57000d, // [60]
+		383, 385, 0x50057, // [61]
+		390, 390, 0x2b001b, // [62]
+		391, 391, 0x2b001b, // [63]
+		400, 402, 0x1c0033, // [64]
+		406, 409, 0x1e0002, // [65]
+		402, 404, 0x3001c, // [66]
+		409, 412, 0x3001e, // [67]
+		415, 419, 0x10003e, // [68]
+		422, 422, 0xf0002, // [69]
+		419, 421, 0x30010, // [70]
+		425, 429, 0x100030, // [71]
+		432, 433, 0x100002, // [72]
+		436, 440, 0x30002, // [73]
+		429, 431, 0x30010, // [74]
+		433, 435, 0x30010, // [75]
+		443, 446, 0x3d007a, // [76]
+		449, 463, 0x3e0002, // [77]
+		446, 448, 0x3003d, // [78]
+		467, 470, 0x100074, // [79]
+		482, 483, 0x100002, // [80]
+		487, 488, 0x1b0002, // [81]
+		494, 495, 0x100002, // [82]
+		501, 504, 0x1b0002, // [83]
+		526, 534, 0x100002, // [84]
+		539, 539, 0x1d0002, // [85]
+		470, 471, 0x1c0010, // [86]
+		471, 475, 0x4001c, // [87]
+		475, 479, 0x40009, // [88]
+		483, 485, 0x30010, // [89]
+		488, 492, 0x3001b, // [90]
+		495, 498, 0x30010, // [91]
+		504, 507, 0x11001b, // [92]
+		510, 522, 0x40003, // [93]
+		507, 509, 0x40011, // [94]
+		534, 537, 0x30010, // [95]
+		549, 555, 0x160053, // [96]
+		609, 610, 0x180002, // [97]
+		555, 559, 0x170016, // [98]
+		559, 562, 0x2f0017, // [99]
+		569, 569, 0x490004, // [100]
+		562, 566, 0x5002f, // [101]
+		571, 574, 0x120009, // [102]
+		579, 582, 0x3b0004, // [103]
+		574, 577, 0x50012, // [104]
+		582, 585, 0x30003b, // [105]
+		590, 590, 0x3a0005, // [106]
+		585, 589, 0x60030, // [107]
+		595, 597, 0x400008, // [108]
+		597, 600, 0x40040, // [109]
+		600, 602, 0x2b0009, // [110]
+		602, 605, 0x5002b, // [111]
+		625, 648, 0x10004e, // [112]
+		652, 676, 0x100002, // [113]
+		680, 685, 0x6c0002, // [114]
+		688, 690, 0x240002, // [115]
+		648, 650, 0x30010, // [116]
+		676, 678, 0x30010, // [117]
+		685, 687, 0x3006c, // [118]
+		702, 728, 0x10006c, // [119]
+		731, 732, 0x100002, // [120]
+		735, 746, 0x350002, // [121]
+		728, 730, 0x30010, // [122]
+		732, 734, 0x30010, // [123]
+		749, 751, 0x1e0056, // [124]
+		754, 755, 0x100002, // [125]
+		759, 760, 0x100002, // [126]
+		765, 765, 0x1e0002, // [127]
+		751, 753, 0x3001e, // [128]
+		755, 757, 0x30010, // [129]
+		760, 762, 0x30010, // [130]
+		768, 774, 0x1a0069, // [131]
+		802, 802, 0x480002, // [132]
+		774, 777, 0x11001a, // [133]
+		780, 793, 0x110003, // [134]
+		796, 797, 0x100003, // [135]
+		777, 779, 0x40011, // [136]
+		793, 795, 0x40011, // [137]
+		797, 799, 0x40010, // [138]
+		806, 816, 0x330029, // [139]
+		819, 819, 0x320002, // [140]
+		822, 824, 0x270002, // [141]
+		829, 829, 0x110002, // [142]
+		816, 818, 0x30033, // [143]
+		819, 821, 0x30032, // [144]
+		824, 826, 0x30027, // [145]
+		826, 828, 0x30008, // [146]
+		837, 839, 0x1d0096, // [147]
+		850, 867, 0x30002, // [148]
+		839, 842, 0x11001d, // [149]
+		845, 847, 0x290003, // [150]
+		842, 844, 0x40011, // [151]
+		870, 892, 0x2002f, // [152]
+		894, 905, 0x100085, // [153]
+		910, 921, 0xc0002, // [154]
+		905, 908, 0x30010, // [155]
+	},
+	NumStmt: [156]uint16{
+		3, // 0
+		1, // 1
+		2, // 2
+		1, // 3
+		2, // 4
+		6, // 5
+		3, // 6
+		5, // 7
+		1, // 8
+		2, // 9
+		2, // 10
+		3, // 11
+		6, // 12
+		1, // 13
+		2, // 14
+		6, // 15
+		3, // 16
+		2, // 17
+		16, // 18
+		4, // 19
+		2, // 20
+		1, // 21
+		2, // 22
+		1, // 23
+		6, // 24
+		1, // 25
+		1, // 26
+		2, // 27
+		1, // 28
+		1, // 29
+		1, // 30
+		3, // 31
+		1, // 32
+		2, // 33
+		1, // 34
+		1, // 35
+		1, // 36
+		5, // 37
+		1, // 38
+		1, // 39
+		1, // 40
+		1, // 41
+		1, // 42
+		1, // 43
+		1, // 44
+		1, // 45
+		1, // 46
+		1, // 47
+		1, // 48
+		3, // 49
+		1, // 50
+		1, // 51
+		1, // 52
+		1, // 53
+		1, // 54
+		2, // 55
+		1, // 56
+		1, // 57
+		1, // 58
+		1, // 59
+		2, // 60
+		1, // 61
+		1, // 62
+		1, // 63
+		2, // 64
+		3, // 65
+		1, // 66
+		2, // 67
+		4, // 68
+		1, // 69
+		1, // 70
+		4, // 71
+		2, // 72
+		1, // 73
+		1, // 74
+		1, // 75
+		3, // 76
+		10, // 77
+		1, // 78
+		2, // 79
+		2, // 80
+		2, // 81
+		2, // 82
+		2, // 83
+		4, // 84
+		1, // 85
+		1, // 86
+		2, // 87
+		2, // 88
+		1, // 89
+		3, // 90
+		2, // 91
+		2, // 92
+		1, // 93
+		1, // 94
+		2, // 95
+		3, // 96
+		2, // 97
+		2, // 98
+		2, // 99
+		1, // 100
+		2, // 101
+		2, // 102
+		2, // 103
+		2, // 104
+		2, // 105
+		1, // 106
+		2, // 107
+		1, // 108
+		2, // 109
+		2, // 110
+		2, // 111
+		10, // 112
+		5, // 113
+		4, // 114
+		2, // 115
+		1, // 116
+		1, // 117
+		1, // 118
+		8, // 119
+		2, // 120
+		3, // 121
+		1, // 122
+		1, // 123
+		1, // 124
+		2, // 125
+		2, // 126
+		1, // 127
+		1, // 128
+		1, // 129
+		1, // 130
+		6, // 131
+		1, // 132
+		3, // 133
+		6, // 134
+		2, // 135
+		1, // 136
+		1, // 137
+		1, // 138
+		4, // 139
+		1, // 140
+		2, // 141
+		1, // 142
+		1, // 143
+		1, // 144
+		1, // 145
+		1, // 146
+		2, // 147
+		4, // 148
+		3, // 149
+		3, // 150
+		1, // 151
+		1, // 152
+		3, // 153
+		3, // 154
+		2, // 155
+	},
+}
+var _ = _cover_atomic_.LoadUint32

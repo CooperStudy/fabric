@@ -1,0 +1,353 @@
+//line /home/cooper/go/src/github.com/hyperledger/fabric/token/tms/plain/pool.go:1
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package plain; import _cover_atomic_ "sync/atomic"
+
+import (
+	"fmt"
+	"io"
+	"sync"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/protos/token"
+	"github.com/hyperledger/fabric/token/tms"
+	"github.com/pkg/errors"
+)
+
+// OutputNotFoundError is returned when an entry was not found in the pool.
+type OutputNotFoundError struct {
+	ID string
+}
+
+func (o *OutputNotFoundError) Error() string {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[0], 1);
+	return fmt.Sprintf("entry not found: %s", o.ID)
+}
+
+// TxNotFoundError is returned when a transaction was not found in the pool.
+type TxNotFoundError struct {
+	TxID string
+}
+
+func (p *TxNotFoundError) Error() string {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[1], 1);
+	return fmt.Sprintf("transaction not found: %s", p.TxID)
+}
+
+// A MemoryPool is an in-memory ledger of transactions and unspent outputs.
+// This implementation is only meant for testing.
+type MemoryPool struct {
+	mutex   sync.RWMutex
+	entries map[string]*token.PlainOutput
+	history map[string]*token.TokenTransaction
+}
+
+// NewMemoryPool creates a new MemoryPool
+func NewMemoryPool() *MemoryPool {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[2], 1);
+	return &MemoryPool{
+		entries: map[string]*token.PlainOutput{},
+		history: map[string]*token.TokenTransaction{},
+	}
+}
+
+// Check if a proposed update can be committed.
+func (p *MemoryPool) checkUpdate(transactionData []tms.TransactionData) error {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[3], 1);
+	for _, td := range transactionData {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[5], 1);
+		action := td.Tx.GetPlainAction()
+		if action == nil {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[8], 1);
+			return errors.Errorf("check update failed for transaction '%s': missing token action", td.TxID)
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[6], 1);err := p.checkAction(action, td.TxID)
+		if err != nil {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[9], 1);
+			return errors.WithMessage(err, "check update failed")
+		}
+
+		_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[7], 1);if p.history[td.TxID] != nil {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[10], 1);
+			return errors.Errorf("transaction already exists: %s", td.TxID)
+		}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[4], 1);return nil
+}
+
+// CommitUpdate commits transaction data into the pool.
+func (p *MemoryPool) CommitUpdate(transactionData []tms.TransactionData) error {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[11], 1);
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
+	err := p.checkUpdate(transactionData)
+	if err != nil {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[14], 1);
+		return err
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[12], 1);for _, td := range transactionData {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[15], 1);
+		p.commitAction(td.Tx.GetPlainAction(), td.TxID)
+		p.history[td.TxID] = cloneTransaction(td.Tx)
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[13], 1);return nil
+}
+
+func (p *MemoryPool) checkAction(plainAction *token.PlainTokenAction, txID string) error {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[16], 1);
+	switch action := plainAction.Data.(type) {
+	case *token.PlainTokenAction_PlainImport:_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[17], 1);
+		return p.checkImportAction(action.PlainImport, txID)
+	default:_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[18], 1);
+		return errors.Errorf("unknown plain token action: %T", action)
+	}
+}
+
+func (p *MemoryPool) commitAction(plainAction *token.PlainTokenAction, txID string) {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[19], 1);
+	switch action := plainAction.Data.(type) {
+	case *token.PlainTokenAction_PlainImport:_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[20], 1);
+		p.commitImportAction(action.PlainImport, txID)
+	}
+}
+
+func (p *MemoryPool) checkImportAction(importAction *token.PlainImport, txID string) error {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[21], 1);
+	for i := range importAction.GetOutputs() {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[23], 1);
+		entryID := calculateOutputID(txID, i)
+		if p.entries[entryID] != nil {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[24], 1);
+			return errors.Errorf("pool entry already exists: %s", entryID)
+		}
+	}
+	_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[22], 1);return nil
+}
+
+func (p *MemoryPool) commitImportAction(importAction *token.PlainImport, txID string) {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[25], 1);
+	for i, entry := range importAction.GetOutputs() {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[26], 1);
+		entryID := calculateOutputID(txID, i)
+		p.addEntry(entryID, entry)
+	}
+}
+
+// Add a new entry into the pool.
+func (p *MemoryPool) addEntry(entryID string, entry *token.PlainOutput) {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[27], 1);
+	p.entries[entryID] = cloneOutput(entry)
+}
+
+func cloneOutput(po *token.PlainOutput) *token.PlainOutput {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[28], 1);
+	clone := proto.Clone(po)
+	return clone.(*token.PlainOutput)
+}
+
+func cloneTransaction(tt *token.TokenTransaction) *token.TokenTransaction {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[29], 1);
+	clone := proto.Clone(tt)
+	return clone.(*token.TokenTransaction)
+}
+
+// OutputByID gets an output by its ID.
+func (p *MemoryPool) OutputByID(id string) (*token.PlainOutput, error) {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[30], 1);
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
+
+	output := p.entries[id]
+	if output == nil {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[32], 1);
+		return nil, &OutputNotFoundError{ID: id}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[31], 1);return output, nil
+}
+
+// TxByID gets a transaction by its transaction ID.
+// If no transaction exists with the given ID, a TxNotFoundError is returned.
+func (p *MemoryPool) TxByID(txID string) (*token.TokenTransaction, error) {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[33], 1);
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
+
+	tt := p.history[txID]
+	if tt == nil {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[35], 1);
+		return nil, &TxNotFoundError{TxID: txID}
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[34], 1);return tt, nil
+}
+
+// Iterator returns an iterator of the unspent outputs based on a copy of the pool.
+func (p *MemoryPool) Iterator() *PoolIterator {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[36], 1);
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
+	keys := make([]string, len(p.entries))
+	i := 0
+	for k := range p.entries {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[38], 1);
+		keys[i] = k
+		i++
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[37], 1);return &PoolIterator{pool: p, keys: keys, current: 0}
+}
+
+// PoolIterator is an iterator for iterating through the items in the pool.
+type PoolIterator struct {
+	pool    *MemoryPool
+	keys    []string
+	current int
+}
+
+// Next gets the next output from the pool, or io.EOF if there are no more outputs.
+func (it *PoolIterator) Next() (string, *token.PlainOutput, error) {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[39], 1);
+	if it.current >= len(it.keys) {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[41], 1);
+		return "", nil, io.EOF
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[40], 1);entryID := it.keys[it.current]
+	it.current++
+	entry, err := it.pool.OutputByID(entryID)
+
+	return entryID, entry, err
+}
+
+// HistoryIterator creates a new HistoryIterator for iterating through the transaction history.
+func (p *MemoryPool) HistoryIterator() *HistoryIterator {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[42], 1);
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
+	keys := make([]string, len(p.history))
+	i := 0
+	for k := range p.history {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[44], 1);
+		keys[i] = k
+		i++
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[43], 1);return &HistoryIterator{pool: p, keys: keys, current: 0}
+}
+
+// HistoryIterator is an iterator for iterating through the transaction history.
+type HistoryIterator struct {
+	pool    *MemoryPool
+	keys    []string
+	current int
+}
+
+// Next gets the next transaction from the history, or io.EOF if there are no more transactions.
+func (it *HistoryIterator) Next() (string, *token.TokenTransaction, error) {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[45], 1);
+	if it.current >= len(it.keys) {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[47], 1);
+		return "", nil, io.EOF
+	}
+
+	_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[46], 1);txID := it.keys[it.current]
+	it.current++
+	tx, err := it.pool.TxByID(txID)
+
+	return txID, tx, err
+}
+
+// Calculate an ID for an individual output in a transaction, as a function of
+// the transaction ID, and the index of the output
+func calculateOutputID(tmsTxID string, index int) string {_cover_atomic_.AddUint32(&GoCover_3_376538356362393564346637.Count[48], 1);
+	return fmt.Sprintf("%s.%d", tmsTxID, index)
+}
+
+var GoCover_3_376538356362393564346637 = struct {
+	Count     [49]uint32
+	Pos       [3 * 49]uint32
+	NumStmt   [49]uint16
+} {
+	Pos: [3 * 49]uint32{
+		25, 27, 0x2002e, // [0]
+		34, 36, 0x2002a, // [1]
+		47, 52, 0x20022, // [2]
+		55, 56, 0x25004f, // [3]
+		72, 72, 0xc0002, // [4]
+		56, 58, 0x140025, // [5]
+		62, 63, 0x110003, // [6]
+		67, 67, 0x200003, // [7]
+		58, 60, 0x40014, // [8]
+		63, 65, 0x40011, // [9]
+		67, 69, 0x40020, // [10]
+		76, 81, 0x100050, // [11]
+		85, 85, 0x250002, // [12]
+		90, 90, 0xc0002, // [13]
+		81, 83, 0x30010, // [14]
+		85, 88, 0x30025, // [15]
+		93, 94, 0x2b005a, // [16]
+		95, 96, 0x37002b, // [17]
+		97, 98, 0x41000a, // [18]
+		102, 103, 0x2b0055, // [19]
+		104, 105, 0x31002b, // [20]
+		109, 110, 0x2b005c, // [21]
+		116, 116, 0xc0002, // [22]
+		110, 112, 0x20002b, // [23]
+		112, 114, 0x40020, // [24]
+		119, 120, 0x320057, // [25]
+		120, 123, 0x30032, // [26]
+		127, 129, 0x20049, // [27]
+		131, 134, 0x2003c, // [28]
+		136, 139, 0x2004b, // [29]
+		142, 147, 0x130048, // [30]
+		151, 151, 0x140002, // [31]
+		147, 149, 0x30013, // [32]
+		156, 161, 0xf004b, // [33]
+		165, 165, 0x100002, // [34]
+		161, 163, 0x3000f, // [35]
+		169, 175, 0x1b002f, // [36]
+		180, 180, 0x370002, // [37]
+		175, 178, 0x3001b, // [38]
+		191, 192, 0x200044, // [39]
+		196, 200, 0x1c0002, // [40]
+		192, 194, 0x30020, // [41]
+		204, 210, 0x1b0039, // [42]
+		215, 215, 0x3a0002, // [43]
+		210, 213, 0x3001b, // [44]
+		226, 227, 0x20004c, // [45]
+		231, 235, 0x160002, // [46]
+		227, 229, 0x30020, // [47]
+		240, 242, 0x2003a, // [48]
+	},
+	NumStmt: [49]uint16{
+		1, // 0
+		1, // 1
+		1, // 2
+		1, // 3
+		1, // 4
+		2, // 5
+		2, // 6
+		1, // 7
+		1, // 8
+		1, // 9
+		1, // 10
+		4, // 11
+		1, // 12
+		1, // 13
+		1, // 14
+		2, // 15
+		1, // 16
+		1, // 17
+		1, // 18
+		1, // 19
+		1, // 20
+		1, // 21
+		1, // 22
+		2, // 23
+		1, // 24
+		1, // 25
+		2, // 26
+		1, // 27
+		2, // 28
+		2, // 29
+		4, // 30
+		1, // 31
+		1, // 32
+		4, // 33
+		1, // 34
+		1, // 35
+		5, // 36
+		1, // 37
+		2, // 38
+		1, // 39
+		4, // 40
+		1, // 41
+		5, // 42
+		1, // 43
+		2, // 44
+		1, // 45
+		4, // 46
+		1, // 47
+		1, // 48
+	},
+}
+var _ = _cover_atomic_.LoadUint32
