@@ -59,7 +59,7 @@ type blockIndex struct {
 
 func newBlockIndex(indexConfig *blkstorage.IndexConfig, db *leveldbhelper.DBHandle) (*blockIndex, error) {
 	indexItems := indexConfig.AttrsToIndex
-	logger.Debugf("newBlockIndex() - indexItems:[%s]", indexItems)
+	logger.Debugf("newBlockIndex() - indexItems:[%s]", indexItems)//newBlockIndex() - indexItems:[[BlockNum]]
 	indexItemsMap := make(map[blkstorage.IndexableAttr]bool)
 	for _, indexItem := range indexItems {
 		indexItemsMap[indexItem] = true
@@ -69,7 +69,7 @@ func newBlockIndex(indexConfig *blkstorage.IndexConfig, db *leveldbhelper.DBHand
 	// for efficiency purpose - [FAB-10587]
 	if (indexItemsMap[blkstorage.IndexableAttrTxValidationCode] || indexItemsMap[blkstorage.IndexableAttrBlockTxID]) &&
 		!indexItemsMap[blkstorage.IndexableAttrTxID] {
-		return nil, errors.Errorf("dependent index [%s] is not enabled for [%s] or [%s]",
+		return nil, errors.Errorf("dependent index [%s] is not enabled for [%s] or [%s]",//
 			blkstorage.IndexableAttrTxID, blkstorage.IndexableAttrTxValidationCode, blkstorage.IndexableAttrBlockTxID)
 	}
 	return &blockIndex{indexItemsMap, db}, nil
@@ -88,12 +88,19 @@ func (index *blockIndex) getLastBlockIndexed() (uint64, error) {
 }
 
 func (index *blockIndex) indexBlock(blockIdxInfo *blockIdxInfo) error {
+	logger.Info("====indexBlock=====")
 	// do not index anything
 	if len(index.indexItemsMap) == 0 {
 		logger.Debug("Not indexing block... as nothing to index")
 		return nil
 	}
 	logger.Debugf("Indexing block [%s]", blockIdxInfo)
+	/*
+	Indexing block [blockNum=0, blockHash=[]byte{0xe8, 0xb8, 0xc1, 0x34, 0xa,
+	0xa8, 0xad, 0x88, 0x77, 0xda, 0x98, 0xe6, 0x30, 0xb7, 0xd, 0x8b, 0xfc, 0xc2, 0xc, 0x7b, 0x75, 0x45, 0xdf, 0x18, 0x47, 0xb8, 0xb0, 0x62, 0x1c
+	, 0x2f, 0x7, 0xd2} txOffsets=
+	txId=ae485ac407ff0c37186ceed06ea8f4201f04a11085c719ae976ba4777651b755 locPointer=offset=38, bytesLength=12724]
+	*/
 	flp := blockIdxInfo.flp
 	txOffsets := blockIdxInfo.txOffsets
 	txsfltr := ledgerUtil.TxValidationFlags(blockIdxInfo.metadata.Metadata[common.BlockMetadataIndex_TRANSACTIONS_FILTER])

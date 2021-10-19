@@ -48,7 +48,6 @@ func (b *fileBootstrapper) GenesisBlock() *cb.Block {
 	unmarshallErr := proto.Unmarshal(bootstrapFile, genesisBlock)
 	if unmarshallErr != nil {
 		panic(fmt.Errorf("Unable to bootstrap orderer. Error unmarshalling genesis block: %v", unmarshallErr))
-
 	}
 	return genesisBlock
 } // GenesisBlock

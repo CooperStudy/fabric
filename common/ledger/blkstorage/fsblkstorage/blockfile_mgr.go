@@ -88,10 +88,14 @@ At start up a new manager:
   *)  Updates blockchain info used by the APIs
 */
 func newBlockfileMgr(id string, conf *Conf, indexConfig *blkstorage.IndexConfig, indexStore *leveldbhelper.DBHandle) *blockfileMgr {
-	logger.Debugf("newBlockfileMgr() initializing file-based block storage for ledger: %s ", id)
+	logger.Info("===newBlockfileMgr===")
+	logger.Debugf("newBlockfileMgr() initializing file-based block storage for ledger: %s ", id)//byfn-sys-channel
 	//Determine the root directory for the blockfile storage, if it does not exist create it
 	rootDir := conf.getLedgerBlockDir(id)
 	_, err := util.CreateDirIfMissing(rootDir)
+	/*
+	[/var/hyperledger/production/orderer/chains/byfn-sys-channel/]
+	*/
 	if err != nil {
 		panic(fmt.Sprintf("Error creating block storage root dir [%s]: %s", rootDir, err))
 	}
@@ -111,6 +115,8 @@ func newBlockfileMgr(id string, conf *Conf, indexConfig *blkstorage.IndexConfig,
 			panic(fmt.Sprintf("Could not build checkpoint info from block files: %s", err))
 		}
 		logger.Debugf("Info constructed by scanning the blocks dir = %s", spew.Sdump(cpInfo))
+		//Info constructed by scanning the blocks dir = (*fsblkstorage.checkpoi
+		//ntInfo)(0xc000145400)(latestFileChunkSuffixNum=[0], latestFileChunksize=[0], isChainEmpty=[true], lastBlockNumber=[0])
 	} else {
 		logger.Debug(`Synching block information from block storage (if needed)`)
 		syncCPInfoFromFS(rootDir, cpInfo)
@@ -153,6 +159,12 @@ func newBlockfileMgr(id string, conf *Conf, indexConfig *blkstorage.IndexConfig,
 	if !cpInfo.isChainEmpty {
 		//If start up is a restart of an existing storage, sync the index from block storage and update BlockchainInfo for external API's
 		mgr.syncIndex()
+		/*
+		Indexing block [blockNum=0, blockHash=[]byte{0xe8, 0xb8, 0xc1, 0x34, 0xa,
+		0xa8, 0xad, 0x88, 0x77, 0xda, 0x98, 0xe6, 0x30, 0xb7, 0xd, 0x8b, 0xfc, 0xc2, 0xc, 0x7b, 0x75, 0x45, 0xdf, 0x18, 0x47, 0xb8, 0xb0, 0x62, 0x1c
+		, 0x2f, 0x7, 0xd2} txOffsets=
+
+		*/
 		lastBlockHeader, err := mgr.retrieveBlockHeaderByNumber(cpInfo.lastBlockNumber)
 		if err != nil {
 			panic(fmt.Sprintf("Could not retrieve header of the last block form file: %s", err))
@@ -326,6 +338,7 @@ func (mgr *blockfileMgr) addBlock(block *common.Block) error {
 }
 
 func (mgr *blockfileMgr) syncIndex() error {
+	logger.Info("========syncIndex========")
 	var lastBlockIndexed uint64
 	var indexEmpty bool
 	var err error

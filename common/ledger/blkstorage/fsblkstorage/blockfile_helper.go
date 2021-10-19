@@ -20,6 +20,11 @@ import (
 // constructCheckpointInfoFromBlockFiles scans the last blockfile (if any) and construct the checkpoint info
 // if the last file contains no block or only a partially written block (potentially because of a crash while writing block to the file),
 // this scans the second last file (if any)
+/*
+/ 构造CheckpointInfoFromBlockFiles扫描最新一个块文件（如果有）并构建检查点信息
+// 如果最后一个文件不包含块或仅包含部分写入的块（可能是因为将块写入文件时发生崩溃），
+// 这将扫描倒数第二个文件（如果有）
+ */
 func constructCheckpointInfoFromBlockFiles(rootDir string) (*checkpointInfo, error) {
 	logger.Debugf("Retrieving checkpoint info from block files")
 	var lastFileNum int
@@ -34,7 +39,7 @@ func constructCheckpointInfoFromBlockFiles(rootDir string) (*checkpointInfo, err
 	if lastFileNum, err = retrieveLastFileSuffix(rootDir); err != nil {
 		return nil, err
 	}
-	logger.Debugf("Last file number found = %d", lastFileNum)
+	logger.Debugf("Last file number found = %d", lastFileNum) //-1
 
 	if lastFileNum == -1 {
 		cpInfo := &checkpointInfo{0, 0, true, 0}
@@ -99,7 +104,7 @@ func retrieveLastFileSuffix(rootDir string) (int, error) {
 			biggestFileNum = fileNum
 		}
 	}
-	logger.Debugf("retrieveLastFileSuffix() - biggestFileNum = %d", biggestFileNum)
+	logger.Debugf("retrieveLastFileSuffix() - biggestFileNum = %d", biggestFileNum)//biggestFileNum = -1
 	return biggestFileNum, err
 }
 

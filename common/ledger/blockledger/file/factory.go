@@ -68,11 +68,7 @@ func (flf *fileLedgerFactory) Close() {
 // New creates a new ledger factory
 func New(directory string) blockledger.Factory {
 	return &fileLedgerFactory{
-		blkstorageProvider: fsblkstorage.NewProvider(
-			fsblkstorage.NewConf(directory, -1),
-			&blkstorage.IndexConfig{
-				AttrsToIndex: []blkstorage.IndexableAttr{blkstorage.IndexableAttrBlockNum}},
-		),
+		blkstorageProvider: fsblkstorage.NewProvider(fsblkstorage.NewConf(directory, -1), &blkstorage.IndexConfig{AttrsToIndex: []blkstorage.IndexableAttr{blkstorage.IndexableAttrBlockNum}}),
 		ledgers: make(map[string]blockledger.ReadWriter),
 	}
 }

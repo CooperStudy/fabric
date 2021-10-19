@@ -150,7 +150,7 @@ func (h *Handler) Handle(ctx context.Context, srv *Server) error {
 	defer h.Metrics.StreamsClosed.Add(1)
 	for {
 		logger.Debugf("Attempting to read seek info message from %s", addr)
-		envelope, err := srv.Recv()
+		envelope, err := srv.Recv()//==deliverMsgTracer==Recv===
 		if err == io.EOF {
 			logger.Debugf("Received EOF from %s, hangup", addr)
 			return nil

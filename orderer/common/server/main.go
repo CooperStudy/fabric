@@ -162,6 +162,7 @@ func Start(cmd string, conf *localconfig.TopLevel) {
 	server := NewServer(manager, metricsProvider, &conf.Debug, conf.General.Authentication.TimeWindow, mutualTLS)
 
 	logger.Infof("Starting %s", metadata.GetVersionInfo())
+	//handle
 	go handleSignals(addPlatformSignals(map[os.Signal]func(){
 		syscall.SIGTERM: func() { grpcServer.Stop() },
 	}))

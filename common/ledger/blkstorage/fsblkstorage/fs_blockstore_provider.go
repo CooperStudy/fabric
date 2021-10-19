@@ -31,6 +31,7 @@ type FsBlockstoreProvider struct {
 
 // NewProvider constructs a filesystem based block store provider
 func NewProvider(conf *Conf, indexConfig *blkstorage.IndexConfig) blkstorage.BlockStoreProvider {
+	logger.Info("========NewProvider======")
 	p := leveldbhelper.NewProvider(&leveldbhelper.Conf{DBPath: conf.getIndexDir()})
 	return &FsBlockstoreProvider{conf, indexConfig, p}
 }

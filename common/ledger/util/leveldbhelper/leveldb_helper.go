@@ -47,6 +47,7 @@ type DB struct {
 
 // CreateDB constructs a `DB`
 func CreateDB(conf *Conf) *DB {
+	logger.Info("====createDB=====")
 	readOpts := &opt.ReadOptions{}
 	writeOptsNoSync := &opt.WriteOptions{}
 	writeOptsSync := &opt.WriteOptions{}
@@ -62,6 +63,7 @@ func CreateDB(conf *Conf) *DB {
 
 // Open opens the underlying db
 func (dbInst *DB) Open() {
+	logger.Info("========Open======")
 	dbInst.mux.Lock()
 	defer dbInst.mux.Unlock()
 	if dbInst.dbState == opened {

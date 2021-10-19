@@ -36,6 +36,7 @@ type Provider struct {
 
 // NewProvider constructs a Provider
 func NewProvider(conf *Conf) *Provider {
+	logger.Info("=====NewProvider====")
 	db := CreateDB(conf)
 	db.Open()
 	return &Provider{db, make(map[string]*DBHandle), sync.Mutex{}}

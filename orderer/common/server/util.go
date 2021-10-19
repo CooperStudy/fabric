@@ -31,12 +31,18 @@ func createLedgerFactory(conf *config.TopLevel) (blockledger.Factory, string) {
 		if ld == "" {
 			ld = createTempDir(conf.FileLedger.Prefix)
 		}
-		logger.Debug("Ledger dir:", ld)
+		logger.Debug("Ledger dir:", ld)//var/hyperledger/production/orderer
 		lf = fileledger.New(ld)
 		// The file-based ledger stores the blocks for each channel
 		// in a fsblkstorage.ChainsDir sub-directory that we have
 		// to create separately. Otherwise the call to the ledger
 		// Factory's ChainIDs below will fail (dir won't exist).
+
+		/*
+		CreateDirIfMissing /var/hyperledger/production/orderer/index
+
+		 */
+
 		createSubDir(ld, fsblkstorage.ChainsDir)
 	case "json":
 		ld = conf.FileLedger.Location

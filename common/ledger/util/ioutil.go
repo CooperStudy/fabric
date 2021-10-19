@@ -21,18 +21,19 @@ var logger = flogging.MustGetLogger("kvledger.util")
 
 // CreateDirIfMissing creates a dir for dirPath if not already exists. If the dir is empty it returns true
 func CreateDirIfMissing(dirPath string) (bool, error) {
+	logger.Info("=============CreateDirIfMissing===================")
 	// if dirPath does not end with a path separator, it leaves out the last segment while creating directories
 	if !strings.HasSuffix(dirPath, "/") {
 		dirPath = dirPath + "/"
 	}
-	logger.Debugf("CreateDirIfMissing [%s]", dirPath)
-	logDirStatus("Before creating dir", dirPath)
-	err := os.MkdirAll(path.Dir(dirPath), 0755)
+	logger.Debugf("CreateDirIfMissing [%s]", dirPath)//[/var/hyperledger/production/orderer/chains/byfn-sys-channel/]
+	logDirStatus("Before creating dir", dirPath)//[/var/hyperledger/production/orderer/chains/byfn-sys-channel/]
+	err := os.MkdirAll(path.Dir(dirPath), 0755)//
 	if err != nil {
 		logger.Debugf("Error creating dir [%s]", dirPath)
 		return false, errors.Wrapf(err, "error creating dir [%s]", dirPath)
 	}
-	logDirStatus("After creating dir", dirPath)
+	logDirStatus("After creating dir", dirPath)//[/var/hyperledger/production/orderer/chains/byfn-sys-channel/]
 	return DirEmpty(dirPath)
 }
 
