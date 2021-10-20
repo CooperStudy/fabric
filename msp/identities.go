@@ -118,6 +118,10 @@ func (id *identity) Validate() error {
 
 // GetOrganizationalUnits returns the OU for this instance
 func (id *identity) GetOrganizationalUnits() []*OUIdentifier {
+	mspLogger.Info("=======GetOrganizationalUnits:start======")
+	defer func() {
+		mspLogger.Info("=======GetOrganizationalUnits:end======")
+	}()
 	if id.cert == nil {
 		return nil
 	}

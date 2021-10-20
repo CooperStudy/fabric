@@ -76,6 +76,10 @@ func (msp *bccspmsp) validateIdentityAgainstChain(id *identity, validationChain 
 }
 
 func (msp *bccspmsp) validateCertAgainstChain(cert *x509.Certificate, validationChain []*x509.Certificate) error {
+	mspLogger.Info("=============validateCertAgainstChain:start======")
+	defer func() {
+		mspLogger.Info("=============validateCertAgainstChain:end======")
+	}()
 	// here we know that the identity is valid; now we have to check whether it has been revoked
 
 	// identify the SKI of the CA that signed this cert
