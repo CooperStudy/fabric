@@ -45,12 +45,16 @@ func NewMSPManager() MSPManager {
 
 // Setup initializes the internal data structures of this manager and creates MSPs
 func (mgr *mspManagerImpl) Setup(msps []MSP) error {
+	mspLogger.Info("=====Setup:start========")
+	defer func() {
+		mspLogger.Info("=====Setup:end========")
+	}()
 	if mgr.up {
 		mspLogger.Infof("MSP manager already up")
 		return nil
 	}
 
-	mspLogger.Debugf("Setting up the MSP manager (%d msps)", len(msps))
+	mspLogger.Debugf("Setting up the MSP manager (%d msps)", len(msps))//Setting up the MSP manager (3 msps)
 
 	// create the map that assigns MSP IDs to their manager instance - once
 	mgr.mspsMap = make(map[string]MSP)
@@ -71,7 +75,7 @@ func (mgr *mspManagerImpl) Setup(msps []MSP) error {
 
 	mgr.up = true
 
-	mspLogger.Debugf("MSP manager setup complete, setup %d msps", len(msps))
+	mspLogger.Debugf("MSP manager setup complete, setup %d msps", len(msps))//MSP manager setup complete, setup 3 msps
 
 	return nil
 }
