@@ -138,10 +138,9 @@ func (ch *chain) main() {
 		err = nil
 		select {
 		case msg := <-ch.sendChan:
-			logger.Info("===ch.sendChan==",*msg.configMsg,msg.configSeq,*msg.normalMsg)
+			logger.Info("===ch.sendChan==",msg)
 			if msg.configMsg == nil {
 				// NormalMsg
-				logger.Info("msg.configSeq",msg.configSeq)
 				logger.Info("seq",seq)
 				if msg.configSeq < seq {
 					logger.Info("============1==")
@@ -174,7 +173,7 @@ func (ch *chain) main() {
 
 			} else {
 				// ConfigMsg
-				logger.Info("msg.configSeq",msg.configSeq)
+				logger.Info("msg",msg)
 				logger.Info("seq",seq)
 				if msg.configSeq < seq {
 					msg.configMsg, _, err = ch.support.ProcessConfigMsg(msg.configMsg)
