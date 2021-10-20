@@ -318,19 +318,16 @@ func (pm *ManagerImpl) Manager(path []string) (Manager, bool) {
 	defer func() {
 		logger.Info("====Manager:end======")
 	}()
-	/*
-	2021-10-19 08:33:50.827 UTC [policies] Manager -> DEBU 180 Manager Channel looking up path [Application]
-	2021-10-19 08:33:50.827 UTC [policies] Manager -> DEBU 181 Manager Channel has managers Orderer
-	2021-10-19 08:33:50.827 UTC [policies] Manager -> DEBU 182 Manager Channel has managers Consortiums
-	2021-10-19 08:33:50.827 UTC [policies] Manager -> DEBU 183 Manager Channel looking up path [Orderer]
-	2021-10-19 08:33:50.827 UTC [policies] Manager -> DEBU 184 Manager Channel has managers Orderer
-	2021-10-19 08:33:50.827 UTC [policies] Manager -> DEBU 185 Manager Channel has managers Consortiums
-	2021-10-19 08:33:50.827 UTC [policies] Manager -> DEBU 186 Manager Channel/Orderer looking up path []
-	2021-10-19 08:33:50.827 UTC [policies] Manager -> DEBU 187 Manager Channel/Orderer has managers OrdererOrg
-	*/
+
 	//Manager Channel looking up path [Application]
+	//Manager Channel looking up path [Orderer]
+	//Manager Channel has managers Consortiums
+	//Manager Channel/Orderer looking up path []
+	//Manager Channel/Orderer has managers OrdererOrg
 	logger.Debugf("Manager %s looking up path %v", pm.path, path)
 	for manager := range pm.managers {
+		//Manager Channel has managers Orderer
+		//Manager Channel has managers Consortiums
 		logger.Debugf("Manager %s has managers %s", pm.path, manager)
 	}
 	if len(path) == 0 {

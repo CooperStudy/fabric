@@ -51,7 +51,10 @@ type RuleSet struct {
 
 // NewRuleSet creates a new RuleSet with the given ordered list of Rules
 func NewRuleSet(rules []Rule) *RuleSet {
-	logger.Info("====NewRuleSet===")
+	logger.Info("====NewRuleSet:start===")
+	defer func() {
+		logger.Info("====NewRuleSet:end===")
+	}()
 	return &RuleSet{
 		rules: rules,
 	}

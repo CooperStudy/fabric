@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package multichannel
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric/common/channelconfig"
 	mockconfig "github.com/hyperledger/fabric/common/mocks/config"
 	"github.com/hyperledger/fabric/orderer/common/blockcutter"
@@ -75,6 +76,10 @@ func (mcs *ConsenterSupport) Block(number uint64) *cb.Block {
 
 // BlockCutter returns BlockCutterVal
 func (mcs *ConsenterSupport) BlockCutter() blockcutter.Receiver {
+	fmt.Println("===BlockCutter:start====")
+	defer func() {
+		fmt.Println("===BlockCutter:end====")
+	}()
 	return mcs.BlockCutterVal
 }
 

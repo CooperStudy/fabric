@@ -41,7 +41,10 @@ type BlockWriter struct {
 }
 
 func newBlockWriter(lastBlock *cb.Block, r *Registrar, support blockWriterSupport) *BlockWriter {
-	logger.Info("====newBlockWriter===")
+	logger.Info("====newBlockWriter:start===")
+	defer func() {
+		logger.Info("====newBlockWriter:end===")
+	}()
 	bw := &BlockWriter{
 		support:       support,
 		lastConfigSeq: support.Sequence(),
@@ -58,8 +61,8 @@ func newBlockWriter(lastBlock *cb.Block, r *Registrar, support blockWriterSuppor
 			logger.Panicf("[channel: %s] Error extracting last config block from block metadata: %s", support.ChainID(), err)
 		}
 	}
-
-	logger.Debugf("[channel: %s] Creating block writer for tip of chain (blockNumber=%d, lastConfigBlockNum=%d, lastConfigSeq=%d)", support.ChainID(), lastBlock.Header.Number, bw.lastConfigBlockNum, bw.lastConfigSeq)
+	//[channel: byfn-sys-channel] Creating block writer for tip of chain (blockNumber=0,lastConfigBlockNum=0,lastConfigSeq=0)
+ 	logger.Debugf("[channel: %s] Creating block writer for tip of chain (blockNumber=%d, lastConfigBlockNum=%d, lastConfigSeq=%d)", support.ChainID(), lastBlock.Header.Number, bw.lastConfigBlockNum, bw.lastConfigSeq)
 	return bw
 }
 
@@ -90,6 +93,10 @@ func (bw *BlockWriter) CreateNextBlock(messages []*cb.Envelope) *cb.Block {
 // This call will block until the new config has taken effect, then will return
 // while the block is written asynchronously to disk.
 func (bw *BlockWriter) WriteConfigBlock(block *cb.Block, encodedMetadataValue []byte) {
+	logger.Info("===BlockWriter==WriteConfigBlock:start====")
+	defer func() {
+		logger.Info("===BlockWriter==WriteConfigBlock:end====")
+	}()
 	ctx, err := utils.ExtractEnvelope(block, 0)
 	if err != nil {
 		logger.Panicf("Told to write a config block, but could not get configtx: %s", err)

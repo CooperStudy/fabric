@@ -39,8 +39,16 @@ func newRegistry(p provider, capabilities map[string]*cb.Capability) *registry {
 
 // Supported checks that all of the required capabilities are supported by this binary.
 func (r *registry) Supported() error {
+	logger.Info("===Supported:start====")
+	defer func() {
+		logger.Info("===Supported:end====")
+	}()
 	for capabilityName := range r.capabilities {
 		if r.provider.HasCapability(capabilityName) {
+			/*
+			Orderer capability V1_1 is supported and is enabled
+			Channel capability V1_3 is supported and is enabled
+			 */
 			logger.Debugf("%s capability %s is supported and is enabled", r.provider.Type(), capabilityName)
 			continue
 		}

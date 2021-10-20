@@ -30,7 +30,10 @@ type SigFilter struct {
 // NewSigFilter creates a new signature filter, at every evaluation, the policy manager is called
 // to retrieve the latest version of the policy
 func NewSigFilter(policyName string, support SigFilterSupport) *SigFilter {
-	logger.Info("====NewSigFilter===")
+	logger.Info("====NewSigFilter:start===")
+	defer func() {
+		logger.Info("====NewSigFilter:end===")
+	}()
 	return &SigFilter{
 		policyName: policyName,
 		support:    support,

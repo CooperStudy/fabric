@@ -52,6 +52,10 @@ func NewReceiver() *Receiver {
 
 // Ordered will add or cut the batch according to the state of Receiver, it blocks reading from Block on return
 func (mbc *Receiver) Ordered(env *cb.Envelope) ([][]*cb.Envelope, bool) {
+	logger.Info("=====Ordered:start=========")
+	defer func() {
+		logger.Info("=====Ordered:end=========")
+	}()
 	defer func() {
 		<-mbc.Block
 	}()
@@ -90,6 +94,10 @@ func (mbc *Receiver) Ordered(env *cb.Envelope) ([][]*cb.Envelope, bool) {
 
 // Cut terminates the current batch, returning it
 func (mbc *Receiver) Cut() []*cb.Envelope {
+	logger.Info("======Cut:start======")
+	defer func() {
+		logger.Info("======Cut:end======")
+	}()
 	mbc.mutex.Lock()
 	defer mbc.mutex.Unlock()
 	logger.Debugf("Cutting batch")

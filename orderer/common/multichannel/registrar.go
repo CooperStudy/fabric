@@ -87,7 +87,10 @@ func (cr *configResources) Update(bndl *channelconfig.Bundle) {
 }
 
 func (cr *configResources) SharedConfig() channelconfig.Orderer {
-	logger.Info("====SharedConfig===")
+	logger.Info("====SharedConfig:start===")
+	defer func() {
+		logger.Info("====SharedConfig:end===")
+	}()
 	oc, ok := cr.OrdererConfig()
 	if !ok {
 		logger.Panicf("[channel %s] has no orderer configuration", cr.ConfigtxValidator().ChainID())
@@ -121,16 +124,19 @@ func getConfigTx(reader blockledger.Reader) *cb.Envelope {
 		logger.Info("====getConfigTx:end===")
 	}()
 	//
+	logger.Info("====GetBlock===")
 	lastBlock := blockledger.GetBlock(reader, reader.Height()-1)
+	logger.Info("====GetLastConfigIndexFromBlock===")
 	index, err := utils.GetLastConfigIndexFromBlock(lastBlock)
 	if err != nil {
 		logger.Panicf("Chain did not have appropriately encoded last config in its latest block: %s", err)
 	}
+	logger.Info("====GetBlock===")
 	configBlock := blockledger.GetBlock(reader, index)
 	if configBlock == nil {
 		logger.Panicf("Config block does not exist")
 	}
-
+	logger.Info("====ExtractEnvelopeOrPanic===")
 	return utils.ExtractEnvelopeOrPanic(configBlock, 0)
 }
 
@@ -174,13 +180,9 @@ func (r *Registrar) Initialize(consenters map[string]consensus.Consenter) {
 			if r.systemChannelID != "" {
 				logger.Panicf("There appear to be two system chains %s and %s", r.systemChannelID, chainID)
 			}
-			chain := newChainSupport(
-				r,
-				ledgerResources,
-				r.consenters,
-				r.signer,
-				r.blockcutterMetrics)
+			chain := newChainSupport(r, ledgerResources, r.consenters, r.signer, r.blockcutterMetrics)
 			r.templator = msgprocessor.NewDefaultTemplator(chain)
+			//CreateSystemChannelFilters
 			chain.Processor = msgprocessor.NewSystemChannel(chain, r.templator, msgprocessor.CreateSystemChannelFilters(r, chain))
 
 			// Retrieve genesis block to log its hash. See FAB-5450 for the purpose

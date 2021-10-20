@@ -32,7 +32,11 @@ type SystemChannel struct {
 
 // NewSystemChannel creates a new system channel message processor.
 func NewSystemChannel(support StandardChannelSupport, templator ChannelConfigTemplator, filters *RuleSet) *SystemChannel {
-	logger.Info("====NewSystemChannel===")
+	logger.Info("====NewSystemChannel:start===")
+	defer func() {
+		logger.Info("====NewSystemChannel:end==")
+	}()
+	//Creating system channel msg processor for channel byfn-sys-channel
 	logger.Debugf("Creating system channel msg processor for channel %s", support.ChainID())
 	return &SystemChannel{
 		StandardChannel: NewStandardChannel(support, filters),
@@ -42,18 +46,15 @@ func NewSystemChannel(support StandardChannelSupport, templator ChannelConfigTem
 
 // CreateSystemChannelFilters creates the set of filters for the ordering system chain.
 func CreateSystemChannelFilters(chainCreator ChainCreator, ledgerResources channelconfig.Resources) *RuleSet {
-	logger.Info("====CreateSystemChannelFilters===")
+	logger.Info("====CreateSystemChannelFilters:start===")
+	defer func() {
+		logger.Info("====CreateSystemChannelFilters:end===")
+	}()
 	ordererConfig, ok := ledgerResources.OrdererConfig()
 	if !ok {
 		logger.Panicf("Cannot create system channel filters without orderer config")
 	}
-	return NewRuleSet([]Rule{
-		EmptyRejectRule,
-		NewExpirationRejectRule(ledgerResources),
-		NewSizeFilter(ordererConfig),
-		NewSigFilter(policies.ChannelWriters, ledgerResources),
-		NewSystemChannelFilter(ledgerResources, chainCreator),
-	})
+	return NewRuleSet([]Rule{EmptyRejectRule, NewExpirationRejectRule(ledgerResources), NewSizeFilter(ordererConfig), NewSigFilter(policies.ChannelWriters, ledgerResources), NewSystemChannelFilter(ledgerResources, chainCreator),})
 }
 
 // ProcessNormalMsg handles normal messages, rejecting them if they are not bound for the system channel ID
@@ -206,7 +207,10 @@ type DefaultTemplator struct {
 
 // NewDefaultTemplator returns an instance of the DefaultTemplator.
 func NewDefaultTemplator(support DefaultTemplatorSupport) *DefaultTemplator {
-	logger.Info("====NewDefaultTemplator===")
+	logger.Info("====NewDefaultTemplator:start===")
+	defer func() {
+		logger.Info("====NewDefaultTemplator:end===")
+	}()
 	return &DefaultTemplator{
 		support: support,
 	}

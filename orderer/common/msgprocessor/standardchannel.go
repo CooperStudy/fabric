@@ -47,17 +47,15 @@ func NewStandardChannel(support StandardChannelSupport, filters *RuleSet) *Stand
 
 // CreateStandardChannelFilters creates the set of filters for a normal (non-system) chain
 func CreateStandardChannelFilters(filterSupport channelconfig.Resources) *RuleSet {
-	logger.Info("====CreateStandardChannelFilters===")
+	logger.Info("====CreateStandardChannelFilters:start===")
+	defer func() {
+		logger.Info("====CreateStandardChannelFilters:end===")
+	}()
 	ordererConfig, ok := filterSupport.OrdererConfig()
 	if !ok {
 		logger.Panicf("Missing orderer config")
 	}
-	return NewRuleSet([]Rule{
-		EmptyRejectRule,
-		NewExpirationRejectRule(filterSupport),
-		NewSizeFilter(ordererConfig),
-		NewSigFilter(policies.ChannelWriters, filterSupport),
-	})
+	return NewRuleSet([]Rule{EmptyRejectRule, NewExpirationRejectRule(filterSupport), NewSizeFilter(ordererConfig), NewSigFilter(policies.ChannelWriters, filterSupport),})
 }
 
 // ClassifyMsg inspects the message to determine which type of processing is necessary
@@ -80,7 +78,10 @@ func (s *StandardChannel) ClassifyMsg(chdr *cb.ChannelHeader) Classification {
 // ProcessNormalMsg will check the validity of a message based on the current configuration.  It returns the current
 // configuration sequence number and nil on success, or an error if the message is not valid
 func (s *StandardChannel) ProcessNormalMsg(env *cb.Envelope) (configSeq uint64, err error) {
-	logger.Info("====ProcessNormalMsg===")
+	logger.Info("====ProcessNormalMsg:start===")
+	defer func() {
+		logger.Info("====ProcessNormalMsg:end===")
+	}()
 	configSeq = s.support.Sequence()
 	err = s.filters.Apply(env)
 	return
@@ -127,7 +128,10 @@ func (s *StandardChannel) ProcessConfigUpdateMsg(env *cb.Envelope) (config *cb.E
 // ProcessConfigMsg takes an envelope of type `HeaderType_CONFIG`, unpacks the `ConfigEnvelope` from it
 // extracts the `ConfigUpdate` from `LastUpdate` field, and calls `ProcessConfigUpdateMsg` on it.
 func (s *StandardChannel) ProcessConfigMsg(env *cb.Envelope) (config *cb.Envelope, configSeq uint64, err error) {
-	logger.Info("====ProcessConfigMsg===")
+	logger.Info("====ProcessConfigMsg:start===")
+	defer func() {
+		logger.Info("====ProcessConfigMsg:end===")
+	}()
 	logger.Debugf("Processing config message for channel %s", s.support.ChainID())
 
 	configEnvelope := &cb.ConfigEnvelope{}

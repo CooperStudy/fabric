@@ -161,6 +161,7 @@ func Start(cmd string, conf *localconfig.TopLevel) {
 	mutualTLS := serverConfig.SecOpts.UseTLS && serverConfig.SecOpts.RequireClientCert
 	server := NewServer(manager, metricsProvider, &conf.Debug, conf.General.Authentication.TimeWindow, mutualTLS)
 
+	//Starting orderer
 	logger.Infof("Starting %s", metadata.GetVersionInfo())
 	//handle
 	go handleSignals(addPlatformSignals(map[os.Signal]func(){
@@ -186,7 +187,10 @@ func initializeLogging() {
 
 // Start the profiling service if enabled.
 func initializeProfilingService(conf *localconfig.TopLevel) {
-	logger.Info("====initializeProfilingService===")
+	logger.Info("====initializeProfilingService:start===")
+	defer func() {
+		logger.Info("====initializeProfilingService:end===")
+	}()
 	if conf.General.Profile.Enabled {
 		go func() {
 			logger.Info("Starting Go pprof profiling service on:", conf.General.Profile.Address)

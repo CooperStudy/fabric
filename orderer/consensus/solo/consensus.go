@@ -42,13 +42,20 @@ func New() consensus.Consenter {
 
 func (solo *consenter) HandleChain(support consensus.ConsenterSupport, metadata *cb.Metadata) (consensus.Chain, error) {
 
-	logger.Info("==solo==HandleChain===")
+	logger.Info("==solo==HandleChain:start===")
+	defer func() {
+		logger.Info("==solo==HandleChain:end===")
+	}()
 	return newChain(support), nil
 }
 
 func newChain(support consensus.ConsenterSupport) *chain {
 
-	logger.Info("==solo==newChain===")
+	logger.Info("==solo==newChain:start===")
+	defer func() {
+		logger.Info("==solo==newChain:end===")
+	}()
+
 
 	return &chain{
 		support:  support,
@@ -58,7 +65,10 @@ func newChain(support consensus.ConsenterSupport) *chain {
 }
 
 func (ch *chain) Start() {
-	logger.Info("==solo==Start===")
+	logger.Info("==solo==Start:start===")
+	defer func() {
+		logger.Info("==solo==Start:end===")
+	}()
 	go ch.main()
 }
 
@@ -128,9 +138,13 @@ func (ch *chain) main() {
 		err = nil
 		select {
 		case msg := <-ch.sendChan:
+			logger.Info("===ch.sendChan==",*msg.configMsg,msg.configSeq,*msg.normalMsg)
 			if msg.configMsg == nil {
 				// NormalMsg
+				logger.Info("msg.configSeq",msg.configSeq)
+				logger.Info("seq",seq)
 				if msg.configSeq < seq {
+					logger.Info("============1==")
 					_, err = ch.support.ProcessNormalMsg(msg.normalMsg)
 					if err != nil {
 						logger.Warningf("Discarding bad normal message: %s", err)
@@ -160,6 +174,8 @@ func (ch *chain) main() {
 
 			} else {
 				// ConfigMsg
+				logger.Info("msg.configSeq",msg.configSeq)
+				logger.Info("seq",seq)
 				if msg.configSeq < seq {
 					msg.configMsg, _, err = ch.support.ProcessConfigMsg(msg.configMsg)
 					if err != nil {
@@ -179,6 +195,7 @@ func (ch *chain) main() {
 			}
 		case <-timer:
 			//clear the timer
+			logger.Info("clear the timer")
 			timer = nil
 
 			batch := ch.support.BlockCutter().Cut()

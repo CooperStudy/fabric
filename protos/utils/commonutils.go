@@ -8,6 +8,7 @@ package utils
 
 import (
 	"fmt"
+	"github.com/op/go-logging"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -138,7 +139,12 @@ func ExtractEnvelopeOrPanic(block *cb.Block, index int) *cb.Envelope {
 
 // ExtractEnvelope retrieves the requested envelope from a given block and
 // unmarshals it
+var logger = logging.MustGetLogger("protos.utils.commonutils.go")
 func ExtractEnvelope(block *cb.Block, index int) (*cb.Envelope, error) {
+	logger.Info("==ExtractEnvelope:start====")
+	defer func() {
+		logger.Info("==ExtractEnvelope:end====")
+	}()
 	if block.Data == nil {
 		return nil, errors.New("block data is nil")
 	}

@@ -72,6 +72,10 @@ type CertHashExtractor func(proto.Message) []byte
 // mutualTLS is configured or not, and according to a function that extracts
 // TLS certificate hashes from proto messages
 func NewBindingInspector(mutualTLS bool, extractTLSCertHash CertHashExtractor) BindingInspector {
+	logger.Info("===NewBindingInspector:start==")
+	defer func() {
+		logger.Info("===NewBindingInspector:end==")
+	}()
 	if extractTLSCertHash == nil {
 		panic(errors.New("extractTLSCertHash parameter is nil"))
 	}
@@ -94,6 +98,10 @@ func NewBindingInspector(mutualTLS bool, extractTLSCertHash CertHashExtractor) B
 // there is no TLS certificate to be excavated from the gRPC context,
 // an error is returned.
 func mutualTLSBinding(ctx context.Context, claimedTLScertHash []byte) error {
+	logger.Info("====mutualTLSBinding:start====")
+	defer func() {
+		logger.Info("====mutualTLSBinding:end====")
+	}()
 	if len(claimedTLScertHash) == 0 {
 		return errors.Errorf("client didn't include its TLS cert hash")
 	}

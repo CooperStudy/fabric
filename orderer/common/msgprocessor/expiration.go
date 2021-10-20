@@ -24,7 +24,10 @@ type resources interface {
 // NewExpirationRejectRule returns a rule that rejects messages signed by identities
 // who's identities have expired, given the capability is active
 func NewExpirationRejectRule(filterSupport resources) Rule {
-	logger.Info("====NewExpirationRejectRule===")
+	logger.Info("====NewExpirationRejectRule:start===")
+	defer func() {
+		logger.Info("====NewExpirationRejectRule:end===")
+	}()
 	return &expirationRejectRule{filterSupport: filterSupport}
 }
 

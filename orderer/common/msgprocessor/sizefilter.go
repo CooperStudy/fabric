@@ -20,7 +20,10 @@ type Support interface {
 
 // New creates a size filter which rejects messages larger than maxBytes
 func NewSizeFilter(support Support) *MaxBytesRule {
-	logger.Info("====NewSizeFilter===")
+	logger.Info("====NewSizeFilter:start===")
+	defer func() {
+		logger.Info("====NewSizeFilter:end===")
+	}()
 	return &MaxBytesRule{support: support}
 }
 

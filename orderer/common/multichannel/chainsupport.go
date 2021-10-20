@@ -29,14 +29,11 @@ type ChainSupport struct {
 	crypto.LocalSigner
 }
 
-func newChainSupport(
-	registrar *Registrar,
-	ledgerResources *ledgerResources,
-	consenters map[string]consensus.Consenter,
-	signer crypto.LocalSigner,
-	blockcutterMetrics *blockcutter.Metrics,
-) *ChainSupport {
-	logger.Info("====newChainSupport===")
+func newChainSupport(registrar *Registrar, ledgerResources *ledgerResources, consenters map[string]consensus.Consenter, signer crypto.LocalSigner, blockcutterMetrics *blockcutter.Metrics) *ChainSupport {
+	logger.Info("====newChainSupport:start===")
+	defer func() {
+		logger.Info("====newChainSupport:end===")
+	}()
 	// Read in the last block and metadata for the channel
 	lastBlock := blockledger.GetBlock(ledgerResources, ledgerResources.Height()-1)
 
@@ -75,7 +72,7 @@ func newChainSupport(
 	if err != nil {
 		logger.Panicf("[channel: %s] Error creating consenter: %s", cs.ChainID(), err)
 	}
-
+// [channel:byfn-sys-channel] Done Creating channel support resources
 	logger.Debugf("[channel: %s] Done creating channel support resources", cs.ChainID())
 
 	return cs
@@ -144,6 +141,10 @@ func (cs *ChainSupport) ConfigProto() *cb.Config {
 
 // Sequence passes through to the underlying configtx.Validator
 func (cs *ChainSupport) Sequence() uint64 {
+	logger.Info("====Sequence:start=====")
+	defer func() {
+		logger.Info("====Sequence:end=====")
+	}()
 	return cs.ConfigtxValidator().Sequence()
 }
 

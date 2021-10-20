@@ -134,6 +134,10 @@ func ExtractChannelHeaderCertHash(msg proto.Message) []byte {
 
 // NewHandler creates an implementation of the Handler interface.
 func NewHandler(cm ChainManager, timeWindow time.Duration, mutualTLS bool, metrics *Metrics) *Handler {
+	logger.Info("===NewHandler:start===")
+	defer func() {
+		logger.Info("===NewHandler:end===")
+	}()
 	return &Handler{
 		ChainManager:     cm,
 		TimeWindow:       timeWindow,
