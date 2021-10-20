@@ -101,6 +101,10 @@ type bccspmsp struct {
 // generate identities and signing identities backed by
 // certificates and keypairs
 func newBccspMsp(version MSPVersion) (MSP, error) {
+	mspLogger.Info("=======newBccspMsp:start========")
+	defer func() {
+		mspLogger.Info("=======newBccspMsp:end====")
+	}()
 	mspLogger.Debugf("Creating BCCSP-based MSP instance")
 
 	bccsp := factory.GetDefault()
@@ -112,6 +116,7 @@ func newBccspMsp(version MSPVersion) (MSP, error) {
 		theMsp.internalSetupFunc = theMsp.setupV1
 		theMsp.internalValidateIdentityOusFunc = theMsp.validateIdentityOUsV1
 		theMsp.internalSatisfiesPrincipalInternalFunc = theMsp.satisfiesPrincipalInternalPreV13
+		//func (msp *bccspmsp) satisfiesPrincipalInternalPreV13(id Identity, principal *m.MSPPrincipal) error {
 	case MSPv1_1:
 		theMsp.internalSetupFunc = theMsp.setupV11
 		theMsp.internalValidateIdentityOusFunc = theMsp.validateIdentityOUsV11

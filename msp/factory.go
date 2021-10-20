@@ -45,6 +45,10 @@ type IdemixNewOpts struct {
 
 // New create a new MSP instance depending on the passed Opts
 func New(opts NewOpts) (MSP, error) {
+	mspLogger.Info("====New:start==")
+	defer func() {
+		mspLogger.Info("====New:end===")
+	}()
 	switch opts.(type) {
 	case *BCCSPNewOpts:
 		switch opts.GetVersion() {

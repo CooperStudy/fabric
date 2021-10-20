@@ -131,6 +131,11 @@ func (msp *bccspmsp) validateCertAgainstChain(cert *x509.Certificate, validation
 }
 
 func (msp *bccspmsp) validateIdentityOUsV1(id *identity) error {
+	mspLogger.Info("======validateIdentityOUsV1:start======")
+	defer func() {
+		mspLogger.Info("======validateIdentityOUsV1:end======")
+	}()
+
 	// Check that the identity's OUs are compatible with those recognized by this MSP,
 	// meaning that the intersection is not empty.
 	if len(msp.ouIdentifiers) > 0 {
