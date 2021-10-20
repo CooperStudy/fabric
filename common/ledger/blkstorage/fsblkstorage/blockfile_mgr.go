@@ -250,6 +250,7 @@ func (mgr *blockfileMgr) moveToNextFile() {
 }
 
 func (mgr *blockfileMgr) addBlock(block *common.Block) error {
+	logger.Info("========addBlock============")
 	bcInfo := mgr.getBlockchainInfo()
 	if block.Header.Number != bcInfo.Height {
 		return errors.Errorf(
@@ -445,6 +446,7 @@ func (mgr *blockfileMgr) getBlockchainInfo() *common.BlockchainInfo {
 }
 
 func (mgr *blockfileMgr) updateCheckpoint(cpInfo *checkpointInfo) {
+	logger.Info("=============updateCheckpoint=======================")
 	mgr.cpInfoCond.L.Lock()
 	defer mgr.cpInfoCond.L.Unlock()
 	mgr.cpInfo = cpInfo

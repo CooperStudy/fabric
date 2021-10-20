@@ -52,6 +52,7 @@ func (fake *BlockIterator) CloseCalls(stub func()) {
 }
 
 func (fake *BlockIterator) Next() (*common.Block, common.Status) {
+
 	fake.nextMutex.Lock()
 	ret, specificReturn := fake.nextReturnsOnCall[len(fake.nextArgsForCall)]
 	fake.nextArgsForCall = append(fake.nextArgsForCall, struct {

@@ -205,7 +205,14 @@ func (msp *bccspmsp) getSigningIdentityFromConf(sidInfo *m.SigningIdentityInfo) 
 // Setup sets up the internal data structures
 // for this MSP, given an MSPConfig ref; it
 // returns nil in case of success or an error otherwise
+
+
 func (msp *bccspmsp) Setup(conf1 *m.MSPConfig) error {
+	mspLogger.Info("===========Setup:start======")
+	defer func() {
+		mspLogger.Info("===========Setup:end======")
+	}()
+
 	if conf1 == nil {
 		return errors.New("Setup error: nil conf reference")
 	}
@@ -219,7 +226,7 @@ func (msp *bccspmsp) Setup(conf1 *m.MSPConfig) error {
 
 	// set the name for this msp
 	msp.name = conf.Name
-	mspLogger.Debugf("Setting up MSP instance %s", msp.name)
+	mspLogger.Debugf("Setting up MSP instance %s", msp.name)//setting up MSP instance Org2MSP
 
 	// setup
 	return msp.internalSetupFunc(conf)
@@ -673,7 +680,16 @@ func (msp *bccspmsp) getCertificationChainIdentifierFromChain(chain []*x509.Cert
 // sanitizeCert ensures that x509 certificates signed using ECDSA
 // do have signatures in Low-S. If this is not the case, the certificate
 // is regenerated to have a Low-S signature.
+/*
+// sanitizeCert 确保使用 ECDSA 签署的 x509 证书
+// 在 Low-S 中确实有签名。 如果不是这种情况，证书
+// 重新生成以具有 Low-S 签名
+ */
 func (msp *bccspmsp) sanitizeCert(cert *x509.Certificate) (*x509.Certificate, error) {
+	mspLogger.Info("=====sanitizeCert:start=====")
+	defer func() {
+		mspLogger.Info("=====sanitizeCert:end=====")
+	}()
 	if isECDSASignedCert(cert) {
 		// Lookup for a parent certificate to perform the sanitization
 		var parentCert *x509.Certificate

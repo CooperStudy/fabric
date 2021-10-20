@@ -36,6 +36,10 @@ func NewMSPConfigHandler(mspVersion msp.MSPVersion) *MSPConfigHandler {
 
 // ProposeValue called when an org defines an MSP
 func (bh *MSPConfigHandler) ProposeMSP(mspConfig *mspprotos.MSPConfig) (msp.MSP, error) {
+	logger.Info("===ProposeMSP:start===")
+	defer func() {
+		logger.Info("===ProposeMSP:end===")
+	}()
 	var theMsp msp.MSP
 	var err error
 
@@ -89,6 +93,10 @@ func (bh *MSPConfigHandler) ProposeMSP(mspConfig *mspprotos.MSPConfig) (msp.MSP,
 }
 
 func (bh *MSPConfigHandler) CreateMSPManager() (msp.MSPManager, error) {
+	logger.Info("===CreateMSPManager===:start")
+	defer func() {
+		logger.Info("===CreateMSPManager===:end")
+	}()
 	mspList := make([]msp.MSP, len(bh.idMap))
 	i := 0
 	for _, pendingMSP := range bh.idMap {

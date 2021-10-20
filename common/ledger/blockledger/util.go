@@ -8,6 +8,7 @@ package blockledger
 
 import (
 	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/flogging"
 	cb "github.com/hyperledger/fabric/protos/common"
 	ab "github.com/hyperledger/fabric/protos/orderer"
 )
@@ -76,9 +77,13 @@ func CreateNextBlock(rl Reader, messages []*cb.Envelope) *cb.Block {
 
 	return block
 }
-
+var logger = flogging.MustGetLogger("common.ledger.blockledger.util.go")
 // GetBlock is a utility method for retrieving a single block
 func GetBlock(rl Reader, index uint64) *cb.Block {
+	logger.Info("==========GetBlock=========")
+	defer func() {
+		logger.Info("==========GetBlock=========")
+	}()
 	iterator, _ := rl.Iterator(&ab.SeekPosition{
 		Type: &ab.SeekPosition_Specified{
 			Specified: &ab.SeekSpecified{Number: index},

@@ -44,6 +44,10 @@ type fileLedgerIterator struct {
 // Next blocks until there is a new block available, or until Close is called.
 // It returns an error if the next block is no longer retrievable.
 func (i *fileLedgerIterator) Next() (*cb.Block, cb.Status) {
+	logger.Info("====fileLedgerIterator====Next:start====")
+	defer func() {
+		logger.Info("====fileLedgerIterator====Next:end====")
+	}()
 	result, err := i.commonIterator.Next()
 	if err != nil {
 		logger.Error(err)
@@ -104,6 +108,7 @@ func (fl *FileLedger) Height() uint64 {
 
 // Append a new block to the ledger
 func (fl *FileLedger) Append(block *cb.Block) error {
+	logger.Info("====Append====")
 	err := fl.blockStore.AddBlock(block)
 	if err == nil {
 		close(fl.signal)

@@ -16,6 +16,10 @@ import (
 
 // DeserializeGroup deserializes the value for all values in a config group
 func DeserializeProtoValuesFromGroup(group *cb.ConfigGroup, protosStructs ...interface{}) error {
+	logger.Info("======DeserializeProtoValuesFromGroup:start=====")
+	defer func(){
+		logger.Info("======DeserializeProtoValuesFromGroup:end=====")
+	}()
 	sv, err := NewStandardValues(protosStructs...)
 	if err != nil {
 		logger.Panicf("This is a compile time bug only, the proto structures are somehow invalid: %s", err)
@@ -39,12 +43,24 @@ type StandardValues struct {
 // messages and build a lookup map from structure field name to proto message instance
 // This is a useful way to easily implement the Values interface
 func NewStandardValues(protosStructs ...interface{}) (*StandardValues, error) {
+	logger.Info("======NewStandardValues:start=====")
+	defer func(){
+		logger.Info("======NewStandardValues:end=====")
+	}()
+
 	sv := &StandardValues{
 		lookup: make(map[string]proto.Message),
 	}
 
 	for _, protosStruct := range protosStructs {
 		logger.Debugf("Initializing protos for %T\n", protosStruct)
+		/*
+		Initializing protos for: *channelconfig.ChannelProtos
+		Initializing protos for: *channelconfig.ConsotiumProtos
+		Processing filed: channelCreateionPolicy
+		Initializing protos for: *channelconfig.OrganizationProtos
+		Procssing filed:MSP
+		 */
 		if err := sv.initializeProtosStruct(reflect.ValueOf(protosStruct)); err != nil {
 			return nil, err
 		}
@@ -71,6 +87,10 @@ func (sv *StandardValues) Deserialize(key string, value []byte) (proto.Message, 
 }
 
 func (sv *StandardValues) initializeProtosStruct(objValue reflect.Value) error {
+	logger.Info("=============initializeProtosStruct:start")
+	defer func() {
+		logger.Info("=============initializeProtosStruct:end")
+	}()
 	objType := objValue.Type()
 	if objType.Kind() != reflect.Ptr {
 		return fmt.Errorf("Non pointer type")
@@ -83,6 +103,13 @@ func (sv *StandardValues) initializeProtosStruct(objValue reflect.Value) error {
 	for i := 0; i < numFields; i++ {
 		structField := objType.Elem().Field(i)
 		logger.Debugf("Processing field: %s\n", structField.Name)
+		/*
+		Processing field:HahsingAlgorithm
+		Processing field:BlockDataHashingStructure
+		Processing field:OrdererAddresses
+		Processing field:Consortium
+		Processing field:Capablilities
+		 */
 		switch structField.Type.Kind() {
 		case reflect.Ptr:
 			fieldPtr := objValue.Elem().Field(i)

@@ -32,6 +32,10 @@ type fileLedgerFactory struct {
 
 // GetOrCreate gets an existing ledger (if it exists) or creates it if it does not
 func (flf *fileLedgerFactory) GetOrCreate(chainID string) (blockledger.ReadWriter, error) {
+	logger.Info("====GetOrCreate:start===")
+	defer func() {
+		logger.Info("====GetOrCreate:end===")
+	}()
 	flf.mutex.Lock()
 	defer flf.mutex.Unlock()
 

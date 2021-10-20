@@ -39,8 +39,30 @@ type identity struct {
 }
 
 func newIdentity(cert *x509.Certificate, pk bccsp.Key, msp *bccspmsp) (Identity, error) {
+	mspLogger.Info("===newIdentity:start=====")
+	defer func() {
+		mspLogger.Info("===newIdentity:start=====")
+	}()
 	if mspIdentityLogger.IsEnabledFor(zapcore.DebugLevel) {
 		mspIdentityLogger.Debugf("Creating identity instance for cert %s", certToPEM(cert))
+		/*
+		2021-10-19 08:33:50.818 UTC [msp.identity] newIdentity -> DEBU 11e Creating identity instance for cert -----BEGIN CERTIFICATE-----
+		MIICQjCCAemgAwIBAgIQP2OocAZewVXNZe00EYfZ+zAKBggqhkjOPQQDAjBzMQsw
+		CQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMNU2FuIEZy
+		YW5jaXNjbzEZMBcGA1UEChMQb3JnMi5leGFtcGxlLmNvbTEcMBoGA1UEAxMTY2Eu
+		b3JnMi5leGFtcGxlLmNvbTAeFw0yMTEwMTkwODI3NTdaFw0zMTEwMTcwODI3NTda
+		MHMxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1T
+		YW4gRnJhbmNpc2NvMRkwFwYDVQQKExBvcmcyLmV4YW1wbGUuY29tMRwwGgYDVQQD
+		ExNjYS5vcmcyLmV4YW1wbGUuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE
+		0IGXmhDm//0YvAQFxyVg8tfSfDplAKB0ZTvFtxdhm6HOpOwEj8NeMW5v1sPqsr7r
+		rUP5q7mFQf8Ram4kFsYTzaNfMF0wDgYDVR0PAQH/BAQDAgGmMA8GA1UdJQQIMAYG
+		BFUdJQAwDwYDVR0TAQH/BAUwAwEB/zApBgNVHQ4EIgQgYb2CrdEM2wKv/ewcHmm1
+		Y6Vo7N/8QwzdOT4z+agYYfswCgYIKoZIzj0EAwIDRwAwRAIgOBs7ECxyaeJie/98
+		zJ4CfUtsSoCjFpJrp8tH6PM92pgCICEr0KpptYg64pZmaKZRvTw+KPlotWqu22+V
+		Fc1BK53o
+		-----END CERTIFICATE-----
+
+		*/
 	}
 
 	// Sanitize first the certificate

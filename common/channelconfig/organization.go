@@ -70,13 +70,22 @@ func (oc *OrganizationConfig) MSPID() string {
 
 // Validate returns whether the configuration is valid
 func (oc *OrganizationConfig) Validate() error {
+	logger.Info("===Validate:start===")
+	defer func() {
+		logger.Info("===Validate:end==")
+	}()
 	return oc.validateMSP()
 }
 
 func (oc *OrganizationConfig) validateMSP() error {
+	logger.Info("===validateMSP:start===")
+	defer func() {
+		logger.Info("===validateMSP:end==")
+	}()
+
 	var err error
 
-	logger.Debugf("Setting up MSP for org %s", oc.name)
+	logger.Debugf("Setting up MSP for org %s", oc.name)//Setting up MSP for org Org2MSP
 	oc.msp, err = oc.mspConfigHandler.ProposeMSP(oc.protos.MSP)
 	if err != nil {
 		return err

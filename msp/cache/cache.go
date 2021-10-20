@@ -21,7 +21,12 @@ const (
 
 var mspLogger = flogging.MustGetLogger("msp")
 
+var logger = flogging.MustGetLogger("map.cache.cache.go")
 func New(o msp.MSP) (msp.MSP, error) {
+	logger.Info("====New:start=====")
+	defer func() {
+		logger.Info("====New:end=====")
+	}()
 	mspLogger.Debugf("Creating Cache-MSP instance")
 	if o == nil {
 		return nil, errors.Errorf("Invalid passed MSP. It must be different from nil.")

@@ -52,7 +52,11 @@ type blockPlacementInfo struct {
 // blockfileStream functions
 ////////////////////////////////////
 func newBlockfileStream(rootDir string, fileNum int, startOffset int64) (*blockfileStream, error) {
+	logger.Info("========newBlockfileStream==========")
 	filePath := deriveBlockfilePath(rootDir, fileNum)
+	/*
+	filePath:/var/hyperledger/production/orderer/chains/byfn-sys-channel/blockfile_000000 startoffset=[0]
+	 */
 	logger.Debugf("newBlockfileStream(): filePath=[%s], startOffset=[%d]", filePath, startOffset)
 	var file *os.File
 	var err error
@@ -80,7 +84,14 @@ func (s *blockfileStream) nextBlockBytes() ([]byte, error) {
 // along with the offset information in the block file.
 // An error `ErrUnexpectedEndOfBlockfile` is returned if a partial written data is detected
 // which is possible towards the tail of the file if a crash had taken place during appending of a block
+/*
+// nextBlockBytesAndPlacementInfo
+返回下一个块的字节以及块文件中的偏移量信息。
+// 如果检测到部分写入数据，则返回错误`ErrUnexpectedEndOfBlockfile`
+  如果在附加块期间发生崩溃，则可能朝向文件尾部
+ */
 func (s *blockfileStream) nextBlockBytesAndPlacementInfo() ([]byte, *blockPlacementInfo, error) {
+	logger.Info("===============nextBlockBytesAndPlacementInfo========================")
 	var lenBytes []byte
 	var err error
 	var fileInfo os.FileInfo
@@ -101,6 +112,7 @@ func (s *blockfileStream) nextBlockBytesAndPlacementInfo() ([]byte, *blockPlacem
 		peekBytes = int(remainingBytes)
 		moreContentAvailable = false
 	}
+	//remaining bytes=[12767],going to peek [8] bytes
 	logger.Debugf("Remaining bytes=[%d], Going to peek [%d] bytes", remainingBytes, peekBytes)
 	if lenBytes, err = s.reader.Peek(peekBytes); err != nil {
 		return nil, nil, errors.Wrapf(err, "error peeking [%d] bytes from block file", peekBytes)
@@ -134,6 +146,7 @@ func (s *blockfileStream) nextBlockBytesAndPlacementInfo() ([]byte, *blockPlacem
 		blockStartOffset: s.currentOffset,
 		blockBytesOffset: s.currentOffset + int64(n)}
 	s.currentOffset += int64(n) + int64(length)
+	//Returning blockbytes - length=[12765],placementInfo={fileNum=0,staroffset=0,bytesoffset=2}
 	logger.Debugf("Returning blockbytes - length=[%d], placementInfo={%s}", len(blockBytes), blockPlacementInfo)
 	return blockBytes, blockPlacementInfo, nil
 }
@@ -146,6 +159,7 @@ func (s *blockfileStream) close() error {
 // blockStream functions
 ////////////////////////////////////
 func newBlockStream(rootDir string, startFileNum int, startOffset int64, endFileNum int) (*blockStream, error) {
+	logger.Info("========newBlockStream=======")
 	startFileStream, err := newBlockfileStream(rootDir, startFileNum, startOffset)
 	if err != nil {
 		return nil, err
@@ -166,11 +180,13 @@ func (s *blockStream) moveToNextBlockfileStream() error {
 }
 
 func (s *blockStream) nextBlockBytes() ([]byte, error) {
+	logger.Info("=====nextBlockBytes=====")
 	blockBytes, _, err := s.nextBlockBytesAndPlacementInfo()
 	return blockBytes, err
 }
 
 func (s *blockStream) nextBlockBytesAndPlacementInfo() ([]byte, *blockPlacementInfo, error) {
+	logger.Info("========nextBlockBytesAndPlacementInfo======")
 	var blockBytes []byte
 	var blockPlacementInfo *blockPlacementInfo
 	var err error
@@ -178,6 +194,7 @@ func (s *blockStream) nextBlockBytesAndPlacementInfo() ([]byte, *blockPlacementI
 		logger.Errorf("Error reading next block bytes from file number [%d]: %s", s.currentFileNum, err)
 		return nil, nil, err
 	}
+	//blockbytes [12765] read from file [0]
 	logger.Debugf("blockbytes [%d] read from file [%d]", len(blockBytes), s.currentFileNum)
 	if blockBytes == nil && (s.currentFileNum < s.endFileNum || s.endFileNum < 0) {
 		logger.Debugf("current file [%d] exhausted. Moving to next file", s.currentFileNum)

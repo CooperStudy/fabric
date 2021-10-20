@@ -379,6 +379,7 @@ func initializeBootstrapChannel(genesisBlock *cb.Block, lf blockledger.Factory) 
 		logger.Fatal("Failed to create the system chain:", err)
 	}
 
+	//Broadcasting about update checkpointInfo: latestFileChunkSuffixNum=[0], latestFileChunksize=[12767], isChainEmpty=[false], lastBlockNumber=[0]
 	if err := gl.Append(genesisBlock); err != nil {
 		logger.Fatal("Could not write genesis block to ledger:", err)
 	}
@@ -414,15 +415,7 @@ func initializeLocalMsp(conf *localconfig.TopLevel) {
 	}
 }
 
-func initializeMultichannelRegistrar(bootstrapBlock *cb.Block,
-	clusterDialer *cluster.PredicateDialer,
-	srvConf comm.ServerConfig,
-	srv *comm.GRPCServer,
-	conf *localconfig.TopLevel,
-	signer crypto.LocalSigner,
-	metricsProvider metrics.Provider,
-	lf blockledger.Factory,
-	callbacks ...func(bundle *channelconfig.Bundle)) *multichannel.Registrar {
+func initializeMultichannelRegistrar(bootstrapBlock *cb.Block, clusterDialer *cluster.PredicateDialer, srvConf comm.ServerConfig, srv *comm.GRPCServer, conf *localconfig.TopLevel, signer crypto.LocalSigner, metricsProvider metrics.Provider, lf blockledger.Factory, callbacks ...func(bundle *channelconfig.Bundle)) *multichannel.Registrar {
 
 
 	logger.Info("====initializeMultichannelRegistrar===")
@@ -437,6 +430,7 @@ func initializeMultichannelRegistrar(bootstrapBlock *cb.Block,
 
 	consenters := make(map[string]consensus.Consenter)
 
+	//=====newRegistrar
 	registrar := multichannel.NewRegistrar(lf, signer, metricsProvider, callbacks...)
 
 	consenters["solo"] = solo.New()
@@ -445,10 +439,12 @@ func initializeMultichannelRegistrar(bootstrapBlock *cb.Block,
 	// Note, we pass a 'nil' channel here, we could pass a channel that
 	// closes if we wished to cleanup this routine on exit.
 	go kafkaMetrics.PollGoMetricsUntilStop(time.Minute, nil)
+	//isClutstrtype
 	if isClusterType(bootstrapBlock) {
 		raftConsenter := etcdraft.New(clusterDialer, conf, srvConf, srv, registrar)
 		consenters["etcdraft"] = raftConsenter
 	}
+	//initialize
 	registrar.Initialize(consenters)
 	return registrar
 }

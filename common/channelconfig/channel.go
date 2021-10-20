@@ -78,6 +78,11 @@ type ChannelConfig struct {
 
 // NewChannelConfig creates a new ChannelConfig
 func NewChannelConfig(channelGroup *cb.ConfigGroup) (*ChannelConfig, error) {
+	logger.Info("======NewChannelConfig:start=====")
+	defer func(){
+		logger.Info("======NewChannelConfig:end=====")
+	}()
+
 	cc := &ChannelConfig{
 		protos: &ChannelProtos{},
 	}
@@ -97,6 +102,7 @@ func NewChannelConfig(channelGroup *cb.ConfigGroup) (*ChannelConfig, error) {
 	for groupName, group := range channelGroup.Groups {
 		switch groupName {
 		case ApplicationGroupKey:
+
 			cc.appConfig, err = NewApplicationConfig(group, mspConfigHandler)
 		case OrdererGroupKey:
 			cc.ordererConfig, err = NewOrdererConfig(group, mspConfigHandler)

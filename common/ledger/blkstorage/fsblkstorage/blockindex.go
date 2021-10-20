@@ -221,6 +221,7 @@ func (index *blockIndex) getBlockLocByHash(blockHash []byte) (*fileLocPointer, e
 }
 
 func (index *blockIndex) getBlockLocByBlockNum(blockNum uint64) (*fileLocPointer, error) {
+	logger.Info("=========getBlockLocByBlockNum=========")
 	if _, ok := index.indexItemsMap[blkstorage.IndexableAttrBlockNum]; !ok {
 		return nil, blkstorage.ErrAttrNotIndexed
 	}

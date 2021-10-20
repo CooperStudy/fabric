@@ -51,6 +51,7 @@ func (itr *blocksItr) waitForBlock(blockNum uint64) uint64 {
 }
 
 func (itr *blocksItr) initStream() error {
+	logger.Info("======initStream======")
 	var lp *fileLocPointer
 	var err error
 	if lp, err = itr.mgr.index.getBlockLocByBlockNum(itr.blockNumToRetrieve); err != nil {
@@ -70,6 +71,7 @@ func (itr *blocksItr) shouldClose() bool {
 
 // Next moves the cursor（光标） to next block and returns true iff the iterator is not exhausted
 func (itr *blocksItr) Next() (ledger.QueryResult, error) {
+	logger.Info("======blocksItr====Next====")
 	if itr.maxBlockNumAvailable < itr.blockNumToRetrieve {
 		itr.maxBlockNumAvailable = itr.waitForBlock(itr.blockNumToRetrieve)
 	}
@@ -79,7 +81,7 @@ func (itr *blocksItr) Next() (ledger.QueryResult, error) {
 		return nil, nil
 	}
 	if itr.stream == nil {
-		logger.Debugf("Initializing block stream for iterator. itr.maxBlockNumAvailable=%d", itr.maxBlockNumAvailable)
+		logger.Debugf("Initializing block stream for iterator. itr.maxBlockNumAvailable=%d", itr.maxBlockNumAvailable)//0
 		if err := itr.initStream(); err != nil {
 			return nil, err
 		}

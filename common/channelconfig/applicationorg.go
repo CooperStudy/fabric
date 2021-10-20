@@ -33,6 +33,10 @@ type ApplicationOrgConfig struct {
 
 // NewApplicationOrgConfig creates a new config for an application org
 func NewApplicationOrgConfig(id string, orgGroup *cb.ConfigGroup, mspConfig *MSPConfigHandler) (*ApplicationOrgConfig, error) {
+	logger.Info("======NewApplicationOrgConfig:start=====")
+	defer func() {
+		logger.Info("======NewApplicationOrgConfig:end=====")
+	}()
 	if len(orgGroup.Groups) > 0 {
 		return nil, fmt.Errorf("ApplicationOrg config does not allow sub-groups")
 	}
@@ -67,6 +71,11 @@ func (aog *ApplicationOrgConfig) AnchorPeers() []*pb.AnchorPeer {
 }
 
 func (aoc *ApplicationOrgConfig) Validate() error {
+	logger.Info("===Validate:start====")
+	defer func() {
+		logger.Info("===Validate:end====")
+	}()
+
 	logger.Debugf("Anchor peers for org %s are %v", aoc.name, aoc.protos.AnchorPeers)
 	return aoc.OrganizationConfig.Validate()
 }

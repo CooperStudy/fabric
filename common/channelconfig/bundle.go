@@ -174,6 +174,10 @@ func NewBundleFromEnvelope(env *cb.Envelope) (*Bundle, error) {
 
 // NewBundle creates a new immutable bundle of configuration
 func NewBundle(channelID string, config *cb.Config) (*Bundle, error) {
+	logger.Info("==========NewBundle：start=========")
+	defer func() {
+		logger.Info("==========NewBundle：end=========")
+	}()
 	if err := preValidate(config); err != nil {
 		return nil, err
 	}
@@ -214,6 +218,10 @@ func NewBundle(channelID string, config *cb.Config) (*Bundle, error) {
 }
 
 func preValidate(config *cb.Config) error {
+	logger.Info("==preValidate:start==")
+	defer func() {
+		logger.Info("==preValidate：end==")
+	}()
 	if config == nil {
 		return errors.New("channelconfig Config cannot be nil")
 	}

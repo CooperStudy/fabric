@@ -110,7 +110,11 @@ type Registrar struct {
 }
 
 func getConfigTx(reader blockledger.Reader) *cb.Envelope {
-	logger.Info("====getConfigTx===")
+	logger.Info("====getConfigTx:start===")
+	defer func() {
+		logger.Info("====getConfigTx:end===")
+	}()
+	//
 	lastBlock := blockledger.GetBlock(reader, reader.Height()-1)
 	index, err := utils.GetLastConfigIndexFromBlock(lastBlock)
 	if err != nil {
@@ -125,9 +129,7 @@ func getConfigTx(reader blockledger.Reader) *cb.Envelope {
 }
 
 // NewRegistrar produces an instance of a *Registrar.
-func NewRegistrar(ledgerFactory blockledger.Factory,
-	signer crypto.LocalSigner, metricsProvider metrics.Provider, callbacks ...func(bundle *channelconfig.Bundle)) *Registrar {
-
+func NewRegistrar(ledgerFactory blockledger.Factory,signer crypto.LocalSigner, metricsProvider metrics.Provider, callbacks ...func(bundle *channelconfig.Bundle)) *Registrar {
 	logger.Info("====NewRegistrar===")
 
 	r := &Registrar{
@@ -142,7 +144,10 @@ func NewRegistrar(ledgerFactory blockledger.Factory,
 }
 
 func (r *Registrar) Initialize(consenters map[string]consensus.Consenter) {
-	logger.Info("====Initialize===")
+	logger.Info("====Initialize:start===")
+	defer func() {
+		logger.Info("====Initialize:end===")
+	}()
 
 	r.consenters = consenters
 	existingChains := r.ledgerFactory.ChainIDs()
@@ -155,6 +160,7 @@ func (r *Registrar) Initialize(consenters map[string]consensus.Consenter) {
 		if configTx == nil {
 			logger.Panic("Programming error, configTx should never be nil here")
 		}
+
 		ledgerResources := r.newLedgerResources(configTx)
 		chainID := ledgerResources.ConfigtxValidator().ChainID()
 
@@ -252,7 +258,11 @@ func (r *Registrar) GetChain(chainID string) *ChainSupport {
 }
 
 func (r *Registrar) newLedgerResources(configTx *cb.Envelope) *ledgerResources {
-	logger.Info("====newLedgerResources===")
+	logger.Info("====newLedgerResources:start===")
+	defer func() {
+		logger.Info("====newLedgerResources:end===")
+	}()
+
 	payload, err := utils.UnmarshalPayload(configTx.Payload)
 	if err != nil {
 		logger.Panicf("Error umarshaling envelope to payload: %s", err)

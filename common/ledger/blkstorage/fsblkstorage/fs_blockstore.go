@@ -39,6 +39,7 @@ func newFsBlockStore(id string, conf *Conf, indexConfig *blkstorage.IndexConfig,
 
 // AddBlock adds a new block
 func (store *fsBlockStore) AddBlock(block *common.Block) error {
+	logger.Info("========AddBlock==========")
 	return store.fileMgr.addBlock(block)
 }
 

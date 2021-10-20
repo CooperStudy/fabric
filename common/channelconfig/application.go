@@ -35,6 +35,10 @@ type ApplicationConfig struct {
 
 // NewApplicationConfig creates config from an Application config group
 func NewApplicationConfig(appGroup *cb.ConfigGroup, mspConfig *MSPConfigHandler) (*ApplicationConfig, error) {
+	logger.Info("=====NewApplicationConfig:start===")
+	defer func() {
+		logger.Info("=====NewApplicationConfig:end===")
+	}()
 	ac := &ApplicationConfig{
 		applicationOrgs: make(map[string]ApplicationOrg),
 		protos:          &ApplicationProtos{},

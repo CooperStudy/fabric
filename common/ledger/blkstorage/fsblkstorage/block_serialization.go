@@ -55,6 +55,7 @@ func serializeBlock(block *common.Block) ([]byte, *serializedBlockInfo, error) {
 }
 
 func deserializeBlock(serializedBlockBytes []byte) (*common.Block, error) {
+	logger.Info("=====deserializeBlock=======")
 	block := &common.Block{}
 	var err error
 	b := ledgerutil.NewBuffer(serializedBlockBytes)
