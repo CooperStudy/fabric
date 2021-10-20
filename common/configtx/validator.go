@@ -98,6 +98,10 @@ func validateChannelID(channelID string) error {
 
 // NewValidatorImpl constructs a new implementation of the Validator interface.
 func NewValidatorImpl(channelID string, config *cb.Config, namespace string, pm policies.Manager) (*ValidatorImpl, error) {
+	logger.Info("==NewValidatorImpl:start==")
+	defer func() {
+		logger.Info("==NewValidatorImpl:end==")
+	}()
 	if config == nil {
 		return nil, errors.Errorf("nil config parameter")
 	}

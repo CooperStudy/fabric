@@ -29,6 +29,10 @@ const (
 // mapConfig is intended to be called outside this file
 // it takes a ConfigGroup and generates a map of fqPath to comparables (or error on invalid keys)
 func mapConfig(channelGroup *cb.ConfigGroup, rootGroupKey string) (map[string]comparable, error) {
+	logger.Info("==mapConfig:start==")
+	defer func() {
+		logger.Info("==mapConfig:end==")
+	}()
 	result := make(map[string]comparable)
 	if channelGroup != nil {
 		err := recurseConfig(result, []string{rootGroupKey}, channelGroup)
@@ -41,6 +45,10 @@ func mapConfig(channelGroup *cb.ConfigGroup, rootGroupKey string) (map[string]co
 
 // addToMap is used only internally by mapConfig
 func addToMap(cg comparable, result map[string]comparable) error {
+	logger.Info("======addToMap:start========")
+	defer func() {
+		logger.Info("======addToMap:end========")
+	}()
 	var fqPath string
 
 	switch {
@@ -62,6 +70,49 @@ func addToMap(cg comparable, result map[string]comparable) error {
 		fqPath += pathSeparator + strings.Join(cg.path, pathSeparator) + pathSeparator + cg.key
 	}
 
+	/*
+	2021-10-19 08:33:50.826 UTC [policies] NewManagerImpl -> DEBU 155 Proposed new policy Writers for Channel
+	2021-10-19 08:33:50.826 UTC [policies] NewManagerImpl -> DEBU 156 Proposed new policy Admins for Channel
+	2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 157 Adding to config map: [Group]  /Channel
+	2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 158 Adding to config map: [Group]  /Channel/Orderer
+	2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 159 Adding to config map: [Group]  /Channel/Orderer/OrdererOrg
+	2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 15a Adding to config map: [Value]  /Channel/Orderer/OrdererOrg/MSP
+	2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 15b Adding to config map: [Policy] /Channel/Orderer/OrdererOrg/Admins
+	2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 15c Adding to config map: [Policy] /Channel/Orderer/OrdererOrg/Readers
+	2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 15d Adding to config map: [Policy] /Channel/Orderer/OrdererOrg/Writers
+	2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 15e Adding to config map: [Value]  /Channel/Orderer/BatchTimeout
+	2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 15f Adding to config map: [Value]  /Channel/Orderer/ChannelRestrictions
+	2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 160 Adding to config map: [Value]  /Channel/Orderer/Capabilities
+	2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 161 Adding to config map: [Value]  /Channel/Orderer/ConsensusType
+	2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 162 Adding to config map: [Value]  /Channel/Orderer/BatchSize
+	2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 163 Adding to config map: [Policy] /Channel/Orderer/Writers
+	2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 164 Adding to config map: [Policy] /Channel/Orderer/Admins
+	2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 165 Adding to config map: [Policy] /Channel/Orderer/BlockValidation
+	2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 166 Adding to config map: [Policy] /Channel/Orderer/Readers
+	2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 167 Adding to config map: [Group]  /Channel/Consortiums
+	2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 168 Adding to config map: [Group]  /Channel/Consortiums/SampleConsortium
+	2021-10-19 08:33:50.827 UTC [common.configtx] addToMap -> DEBU 169 Adding to config map: [Group]  /Channel/Consortiums/SampleConsortium/Org1
+	MSP
+	2021-10-19 08:33:50.827 UTC [common.configtx] addToMap -> DEBU 16a Adding to config map: [Value]  /Channel/Consortiums/SampleConsortium/Org1
+	MSP/MSP
+	2021-10-19 08:33:50.827 UTC [common.configtx] addToMap -> DEBU 16b Adding to config map: [Policy] /Channel/Consortiums/SampleConsortium/Org1
+	MSP/Admins
+	2021-10-19 08:33:50.827 UTC [common.configtx] addToMap -> DEBU 16c Adding to config map: [Policy] /Channel/Consortiums/SampleConsortium/Org1
+	MSP/Readers
+	2021-10-19 08:33:50.827 UTC [common.configtx] addToMap -> DEBU 16d Adding to config map: [Policy] /Channel/Consortiums/SampleConsortium/Org1
+	MSP/Writers
+	2021-10-19 08:33:50.827 UTC [common.configtx] addToMap -> DEBU 16e Adding to config map: [Group]  /Channel/Consortiums/SampleConsortium/Org2
+	MSP
+	2021-10-19 08:33:50.827 UTC [common.configtx] addToMap -> DEBU 16f Adding to config map: [Value]  /Channel/Consortiums/SampleConsortium/Org2
+	MSP/MSP
+	2021-10-19 08:33:50.827 UTC [common.configtx] addToMap -> DEBU 170 Adding to config map: [Policy] /Channel/Consortiums/SampleConsortium/Org2
+	MSP/Admins
+	2021-10-19 08:33:50.827 UTC [common.configtx] addToMap -> DEBU 171 Adding to config map: [Policy] /Channel/Consortiums/SampleConsortium/Org2
+	MSP/Readers
+	2021-10-19 08:33:50.827 UTC [common.configtx] addToMap -> DEBU 172 Adding to config map: [Policy] /Channel/Consortiums/SampleConsortium/Org2
+	MSP/Writers
+
+	*/
 	logger.Debugf("Adding to config map: %s", fqPath)
 
 	result[fqPath] = cg
@@ -71,6 +122,10 @@ func addToMap(cg comparable, result map[string]comparable) error {
 
 // recurseConfig is used only internally by mapConfig
 func recurseConfig(result map[string]comparable, path []string, group *cb.ConfigGroup) error {
+	logger.Info("===recurseConfig:start===")
+	defer func() {
+		logger.Info("===recurseConfig:end===")
+	}()
 	if err := addToMap(comparable{key: path[len(path)-1], path: path[:len(path)-1], ConfigGroup: group}, result); err != nil {
 		return err
 	}

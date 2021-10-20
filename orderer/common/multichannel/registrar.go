@@ -37,7 +37,10 @@ var logger = flogging.MustGetLogger("orderer.commmon.multichannel")
 
 // checkResources makes sure that the channel config is compatible with this binary and logs sanity checks
 func checkResources(res channelconfig.Resources) error {
-	logger.Info("====checkResources===")
+	logger.Info("====checkResources:start===")
+	defer func() {
+		logger.Info("====checkResources:end===")
+	}()
 	channelconfig.LogSanityChecks(res)
 	oc, ok := res.OrdererConfig()
 	if !ok {
@@ -54,7 +57,10 @@ func checkResources(res channelconfig.Resources) error {
 
 // checkResourcesOrPanic invokes checkResources and panics if an error is returned
 func checkResourcesOrPanic(res channelconfig.Resources) {
-	logger.Info("====checkResourcesOrPanic===")
+	logger.Info("====checkResourcesOrPanic:start===")
+	defer func() {
+		logger.Info("====checkResourcesOrPanic:end===")
+	}()
 	if err := checkResources(res); err != nil {
 		logger.Panicf("[channel %s] %s", res.ConfigtxValidator().ChainID(), err)
 	}

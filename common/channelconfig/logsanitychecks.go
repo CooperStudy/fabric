@@ -11,6 +11,11 @@ import (
 )
 
 func LogSanityChecks(res Resources) {
+	logger.Info("====LogSanityChecks:start===")
+	defer func() {
+		logger.Info("====LogSanityChecks:end===")
+	}()
+
 	pm := res.PolicyManager()
 	for _, policyName := range []string{policies.ChannelReaders, policies.ChannelWriters} {
 		_, ok := pm.GetPolicy(policyName)
@@ -19,6 +24,9 @@ func LogSanityChecks(res Resources) {
 		} else {
 			logger.Debugf("As expected, current configuration has policy '%s'", policyName)
 		}
+
+		//As expected, current configuration has policy '/Channel/Readers'
+		//As expected, current configuration has policy '/Channel/Writes'
 	}
 	if _, ok := pm.Manager([]string{policies.ApplicationPrefix}); ok {
 		// Check for default application policies if the application component is defined

@@ -156,6 +156,10 @@ type ManagerImpl struct {
 
 // NewManagerImpl creates a new ManagerImpl with the given CryptoHelper
 func NewManagerImpl(path string, providers map[int32]Provider, root *cb.ConfigGroup) (*ManagerImpl, error) {
+	logger.Info("=====NewManagerImpl:start=====")
+	defer func() {
+		logger.Info("=====NewManagerImpl:end=====")
+	}()
 	var err error
 	_, ok := providers[int32(cb.Policy_IMPLICIT_META)]
 	if ok {
@@ -201,6 +205,91 @@ func NewManagerImpl(path string, providers map[int32]Provider, root *cb.ConfigGr
 
 		policies[policyName] = cPolicy
 
+		/*
+		2021-10-19 08:33:50.825 UTC [policies] NewManagerImpl -> DEBU 144 Proposed new policy Admins for Channel/Orderer/OrdererOrg
+		2021-10-19 08:33:50.825 UTC [policies] NewManagerImpl -> DEBU 145 Proposed new policy Readers for Channel/Orderer/OrdererOrg
+		2021-10-19 08:33:50.825 UTC [policies] NewManagerImpl -> DEBU 146 Proposed new policy Writers for Channel/Orderer/OrdererOrg
+		2021-10-19 08:33:50.825 UTC [policies] NewManagerImpl -> DEBU 147 Proposed new policy Writers for Channel/Orderer
+		2021-10-19 08:33:50.825 UTC [policies] NewManagerImpl -> DEBU 148 Proposed new policy Admins for Channel/Orderer
+		2021-10-19 08:33:50.825 UTC [policies] NewManagerImpl -> DEBU 149 Proposed new policy BlockValidation for Channel/Orderer
+		2021-10-19 08:33:50.825 UTC [policies] NewManagerImpl -> DEBU 14a Proposed new policy Readers for Channel/Orderer
+		2021-10-19 08:33:50.825 UTC [policies] NewManagerImpl -> DEBU 14b Proposed new policy Admins for Channel/Consortiums/SampleConsortium/Org1MS
+		P
+		2021-10-19 08:33:50.825 UTC [policies] NewManagerImpl -> DEBU 14c Proposed new policy Readers for Channel/Consortiums/SampleConsortium/Org1M
+		SP
+		2021-10-19 08:33:50.826 UTC [policies] NewManagerImpl -> DEBU 14d Proposed new policy Writers for Channel/Consortiums/SampleConsortium/Org1M
+		SP
+		2021-10-19 08:33:50.826 UTC [policies] NewManagerImpl -> DEBU 14e Proposed new policy Writers for Channel/Consortiums/SampleConsortium/Org2M
+		SP
+		2021-10-19 08:33:50.826 UTC [policies] NewManagerImpl -> DEBU 14f Proposed new policy Admins for Channel/Consortiums/SampleConsortium/Org2MS
+		P
+		2021-10-19 08:33:50.826 UTC [policies] NewManagerImpl -> DEBU 150 Proposed new policy Readers for Channel/Consortiums/SampleConsortium/Org2M
+		SP
+		2021-10-19 08:33:50.826 UTC [policies] NewManagerImpl -> DEBU 151 Proposed new policy Admins for Channel/Consortiums
+		2021-10-19 08:33:50.826 UTC [policies] GetPolicy -> DEBU 152 Returning dummy reject all policy because Readers could not be found in Channel
+		/Consortiums/Readers
+		2021-10-19 08:33:50.826 UTC [policies] NewManagerImpl -> DEBU 153 Proposed new policy Readers for Channel
+		2021-10-19 08:33:50.826 UTC [policies] GetPolicy -> DEBU 154 Returning dummy reject all policy because Writers could not be found in Channel
+		/Consortiums/Writers
+		2021-10-19 08:33:50.826 UTC [policies] NewManagerImpl -> DEBU 155 Proposed new policy Writers for Channel
+		2021-10-19 08:33:50.826 UTC [policies] NewManagerImpl -> DEBU 156 Proposed new policy Admins for Channel
+		2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 157 Adding to config map: [Group]  /Channel
+		2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 158 Adding to config map: [Group]  /Channel/Orderer
+		2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 159 Adding to config map: [Group]  /Channel/Orderer/OrdererOrg
+		2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 15a Adding to config map: [Value]  /Channel/Orderer/OrdererOrg/MSP
+		2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 15b Adding to config map: [Policy] /Channel/Orderer/OrdererOrg/Admins
+		2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 15c Adding to config map: [Policy] /Channel/Orderer/OrdererOrg/Readers
+		2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 15d Adding to config map: [Policy] /Channel/Orderer/OrdererOrg/Writers
+		2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 15e Adding to config map: [Value]  /Channel/Orderer/BatchTimeout
+		2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 15f Adding to config map: [Value]  /Channel/Orderer/ChannelRestrictions
+		2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 160 Adding to config map: [Value]  /Channel/Orderer/Capabilities
+		2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 161 Adding to config map: [Value]  /Channel/Orderer/ConsensusType
+		2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 162 Adding to config map: [Value]  /Channel/Orderer/BatchSize
+		2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 163 Adding to config map: [Policy] /Channel/Orderer/Writers
+		2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 160 Adding to config map: [Value]  /Channel/Orderer/Capabilities
+		2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 161 Adding to config map: [Value]  /Channel/Orderer/ConsensusType
+		2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 162 Adding to config map: [Value]  /Channel/Orderer/BatchSize
+		2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 163 Adding to config map: [Policy] /Channel/Orderer/Writers
+		2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 164 Adding to config map: [Policy] /Channel/Orderer/Admins
+		2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 165 Adding to config map: [Policy] /Channel/Orderer/BlockValidation
+		2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 166 Adding to config map: [Policy] /Channel/Orderer/Readers
+		2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 167 Adding to config map: [Group]  /Channel/Consortiums
+		2021-10-19 08:33:50.826 UTC [common.configtx] addToMap -> DEBU 168 Adding to config map: [Group]  /Channel/Consortiums/SampleConsortium
+		2021-10-19 08:33:50.827 UTC [common.configtx] addToMap -> DEBU 169 Adding to config map: [Group]  /Channel/Consortiums/SampleConsortium/Org1
+		MSP
+		2021-10-19 08:33:50.827 UTC [common.configtx] addToMap -> DEBU 16a Adding to config map: [Value]  /Channel/Consortiums/SampleConsortium/Org1
+		MSP/MSP
+		2021-10-19 08:33:50.827 UTC [common.configtx] addToMap -> DEBU 16b Adding to config map: [Policy] /Channel/Consortiums/SampleConsortium/Org1
+		MSP/Admins
+		2021-10-19 08:33:50.827 UTC [common.configtx] addToMap -> DEBU 16c Adding to config map: [Policy] /Channel/Consortiums/SampleConsortium/Org1
+		MSP/Readers
+		2021-10-19 08:33:50.827 UTC [common.configtx] addToMap -> DEBU 16d Adding to config map: [Policy] /Channel/Consortiums/SampleConsortium/Org1
+		MSP/Writers
+		2021-10-19 08:33:50.827 UTC [common.configtx] addToMap -> DEBU 16e Adding to config map: [Group]  /Channel/Consortiums/SampleConsortium/Org2
+		MSP
+		2021-10-19 08:33:50.827 UTC [common.configtx] addToMap -> DEBU 16f Adding to config map: [Value]  /Channel/Consortiums/SampleConsortium/Org2
+		MSP/MSP
+		2021-10-19 08:33:50.827 UTC [common.configtx] addToMap -> DEBU 170 Adding to config map: [Policy] /Channel/Consortiums/SampleConsortium/Org2
+		MSP/Admins
+		2021-10-19 08:33:50.827 UTC [common.configtx] addToMap -> DEBU 171 Adding to config map: [Policy] /Channel/Consortiums/SampleConsortium/Org2
+		MSP/Readers
+		2021-10-19 08:33:50.827 UTC [common.configtx] addToMap -> DEBU 172 Adding to config map: [Policy] /Channel/Consortiums/SampleConsortium/Org2
+		MSP/Writers
+		2021-10-19 08:33:50.827 UTC [common.configtx] addToMap -> DEBU 173 Adding to config map: [Value]  /Channel/Consortiums/SampleConsortium/Chan
+		nelCreationPolicy
+		2021-10-19 08:33:50.827 UTC [common.configtx] addToMap -> DEBU 174 Adding to config map: [Policy] /Channel/Consortiums/Admins
+		2021-10-19 08:33:50.827 UTC [common.configtx] addToMap -> DEBU 175 Adding to config map: [Value]  /Channel/OrdererAddresses
+		2021-10-19 08:33:50.827 UTC [common.configtx] addToMap -> DEBU 176 Adding to config map: [Value]  /Channel/Capabilities
+		2021-10-19 08:33:50.827 UTC [common.configtx] addToMap -> DEBU 177 Adding to config map: [Value]  /Channel/HashingAlgorithm
+		2021-10-19 08:33:50.827 UTC [common.configtx] addToMap -> DEBU 178 Adding to config map: [Value]  /Channel/BlockDataHashingStructure
+		2021-10-19 08:33:50.827 UTC [common.configtx] addToMap -> DEBU 179 Adding to config map: [Policy] /Channel/Readers
+		2021-10-19 08:33:50.827 UTC [common.configtx] addToMap -> DEBU 17a Adding to config map: [Policy] /Channel/Writers
+		2021-10-19 08:33:50.827 UTC [common.configtx] addToMap -> DEBU 17b Adding to config map: [Policy] /Channel/Admins
+
+
+
+
+		*/
 		logger.Debugf("Proposed new policy %s for %s", policyName, path)
 	}
 
@@ -225,6 +314,21 @@ func (rp rejectPolicy) Evaluate(signedData []*cb.SignedData) error {
 
 // Manager returns the sub-policy manager for a given path and whether it exists
 func (pm *ManagerImpl) Manager(path []string) (Manager, bool) {
+	logger.Info("====Manager:start======")
+	defer func() {
+		logger.Info("====Manager:end======")
+	}()
+	/*
+	2021-10-19 08:33:50.827 UTC [policies] Manager -> DEBU 180 Manager Channel looking up path [Application]
+	2021-10-19 08:33:50.827 UTC [policies] Manager -> DEBU 181 Manager Channel has managers Orderer
+	2021-10-19 08:33:50.827 UTC [policies] Manager -> DEBU 182 Manager Channel has managers Consortiums
+	2021-10-19 08:33:50.827 UTC [policies] Manager -> DEBU 183 Manager Channel looking up path [Orderer]
+	2021-10-19 08:33:50.827 UTC [policies] Manager -> DEBU 184 Manager Channel has managers Orderer
+	2021-10-19 08:33:50.827 UTC [policies] Manager -> DEBU 185 Manager Channel has managers Consortiums
+	2021-10-19 08:33:50.827 UTC [policies] Manager -> DEBU 186 Manager Channel/Orderer looking up path []
+	2021-10-19 08:33:50.827 UTC [policies] Manager -> DEBU 187 Manager Channel/Orderer has managers OrdererOrg
+	*/
+	//Manager Channel looking up path [Application]
 	logger.Debugf("Manager %s looking up path %v", pm.path, path)
 	for manager := range pm.managers {
 		logger.Debugf("Manager %s has managers %s", pm.path, manager)

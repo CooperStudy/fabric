@@ -44,6 +44,11 @@ func deduplicate(sds []IdentityAndSignature) []IdentityAndSignature {
 // compile recursively builds a go evaluatable function corresponding to the policy specified, remember to call deduplicate on identities before
 // passing them to this function for evaluation
 func compile(policy *cb.SignaturePolicy, identities []*mb.MSPPrincipal, deserializer msp.IdentityDeserializer) (func([]IdentityAndSignature, []bool) bool, error) {
+	logger.Info("========compile:start==========")
+	defer func() {
+		logger.Info("========compile:end==========")
+	}()
+
 	if policy == nil {
 		return nil, fmt.Errorf("Empty policy element")
 	}

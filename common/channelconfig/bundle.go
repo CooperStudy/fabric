@@ -37,6 +37,10 @@ type Bundle struct {
 
 // PolicyManager returns the policy manager constructed for this config
 func (b *Bundle) PolicyManager() policies.Manager {
+	logger.Info("====PolicyManager:start====")
+	defer func() {
+		logger.Info("====PolicyManager:end====")
+	}()
 	return b.policyManager
 }
 

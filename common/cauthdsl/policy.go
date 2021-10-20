@@ -9,6 +9,7 @@ package cauthdsl
 import (
 	"errors"
 	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/common/policies"
@@ -71,7 +72,12 @@ func NewPolicyProvider(deserializer msp.IdentityDeserializer) policies.Provider 
 }
 
 // NewPolicy creates a new policy based on the policy bytes
+var logger = flogging.MustGetLogger("common.cauthdsl.policy.go")
 func (pr *provider) NewPolicy(data []byte) (policies.Policy, proto.Message, error) {
+	logger.Info("======NewPolicy:start==========")
+	defer func() {
+		logger.Info("======NewPolicy:end==========")
+	}()
 	sigPolicy := &cb.SignaturePolicyEnvelope{}
 	if err := proto.Unmarshal(data, sigPolicy); err != nil {
 		return nil, nil, fmt.Errorf("Error unmarshaling to SignaturePolicy: %s", err)
