@@ -274,7 +274,10 @@ var Defaults = TopLevel{
 // Load parses the orderer YAML file and environment, producing
 // a struct suitable for config use, returning error on failure.
 func Load() (*TopLevel, error) {
-	logger.Info("====Load===")
+	logger.Info("====Load:start===")
+	defer func() {
+		logger.Info("====Load:end===")
+	}()
 	config := viper.New()
 	coreconfig.InitViper(config, "orderer")
 	config.SetEnvPrefix(Prefix)

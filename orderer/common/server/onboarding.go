@@ -29,7 +29,10 @@ type replicationInitiator struct {
 
 func (ri *replicationInitiator) replicateIfNeeded() {
 
-	logger.Info("====replicateIfNeeded===")
+	logger.Info("====replicateIfNeeded:start===")
+	defer func() {
+		logger.Info("====replicateIfNeeded:end===")
+	}()
 
 	if ri.bootstrapBlock.Header.Number == 0 {
 		ri.logger.Debug("Booted with a genesis block, replication isn't an option")

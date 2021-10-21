@@ -31,6 +31,10 @@ type mspSigner struct {
 // It assumes that the local msp has been already initialized.
 // Look at mspmgmt.LoadLocalMsp for further information.
 func NewSigner() crypto.LocalSigner {
+	fmt.Println("=====NewSigner:start====")
+	defer func() {
+		fmt.Println("=====NewSigner:end====")
+	}()
 	return &mspSigner{}
 }
 

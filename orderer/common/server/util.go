@@ -21,7 +21,10 @@ import (
 
 func createLedgerFactory(conf *config.TopLevel) (blockledger.Factory, string) {
 
-	logger.Info("===createLedgerFactory===")
+	logger.Info("===createLedgerFactory:start===")
+	defer func() {
+		logger.Info("===createLedgerFactory:end===")
+	}()
 
 	var lf blockledger.Factory
 	var ld string

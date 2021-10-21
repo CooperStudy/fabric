@@ -9,6 +9,7 @@ package operations
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -105,6 +106,10 @@ func (s *System) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 }
 
 func (s *System) Start() error {
+	fmt.Println("=System===Start:start===")
+	defer func() {
+		fmt.Println("=System===Start:end===")
+	}()
 	err := s.startMetricsTickers()
 	if err != nil {
 		return err
@@ -124,6 +129,10 @@ func (s *System) Start() error {
 }
 
 func (s *System) Stop() error {
+	fmt.Println("==System==start:start===")
+	defer func() {
+		fmt.Println("=System===start:end===")
+	}()
 	if s.collectorTicker != nil {
 		s.collectorTicker.Stop()
 		s.collectorTicker = nil

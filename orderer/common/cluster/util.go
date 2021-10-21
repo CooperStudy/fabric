@@ -147,7 +147,10 @@ func (dialer *PredicateDialer) ClientConfig() (comm.ClientConfig, error) {
 
 // SetConfig sets the configuration of the PredicateDialer
 func (dialer *PredicateDialer) SetConfig(config comm.ClientConfig) {
-	logger.Info("====SetConfig===")
+	logger.Info("====SetConfig:start===")
+	defer func() {
+		logger.Info("====SetConfig:end===")
+	}()
 	configCopy := comm.ClientConfig{
 		AsyncConnect: config.AsyncConnect,
 		Timeout:      config.Timeout,

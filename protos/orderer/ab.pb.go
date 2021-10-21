@@ -681,6 +681,10 @@ type AtomicBroadcastServer interface {
 }
 
 func RegisterAtomicBroadcastServer(s *grpc.Server, srv AtomicBroadcastServer) {
+	fmt.Println("====RegisterAtomicBroadcastServer:start===")
+	defer func() {
+		fmt.Println("====RegisterAtomicBroadcastServer:end===")
+	}()
 	s.RegisterService(&_AtomicBroadcast_serviceDesc, srv)
 }
 
