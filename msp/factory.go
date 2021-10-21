@@ -30,6 +30,10 @@ type NewBaseOpts struct {
 }
 
 func (o *NewBaseOpts) GetVersion() MSPVersion {
+	mspLogger.Info("==fabric msp factory.go==GetVersion:start==")
+	defer func() {
+		mspLogger.Info("==fabric msp factory.go==GetVersion:start==")
+	}()
 	return o.Version
 }
 
@@ -45,9 +49,9 @@ type IdemixNewOpts struct {
 
 // New create a new MSP instance depending on the passed Opts
 func New(opts NewOpts) (MSP, error) {
-	mspLogger.Info("====New:start==")
+	mspLogger.Info("==fabric msp factory.go==New:start==")
 	defer func() {
-		mspLogger.Info("====New:end===")
+		mspLogger.Info("==fabric msp factory.go==New:start==")
 	}()
 	switch opts.(type) {
 	case *BCCSPNewOpts:

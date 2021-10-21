@@ -369,6 +369,11 @@ func NewConsortiumGroup(conf *genesisconfig.Consortium) (*cb.ConfigGroup, error)
 // NewChannelCreateConfigUpdate generates a ConfigUpdate which can be sent to the orderer to create a new channel.  Optionally, the channel group of the
 // ordering system channel may be passed in, and the resulting ConfigUpdate will extract the appropriate versions from this file.
 func NewChannelCreateConfigUpdate(channelID string, conf *genesisconfig.Profile) (*cb.ConfigUpdate, error) {
+	logger.Info("======NewChannelCreateConfigUpdate:start========")
+	defer func() {
+		logger.Info("======NewChannelCreateConfigUpdate:end========")
+	}()
+
 	if conf.Application == nil {
 		return nil, errors.New("cannot define a new channel with no Application section")
 	}
@@ -416,6 +421,10 @@ func NewChannelCreateConfigUpdate(channelID string, conf *genesisconfig.Profile)
 
 // MakeChannelCreationTransaction is a handy utility function for creating transactions for channel creation
 func MakeChannelCreationTransaction(channelID string, signer crypto.LocalSigner, conf *genesisconfig.Profile) (*cb.Envelope, error) {
+	logger.Info("======MakeChannelCreationTransaction:start========")
+	defer func() {
+		logger.Info("======MakeChannelCreationTransaction:end========")
+	}()
 	newChannelConfigUpdate, err := NewChannelCreateConfigUpdate(channelID, conf)
 	if err != nil {
 		return nil, errors.Wrap(err, "config update generation failure")

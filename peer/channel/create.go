@@ -38,6 +38,10 @@ import (
 type ConfigTxFileNotFound string
 
 func (e ConfigTxFileNotFound) Error() string {
+	logger.Info("==peer channel create.go===Error:start=========")
+	defer func() {
+		logger.Info("==peer channel create.go===Error:end=========")
+	}()
 	return fmt.Sprintf("channel create configuration tx file not found %s", string(e))
 }
 
@@ -49,6 +53,11 @@ func (e InvalidCreateTx) Error() string {
 }
 
 func createCmd(cf *ChannelCmdFactory) *cobra.Command {
+	logger.Info("==peer channel create.go===createCmd:start=========")
+	defer func() {
+		logger.Info("==peer channel create.go===createCmd:end=========")
+	}()
+
 	createCmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a channel",
@@ -69,6 +78,11 @@ func createCmd(cf *ChannelCmdFactory) *cobra.Command {
 }
 
 func createChannelFromDefaults(cf *ChannelCmdFactory) (*cb.Envelope, error) {
+	logger.Info("==peer channel create.go===createChannelFromDefaults:start=========")
+	defer func() {
+		logger.Info("==peer channel create.go===createChannelFromDefaults:end=========")
+	}()
+
 	chCrtEnv, err := encoder.MakeChannelCreationTransaction(channelID, localsigner.NewSigner(), genesisconfig.Load(genesisconfig.SampleSingleMSPChannelProfile))
 	if err != nil {
 		return nil, err
@@ -78,6 +92,10 @@ func createChannelFromDefaults(cf *ChannelCmdFactory) (*cb.Envelope, error) {
 }
 
 func createChannelFromConfigTx(configTxFileName string) (*cb.Envelope, error) {
+	logger.Info("==peer channel create.go===createChannelFromConfigTx:start=========")
+	defer func() {
+		logger.Info("==peer channel create.go===createChannelFromConfigTx:end=========")
+	}()
 	cftx, err := ioutil.ReadFile(configTxFileName)
 	if err != nil {
 		return nil, ConfigTxFileNotFound(err.Error())
@@ -87,6 +105,10 @@ func createChannelFromConfigTx(configTxFileName string) (*cb.Envelope, error) {
 }
 
 func sanityCheckAndSignConfigTx(envConfigUpdate *cb.Envelope) (*cb.Envelope, error) {
+	logger.Info("==peer channel create.go===sanityCheckAndSignConfigTx:start=========")
+	defer func() {
+		logger.Info("==peer channel create.go===sanityCheckAndSignConfigTx:end=========")
+	}()
 	payload, err := utils.ExtractPayload(envConfigUpdate)
 	if err != nil {
 		return nil, InvalidCreateTx("bad payload")
@@ -142,9 +164,16 @@ func sanityCheckAndSignConfigTx(envConfigUpdate *cb.Envelope) (*cb.Envelope, err
 }
 
 func sendCreateChainTransaction(cf *ChannelCmdFactory) error {
+	logger.Info("======sendCreateChainTransaction:start===")
+	defer func() {
+		logger.Info("=====sendCreateChainTransaction:end===")
+	}()
+
 	var err error
 	var chCrtEnv *cb.Envelope
 
+
+	logger.Info("=======channelTxFile=======",channelTxFile)
 	if channelTxFile != "" {
 		if chCrtEnv, err = createChannelFromConfigTx(channelTxFile); err != nil {
 			return err
@@ -172,6 +201,11 @@ func sendCreateChainTransaction(cf *ChannelCmdFactory) error {
 }
 
 func executeCreate(cf *ChannelCmdFactory) error {
+	logger.Info("==peer channel create.go===executeCreate:start=========")
+	defer func() {
+		logger.Info("==peer channel create.go===executeCreate:end=========")
+	}()
+
 	err := sendCreateChainTransaction(cf)
 	if err != nil {
 		return err

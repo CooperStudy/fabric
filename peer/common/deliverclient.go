@@ -147,6 +147,10 @@ type ordererDeliverService struct {
 
 // NewDeliverClientForOrderer creates a new DeliverClient from an OrdererClient
 func NewDeliverClientForOrderer(channelID string) (*DeliverClient, error) {
+	logger.Info("=====peer common deliverclient===NewDeliverClientForOrderer:start=======")
+	defer func() {
+		logger.Info("=====peer common deliverclient===NewDeliverClientForOrderer:end=======")
+	}()
 	var tlsCertHash []byte
 	oc, err := NewOrdererClientFromEnv()
 	if err != nil {
@@ -176,6 +180,10 @@ type peerDeliverService struct {
 
 // NewDeliverClientForPeer creates a new DeliverClient from a PeerClient
 func NewDeliverClientForPeer(channelID string) (*DeliverClient, error) {
+	logger.Info("=====peer common deliverclient===NewDeliverClientForPeer:start=======")
+	defer func() {
+		logger.Info("=====peer common deliverclient===NewDeliverClientForPeer:end=======")
+	}()
 	var tlsCertHash []byte
 	pc, err := NewPeerClientFromEnv()
 	if err != nil {

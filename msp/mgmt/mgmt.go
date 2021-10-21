@@ -178,7 +178,10 @@ func GetLocalMSP() msp.MSP {
 }
 
 func loadLocaMSP() msp.MSP {
-	mspLogger.Info("===========")
+	mspLogger.Info("======fabric msp mgmt mgmt.go=loadLocaMSP:start=======")
+	defer func() {
+		mspLogger.Info("======fabric msp mgmt mgmt.go=loadLocaMSP:end=======")
+	}()
 	// determine the type of MSP (by default, we'll use bccspMSP)
 	mspType := viper.GetString("peer.localMspType")
 	if mspType == "" {
@@ -190,6 +193,7 @@ func loadLocaMSP() msp.MSP {
 		msp.ProviderTypeToString(msp.IDEMIX): &msp.IdemixNewOpts{NewBaseOpts: msp.NewBaseOpts{Version: msp.MSPv1_1}},
 	}
 	newOpts, found := mspOpts[mspType]
+	mspLogger.Info("==mspOpts==")
 	if !found {
 		mspLogger.Panicf("msp type " + mspType + " unknown")
 	}
@@ -217,6 +221,10 @@ func loadLocaMSP() msp.MSP {
 
 // GetIdentityDeserializer returns the IdentityDeserializer for the given chain
 func GetIdentityDeserializer(chainID string) msp.IdentityDeserializer {
+	mspLogger.Info("======fabric msp mgmt mgmt.go=GetIdentityDeserializer:start=======")
+	defer func() {
+		mspLogger.Info("======fabric msp mgmt mgmt.go=GetIdentityDeserializer:end=======")
+	}()
 	if chainID == "" {
 		return GetLocalMSP()
 	}
@@ -227,6 +235,10 @@ func GetIdentityDeserializer(chainID string) msp.IdentityDeserializer {
 // GetLocalSigningIdentityOrPanic returns the local signing identity or panic in case
 // or error
 func GetLocalSigningIdentityOrPanic() msp.SigningIdentity {
+	mspLogger.Info("======fabric msp mgmt mgmt.go=GetLocalSigningIdentityOrPanic:start=======")
+	defer func() {
+		mspLogger.Info("======fabric msp mgmt mgmt.go=GetLocalSigningIdentityOrPanic:end=======")
+	}()
 	id, err := GetLocalMSP().GetDefaultSigningIdentity()
 	if err != nil {
 		mspLogger.Panicf("Failed getting local signing identity [%+v]", err)
