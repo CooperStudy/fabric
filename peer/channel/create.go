@@ -101,7 +101,14 @@ func createChannelFromConfigTx(configTxFileName string) (*cb.Envelope, error) {
 		return nil, ConfigTxFileNotFound(err.Error())
 	}
 
-	return utils.UnmarshalEnvelope(cftx)
+	logger.Info("========cftx=========",string(cftx))
+	env,err := utils.UnmarshalEnvelope(cftx)
+	if env != nil{
+		logger.Info("====env.Payload=======",env.Payload)
+		logger.Info("====env.Signature=======",env.Signature)
+	}
+
+	return env,err
 }
 
 func sanityCheckAndSignConfigTx(envConfigUpdate *cb.Envelope) (*cb.Envelope, error) {
@@ -110,15 +117,18 @@ func sanityCheckAndSignConfigTx(envConfigUpdate *cb.Envelope) (*cb.Envelope, err
 		logger.Info("==peer channel create.go===sanityCheckAndSignConfigTx:end=========")
 	}()
 	payload, err := utils.ExtractPayload(envConfigUpdate)
+	logger.Info("===payload======",*payload)
 	if err != nil {
 		return nil, InvalidCreateTx("bad payload")
 	}
+	logger.Info("===payload.Header======",*payload.Header)
 
 	if payload.Header == nil || payload.Header.ChannelHeader == nil {
 		return nil, InvalidCreateTx("bad header")
 	}
 
 	ch, err := utils.UnmarshalChannelHeader(payload.Header.ChannelHeader)
+    logger.Info("======ch:======",ch)
 	if err != nil {
 		return nil, InvalidCreateTx("could not unmarshall channel header")
 	}
@@ -172,7 +182,7 @@ func sendCreateChainTransaction(cf *ChannelCmdFactory) error {
 	var err error
 	var chCrtEnv *cb.Envelope
 
-
+    //=======channelTxFile======= ./channel-artifacts/channel.tx
 	logger.Info("=======channelTxFile=======",channelTxFile)
 	if channelTxFile != "" {
 		if chCrtEnv, err = createChannelFromConfigTx(channelTxFile); err != nil {
