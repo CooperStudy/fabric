@@ -46,6 +46,10 @@ type ValidatorImpl struct {
 //      2. Are shorter than 250 characters.
 //      3. Are not the strings "." or "..".
 func validateConfigID(configID string) error {
+	logger.Info("======validateConfigID:start======")
+	defer func() {
+		logger.Info("======validateConfigID:end======")
+	}()
 	re, _ := regexp.Compile(configAllowedChars)
 	// Length
 	if len(configID) <= 0 {
@@ -78,6 +82,10 @@ func validateConfigID(configID string) error {
 // This is to accomodate existing channel names with '.', especially in the
 // behave tests which rely on the dot notation for their sluggification.
 func validateChannelID(channelID string) error {
+	logger.Info("======validateChannelID:start======")
+	defer func() {
+		logger.Info("======validateChannelID:end======")
+	}()
 	re, _ := regexp.Compile(channelAllowedChars)
 	// Length
 	if len(channelID) <= 0 {
@@ -132,10 +140,18 @@ func NewValidatorImpl(channelID string, config *cb.Config, namespace string, pm 
 // ProposeConfigUpdate takes in an Envelope of type CONFIG_UPDATE and produces a
 // ConfigEnvelope to be used as the Envelope Payload Data of a CONFIG message
 func (vi *ValidatorImpl) ProposeConfigUpdate(configtx *cb.Envelope) (*cb.ConfigEnvelope, error) {
+	logger.Info("======ValidatorImpl===ProposeConfigUpdate:start======")
+	defer func() {
+		logger.Info("======ValidatorImpl===ProposeConfigUpdate:end======")
+	}()
 	return vi.proposeConfigUpdate(configtx)
 }
 
 func (vi *ValidatorImpl) proposeConfigUpdate(configtx *cb.Envelope) (*cb.ConfigEnvelope, error) {
+	logger.Info("===ValidatorImpl===proposeConfigUpdate:start======")
+	defer func() {
+		logger.Info("===ValidatorImpl===proposeConfigUpdate:end======")
+	}()
 	configUpdateEnv, err := utils.EnvelopeToConfigUpdate(configtx)
 	if err != nil {
 		return nil, errors.Errorf("error converting envelope to config update: %s", err)

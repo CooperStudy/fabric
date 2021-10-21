@@ -77,7 +77,10 @@ func init() {
 }
 
 func main() {
-	logger.Info("===main===")
+	logger.Info("===============order.sample_clients.broadcast_config.client:start")
+	defer func() {
+		logger.Info("===============order.sample_clients.broadcast_config.client:end")
+	}()
 	cmd := new(cmdImpl)
 	var srv string
 

@@ -148,13 +148,20 @@ func NewHandler(cm ChainManager, timeWindow time.Duration, mutualTLS bool, metri
 
 // Handle receives incoming deliver requests.
 func (h *Handler) Handle(ctx context.Context, srv *Server) error {
+	logger.Info("===Handle：start====")
+	defer func() {
+		logger.Info("===Handle：end====")
+	}()
 	addr := util.ExtractRemoteAddress(ctx)
+	//Starting new deliver loop for 172.20.0.7:43750
 	logger.Debugf("Starting new deliver loop for %s", addr)
 	h.Metrics.StreamsOpened.Add(1)
 	defer h.Metrics.StreamsClosed.Add(1)
 	for {
+		//Attempting to read seek info message from 172.20.0.7:43750
 		logger.Debugf("Attempting to read seek info message from %s", addr)
 		envelope, err := srv.Recv()//==deliverMsgTracer==Recv===
+		logger.Info("==收到的envelope===",*envelope)
 		if err == io.EOF {
 			logger.Debugf("Received EOF from %s, hangup", addr)
 			return nil
@@ -190,6 +197,10 @@ func isFiltered(srv *Server) bool {
 }
 
 func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.Envelope) (status cb.Status, err error) {
+	logger.Info("====deliverBlocks：start====")
+	defer func() {
+		logger.Info("====deliverBlocks：end====")
+	}()
 	addr := util.ExtractRemoteAddress(ctx)
 	payload, err := utils.UnmarshalPayload(envelope.Payload)
 	if err != nil {

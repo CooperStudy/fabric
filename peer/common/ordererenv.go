@@ -55,6 +55,10 @@ func SetOrdererEnv(cmd *cobra.Command, args []string) {
 
 // AddOrdererFlags adds flags for orderer-related commands
 func AddOrdererFlags(cmd *cobra.Command) {
+	logger.Info("======fabric-peer-common-ordererenv.go-AddOrdererFlags:start=============")
+	defer func() {
+		logger.Info("======fabric-peer-common-ordererenv.go-AddOrdererFlags:end=============")
+	}()
 	flags := cmd.PersistentFlags()
 
 	flags.StringVarP(&OrderingEndpoint, "orderer", "o", "", "Ordering service endpoint")

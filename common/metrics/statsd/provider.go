@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package statsd
 
 import (
+	"fmt"
 	"github.com/go-kit/kit/metrics/statsd"
 	"github.com/hyperledger/fabric/common/metrics"
 	"github.com/hyperledger/fabric/common/metrics/internal/namer"
@@ -73,6 +74,10 @@ type Counter struct {
 }
 
 func (c *Counter) Add(delta float64) {
+	fmt.Println("===add:start===")
+	defer func() {
+		fmt.Println("===add:end===")
+	}()
 	if c.Counter == nil {
 		panic("label values must be provided by calling With")
 	}

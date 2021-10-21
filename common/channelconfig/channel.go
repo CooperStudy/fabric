@@ -155,6 +155,10 @@ func (cc *ChannelConfig) BlockDataHashingStructureWidth() uint32 {
 
 // OrdererAddresses returns the list of valid orderer addresses to connect to to invoke Broadcast/Deliver
 func (cc *ChannelConfig) OrdererAddresses() []string {
+	logger.Info("====OrdererAddresses:start===")
+	defer func() {
+		logger.Info("====OrdererAddresses:end===")
+	}()
 	return cc.protos.OrdererAddresses.Addresses
 }
 

@@ -31,7 +31,10 @@ type broadcastSupport struct {
 }
 
 func (bs broadcastSupport) BroadcastChannelSupport(msg *cb.Envelope) (*cb.ChannelHeader, bool, broadcast.ChannelSupport, error) {
-	logger.Info("====BroadcastChannelSupport===")
+	logger.Info("====BroadcastChannelSupport:start===")
+	defer func() {
+		logger.Info("====BroadcastChannelSupport:end===")
+	}()
 	return bs.Registrar.BroadcastChannelSupport(msg)
 }
 
@@ -131,7 +134,10 @@ type broadcastMsgTracer struct {
 }
 
 func (bmt *broadcastMsgTracer) Recv() (*cb.Envelope, error) {
-	logger.Info("====Recv===")
+	logger.Info("===broadcastMsgTracer=Recv:start===")
+	defer func() {
+		logger.Info("===broadcastMsgTracer=Recv:end===")
+	}()
 	msg, err := bmt.AtomicBroadcast_BroadcastServer.Recv()
 	if traceDir := bmt.debug.BroadcastTraceDir; traceDir != "" {
 		bmt.trace(bmt.debug.BroadcastTraceDir, msg, err)
@@ -145,7 +151,10 @@ type deliverMsgTracer struct {
 }
 
 func (dmt *deliverMsgTracer) Recv() (*cb.Envelope, error) {
-	logger.Info("==deliverMsgTracer==Recv===")
+	logger.Info("==deliverMsgTracer==Recv:start===")
+	defer func() {
+		logger.Info("==deliverMsgTracer==Recv:end===")
+	}()
 	msg, err := dmt.Receiver.Recv()
 	if traceDir := dmt.debug.DeliverTraceDir; traceDir != "" {
 		dmt.trace(traceDir, msg, err)
@@ -156,7 +165,10 @@ func (dmt *deliverMsgTracer) Recv() (*cb.Envelope, error) {
 // Broadcast receives a stream of messages from a client for ordering
 func (s *server) Broadcast(srv ab.AtomicBroadcast_BroadcastServer) error {
 
-	logger.Info("===Broadcast===")
+	logger.Info("===Broadcast:start===")
+	defer func() {
+		logger.Info("===Broadcast:end===")
+	}()
 
 	logger.Debugf("Starting new Broadcast handler")
 	defer func() {
@@ -176,8 +188,10 @@ func (s *server) Broadcast(srv ab.AtomicBroadcast_BroadcastServer) error {
 
 // Deliver sends a stream of blocks to a client after ordering
 func (s *server) Deliver(srv ab.AtomicBroadcast_DeliverServer) error {
-
-	logger.Info("===Deliver===")
+	logger.Info("===Deliver:start===")
+	defer func() {
+		logger.Info("===Deliver:end===")
+	}()
 
 	logger.Debugf("Starting new Deliver handler")
 	defer func() {

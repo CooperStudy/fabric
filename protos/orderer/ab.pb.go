@@ -611,6 +611,10 @@ func NewAtomicBroadcastClient(cc *grpc.ClientConn) AtomicBroadcastClient {
 }
 
 func (c *atomicBroadcastClient) Broadcast(ctx context.Context, opts ...grpc.CallOption) (AtomicBroadcast_BroadcastClient, error) {
+	fmt.Println("=======Broadcast:start======")
+	defer func() {
+		fmt.Println("=======Broadcast:end======")
+	}()
 	stream, err := c.cc.NewStream(ctx, &_AtomicBroadcast_serviceDesc.Streams[0], "/orderer.AtomicBroadcast/Broadcast", opts...)
 	if err != nil {
 		return nil, err
@@ -642,6 +646,10 @@ func (x *atomicBroadcastBroadcastClient) Recv() (*BroadcastResponse, error) {
 }
 
 func (c *atomicBroadcastClient) Deliver(ctx context.Context, opts ...grpc.CallOption) (AtomicBroadcast_DeliverClient, error) {
+	fmt.Println("====Deliver:start====")
+	defer func() {
+		fmt.Println("====Deliver:end====")
+	}()
 	stream, err := c.cc.NewStream(ctx, &_AtomicBroadcast_serviceDesc.Streams[1], "/orderer.AtomicBroadcast/Deliver", opts...)
 	if err != nil {
 		return nil, err
@@ -689,6 +697,10 @@ func RegisterAtomicBroadcastServer(s *grpc.Server, srv AtomicBroadcastServer) {
 }
 
 func _AtomicBroadcast_Broadcast_Handler(srv interface{}, stream grpc.ServerStream) error {
+	fmt.Println("=_AtomicBroadcast_Broadcast_Handler:start==")
+	defer func() {
+		fmt.Println("=_AtomicBroadcast_Broadcast_Handler:end==")
+	}()
 	return srv.(AtomicBroadcastServer).Broadcast(&atomicBroadcastBroadcastServer{stream})
 }
 
@@ -707,6 +719,10 @@ func (x *atomicBroadcastBroadcastServer) Send(m *BroadcastResponse) error {
 }
 
 func (x *atomicBroadcastBroadcastServer) Recv() (*common.Envelope, error) {
+	fmt.Println("====atomicBroadcastBroadcastServer:start=====")
+	defer func() {
+		fmt.Println("====atomicBroadcastBroadcastServer:end=====")
+	}()
 	m := new(common.Envelope)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -715,6 +731,10 @@ func (x *atomicBroadcastBroadcastServer) Recv() (*common.Envelope, error) {
 }
 
 func _AtomicBroadcast_Deliver_Handler(srv interface{}, stream grpc.ServerStream) error {
+	fmt.Println("====_AtomicBroadcast_Deliver_Handler:start====")
+	defer func() {
+		fmt.Println("====_AtomicBroadcast_Deliver_Handler:end====")
+	}()
 	return srv.(AtomicBroadcastServer).Deliver(&atomicBroadcastDeliverServer{stream})
 }
 
@@ -733,12 +753,17 @@ func (x *atomicBroadcastDeliverServer) Send(m *DeliverResponse) error {
 }
 
 func (x *atomicBroadcastDeliverServer) Recv() (*common.Envelope, error) {
+    fmt.Println("========Recv:start=====")
+    defer func() {
+		fmt.Println("========Recv:end=====")
+	}()
 	m := new(common.Envelope)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
+
 
 var _AtomicBroadcast_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "orderer.AtomicBroadcast",

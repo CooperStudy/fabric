@@ -96,6 +96,10 @@ func GetLastConfigIndexFromBlockOrPanic(block *cb.Block) uint64 {
 
 // GetBlockFromBlockBytes marshals the bytes into Block
 func GetBlockFromBlockBytes(blockBytes []byte) (*cb.Block, error) {
+	logger.Info("=========GetBlockFromBlockBytes:start=========")
+	defer func() {
+		logger.Info("=========GetBlockFromBlockBytes:end=========")
+	}()
 	block := &cb.Block{}
 	err := proto.Unmarshal(blockBytes, block)
 	if err != nil {

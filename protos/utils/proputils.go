@@ -464,6 +464,10 @@ func CreateProposalFromCISAndTxid(txid string, typ common.HeaderType, chainID st
 // CreateProposalFromCIS returns a proposal given a serialized identity and a
 // ChaincodeInvocationSpec
 func CreateProposalFromCIS(typ common.HeaderType, chainID string, cis *peer.ChaincodeInvocationSpec, creator []byte) (*peer.Proposal, string, error) {
+	logger.Info("=========CreateProposalFromCIS:start=========")
+	defer func() {
+		logger.Info("=========CreateProposalFromCIS:end=========")
+	}()
 	return CreateChaincodeProposal(typ, chainID, cis, creator)
 }
 

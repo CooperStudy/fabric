@@ -34,6 +34,10 @@ type broadcastClient struct {
 
 // GetBroadcastClient creates a simple instance of the BroadcastClient interface
 func GetBroadcastClient() (BroadcastClient, error) {
+	logger.Info("======GetBroadcastClient:start======")
+	defer func() {
+		logger.Info("======GetBroadcastClient:end======")
+	}()
 	oc, err := NewOrdererClientFromEnv()
 	if err != nil {
 		return nil, err

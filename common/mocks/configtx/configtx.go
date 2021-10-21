@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package configtx
 
 import (
+	"fmt"
 	cb "github.com/hyperledger/fabric/protos/common"
 )
 
@@ -39,31 +40,55 @@ type Validator struct {
 
 // ConfigProto returns the ConfigProtoVal
 func (cm *Validator) ConfigProto() *cb.Config {
+	fmt.Println("==Validator===ConfigProto:start=====")
+	defer func() {
+		fmt.Println("==Validator===ConfigProto:end=====")
+	}()
 	return cm.ConfigProtoVal
 }
 
 // ConsensusType returns the ConsensusTypeVal
 func (cm *Validator) ChainID() string {
+	fmt.Println("==Validator===ChainID:start=====")
+	defer func() {
+		fmt.Println("==Validator===ChainID:end=====")
+	}()
 	return cm.ChainIDVal
 }
 
 // BatchSize returns the BatchSizeVal
 func (cm *Validator) Sequence() uint64 {
+	fmt.Println("==Validator===Sequence:start=====")
+	defer func() {
+		fmt.Println("==Validator===Sequence:end=====")
+	}()
 	return cm.SequenceVal
 }
 
 // ProposeConfigUpdate
 func (cm *Validator) ProposeConfigUpdate(update *cb.Envelope) (*cb.ConfigEnvelope, error) {
+	fmt.Println("==Validator===ProposeConfigUpdate:start=====")
+	defer func() {
+		fmt.Println("==Validator===ProposeConfigUpdate:end=====")
+	}()
 	return cm.ProposeConfigUpdateVal, cm.ProposeConfigUpdateError
 }
 
 // Apply returns ApplyVal
 func (cm *Validator) Apply(configEnv *cb.ConfigEnvelope) error {
+	fmt.Println("==Validator===Apply:start=====")
+	defer func() {
+		fmt.Println("==Validator===Apply:end=====")
+	}()
 	cm.AppliedConfigUpdateEnvelope = configEnv
 	return cm.ApplyVal
 }
 
 // Validate returns ValidateVal
 func (cm *Validator) Validate(configEnv *cb.ConfigEnvelope) error {
+	fmt.Println("==Validator===Validate:start=====")
+	defer func() {
+		fmt.Println("==Validator===Validate:end=====")
+	}()
 	return cm.ValidateVal
 }

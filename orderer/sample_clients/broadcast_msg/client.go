@@ -58,7 +58,10 @@ func (s *broadcastClient) getAck() error {
 }
 
 func main() {
-	logger.Info("==main===")
+	logger.Info("===============order.sample_clients.broadcast_msg.client:start")
+	defer func() {
+		logger.Info("===============order.sample_clients.broadcast_msg.client:end")
+	}()
 	conf, err := localconfig.Load()
 	if err != nil {
 		fmt.Println("failed to load config:", err)

@@ -154,6 +154,10 @@ func (b *Bundle) ValidateNew(nb Resources) error {
 // NewBundleFromEnvelope wraps the NewBundle function, extracting the needed
 // information from a full configtx
 func NewBundleFromEnvelope(env *cb.Envelope) (*Bundle, error) {
+	logger.Info("=========NewBundleFromEnvelope:start=========")
+	defer func() {
+		logger.Info("=========NewBundleFromEnvelope:end=========")
+	}()
 	payload, err := utils.UnmarshalPayload(env.Payload)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal payload from envelope")

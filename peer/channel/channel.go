@@ -44,6 +44,10 @@ var (
 
 // Cmd returns the cobra command for Node
 func Cmd(cf *ChannelCmdFactory) *cobra.Command {
+	logger.Info("======fabric-peer-channel-channel.go-Cmd:start=============")
+	defer func() {
+		logger.Info("======fabric-peer-channel-channel.go-Cmd:end=============")
+	}()
 	AddFlags(channelCmd)
 
 	channelCmd.AddCommand(createCmd(cf))
@@ -59,17 +63,29 @@ func Cmd(cf *ChannelCmdFactory) *cobra.Command {
 
 // AddFlags adds flags for create and join
 func AddFlags(cmd *cobra.Command) {
+	logger.Info("======fabric-peer-channel-channel.go-AddFlags:start=============")
+	defer func() {
+		logger.Info("======fabric-peer-channel-channel.go-AddFlags:end=============")
+	}()
 	common.AddOrdererFlags(cmd)
 }
 
 var flags *pflag.FlagSet
 
 func init() {
+	logger.Info("======fabric-peer-channel-channel.go-init:start=============")
+	defer func() {
+		logger.Info("======fabric-peer-channel-channel.go-init:end=============")
+	}()
 	resetFlags()
 }
 
 // Explicitly define a method to facilitate tests
 func resetFlags() {
+	logger.Info("======fabric-peer-channel-channel.go-resetFlags:start=============")
+	defer func() {
+		logger.Info("======fabric-peer-channel-channel.go-resetFlags:end=============")
+	}()
 	flags = &pflag.FlagSet{}
 
 	flags.StringVarP(&genesisBlockPath, "blockpath", "b", common.UndefinedParamValue, "Path to file containing genesis block")
@@ -80,6 +96,10 @@ func resetFlags() {
 }
 
 func attachFlags(cmd *cobra.Command, names []string) {
+	logger.Info("======fabric-peer-channel-channel.go-attachFlags:start=============")
+	defer func() {
+		logger.Info("======fabric-peer-channel-channel.go-attachFlags:end=============")
+	}()
 	cmdFlags := cmd.Flags()
 	for _, name := range names {
 		if flag := flags.Lookup(name); flag != nil {
@@ -95,6 +115,10 @@ var channelCmd = &cobra.Command{
 	Short: "Operate a channel: create|fetch|join|list|update|signconfigtx|getinfo.",
 	Long:  "Operate a channel: create|fetch|join|list|update|signconfigtx|getinfo.",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		logger.Info("======fabric-peer-channel-channel.go-PersistentPreRun:start=============")
+		defer func() {
+			logger.Info("======fabric-peer-channel-channel.go-PersistentPreRun:end=============")
+		}()
 		common.InitCmd(cmd, args)
 		common.SetOrdererEnv(cmd, args)
 	},
@@ -120,6 +144,10 @@ type ChannelCmdFactory struct {
 
 // InitCmdFactory init the ChannelCmdFactory with clients to endorser and orderer according to params
 func InitCmdFactory(isEndorserRequired, isPeerDeliverRequired, isOrdererRequired bool) (*ChannelCmdFactory, error) {
+	logger.Info("======fabric-peer-channel-channel.go-InitCmdFactory:start=============")
+	defer func() {
+		logger.Info("======fabric-peer-channel-channel.go-InitCmdFactory:end=============")
+	}()
 	if isPeerDeliverRequired && isOrdererRequired {
 		// this is likely a bug during development caused by adding a new cmd
 		return nil, errors.New("ERROR - only a single deliver source is currently supported")

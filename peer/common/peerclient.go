@@ -116,6 +116,7 @@ func (pc *PeerClient) Certificate() tls.Certificate {
 // from the configuration settings for "peer.address" and
 // "peer.tls.rootcert.file"
 func GetEndorserClient(address, tlsRootCertFile string) (pb.EndorserClient, error) {
+
 	var peerClient *PeerClient
 	var err error
 	if address != "" {

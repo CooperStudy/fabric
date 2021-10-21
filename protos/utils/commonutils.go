@@ -302,6 +302,10 @@ func IsConfigBlock(block *cb.Block) bool {
 
 // ChannelHeader returns the *cb.ChannelHeader for a given *cb.Envelope.
 func ChannelHeader(env *cb.Envelope) (*cb.ChannelHeader, error) {
+	logger.Info("=====ChannelHeader:start=====")
+	defer func() {
+		logger.Info("=====ChannelHeader:end=====")
+	}()
 	envPayload, err := UnmarshalPayload(env.Payload)
 	if err != nil {
 		return nil, err
@@ -336,6 +340,7 @@ func ChannelID(env *cb.Envelope) (string, error) {
 // EnvelopeToConfigUpdate is used to extract a ConfigUpdateEnvelope from an envelope of
 // type CONFIG_UPDATE
 func EnvelopeToConfigUpdate(configtx *cb.Envelope) (*cb.ConfigUpdateEnvelope, error) {
+
 	configUpdateEnv := &cb.ConfigUpdateEnvelope{}
 	_, err := UnmarshalEnvelopeOfType(configtx, cb.HeaderType_CONFIG_UPDATE, configUpdateEnv)
 	if err != nil {

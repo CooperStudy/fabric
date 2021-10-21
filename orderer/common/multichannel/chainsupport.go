@@ -112,6 +112,10 @@ func (cs *ChainSupport) Validate(configEnv *cb.ConfigEnvelope) error {
 
 // ProposeConfigUpdate passes through to the underlying configtx.Validator
 func (cs *ChainSupport) ProposeConfigUpdate(configtx *cb.Envelope) (*cb.ConfigEnvelope, error) {
+	logger.Info("==ChainSupport===ProposeConfigUpdate:start=====")
+	defer func() {
+		logger.Info("==ChainSupport===ProposeConfigUpdate:end=====")
+	}()
 	env, err := cs.ConfigtxValidator().ProposeConfigUpdate(configtx)
 	if err != nil {
 		return nil, err

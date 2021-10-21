@@ -38,7 +38,10 @@ type StandardChannel struct {
 
 // NewStandardChannel creates a new standard message processor
 func NewStandardChannel(support StandardChannelSupport, filters *RuleSet) *StandardChannel {
-	logger.Info("====NewStandardChannel===")
+	logger.Info("==NewStandardChannel:start===")
+	defer func() {
+		logger.Info("==NewStandardChannel:end===")
+	}()
 	return &StandardChannel{
 		filters: filters,
 		support: support,
@@ -60,7 +63,10 @@ func CreateStandardChannelFilters(filterSupport channelconfig.Resources) *RuleSe
 
 // ClassifyMsg inspects the message to determine which type of processing is necessary
 func (s *StandardChannel) ClassifyMsg(chdr *cb.ChannelHeader) Classification {
-	logger.Info("====ClassifyMsg===")
+	logger.Info("==StandardChannel==ClassifyMsg:start===")
+	defer func() {
+		logger.Info("==StandardChannel==ClassifyMsg:end===")
+	}()
 	switch chdr.Type {
 	case int32(cb.HeaderType_CONFIG_UPDATE):
 		return ConfigUpdateMsg
@@ -78,11 +84,12 @@ func (s *StandardChannel) ClassifyMsg(chdr *cb.ChannelHeader) Classification {
 // ProcessNormalMsg will check the validity of a message based on the current configuration.  It returns the current
 // configuration sequence number and nil on success, or an error if the message is not valid
 func (s *StandardChannel) ProcessNormalMsg(env *cb.Envelope) (configSeq uint64, err error) {
-	logger.Info("====ProcessNormalMsg:start===")
+	logger.Info("==StandardChannel==ProcessNormalMsg:start===")
 	defer func() {
-		logger.Info("====ProcessNormalMsg:end===")
+		logger.Info("==StandardChannel==ProcessNormalMsg:end===")
 	}()
 	configSeq = s.support.Sequence()
+	logger.Info("==configSeq==",configSeq)
 	err = s.filters.Apply(env)
 	return
 }
@@ -91,7 +98,11 @@ func (s *StandardChannel) ProcessNormalMsg(env *cb.Envelope) (configSeq uint64, 
 // return the resulting config message and the configSeq the config was computed from.  If the config impetus message
 // is invalid, an error is returned.
 func (s *StandardChannel) ProcessConfigUpdateMsg(env *cb.Envelope) (config *cb.Envelope, configSeq uint64, err error) {
-	logger.Info("====ProcessConfigUpdateMsg===")
+	logger.Info("==StandardChannel==ProcessConfigUpdateMsg:start===")
+	defer func() {
+		logger.Info("==StandardChannel==ProcessConfigUpdateMsg:end===")
+	}()
+	//Processing config update message for channel mychannel
 	logger.Debugf("Processing config update message for channel %s", s.support.ChainID())
 
 	// Call Sequence first.  If seq advances between proposal and acceptance, this is okay, and will cause reprocessing
@@ -128,9 +139,9 @@ func (s *StandardChannel) ProcessConfigUpdateMsg(env *cb.Envelope) (config *cb.E
 // ProcessConfigMsg takes an envelope of type `HeaderType_CONFIG`, unpacks the `ConfigEnvelope` from it
 // extracts the `ConfigUpdate` from `LastUpdate` field, and calls `ProcessConfigUpdateMsg` on it.
 func (s *StandardChannel) ProcessConfigMsg(env *cb.Envelope) (config *cb.Envelope, configSeq uint64, err error) {
-	logger.Info("====ProcessConfigMsg:start===")
+	logger.Info("==StandardChannel==ProcessConfigMsg:start===")
 	defer func() {
-		logger.Info("====ProcessConfigMsg:end===")
+		logger.Info("===StandardChannel=ProcessConfigMsg:end===")
 	}()
 	logger.Debugf("Processing config message for channel %s", s.support.ChainID())
 

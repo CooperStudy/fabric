@@ -60,7 +60,10 @@ func CreateSystemChannelFilters(chainCreator ChainCreator, ledgerResources chann
 // ProcessNormalMsg handles normal messages, rejecting them if they are not bound for the system channel ID
 // with ErrChannelDoesNotExist.
 func (s *SystemChannel) ProcessNormalMsg(msg *cb.Envelope) (configSeq uint64, err error) {
-	logger.Info("====ProcessNormalMsg===")
+	logger.Info("===SystemChannel=ProcessNormalMsg:start===")
+	defer func() {
+		logger.Info("===SystemChannel=ProcessNormalMsg:end===")
+	}()
 	channelID, err := utils.ChannelID(msg)
 	if err != nil {
 		return 0, err
@@ -81,12 +84,15 @@ func (s *SystemChannel) ProcessNormalMsg(msg *cb.Envelope) (configSeq uint64, er
 // or, for channel creation.  In the channel creation case, the CONFIG_UPDATE is wrapped into a resulting
 // ORDERER_TRANSACTION, and in the standard CONFIG_UPDATE case, a resulting CONFIG message
 func (s *SystemChannel) ProcessConfigUpdateMsg(envConfigUpdate *cb.Envelope) (config *cb.Envelope, configSeq uint64, err error) {
-	logger.Info("====ProcessNormalMsg===")
+	logger.Info("===SystemChannel=ProcessNormalMsg:start===")
+	defer func() {
+		logger.Info("===SystemChannel=ProcessNormalMsg:end===")
+	}()
 	channelID, err := utils.ChannelID(envConfigUpdate)
 	if err != nil {
 		return nil, 0, err
 	}
-
+//Processing config update tx with system channel message processor for channel ID mychannel
 	logger.Debugf("Processing config update tx with system channel message processor for channel ID %s", channelID)
 
 	if channelID == s.support.ChainID() {
@@ -94,7 +100,7 @@ func (s *SystemChannel) ProcessConfigUpdateMsg(envConfigUpdate *cb.Envelope) (co
 	}
 
 	// XXX we should check that the signature on the outer envelope is at least valid for some MSP in the system channel
-
+//Processing channel create tx for channel mychannel on system channel byfn-sys-channel
 	logger.Debugf("Processing channel create tx for channel %s on system channel %s", channelID, s.support.ChainID())
 
 	// If the channel ID does not match the system channel, then this must be a channel creation transaction
@@ -138,7 +144,10 @@ func (s *SystemChannel) ProcessConfigUpdateMsg(envConfigUpdate *cb.Envelope) (co
 //   - `HeaderType_ORDERER_TRANSACTION`: it's a channel creation message, we unpack `ConfigUpdate` envelope
 //     and run `ProcessConfigUpdateMsg` on it
 func (s *SystemChannel) ProcessConfigMsg(env *cb.Envelope) (*cb.Envelope, uint64, error) {
-	logger.Info("====ProcessConfigMsg===")
+	logger.Info("==SystemChannel==ProcessConfigMsg:start===")
+	defer func() {
+		logger.Info("==SystemChannel==ProcessConfigMsg:end===")
+	}()
 	payload, err := utils.UnmarshalPayload(env.Payload)
 	if err != nil {
 		return nil, 0, err
@@ -218,7 +227,10 @@ func NewDefaultTemplator(support DefaultTemplatorSupport) *DefaultTemplator {
 
 // NewChannelConfig creates a new template channel configuration based on the current config in the ordering system channel.
 func (dt *DefaultTemplator) NewChannelConfig(envConfigUpdate *cb.Envelope) (channelconfig.Resources, error) {
-	logger.Info("====NewChannelConfig===")
+	logger.Info("==DefaultTemplator==NewChannelConfig:start===")
+	defer func() {
+		logger.Info("==DefaultTemplator==NewChannelConfig:end===")
+	}()
 	configUpdatePayload, err := utils.UnmarshalPayload(envConfigUpdate.Payload)
 	if err != nil {
 		return nil, fmt.Errorf("Failing initial channel config creation because of payload unmarshaling error: %s", err)

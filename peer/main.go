@@ -27,7 +27,10 @@ var mainCmd = &cobra.Command{
 	Use: "peer"}
 
 func main() {
-	fmt.Println("=================版本1.0.0====================")
+	fmt.Println("=================peer main.go:start====================")
+	defer func() {
+		fmt.Println("=================peer main.go:end====================")
+	}()
 	// For environment variables.
 	//SetEnvPrefix会设置一个环境变量的前缀名
 	viper.SetEnvPrefix(common.CmdRoot)

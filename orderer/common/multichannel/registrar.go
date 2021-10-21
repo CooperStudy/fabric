@@ -81,13 +81,13 @@ func (cr *configResources) CreateBundle(channelID string, config *cb.Config) (*c
 }
 
 func (cr *configResources) Update(bndl *channelconfig.Bundle) {
-	logger.Info("====Update===")
+	logger.Info("=configResources===Update===")
 	checkResourcesOrPanic(bndl)
 	cr.mutableResources.Update(bndl)
 }
 
 func (cr *configResources) SharedConfig() channelconfig.Orderer {
-	logger.Info("====SharedConfig:start===")
+	logger.Info("=configResources===SharedConfig:start===")
 	defer func() {
 		logger.Info("====SharedConfig:end===")
 	}()
@@ -156,9 +156,9 @@ func NewRegistrar(ledgerFactory blockledger.Factory,signer crypto.LocalSigner, m
 }
 
 func (r *Registrar) Initialize(consenters map[string]consensus.Consenter) {
-	logger.Info("====Initialize:start===")
+	logger.Info("==Registrar==Initialize:start===")
 	defer func() {
-		logger.Info("====Initialize:end===")
+		logger.Info("==Registrar==Initialize:end===")
 	}()
 
 	r.consenters = consenters
@@ -223,7 +223,10 @@ func (r *Registrar) Initialize(consenters map[string]consensus.Consenter) {
 
 // SystemChannelID returns the ChannelID for the system channel.
 func (r *Registrar) SystemChannelID() string {
-	logger.Info("====SystemChannelID===")
+	logger.Info("==Registrar==SystemChannelID;start===")
+	defer func() {
+		logger.Info("==Registrar==SystemChannelID;end===")
+	}()
 	return r.systemChannelID
 }
 
@@ -232,9 +235,12 @@ func (r *Registrar) SystemChannelID() string {
 // be processed directly (like CONFIG and ORDERER_TRANSACTION messages)
 func (r *Registrar) BroadcastChannelSupport(msg *cb.Envelope) (*cb.ChannelHeader, bool, *ChainSupport, error) {
 
-	logger.Info("====BroadcastChannelSupport===")
-
+	logger.Info("==Registrar==BroadcastChannelSupport:start===")
+	defer func() {
+		logger.Info("==Registrar==BroadcastChannelSupport:end===")
+	}()
 	chdr, err := utils.ChannelHeader(msg)
+	logger.Info("=======chdr====",chdr)
 	if err != nil {
 		return nil, false, nil, fmt.Errorf("could not determine channel ID: %s", err)
 	}
@@ -247,18 +253,26 @@ func (r *Registrar) BroadcastChannelSupport(msg *cb.Envelope) (*cb.ChannelHeader
 	isConfig := false
 	switch cs.ClassifyMsg(chdr) {
 	case msgprocessor.ConfigUpdateMsg:
+		logger.Info("=msgprocessor.ConfigUpdateMsg=")
 		isConfig = true
 	case msgprocessor.ConfigMsg:
+		logger.Info("=msgprocessor.ConfigMsg=")
 		return chdr, false, nil, errors.New("message is of type that cannot be processed directly")
 	default:
 	}
 
+	logger.Info("chdr",chdr,"isConfig",isConfig,"cs",*cs)
 	return chdr, isConfig, cs, nil
 }
 
 // GetChain retrieves the chain support for a chain if it exists
 func (r *Registrar) GetChain(chainID string) *ChainSupport {
-	logger.Info("====GetChain===")
+	logger.Info("=Registrar===GetChain:start===")
+	defer func() {
+		logger.Info("=Registrar===GetChain:end===")
+	}()
+	logger.Info("==chainID=",chainID)
+
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
@@ -266,9 +280,9 @@ func (r *Registrar) GetChain(chainID string) *ChainSupport {
 }
 
 func (r *Registrar) newLedgerResources(configTx *cb.Envelope) *ledgerResources {
-	logger.Info("====newLedgerResources:start===")
+	logger.Info("==Registrar==newLedgerResources:start===")
 	defer func() {
-		logger.Info("====newLedgerResources:end===")
+		logger.Info("==Registrar==newLedgerResources:end===")
 	}()
 
 	payload, err := utils.UnmarshalPayload(configTx.Payload)
@@ -311,7 +325,10 @@ func (r *Registrar) newLedgerResources(configTx *cb.Envelope) *ledgerResources {
 }
 
 func (r *Registrar) newChain(configtx *cb.Envelope) {
-	logger.Info("====newChain===")
+	logger.Info("==Registrar==newChain:start==")
+	defer func() {
+		logger.Info("==Registrar==newChain:end==")
+	}()
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
@@ -346,7 +363,10 @@ func (r *Registrar) ChannelsCount() int {
 
 // NewChannelConfig produces a new template channel configuration based on the system channel's current config.
 func (r *Registrar) NewChannelConfig(envConfigUpdate *cb.Envelope) (channelconfig.Resources, error) {
-	logger.Info("====NewChannelConfig===")
+	logger.Info("==Registrar==NewChannelConfig:start==")
+	defer func() {
+		logger.Info("==Registrar==NewChannelConfig:end==")
+	}()
 	return r.templator.NewChannelConfig(envConfigUpdate)
 }
 

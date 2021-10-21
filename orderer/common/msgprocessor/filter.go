@@ -62,7 +62,10 @@ func NewRuleSet(rules []Rule) *RuleSet {
 
 // Apply applies the rules given for this set in order, returning nil on valid or err on invalid
 func (rs *RuleSet) Apply(message *ab.Envelope) error {
-	logger.Info("===RuleSet=Apply===")
+	logger.Info("===RuleSet=Apply:start===")
+	defer func() {
+		logger.Info("===RuleSet=Apply:end===")
+	}()
 	for _, rule := range rs.rules {
 		err := rule.Apply(message)
 		if err != nil {

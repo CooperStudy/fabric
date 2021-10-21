@@ -64,11 +64,17 @@ type Handler struct {
 
 // Handle reads requests from a Broadcast stream, processes them, and returns the responses to the stream
 func (bh *Handler) Handle(srv ab.AtomicBroadcast_BroadcastServer) error {
-	logger.Info("====Handle===")
+	logger.Info("====Handle:start===")
+	defer func() {
+		logger.Info("====Handle:end===")
+	}()
 	addr := util.ExtractRemoteAddress(srv.Context())
+	//Starting new broadcast loop for 172.20.0.7:43752
 	logger.Debugf("Starting new broadcast loop for %s", addr)
 	for {
 		msg, err := srv.Recv()
+
+		logger.Info("===msg==",*msg)
 		if err == io.EOF {
 			logger.Debugf("Received EOF from %s, hangup", addr)
 			return nil
@@ -102,7 +108,10 @@ type MetricsTracker struct {
 }
 
 func (mt *MetricsTracker) Record(resp *ab.BroadcastResponse) {
-	logger.Info("====Record===")
+	logger.Info("====Record:start===")
+	defer func() {
+		logger.Info("====Record:end===")
+	}()
 	labels := []string{
 		"status", resp.Status.String(),
 		"channel", mt.ChannelID,
@@ -123,7 +132,10 @@ func (mt *MetricsTracker) Record(resp *ab.BroadcastResponse) {
 }
 
 func (mt *MetricsTracker) BeginValidate() {
-	logger.Info("====BeginValidate===")
+	logger.Info("====BeginValidate:start===")
+	defer func() {
+		logger.Info("====BeginValidate:end===")
+	}()
 	mt.ValidateStartTime = time.Now()
 }
 
@@ -139,7 +151,10 @@ func (mt *MetricsTracker) BeginEnqueue() {
 
 // ProcessMessage validates and enqueues a single message
 func (bh *Handler) ProcessMessage(msg *cb.Envelope, addr string) (resp *ab.BroadcastResponse) {
-	logger.Info("====ProcessMessage===")
+	logger.Info("====ProcessMessage:start===")
+	defer func() {
+		logger.Info("====ProcessMessage:end===")
+	}()
 	tracker := &MetricsTracker{
 		ChannelID: "unknown",
 		TxType:    "unknown",
@@ -185,6 +200,8 @@ func (bh *Handler) ProcessMessage(msg *cb.Envelope, addr string) (resp *ab.Broad
 			return &ab.BroadcastResponse{Status: cb.Status_SERVICE_UNAVAILABLE, Info: err.Error()}
 		}
 	} else { // isConfig
+		//[channel: mychannel] Broadcast is processing config update message from 172.20.0.7:43752
+
 		logger.Debugf("[channel: %s] Broadcast is processing config update message from %s", chdr.ChannelId, addr)
 
 		config, configSeq, err := processor.ProcessConfigUpdateMsg(msg)

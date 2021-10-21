@@ -42,6 +42,10 @@ func NewOrdererClientFromEnv() (*OrdererClient, error) {
 
 // Broadcast returns a broadcast client for the AtomicBroadcast service
 func (oc *OrdererClient) Broadcast() (ab.AtomicBroadcast_BroadcastClient, error) {
+	logger.Info("===============peer.common.client:start")
+	defer func() {
+		logger.Info("===============peer.common.client:end")
+	}()
 	conn, err := oc.commonClient.NewConnection(oc.address, oc.sn)
 	if err != nil {
 		return nil, errors.WithMessage(err, fmt.Sprintf("orderer client failed to connect to %s", oc.address))
