@@ -20,6 +20,10 @@ import (
 
 // LoadLocalMspWithType loads the local MSP with the specified type from the specified directory
 func LoadLocalMspWithType(dir string, bccspConfig *factory.FactoryOpts, mspID, mspType string) error {
+	mspLogger.Info("======fabric msp mgmt mgmt.go=LoadLocalMspWithType:start=======")
+	defer func() {
+		mspLogger.Info("======fabric msp mgmt mgmt.go=LoadLocalMspWithType:end=======")
+	}()
 	if mspID == "" {
 		return errors.New("the local MSP must have an ID")
 	}
@@ -34,6 +38,10 @@ func LoadLocalMspWithType(dir string, bccspConfig *factory.FactoryOpts, mspID, m
 
 // LoadLocalMsp loads the local MSP from the specified directory
 func LoadLocalMsp(dir string, bccspConfig *factory.FactoryOpts, mspID string) error {
+	mspLogger.Info("======fabric msp mgmt mgmt.go=LoadLocalMsp:start=======")
+	defer func() {
+		mspLogger.Info("======fabric msp mgmt mgmt.go=LoadLocalMsp:end=======")
+	}()
 	if mspID == "" {
 		return errors.New("the local MSP must have an ID")
 	}
@@ -66,6 +74,11 @@ type mspMgmtMgr struct {
 }
 
 func (mgr *mspMgmtMgr) DeserializeIdentity(serializedIdentity []byte) (msp.Identity, error) {
+	mspLogger.Info("======fabric msp mgmt mgmt.go=DeserializeIdentity:start=======")
+	defer func() {
+		mspLogger.Info("======fabric msp mgmt mgmt.go=DeserializeIdentity:end=======")
+	}()
+
 	if !mgr.up {
 		return nil, errors.New("channel doesn't exist")
 	}
@@ -73,6 +86,10 @@ func (mgr *mspMgmtMgr) DeserializeIdentity(serializedIdentity []byte) (msp.Ident
 }
 
 func (mgr *mspMgmtMgr) Setup(msps []msp.MSP) error {
+	mspLogger.Info("======fabric msp mgmt mgmt.go=Setup:start=======")
+	defer func() {
+		mspLogger.Info("======fabric msp mgmt mgmt.go=Setup:end=======")
+	}()
 	err := mgr.MSPManager.Setup(msps)
 	if err == nil {
 		mgr.up = true
@@ -83,6 +100,11 @@ func (mgr *mspMgmtMgr) Setup(msps []msp.MSP) error {
 // GetManagerForChain returns the msp manager for the supplied
 // chain; if no such manager exists, one is created
 func GetManagerForChain(chainID string) msp.MSPManager {
+
+	mspLogger.Info("======fabric msp mgmt mgmt.go=GetManagerForChain:start=======")
+	defer func() {
+		mspLogger.Info("======fabric msp mgmt mgmt.go=GetManagerForChain:end=======")
+	}()
 	m.Lock()
 	defer m.Unlock()
 
@@ -107,6 +129,10 @@ func GetManagerForChain(chainID string) msp.MSPManager {
 
 // GetManagers returns all the managers registered
 func GetDeserializers() map[string]msp.IdentityDeserializer {
+	mspLogger.Info("======fabric msp mgmt mgmt.go=GetDeserializers:start=======")
+	defer func() {
+		mspLogger.Info("======fabric msp mgmt mgmt.go=GetDeserializers:end=======")
+	}()
 	m.Lock()
 	defer m.Unlock()
 
@@ -123,6 +149,10 @@ func GetDeserializers() map[string]msp.IdentityDeserializer {
 // parsing to the channelconfig.Resources interface, while preserving the problematic singleton
 // nature of the MSP manager
 func XXXSetMSPManager(chainID string, manager msp.MSPManager) {
+	mspLogger.Info("======fabric msp mgmt mgmt.go=XXXSetMSPManager:start=======")
+	defer func() {
+		mspLogger.Info("======fabric msp mgmt mgmt.go=XXXSetMSPManager:end=======")
+	}()
 	m.Lock()
 	defer m.Unlock()
 
@@ -131,6 +161,10 @@ func XXXSetMSPManager(chainID string, manager msp.MSPManager) {
 
 // GetLocalMSP returns the local msp (and creates it if it doesn't exist)
 func GetLocalMSP() msp.MSP {
+	mspLogger.Info("======fabric msp mgmt mgmt.go=GetLocalMSP:start=======")
+	defer func() {
+		mspLogger.Info("======fabric msp mgmt mgmt.go=GetLocalMSP:end=======")
+	}()
 	m.Lock()
 	defer m.Unlock()
 
@@ -144,6 +178,7 @@ func GetLocalMSP() msp.MSP {
 }
 
 func loadLocaMSP() msp.MSP {
+	mspLogger.Info("===========")
 	// determine the type of MSP (by default, we'll use bccspMSP)
 	mspType := viper.GetString("peer.localMspType")
 	if mspType == "" {

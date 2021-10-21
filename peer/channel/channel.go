@@ -148,6 +148,9 @@ func InitCmdFactory(isEndorserRequired, isPeerDeliverRequired, isOrdererRequired
 	defer func() {
 		logger.Info("======fabric-peer-channel-channel.go-InitCmdFactory:end=============")
 	}()
+	logger.Info("===isEndorserRequired===",isEndorserRequired)
+	logger.Info("===isPeerDeliverRequired===",isPeerDeliverRequired)
+	logger.Info("===isOrdererRequired===",isOrdererRequired)
 	if isPeerDeliverRequired && isOrdererRequired {
 		// this is likely a bug during development caused by adding a new cmd
 		return nil, errors.New("ERROR - only a single deliver source is currently supported")
