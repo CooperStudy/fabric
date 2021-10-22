@@ -96,12 +96,14 @@ func createChannelFromConfigTx(configTxFileName string) (*cb.Envelope, error) {
 	defer func() {
 		logger.Info("==peer channel create.go===createChannelFromConfigTx:end=========")
 	}()
-	cftx, err := ioutil.ReadFile(configTxFileName)
-	if err != nil {
-		return nil, ConfigTxFileNotFound(err.Error())
-	}
+	//cftx, err := ioutil.ReadFile(configTxFileName)
+	//if err != nil {
+	//	return nil, ConfigTxFileNotFound(err.Error())
+	//}
 
-	logger.Info("========cftx=========",string(cftx))
+    //cftx := []byte{10,201,2,10,16,10,14,8,2,26,6,8,138,226,201,139,6,34,2,99,49,18,180,2,10,177,2,10,2,99,49,18,59,18,41,10,11,65,112,112,108,105,99,97,116,105,111,110,18,26,18,11,10,7,79,114,103,50,77,83,80,18,0,18,11,10,7,79,114,103,49,77,83,80,18,0,26,14,10,10,67,111,110,115,111,114,116,105,117,109,18,0,26,237,1,18,198,1,10,11,65,112,112,108,105,99,97,116,105,111,110,18,182,1,8,1,18,11,10,7,79,114,103,50,77,83,80,18,0,18,11,10,7,79,114,103,49,77,83,80,18,0,26,36,10,12,67,97,112,97,98,105,108,105,116,105,101,115,18,20,18,10,10,8,10,4,86,49,95,51,18,0,26,6,65,100,109,105,110,115,34,34,10,7,87,114,105,116,101,114,115,18,23,18,13,8,3,18,9,10,7,87,114,105,116,101,114,115,26,6,65,100,109,105,110,115,34,34,10,6,65,100,109,105,110,115,18,24,18,14,8,3,18,10,10,6,65,100,109,105,110,115,16,2,26,6,65,100,109,105,110,115,34,34,10,7,82,101,97,100,101,114,115,18,23,18,13,8,3,18,9,10,7,82,101,97,100,101,114,115,26,6,65,100,109,105,110,115,42,6,65,100,109,105,110,115,26,34,10,10,67,111,110,115,111,114,116,105,117,109,18,20,18,18,10,16,83,97,109,112,108,101,67,111,110,115,111,114,116,105,117,109}
+	cftx := []byte{10,175,2,10,16,10,14,8,2,26,6,8,133,255,201,139,6,34,2,99,49,18,154,2,10,151,2,10,2,99,49,18,46,18,28,10,11,65,112,112,108,105,99,97,116,105,111,110,18,13,18,11,10,7,79,114,103,49,77,83,80,18,0,26,14,10,10,67,111,110,115,111,114,116,105,117,109,18,0,26,224,1,18,185,1,10,11,65,112,112,108,105,99,97,116,105,111,110,18,169,1,8,1,18,11,10,7,79,114,103,49,77,83,80,18,0,26,36,10,12,67,97,112,97,98,105,108,105,116,105,101,115,18,20,18,10,10,8,10,4,86,49,95,51,18,0,26,6,65,100,109,105,110,115,34,34,10,7,87,114,105,116,101,114,115,18,23,18,13,8,3,18,9,10,7,87,114,105,116,101,114,115,26,6,65,100,109,105,110,115,34,34,10,6,65,100,109,105,110,115,18,24,18,14,8,3,18,10,10,6,65,100,109,105,110,115,16,2,26,6,65,100,109,105,110,115,34,34,10,7,82,101,97,100,101,114,115,18,23,18,13,8,3,18,9,10,7,82,101,97,100,101,114,115,26,6,65,100,109,105,110,115,42,6,65,100,109,105,110,115,26,34,10,10,67,111,110,115,111,114,116,105,117,109,18,20,18,18,10,16,83,97,109,112,108,101,67,111,110,115,111,114,116,105,117,109}
+    logger.Info("========cftx=========",string(cftx))
 	env,err := utils.UnmarshalEnvelope(cftx)
 	if env != nil{
 		logger.Info("====env.Payload=======",env.Payload)
@@ -126,6 +128,26 @@ func sanityCheckAndSignConfigTx(envConfigUpdate *cb.Envelope) (*cb.Envelope, err
 	if payload.Header == nil || payload.Header.ChannelHeader == nil {
 		return nil, InvalidCreateTx("bad header")
 	}
+	/*
+	type ChannelHeader struct {
+		Type int32 `protobuf:"varint,1,opt,name=type,proto3" json:"type,omitempty"`
+		Version int32 `protobuf:"varint,2,opt,name=version,proto3" json:"version,omitempty"`
+		Timestamp *timestamp.Timestamp `protobuf:"bytes,3,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+		ChannelId string `protobuf:"bytes,4,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
+		TxId string `protobuf:"bytes,5,opt,name=tx_id,json=txId,proto3" json:"tx_id,omitempty"`
+		Epoch uint64 `protobuf:"varint,6,opt,name=epoch,proto3" json:"epoch,omitempty"`
+		Extension []byte `protobuf:"bytes,7,opt,name=extension,proto3" json:"extension,omitempty"`
+		TlsCertHash          []byte   `protobuf:"bytes,8,opt,name=tls_cert_hash,json=tlsCertHash,proto3" json:"tls_cert_hash,omitempty"`
+
+	/*
+	type:2
+	timestamp:<seconds:1634796922 >
+	channel_id:"b"
+
+
+
+	}
+	 */
 
 	ch, err := utils.UnmarshalChannelHeader(payload.Header.ChannelHeader)
     logger.Info("======ch:======",ch)
@@ -273,6 +295,18 @@ func create(cmd *cobra.Command, args []string, cf *ChannelCmdFactory) error {
 	defer func() {
 		fmt.Println("====fabric peer channel create.go====create:end==")
 	}()
+
+
+	logger.Info("======create channel==============")
+	/*
+
+	 */
+
+
+
+
+
+
 
 	// the global chainID filled by the "-c" command
 	if channelID == common.UndefinedParamValue {

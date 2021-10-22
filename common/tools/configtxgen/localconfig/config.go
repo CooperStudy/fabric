@@ -8,10 +8,6 @@ package localconfig
 
 import (
 	"fmt"
-	"path/filepath"
-	"strings"
-	"time"
-
 	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/common/policies"
 	"github.com/hyperledger/fabric/common/viperutil"
@@ -19,6 +15,8 @@ import (
 	"github.com/hyperledger/fabric/msp"
 	"github.com/hyperledger/fabric/protos/orderer/etcdraft"
 	"github.com/spf13/viper"
+	"path/filepath"
+	"strings"
 )
 
 const (
@@ -77,117 +75,216 @@ const (
 )
 
 // TopLevel consists of the structs used by the configtxgen tool.
-type TopLevel struct {
-	Profiles      map[string]*Profile        `yaml:"Profiles"`
-	Organizations []*Organization            `yaml:"Organizations"`
-	Channel       *Profile                   `yaml:"Channel"`
-	Application   *Application               `yaml:"Application"`
-	Orderer       *Orderer                   `yaml:"Orderer"`
-	Capabilities  map[string]map[string]bool `yaml:"Capabilities"`
-	Resources     *Resources                 `yaml:"Resources"`
-}
+//type TopLevel struct {
+//	Profiles      map[string]*Profile        `yaml:"Profiles" json:"Profiles"`
+//	Organizations []*Organization            `yaml:"Organizations" json:"Organizations"`
+//	Channel       *Profile                   `yaml:"Channel" json:"Channel"`
+//	Application   *Application               `yaml:"Application" json:"Application"`
+//	Orderer       *Orderer                   `yaml:"Orderer" json:"Orderer"`
+//	Capabilities  map[string]map[string]bool `yaml:"Capabilities" json:"Capabilities"`
+//	Resources     *Resources                 `yaml:"Resources" json:"Resources"`
+//}
 
 // Profile encodes orderer/application configuration combinations for the
 // configtxgen tool.
-type Profile struct {
-	Consortium   string                 `yaml:"Consortium"`
-	Application  *Application           `yaml:"Application"`
-	Orderer      *Orderer               `yaml:"Orderer"`
-	Consortiums  map[string]*Consortium `yaml:"Consortiums"`
-	Capabilities map[string]bool        `yaml:"Capabilities"`
-	Policies     map[string]*Policy     `yaml:"Policies"`
-}
+//type Profile struct {
+//	Consortium   string                 `yaml:"Consortium" json:"Consortium"`
+//	Application  *Application           `yaml:"Application" json:"Application"`
+//	Orderer      *Orderer               `yaml:"Orderer" json:"Orderer"`
+//	Consortiums  map[string]*Consortium `yaml:"Consortiums" json:"Consortiums"`
+//	Capabilities map[string]bool        `yaml:"Capabilities" json:"Capabilities"`
+//	Policies     map[string]*Policy     `yaml:"Policies" json:"Policies"`
+//}
 
 // Policy encodes a channel config policy
-type Policy struct {
-	Type string `yaml:"Type"`
-	Rule string `yaml:"Rule"`
-}
+//type Policy struct {
+//	Type string `yaml:"Type" json:"Type"`
+//	Rule string `yaml:"Rule" json:"Rule"`
+//}
 
 // Consortium represents a group of organizations which may create channels
 // with each other
-type Consortium struct {
-	Organizations []*Organization `yaml:"Organizations"`
-}
+//type Consortium struct {
+//	Organizations []*Organization `yaml:"Organizations"`
+//}
 
 // Application encodes the application-level configuration needed in config
 // transactions.
-type Application struct {
-	Organizations []*Organization    `yaml:"Organizations"`
-	Capabilities  map[string]bool    `yaml:"Capabilities"`
-	Resources     *Resources         `yaml:"Resources"`
-	Policies      map[string]*Policy `yaml:"Policies"`
-	ACLs          map[string]string  `yaml:"ACLs"`
-}
+//type Application struct {
+//	Organizations []*Organization    `yaml:"Organizations" json:"Organizations"`
+//	Capabilities  map[string]bool    `yaml:"Capabilities" json:"Capabilities"`
+//	Resources     *Resources         `yaml:"Resources" json:"Resources"`
+//	Policies      map[string]*Policy `yaml:"Policies" json:"Policies"`
+//	ACLs          map[string]string  `yaml:"ACLs" json:"ACLs"`
+//}
 
 // Resources encodes the application-level resources configuration needed to
 // seed the resource tree
-type Resources struct {
-	DefaultModPolicy string
-}
+//type Resources struct {
+//	DefaultModPolicy string
+//}
 
 // Organization encodes the organization-level configuration needed in
 // config transactions.
-type Organization struct {
-	Name     string             `yaml:"Name"`
-	ID       string             `yaml:"ID"`
-	MSPDir   string             `yaml:"MSPDir"`
-	MSPType  string             `yaml:"MSPType"`
-	Policies map[string]*Policy `yaml:"Policies"`
-
-	// Note: Viper deserialization does not seem to care for
-	// embedding of types, so we use one organization struct
-	// for both orderers and applications.
-	AnchorPeers []*AnchorPeer `yaml:"AnchorPeers"`
-
-	// AdminPrincipal is deprecated and may be removed in a future release
-	// it was used for modifying the default policy generation, but policies
-	// may now be specified explicitly so it is redundant and unnecessary
-	AdminPrincipal string `yaml:"AdminPrincipal"`
-}
+//type Organization struct {
+//	Name     string             `yaml:"Name" json:"Name"`
+//	ID       string             `yaml:"ID" json:"ID"`
+//	MSPDir   string             `yaml:"MSPDir" json:"MSPDir"`
+//	MSPType  string             `yaml:"MSPType" json:"MSPType"`
+//	Policies map[string]*Policy `yaml:"Policies" json:"Policies"`
+//
+//	// Note: Viper deserialization does not seem to care for
+//	// embedding of types, so we use one organization struct
+//	// for both orderers and applications.
+//	AnchorPeers []*AnchorPeer `yaml:"AnchorPeers" json:"AnchorPeers"`
+//
+//	// AdminPrincipal is deprecated and may be removed in a future release
+//	// it was used for modifying the default policy generation, but policies
+//	// may now be specified explicitly so it is redundant and unnecessary
+//	AdminPrincipal string `yaml:"AdminPrincipal" json:"AdminPrincipal"`
+//}
 
 // AnchorPeer encodes the necessary fields to identify an anchor peer.
-type AnchorPeer struct {
-	Host string `yaml:"Host"`
-	Port int    `yaml:"Port"`
-}
+//type AnchorPeer struct {
+//	Host string `yaml:"Host" json:"Host"`
+//	Port int    `yaml:"Port" json:"Port"`
+//}
 
 // Orderer contains configuration which is used for the
 // bootstrapping of an orderer by the provisional bootstrapper.
-type Orderer struct {
-	OrdererType   string             `yaml:"OrdererType"`
-	Addresses     []string           `yaml:"Addresses"`
-	BatchTimeout  time.Duration      `yaml:"BatchTimeout"`
-	BatchSize     BatchSize          `yaml:"BatchSize"`
-	Kafka         Kafka              `yaml:"Kafka"`
-	EtcdRaft      *etcdraft.Metadata `yaml:"EtcdRaft"`
-	Organizations []*Organization    `yaml:"Organizations"`
-	MaxChannels   uint64             `yaml:"MaxChannels"`
-	Capabilities  map[string]bool    `yaml:"Capabilities"`
-	Policies      map[string]*Policy `yaml:"Policies"`
-}
+//type Orderer struct {
+//	OrdererType   string             `yaml:"OrdererType" json:"OrdererType"`
+//	Addresses     []string           `yaml:"Addresses"  json:"Addresses"`
+//	BatchTimeout  time.Duration      `yaml:"BatchTimeout" json:"BatchTimeout"`
+//	BatchSize     BatchSize          `yaml:"BatchSize" json:"BatchSize"`
+//	Kafka         Kafka              `yaml:"Kafka" json:"Kafka"`
+//	EtcdRaft      *etcdraft.Metadata `yaml:"EtcdRaft json:"EtcdRaft""`
+//	Organizations []*Organization    `yaml:"Organizations" json:"Organizations"`
+//	MaxChannels   uint64             `yaml:"MaxChannels" json:"MaxChannels"`
+//	Capabilities  map[string]bool    `yaml:"Capabilities" json:"Capabilities"`
+//	Policies      map[string]*Policy `yaml:"Policies" json:"Policies"`
+//}
 
 // BatchSize contains configuration affecting the size of batches.
-type BatchSize struct {
-	MaxMessageCount   uint32 `yaml:"MaxMessageCount"`
-	AbsoluteMaxBytes  uint32 `yaml:"AbsoluteMaxBytes"`
-	PreferredMaxBytes uint32 `yaml:"PreferredMaxBytes"`
-}
+//type BatchSize struct {
+//	MaxMessageCount   uint32 `yaml:"MaxMessageCount" json:"MaxMessageCount"`
+//	AbsoluteMaxBytes  uint32 `yaml:"AbsoluteMaxBytes" json:"AbsoluteMaxBytes"`
+//	PreferredMaxBytes uint32 `yaml:"PreferredMaxBytes" json:"PreferredMaxBytes"`
+//}
 
 // Kafka contains configuration for the Kafka-based orderer.
-type Kafka struct {
-	Brokers []string `yaml:"Brokers"`
+//type Kafka struct {
+//	Brokers []string `yaml:"Brokers" json:"Brokers"`
+//}
+
+
+
+
+type TopLevel struct {
+	Profiles      map[string]*Profile        `yaml:"Profiles" json:"Profiles"`
+	Organizations []*Organization            `yaml:"Organizations" json:"Organizations"`
+	Channel       *Profile                   `yaml:"Channel" json:"Channel"`
+	Application   *Application               `yaml:"Application" json:"Application"`
+	Orderer       *Orderer                   `yaml:"Orderer" json:"Orderer"`
+	Capabilities  map[string]map[string]bool `yaml:"Capabilities" json:"Capabilities"`
+	Resources     *Resources                 `yaml:"Resources" json:"Resources"`
 }
+
+type Profile struct {
+	Consortium   string                 `yaml:"Consortium" json:"Consortium"`
+	Application  *Application           `yaml:"Application" json:"Application"`
+	Orderer      *Orderer               `yaml:"Orderer" json:"Orderer"`
+	Consortiums  map[string]*Consortium `yaml:"Consortiums" json:"Consortiums"`
+	Capabilities map[string]bool        `yaml:"Capabilities" json:"Capabilities"`
+	Policies     map[string]*Policy     `yaml:"Policies" json:"Policies"`
+}
+
+type Policy struct {
+	Type string `yaml:"Type" json:"Type"`
+	Rule string `yaml:"Rule" json:"Rule"`
+}
+
+type Consortium struct {
+	Organizations []*Organization `yaml:"Organizations" json:"Organizations"`
+}
+
+type Application struct {
+	Organizations []*Organization    `yaml:"Organizations" json:"Organizations"`
+	Capabilities  map[string]bool    `yaml:"Capabilities" json:"Capabilities"`
+	Resources     *Resources         `yaml:"Resources" json:"Resources"`
+	Policies      map[string]*Policy `yaml:"Policies" json:"Policies"`
+	ACLs          map[string]string  `yaml:"ACLs" json:"ACLs"`
+}
+
+type Resources struct {
+	DefaultModPolicy string `json:"DefaultModPolicy"`
+}
+
+type Organization struct {
+	Name     string             `yaml:"Name" json:"Name"`
+	ID       string             `yaml:"ID" json:"ID"`
+	MSPDir   string             `yaml:"MSPDir" json:"MSPDir"`
+	MSPType  string             `yaml:"MSPType" json:"MSPType"`
+	Policies map[string]*Policy `yaml:"Policies" json:"Policies"`
+	AnchorPeers []*AnchorPeer `yaml:"AnchorPeers" json:"AnchorPeers"`
+	AdminPrincipal string `yaml:"AdminPrincipal" json:"AdminPrincipal"`
+}
+
+type AnchorPeer struct {
+	Host string `yaml:"Host" json:"Host"`
+	Port int    `yaml:"Port" json:"Port"`
+}
+
+type Orderer struct {
+	OrdererType   string             `yaml:"OrdererType" json:"OrdererType"`
+	Addresses     []string           `yaml:"Addresses"  json:"Addresses"`
+	BatchTimeout  string      `yaml:"BatchTimeout" json:"BatchTimeout"`
+	BatchSize     BatchSize          `yaml:"BatchSize" json:"BatchSize"`
+	Kafka         Kafka              `yaml:"Kafka" json:"Kafka"`
+	EtcdRaft      *etcdraft.Metadata `yaml:"EtcdRaft json:"EtcdRaft""`
+	Organizations []*Organization    `t`
+	MaxChannels   uint64             `yaml:"MaxChannels" json:"MaxChannels"`
+	Capabilities  map[string]bool    `yaml:"Capabilities" json:"Capabilities"`
+	Policies      map[string]*Policy `yaml:"Policies" json:"Policies"`
+}
+
+type BatchSize struct {
+	MaxMessageCount   string `yaml:"MaxMessageCount" json:"MaxMessageCount"`
+	AbsoluteMaxBytes  string `yaml:"AbsoluteMaxBytes" json:"AbsoluteMaxBytes"`
+	PreferredMaxBytes string `yaml:"PreferredMaxBytes" json:"PreferredMaxBytes"`
+}
+
+type Kafka struct {
+	Brokers []string `yaml:"Brokers" json:"Brokers"`
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 var genesisDefaults = TopLevel{
 	Orderer: &Orderer{
 		OrdererType:  "solo",
 		Addresses:    []string{"127.0.0.1:7050"},
-		BatchTimeout: 2 * time.Second,
+		BatchTimeout: "2",
 		BatchSize: BatchSize{
-			MaxMessageCount:   10,
-			AbsoluteMaxBytes:  10 * 1024 * 1024,
-			PreferredMaxBytes: 512 * 1024,
+			MaxMessageCount:   "10",
+			AbsoluteMaxBytes:  "10",
+			PreferredMaxBytes: "512",
 		},
 		Kafka: Kafka{
 			Brokers: []string{"127.0.0.1:9092"},
@@ -364,16 +461,16 @@ loop:
 		case ord.Addresses == nil:
 			logger.Infof("Orderer.Addresses unset, setting to %s", genesisDefaults.Orderer.Addresses)
 			ord.Addresses = genesisDefaults.Orderer.Addresses
-		case ord.BatchTimeout == 0:
+		case ord.BatchTimeout == "":
 			logger.Infof("Orderer.BatchTimeout unset, setting to %s", genesisDefaults.Orderer.BatchTimeout)
 			ord.BatchTimeout = genesisDefaults.Orderer.BatchTimeout
-		case ord.BatchSize.MaxMessageCount == 0:
+		case ord.BatchSize.MaxMessageCount == "":
 			logger.Infof("Orderer.BatchSize.MaxMessageCount unset, setting to %v", genesisDefaults.Orderer.BatchSize.MaxMessageCount)
 			ord.BatchSize.MaxMessageCount = genesisDefaults.Orderer.BatchSize.MaxMessageCount
-		case ord.BatchSize.AbsoluteMaxBytes == 0:
+		case ord.BatchSize.AbsoluteMaxBytes == "":
 			logger.Infof("Orderer.BatchSize.AbsoluteMaxBytes unset, setting to %v", genesisDefaults.Orderer.BatchSize.AbsoluteMaxBytes)
 			ord.BatchSize.AbsoluteMaxBytes = genesisDefaults.Orderer.BatchSize.AbsoluteMaxBytes
-		case ord.BatchSize.PreferredMaxBytes == 0:
+		case ord.BatchSize.PreferredMaxBytes == "":
 			logger.Infof("Orderer.BatchSize.PreferredMaxBytes unset, setting to %v", genesisDefaults.Orderer.BatchSize.PreferredMaxBytes)
 			ord.BatchSize.PreferredMaxBytes = genesisDefaults.Orderer.BatchSize.PreferredMaxBytes
 		default:

@@ -7,12 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"strings"
-
 	"github.com/hyperledger/fabric/bccsp/factory"
 	"github.com/hyperledger/fabric/common/channelconfig"
 	"github.com/hyperledger/fabric/common/flogging"
@@ -24,6 +21,9 @@ import (
 	pb "github.com/hyperledger/fabric/protos/peer"
 	"github.com/hyperledger/fabric/protos/utils"
 	"github.com/pkg/errors"
+	"io/ioutil"
+	"os"
+	"strings"
 )
 
 var exitCode = 0
@@ -46,8 +46,72 @@ func doOutputBlock(config *genesisconfig.Profile, channelID string, outputBlock 
 }
 
 func doOutputChannelCreateTx(conf *genesisconfig.Profile, channelID string, outputChannelCreateTx string) error {
-	logger.Info("Generating new channel configtx")
+	logger.Info("============doOutputChannelCreateTx:start=====")
+/**
+    Consortium   string                 `yaml:"Consortium"`
+  	Application  *Application           `yaml:"Application"`
+  	Orderer      *Orderer               `yaml:"Orderer"`
+  	Consortiums  map[string]*Consortium `yaml:"Consortiums"`
+  	Capabilities map[string]bool        `yaml:"Capabilities"`
+  	Policies     map[string]*Policy     `yaml:"Policies"`
+ */
+    fmt.Println("====conf====",conf)
+	fmt.Println("===conf.Consortium==",conf.Consortium)//SampleConsortium
+	if conf.Application != nil{
+		fmt.Println("===conf.Application==",*conf.Application)
+	}else{
+		fmt.Println("===conf.Application",conf.Application)
+	}
+	fmt.Println("===conf.Application.Policies==",conf.Application.Policies)
+	for k,v := range conf.Application.Policies {
+		fmt.Println(k)
+		fmt.Println(v)
+		if v != nil{
+			fmt.Println(*v)
+		}else{
+			fmt.Println(v)
+		}
+	}
+	fmt.Println("===conf.Application.Capabilities==",conf.Application.Capabilities)
+	fmt.Println("===conf.Application.Organizations==",conf.Application.Organizations)
+    for k,v := range conf.Application.Organizations {
+    	fmt.Println(k)
+    	fmt.Println(v)
+    	if v != nil{
+    		fmt.Println(*v)
+		}else{
+			fmt.Println(v)
+		}
+	}
+	fmt.Println("===conf.Application.ACLS==",conf.Application.ACLs)
+    if conf.Application.Resources != nil{
+		fmt.Println("===conf.Application.Resources==",*conf.Application.Resources)
+	}else{
+		fmt.Println("===conf.Application.Resources==",conf.Application.Resources)
+	}
 
+	// {[0xc00019e0e0 0xc00019e150] map[V1_2:false V1_1:false V1_3:true] <nil> map[Writers:0xc0004c8420 Admins:0xc0004c84a0 Readers:0xc0004c8520] map[]}
+	if conf.Orderer != nil{
+		fmt.Println("===conf.Orderer==",*conf.Orderer)
+	}else{
+		//===conf.Orderer== <nil>
+		fmt.Println("===conf.Orderer==",conf.Orderer)
+	}
+	fmt.Println("===conf.Consortiums==",conf.Consortiums)
+    //===conf.Consortiums== map[]
+	fmt.Println("===conf.Capabilities==",conf.Capabilities)
+    //===conf.Capabilities== map[]
+	fmt.Println("===conf.Policies==",conf.Policies)
+    //===conf.Policies== map[]
+
+
+
+	fmt.Println("=====outputChannelCreateTx=",outputChannelCreateTx)
+
+	logger.Info("Generating new channel configtx")
+	defer func() {
+		logger.Info("============doOutputChannelCreateTx:end=====")
+	}()
 	configtx, err := encoder.MakeChannelCreationTransaction(channelID, nil, conf)
 	if err != nil {
 		return err
@@ -188,6 +252,7 @@ func doInspectChannelCreateTx(inspectChannelCreateTx string) error {
 
 func doPrintOrg(t *genesisconfig.TopLevel, printOrg string) error {
 	for _, org := range t.Organizations {
+		fmt.Println("org",org)
 		if org.Name == printOrg {
 			og, err := encoder.NewOrdererOrgGroup(org)
 			if err != nil {
@@ -262,20 +327,45 @@ func main() {
 		}
 	}
 	var topLevelConfig *genesisconfig.TopLevel
-	if configPath != "" {
-		topLevelConfig = genesisconfig.LoadTopLevel(configPath)
-	} else {
-		topLevelConfig = genesisconfig.LoadTopLevel()
+	//if configPath != "" {
+	//	topLevelConfig = genesisconfig.LoadTopLevel(configPath)
+	//} else {
+	//	topLevelConfig = genesisconfig.LoadTopLevel()
+	//}
+
+    configstr := "{\"Organizations\": [\n    {\n      \"Name\": \"OrdererOrg\",\n      \"ID\": \"OrdererMSP\",\n      \"MSPDir\": \"crypto-config/ordererOrganizations/example.com/msp\",\n      \"Policies\": {\n        \"Readers\": {\n          \"Type\": \"Signature\",\n          \"Rule\": \"OR('OrdererMSP.member')\"\n        },\n        \"Writers\": {\n          \"Type\": \"Signature\",\n          \"Rule\": \"OR('OrdererMSP.member')\"\n        },\n        \"Admins\": {\n          \"Type\": \"Signature\",\n          \"Rule\": \"OR('OrdererMSP.admin')\"\n        }\n      }\n    },\n    {\n      \"Name\": \"Org1MSP\",\n      \"ID\": \"Org1MSP\",\n      \"MSPDir\": \"crypto-config/peerOrganizations/org1.example.com/msp\",\n      \"Policies\": {\n        \"Readers\": {\n          \"Type\": \"Signature\",\n          \"Rule\": \"OR('Org1MSP.admin', 'Org1MSP.peer', 'Org1MSP.client')\"\n        },\n        \"Writers\": {\n          \"Type\": \"Signature\",\n          \"Rule\": \"OR('Org1MSP.admin', 'Org1MSP.client')\"\n        },\n        \"Admins\": {\n          \"Type\": \"Signature\",\n          \"Rule\": \"OR('Org1MSP.admin')\"\n        }\n      },\n      \"AnchorPeers\": [\n        {\n          \"Host\": \"peer0.org1.example.com\",\n          \"Port\": 7051\n        }\n      ]\n    },\n    {\n      \"Name\": \"Org2MSP\",\n      \"ID\": \"Org2MSP\",\n      \"MSPDir\": \"crypto-config/peerOrganizations/org2.example.com/msp\",\n      \"Policies\": {\n        \"Readers\": {\n          \"Type\": \"Signature\",\n          \"Rule\": \"OR('Org2MSP.admin', 'Org2MSP.peer', 'Org2MSP.client')\"\n        },\n        \"Writers\": {\n          \"Type\": \"Signature\",\n          \"Rule\": \"OR('Org2MSP.admin', 'Org2MSP.client')\"\n        },\n        \"Admins\": {\n          \"Type\": \"Signature\",\n          \"Rule\": \"OR('Org2MSP.admin')\"\n        }\n      },\n      \"AnchorPeers\": [\n        {\n          \"Host\": \"peer0.org2.example.com\",\n          \"Port\": 7051\n        }\n      ]\n    }\n  ],\n  \"Capabilities\": {\n    \"Channel\": {\n      \"V1_3\": true\n    },\n    \"Orderer\": {\n      \"V1_1\": true\n    },\n    \"Application\": {\n      \"V1_3\": true,\n      \"V1_2\": false,\n      \"V1_1\": false\n    }\n  },\n  \"Application\": {\n    \"Organizations\": null,\n    \"Policies\": {\n      \"Readers\": {\n        \"Type\": \"ImplicitMeta\",\n        \"Rule\": \"ANY Readers\"\n      },\n      \"Writers\": {\n        \"Type\": \"ImplicitMeta\",\n        \"Rule\": \"ANY Writers\"\n      },\n      \"Admins\": {\n        \"Type\": \"ImplicitMeta\",\n        \"Rule\": \"MAJORITY Admins\"\n      }\n    },\n    \"Capabilities\": {\n      \"V1_3\": true,\n      \"V1_2\": false,\n      \"V1_1\": false\n    }\n  },\n  \"Orderer\": {\n    \"OrdererType\": \"solo\",\n    \"Addresses\": [\n      \"orderer.example.com:7050\"\n    ],\n    \"BatchTimeout\": \"2s\",\n    \"BatchSize\": {\n      \"MaxMessageCount\": \"10\",\n      \"AbsoluteMaxBytes\": \"99\",\n      \"PreferredMaxBytes\": \"512\"\n    },\n    \"Kafka\": {\n      \"Brokers\": [\n        \"127.0.0.1:9092\"\n      ]\n    },\n    \"Organizations\": null,\n    \"Policies\": {\n      \"Readers\": {\n        \"Type\": \"ImplicitMeta\",\n        \"Rule\": \"ANY Readers\"\n      },\n      \"Writers\": {\n        \"Type\": \"ImplicitMeta\",\n        \"Rule\": \"ANY Writers\"\n      },\n      \"Admins\": {\n        \"Type\": \"ImplicitMeta\",\n        \"Rule\": \"MAJORITY Admins\"\n      },\n      \"BlockValidation\": {\n        \"Type\": \"ImplicitMeta\",\n        \"Rule\": \"ANY Writers\"\n      }\n    }\n  },\n  \"Channel\": {\n    \"Policies\": {\n      \"Readers\": {\n        \"Type\": \"ImplicitMeta\",\n        \"Rule\": \"ANY Readers\"\n      },\n      \"Writers\": {\n        \"Type\": \"ImplicitMeta\",\n        \"Rule\": \"ANY Writers\"\n      },\n      \"Admins\": {\n        \"Type\": \"ImplicitMeta\",\n        \"Rule\": \"MAJORITY Admins\"\n      }\n    },\n    \"Capabilities\": {\n      \"V1_3\": true\n    }\n  },\n  \"Profiles\": {\n    \"OneOrgsOrdererGenesis\": {\n      \"Policies\": {\n        \"Readers\": {\n          \"Type\": \"ImplicitMeta\",\n          \"Rule\": \"ANY Readers\"\n        },\n        \"Writers\": {\n          \"Type\": \"ImplicitMeta\",\n          \"Rule\": \"ANY Writers\"\n        },\n        \"Admins\": {\n          \"Type\": \"ImplicitMeta\",\n          \"Rule\": \"MAJORITY Admins\"\n        }\n      },\n      \"Capabilities\": {\n        \"V1_3\": true\n      },\n      \"Orderer\": {\n        \"OrdererType\": \"solo\",\n        \"Addresses\": [\n          \"orderer.example.com:7050\"\n        ],\n        \"BatchTimeout\": \"2s\",\n        \"BatchSize\": {\n          \"MaxMessageCount\": 10,\n          \"AbsoluteMaxBytes\": \"99 MB\",\n          \"PreferredMaxBytes\": \"512\"\n        },\n        \"Kafka\": {\n          \"Brokers\": [\n            \"127.0.0.1:9092\"\n          ]\n        },\n        \"Organizations\": [\n          {\n            \"Name\": \"OrdererOrg\",\n            \"ID\": \"OrdererMSP\",\n            \"MSPDir\": \"crypto-config/ordererOrganizations/example.com/msp\",\n            \"Policies\": {\n              \"Readers\": {\n                \"Type\": \"Signature\",\n                \"Rule\": \"OR('OrdererMSP.member')\"\n              },\n              \"Writers\": {\n                \"Type\": \"Signature\",\n                \"Rule\": \"OR('OrdererMSP.member')\"\n              },\n              \"Admins\": {\n                \"Type\": \"Signature\",\n                \"Rule\": \"OR('OrdererMSP.admin')\"\n              }\n            }\n          }\n        ],\n        \"Policies\": {\n          \"Readers\": {\n            \"Type\": \"ImplicitMeta\",\n            \"Rule\": \"ANY Readers\"\n          },\n          \"Writers\": {\n            \"Type\": \"ImplicitMeta\",\n            \"Rule\": \"ANY Writers\"\n          },\n          \"Admins\": {\n            \"Type\": \"ImplicitMeta\",\n            \"Rule\": \"MAJORITY Admins\"\n          },\n          \"BlockValidation\": {\n            \"Type\": \"ImplicitMeta\",\n            \"Rule\": \"ANY Writers\"\n          }\n        },\n        \"Capabilities\": {\n          \"V1_1\": true\n        }\n      },\n      \"Consortiums\": {\n        \"SampleConsortium\": {\n          \"Organizations\": [\n            {\n              \"Name\": \"Org1MSP\",\n              \"ID\": \"Org1MSP\",\n              \"MSPDir\": \"crypto-config/peerOrganizations/org1.example.com/msp\",\n              \"Policies\": {\n                \"Readers\": {\n                  \"Type\": \"Signature\",\n                  \"Rule\": \"OR('Org1MSP.admin', 'Org1MSP.peer', 'Org1MSP.client')\"\n                },\n                \"Writers\": {\n                  \"Type\": \"Signature\",\n                  \"Rule\": \"OR('Org1MSP.admin', 'Org1MSP.client')\"\n                },\n                \"Admins\": {\n                  \"Type\": \"Signature\",\n                  \"Rule\": \"OR('Org1MSP.admin')\"\n                }\n              },\n              \"AnchorPeers\": [\n                {\n                  \"Host\": \"peer0.org1.example.com\",\n                  \"Port\": 7051\n                }\n              ]\n            },\n            {\n              \"Name\": \"Org2MSP\",\n              \"ID\": \"Org2MSP\",\n              \"MSPDir\": \"crypto-config/peerOrganizations/org2.example.com/msp\",\n              \"Policies\": {\n                \"Readers\": {\n                  \"Type\": \"Signature\",\n                  \"Rule\": \"OR('Org2MSP.admin', 'Org2MSP.peer', 'Org2MSP.client')\"\n                },\n                \"Writers\": {\n                  \"Type\": \"Signature\",\n                  \"Rule\": \"OR('Org2MSP.admin', 'Org2MSP.client')\"\n                },\n                \"Admins\": {\n                  \"Type\": \"Signature\",\n                  \"Rule\": \"OR('Org2MSP.admin')\"\n                }\n              },\n              \"AnchorPeers\": [\n                {\n                  \"Host\": \"peer0.org2.example.com\",\n                  \"Port\": 7051\n                }\n              ]\n            }\n          ]\n        }\n      }\n    },\n    \"OneOrgsChannel\": {\n      \"Consortium\": \"SampleConsortium\",\n      \"Application\": {\n        \"Organizations\": [\n          {\n            \"Name\": \"Org1MSP\",\n            \"ID\": \"Org1MSP\",\n            \"MSPDir\": \"crypto-config/peerOrganizations/org1.example.com/msp\",\n            \"Policies\": {\n              \"Readers\": {\n                \"Type\": \"Signature\",\n                \"Rule\": \"OR('Org1MSP.admin', 'Org1MSP.peer', 'Org1MSP.client')\"\n              },\n              \"Writers\": {\n                \"Type\": \"Signature\",\n                \"Rule\": \"OR('Org1MSP.admin', 'Org1MSP.client')\"\n              },\n              \"Admins\": {\n                \"Type\": \"Signature\",\n                \"Rule\": \"OR('Org1MSP.admin')\"\n              }\n            },\n            \"AnchorPeers\": [\n              {\n                \"Host\": \"peer0.org1.example.com\",\n                \"Port\": 7051\n              }\n            ]\n          },\n          {\n            \"Name\": \"Org2MSP\",\n            \"ID\": \"Org2MSP\",\n            \"MSPDir\": \"crypto-config/peerOrganizations/org2.example.com/msp\",\n            \"Policies\": {\n              \"Readers\": {\n                \"Type\": \"Signature\",\n                \"Rule\": \"OR('Org2MSP.admin', 'Org2MSP.peer', 'Org2MSP.client')\"\n              },\n              \"Writers\": {\n                \"Type\": \"Signature\",\n                \"Rule\": \"OR('Org2MSP.admin', 'Org2MSP.client')\"\n              },\n              \"Admins\": {\n                \"Type\": \"Signature\",\n                \"Rule\": \"OR('Org2MSP.admin')\"\n              }\n            },\n            \"AnchorPeers\": [\n              {\n                \"Host\": \"peer0.org2.example.com\",\n                \"Port\": 7051\n              }\n            ]\n          }\n        ],\n        \"Policies\": {\n          \"Readers\": {\n            \"Type\": \"ImplicitMeta\",\n            \"Rule\": \"ANY Readers\"\n          },\n          \"Writers\": {\n            \"Type\": \"ImplicitMeta\",\n            \"Rule\": \"ANY Writers\"\n          },\n          \"Admins\": {\n            \"Type\": \"ImplicitMeta\",\n            \"Rule\": \"MAJORITY Admins\"\n          }\n        },\n        \"Capabilities\": {\n          \"V1_3\": true,\n          \"V1_2\": false,\n          \"V1_1\": false\n        }\n      }\n    },\n    \"SampleDevModeKafka\": {\n      \"Policies\": {\n        \"Readers\": {\n          \"Type\": \"ImplicitMeta\",\n          \"Rule\": \"ANY Readers\"\n        },\n        \"Writers\": {\n          \"Type\": \"ImplicitMeta\",\n          \"Rule\": \"ANY Writers\"\n        },\n        \"Admins\": {\n          \"Type\": \"ImplicitMeta\",\n          \"Rule\": \"MAJORITY Admins\"\n        }\n      },\n      \"Capabilities\": {\n        \"V1_3\": true\n      },\n      \"Orderer\": {\n        \"OrdererType\": \"kafka\",\n        \"Addresses\": [\n          \"orderer.example.com:7050\"\n        ],\n        \"BatchTimeout\": \"2s\",\n        \"BatchSize\": {\n          \"MaxMessageCount\": 10,\n          \"AbsoluteMaxBytes\": \"99 MB\",\n          \"PreferredMaxBytes\": \"512\"\n        },\n        \"Kafka\": {\n          \"Brokers\": [\n            \"kafka.example.com:9092\"\n          ]\n        },\n        \"Organizations\": [\n          {\n            \"Name\": \"OrdererOrg\",\n            \"ID\": \"OrdererMSP\",\n            \"MSPDir\": \"crypto-config/ordererOrganizations/example.com/msp\",\n            \"Policies\": {\n              \"Readers\": {\n                \"Type\": \"Signature\",\n                \"Rule\": \"OR('OrdererMSP.member')\"\n              },\n              \"Writers\": {\n                \"Type\": \"Signature\",\n                \"Rule\": \"OR('OrdererMSP.member')\"\n              },\n              \"Admins\": {\n                \"Type\": \"Signature\",\n                \"Rule\": \"OR('OrdererMSP.admin')\"\n              }\n            }\n          }\n        ],\n        \"Policies\": {\n          \"Readers\": {\n            \"Type\": \"ImplicitMeta\",\n            \"Rule\": \"ANY Readers\"\n          },\n          \"Writers\": {\n            \"Type\": \"ImplicitMeta\",\n            \"Rule\": \"ANY Writers\"\n          },\n          \"Admins\": {\n            \"Type\": \"ImplicitMeta\",\n            \"Rule\": \"MAJORITY Admins\"\n          },\n          \"BlockValidation\": {\n            \"Type\": \"ImplicitMeta\",\n            \"Rule\": \"ANY Writers\"\n          }\n        },\n        \"Capabilities\": {\n          \"V1_1\": true\n        }\n      },\n      \"Application\": {\n        \"Organizations\": [\n          {\n            \"Name\": \"OrdererOrg\",\n            \"ID\": \"OrdererMSP\",\n            \"MSPDir\": \"crypto-config/ordererOrganizations/example.com/msp\",\n            \"Policies\": {\n              \"Readers\": {\n                \"Type\": \"Signature\",\n                \"Rule\": \"OR('OrdererMSP.member')\"\n              },\n              \"Writers\": {\n                \"Type\": \"Signature\",\n                \"Rule\": \"OR('OrdererMSP.member')\"\n              },\n              \"Admins\": {\n                \"Type\": \"Signature\",\n                \"Rule\": \"OR('OrdererMSP.admin')\"\n              }\n            }\n          }\n        ],\n        \"Policies\": {\n          \"Readers\": {\n            \"Type\": \"ImplicitMeta\",\n            \"Rule\": \"ANY Readers\"\n          },\n          \"Writers\": {\n            \"Type\": \"ImplicitMeta\",\n            \"Rule\": \"ANY Writers\"\n          },\n          \"Admins\": {\n            \"Type\": \"ImplicitMeta\",\n            \"Rule\": \"MAJORITY Admins\"\n          }\n        },\n        \"Capabilities\": {\n          \"V1_3\": true,\n          \"V1_2\": false,\n          \"V1_1\": false\n        }\n      },\n      \"Consortiums\": {\n        \"SampleConsortium\": {\n          \"Organizations\": [\n            {\n              \"Name\": \"Org1MSP\",\n              \"ID\": \"Org1MSP\",\n              \"MSPDir\": \"crypto-config/peerOrganizations/org1.example.com/msp\",\n              \"Policies\": {\n                \"Readers\": {\n                  \"Type\": \"Signature\",\n                  \"Rule\": \"OR('Org1MSP.admin', 'Org1MSP.peer', 'Org1MSP.client')\"\n                },\n                \"Writers\": {\n                  \"Type\": \"Signature\",\n                  \"Rule\": \"OR('Org1MSP.admin', 'Org1MSP.client')\"\n                },\n                \"Admins\": {\n                  \"Type\": \"Signature\",\n                  \"Rule\": \"OR('Org1MSP.admin')\"\n                }\n              },\n              \"AnchorPeers\": [\n                {\n                  \"Host\": \"peer0.org1.example.com\",\n                  \"Port\": 7051\n                }\n              ]\n            },\n            {\n              \"Name\": \"Org2MSP\",\n              \"ID\": \"Org2MSP\",\n              \"MSPDir\": \"crypto-config/peerOrganizations/org2.example.com/msp\",\n              \"Policies\": {\n                \"Readers\": {\n                  \"Type\": \"Signature\",\n                  \"Rule\": \"OR('Org2MSP.admin', 'Org2MSP.peer', 'Org2MSP.client')\"\n                },\n                \"Writers\": {\n                  \"Type\": \"Signature\",\n                  \"Rule\": \"OR('Org2MSP.admin', 'Org2MSP.client')\"\n                },\n                \"Admins\": {\n                  \"Type\": \"Signature\",\n                  \"Rule\": \"OR('Org2MSP.admin')\"\n                }\n              },\n              \"AnchorPeers\": [\n                {\n                  \"Host\": \"peer0.org2.example.com\",\n                  \"Port\": 7051\n                }\n              ]\n            }\n          ]\n        }\n      }\n    }\n  }\n}"
+	err  :=json.Unmarshal([]byte(configstr),&topLevelConfig)
+	fmt.Println("err",err)
+
+//}
+
+
+	var genProfile *genesisconfig.Profile
+	var c1 *genesisconfig.Profile
+
+	genProfile = topLevelConfig.Profiles["OneOrgsOrdererGenesis"]
+	if genProfile != nil{
+		fmt.Println("genProfile",*genProfile)
+	}else{
+		fmt.Println("nil")
+	}
+	c1 = topLevelConfig.Profiles["OneOrgsChannel"]
+
+	if c1 != nil{
+		fmt.Println("c1",*c1)
+	}else{
+		fmt.Println("nil")
 	}
 
+
 	if outputBlock != "" {
-		if err := doOutputBlock(profileConfig, channelID, outputBlock); err != nil {
+		if err := doOutputBlock(genProfile, channelID, outputBlock); err != nil {
 			logger.Fatalf("Error on outputBlock: %s", err)
 		}
 	}
 
 	if outputChannelCreateTx != "" {
-		if err := doOutputChannelCreateTx(profileConfig, channelID, outputChannelCreateTx); err != nil {
+		if err := doOutputChannelCreateTx(c1, channelID, outputChannelCreateTx); err != nil {
 			logger.Fatalf("Error on outputChannelCreateTx: %s", err)
 		}
 	}

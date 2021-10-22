@@ -192,6 +192,7 @@ func GetLocalMspConfig(dir string, bccspConfig *factory.FactoryOpts, ID string) 
 
 // GetVerifyingMspConfig returns an MSP config given directory, ID and type
 func GetVerifyingMspConfig(dir, ID, mspType string) (*msp.MSPConfig, error) {
+	mspType = "bccsp"
 	switch mspType {
 	case ProviderTypeToString(FABRIC):
 		return getMspConfig(dir, ID, nil)
