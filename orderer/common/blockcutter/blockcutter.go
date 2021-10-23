@@ -43,6 +43,10 @@ type receiver struct {
 
 // NewReceiverImpl creates a Receiver implementation based on the given configtxorderer manager
 func NewReceiverImpl(channelID string, sharedConfigFetcher OrdererConfigFetcher, metrics *Metrics) Receiver {
+	logger.Info("=======blockcutter:start====")
+	defer func() {
+		logger.Info("=======blockcutter:end====")
+	}()
 	return &receiver{
 		sharedConfigFetcher: sharedConfigFetcher,
 		Metrics:             metrics,
@@ -129,7 +133,10 @@ func (r *receiver) Ordered(msg *cb.Envelope) (messageBatches [][]*cb.Envelope, p
 
 // Cut returns the current batch and starts a new one
 func (r *receiver) Cut() []*cb.Envelope {
-	logger.Info("====Cut===")
+	logger.Info("=====receiver==blockcutter:start====")
+	defer func() {
+		logger.Info("===receiver====blockcutter:end====")
+	}()
 	r.Metrics.BlockFillDuration.With("channel", r.ChannelID).Observe(time.Since(r.PendingBatchStartTime).Seconds())
 	r.PendingBatchStartTime = time.Time{}
 	batch := r.pendingBatch
@@ -139,6 +146,9 @@ func (r *receiver) Cut() []*cb.Envelope {
 }
 
 func messageSizeBytes(message *cb.Envelope) uint32 {
-	logger.Info("====messageSizeBytes===")
+	logger.Info("=====messageSizeBytes:start====")
+	defer func() {
+		logger.Info("===messageSizeBytes:end====")
+	}()
 	return uint32(len(message.Payload) + len(message.Signature))
 }

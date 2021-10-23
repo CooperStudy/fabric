@@ -31,6 +31,10 @@ const (
 // and from a signer and TLS key cert pair.
 // The PullerConfig's channel is initialized to be the system channel.
 func PullerConfigFromTopLevelConfig(systemChannel string, conf *localconfig.TopLevel, tlsKey, tlsCert []byte, signer crypto.LocalSigner) PullerConfig {
+	logger.Info("=PullerConfigFromTopLevelConfig   Clone:start===")
+	defer func() {
+		logger.Info("==PullerConfigFromTopLevelConfig    Clone:end===")
+	}()
 	return PullerConfig{
 		Channel:             systemChannel,
 		MaxTotalBufferBytes: conf.General.Cluster.ReplicationBufferSize,
@@ -85,7 +89,10 @@ type Replicator struct {
 // IsReplicationNeeded returns whether replication is needed,
 // or the cluster node can resume standard boot flow.
 func (r *Replicator) IsReplicationNeeded() (bool, error) {
-	logger.Info("====IsReplicationNeeded===")
+	logger.Info("=Replicator==IsReplicationNeeded:start===")
+	defer func() {
+		logger.Info("=Replicator==IsReplicationNeeded:end===")
+	}()
 	systemChannelLedger, err := r.LedgerFactory.GetOrCreate(r.SystemChannel)
 	if err != nil {
 		return false, err
@@ -109,7 +116,10 @@ func (r *Replicator) IsReplicationNeeded() (bool, error) {
 
 // ReplicateChains pulls chains and commits them.
 func (r *Replicator) ReplicateChains() {
-	logger.Info("====ReplicateChains===")
+	logger.Info("=Replicator==ReplicateChains:start===")
+	defer func() {
+		logger.Info("=Replicator==ReplicateChains:end===")
+	}()
 	channels := r.discoverChannels()
 	channels2Pull := r.channelsToPull(channels)
 	r.Logger.Info("Found myself in", len(channels2Pull), "channels:", channels2Pull)
@@ -123,7 +133,10 @@ func (r *Replicator) ReplicateChains() {
 }
 
 func (r *Replicator) discoverChannels() []string {
-	logger.Info("====discoverChannels===")
+	logger.Info("=Replicator==discoverChannels:start===")
+	defer func() {
+		logger.Info("=Replicator==discoverChannels:end===")
+	}()
 	r.Logger.Debug("Entering")
 	defer r.Logger.Debug("Exiting")
 	channels := r.ChannelLister.Channels()
@@ -135,7 +148,10 @@ func (r *Replicator) discoverChannels() []string {
 // PullChannel pulls the given channel from some orderer,
 // and commits it to the ledger.
 func (r *Replicator) PullChannel(channel string) error {
-	logger.Info("====PullChannel===")
+	logger.Info("=Replicator==PullChannel:start===")
+	defer func() {
+		logger.Info("=Replicator==PullChannel:end===")
+	}()
 	r.Logger.Info("Pulling channel", channel)
 	puller := r.Puller.Clone()
 	defer puller.Close()
@@ -157,7 +173,10 @@ func (r *Replicator) PullChannel(channel string) error {
 }
 
 func (r *Replicator) pullChannelBlocks(channel string, puller ChainPuller, latestHeight uint64) error {
-	logger.Info("====pullChannelBlocks===")
+	logger.Info("=Replicator==pullChannelBlocks:start===")
+	defer func() {
+		logger.Info("=Replicator==pullChannelBlocks:end===")
+	}()
 	ledger, err := r.LedgerFactory.GetOrCreate(channel)
 	if err != nil {
 		r.Logger.Panicf("Failed to create a ledger for channel %s: %v", channel, err)
@@ -187,14 +206,20 @@ func (r *Replicator) pullChannelBlocks(channel string, puller ChainPuller, lates
 }
 
 func (r *Replicator) appendBlock(block *common.Block, ledger LedgerWriter) {
-	logger.Info("====appendBlock===")
+	logger.Info("=Replicator==appendBlock:start===")
+	defer func() {
+		logger.Info("=Replicator==appendBlock:end===")
+	}()
 	if err := ledger.Append(block); err != nil {
 		r.Logger.Panicf("Failed to write block %d: %v", block.Header.Number, err)
 	}
 }
 
 func (r *Replicator) compareBootBlockWithSystemChannelLastConfigBlock(block *common.Block) {
-	logger.Info("====compareBootBlockWithSystemChannelLastConfigBlock===")
+	logger.Info("=Replicator==compareBootBlockWithSystemChannelLastConfigBlock:start===")
+	defer func() {
+		logger.Info("=Replicator==compareBootBlockWithSystemChannelLastConfigBlock:end===")
+	}()
 	// Overwrite the received block's data hash
 	block.Header.DataHash = block.Data.Hash()
 
@@ -208,7 +233,10 @@ func (r *Replicator) compareBootBlockWithSystemChannelLastConfigBlock(block *com
 }
 
 func (r *Replicator) channelsToPull(channels []string) []string {
-	logger.Info("====channelsToPull===")
+	logger.Info("=Replicator==channelsToPull:start===")
+	defer func() {
+		logger.Info("=Replicator==channelsToPull:end===")
+	}()
 	r.Logger.Info("Will now pull channels:", channels)
 	var channelsToPull []string
 	for _, channel := range channels {
@@ -248,7 +276,10 @@ type PullerConfig struct {
 
 // BlockPullerFromConfigBlock returns a BlockPuller that doesn't verify signatures on blocks.
 func BlockPullerFromConfigBlock(conf PullerConfig, block *common.Block) (*BlockPuller, error) {
-	logger.Info("====BlockPullerFromConfigBlock===")
+	logger.Info("===BlockPullerFromConfigBlock:start===")
+	defer func() {
+		logger.Info("===BlockPullerFromConfigBlock:end===")
+	}()
 	if block == nil {
 		return nil, errors.New("nil block")
 	}
@@ -296,7 +327,10 @@ type NoopBlockVerifier struct{}
 
 // VerifyBlockSignature accepts all signatures over blocks.
 func (*NoopBlockVerifier) VerifyBlockSignature(sd []*common.SignedData, config *common.ConfigEnvelope) error {
-	logger.Info("====VerifyBlockSignature===")
+	logger.Info("===VerifyBlockSignature:start===")
+	defer func() {
+		logger.Info("===VerifyBlockSignature:end===")
+	}()
 	return nil
 }
 
@@ -333,7 +367,10 @@ type selfMembershipPredicate func(configBlock *common.Block) error
 // It returns nil if the caller participates in the chain.
 // It may return notInChannelError error in case the caller doesn't participate in the chain.
 func Participant(puller ChainPuller, analyzeLastConfBlock selfMembershipPredicate) error {
-	logger.Info("====Participant===")
+	logger.Info("===Participant:start===")
+	defer func() {
+		logger.Info("===Participant:end===")
+	}()
 	endpoint, latestHeight := latestHeightAndEndpoint(puller)
 	if endpoint == "" {
 		return errors.New("no available orderer")
@@ -352,7 +389,10 @@ func Participant(puller ChainPuller, analyzeLastConfBlock selfMembershipPredicat
 }
 
 func latestHeightAndEndpoint(puller ChainPuller) (string, uint64) {
-	logger.Info("====latestHeightAndEndpoint===")
+	logger.Info("===latestHeightAndEndpoint:start===")
+	defer func() {
+		logger.Info("===latestHeightAndEndpoint:end===")
+	}()
 	var maxHeight uint64
 	var mostUpToDateEndpoint string
 	for endpoint, height := range puller.HeightsByEndpoints() {
@@ -365,7 +405,10 @@ func latestHeightAndEndpoint(puller ChainPuller) (string, uint64) {
 }
 
 func lastConfigFromBlock(block *common.Block) (uint64, error) {
-	logger.Info("====lastConfigFromBlock===")
+	logger.Info("===lastConfigFromBlock:start===")
+	defer func() {
+		logger.Info("===lastConfigFromBlock:end===")
+	}()
 	if block.Metadata == nil || len(block.Metadata.Metadata) <= int(common.BlockMetadataIndex_LAST_CONFIG) {
 		return 0, errors.New("no metadata in block")
 	}
@@ -374,13 +417,20 @@ func lastConfigFromBlock(block *common.Block) (uint64, error) {
 
 // Close closes the ChainInspector
 func (ci *ChainInspector) Close() {
+	logger.Info("=ChainInspector==Close:start===")
+	defer func() {
+		logger.Info("==ChainInspector=Close:end===")
+	}()
 	ci.Puller.Close()
 }
 
 // Channels returns the list of channels
 // that exist in the chain
 func (ci *ChainInspector) Channels() []string {
-	logger.Info("====Channels===")
+	logger.Info("=ChainInspector==Channels:start===")
+	defer func() {
+		logger.Info("==ChainInspector=Channels:end===")
+	}()
 	channels := make(map[string]struct{})
 	lastConfigBlockNum := ci.LastConfigBlock.Header.Number
 	var block *common.Block
@@ -418,7 +468,10 @@ func (ci *ChainInspector) Channels() []string {
 }
 
 func (ci *ChainInspector) validateHashPointer(block *common.Block, prevHash []byte) {
-	logger.Info("====validateHashPointer===")
+	logger.Info("=ChainInspector==validateHashPointer:start===")
+	defer func() {
+		logger.Info("==ChainInspector=validateHashPointer:end===")
+	}()
 	if prevHash == nil {
 		return
 	}
@@ -430,7 +483,10 @@ func (ci *ChainInspector) validateHashPointer(block *common.Block, prevHash []by
 }
 
 func flattenChannelMap(m map[string]struct{}) []string {
-	logger.Info("====flattenChannelMap===")
+	logger.Info("=flattenChannelMap:start===")
+	defer func() {
+		logger.Info("==flattenChannelMap:end===")
+	}()
 	var res []string
 	for channel := range m {
 		res = append(res, channel)
@@ -441,7 +497,10 @@ func flattenChannelMap(m map[string]struct{}) []string {
 // IsNewChannelBlock returns a name of the channel in case
 // it holds a channel create transaction, or empty string otherwise.
 func IsNewChannelBlock(block *common.Block) (string, error) {
-	logger.Info("====IsNewChannelBlock===")
+	logger.Info("=IsNewChannelBlock:start===")
+	defer func() {
+		logger.Info("==IsNewChannelBlock:end===")
+	}()
 	if block == nil {
 		return "", errors.New("nil block")
 	}

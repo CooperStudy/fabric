@@ -108,9 +108,9 @@ type MetricsTracker struct {
 }
 
 func (mt *MetricsTracker) Record(resp *ab.BroadcastResponse) {
-	logger.Info("====Record:start===")
+	logger.Info("==MetricsTracker==Record:start===")
 	defer func() {
-		logger.Info("====Record:end===")
+		logger.Info("=MetricsTracker===Record:end===")
 	}()
 	labels := []string{
 		"status", resp.Status.String(),
@@ -132,28 +132,34 @@ func (mt *MetricsTracker) Record(resp *ab.BroadcastResponse) {
 }
 
 func (mt *MetricsTracker) BeginValidate() {
-	logger.Info("====BeginValidate:start===")
+	logger.Info("===MetricsTracker=BeginValidate:start===")
 	defer func() {
-		logger.Info("====BeginValidate:end===")
+		logger.Info("==MetricsTracker==BeginValidate:end===")
 	}()
 	mt.ValidateStartTime = time.Now()
 }
 
 func (mt *MetricsTracker) EndValidate() {
-	logger.Info("====EndValidate===")
+	logger.Info("===MetricsTracker=EndValidate:start===")
+	defer func() {
+		logger.Info("==MetricsTracker==EndValidate:end===")
+	}()
 	mt.ValidateDuration = time.Since(mt.ValidateStartTime)
 }
 
 func (mt *MetricsTracker) BeginEnqueue() {
-	logger.Info("====BeginEnqueue===")
+	logger.Info("===MetricsTracker=BeginEnqueue:start===")
+	defer func() {
+		logger.Info("==MetricsTracker==BeginEnqueue:end===")
+	}()
 	mt.EnqueueStartTime = time.Now()
 }
 
 // ProcessMessage validates and enqueues a single message
 func (bh *Handler) ProcessMessage(msg *cb.Envelope, addr string) (resp *ab.BroadcastResponse) {
-	logger.Info("====ProcessMessage:start===")
+	logger.Info("===Handler=ProcessMessage:start===")
 	defer func() {
-		logger.Info("====ProcessMessage:end===")
+		logger.Info("===Handler=ProcessMessage:end===")
 	}()
 	tracker := &MetricsTracker{
 		ChannelID: "unknown",
@@ -231,7 +237,10 @@ func (bh *Handler) ProcessMessage(msg *cb.Envelope, addr string) (resp *ab.Broad
 
 // ClassifyError converts an error type into a status code.
 func ClassifyError(err error) cb.Status {
-	logger.Info("====ClassifyError===")
+	logger.Info("===ClassifyError:start===")
+	defer func() {
+		logger.Info("===ClassifyError:end===")
+	}()
 	switch errors.Cause(err) {
 	case msgprocessor.ErrChannelDoesNotExist:
 		return cb.Status_NOT_FOUND

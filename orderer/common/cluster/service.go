@@ -43,7 +43,10 @@ type Service struct {
 
 // Step forwards a message to a raft FSM located in this server
 func (s *Service) Step(ctx context.Context, request *orderer.StepRequest) (*orderer.StepResponse, error) {
-	logger.Info("====Step===")
+	logger.Info("====Service==Step:start===")
+	defer func() {
+		logger.Info("==Service==Step:end===")
+	}()
 	addr := util.ExtractRemoteAddress(ctx)
 	s.StepLogger.Debugf("Connection from %s", addr)
 	defer s.StepLogger.Debugf("Closing connection from %s", addr)
@@ -56,7 +59,10 @@ func (s *Service) Step(ctx context.Context, request *orderer.StepRequest) (*orde
 
 // Submit accepts transactions
 func (s *Service) Submit(stream orderer.Cluster_SubmitServer) error {
-	logger.Info("====Submit===")
+	logger.Info("====Service==Submit:start===")
+	defer func() {
+		logger.Info("==Service==Submit:end===")
+	}()
 	addr := util.ExtractRemoteAddress(stream.Context())
 	s.Logger.Debugf("Connection from %s", addr)
 	defer s.Logger.Debugf("Closing connection from %s", addr)
@@ -74,7 +80,10 @@ func (s *Service) Submit(stream orderer.Cluster_SubmitServer) error {
 }
 
 func (s *Service) handleSubmit(stream SubmitStream, addr string) error {
-	logger.Info("====handleSubmit===")
+	logger.Info("====Service==handleSubmit:start===")
+	defer func() {
+		logger.Info("==Service==handleSubmit:end===")
+	}()
 	request, err := stream.Recv()
 	if err == io.EOF {
 		return err

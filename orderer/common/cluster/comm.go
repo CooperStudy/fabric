@@ -100,7 +100,10 @@ type requestContext struct {
 // to the underlying Handler
 var logger = flogging.MustGetLogger("orderer.common.cluster.comm.go")
 func (c *Comm) DispatchSubmit(ctx context.Context, request *orderer.SubmitRequest) (*orderer.SubmitResponse, error) {
-	logger.Info("====DispatchSubmit===")
+	logger.Info("=Comm==DispatchSubmit:start===")
+	defer func() {
+		logger.Info("==Comm=DispatchSubmit:end===")
+	}()
 	c.Logger.Debug(request.Channel)
 	reqCtx, err := c.requestContext(ctx, request)
 	if err != nil {
@@ -112,7 +115,10 @@ func (c *Comm) DispatchSubmit(ctx context.Context, request *orderer.SubmitReques
 // DispatchStep identifies the channel and sender of the step request and passes it
 // to the underlying Handler
 func (c *Comm) DispatchStep(ctx context.Context, request *orderer.StepRequest) (*orderer.StepResponse, error) {
-	logger.Info("====DispatchStep===")
+	logger.Info("=Comm==DispatchStep:start===")
+	defer func() {
+		logger.Info("==Comm=DispatchStep:end===")
+	}()
 	reqCtx, err := c.requestContext(ctx, request)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -123,7 +129,10 @@ func (c *Comm) DispatchStep(ctx context.Context, request *orderer.StepRequest) (
 // classifyRequest identifies the sender and channel of the request and returns
 // it wrapped in a requestContext
 func (c *Comm) requestContext(ctx context.Context, msg proto.Message) (*requestContext, error) {
-	logger.Info("====requestContext===")
+	logger.Info("=Comm==requestContext:start===")
+	defer func() {
+		logger.Info("==Comm=requestContext:end===")
+	}()
 	channel := c.ChanExt.TargetChannel(msg)
 	if channel == "" {
 		return nil, errors.Errorf("badly formatted message, cannot extract channel")
@@ -153,7 +162,10 @@ func (c *Comm) requestContext(ctx context.Context, msg proto.Message) (*requestC
 // Remote obtains a RemoteContext linked to the destination node on the context
 // of a given channel
 func (c *Comm) Remote(channel string, id uint64) (*RemoteContext, error) {
-	logger.Info("====Remote===")
+	logger.Info("=Comm==Remote:start===")
+	defer func() {
+		logger.Info("==Comm=Remote:end===")
+	}()
 	c.Lock.RLock()
 	defer c.Lock.RUnlock()
 
@@ -183,7 +195,10 @@ func (c *Comm) Remote(channel string, id uint64) (*RemoteContext, error) {
 
 // Configure configures the channel with the given RemoteNodes
 func (c *Comm) Configure(channel string, newNodes []RemoteNode) {
-	logger.Info("====Configure===")
+	logger.Info("=Comm==Configure:start===")
+	defer func() {
+		logger.Info("==Comm=Configure:end===")
+	}()
 	c.Logger.Infof("Entering, channel: %s, nodes: %v", channel, newNodes)
 	defer c.Logger.Infof("Exiting")
 
@@ -203,7 +218,10 @@ func (c *Comm) Configure(channel string, newNodes []RemoteNode) {
 
 // Shutdown shuts down the instance
 func (c *Comm) Shutdown() {
-	logger.Info("====Shutdown===")
+	logger.Info("=Comm==Shutdown:start===")
+	defer func() {
+		logger.Info("==Comm=Shutdown:end===")
+	}()
 	c.Lock.Lock()
 	defer c.Lock.Unlock()
 
@@ -218,7 +236,10 @@ func (c *Comm) Shutdown() {
 // cleanUnusedConnections disconnects all connections that are un-used
 // at the moment of the invocation
 func (c *Comm) cleanUnusedConnections(serverCertsBeforeConfig StringSet) {
-	logger.Info("====cleanUnusedConnections===")
+	logger.Info("=Comm==cleanUnusedConnections:start===")
+	defer func() {
+		logger.Info("==Comm=cleanUnusedConnections:end===")
+	}()
 	// Scan all nodes after the reconfiguration
 	serverCertsAfterConfig := c.serverCertsInUse()
 	// Filter out the certificates that remained after the reconfiguration
@@ -232,6 +253,10 @@ func (c *Comm) cleanUnusedConnections(serverCertsBeforeConfig StringSet) {
 // serverCertsInUse returns the server certificates that are in use
 // represented as strings.
 func (c *Comm) serverCertsInUse() StringSet {
+	logger.Info("=Comm==serverCertsInUse:start===")
+	defer func() {
+		logger.Info("==Comm=serverCertsInUse:end===")
+	}()
 	logger.Info("====serverCertsInUse===")
 	endpointsInUse := make(StringSet)
 	for _, mapping := range c.Chan2Members {
@@ -242,7 +267,10 @@ func (c *Comm) serverCertsInUse() StringSet {
 
 // applyMembershipConfig sets the given RemoteNodes for the given channel
 func (c *Comm) applyMembershipConfig(channel string, newNodes []RemoteNode) {
-	logger.Info("====applyMembershipConfig===")
+	logger.Info("=Comm==applyMembershipConfig:start===")
+	defer func() {
+		logger.Info("==Comm=applyMembershipConfig:end===")
+	}()
 	mapping := c.getOrCreateMapping(channel)
 	newNodeIDs := make(map[uint64]struct{})
 
@@ -266,7 +294,10 @@ func (c *Comm) applyMembershipConfig(channel string, newNodes []RemoteNode) {
 
 // updateStubInMapping updates the given RemoteNode and adds it to the MemberMapping
 func (c *Comm) updateStubInMapping(mapping MemberMapping, node RemoteNode) {
-	logger.Info("====updateStubInMapping===")
+	logger.Info("=Comm==updateStubInMapping:start===")
+	defer func() {
+		logger.Info("==Comm=updateStubInMapping:end===")
+	}()
 	stub := mapping.ByID(node.ID)
 	if stub == nil {
 		c.Logger.Info("Allocating a new stub for node", node.ID, "with endpoint of", node.Endpoint)
@@ -300,7 +331,10 @@ func (c *Comm) updateStubInMapping(mapping MemberMapping, node RemoteNode) {
 // It is used as a parameter to Stub.Activate() in order to activate
 // a stub atomically.
 func (c *Comm) createRemoteContext(stub *Stub) func() (*RemoteContext, error) {
-	logger.Info("====createRemoteContext===")
+	logger.Info("=Comm==createRemoteContext:start===")
+	defer func() {
+		logger.Info("==Comm=createRemoteContext:end===")
+	}()
 	return func() (*RemoteContext, error) {
 		timeout := c.RPCTimeout
 		if timeout == time.Duration(0) {
@@ -332,7 +366,10 @@ func (c *Comm) createRemoteContext(stub *Stub) func() (*RemoteContext, error) {
 // getOrCreateMapping creates a MemberMapping for the given channel
 // or returns the existing one.
 func (c *Comm) getOrCreateMapping(channel string) MemberMapping {
-	logger.Info("====getOrCreateMapping===")
+	logger.Info("=Comm==getOrCreateMapping:start===")
+	defer func() {
+		logger.Info("==Comm=getOrCreateMapping:end===")
+	}()
 	// Lazily create a mapping if it doesn't already exist
 	mapping, exists := c.Chan2Members[channel]
 	if !exists {
@@ -354,7 +391,10 @@ type Stub struct {
 // Active returns whether the Stub
 // is active or not
 func (stub *Stub) Active() bool {
-	logger.Info("====Active===")
+	logger.Info("=Stub==Active:start===")
+	defer func() {
+		logger.Info("==Stub=Active:end===")
+	}()
 	stub.lock.RLock()
 	defer stub.lock.RUnlock()
 	return stub.isActive()
@@ -363,7 +403,10 @@ func (stub *Stub) Active() bool {
 // Active returns whether the Stub
 // is active or not.
 func (stub *Stub) isActive() bool {
-	logger.Info("====isActive===")
+	logger.Info("=Stub==isActive:start===")
+	defer func() {
+		logger.Info("==Stub=isActive:end===")
+	}()
 	return stub.RemoteContext != nil
 }
 
@@ -371,7 +414,10 @@ func (stub *Stub) isActive() bool {
 // ceases all communication operations
 // invoked on it.
 func (stub *Stub) Deactivate() {
-	logger.Info("====Deactivate===")
+	logger.Info("=Stub==Deactivate:start===")
+	defer func() {
+		logger.Info("==Stub=Deactivate:end===")
+	}()
 	stub.lock.Lock()
 	defer stub.lock.Unlock()
 	if !stub.isActive() {
@@ -385,7 +431,10 @@ func (stub *Stub) Deactivate() {
 // in an atomic manner - if two parallel invocations are invoked on this Stub,
 // only a single invocation of createRemoteStub takes place.
 func (stub *Stub) Activate(createRemoteContext func() (*RemoteContext, error)) error {
-	logger.Info("====Activate===")
+	logger.Info("=Stub==Activate:start===")
+	defer func() {
+		logger.Info("==Stub=Activate:end===")
+	}()
 	stub.lock.Lock()
 	defer stub.lock.Unlock()
 	// Check if the stub has already been activated while we were waiting for the lock
@@ -416,7 +465,10 @@ type RemoteContext struct {
 
 // SubmitStream creates a new Submit stream
 func (rc *RemoteContext) SubmitStream() (orderer.Cluster_SubmitClient, error) {
-	logger.Info("====SubmitStream===")
+	logger.Info("=RemoteContext==SubmitStream:start===")
+	defer func() {
+		logger.Info("==RemoteContext=SubmitStream:end===")
+	}()
 	rc.submitLock.Lock()
 	defer rc.submitLock.Unlock()
 	// Close previous submit stream to prevent resource leak
@@ -435,7 +487,10 @@ func (rc *RemoteContext) SubmitStream() (orderer.Cluster_SubmitClient, error) {
 
 // Step passes an implementation-specific message to another cluster member.
 func (rc *RemoteContext) Step(req *orderer.StepRequest) (*orderer.StepResponse, error) {
-	logger.Info("====Step===")
+	logger.Info("=RemoteContext==Step:start===")
+	defer func() {
+		logger.Info("==RemoteContext=Step:end===")
+	}()
 	ctx, abort := context.WithCancel(context.TODO())
 	ctx, cancel := context.WithTimeout(ctx, rc.RPCTimeout)
 	defer cancel()
@@ -451,7 +506,10 @@ func (rc *RemoteContext) Step(req *orderer.StepRequest) (*orderer.StepResponse, 
 // thus effectively causes all operations on the embedded
 // ClusterClient to end.
 func (rc *RemoteContext) Abort() {
-	logger.Info("====Abort===")
+	logger.Info("=RemoteContext==Abort:start===")
+	defer func() {
+		logger.Info("==RemoteContext=Abort:end===")
+	}()
 	rc.stepLock.Lock()
 	defer rc.stepLock.Unlock()
 
@@ -470,7 +528,10 @@ func (rc *RemoteContext) Abort() {
 // closeSubmitStream closes the Submit stream
 // and invokes its cancellation function
 func (rc *RemoteContext) closeSubmitStream() {
-	logger.Info("====closeSubmitStream===")
+	logger.Info("=RemoteContext==closeSubmitStream:start===")
+	defer func() {
+		logger.Info("==RemoteContext=closeSubmitStream:end===")
+	}()
 	if rc.cancelSubmitStream != nil {
 		rc.cancelSubmitStream()
 		rc.cancelSubmitStream = nil

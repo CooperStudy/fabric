@@ -30,20 +30,29 @@ type ConnByCertMap map[string]*grpc.ClientConn
 // Lookup looks up a certificate and returns the connection that was mapped
 // to the certificate, and whether it was found or not
 func (cbc ConnByCertMap) Lookup(cert []byte) (*grpc.ClientConn, bool) {
-	logger.Info("====Lookup===")
+	logger.Info("==MemberMapping=Lookup:start===")
+	defer func() {
+		logger.Info("==MemberMapping=Lookup:end===")
+	}()
 	conn, ok := cbc[string(cert)]
 	return conn, ok
 }
 
 // Put associates the given connection to the certificate
 func (cbc ConnByCertMap) Put(cert []byte, conn *grpc.ClientConn) {
-	logger.Info("====Put===")
+	logger.Info("==MemberMapping=Put:start===")
+	defer func() {
+		logger.Info("==MemberMapping=Put:end===")
+	}()
 	cbc[string(cert)] = conn
 }
 
 // Remove removes the connection that is associated to the given certificate
 func (cbc ConnByCertMap) Remove(cert []byte) {
-	logger.Info("====Remove===")
+	logger.Info("==MemberMapping=Remove:start===")
+	defer func() {
+		logger.Info("==MemberMapping=Remove:end===")
+	}()
 	delete(cbc, string(cert))
 }
 
@@ -52,19 +61,28 @@ type MemberMapping map[uint64]*Stub
 
 // Put inserts the given stub to the MemberMapping
 func (mp MemberMapping) Put(stub *Stub) {
-	logger.Info("====Put===")
+	logger.Info("==MemberMapping=Put:start===")
+	defer func() {
+		logger.Info("==MemberMapping=Put:end===")
+	}()
 	mp[stub.ID] = stub
 }
 
 // ByID retrieves the Stub with the given ID from the MemberMapping
 func (mp MemberMapping) ByID(ID uint64) *Stub {
-	logger.Info("====ByID===")
+	logger.Info("==MemberMapping=ByID:start===")
+	defer func() {
+		logger.Info("==MemberMapping=ByID:end===")
+	}()
 	return mp[ID]
 }
 
 // LookupByClientCert retrieves a Stub with the given client certificate
 func (mp MemberMapping) LookupByClientCert(cert []byte) *Stub {
-	logger.Info("====LookupByClientCert===")
+	logger.Info("==MemberMapping=LookupByClientCert:start===")
+	defer func() {
+		logger.Info("==MemberMapping=LookupByClientCert:end===")
+	}()
 	for _, stub := range mp {
 		if bytes.Equal(stub.ClientTLSCert, cert) {
 			return stub
@@ -76,7 +94,10 @@ func (mp MemberMapping) LookupByClientCert(cert []byte) *Stub {
 // ServerCertificates returns a set of the server certificates
 // represented as strings
 func (mp MemberMapping) ServerCertificates() StringSet {
-	logger.Info("====ServerCertificates===")
+	logger.Info("==MemberMapping=ServerCertificates:start===")
+	defer func() {
+		logger.Info("==MemberMapping=ServerCertificates:end===")
+	}()
 	res := make(StringSet)
 	for _, member := range mp {
 		res[string(member.ServerTLSCert)] = struct{}{}
@@ -89,7 +110,10 @@ type StringSet map[string]struct{}
 
 // union adds the elements of the given set to the StringSet
 func (ss StringSet) union(set StringSet) {
-	logger.Info("====union===")
+	logger.Info("===StringSet=union:start===")
+	defer func() {
+		logger.Info("===StringSet=union:end===")
+	}()
 	for k := range set {
 		ss[k] = struct{}{}
 	}
@@ -97,7 +121,10 @@ func (ss StringSet) union(set StringSet) {
 
 // subtract removes all elements in the given set from the StringSet
 func (ss StringSet) subtract(set StringSet) {
-	logger.Info("====subtract===")
+	logger.Info("===StringSet=subtract:start===")
+	defer func() {
+		logger.Info("===StringSet=subtract:end===")
+	}()
 	for k := range set {
 		delete(ss, k)
 	}
@@ -112,7 +139,10 @@ type PredicateDialer struct {
 
 // NewTLSPinningDialer creates a new PredicateDialer
 func NewTLSPinningDialer(config comm.ClientConfig) *PredicateDialer {
-	logger.Info("====NewTLSPinningDialer===")
+	logger.Info("====NewTLSPinningDialer:start===")
+	defer func() {
+		logger.Info("====NewTLSPinningDialer:end===")
+	}()
 	d := &PredicateDialer{}
 	d.SetConfig(config)
 	return d
@@ -121,7 +151,10 @@ func NewTLSPinningDialer(config comm.ClientConfig) *PredicateDialer {
 // ClientConfig returns the comm.ClientConfig, or an error
 // if they cannot be extracted.
 func (dialer *PredicateDialer) ClientConfig() (comm.ClientConfig, error) {
-	logger.Info("====ClientConfig===")
+	logger.Info("===PredicateDialer=ClientConfig:start===")
+	defer func() {
+		logger.Info("==PredicateDialer==ClientConfig:end===")
+	}()
 	val := dialer.Config.Load()
 	if val == nil {
 		return comm.ClientConfig{}, errors.New("client config not initialized")
@@ -147,9 +180,9 @@ func (dialer *PredicateDialer) ClientConfig() (comm.ClientConfig, error) {
 
 // SetConfig sets the configuration of the PredicateDialer
 func (dialer *PredicateDialer) SetConfig(config comm.ClientConfig) {
-	logger.Info("====SetConfig:start===")
+	logger.Info("===PredicateDialer=SetConfig:start===")
 	defer func() {
-		logger.Info("====SetConfig:end===")
+		logger.Info("==PredicateDialer==SetConfig:end===")
 	}()
 	configCopy := comm.ClientConfig{
 		AsyncConnect: config.AsyncConnect,
@@ -173,7 +206,10 @@ func (dialer *PredicateDialer) SetConfig(config comm.ClientConfig) {
 // Dial creates a new gRPC connection that can only be established, if the remote node's
 // certificate chain satisfy verifyFunc
 func (dialer *PredicateDialer) Dial(address string, verifyFunc RemoteVerifier) (*grpc.ClientConn, error) {
-	logger.Info("====Dial===")
+	logger.Info("===PredicateDialer:start===")
+	defer func() {
+		logger.Info("=PredicateDialer:end===")
+	}()
 	cfg := dialer.Config.Load().(comm.ClientConfig)
 	cfg.SecOpts.VerifyCertificate = verifyFunc
 	client, err := comm.NewGRPCClient(cfg)
@@ -186,7 +222,10 @@ func (dialer *PredicateDialer) Dial(address string, verifyFunc RemoteVerifier) (
 // DERtoPEM returns a PEM representation of the DER
 // encoded certificate
 func DERtoPEM(der []byte) string {
-	logger.Info("====DERtoPEM===")
+	logger.Info("===DERtoPEM:start===")
+	defer func() {
+		logger.Info("=DERtoPEM:end===")
+	}()
 	return string(pem.EncodeToMemory(&pem.Block{
 		Type:  "CERTIFICATE",
 		Bytes: der,
@@ -201,7 +240,10 @@ type StandardDialer struct {
 
 // Dial dials to the given address
 func (bdp *StandardDialer) Dial(address string) (*grpc.ClientConn, error) {
-	logger.Info("====Dial===")
+	logger.Info("===StandardDialer=Dial:start===")
+	defer func() {
+		logger.Info("=StandardDialer=Dial:end===")
+	}()
 	return bdp.Dialer.Dial(address, nil)
 }
 
@@ -230,7 +272,10 @@ type Dialer interface {
 // VerifyBlocks verifies the given consecutive sequence of blocks is valid,
 // and returns nil if it's valid, else an error.
 func VerifyBlocks(blockBuff []*common.Block, signatureVerifier BlockVerifier) error {
-	logger.Info("====VerifyBlocks===")
+	logger.Info("====VerifyBlocks:start===")
+	defer func() {
+		logger.Info("==VerifyBlocks:end===")
+	}()
 	if len(blockBuff) == 0 {
 		return errors.New("buffer is empty")
 	}
@@ -272,7 +317,10 @@ var errNotAConfig = errors.New("not a config block")
 // ConfigFromBlock returns a ConfigEnvelope if exists, or a *NotAConfigBlock error.
 // It may also return some other error in case parsing failed.
 func ConfigFromBlock(block *common.Block) (*common.ConfigEnvelope, error) {
-	logger.Info("====ConfigFromBlock===")
+	logger.Info("====ConfigFromBlock:start===")
+	defer func() {
+		logger.Info("==ConfigFromBlock:end===")
+	}()
 	if block == nil || block.Data == nil || len(block.Data.Data) == 0 {
 		return nil, errors.New("empty block")
 	}
@@ -305,7 +353,10 @@ func ConfigFromBlock(block *common.Block) (*common.ConfigEnvelope, error) {
 // VerifyBlockHash verifies the hash chain of the block with the given index
 // among the blocks of the given block buffer.
 func VerifyBlockHash(indexInBuffer int, blockBuff []*common.Block) error {
-	logger.Info("====VerifyBlockHash===")
+	logger.Info("====VerifyBlockHash:start===")
+	defer func() {
+		logger.Info("==VerifyBlockHash:end===")
+	}()
 	if len(blockBuff) <= indexInBuffer {
 		return errors.Errorf("index %d out of bounds (total %d blocks)", indexInBuffer, len(blockBuff))
 	}
@@ -345,7 +396,10 @@ func VerifyBlockHash(indexInBuffer int, blockBuff []*common.Block) error {
 
 // SignatureSetFromBlock creates a signature set out of a block.
 func SignatureSetFromBlock(block *common.Block) ([]*common.SignedData, error) {
-	logger.Info("====SignatureSetFromBlock===")
+	logger.Info("====SignatureSetFromBlock:start===")
+	defer func() {
+		logger.Info("==SignatureSetFromBlock:end===")
+	}()
 	if block.Metadata == nil || len(block.Metadata.Metadata) <= int(common.BlockMetadataIndex_SIGNATURES) {
 		return nil, errors.New("no metadata in block")
 	}
@@ -375,7 +429,10 @@ func SignatureSetFromBlock(block *common.Block) ([]*common.SignedData, error) {
 
 // VerifyBlockSignature verifies the signature on the block with the given BlockVerifier and the given config.
 func VerifyBlockSignature(block *common.Block, verifier BlockVerifier, config *common.ConfigEnvelope) error {
-	logger.Info("====VerifyBlockSignature===")
+	logger.Info("====VerifyBlockSignature:start===")
+	defer func() {
+		logger.Info("==VerifyBlockSignature:end===")
+	}()
 	signatureSet, err := SignatureSetFromBlock(block)
 	if err != nil {
 		return err
@@ -393,7 +450,10 @@ type EndpointConfig struct {
 // EndpointconfigFromConfigBlock retrieves TLS CA certificates and endpoints
 // from a config block.
 func EndpointconfigFromConfigBlock(block *common.Block) (*EndpointConfig, error) {
-	logger.Info("====EndpointconfigFromConfigBlock===")
+	logger.Info("====EndpointconfigFromConfigBlock:start===")
+	defer func() {
+		logger.Info("==EndpointconfigFromConfigBlock:end===")
+	}()
 	if block == nil {
 		return nil, errors.New("nil block")
 	}

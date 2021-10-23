@@ -45,7 +45,10 @@ type ConnectionStore struct {
 
 // NewConnectionStore creates a new ConnectionStore with the given SecureDialer
 func NewConnectionStore(dialer SecureDialer) *ConnectionStore {
-	logger.Info("====NewConnectionStore===")
+	logger.Info("=NewConnectionStore:start===")
+	defer func() {
+		logger.Info("==NewConnectionStore:end===")
+	}()
 	connMapping := &ConnectionStore{
 		Connections: make(ConnByCertMap),
 		dialer:      dialer,
@@ -56,7 +59,10 @@ func NewConnectionStore(dialer SecureDialer) *ConnectionStore {
 // verifyHandshake returns a predicate that verifies that the remote node authenticates
 // itself with the given TLS certificate
 func (c *ConnectionStore) verifyHandshake(endpoint string, certificate []byte) RemoteVerifier {
-	logger.Info("====verifyHandshake===")
+	logger.Info("=ConnectionStore   verifyHandshake  :start===")
+	defer func() {
+		logger.Info("==ConnectionStore verifyHandshake:end===")
+	}()
 	return func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
 		if bytes.Equal(certificate, rawCerts[0]) {
 			return nil
@@ -67,7 +73,10 @@ func (c *ConnectionStore) verifyHandshake(endpoint string, certificate []byte) R
 
 // Disconnect closes the gRPC connection that is mapped to the given certificate
 func (c *ConnectionStore) Disconnect(expectedServerCert []byte) {
-	logger.Info("====Disconnect===")
+	logger.Info("=ConnectionStore   Disconnect:start===")
+	defer func() {
+		logger.Info("==ConnectionStore Disconnect:end===")
+	}()
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -82,7 +91,10 @@ func (c *ConnectionStore) Disconnect(expectedServerCert []byte) {
 // Connection obtains a connection to the given endpoint and expects the given server certificate
 // to be presented by the remote node
 func (c *ConnectionStore) Connection(endpoint string, expectedServerCert []byte) (*grpc.ClientConn, error) {
-	logger.Info("====Connection===")
+	logger.Info("=ConnectionStore   Connection:start===")
+	defer func() {
+		logger.Info("==ConnectionStore Connection:end===")
+	}()
 	c.lock.RLock()
 	conn, alreadyConnected := c.Connections.Lookup(expectedServerCert)
 	c.lock.RUnlock()
@@ -98,7 +110,10 @@ func (c *ConnectionStore) Connection(endpoint string, expectedServerCert []byte)
 // connect connects to the given endpoint and expects the given TLS server certificate
 // to be presented at the time of authentication
 func (c *ConnectionStore) connect(endpoint string, expectedServerCert []byte) (*grpc.ClientConn, error) {
-	logger.Info("====connect===")
+	logger.Info("=ConnectionStore   connect:start===")
+	defer func() {
+		logger.Info("==ConnectionStore connect:end===")
+	}()
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	// Check again to see if some other goroutine has already connected while

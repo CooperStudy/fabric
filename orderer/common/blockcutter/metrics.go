@@ -23,6 +23,10 @@ type Metrics struct {
 }
 
 func NewMetrics(p metrics.Provider) *Metrics {
+	logger.Info("=====NewMetrics:start====")
+	defer func() {
+		logger.Info("===NewMetrics:end====")
+	}()
 	return &Metrics{
 		BlockFillDuration: p.NewHistogram(blockFillDuration),
 	}

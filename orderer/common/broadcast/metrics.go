@@ -39,6 +39,10 @@ type Metrics struct {
 }
 
 func NewMetrics(p metrics.Provider) *Metrics {
+	logger.Info("===NewMetrics:start===")
+	defer func() {
+		logger.Info("===NewMetrics:end===")
+	}()
 	return &Metrics{
 		ValidateDuration: p.NewHistogram(validateDuration),
 		EnqueueDuration:  p.NewHistogram(enqueueDuration),

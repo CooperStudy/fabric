@@ -32,6 +32,10 @@ type fileBootstrapper struct {
 
 // New returns a new static bootstrap helper
 func New(fileName string) bootstrap.Helper {
+	logger.Info("=====New:start====")
+	defer func() {
+		logger.Info("===New:end====")
+	}()
 	return &fileBootstrapper{
 		GenesisBlockFile: fileName,
 	}
@@ -39,7 +43,10 @@ func New(fileName string) bootstrap.Helper {
 var logger = flogging.MustGetLogger("orderer.common.bootstrap.file.bootstrap.go")
 // GenesisBlock returns the genesis block to be used for bootstrapping
 func (b *fileBootstrapper) GenesisBlock() *cb.Block {
-	logger.Info("====GenesisBlock===")
+	logger.Info("====fileBootstrapper=GenesisBlock:start====")
+	defer func() {
+		logger.Info("==fileBootstrapper=GenesisBlock:end====")
+	}()
 	bootstrapFile, fileErr := ioutil.ReadFile(b.GenesisBlockFile)
 	if fileErr != nil {
 		panic(fmt.Errorf("Unable to bootstrap orderer. Error reading genesis block file: %v", fileErr))
