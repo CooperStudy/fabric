@@ -637,6 +637,10 @@ type dynamicDeserializer struct {
 }
 
 func (ds *dynamicDeserializer) DeserializeIdentity(serializedIdentity []byte) (msp.Identity, error) {
+	logger.Info("=========dynamicDeserializer) DeserializeIdentity:start=========")
+	defer func() {
+		logger.Info("=========dynamicDeserializer) DeserializeIdentity:end=========")
+	}()
 	return ds.support.MSPManager().DeserializeIdentity(serializedIdentity)
 }
 

@@ -133,6 +133,10 @@ func newBccspMsp(version MSPVersion) (MSP, error) {
 }
 
 func (msp *bccspmsp) getCertFromPem(idBytes []byte) (*x509.Certificate, error) {
+	mspLogger.Info("=======getCertFromPem:start========")
+	defer func() {
+		mspLogger.Info("=======getCertFromPem:end====")
+	}()
 	if idBytes == nil {
 		return nil, errors.New("getCertFromPem error: nil idBytes")
 	}
@@ -154,6 +158,11 @@ func (msp *bccspmsp) getCertFromPem(idBytes []byte) (*x509.Certificate, error) {
 }
 
 func (msp *bccspmsp) getIdentityFromConf(idBytes []byte) (Identity, bccsp.Key, error) {
+	mspLogger.Info("=======getIdentityFromConf:start========")
+	defer func() {
+		mspLogger.Info("=======getIdentityFromConf:end====")
+	}()
+
 	// get a cert
 	cert, err := msp.getCertFromPem(idBytes)
 	if err != nil {
@@ -172,6 +181,11 @@ func (msp *bccspmsp) getIdentityFromConf(idBytes []byte) (Identity, bccsp.Key, e
 }
 
 func (msp *bccspmsp) getSigningIdentityFromConf(sidInfo *m.SigningIdentityInfo) (SigningIdentity, error) {
+	mspLogger.Info("=======getSigningIdentityFromConf:start========")
+	defer func() {
+		mspLogger.Info("=======getSigningIdentityFromConf:end====")
+	}()
+
 	if sidInfo == nil {
 		return nil, errors.New("getIdentityFromBytes error: nil sidInfo")
 	}
@@ -239,32 +253,57 @@ func (msp *bccspmsp) Setup(conf1 *m.MSPConfig) error {
 
 // GetVersion returns the version of this MSP
 func (msp *bccspmsp) GetVersion() MSPVersion {
+	mspLogger.Info("=======GetVersion:start========")
+	defer func() {
+		mspLogger.Info("=======GetVersion:end====")
+	}()
 	return msp.version
 }
 
 // GetType returns the type for this MSP
 func (msp *bccspmsp) GetType() ProviderType {
+	mspLogger.Info("=======GetType:start========")
+	defer func() {
+		mspLogger.Info("=======GetType:end====")
+	}()
 	return FABRIC
 }
 
 // GetIdentifier returns the MSP identifier for this instance
 func (msp *bccspmsp) GetIdentifier() (string, error) {
+	mspLogger.Info("==bccspmsp==GetIdentifier:start========")
+	defer func() {
+		mspLogger.Info("==bccspmsp==GetIdentifier:end========")
+	}()
 	return msp.name, nil
 }
 
 // GetTLSRootCerts returns the root certificates for this MSP
 func (msp *bccspmsp) GetTLSRootCerts() [][]byte {
+	mspLogger.Info("==bccspmsp==GetTLSRootCerts:start========")
+	defer func() {
+		mspLogger.Info("==bccspmsp==GetTLSRootCerts:end========")
+	}()
 	return msp.tlsRootCerts
 }
 
 // GetTLSIntermediateCerts returns the intermediate root certificates for this MSP
 func (msp *bccspmsp) GetTLSIntermediateCerts() [][]byte {
+	mspLogger.Info("==bccspmsp==GetTLSIntermediateCerts:start========")
+	defer func() {
+		mspLogger.Info("==bccspmsp==GetTLSIntermediateCerts:end========")
+	}()
 	return msp.tlsIntermediateCerts
 }
 
 // GetDefaultSigningIdentity returns the
 // default signing identity for this MSP (if any)
 func (msp *bccspmsp) GetDefaultSigningIdentity() (SigningIdentity, error) {
+	mspLogger.Info("==bccspmsp==GetDefaultSigningIdentity:start========")
+	defer func() {
+		mspLogger.Info("==bccspmsp==GetDefaultSigningIdentity:end========")
+	}()
+
 	mspLogger.Debugf("Obtaining default signing identity")
 
 	if msp.signer == nil {
@@ -278,6 +317,10 @@ func (msp *bccspmsp) GetDefaultSigningIdentity() (SigningIdentity, error) {
 // identity identified by the supplied identifier
 func (msp *bccspmsp) GetSigningIdentity(identifier *IdentityIdentifier) (SigningIdentity, error) {
 	// TODO
+	mspLogger.Info("==bccspmsp==GetSigningIdentity:start========")
+	defer func() {
+		mspLogger.Info("==bccspmsp==GetSigningIdentity:end========")
+	}()
 	return nil, errors.Errorf("no signing identity for %#v", identifier)
 }
 
@@ -359,7 +402,11 @@ func (msp *bccspmsp) hasOURoleInternal(id *identity, mspRole m.MSPRole_MSPRoleTy
 // DeserializeIdentity returns an Identity given the byte-level
 // representation of a SerializedIdentity struct
 func (msp *bccspmsp) DeserializeIdentity(serializedID []byte) (Identity, error) {
-	mspLogger.Debug("Obtaining identity")
+	mspLogger.Info("=======msp *bccspmsp) DeserializeIdentity:start=================")
+	defer func() {
+		mspLogger.Info("=======msp *bccspmsp) DeserializeIdentity:start=================")
+	}()
+	mspLogger.Info("=======msp *bccspmsp) DeserializeIdentity:start=================")
 
 	// We first deserialize to a SerializedIdentity to get the MSP ID
 	sId := &m.SerializedIdentity{}
@@ -377,6 +424,10 @@ func (msp *bccspmsp) DeserializeIdentity(serializedID []byte) (Identity, error) 
 
 // deserializeIdentityInternal returns an identity given its byte-level representation
 func (msp *bccspmsp) deserializeIdentityInternal(serializedIdentity []byte) (Identity, error) {
+	mspLogger.Info("==bccspmsp==deserializeIdentityInternal:start========")
+	defer func() {
+		mspLogger.Info("==bccspmsp==deserializeIdentityInternal:end========")
+	}()
 	// This MSP will always deserialize certs this way
 	bl, _ := pem.Decode(serializedIdentity)
 	if bl == nil {
@@ -404,6 +455,10 @@ func (msp *bccspmsp) deserializeIdentityInternal(serializedIdentity []byte) (Ide
 
 // SatisfiesPrincipal returns null if the identity matches the principal or an error otherwise
 func (msp *bccspmsp) SatisfiesPrincipal(id Identity, principal *m.MSPPrincipal) error {
+	mspLogger.Info("==bccspmsp==SatisfiesPrincipal:start========")
+	defer func() {
+		mspLogger.Info("==bccspmsp==SatisfiesPrincipal:end========")
+	}()
 	principals, err := collectPrincipals(principal, msp.GetVersion())
 	if err != nil {
 		return err
@@ -419,6 +474,10 @@ func (msp *bccspmsp) SatisfiesPrincipal(id Identity, principal *m.MSPPrincipal) 
 
 // collectPrincipals collects principals from combined principals into a single MSPPrincipal slice.
 func collectPrincipals(principal *m.MSPPrincipal, mspVersion MSPVersion) ([]*m.MSPPrincipal, error) {
+	mspLogger.Info("==bccspmsp==collectPrincipals:start========")
+	defer func() {
+		mspLogger.Info("==bccspmsp==collectPrincipals:end========")
+	}()
 	switch principal.PrincipalClassification {
 	case m.MSPPrincipal_COMBINED:
 		// Combined principals are not supported in MSP v1.0 or v1.1
@@ -575,6 +634,10 @@ func (msp *bccspmsp) satisfiesPrincipalInternalPreV13(id Identity, principal *m.
 // The function implements the additional behavior expected of an MSP starting from v1.3.
 // For pre-v1.3 functionality, the function calls the satisfiesPrincipalInternalPreV13.
 func (msp *bccspmsp) satisfiesPrincipalInternalV13(id Identity, principal *m.MSPPrincipal) error {
+	mspLogger.Info("==bccspmsp==satisfiesPrincipalInternalV13:start========")
+	defer func() {
+		mspLogger.Info("==bccspmsp==satisfiesPrincipalInternalV13:end========")
+	}()
 	switch principal.PrincipalClassification {
 	case m.MSPPrincipal_COMBINED:
 		return errors.New("SatisfiesPrincipalInternal shall not be called with a CombinedPrincipal")
@@ -711,6 +774,11 @@ func (msp *bccspmsp) getCertificationChainIdentifier(id Identity) ([]byte, error
 }
 
 func (msp *bccspmsp) getCertificationChainIdentifierFromChain(chain []*x509.Certificate) ([]byte, error) {
+	mspLogger.Info("==bccspmsp==getCertificationChainIdentifierFromChain:start========")
+	defer func() {
+		mspLogger.Info("==bccspmsp==getCertificationChainIdentifierFromChain:end========")
+	}()
+
 	// Hash the chain
 	// Use the hash of the identity's certificate as id in the IdentityIdentifier
 	hashOpt, err := bccsp.GetHashOpt(msp.cryptoConfig.IdentityIdentifierHashFunction)
@@ -737,9 +805,9 @@ func (msp *bccspmsp) getCertificationChainIdentifierFromChain(chain []*x509.Cert
 // 重新生成以具有 Low-S 签名
  */
 func (msp *bccspmsp) sanitizeCert(cert *x509.Certificate) (*x509.Certificate, error) {
-	mspLogger.Info("=====sanitizeCert:start=====")
+	mspLogger.Info("==bccspmsp==sanitizeCert:start========")
 	defer func() {
-		mspLogger.Info("=====sanitizeCert:end=====")
+		mspLogger.Info("==bccspmsp==sanitizeCert:end========")
 	}()
 	if isECDSASignedCert(cert) {
 		// Lookup for a parent certificate to perform the sanitization
@@ -771,6 +839,10 @@ func (msp *bccspmsp) sanitizeCert(cert *x509.Certificate) (*x509.Certificate, er
 // In this MSP implementation, well formed means that the PEM has a Type which is either
 // the string 'CERTIFICATE' or the Type is missing altogether.
 func (msp *bccspmsp) IsWellFormed(identity *m.SerializedIdentity) error {
+	mspLogger.Info("==bccspmsp==IsWellFormed:start========")
+	defer func() {
+		mspLogger.Info("==bccspmsp==IsWellFormed:end========")
+	}()
 	bl, _ := pem.Decode(identity.IdBytes)
 	if bl == nil {
 		return errors.New("PEM decoding resulted in an empty block")

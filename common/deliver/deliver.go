@@ -161,7 +161,12 @@ func (h *Handler) Handle(ctx context.Context, srv *Server) error {
 		//Attempting to read seek info message from 172.20.0.7:43750
 		logger.Debugf("Attempting to read seek info message from %s", addr)
 		envelope, err := srv.Recv()//==deliverMsgTracer==Recv===
-		logger.Info("==收到的envelope===",*envelope)
+		if envelope != nil{
+			logger.Info("==收到的envelope===",*envelope)
+		}else {
+			logger.Info("==收到的envelope===",envelope)
+		}
+
 		if err == io.EOF {
 			logger.Debugf("Received EOF from %s, hangup", addr)
 			return nil

@@ -21,11 +21,21 @@ var cauthdslLogger = flogging.MustGetLogger("cauthdsl")
 
 // deduplicate removes any duplicated identities while otherwise preserving identity order
 func deduplicate(sds []IdentityAndSignature) []IdentityAndSignature {
+	logger.Info("==========deduplicate:start================")
+	defer func() {
+		logger.Info("==========deduplicate:end================")
+	}()
 	ids := make(map[string]struct{})
 	result := make([]IdentityAndSignature, 0, len(sds))
+
+	logger.Info("========sds============",len(sds))
+	logger.Info("========sds============",sds)
+
 	for i, sd := range sds {
+
 		identity, err := sd.Identity()
 		if err != nil {
+			//Principal deserialization failure (the supplied identity is not valid: x509: certificate signed by unknown authority (possibly because of "x509: ECDSA verification failure" while trying to verify candidate authority certificate "ca.org1.example.com")) for identity 0
 			cauthdslLogger.Errorf("Principal deserialization failure (%s) for identity %d", err, i)
 			continue
 		}

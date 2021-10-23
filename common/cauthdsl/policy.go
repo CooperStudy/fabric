@@ -44,6 +44,11 @@ type deserializeAndVerify struct {
 }
 
 func (d *deserializeAndVerify) Identity() (Identity, error) {
+	logger.Info("============deserializeAndVerify) Identity():start=======================")
+	defer func() {
+		logger.Info("============deserializeAndVerify) Identity():end=======================")
+	}()
+	logger.Info("============d.signedData.Identity=======================",d.signedData.Identity)
 	deserializedIdentity, err := d.deserializer.DeserializeIdentity(d.signedData.Identity)
 	if err != nil {
 		return nil, err

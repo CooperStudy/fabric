@@ -62,7 +62,9 @@ func (mgr *mspManagerImpl) Setup(msps []MSP) error {
 	// create the map that sorts MSPs by their provider types
 	mgr.mspsByProviders = make(map[ProviderType][]MSP)
 
-	for _, msp := range msps {
+	for k, msp := range msps {
+		mspLogger.Info("===========k====",k)
+		mspLogger.Info("===========msp====",msp)
 		// add the MSP to the map of active MSPs
 		mspID, err := msp.GetIdentifier()
 		if err != nil {
@@ -87,6 +89,10 @@ func (mgr *mspManagerImpl) GetMSPs() (map[string]MSP, error) {
 
 // DeserializeIdentity returns an identity given its serialized version supplied as argument
 func (mgr *mspManagerImpl) DeserializeIdentity(serializedID []byte) (Identity, error) {
+	mspLogger.Info("=======mspManagerImpl====DeserializeIdentity:start=======================")
+	defer func() {
+		mspLogger.Info("=======mspManagerImpl====DeserializeIdentity:end=======================")
+	}()
 	// We first deserialize to a SerializedIdentity to get the MSP ID
 	sId := &msp.SerializedIdentity{}
 	err := proto.Unmarshal(serializedID, sId)
@@ -94,6 +100,7 @@ func (mgr *mspManagerImpl) DeserializeIdentity(serializedID []byte) (Identity, e
 		return nil, errors.Wrap(err, "could not deserialize a SerializedIdentity")
 	}
 
+	mspLogger.Info("=======mgr.mspsMap=======================",mgr.mspsMap)
 	// we can now attempt to obtain the MSP
 	msp := mgr.mspsMap[sId.Mspid]
 	if msp == nil {
