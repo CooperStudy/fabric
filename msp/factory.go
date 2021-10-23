@@ -49,6 +49,10 @@ type IdemixNewOpts struct {
 
 // New create a new MSP instance depending on the passed Opts
 func New(opts NewOpts) (MSP, error) {
+	mspLogger.Info("========factory====New:start======================")
+	defer func() {
+		mspLogger.Info("======factory======New:end======================")
+	}()
 	mspLogger.Info("==fabric msp factory.go==New:start==")
 	defer func() {
 		mspLogger.Info("==fabric msp factory.go==New:start==")

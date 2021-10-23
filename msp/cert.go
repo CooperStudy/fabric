@@ -74,6 +74,10 @@ func isECDSASignedCert(cert *x509.Certificate) bool {
 // If the signature is not in low-S, then a new certificate is generated
 // that is equals to cert but the signature that is in low-S.
 func sanitizeECDSASignedCert(cert *x509.Certificate, parentCert *x509.Certificate) (*x509.Certificate, error) {
+	mspLogger.Info("============sanitizeECDSASignedCert:start======================")
+	defer func() {
+		mspLogger.Info("============sanitizeECDSASignedCert:end======================")
+	}()
 	if cert == nil {
 		return nil, errors.New("certificate must be different from nil")
 	}
@@ -116,6 +120,10 @@ func sanitizeECDSASignedCert(cert *x509.Certificate, parentCert *x509.Certificat
 }
 
 func certFromX509Cert(cert *x509.Certificate) (certificate, error) {
+	mspLogger.Info("============certFromX509Cert:start======================")
+	defer func() {
+		mspLogger.Info("============certFromX509Cert:end======================")
+	}()
 	var newCert certificate
 	_, err := asn1.Unmarshal(cert.Raw, &newCert)
 	if err != nil {
@@ -126,6 +134,10 @@ func certFromX509Cert(cert *x509.Certificate) (certificate, error) {
 
 // String returns a PEM representation of a certificate
 func (c certificate) String() string {
+	mspLogger.Info("============certificate String:start======================")
+	defer func() {
+		mspLogger.Info("============certificate String:end======================")
+	}()
 	b, err := asn1.Marshal(c)
 	if err != nil {
 		return fmt.Sprintf("Failed marshaling cert: %v", err)
@@ -141,6 +153,10 @@ func (c certificate) String() string {
 // certToPEM converts the given x509.Certificate to a PEM
 // encoded string
 func certToPEM(certificate *x509.Certificate) string {
+	mspLogger.Info("============certToPEM:start======================")
+	defer func() {
+		mspLogger.Info("============certToPEM:end======================")
+	}()
 	cert, err := certFromX509Cert(certificate)
 	if err != nil {
 		mspIdentityLogger.Warning("Failed converting certificate to asn1", err)

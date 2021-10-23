@@ -839,6 +839,7 @@ func (msp *bccspmsp) sanitizeCert(cert *x509.Certificate) (*x509.Certificate, er
 // In this MSP implementation, well formed means that the PEM has a Type which is either
 // the string 'CERTIFICATE' or the Type is missing altogether.
 func (msp *bccspmsp) IsWellFormed(identity *m.SerializedIdentity) error {
+
 	mspLogger.Info("==bccspmsp==IsWellFormed:start========")
 	defer func() {
 		mspLogger.Info("==bccspmsp==IsWellFormed:end========")

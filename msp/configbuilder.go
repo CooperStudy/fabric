@@ -64,6 +64,10 @@ func readFile(file string) ([]byte, error) {
 }
 
 func readPemFile(file string) ([]byte, error) {
+	mspLogger.Info("============readPemFile:start======================")
+	defer func() {
+		mspLogger.Info("============readPemFile:end======================")
+	}()
 	bytes, err := readFile(file)
 	if err != nil {
 		return nil, errors.Wrapf(err, "reading from file %s failed", file)
@@ -78,6 +82,10 @@ func readPemFile(file string) ([]byte, error) {
 }
 
 func getPemMaterialFromDir(dir string) ([][]byte, error) {
+	mspLogger.Info("============getPemMaterialFromDir:start======================")
+	defer func() {
+		mspLogger.Info("============getPemMaterialFromDir:end======================")
+	}()
 	mspLogger.Debugf("Reading directory %s", dir)
 
 	_, err := os.Stat(dir)
@@ -130,6 +138,10 @@ const (
 )
 
 func SetupBCCSPKeystoreConfig(bccspConfig *factory.FactoryOpts, keystoreDir string) *factory.FactoryOpts {
+	mspLogger.Info("============SetupBCCSPKeystoreConfig:start======================")
+	defer func() {
+		mspLogger.Info("============SetupBCCSPKeystoreConfig:end======================")
+	}()
 	if bccspConfig == nil {
 		bccspConfig = factory.GetDefaultOpts()
 	}
@@ -154,6 +166,10 @@ func SetupBCCSPKeystoreConfig(bccspConfig *factory.FactoryOpts, keystoreDir stri
 // configuration for the MSP in the specified
 // directory, with the specified ID and type
 func GetLocalMspConfigWithType(dir string, bccspConfig *factory.FactoryOpts, ID, mspType string) (*msp.MSPConfig, error) {
+	mspLogger.Info("============GetLocalMspConfigWithType:start======================")
+	defer func() {
+		mspLogger.Info("============GetLocalMspConfigWithType:end======================")
+	}()
 	switch mspType {
 	case ProviderTypeToString(FABRIC):
 		return GetLocalMspConfig(dir, bccspConfig, ID)
@@ -165,6 +181,10 @@ func GetLocalMspConfigWithType(dir string, bccspConfig *factory.FactoryOpts, ID,
 }
 
 func GetLocalMspConfig(dir string, bccspConfig *factory.FactoryOpts, ID string) (*msp.MSPConfig, error) {
+	mspLogger.Info("============GetLocalMspConfig:start======================")
+	defer func() {
+		mspLogger.Info("============GetLocalMspConfig:end======================")
+	}()
 	signcertDir := filepath.Join(dir, signcerts)
 	keystoreDir := filepath.Join(dir, keystore)
 	bccspConfig = SetupBCCSPKeystoreConfig(bccspConfig, keystoreDir)
@@ -192,6 +212,10 @@ func GetLocalMspConfig(dir string, bccspConfig *factory.FactoryOpts, ID string) 
 
 // GetVerifyingMspConfig returns an MSP config given directory, ID and type
 func GetVerifyingMspConfig(dir, ID, mspType string) (*msp.MSPConfig, error) {
+	mspLogger.Info("============GetVerifyingMspConfig:start======================")
+	defer func() {
+		mspLogger.Info("============GetVerifyingMspConfig:end======================")
+	}()
 	mspType = "bccsp"
 	switch mspType {
 	case ProviderTypeToString(FABRIC):
@@ -204,6 +228,10 @@ func GetVerifyingMspConfig(dir, ID, mspType string) (*msp.MSPConfig, error) {
 }
 
 func getMspConfig(dir string, ID string, sigid *msp.SigningIdentityInfo) (*msp.MSPConfig, error) {
+	mspLogger.Info("============getMspConfig:start======================")
+	defer func() {
+		mspLogger.Info("============getMspConfig:end======================")
+	}()
 	cacertDir := filepath.Join(dir, cacerts)
 	admincertDir := filepath.Join(dir, admincerts)
 	intermediatecertsDir := filepath.Join(dir, intermediatecerts)
@@ -368,6 +396,10 @@ const (
 
 // GetIdemixMspConfig returns the configuration for the Idemix MSP
 func GetIdemixMspConfig(dir string, ID string) (*msp.MSPConfig, error) {
+	mspLogger.Info("============GetIdemixMspConfig:start======================")
+	defer func() {
+		mspLogger.Info("============GetIdemixMspConfig:end======================")
+	}()
 	ipkBytes, err := readFile(filepath.Join(dir, IdemixConfigDirMsp, IdemixConfigFileIssuerPublicKey))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read issuer public key file")

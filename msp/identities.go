@@ -118,10 +118,11 @@ func (id *identity) Validate() error {
 
 // GetOrganizationalUnits returns the OU for this instance
 func (id *identity) GetOrganizationalUnits() []*OUIdentifier {
-	mspLogger.Info("=======GetOrganizationalUnits:start======")
+	mspLogger.Info("========identity====GetOrganizationalUnits:start======================")
 	defer func() {
-		mspLogger.Info("=======GetOrganizationalUnits:end======")
+		mspLogger.Info("========identity====GetOrganizationalUnits:end======================")
 	}()
+
 	if id.cert == nil {
 		return nil
 	}
@@ -146,6 +147,10 @@ func (id *identity) GetOrganizationalUnits() []*OUIdentifier {
 
 // Anonymous returns true if this identity provides anonymity
 func (id *identity) Anonymous() bool {
+	mspLogger.Info("========identity====Anonymous:start======================")
+	defer func() {
+		mspLogger.Info("========identity====Anonymous:end======================")
+	}()
 	return false
 }
 
@@ -154,6 +159,10 @@ func (id *identity) Anonymous() bool {
 // This method does not check the validity of certificate nor
 // any consistency of the mspID with it.
 func NewSerializedIdentity(mspID string, certPEM []byte) ([]byte, error) {
+	mspLogger.Info("========identity====NewSerializedIdentity:start======================")
+	defer func() {
+		mspLogger.Info("========identity====NewSerializedIdentity:end======================")
+	}()
 	// We serialize identities by prepending the MSPID
 	// and appending the x509 cert in PEM format
 	sId := &msp.SerializedIdentity{Mspid: mspID, IdBytes: certPEM}
@@ -168,6 +177,11 @@ func NewSerializedIdentity(mspID string, certPEM []byte) ([]byte, error) {
 // to determine whether this identity produced the
 // signature; it returns nil if so or an error otherwise
 func (id *identity) Verify(msg []byte, sig []byte) error {
+
+	mspLogger.Info("========identity====Verify:start======================")
+	defer func() {
+		mspLogger.Info("========identity====Verify:end======================")
+	}()
 	// mspIdentityLogger.Infof("Verifying signature")
 
 	// Compute Hash
@@ -198,6 +212,10 @@ func (id *identity) Verify(msg []byte, sig []byte) error {
 
 // Serialize returns a byte array representation of this identity
 func (id *identity) Serialize() ([]byte, error) {
+	mspLogger.Info("========identity====Serialize:start======================")
+	defer func() {
+		mspLogger.Info("========identity====Serialize:end======================")
+	}()
 	// mspIdentityLogger.Infof("Serializing identity %s", id.id)
 
 	pb := &pem.Block{Bytes: id.cert.Raw, Type: "CERTIFICATE"}
@@ -217,6 +235,10 @@ func (id *identity) Serialize() ([]byte, error) {
 }
 
 func (id *identity) getHashOpt(hashFamily string) (bccsp.HashOpts, error) {
+	mspLogger.Info("========identity====getHashOpt:start======================")
+	defer func() {
+		mspLogger.Info("========identity====getHashOpt:end======================")
+	}()
 	switch hashFamily {
 	case bccsp.SHA2:
 		return bccsp.GetHashOpt(bccsp.SHA256)
@@ -235,6 +257,11 @@ type signingidentity struct {
 }
 
 func newSigningIdentity(cert *x509.Certificate, pk bccsp.Key, signer crypto.Signer, msp *bccspmsp) (SigningIdentity, error) {
+	mspLogger.Info("========newSigningIdentity:start======================")
+	defer func() {
+		mspLogger.Info("========newSigningIdentityt:end======================")
+	}()
+
 	//mspIdentityLogger.Infof("Creating signing identity instance for ID %s", id)
 	mspId, err := newIdentity(cert, pk, msp)
 	if err != nil {
@@ -245,6 +272,10 @@ func newSigningIdentity(cert *x509.Certificate, pk bccsp.Key, signer crypto.Sign
 
 // Sign produces a signature over msg, signed by this instance
 func (id *signingidentity) Sign(msg []byte) ([]byte, error) {
+	mspLogger.Info("========signingidentity====Sign:start======================")
+	defer func() {
+		mspLogger.Info("======signingidentity======Sign:end======================")
+	}()
 	//mspIdentityLogger.Infof("Signing message")
 
 	// Compute Hash
@@ -272,5 +303,10 @@ func (id *signingidentity) Sign(msg []byte) ([]byte, error) {
 // GetPublicVersion returns the public version of this identity,
 // namely, the one that is only able to verify messages and not sign them
 func (id *signingidentity) GetPublicVersion() Identity {
+
+	mspLogger.Info("===signingidentity=====GetPublicVersion:start======================")
+	defer func() {
+		mspLogger.Info("====signingidentity====GetPublicVersion:end======================")
+	}()
 	return &id.identity
 }

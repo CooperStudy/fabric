@@ -39,6 +39,10 @@ type cacheItem struct {
 }
 
 func newSecondChanceCache(cacheSize int) *secondChanceCache {
+	logger.Info("============newSecondChanceCache:start======================")
+	defer func() {
+		logger.Info("============newSecondChanceCache:end======================")
+	}()
 	var cache secondChanceCache
 	cache.position = 0
 	cache.items = make([]*cacheItem, cacheSize)
@@ -48,13 +52,22 @@ func newSecondChanceCache(cacheSize int) *secondChanceCache {
 }
 
 func (cache *secondChanceCache) len() int {
+	logger.Info("============secondChanceCache  len:start======================")
+	defer func() {
+		logger.Info("============secondChanceCache len:end======================")
+	}()
 	cache.rwlock.RLock()
+
 	defer cache.rwlock.RUnlock()
 
 	return len(cache.table)
 }
 
 func (cache *secondChanceCache) get(key string) (interface{}, bool) {
+	logger.Info("============secondChanceCache  get:start======================")
+	defer func() {
+		logger.Info("============secondChanceCache get:end======================")
+	}()
 	cache.rwlock.RLock()
 	defer cache.rwlock.RUnlock()
 
@@ -70,6 +83,10 @@ func (cache *secondChanceCache) get(key string) (interface{}, bool) {
 }
 
 func (cache *secondChanceCache) add(key string, value interface{}) {
+	logger.Info("============secondChanceCache  add:start======================")
+	defer func() {
+		logger.Info("============secondChanceCache add:end======================")
+	}()
 	cache.rwlock.Lock()
 	defer cache.rwlock.Unlock()
 

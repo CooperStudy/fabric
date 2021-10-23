@@ -214,6 +214,10 @@ var mspTypeStrings = map[ProviderType]string{
 // ProviderTypeToString returns a string that represents the ProviderType integer
 func ProviderTypeToString(id ProviderType) string {
 
+	mspLogger.Info("===ProviderTypeToString:start======================")
+	defer func() {
+		mspLogger.Info("====ProviderTypeToString:end======================")
+	}()
 	if res, found := mspTypeStrings[id]; found {
 		return res
 	}

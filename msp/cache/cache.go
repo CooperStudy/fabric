@@ -60,10 +60,18 @@ type cachedIdentity struct {
 }
 
 func (id *cachedIdentity) SatisfiesPrincipal(principal *pmsp.MSPPrincipal) error {
+	logger.Info("============cachedIdentity SatisfiesPrincipal:start======================")
+	defer func() {
+		logger.Info("============cachedIdentity SatisfiesPrincipal:end======================")
+	}()
 	return id.cache.SatisfiesPrincipal(id.Identity, principal)
 }
 
 func (id *cachedIdentity) Validate() error {
+	logger.Info("============cachedIdentity cachedIdentity:start======================")
+	defer func() {
+		logger.Info("============cachedIdentity cachedIdentity:end======================")
+	}()
 	return id.cache.Validate(id.Identity)
 }
 
@@ -92,12 +100,20 @@ func (c *cachedMSP) DeserializeIdentity(serializedIdentity []byte) (msp.Identity
 }
 
 func (c *cachedMSP) Setup(config *pmsp.MSPConfig) error {
+	logger.Info("============cachedMSP Setup:start======================")
+	defer func() {
+		logger.Info("============cachedMSP Setup:end======================")
+	}()
 	c.cleanCash()
 
 	return c.MSP.Setup(config)
 }
 
 func (c *cachedMSP) Validate(id msp.Identity) error {
+	logger.Info("============cachedMSP Validate:start======================")
+	defer func() {
+		logger.Info("============cachedMSP Validate:end======================")
+	}()
 	identifier := id.GetIdentifier()
 	key := string(identifier.Mspid + ":" + identifier.Id)
 
@@ -116,6 +132,10 @@ func (c *cachedMSP) Validate(id msp.Identity) error {
 }
 
 func (c *cachedMSP) SatisfiesPrincipal(id msp.Identity, principal *pmsp.MSPPrincipal) error {
+	logger.Info("============cachedMSP SatisfiesPrincipal:start======================")
+	defer func() {
+		logger.Info("============cachedMSP SatisfiesPrincipal:end======================")
+	}()
 	identifier := id.GetIdentifier()
 	identityKey := string(identifier.Mspid + ":" + identifier.Id)
 	principalKey := string(principal.PrincipalClassification) + string(principal.Principal)
@@ -137,6 +157,10 @@ func (c *cachedMSP) SatisfiesPrincipal(id msp.Identity, principal *pmsp.MSPPrinc
 }
 
 func (c *cachedMSP) cleanCash() error {
+	logger.Info("============cachedMSP cleanCash:start======================")
+	defer func() {
+		logger.Info("============cachedMSP cleanCash:end======================")
+	}()
 	c.deserializeIdentityCache = newSecondChanceCache(deserializeIdentityCacheSize)
 	c.satisfiesPrincipalCache = newSecondChanceCache(satisfiesPrincipalCacheSize)
 	c.validateIdentityCache = newSecondChanceCache(validateIdentityCacheSize)

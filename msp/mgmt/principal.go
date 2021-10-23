@@ -36,12 +36,20 @@ type MSPPrincipalGetter interface {
 }
 
 func NewLocalMSPPrincipalGetter() MSPPrincipalGetter {
+	mspLogger.Info("============NewLocalMSPPrincipalGetter:start======================")
+	defer func() {
+		mspLogger.Info("============NewLocalMSPPrincipalGetter:end======================")
+	}()
 	return &localMSPPrincipalGetter{}
 }
 
 type localMSPPrincipalGetter struct{}
 
 func (m *localMSPPrincipalGetter) Get(role string) (*msp.MSPPrincipal, error) {
+	mspLogger.Info("============localMSPPrincipalGetter Get:start======================")
+	defer func() {
+		mspLogger.Info("============localMSPPrincipalGetter Get:end======================")
+	}()
 	mspid, err := GetLocalMSP().GetIdentifier()
 	if err != nil {
 		return nil, errors.WithMessage(err, "could not extract local msp identifier")
