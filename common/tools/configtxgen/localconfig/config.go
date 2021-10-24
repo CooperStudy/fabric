@@ -17,6 +17,7 @@ import (
 	"github.com/spf13/viper"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 const (
@@ -238,7 +239,7 @@ type AnchorPeer struct {
 type Orderer struct {
 	OrdererType   string             `yaml:"OrdererType" json:"OrdererType"`
 	Addresses     []string           `yaml:"Addresses"  json:"Addresses"`
-	BatchTimeout  string      `yaml:"BatchTimeout" json:"BatchTimeout"`
+	BatchTimeout  time.Duration      `yaml:"BatchTimeout" json:"BatchTimeout"`
 	BatchSize     BatchSize          `yaml:"BatchSize" json:"BatchSize"`
 	Kafka         Kafka              `yaml:"Kafka" json:"Kafka"`
 	EtcdRaft      *etcdraft.Metadata `yaml:"EtcdRaft json:"EtcdRaft""`
@@ -249,9 +250,9 @@ type Orderer struct {
 }
 
 type BatchSize struct {
-	MaxMessageCount   string `yaml:"MaxMessageCount" json:"MaxMessageCount"`
-	AbsoluteMaxBytes  string `yaml:"AbsoluteMaxBytes" json:"AbsoluteMaxBytes"`
-	PreferredMaxBytes string `yaml:"PreferredMaxBytes" json:"PreferredMaxBytes"`
+	MaxMessageCount   uint32 `yaml:"MaxMessageCount" json:"MaxMessageCount"`
+	AbsoluteMaxBytes  uint32 `yaml:"AbsoluteMaxBytes" json:"AbsoluteMaxBytes"`
+	PreferredMaxBytes uint32 `yaml:"PreferredMaxBytes" json:"PreferredMaxBytes"`
 }
 
 type Kafka struct {
@@ -280,11 +281,11 @@ var genesisDefaults = TopLevel{
 	Orderer: &Orderer{
 		OrdererType:  "solo",
 		Addresses:    []string{"127.0.0.1:7050"},
-		BatchTimeout: "2",
+		BatchTimeout: 10*1000,
 		BatchSize: BatchSize{
-			MaxMessageCount:   "10",
-			AbsoluteMaxBytes:  "10",
-			PreferredMaxBytes: "512",
+			MaxMessageCount:   10*1024,
+			AbsoluteMaxBytes:  99*1024*1024,
+			PreferredMaxBytes: 512*1024,
 		},
 		Kafka: Kafka{
 			Brokers: []string{"127.0.0.1:9092"},
@@ -461,16 +462,16 @@ loop:
 		case ord.Addresses == nil:
 			logger.Infof("Orderer.Addresses unset, setting to %s", genesisDefaults.Orderer.Addresses)
 			ord.Addresses = genesisDefaults.Orderer.Addresses
-		case ord.BatchTimeout == "":
+		case ord.BatchTimeout == 0:
 			logger.Infof("Orderer.BatchTimeout unset, setting to %s", genesisDefaults.Orderer.BatchTimeout)
 			ord.BatchTimeout = genesisDefaults.Orderer.BatchTimeout
-		case ord.BatchSize.MaxMessageCount == "":
+		case ord.BatchSize.MaxMessageCount == 0:
 			logger.Infof("Orderer.BatchSize.MaxMessageCount unset, setting to %v", genesisDefaults.Orderer.BatchSize.MaxMessageCount)
 			ord.BatchSize.MaxMessageCount = genesisDefaults.Orderer.BatchSize.MaxMessageCount
-		case ord.BatchSize.AbsoluteMaxBytes == "":
+		case ord.BatchSize.AbsoluteMaxBytes == 0:
 			logger.Infof("Orderer.BatchSize.AbsoluteMaxBytes unset, setting to %v", genesisDefaults.Orderer.BatchSize.AbsoluteMaxBytes)
 			ord.BatchSize.AbsoluteMaxBytes = genesisDefaults.Orderer.BatchSize.AbsoluteMaxBytes
-		case ord.BatchSize.PreferredMaxBytes == "":
+		case ord.BatchSize.PreferredMaxBytes == 0:
 			logger.Infof("Orderer.BatchSize.PreferredMaxBytes unset, setting to %v", genesisDefaults.Orderer.BatchSize.PreferredMaxBytes)
 			ord.BatchSize.PreferredMaxBytes = genesisDefaults.Orderer.BatchSize.PreferredMaxBytes
 		default:

@@ -24,7 +24,6 @@ import (
 	pb "github.com/hyperledger/fabric/protos/peer"
 	"github.com/hyperledger/fabric/protos/utils"
 	"github.com/pkg/errors"
-	"strconv"
 )
 
 const (
@@ -222,7 +221,7 @@ func NewChannelGroup(conf *genesisconfig.Profile) (*cb.ConfigGroup, error) {
 // about how large blocks should be, how frequently they should be emitted, etc. as well as the organizations of the ordering network.
 // It sets the mod_policy of all elements to "Admins".  This group is always present in any channel configuration.
 func NewOrdererGroup(conf *genesisconfig.Orderer) (*cb.ConfigGroup, error) {
-
+    var err error
 	logger.Info("==========NewOrdererGroup:start==========")
 	defer func() {
 		logger.Info("==========NewOrdererGroup:end==========")
@@ -244,34 +243,37 @@ func NewOrdererGroup(conf *genesisconfig.Orderer) (*cb.ConfigGroup, error) {
 		ModPolicy: channelconfig.AdminsPolicyKey,
 	}
 	logger.Info("==========3==========")
-	a,err := strconv.Atoi(conf.BatchSize.MaxMessageCount)
-	if err != nil{
-		panic(err.Error())
-	}
-
-	aUint32 := uint32(a)
-
-
-	b,err := strconv.Atoi(conf.BatchSize.AbsoluteMaxBytes)
-	if err != nil{
-		panic(err.Error())
-	}
-	bUint32 := uint32(b)
+	fmt.Println("====conf.BatchSize.MaxMessageCount===",conf.BatchSize.MaxMessageCount)
+	fmt.Println("====conf.BatchSize.AbsoluteMaxBytes===",conf.BatchSize.AbsoluteMaxBytes)
+	fmt.Println("====conf.BatchSize.PreferredMaxBytes===",conf.BatchSize.PreferredMaxBytes)
+	//a,err := strconv.Atoi(conf.BatchSize.MaxMessageCount)
+	//if err != nil{
+	//	panic(err.Error())
+	//}
+	//
+	//aUint32 := uint32(a)
 
 
-	c,err := strconv.Atoi(conf.BatchSize.PreferredMaxBytes)
-	if err != nil{
-		panic(err.Error())
-	}
-	cUint32 := uint32(c)
+	//b,err := strconv.Atoi(conf.BatchSize.AbsoluteMaxBytes)
+	//if err != nil{
+	//	panic(err.Error())
+	//}
+	//bUint32 := uint32(b)
+
+
+	//c,err := strconv.Atoi(conf.BatchSize.PreferredMaxBytes)
+	//if err != nil{
+	//	panic(err.Error())
+	//}
+	//cUint32 := uint32(c)
 
 	addValue(ordererGroup, channelconfig.BatchSizeValue(
-		aUint32,
-		bUint32,
-		cUint32,
+		conf.BatchSize.MaxMessageCount,
+		conf.BatchSize.AbsoluteMaxBytes,
+		conf.BatchSize.PreferredMaxBytes,
 	), channelconfig.AdminsPolicyKey)
 	logger.Info("==========4==========")
-	addValue(ordererGroup, channelconfig.BatchTimeoutValue(conf.BatchTimeout), channelconfig.AdminsPolicyKey)
+	addValue(ordererGroup, channelconfig.BatchTimeoutValue(conf.BatchTimeout.String()), channelconfig.AdminsPolicyKey)
 	logger.Info("==========5=========")
 	addValue(ordererGroup, channelconfig.ChannelRestrictionsValue(conf.MaxChannels), channelconfig.AdminsPolicyKey)
 	logger.Info("==========6==========")
@@ -536,6 +538,8 @@ func MakeChannelCreationTransaction(channelID string, signer crypto.LocalSigner,
 	defer func() {
 		logger.Info("==========MakeChannelCreationTransaction:end==========")
 	}()
+	logger.Info("==========channelID==========",channelID)
+	logger.Info("==========conf==========",conf)
 	newChannelConfigUpdate, err := NewChannelCreateConfigUpdate(channelID, conf)
 	if err != nil {
 		return nil, errors.Wrap(err, "config update generation failure")
