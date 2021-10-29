@@ -21,6 +21,7 @@ import (
 )
 
 func loadLib(lib, pin, label string) (*pkcs11.Ctx, uint, *pkcs11.SessionHandle, error) {
+	logger.Info("====loadLib========")
 	var slot uint
 	logger.Debugf("Loading pkcs11 library [%s]\n", lib)
 	if lib == "" {
@@ -82,6 +83,7 @@ func loadLib(lib, pin, label string) (*pkcs11.Ctx, uint, *pkcs11.SessionHandle, 
 }
 
 func (csp *impl) getSession() (session pkcs11.SessionHandle) {
+	logger.Info("==impl==getSession========")
 	select {
 	case session = <-csp.sessions:
 		logger.Debugf("Reusing existing pkcs11 session %+v on slot %d\n", session, csp.slot)
@@ -108,6 +110,7 @@ func (csp *impl) getSession() (session pkcs11.SessionHandle) {
 }
 
 func (csp *impl) returnSession(session pkcs11.SessionHandle) {
+	logger.Info("==impl==returnSession========")
 	select {
 	case csp.sessions <- session:
 		// returned session back to session cache
@@ -120,6 +123,7 @@ func (csp *impl) returnSession(session pkcs11.SessionHandle) {
 // Look for an EC key by SKI, stored in CKA_ID
 // This function can probably be adapted for both EC and RSA keys.
 func (csp *impl) getECKey(ski []byte) (pubKey *ecdsa.PublicKey, isPriv bool, err error) {
+	logger.Info("==impl==getECKey========")
 	p11lib := csp.ctx
 	session := csp.getSession()
 	defer csp.returnSession(session)
@@ -182,6 +186,7 @@ var (
 )
 
 func namedCurveFromOID(oid asn1.ObjectIdentifier) elliptic.Curve {
+	logger.Info("==namedCurveFromOID========")
 	switch {
 	case oid.Equal(oidNamedCurveP224):
 		return elliptic.P224()
@@ -196,6 +201,7 @@ func namedCurveFromOID(oid asn1.ObjectIdentifier) elliptic.Curve {
 }
 
 func oidFromNamedCurve(curve elliptic.Curve) (asn1.ObjectIdentifier, bool) {
+	logger.Info("==oidFromNamedCurve========")
 	switch curve {
 	case elliptic.P224():
 		return oidNamedCurveP224, true
@@ -211,6 +217,7 @@ func oidFromNamedCurve(curve elliptic.Curve) (asn1.ObjectIdentifier, bool) {
 }
 
 func (csp *impl) generateECKey(curve asn1.ObjectIdentifier, ephemeral bool) (ski []byte, pubKey *ecdsa.PublicKey, err error) {
+	logger.Info("==impl===generateECKey=====")
 	p11lib := csp.ctx
 	session := csp.getSession()
 	defer csp.returnSession(session)
@@ -325,6 +332,7 @@ func (csp *impl) generateECKey(curve asn1.ObjectIdentifier, ephemeral bool) (ski
 }
 
 func (csp *impl) signP11ECDSA(ski []byte, msg []byte) (R, S *big.Int, err error) {
+	logger.Info("==impl===signP11ECDSA=====")
 	p11lib := csp.ctx
 	session := csp.getSession()
 	defer csp.returnSession(session)
@@ -355,6 +363,7 @@ func (csp *impl) signP11ECDSA(ski []byte, msg []byte) (R, S *big.Int, err error)
 }
 
 func (csp *impl) verifyP11ECDSA(ski []byte, msg []byte, R, S *big.Int, byteSize int) (bool, error) {
+	logger.Info("==impl===verifyP11ECDSA=====")
 	p11lib := csp.ctx
 	session := csp.getSession()
 	defer csp.returnSession(session)
@@ -396,6 +405,7 @@ const (
 )
 
 func findKeyPairFromSKI(mod *pkcs11.Ctx, session pkcs11.SessionHandle, ski []byte, keyType bool) (*pkcs11.ObjectHandle, error) {
+	logger.Info("=====findKeyPairFromSKI=====")
 	ktype := pkcs11.CKO_PUBLIC_KEY
 	if keyType == privateKeyFlag {
 		ktype = pkcs11.CKO_PRIVATE_KEY
@@ -467,6 +477,7 @@ func findKeyPairFromSKI(mod *pkcs11.Ctx, session pkcs11.SessionHandle, ski []byt
 // 00000030  93 d8 40 c3 d5 a6 b7 38  16 d2 35 0a 53 11 f9 51  |..@....8..5.S..Q|
 // 00000040  fc a7 16                                          |...|
 func ecPoint(p11lib *pkcs11.Ctx, session pkcs11.SessionHandle, key pkcs11.ObjectHandle) (ecpt, oid []byte, err error) {
+	logger.Info("=====ecPoint=====")
 	template := []*pkcs11.Attribute{
 		pkcs11.NewAttribute(pkcs11.CKA_EC_POINT, nil),
 		pkcs11.NewAttribute(pkcs11.CKA_EC_PARAMS, nil),
@@ -507,6 +518,7 @@ func ecPoint(p11lib *pkcs11.Ctx, session pkcs11.SessionHandle, key pkcs11.Object
 }
 
 func listAttrs(p11lib *pkcs11.Ctx, session pkcs11.SessionHandle, obj pkcs11.ObjectHandle) {
+	logger.Info("=====listAttrs=====")
 	var cktype, ckclass uint
 	var ckaid, cklabel []byte
 
@@ -534,6 +546,7 @@ func listAttrs(p11lib *pkcs11.Ctx, session pkcs11.SessionHandle, obj pkcs11.Obje
 }
 
 func (csp *impl) getSecretValue(ski []byte) []byte {
+	logger.Info("==impl===getSecretValue=====")
 	p11lib := csp.ctx
 	session := csp.getSession()
 	defer csp.returnSession(session)
@@ -569,6 +582,7 @@ var (
 )
 
 func nextIDCtr() *big.Int {
+	logger.Info("==nextIDCtr=====")
 	idMutex.Lock()
 	idCtr = new(big.Int).Add(idCtr, bigone)
 	idMutex.Unlock()
