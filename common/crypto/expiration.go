@@ -9,6 +9,7 @@ package crypto
 import (
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -18,6 +19,7 @@ import (
 // ExpiresAt returns when the given identity expires, or a zero time.Time
 // in case we cannot determine that
 func ExpiresAt(identityBytes []byte) time.Time {
+	fmt.Println("======ExpiresAt===========")
 	sId := &msp.SerializedIdentity{}
 	// If protobuf parsing failed, we make no decisions about the expiration time
 	if err := proto.Unmarshal(identityBytes, sId); err != nil {

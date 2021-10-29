@@ -15,20 +15,24 @@ import (
 	"crypto/x509/pkix"
 	"encoding/base64"
 	"encoding/pem"
+	"fmt"
 	"math/big"
 	"net"
 	"time"
 )
 
 func (p *CertKeyPair) PrivKeyString() string {
+	fmt.Println("======CertKeyPair====PrivKeyString===========")
 	return base64.StdEncoding.EncodeToString(p.Key)
 }
 
 func (p *CertKeyPair) PubKeyString() string {
+	fmt.Println("======CertKeyPair====PubKeyString===========")
 	return base64.StdEncoding.EncodeToString(p.Cert)
 }
 
 func newPrivKey() (*ecdsa.PrivateKey, []byte, error) {
+	fmt.Println("======newPrivKey===========")
 	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return nil, nil, err
@@ -41,6 +45,7 @@ func newPrivKey() (*ecdsa.PrivateKey, []byte, error) {
 }
 
 func newCertTemplate() (x509.Certificate, error) {
+	fmt.Println("======newCertTemplate===========")
 	sn, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
 	if err != nil {
 		return x509.Certificate{}, err
@@ -55,6 +60,7 @@ func newCertTemplate() (x509.Certificate, error) {
 }
 
 func newCertKeyPair(isCA bool, isServer bool, host string, certSigner crypto.Signer, parent *x509.Certificate) (*CertKeyPair, error) {
+	fmt.Println("======newCertKeyPair===========")
 	privateKey, privBytes, err := newPrivKey()
 	if err != nil {
 		return nil, err
@@ -110,11 +116,13 @@ func newCertKeyPair(isCA bool, isServer bool, host string, certSigner crypto.Sig
 }
 
 func encodePEM(keyType string, data []byte) []byte {
+	fmt.Println("======encodePEM===========")
 	return pem.EncodeToMemory(&pem.Block{Type: keyType, Bytes: data})
 }
 
 // CertKeyPairFromString converts the given strings in base64 encoding to a CertKeyPair
 func CertKeyPairFromString(privKey string, pubKey string) (*CertKeyPair, error) {
+	fmt.Println("======CertKeyPairFromString===========")
 	priv, err := base64.StdEncoding.DecodeString(privKey)
 	if err != nil {
 		return nil, err

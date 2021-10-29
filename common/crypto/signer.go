@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package crypto
 
 import (
+	"fmt"
 	cb "github.com/hyperledger/fabric/protos/common"
 )
 
@@ -47,11 +48,13 @@ type SignerSupport interface {
 
 // NewSignatureHeaderCreator creates new signature headers
 func NewSignatureHeaderCreator(ss SignerSupport) *SignatureHeaderCreator {
+	fmt.Println("======NewSignatureHeaderCreator===========")
 	return &SignatureHeaderCreator{ss}
 }
 
 // NewSignatureHeader creates a SignatureHeader with the correct signing identity and a valid nonce
 func (bs *SignatureHeaderCreator) NewSignatureHeader() (*cb.SignatureHeader, error) {
+	fmt.Println("======SignatureHeaderCreator=====NewSignatureHeader======")
 	creator, err := bs.Serialize()
 	if err != nil {
 		return nil, err

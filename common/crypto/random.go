@@ -18,6 +18,7 @@ package crypto
 
 import (
 	"crypto/rand"
+	"fmt"
 
 	"github.com/pkg/errors"
 )
@@ -29,6 +30,7 @@ const (
 
 // GetRandomBytes returns len random looking bytes
 func GetRandomBytes(len int) ([]byte, error) {
+	fmt.Println("======GetRandomBytes===========")
 	key := make([]byte, len)
 
 	// TODO: rand could fill less bytes then len
@@ -42,5 +44,6 @@ func GetRandomBytes(len int) ([]byte, error) {
 
 // GetRandomNonce returns a random byte array of length NonceSize
 func GetRandomNonce() ([]byte, error) {
+	fmt.Println("======GetRandomNonce===========")
 	return GetRandomBytes(NonceSize)
 }

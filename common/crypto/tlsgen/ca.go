@@ -9,6 +9,7 @@ package tlsgen
 import (
 	"crypto"
 	"crypto/x509"
+	"fmt"
 )
 
 // CertKeyPair denotes a TLS certificate and corresponding key,
@@ -46,6 +47,7 @@ type ca struct {
 }
 
 func NewCA() (CA, error) {
+	fmt.Println("==========NewCA===========")
 	c := &ca{}
 	var err error
 	c.caCert, err = newCertKeyPair(true, false, "", nil, nil)
@@ -64,6 +66,7 @@ func (c *ca) CertBytes() []byte {
 // or nil, error in case of failure
 // The certificate is signed by the CA and is used as a client TLS certificate
 func (c *ca) NewClientCertKeyPair() (*CertKeyPair, error) {
+	fmt.Println("======ca====NewClientCertKeyPair===========")
 	return newCertKeyPair(false, false, "", c.caCert.Signer, c.caCert.TLSCert)
 }
 
@@ -71,6 +74,7 @@ func (c *ca) NewClientCertKeyPair() (*CertKeyPair, error) {
 // or nil, error in case of failure
 // The certificate is signed by the CA and is used as a server TLS certificate
 func (c *ca) NewServerCertKeyPair(host string) (*CertKeyPair, error) {
+	fmt.Println("======ca====NewServerCertKeyPair===========")
 	keypair, err := newCertKeyPair(false, true, host, c.caCert.Signer, c.caCert.TLSCert)
 	if err != nil {
 		return nil, err
