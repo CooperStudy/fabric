@@ -6,6 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 package handlers
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/pkg/errors"
 )
@@ -17,6 +18,7 @@ type CredentialRequestSigner struct {
 }
 
 func (c *CredentialRequestSigner) Sign(k bccsp.Key, digest []byte, opts bccsp.SignerOpts) ([]byte, error) {
+	fmt.Println("=====CredentialRequestSigner=====Sign===============")
 	userSecretKey, ok := k.(*userSecretKey)
 	if !ok {
 		return nil, errors.New("invalid key, expected *userSecretKey")
@@ -43,6 +45,7 @@ type CredentialRequestVerifier struct {
 }
 
 func (c *CredentialRequestVerifier) Verify(k bccsp.Key, signature, digest []byte, opts bccsp.SignerOpts) (bool, error) {
+	fmt.Println("=====CredentialRequestSigner=====Verify===============")
 	issuerPublicKey, ok := k.(*issuerPublicKey)
 	if !ok {
 		return false, errors.New("invalid key, expected *issuerPublicKey")
@@ -65,6 +68,7 @@ type CredentialSigner struct {
 }
 
 func (s *CredentialSigner) Sign(k bccsp.Key, digest []byte, opts bccsp.SignerOpts) (signature []byte, err error) {
+	fmt.Println("=====CredentialSigner=====Sign===============")
 	issuerSecretKey, ok := k.(*issuerSecretKey)
 	if !ok {
 		return nil, errors.New("invalid key, expected *issuerSecretKey")
@@ -87,6 +91,7 @@ type CredentialVerifier struct {
 }
 
 func (v *CredentialVerifier) Verify(k bccsp.Key, signature, digest []byte, opts bccsp.SignerOpts) (valid bool, err error) {
+	fmt.Println("=====CredentialVerifier=====Verify===============")
 	userSecretKey, ok := k.(*userSecretKey)
 	if !ok {
 		return false, errors.New("invalid key, expected *userSecretKey")

@@ -6,6 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 package handlers
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/pkg/errors"
 )
@@ -20,10 +21,12 @@ type issuerSecretKey struct {
 }
 
 func NewIssuerSecretKey(sk IssuerSecretKey, exportable bool) *issuerSecretKey {
+	fmt.Println("=====NewIssuerSecretKey=================")
 	return &issuerSecretKey{sk: sk, exportable: exportable}
 }
 
 func (k *issuerSecretKey) Bytes() ([]byte, error) {
+	fmt.Println("====issuerSecretKey=Bytes=================")
 	if k.exportable {
 		return k.sk.Bytes()
 	}
@@ -32,6 +35,7 @@ func (k *issuerSecretKey) Bytes() ([]byte, error) {
 }
 
 func (k *issuerSecretKey) SKI() []byte {
+	fmt.Println("====issuerSecretKey=SKI=================")
 	pk, err := k.PublicKey()
 	if err != nil {
 		return nil
@@ -41,14 +45,17 @@ func (k *issuerSecretKey) SKI() []byte {
 }
 
 func (*issuerSecretKey) Symmetric() bool {
+	fmt.Println("====issuerSecretKey=Symmetric=================")
 	return false
 }
 
 func (*issuerSecretKey) Private() bool {
+	fmt.Println("====issuerSecretKey=Private=================")
 	return true
 }
 
 func (k *issuerSecretKey) PublicKey() (bccsp.Key, error) {
+	fmt.Println("====issuerSecretKey=PublicKey=================")
 	return &issuerPublicKey{k.sk.Public()}, nil
 }
 
@@ -59,26 +66,32 @@ type issuerPublicKey struct {
 }
 
 func NewIssuerPublicKey(pk IssuerPublicKey) *issuerPublicKey {
+	fmt.Println("====NewIssuerPublicKey=================")
 	return &issuerPublicKey{pk}
 }
 
 func (k *issuerPublicKey) Bytes() ([]byte, error) {
+	fmt.Println("====issuerPublicKey====Bytes=============")
 	return k.pk.Bytes()
 }
 
 func (k *issuerPublicKey) SKI() []byte {
+	fmt.Println("====issuerPublicKey====SKI=============")
 	return k.pk.Hash()
 }
 
 func (*issuerPublicKey) Symmetric() bool {
+	fmt.Println("====issuerPublicKey====Symmetric=============")
 	return false
 }
 
 func (*issuerPublicKey) Private() bool {
+	fmt.Println("====issuerPublicKey====Private=============")
 	return false
 }
 
 func (k *issuerPublicKey) PublicKey() (bccsp.Key, error) {
+	fmt.Println("====issuerPublicKey====PublicKey=============")
 	return k, nil
 }
 
@@ -92,6 +105,7 @@ type IssuerKeyGen struct {
 }
 
 func (g *IssuerKeyGen) KeyGen(opts bccsp.KeyGenOpts) (k bccsp.Key, err error) {
+	fmt.Println("====IssuerKeyGen====KeyGen=============")
 	o, ok := opts.(*bccsp.IdemixIssuerKeyGenOpts)
 	if !ok {
 		return nil, errors.New("invalid options, expected *bccsp.IdemixIssuerKeyGenOpts")
@@ -113,6 +127,7 @@ type IssuerPublicKeyImporter struct {
 }
 
 func (i *IssuerPublicKeyImporter) KeyImport(raw interface{}, opts bccsp.KeyImportOpts) (k bccsp.Key, err error) {
+	fmt.Println("====IssuerPublicKeyImporter====KeyImport=============")
 	der, ok := raw.([]byte)
 	if !ok {
 		return nil, errors.New("invalid raw, expected byte array")
