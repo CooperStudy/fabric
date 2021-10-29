@@ -9,6 +9,7 @@ import (
 	"crypto/elliptic"
 	"crypto/sha256"
 	"crypto/sha512"
+	"fmt"
 	"reflect"
 
 	"github.com/hyperledger/fabric/bccsp"
@@ -19,6 +20,7 @@ import (
 // NewDefaultSecurityLevel returns a new instance of the software-based BCCSP
 // at security level 256, hash family SHA2 and using FolderBasedKeyStore as KeyStore.
 func NewDefaultSecurityLevel(keyStorePath string) (bccsp.BCCSP, error) {
+	fmt.Println("==NewDefaultSecurityLevel==")
 	ks := &fileBasedKeyStore{}
 	if err := ks.Init(nil, keyStorePath, false); err != nil {
 		return nil, errors.Wrapf(err, "Failed initializing key store at [%v]", keyStorePath)
@@ -30,12 +32,14 @@ func NewDefaultSecurityLevel(keyStorePath string) (bccsp.BCCSP, error) {
 // NewDefaultSecurityLevel returns a new instance of the software-based BCCSP
 // at security level 256, hash family SHA2 and using the passed KeyStore.
 func NewDefaultSecurityLevelWithKeystore(keyStore bccsp.KeyStore) (bccsp.BCCSP, error) {
+	fmt.Println("==NewDefaultSecurityLevelWithKeystore==")
 	return NewWithParams(256, "SHA2", keyStore)
 }
 
 // NewWithParams returns a new instance of the software-based BCCSP
 // set at the passed security level, hash family and KeyStore.
 func NewWithParams(securityLevel int, hashFamily string, keyStore bccsp.KeyStore) (bccsp.BCCSP, error) {
+	fmt.Println("==NewWithParams==")
 	// Init config
 	conf := &config{}
 	err := conf.setSecurityLevel(securityLevel, hashFamily)

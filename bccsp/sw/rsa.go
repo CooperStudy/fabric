@@ -28,6 +28,7 @@ import (
 type rsaSigner struct{}
 
 func (s *rsaSigner) Sign(k bccsp.Key, digest []byte, opts bccsp.SignerOpts) ([]byte, error) {
+	fmt.Println("==rsaSigner===Sign=")
 	if opts == nil {
 		return nil, errors.New("Invalid options. Must be different from nil.")
 	}
@@ -38,6 +39,7 @@ func (s *rsaSigner) Sign(k bccsp.Key, digest []byte, opts bccsp.SignerOpts) ([]b
 type rsaPrivateKeyVerifier struct{}
 
 func (v *rsaPrivateKeyVerifier) Verify(k bccsp.Key, signature, digest []byte, opts bccsp.SignerOpts) (bool, error) {
+	fmt.Println("==rsaPrivateKeyVerifier===Verify=")
 	if opts == nil {
 		return false, errors.New("Invalid options. It must not be nil.")
 	}
@@ -56,6 +58,7 @@ func (v *rsaPrivateKeyVerifier) Verify(k bccsp.Key, signature, digest []byte, op
 type rsaPublicKeyKeyVerifier struct{}
 
 func (v *rsaPublicKeyKeyVerifier) Verify(k bccsp.Key, signature, digest []byte, opts bccsp.SignerOpts) (bool, error) {
+	fmt.Println("==rsaPublicKeyKeyVerifier===Verify=")
 	if opts == nil {
 		return false, errors.New("Invalid options. It must not be nil.")
 	}

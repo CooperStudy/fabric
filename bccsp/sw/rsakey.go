@@ -40,11 +40,13 @@ type rsaPrivateKey struct {
 // Bytes converts this key to its byte representation,
 // if this operation is allowed.
 func (k *rsaPrivateKey) Bytes() ([]byte, error) {
+	fmt.Println("==rsaPrivateKey===Bytes=")
 	return nil, errors.New("Not supported.")
 }
 
 // SKI returns the subject key identifier of this key.
 func (k *rsaPrivateKey) SKI() []byte {
+	fmt.Println("==rsaPrivateKey===SKI=")
 	if k.privKey == nil {
 		return nil
 	}
@@ -64,18 +66,21 @@ func (k *rsaPrivateKey) SKI() []byte {
 // Symmetric returns true if this key is a symmetric key,
 // false is this key is asymmetric
 func (k *rsaPrivateKey) Symmetric() bool {
+	fmt.Println("==rsaPrivateKey===Symmetric=")
 	return false
 }
 
 // Private returns true if this key is an asymmetric private key,
 // false otherwise.
 func (k *rsaPrivateKey) Private() bool {
+	fmt.Println("==rsaPrivateKey===Private=")
 	return true
 }
 
 // PublicKey returns the corresponding public key part of an asymmetric public/private key pair.
 // This method returns an error in symmetric key schemes.
 func (k *rsaPrivateKey) PublicKey() (bccsp.Key, error) {
+	fmt.Println("==rsaPrivateKey===PublicKey=")
 	return &rsaPublicKey{&k.privKey.PublicKey}, nil
 }
 
@@ -86,6 +91,7 @@ type rsaPublicKey struct {
 // Bytes converts this key to its byte representation,
 // if this operation is allowed.
 func (k *rsaPublicKey) Bytes() (raw []byte, err error) {
+	fmt.Println("==rsaPrivateKey===Bytes=")
 	if k.pubKey == nil {
 		return nil, errors.New("Failed marshalling key. Key is nil.")
 	}
@@ -98,6 +104,7 @@ func (k *rsaPublicKey) Bytes() (raw []byte, err error) {
 
 // SKI returns the subject key identifier of this key.
 func (k *rsaPublicKey) SKI() []byte {
+	fmt.Println("==rsaPublicKey===SKI=")
 	if k.pubKey == nil {
 		return nil
 	}
@@ -117,17 +124,20 @@ func (k *rsaPublicKey) SKI() []byte {
 // Symmetric returns true if this key is a symmetric key,
 // false is this key is asymmetric
 func (k *rsaPublicKey) Symmetric() bool {
+	fmt.Println("==rsaPublicKey===Symmetric=")
 	return false
 }
 
 // Private returns true if this key is an asymmetric private key,
 // false otherwise.
 func (k *rsaPublicKey) Private() bool {
+	fmt.Println("==rsaPublicKey===Private=")
 	return false
 }
 
 // PublicKey returns the corresponding public key part of an asymmetric public/private key pair.
 // This method returns an error in symmetric key schemes.
 func (k *rsaPublicKey) PublicKey() (bccsp.Key, error) {
+	fmt.Println("==rsaPublicKey===PublicKey=")
 	return k, nil
 }

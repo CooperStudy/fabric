@@ -17,6 +17,7 @@ limitations under the License.
 package sw
 
 import (
+	"fmt"
 	"hash"
 
 	"github.com/hyperledger/fabric/bccsp"
@@ -27,11 +28,13 @@ type hasher struct {
 }
 
 func (c *hasher) Hash(msg []byte, opts bccsp.HashOpts) ([]byte, error) {
+	fmt.Println("===hasher==Hash==")
 	h := c.hash()
 	h.Write(msg)
 	return h.Sum(nil), nil
 }
 
 func (c *hasher) GetHash(opts bccsp.HashOpts) (hash.Hash, error) {
+	fmt.Println("===hasher==GetHash==")
 	return c.hash(), nil
 }
