@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/hyperledger/fabric/bccsp/factory"
@@ -15,6 +16,7 @@ import (
 )
 
 func main() {
+	fmt.Println("========main===========")
 	factory.InitFactories(nil)
 	cli := common.NewCLI("discover", "Command line client for fabric discovery service")
 	discovery.AddCommands(cli)

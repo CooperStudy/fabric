@@ -30,6 +30,7 @@ type ChannelProvider struct {
 
 // NewChannelProvider creates a channel capabilities provider.
 func NewChannelProvider(capabilities map[string]*cb.Capability) *ChannelProvider {
+	logger.Info("==NewChannelProvider=")
 	cp := &ChannelProvider{}
 	cp.registry = newRegistry(cp, capabilities)
 	_, cp.v11 = capabilities[ChannelV1_1]
@@ -44,6 +45,7 @@ func (cp *ChannelProvider) Type() string {
 
 // HasCapability returns true if the capability is supported by this binary.
 func (cp *ChannelProvider) HasCapability(capability string) bool {
+	logger.Info("==ChannelProvider=====HasCapability==")
 	switch capability {
 	// Add new capability names here
 	case ChannelV1_3:
@@ -57,6 +59,7 @@ func (cp *ChannelProvider) HasCapability(capability string) bool {
 
 // MSPVersion returns the level of MSP support required by this channel.
 func (cp *ChannelProvider) MSPVersion() msp.MSPVersion {
+	logger.Info("==ChannelProvider=====MSPVersion==")
 	switch {
 	case cp.v13:
 		return msp.MSPv1_3

@@ -25,6 +25,7 @@ type OrdererProvider struct {
 
 // NewOrdererProvider creates an orderer capabilities provider.
 func NewOrdererProvider(capabilities map[string]*cb.Capability) *OrdererProvider {
+	logger.Info("==NewOrdererProvider==")
 	cp := &OrdererProvider{}
 	cp.registry = newRegistry(cp, capabilities)
 	_, cp.v11BugFixes = capabilities[OrdererV1_1]
@@ -33,11 +34,13 @@ func NewOrdererProvider(capabilities map[string]*cb.Capability) *OrdererProvider
 
 // Type returns a descriptive string for logging purposes.
 func (cp *OrdererProvider) Type() string {
+	logger.Info("==OrdererProvider====Type===")
 	return ordererTypeName
 }
 
 // HasCapability returns true if the capability is supported by this binary.
 func (cp *OrdererProvider) HasCapability(capability string) bool {
+	logger.Info("==OrdererProvider====HasCapability===")
 	switch capability {
 	// Add new capability names here
 	case OrdererV1_1:
@@ -50,17 +53,20 @@ func (cp *OrdererProvider) HasCapability(capability string) bool {
 // PredictableChannelTemplate specifies whether the v1.0 undesirable behavior of setting the /Channel
 // group's mod_policy to "" and copying versions from the channel config should be fixed or not.
 func (cp *OrdererProvider) PredictableChannelTemplate() bool {
+	logger.Info("==OrdererProvider====PredictableChannelTemplate===")
 	return cp.v11BugFixes
 }
 
 // Resubmission specifies whether the v1.0 non-deterministic commitment of tx should be fixed by re-submitting
 // the re-validated tx.
 func (cp *OrdererProvider) Resubmission() bool {
+	logger.Info("==OrdererProvider====Resubmission===")
 	return cp.v11BugFixes
 }
 
 // ExpirationCheck specifies whether the orderer checks for identity expiration checks
 // when validating messages
 func (cp *OrdererProvider) ExpirationCheck() bool {
+	logger.Info("==OrdererProvider====ExpirationCheck===")
 	return cp.v11BugFixes
 }

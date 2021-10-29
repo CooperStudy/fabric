@@ -31,6 +31,7 @@ type registry struct {
 }
 
 func newRegistry(p provider, capabilities map[string]*cb.Capability) *registry {
+	logger.Info("==newRegistry=")
 	return &registry{
 		provider:     p,
 		capabilities: capabilities,
@@ -39,6 +40,7 @@ func newRegistry(p provider, capabilities map[string]*cb.Capability) *registry {
 
 // Supported checks that all of the required capabilities are supported by this binary.
 func (r *registry) Supported() error {
+	logger.Info("==registry==Supported=")
 	for capabilityName := range r.capabilities {
 		if r.provider.HasCapability(capabilityName) {
 			logger.Debugf("%s capability %s is supported and is enabled", r.provider.Type(), capabilityName)

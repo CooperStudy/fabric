@@ -21,6 +21,7 @@ var cauthdslLogger = flogging.MustGetLogger("cauthdsl")
 
 // deduplicate removes any duplicated identities while otherwise preserving identity order
 func deduplicate(sds []IdentityAndSignature) []IdentityAndSignature {
+	fmt.Println("==deduplicate===")
 	ids := make(map[string]struct{})
 	result := make([]IdentityAndSignature, 0, len(sds))
 	for i, sd := range sds {
@@ -44,6 +45,7 @@ func deduplicate(sds []IdentityAndSignature) []IdentityAndSignature {
 // compile recursively builds a go evaluatable function corresponding to the policy specified, remember to call deduplicate on identities before
 // passing them to this function for evaluation
 func compile(policy *cb.SignaturePolicy, identities []*mb.MSPPrincipal, deserializer msp.IdentityDeserializer) (func([]IdentityAndSignature, []bool) bool, error) {
+	fmt.Println("==compile===")
 	if policy == nil {
 		return nil, fmt.Errorf("Empty policy element")
 	}

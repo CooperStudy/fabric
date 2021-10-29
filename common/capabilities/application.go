@@ -43,6 +43,7 @@ type ApplicationProvider struct {
 
 // NewApplicationProvider creates a application capabilities provider.
 func NewApplicationProvider(capabilities map[string]*cb.Capability) *ApplicationProvider {
+	logger.Info("==NewApplicationProvider===")
 	ap := &ApplicationProvider{}
 	ap.registry = newRegistry(ap, capabilities)
 	_, ap.v11 = capabilities[ApplicationV1_1]
@@ -55,17 +56,20 @@ func NewApplicationProvider(capabilities map[string]*cb.Capability) *Application
 
 // Type returns a descriptive string for logging purposes.
 func (ap *ApplicationProvider) Type() string {
+	logger.Info("==ApplicationProvider==Type=")
 	return applicationTypeName
 }
 
 // ACLs returns whether ACLs may be specified in the channel application config
 func (ap *ApplicationProvider) ACLs() bool {
+	logger.Info("==ApplicationProvider==ACLs=")
 	return ap.v12 || ap.v13
 }
 
 // ForbidDuplicateTXIdInBlock specifies whether two transactions with the same TXId are permitted
 // in the same block or whether we mark the second one as TxValidationCode_DUPLICATE_TXID
 func (ap *ApplicationProvider) ForbidDuplicateTXIdInBlock() bool {
+	logger.Info("==ApplicationProvider==ForbidDuplicateTXIdInBlock=")
 	return ap.v11 || ap.v12 || ap.v13
 }
 
@@ -73,30 +77,35 @@ func (ap *ApplicationProvider) ForbidDuplicateTXIdInBlock() bool {
 // In v1.1, the private channel data is experimental and has to be enabled explicitly.
 // In v1.2, the private channel data is enabled by default.
 func (ap *ApplicationProvider) PrivateChannelData() bool {
+	logger.Info("==ApplicationProvider==PrivateChannelData=")
 	return ap.v11PvtDataExperimental || ap.v12 || ap.v13
 }
 
 // CollectionUpgrade returns true if this channel is configured to allow updates to
 // existing collection or add new collections through chaincode upgrade (as introduced in v1.2)
 func (ap ApplicationProvider) CollectionUpgrade() bool {
+	logger.Info("==ApplicationProvider==CollectionUpgrade=")
 	return ap.v12 || ap.v13
 }
 
 // V1_1Validation returns true is this channel is configured to perform stricter validation
 // of transactions (as introduced in v1.1).
 func (ap *ApplicationProvider) V1_1Validation() bool {
+	logger.Info("==ApplicationProvider==V1_1Validation=")
 	return ap.v11 || ap.v12 || ap.v13
 }
 
 // V1_2Validation returns true if this channel is configured to perform stricter validation
 // of transactions (as introduced in v1.2).
 func (ap *ApplicationProvider) V1_2Validation() bool {
+	logger.Info("==ApplicationProvider==V1_2Validation=")
 	return ap.v12 || ap.v13
 }
 
 // V1_3Validation returns true if this channel is configured to perform stricter validation
 // of transactions (as introduced in v1.3).
 func (ap *ApplicationProvider) V1_3Validation() bool {
+	logger.Info("==ApplicationProvider==V1_3Validation=")
 	return ap.v13
 }
 
@@ -104,22 +113,26 @@ func (ap *ApplicationProvider) V1_3Validation() bool {
 // v1.0/v1.1/v1.2 lifecycle, or whether it should use the newer per channel peer local chaincode
 // metadata package approach planned for release with Fabric v1.3
 func (ap *ApplicationProvider) MetadataLifecycle() bool {
+	logger.Info("==ApplicationProvider==MetadataLifecycle=")
 	return false
 }
 
 // KeyLevelEndorsement returns true if this channel supports endorsement
 // policies expressible at a ledger key granularity, as described in FAB-8812
 func (ap *ApplicationProvider) KeyLevelEndorsement() bool {
+	logger.Info("==ApplicationProvider==KeyLevelEndorsement=")
 	return ap.v13
 }
 
 // FabToken returns true if support for fabric token functions is enabled.
 func (ap *ApplicationProvider) FabToken() bool {
+	logger.Info("==ApplicationProvider==FabToken=")
 	return ap.v14FabTokenExperimental
 }
 
 // HasCapability returns true if the capability is supported by this binary.
 func (ap *ApplicationProvider) HasCapability(capability string) bool {
+	logger.Info("==ApplicationProvider==HasCapability=")
 	switch capability {
 	// Add new capability names here
 	case ApplicationV1_1:

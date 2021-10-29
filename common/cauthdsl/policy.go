@@ -43,6 +43,7 @@ type deserializeAndVerify struct {
 }
 
 func (d *deserializeAndVerify) Identity() (Identity, error) {
+	fmt.Println("==deserializeAndVerify==Identity=")
 	deserializedIdentity, err := d.deserializer.DeserializeIdentity(d.signedData.Identity)
 	if err != nil {
 		return nil, err
@@ -53,6 +54,7 @@ func (d *deserializeAndVerify) Identity() (Identity, error) {
 }
 
 func (d *deserializeAndVerify) Verify() error {
+	fmt.Println("==deserializeAndVerify==Verify=")
 	if d.deserializedIdentity == nil {
 		cauthdslLogger.Panicf("programming error, Identity must be called prior to Verify")
 	}
@@ -65,6 +67,7 @@ type provider struct {
 
 // NewProviderImpl provides a policy generator for cauthdsl type policies
 func NewPolicyProvider(deserializer msp.IdentityDeserializer) policies.Provider {
+	fmt.Println("==NewPolicyProvider=")
 	return &provider{
 		deserializer: deserializer,
 	}
@@ -72,6 +75,7 @@ func NewPolicyProvider(deserializer msp.IdentityDeserializer) policies.Provider 
 
 // NewPolicy creates a new policy based on the policy bytes
 func (pr *provider) NewPolicy(data []byte) (policies.Policy, proto.Message, error) {
+	fmt.Println("==NewPolicy=")
 	sigPolicy := &cb.SignaturePolicyEnvelope{}
 	if err := proto.Unmarshal(data, sigPolicy); err != nil {
 		return nil, nil, fmt.Errorf("Error unmarshaling to SignaturePolicy: %s", err)
@@ -100,6 +104,7 @@ type policy struct {
 
 // Evaluate takes a set of SignedData and evaluates whether this set of signatures satisfies the policy
 func (p *policy) Evaluate(signatureSet []*cb.SignedData) error {
+	fmt.Println("===policy==Evaluate=")
 	if p == nil {
 		return fmt.Errorf("No such policy")
 	}

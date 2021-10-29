@@ -350,6 +350,5 @@ func (opts *X509PublicKeyImportOpts) Algorithm() string {
 // false otherwise.
 func (opts *X509PublicKeyImportOpts) Ephemeral() bool {
 	fmt.Println("===X509PublicKeyImportOpts==Ephemeral===")
-
 	return opts.Temporary
 }

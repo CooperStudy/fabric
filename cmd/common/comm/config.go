@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package comm
 
 import (
+	"fmt"
 	"io/ioutil"
 	"time"
 
@@ -29,6 +30,7 @@ type Config struct {
 // The given function generates a self signed client TLS certificate if
 // the TLS certificate and key aren't present at the config
 func (conf Config) ToSecureOptions(newSelfSignedTLSCert genTLSCertFunc) (*comm.SecureOptions, error) {
+	fmt.Println("=Config=ToSecureOptions===")
 	if conf.PeerCACertPath == "" {
 		return &comm.SecureOptions{}, nil
 	}
@@ -64,6 +66,7 @@ func (conf Config) ToSecureOptions(newSelfSignedTLSCert genTLSCertFunc) (*comm.S
 }
 
 func loadFile(path string) ([]byte, error) {
+	fmt.Println("=loadFile===")
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, errors.Errorf("Failed opening file %s: %v", path, err)

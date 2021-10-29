@@ -45,6 +45,7 @@ type CLI struct {
 
 // NewCLI creates a new CLI with the given name and help message
 func NewCLI(name, help string) *CLI {
+	fmt.Println("========NewCLI=============")
 	return &CLI{
 		app:         kingpin.New(name, help),
 		dispatchers: make(map[string]CLICommand),
@@ -53,6 +54,7 @@ func NewCLI(name, help string) *CLI {
 
 // Command adds a new top-level command to the CLI
 func (cli *CLI) Command(name, help string, onCommand CLICommand) *kingpin.CmdClause {
+	fmt.Println("========Command=============")
 	cmd := cli.app.Command(name, help)
 	cli.dispatchers[name] = onCommand
 	return cmd
@@ -60,6 +62,7 @@ func (cli *CLI) Command(name, help string, onCommand CLICommand) *kingpin.CmdCla
 
 // Run makes the CLI process the arguments and executes the command(s) with the flag(s)
 func (cli *CLI) Run(args []string) {
+	fmt.Println("========CLI=======Run======")
 	configFile = cli.app.Flag("configFile", "Specifies the config file to load the configuration from").String()
 	persist := cli.app.Command(saveConfigCommand, fmt.Sprintf("Save the config passed by flags into the file specified by --configFile"))
 	configureFlags(cli.app)
@@ -96,6 +99,7 @@ func (cli *CLI) Run(args []string) {
 }
 
 func configureFlags(persistCommand *kingpin.Application) {
+	fmt.Println("========configureFlags===========")
 	// TLS flags
 	tlsCA = persistCommand.Flag("peerTLSCA", "Sets the TLS CA certificate file path that verifies the TLS peer's certificate").File()
 	tlsCert = persistCommand.Flag("tlsCert", "(Optional) Sets the client TLS certificate file path that is used when the peer enforces client authentication").File()
@@ -107,6 +111,7 @@ func configureFlags(persistCommand *kingpin.Application) {
 }
 
 func persistConfig(conf Config, file string) {
+	fmt.Println("========persistConfig===========")
 	if err := conf.ToFile(file); err != nil {
 		out("Failed persisting configuration:", err)
 		terminate(1)
@@ -114,6 +119,7 @@ func persistConfig(conf Config, file string) {
 }
 
 func loadConfig(file string) Config {
+	fmt.Println("========loadConfig===========")
 	conf, err := ConfigFromFile(file)
 	if err != nil {
 		out("Failed loading config", err)
@@ -124,6 +130,7 @@ func loadConfig(file string) Config {
 }
 
 func parseFlagsToConfig() Config {
+	fmt.Println("========parseFlagsToConfig===========")
 	conf := Config{
 		SignerConfig: signer.Config{
 			MSPID:        *mspID,
@@ -140,6 +147,7 @@ func parseFlagsToConfig() Config {
 }
 
 func evaluateFileFlag(f **os.File) string {
+	fmt.Println("========evaluateFileFlag===========")
 	if f == nil {
 		return ""
 	}
@@ -154,5 +162,6 @@ func evaluateFileFlag(f **os.File) string {
 	return path
 }
 func out(a ...interface{}) {
+	fmt.Println("========out===========")
 	fmt.Fprintln(outWriter, a...)
 }

@@ -12,6 +12,7 @@ import (
 	"crypto/x509"
 	"encoding/asn1"
 	"encoding/pem"
+	"fmt"
 	"io/ioutil"
 	"math/big"
 
@@ -41,6 +42,7 @@ type Signer struct {
 
 // NewSigner creates a new Signer out of the given configuration
 func NewSigner(conf Config) (*Signer, error) {
+	fmt.Println("=NewSigner===")
 	sId, err := serializeIdentity(conf.IdentityPath, conf.MSPID)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -56,6 +58,7 @@ func NewSigner(conf Config) (*Signer, error) {
 }
 
 func serializeIdentity(clientCert string, mspID string) ([]byte, error) {
+	fmt.Println("=serializeIdentity===")
 	b, err := ioutil.ReadFile(clientCert)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -68,11 +71,13 @@ func serializeIdentity(clientCert string, mspID string) ([]byte, error) {
 }
 
 func (si *Signer) Sign(msg []byte) ([]byte, error) {
+	fmt.Println("===Signer===Sign===")
 	digest := util.ComputeSHA256(msg)
 	return signECDSA(si.key, digest)
 }
 
 func loadPrivateKey(file string) (*ecdsa.PrivateKey, error) {
+	fmt.Println("===loadPrivateKey======")
 	b, err := ioutil.ReadFile(file)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -89,6 +94,7 @@ func loadPrivateKey(file string) (*ecdsa.PrivateKey, error) {
 }
 
 func signECDSA(k *ecdsa.PrivateKey, digest []byte) (signature []byte, err error) {
+	fmt.Println("===signECDSA======")
 	r, s, err := ecdsa.Sign(rand.Reader, k, digest)
 	if err != nil {
 		return nil, err
@@ -103,6 +109,7 @@ func signECDSA(k *ecdsa.PrivateKey, digest []byte) (signature []byte, err error)
 }
 
 func marshalECDSASignature(r, s *big.Int) ([]byte, error) {
+	fmt.Println("===marshalECDSASignature======")
 	return asn1.Marshal(ECDSASignature{r, s})
 }
 

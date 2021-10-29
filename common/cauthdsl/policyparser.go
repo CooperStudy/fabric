@@ -56,6 +56,7 @@ var (
 // a stub function - it returns the same string as it's passed.
 // This will be evaluated by second/third passes to convert to a proto policy
 func outof(args ...interface{}) (interface{}, error) {
+	fmt.Println("==========outof=========")
 	toret := "outof("
 	if len(args) < 2 {
 		return nil, fmt.Errorf("Expected at least two arguments to NOutOf. Given %d", len(args))
@@ -90,16 +91,19 @@ func outof(args ...interface{}) (interface{}, error) {
 }
 
 func and(args ...interface{}) (interface{}, error) {
+	fmt.Println("==========and=========")
 	args = append([]interface{}{len(args)}, args...)
 	return outof(args...)
 }
 
 func or(args ...interface{}) (interface{}, error) {
+	fmt.Println("==========or=========")
 	args = append([]interface{}{1}, args...)
 	return outof(args...)
 }
 
 func firstPass(args ...interface{}) (interface{}, error) {
+	fmt.Println("==========firstPass=========")
 	toret := "outof(ID"
 	for _, arg := range args {
 		toret += ", "
@@ -122,6 +126,7 @@ func firstPass(args ...interface{}) (interface{}, error) {
 }
 
 func secondPass(args ...interface{}) (interface{}, error) {
+	fmt.Println("==========secondPass=========")
 	/* general sanity check, we expect at least 3 args */
 	if len(args) < 3 {
 		return nil, fmt.Errorf("At least 3 arguments expected, got %d", len(args))
@@ -220,6 +225,7 @@ type context struct {
 }
 
 func newContext() *context {
+	fmt.Println("==========newContext=========")
 	return &context{IDNum: 0, principals: make([]*msp.MSPPrincipal, 0)}
 }
 
@@ -242,6 +248,7 @@ func newContext() *context {
 //	- ROLE takes the value of any of the RoleXXX constants representing
 //    the required role
 func FromString(policy string) (*common.SignaturePolicyEnvelope, error) {
+	fmt.Println("==========FromString=========")
 	// first we translate the and/or business into outof gates
 	intermediate, err := govaluate.NewEvaluableExpressionWithFunctions(
 		policy, map[string]govaluate.ExpressionFunction{

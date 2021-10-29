@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package common
 
 import (
+	"fmt"
 	"io/ioutil"
 
 	"github.com/hyperledger/fabric/cmd/common/comm"
@@ -28,6 +29,7 @@ type Config struct {
 
 // ConfigFromFile loads the given file and converts it to a Config
 func ConfigFromFile(file string) (Config, error) {
+	fmt.Println("========ConfigFromFile===========")
 	configData, err := ioutil.ReadFile(file)
 	if err != nil {
 		return Config{}, errors.WithStack(err)
@@ -43,6 +45,7 @@ func ConfigFromFile(file string) (Config, error) {
 
 // ToFile writes the config into a file
 func (c Config) ToFile(file string) error {
+	fmt.Println("========ToFile===========")
 	if err := validateConfig(c); err != nil {
 		return errors.Wrap(err, "config isn't valid")
 	}
@@ -54,6 +57,7 @@ func (c Config) ToFile(file string) error {
 }
 
 func validateConfig(conf Config) error {
+	fmt.Println("========validateConfig===========")
 	nonEmptyStrings := []string{
 		conf.SignerConfig.MSPID,
 		conf.SignerConfig.IdentityPath,
