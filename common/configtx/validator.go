@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package configtx
 
 import (
+	"fmt"
 	"regexp"
 
 	"github.com/golang/protobuf/proto"
@@ -46,6 +47,7 @@ type ValidatorImpl struct {
 //      2. Are shorter than 250 characters.
 //      3. Are not the strings "." or "..".
 func validateConfigID(configID string) error {
+	fmt.Println("==validateConfigID===")
 	re, _ := regexp.Compile(configAllowedChars)
 	// Length
 	if len(configID) <= 0 {
@@ -78,6 +80,7 @@ func validateConfigID(configID string) error {
 // This is to accomodate existing channel names with '.', especially in the
 // behave tests which rely on the dot notation for their sluggification.
 func validateChannelID(channelID string) error {
+	fmt.Println("==validateChannelID===")
 	re, _ := regexp.Compile(channelAllowedChars)
 	// Length
 	if len(channelID) <= 0 {
@@ -98,6 +101,7 @@ func validateChannelID(channelID string) error {
 
 // NewValidatorImpl constructs a new implementation of the Validator interface.
 func NewValidatorImpl(channelID string, config *cb.Config, namespace string, pm policies.Manager) (*ValidatorImpl, error) {
+	fmt.Println("==NewValidatorImpl===")
 	if config == nil {
 		return nil, errors.Errorf("nil config parameter")
 	}
@@ -128,10 +132,12 @@ func NewValidatorImpl(channelID string, config *cb.Config, namespace string, pm 
 // ProposeConfigUpdate takes in an Envelope of type CONFIG_UPDATE and produces a
 // ConfigEnvelope to be used as the Envelope Payload Data of a CONFIG message
 func (vi *ValidatorImpl) ProposeConfigUpdate(configtx *cb.Envelope) (*cb.ConfigEnvelope, error) {
+	fmt.Println("==ValidatorImpl==ProposeConfigUpdate===")
 	return vi.proposeConfigUpdate(configtx)
 }
 
 func (vi *ValidatorImpl) proposeConfigUpdate(configtx *cb.Envelope) (*cb.ConfigEnvelope, error) {
+	fmt.Println("==ValidatorImpl==proposeConfigUpdate===")
 	configUpdateEnv, err := utils.EnvelopeToConfigUpdate(configtx)
 	if err != nil {
 		return nil, errors.Errorf("error converting envelope to config update: %s", err)
@@ -158,6 +164,7 @@ func (vi *ValidatorImpl) proposeConfigUpdate(configtx *cb.Envelope) (*cb.ConfigE
 
 // Validate simulates applying a ConfigEnvelope to become the new config
 func (vi *ValidatorImpl) Validate(configEnv *cb.ConfigEnvelope) error {
+	fmt.Println("==ValidatorImpl==Validate===")
 	if configEnv == nil {
 		return errors.Errorf("config envelope is nil")
 	}
@@ -195,15 +202,19 @@ func (vi *ValidatorImpl) Validate(configEnv *cb.ConfigEnvelope) error {
 
 // ChainID retrieves the chain ID associated with this manager
 func (vi *ValidatorImpl) ChainID() string {
+	fmt.Println("==ValidatorImpl==ChainID===")
 	return vi.channelID
+
 }
 
 // Sequence returns the sequence number of the config
 func (vi *ValidatorImpl) Sequence() uint64 {
+	fmt.Println("==ValidatorImpl==Sequence===")
 	return vi.sequence
 }
 
 // ConfigProto returns the config proto which initialized this Validator
 func (vi *ValidatorImpl) ConfigProto() *cb.Config {
+	fmt.Println("==ValidatorImpl==ConfigProto===")
 	return vi.configProto
 }

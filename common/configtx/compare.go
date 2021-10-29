@@ -8,6 +8,7 @@ package configtx
 
 import (
 	"bytes"
+	"fmt"
 
 	cb "github.com/hyperledger/fabric/protos/common"
 )
@@ -21,6 +22,7 @@ type comparable struct {
 }
 
 func (cg comparable) equals(other comparable) bool {
+	fmt.Println("=====comparable==equals==")
 	switch {
 	case cg.ConfigGroup != nil:
 		if other.ConfigGroup == nil {
@@ -44,6 +46,7 @@ func (cg comparable) equals(other comparable) bool {
 }
 
 func (cg comparable) version() uint64 {
+	fmt.Println("=====comparable==version==")
 	switch {
 	case cg.ConfigGroup != nil:
 		return cg.ConfigGroup.Version
@@ -58,6 +61,7 @@ func (cg comparable) version() uint64 {
 }
 
 func (cg comparable) modPolicy() string {
+	fmt.Println("=====comparable==modPolicy==")
 	switch {
 	case cg.ConfigGroup != nil:
 		return cg.ConfigGroup.ModPolicy
@@ -72,12 +76,14 @@ func (cg comparable) modPolicy() string {
 }
 
 func equalConfigValues(lhs, rhs *cb.ConfigValue) bool {
+	fmt.Println("=====equalConfigValues====")
 	return lhs.Version == rhs.Version &&
 		lhs.ModPolicy == rhs.ModPolicy &&
 		bytes.Equal(lhs.Value, rhs.Value)
 }
 
 func equalConfigPolicies(lhs, rhs *cb.ConfigPolicy) bool {
+	fmt.Println("=====equalConfigPolicies====")
 	if lhs.Version != rhs.Version ||
 		lhs.ModPolicy != rhs.ModPolicy {
 		return false
@@ -95,6 +101,7 @@ func equalConfigPolicies(lhs, rhs *cb.ConfigPolicy) bool {
 // TODO, try to consolidate these three methods into one, as the code
 // contents are the same, but the function signatures need to be different
 func subsetOfGroups(inner, outer map[string]*cb.ConfigGroup) bool {
+	fmt.Println("=====subsetOfGroups====")
 	// The empty set is a subset of all sets
 	if len(inner) == 0 {
 		return true
@@ -116,6 +123,7 @@ func subsetOfGroups(inner, outer map[string]*cb.ConfigGroup) bool {
 }
 
 func subsetOfPolicies(inner, outer map[string]*cb.ConfigPolicy) bool {
+	fmt.Println("=====subsetOfPolicies====")
 	// The empty set is a subset of all sets
 	if len(inner) == 0 {
 		return true
@@ -137,6 +145,7 @@ func subsetOfPolicies(inner, outer map[string]*cb.ConfigPolicy) bool {
 }
 
 func subsetOfValues(inner, outer map[string]*cb.ConfigValue) bool {
+	fmt.Println("=====subsetOfValues====")
 	// The empty set is a subset of all sets
 	if len(inner) == 0 {
 		return true
@@ -158,6 +167,7 @@ func subsetOfValues(inner, outer map[string]*cb.ConfigValue) bool {
 }
 
 func equalConfigGroup(lhs, rhs *cb.ConfigGroup) bool {
+	fmt.Println("=====equalConfigGroup====")
 	if lhs.Version != rhs.Version ||
 		lhs.ModPolicy != rhs.ModPolicy {
 		return false
