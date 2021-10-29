@@ -52,6 +52,7 @@ var (
 var oidPublicKeyECDSA = asn1.ObjectIdentifier{1, 2, 840, 10045, 2, 1}
 
 func oidFromNamedCurve(curve elliptic.Curve) (asn1.ObjectIdentifier, bool) {
+	fmt.Println("===oidFromNamedCurve======")
 	switch curve {
 	case elliptic.P224():
 		return oidNamedCurveP224, true
@@ -67,6 +68,7 @@ func oidFromNamedCurve(curve elliptic.Curve) (asn1.ObjectIdentifier, bool) {
 
 // PrivateKeyToDER marshals a private key to der
 func PrivateKeyToDER(privateKey *ecdsa.PrivateKey) ([]byte, error) {
+	fmt.Println("===PrivateKeyToDER======")
 	if privateKey == nil {
 		return nil, errors.New("Invalid ecdsa private key. It must be different from nil.")
 	}
@@ -78,6 +80,7 @@ func PrivateKeyToDER(privateKey *ecdsa.PrivateKey) ([]byte, error) {
 // EC private keys are converted to PKCS#8 format.
 // RSA private keys are converted to PKCS#1 format.
 func PrivateKeyToPEM(privateKey interface{}, pwd []byte) ([]byte, error) {
+	fmt.Println("===PrivateKeyToPEM======")
 	// Validate inputs
 	if len(pwd) != 0 {
 		return PrivateKeyToEncryptedPEM(privateKey, pwd)
@@ -149,6 +152,7 @@ func PrivateKeyToPEM(privateKey interface{}, pwd []byte) ([]byte, error) {
 
 // PrivateKeyToEncryptedPEM converts a private key to an encrypted PEM
 func PrivateKeyToEncryptedPEM(privateKey interface{}, pwd []byte) ([]byte, error) {
+	fmt.Println("===PrivateKeyToEncryptedPEM======")
 	if privateKey == nil {
 		return nil, errors.New("Invalid private key. It must be different from nil.")
 	}
@@ -184,7 +188,7 @@ func PrivateKeyToEncryptedPEM(privateKey interface{}, pwd []byte) ([]byte, error
 
 // DERToPrivateKey unmarshals a der to private key
 func DERToPrivateKey(der []byte) (key interface{}, err error) {
-
+	fmt.Println("===DERToPrivateKey======")
 	if key, err = x509.ParsePKCS1PrivateKey(der); err == nil {
 		return key, nil
 	}
@@ -207,6 +211,7 @@ func DERToPrivateKey(der []byte) (key interface{}, err error) {
 
 // PEMtoPrivateKey unmarshals a pem to private key
 func PEMtoPrivateKey(raw []byte, pwd []byte) (interface{}, error) {
+	fmt.Println("===PEMtoPrivateKey======")
 	if len(raw) == 0 {
 		return nil, errors.New("Invalid PEM. It must be different from nil.")
 	}
@@ -243,6 +248,7 @@ func PEMtoPrivateKey(raw []byte, pwd []byte) (interface{}, error) {
 
 // PEMtoAES extracts from the PEM an AES key
 func PEMtoAES(raw []byte, pwd []byte) ([]byte, error) {
+	fmt.Println("===PEMtoAES======")
 	if len(raw) == 0 {
 		return nil, errors.New("Invalid PEM. It must be different from nil.")
 	}
@@ -268,11 +274,13 @@ func PEMtoAES(raw []byte, pwd []byte) ([]byte, error) {
 
 // AEStoPEM encapsulates an AES key in the PEM format
 func AEStoPEM(raw []byte) []byte {
+	fmt.Println("===AEStoPEM======")
 	return pem.EncodeToMemory(&pem.Block{Type: "AES PRIVATE KEY", Bytes: raw})
 }
 
 // AEStoEncryptedPEM encapsulates an AES key in the encrypted PEM format
 func AEStoEncryptedPEM(raw []byte, pwd []byte) ([]byte, error) {
+	fmt.Println("===AEStoEncryptedPEM======")
 	if len(raw) == 0 {
 		return nil, errors.New("Invalid aes key. It must be different from nil")
 	}
@@ -296,6 +304,7 @@ func AEStoEncryptedPEM(raw []byte, pwd []byte) ([]byte, error) {
 
 // PublicKeyToPEM marshals a public key to the pem format
 func PublicKeyToPEM(publicKey interface{}, pwd []byte) ([]byte, error) {
+	fmt.Println("===PublicKeyToPEM======")
 	if len(pwd) != 0 {
 		return PublicKeyToEncryptedPEM(publicKey, pwd)
 	}
@@ -343,6 +352,7 @@ func PublicKeyToPEM(publicKey interface{}, pwd []byte) ([]byte, error) {
 
 // PublicKeyToDER marshals a public key to the der format
 func PublicKeyToDER(publicKey interface{}) ([]byte, error) {
+	fmt.Println("===PublicKeyToDER======")
 	if publicKey == nil {
 		return nil, errors.New("Invalid public key. It must be different from nil.")
 	}
@@ -377,6 +387,7 @@ func PublicKeyToDER(publicKey interface{}) ([]byte, error) {
 
 // PublicKeyToEncryptedPEM converts a public key to encrypted pem
 func PublicKeyToEncryptedPEM(publicKey interface{}, pwd []byte) ([]byte, error) {
+	fmt.Println("===PublicKeyToEncryptedPEM======")
 	if publicKey == nil {
 		return nil, errors.New("Invalid public key. It must be different from nil.")
 	}
@@ -414,6 +425,7 @@ func PublicKeyToEncryptedPEM(publicKey interface{}, pwd []byte) ([]byte, error) 
 
 // PEMtoPublicKey unmarshals a pem to public key
 func PEMtoPublicKey(raw []byte, pwd []byte) (interface{}, error) {
+	fmt.Println("===PEMtoPublicKey======")
 	if len(raw) == 0 {
 		return nil, errors.New("Invalid PEM. It must be different from nil.")
 	}
@@ -449,6 +461,7 @@ func PEMtoPublicKey(raw []byte, pwd []byte) (interface{}, error) {
 
 // DERToPublicKey unmarshals a der to public key
 func DERToPublicKey(raw []byte) (pub interface{}, err error) {
+	fmt.Println("===DERToPublicKey======")
 	if len(raw) == 0 {
 		return nil, errors.New("Invalid DER. It must be different from nil.")
 	}

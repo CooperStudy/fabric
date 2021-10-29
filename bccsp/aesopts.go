@@ -16,7 +16,10 @@ limitations under the License.
 
 package bccsp
 
-import "io"
+import (
+	"fmt"
+	"io"
+)
 
 // AES128KeyGenOpts contains options for AES key generation at 128 security level
 type AES128KeyGenOpts struct {
@@ -25,12 +28,14 @@ type AES128KeyGenOpts struct {
 
 // Algorithm returns the key generation algorithm identifier (to be used).
 func (opts *AES128KeyGenOpts) Algorithm() string {
+	fmt.Println("===AES128KeyGenOpts==Algorithm====")
 	return AES128
 }
 
 // Ephemeral returns true if the key to generate has to be ephemeral,
 // false otherwise.
 func (opts *AES128KeyGenOpts) Ephemeral() bool {
+	fmt.Println("===AES128KeyGenOpts==Ephemeral====")
 	return opts.Temporary
 }
 
@@ -41,12 +46,14 @@ type AES192KeyGenOpts struct {
 
 // Algorithm returns the key generation algorithm identifier (to be used).
 func (opts *AES192KeyGenOpts) Algorithm() string {
+	fmt.Println("===AES192KeyGenOpts==Algorithm====")
 	return AES192
 }
 
 // Ephemeral returns true if the key to generate has to be ephemeral,
 // false otherwise.
 func (opts *AES192KeyGenOpts) Ephemeral() bool {
+	fmt.Println("===AES192KeyGenOpts==Ephemeral====")
 	return opts.Temporary
 }
 
@@ -57,12 +64,14 @@ type AES256KeyGenOpts struct {
 
 // Algorithm returns the key generation algorithm identifier (to be used).
 func (opts *AES256KeyGenOpts) Algorithm() string {
+	fmt.Println("===AES256KeyGenOpts==Algorithm====")
 	return AES256
 }
 
 // Ephemeral returns true if the key to generate has to be ephemeral,
 // false otherwise.
 func (opts *AES256KeyGenOpts) Ephemeral() bool {
+	fmt.Println("===AES256KeyGenOpts==Ephemeral====")
 	return opts.Temporary
 }
 

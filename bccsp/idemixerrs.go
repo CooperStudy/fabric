@@ -26,6 +26,7 @@ type IdemixIssuerPublicKeyImporterError struct {
 }
 
 func (r *IdemixIssuerPublicKeyImporterError) Error() string {
+	fmt.Println("===IdemixIssuerPublicKeyImporterError==Error===")
 	if r.Cause != nil {
 		return fmt.Sprintf("%s: %s", r.ErrorMsg, r.Cause)
 	}

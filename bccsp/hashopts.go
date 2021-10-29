@@ -56,6 +56,7 @@ func (opts *SHA3_384Opts) Algorithm() string {
 
 // GetHashOpt returns the HashOpts corresponding to the passed hash function
 func GetHashOpt(hashFunction string) (HashOpts, error) {
+	fmt.Println("===GetHashOpt=====")
 	switch hashFunction {
 	case SHA256:
 		return &SHA256Opts{}, nil

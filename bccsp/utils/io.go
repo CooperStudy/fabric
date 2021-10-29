@@ -17,12 +17,14 @@ limitations under the License.
 package utils
 
 import (
+	"fmt"
 	"io"
 	"os"
 )
 
 // DirMissingOrEmpty checks is a directory is missing or empty
 func DirMissingOrEmpty(path string) (bool, error) {
+	fmt.Println("===DirMissingOrEmpty======")
 	dirExists, err := DirExists(path)
 	if err != nil {
 		return false, err
@@ -43,6 +45,7 @@ func DirMissingOrEmpty(path string) (bool, error) {
 
 // DirExists checks if a directory exists
 func DirExists(path string) (bool, error) {
+	fmt.Println("===DirExists======")
 	_, err := os.Stat(path)
 	if err == nil {
 		return true, nil
@@ -55,6 +58,7 @@ func DirExists(path string) (bool, error) {
 
 // DirEmpty checks if a directory is empty
 func DirEmpty(path string) (bool, error) {
+	fmt.Println("===DirEmpty======")
 	f, err := os.Open(path)
 	if err != nil {
 		return false, err

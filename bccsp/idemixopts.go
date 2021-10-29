@@ -7,6 +7,7 @@ package bccsp
 
 import (
 	"crypto"
+	"fmt"
 )
 
 // RevocationAlgorithm identifies the revocation algorithm
@@ -33,12 +34,14 @@ type IdemixIssuerKeyGenOpts struct {
 
 // Algorithm returns the key generation algorithm identifier (to be used).
 func (*IdemixIssuerKeyGenOpts) Algorithm() string {
+	fmt.Println("===IdemixIssuerKeyGenOpts==Algorithm===")
 	return IDEMIX
 }
 
 // Ephemeral returns true if the key to generate has to be ephemeral,
 // false otherwise.
 func (o *IdemixIssuerKeyGenOpts) Ephemeral() bool {
+	fmt.Println("===IdemixIssuerKeyGenOpts==Ephemeral===")
 	return o.Temporary
 }
 
@@ -51,12 +54,14 @@ type IdemixIssuerPublicKeyImportOpts struct {
 
 // Algorithm returns the key generation algorithm identifier (to be used).
 func (*IdemixIssuerPublicKeyImportOpts) Algorithm() string {
+	fmt.Println("===IdemixIssuerPublicKeyImportOpts==Algorithm===")
 	return IDEMIX
 }
 
 // Ephemeral returns true if the key to generate has to be ephemeral,
 // false otherwise.
 func (o *IdemixIssuerPublicKeyImportOpts) Ephemeral() bool {
+	fmt.Println("===IdemixIssuerPublicKeyImportOpts==Ephemeral===")
 	return o.Temporary
 }
 
@@ -67,12 +72,14 @@ type IdemixUserSecretKeyGenOpts struct {
 
 // Algorithm returns the key generation algorithm identifier (to be used).
 func (*IdemixUserSecretKeyGenOpts) Algorithm() string {
+	fmt.Println("===IdemixUserSecretKeyGenOpts==Algorithm===")
 	return IDEMIX
 }
 
 // Ephemeral returns true if the key to generate has to be ephemeral,
 // false otherwise.
 func (o *IdemixUserSecretKeyGenOpts) Ephemeral() bool {
+	fmt.Println("===IdemixUserSecretKeyGenOpts==Ephemeral===")
 	return o.Temporary
 }
 
@@ -83,12 +90,14 @@ type IdemixUserSecretKeyImportOpts struct {
 
 // Algorithm returns the key generation algorithm identifier (to be used).
 func (*IdemixUserSecretKeyImportOpts) Algorithm() string {
+	fmt.Println("===IdemixUserSecretKeyImportOpts==Algorithm===")
 	return IDEMIX
 }
 
 // Ephemeral returns true if the key to generate has to be ephemeral,
 // false otherwise.
 func (o *IdemixUserSecretKeyImportOpts) Ephemeral() bool {
+	fmt.Println("===IdemixUserSecretKeyImportOpts==Ephemeral===")
 	return o.Temporary
 }
 
@@ -103,18 +112,21 @@ type IdemixNymKeyDerivationOpts struct {
 
 // Algorithm returns the key derivation algorithm identifier (to be used).
 func (*IdemixNymKeyDerivationOpts) Algorithm() string {
+	fmt.Println("===IdemixNymKeyDerivationOpts==Algorithm===")
 	return IDEMIX
 }
 
 // Ephemeral returns true if the key to derive has to be ephemeral,
 // false otherwise.
 func (o *IdemixNymKeyDerivationOpts) Ephemeral() bool {
+	fmt.Println("===IdemixNymKeyDerivationOpts==Ephemeral===")
 	return o.Temporary
 }
 
 // IssuerPublicKey returns the issuer public key used to derive
 // a new unlinkable pseudonym from a credential secret key
 func (o *IdemixNymKeyDerivationOpts) IssuerPublicKey() Key {
+	fmt.Println("===IdemixNymKeyDerivationOpts==IssuerPublicKey===")
 	return o.IssuerPK
 }
 
@@ -126,12 +138,14 @@ type IdemixNymPublicKeyImportOpts struct {
 
 // Algorithm returns the key derivation algorithm identifier (to be used).
 func (*IdemixNymPublicKeyImportOpts) Algorithm() string {
+	fmt.Println("===IdemixNymPublicKeyImportOpts==Algorithm===")
 	return IDEMIX
 }
 
 // Ephemeral returns true if the key to derive has to be ephemeral,
 // false otherwise.
 func (o *IdemixNymPublicKeyImportOpts) Ephemeral() bool {
+	fmt.Println("===IdemixNymPublicKeyImportOpts==Ephemeral===")
 	return o.Temporary
 }
 
@@ -150,12 +164,14 @@ type IdemixCredentialRequestSignerOpts struct {
 }
 
 func (o *IdemixCredentialRequestSignerOpts) HashFunc() crypto.Hash {
+	fmt.Println("===IdemixCredentialRequestSignerOpts==HashFunc===")
 	return o.H
 }
 
 // IssuerPublicKey returns the issuer public key used to derive
 // a new unlinkable pseudonym from a credential secret key
 func (o *IdemixCredentialRequestSignerOpts) IssuerPublicKey() Key {
+	fmt.Println("===IdemixCredentialRequestSignerOpts==IssuerPublicKey===")
 	return o.IssuerPK
 }
 
@@ -192,10 +208,12 @@ type IdemixCredentialSignerOpts struct {
 // the message passed to Signer.Sign, or else zero to indicate that no
 // hashing was done.
 func (o *IdemixCredentialSignerOpts) HashFunc() crypto.Hash {
+	fmt.Println("===IdemixCredentialSignerOpts==HashFunc===")
 	return o.H
 }
 
 func (o *IdemixCredentialSignerOpts) IssuerPublicKey() Key {
+	fmt.Println("===IdemixCredentialSignerOpts==IssuerPublicKey===")
 	return o.IssuerPK
 }
 
@@ -228,6 +246,7 @@ type IdemixSignerOpts struct {
 }
 
 func (o *IdemixSignerOpts) HashFunc() crypto.Hash {
+	fmt.Println("===IdemixSignerOpts==HashFunc===")
 	return o.H
 }
 
@@ -245,6 +264,7 @@ type IdemixNymSignerOpts struct {
 // the message passed to Signer.Sign, or else zero to indicate that no
 // hashing was done.
 func (o *IdemixNymSignerOpts) HashFunc() crypto.Hash {
+	fmt.Println("===IdemixNymSignerOpts==HashFunc===")
 	return o.H
 }
 
@@ -256,12 +276,14 @@ type IdemixRevocationKeyGenOpts struct {
 
 // Algorithm returns the key generation algorithm identifier (to be used).
 func (*IdemixRevocationKeyGenOpts) Algorithm() string {
+	fmt.Println("===IdemixRevocationKeyGenOpts==Algorithm===")
 	return IDEMIX
 }
 
 // Ephemeral returns true if the key to generate has to be ephemeral,
 // false otherwise.
 func (o *IdemixRevocationKeyGenOpts) Ephemeral() bool {
+	fmt.Println("===IdemixRevocationKeyGenOpts==Ephemeral===")
 	return o.Temporary
 }
 
@@ -272,12 +294,14 @@ type IdemixRevocationPublicKeyImportOpts struct {
 
 // Algorithm returns the key generation algorithm identifier (to be used).
 func (*IdemixRevocationPublicKeyImportOpts) Algorithm() string {
+	fmt.Println("===IdemixRevocationPublicKeyImportOpts==Algorithm===")
 	return IDEMIX
 }
 
 // Ephemeral returns true if the key to generate has to be ephemeral,
 // false otherwise.
 func (o *IdemixRevocationPublicKeyImportOpts) Ephemeral() bool {
+	fmt.Println("===IdemixRevocationPublicKeyImportOpts==Ephemeral===")
 	return o.Temporary
 }
 
@@ -293,5 +317,6 @@ type IdemixCRISignerOpts struct {
 }
 
 func (o *IdemixCRISignerOpts) HashFunc() crypto.Hash {
+	fmt.Println("===IdemixCRISignerOpts==HashFunc===")
 	return o.H
 }
