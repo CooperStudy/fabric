@@ -7,6 +7,7 @@ package bridge
 
 import (
 	"crypto/ecdsa"
+	"fmt"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-amcl/amcl"
@@ -27,6 +28,8 @@ type SignatureScheme struct {
 // and attributes to be disclosed.
 func (s *SignatureScheme) Sign(cred []byte, sk handlers.Big, Nym handlers.Ecp, RNym handlers.Big, ipk handlers.IssuerPublicKey, attributes []bccsp.IdemixAttribute,
 	msg []byte, rhIndex int, criRaw []byte) (res []byte, err error) {
+
+	fmt.Println("=======SignatureScheme===Sign=================")
 	defer func() {
 		if r := recover(); r != nil {
 			res = nil
@@ -93,6 +96,7 @@ func (s *SignatureScheme) Sign(cred []byte, sk handlers.Big, Nym handlers.Ecp, R
 // Verify checks that an idemix signature is valid with the respect to the passed issuer public key, digest, attributes,
 // revocation index (rhIndex), revocation public key, and epoch.
 func (*SignatureScheme) Verify(ipk handlers.IssuerPublicKey, signature, digest []byte, attributes []bccsp.IdemixAttribute, rhIndex int, revocationPublicKey *ecdsa.PublicKey, epoch int) (err error) {
+	fmt.Println("=======SignatureScheme===Verify=================")
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.Errorf("failure [%s]", r)

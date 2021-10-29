@@ -6,6 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 package bridge
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric-amcl/amcl/FP256BN"
 	"github.com/hyperledger/fabric/idemix"
 )
@@ -16,6 +17,7 @@ type Big struct {
 }
 
 func (b *Big) Bytes() ([]byte, error) {
+	fmt.Println("====Big====Bytes=============")
 	return idemix.BigToBytes(b.E), nil
 }
 
@@ -25,6 +27,7 @@ type Ecp struct {
 }
 
 func (o *Ecp) Bytes() ([]byte, error) {
+	fmt.Println("====Ecp====Bytes=============")
 	var res []byte
 	res = append(res, idemix.BigToBytes(o.E.GetX())...)
 	res = append(res, idemix.BigToBytes(o.E.GetY())...)

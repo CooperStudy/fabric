@@ -57,6 +57,7 @@ type BCCSPFactory interface {
 
 // GetDefault returns a non-ephemeral (long-term) BCCSP
 func GetDefault() bccsp.BCCSP {
+	logger.Info("=======GetDefault=================")
 	if defaultBCCSP == nil {
 		logger.Warning("Before using BCCSP, please call InitFactories(). Falling back to bootBCCSP.")
 		bootBCCSPInitOnce.Do(func() {
@@ -74,6 +75,7 @@ func GetDefault() bccsp.BCCSP {
 
 // GetBCCSP returns a BCCSP created according to the options passed in input.
 func GetBCCSP(name string) (bccsp.BCCSP, error) {
+	logger.Info("=======GetBCCSP=================")
 	csp, ok := bccspMap[name]
 	if !ok {
 		return nil, errors.Errorf("Could not find BCCSP, no '%s' provider", name)
@@ -82,6 +84,7 @@ func GetBCCSP(name string) (bccsp.BCCSP, error) {
 }
 
 func initBCCSP(f BCCSPFactory, config *FactoryOpts) error {
+	logger.Info("=======initBCCSP=================")
 	csp, err := f.Get(config)
 	if err != nil {
 		return errors.Errorf("Could not initialize BCCSP %s [%s]", f.Name(), err)

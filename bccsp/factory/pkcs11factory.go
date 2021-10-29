@@ -34,11 +34,13 @@ type PKCS11Factory struct{}
 
 // Name returns the name of this factory
 func (f *PKCS11Factory) Name() string {
+	logger.Info("======PKCS11Factory===Name================")
 	return PKCS11BasedFactoryName
 }
 
 // Get returns an instance of BCCSP using Opts.
 func (f *PKCS11Factory) Get(config *FactoryOpts) (bccsp.BCCSP, error) {
+	logger.Info("======PKCS11Factory===Get================")
 	// Validate arguments
 	if config == nil || config.Pkcs11Opts == nil {
 		return nil, errors.New("Invalid config. It must not be nil.")

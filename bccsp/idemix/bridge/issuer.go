@@ -22,10 +22,12 @@ type IssuerPublicKey struct {
 }
 
 func (o *IssuerPublicKey) Bytes() ([]byte, error) {
+	fmt.Println("====IssuerPublicKey====Bytes=============")
 	return proto.Marshal(o.PK)
 }
 
 func (o *IssuerPublicKey) Hash() []byte {
+	fmt.Println("====IssuerPublicKey====Hash=============")
 	return o.PK.Hash
 }
 
@@ -35,10 +37,12 @@ type IssuerSecretKey struct {
 }
 
 func (o *IssuerSecretKey) Bytes() ([]byte, error) {
+	fmt.Println("====IssuerPublicKey====Bytes=============")
 	return proto.Marshal(o.SK)
 }
 
 func (o *IssuerSecretKey) Public() handlers.IssuerPublicKey {
+	fmt.Println("====IssuerPublicKey====Public=============")
 	return &IssuerPublicKey{o.SK.Ipk}
 }
 
@@ -49,6 +53,7 @@ type Issuer struct {
 
 // NewKey generates a new issuer key-pair
 func (i *Issuer) NewKey(attributeNames []string) (res handlers.IssuerSecretKey, err error) {
+	fmt.Println("====Issuer====NewKey=============")
 	defer func() {
 		if r := recover(); r != nil {
 			res = nil
@@ -67,6 +72,7 @@ func (i *Issuer) NewKey(attributeNames []string) (res handlers.IssuerSecretKey, 
 }
 
 func (*Issuer) NewPublicKeyFromBytes(raw []byte, attributes []string) (res handlers.IssuerPublicKey, err error) {
+	fmt.Println("====Issuer====NewPublicKeyFromBytes=============")
 	defer func() {
 		if r := recover(); r != nil {
 			res = nil
