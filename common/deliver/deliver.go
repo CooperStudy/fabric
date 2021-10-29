@@ -8,6 +8,7 @@ package deliver
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"math"
 	"strconv"
@@ -82,6 +83,7 @@ type InspectorFunc func(context.Context, proto.Message) error
 
 // Inspect calls inspector(ctx, p)
 func (inspector InspectorFunc) Inspect(ctx context.Context, p proto.Message) error {
+	fmt.Println("======InspectorFunc===Inspect===")
 	return inspector(ctx, p)
 }
 
@@ -125,6 +127,7 @@ type Server struct {
 
 // ExtractChannelHeaderCertHash extracts the TLS cert hash from a channel header.
 func ExtractChannelHeaderCertHash(msg proto.Message) []byte {
+	fmt.Println("======ExtractChannelHeaderCertHash===")
 	chdr, isChannelHeader := msg.(*cb.ChannelHeader)
 	if !isChannelHeader || chdr == nil {
 		return nil
@@ -134,6 +137,7 @@ func ExtractChannelHeaderCertHash(msg proto.Message) []byte {
 
 // NewHandler creates an implementation of the Handler interface.
 func NewHandler(cm ChainManager, timeWindow time.Duration, mutualTLS bool, metrics *Metrics) *Handler {
+	fmt.Println("======NewHandler===")
 	return &Handler{
 		ChainManager:     cm,
 		TimeWindow:       timeWindow,
@@ -144,6 +148,7 @@ func NewHandler(cm ChainManager, timeWindow time.Duration, mutualTLS bool, metri
 
 // Handle receives incoming deliver requests.
 func (h *Handler) Handle(ctx context.Context, srv *Server) error {
+	fmt.Println("====Handler==Handle===")
 	addr := util.ExtractRemoteAddress(ctx)
 	logger.Debugf("Starting new deliver loop for %s", addr)
 	h.Metrics.StreamsOpened.Add(1)
@@ -179,6 +184,7 @@ func (h *Handler) Handle(ctx context.Context, srv *Server) error {
 }
 
 func isFiltered(srv *Server) bool {
+	fmt.Println("====isFiltered==")
 	if filtered, ok := srv.ResponseSender.(Filtered); ok {
 		return filtered.IsFiltered()
 	}
@@ -186,6 +192,7 @@ func isFiltered(srv *Server) bool {
 }
 
 func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.Envelope) (status cb.Status, err error) {
+	fmt.Println("==Handler==deliverBlocks==")
 	addr := util.ExtractRemoteAddress(ctx)
 	payload, err := utils.UnmarshalPayload(envelope.Payload)
 	if err != nil {
@@ -336,6 +343,7 @@ func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.E
 }
 
 func (h *Handler) validateChannelHeader(ctx context.Context, chdr *cb.ChannelHeader) error {
+	fmt.Println("==Handler==validateChannelHeader==")
 	if chdr.GetTimestamp() == nil {
 		err := errors.New("channel header in envelope must contain timestamp")
 		return err

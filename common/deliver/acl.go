@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package deliver
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/hyperledger/fabric/protos/common"
@@ -24,6 +25,7 @@ type ConfigSequencer interface {
 // NewSessionAC creates an instance of SessionAccessControl. This constructor will
 // return an error if a signature header cannot be extracted from the envelope.
 func NewSessionAC(chain ConfigSequencer, env *common.Envelope, policyChecker PolicyChecker, channelID string, expiresAt ExpiresAtFunc) (*SessionAccessControl, error) {
+	fmt.Println("======NewSessionAC======")
 	signedData, err := env.AsSignedData()
 	if err != nil {
 		return nil, err
@@ -55,6 +57,7 @@ type SessionAccessControl struct {
 // The decision is cached until the identity expires or the chain configuration
 // changes.
 func (ac *SessionAccessControl) Evaluate() error {
+	fmt.Println("======SessionAccessControl===Evaluate===")
 	if !ac.sessionEndTime.IsZero() && time.Now().After(ac.sessionEndTime) {
 		return errors.Errorf("client identity expired %v before", time.Since(ac.sessionEndTime))
 	}
