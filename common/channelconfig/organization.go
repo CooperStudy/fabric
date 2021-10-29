@@ -37,6 +37,7 @@ type OrganizationConfig struct {
 
 // NewOrganizationConfig creates a new config for an organization
 func NewOrganizationConfig(name string, orgGroup *cb.ConfigGroup, mspConfigHandler *MSPConfigHandler) (*OrganizationConfig, error) {
+	fmt.Println("==NewOrganizationConfig==")
 	if len(orgGroup.Groups) > 0 {
 		return nil, fmt.Errorf("organizations do not support sub-groups")
 	}
@@ -60,20 +61,24 @@ func NewOrganizationConfig(name string, orgGroup *cb.ConfigGroup, mspConfigHandl
 
 // Name returns the name this org is referred to in config
 func (oc *OrganizationConfig) Name() string {
+	fmt.Println("==OrganizationConfig==Name==")
 	return oc.name
 }
 
 // MSPID returns the MSP ID associated with this org
 func (oc *OrganizationConfig) MSPID() string {
+	fmt.Println("==OrganizationConfig==MSPID==")
 	return oc.mspID
 }
 
 // Validate returns whether the configuration is valid
 func (oc *OrganizationConfig) Validate() error {
+	fmt.Println("==OrganizationConfig==Validate==")
 	return oc.validateMSP()
 }
 
 func (oc *OrganizationConfig) validateMSP() error {
+	fmt.Println("==OrganizationConfig==validateMSP==")
 	var err error
 
 	logger.Debugf("Setting up MSP for org %s", oc.name)

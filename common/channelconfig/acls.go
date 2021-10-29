@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package channelconfig
 
 import (
+	"fmt"
 	pb "github.com/hyperledger/fabric/protos/peer"
 )
 
@@ -16,11 +17,13 @@ type aclsProvider struct {
 }
 
 func (ag *aclsProvider) PolicyRefForAPI(aclName string) string {
+	fmt.Println("==aclsProvider==PolicyRefForAPI=========")
 	return ag.aclPolicyRefs[aclName]
 }
 
 // this translates policies to absolute paths if needed
 func newAPIsProvider(acls map[string]*pb.APIResource) *aclsProvider {
+	fmt.Println("==newAPIsProvider=========")
 	aclPolicyRefs := make(map[string]string)
 
 	for key, acl := range acls {

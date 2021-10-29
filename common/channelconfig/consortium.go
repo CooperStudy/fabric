@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package channelconfig
 
 import (
+	"fmt"
 	cb "github.com/hyperledger/fabric/protos/common"
 	"github.com/pkg/errors"
 )
@@ -30,6 +31,7 @@ type ConsortiumConfig struct {
 
 // NewConsortiumConfig creates a new instance of the consoritums config
 func NewConsortiumConfig(consortiumGroup *cb.ConfigGroup, mspConfig *MSPConfigHandler) (*ConsortiumConfig, error) {
+	fmt.Println("=====NewConsortiumConfig===")
 	cc := &ConsortiumConfig{
 		protos: &ConsortiumProtos{},
 		orgs:   make(map[string]Org),
@@ -51,11 +53,13 @@ func NewConsortiumConfig(consortiumGroup *cb.ConfigGroup, mspConfig *MSPConfigHa
 
 // Organizations returns the set of organizations in the consortium
 func (cc *ConsortiumConfig) Organizations() map[string]Org {
+	fmt.Println("=====ConsortiumConfig==Organizations=")
 	return cc.orgs
 }
 
 // CreationPolicy returns the policy structure used to validate
 // the channel creation
 func (cc *ConsortiumConfig) ChannelCreationPolicy() *cb.Policy {
+	fmt.Println("=====ConsortiumConfig==ChannelCreationPolicy=")
 	return cc.protos.ChannelCreationPolicy
 }

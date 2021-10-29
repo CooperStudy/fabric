@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package channelconfig
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/hyperledger/fabric/common/configtx"
 	"github.com/hyperledger/fabric/common/flogging"
@@ -37,22 +38,26 @@ type Bundle struct {
 
 // PolicyManager returns the policy manager constructed for this config
 func (b *Bundle) PolicyManager() policies.Manager {
+	fmt.Println("=Bundle==PolicyManager========")
 	return b.policyManager
 }
 
 // MSPManager returns the MSP manager constructed for this config
 func (b *Bundle) MSPManager() msp.MSPManager {
+	fmt.Println("=Bundle==MSPManager========")
 	return b.channelConfig.MSPManager()
 }
 
 // ChannelConfig returns the config.Channel for the chain
 func (b *Bundle) ChannelConfig() Channel {
+	fmt.Println("=Bundle==ChannelConfig========")
 	return b.channelConfig
 }
 
 // OrdererConfig returns the config.Orderer for the channel
 // and whether the Orderer config exists
 func (b *Bundle) OrdererConfig() (Orderer, bool) {
+	fmt.Println("=Bundle==OrdererConfig========")
 	result := b.channelConfig.OrdererConfig()
 	return result, result != nil
 }
@@ -60,6 +65,7 @@ func (b *Bundle) OrdererConfig() (Orderer, bool) {
 // ConsortiumsConfig() returns the config.Consortiums for the channel
 // and whether the consortiums config exists
 func (b *Bundle) ConsortiumsConfig() (Consortiums, bool) {
+	fmt.Println("=Bundle==ConsortiumsConfig========")
 	result := b.channelConfig.ConsortiumsConfig()
 	return result, result != nil
 }
@@ -67,18 +73,21 @@ func (b *Bundle) ConsortiumsConfig() (Consortiums, bool) {
 // ApplicationConfig returns the configtxapplication.SharedConfig for the channel
 // and whether the Application config exists
 func (b *Bundle) ApplicationConfig() (Application, bool) {
+	fmt.Println("=Bundle==ApplicationConfig========")
 	result := b.channelConfig.ApplicationConfig()
 	return result, result != nil
 }
 
 // ConfigtxValidator returns the configtx.Validator for the channel
 func (b *Bundle) ConfigtxValidator() configtx.Validator {
+	fmt.Println("=Bundle==ConfigtxValidator========")
 	return b.configtxManager
 }
 
 // ValidateNew checks if a new bundle's contained configuration is valid to be derived from the current bundle.
 // This allows checks of the nature "Make sure that the consensus type did not change." which is otherwise
 func (b *Bundle) ValidateNew(nb Resources) error {
+	fmt.Println("=Bundle==ValidateNew========")
 	if oc, ok := b.OrdererConfig(); ok {
 		noc, ok := nb.OrdererConfig()
 		if !ok {
@@ -150,6 +159,7 @@ func (b *Bundle) ValidateNew(nb Resources) error {
 // NewBundleFromEnvelope wraps the NewBundle function, extracting the needed
 // information from a full configtx
 func NewBundleFromEnvelope(env *cb.Envelope) (*Bundle, error) {
+	fmt.Println("=====NewBundleFromEnvelope========")
 	payload, err := utils.UnmarshalPayload(env.Payload)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal payload from envelope")
@@ -174,6 +184,7 @@ func NewBundleFromEnvelope(env *cb.Envelope) (*Bundle, error) {
 
 // NewBundle creates a new immutable bundle of configuration
 func NewBundle(channelID string, config *cb.Config) (*Bundle, error) {
+	fmt.Println("=====NewBundle========")
 	if err := preValidate(config); err != nil {
 		return nil, err
 	}
@@ -214,6 +225,7 @@ func NewBundle(channelID string, config *cb.Config) (*Bundle, error) {
 }
 
 func preValidate(config *cb.Config) error {
+	fmt.Println("=====preValidate========")
 	if config == nil {
 		return errors.New("channelconfig Config cannot be nil")
 	}

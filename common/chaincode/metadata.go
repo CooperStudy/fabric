@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package chaincode
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/hyperledger/fabric/protos/gossip"
@@ -33,6 +34,7 @@ type MetadataSet []Metadata
 
 // AsChaincodes converts this MetadataSet to a slice of gossip.Chaincodes
 func (ccs MetadataSet) AsChaincodes() []*gossip.Chaincode {
+	 fmt.Println("====MetadataSet======AsChaincodes=========")
 	var res []*gossip.Chaincode
 	for _, cc := range ccs {
 		res = append(res, &gossip.Chaincode{
@@ -51,6 +53,7 @@ type MetadataMapping struct {
 
 // NewMetadataMapping creates a new metadata mapping
 func NewMetadataMapping() *MetadataMapping {
+	fmt.Println("====NewMetadataMapping=========")
 	return &MetadataMapping{
 		mdByName: make(map[string]Metadata),
 	}
@@ -58,6 +61,7 @@ func NewMetadataMapping() *MetadataMapping {
 
 // Lookup returns the Metadata that is associated with the given chaincode
 func (m *MetadataMapping) Lookup(cc string) (Metadata, bool) {
+	fmt.Println("==MetadataMapping==Lookup=========")
 	m.RLock()
 	defer m.RUnlock()
 	md, exists := m.mdByName[cc]
@@ -66,6 +70,7 @@ func (m *MetadataMapping) Lookup(cc string) (Metadata, bool) {
 
 // Update updates the chaincode metadata in the mapping
 func (m *MetadataMapping) Update(ccMd Metadata) {
+	fmt.Println("==MetadataMapping==Update=========")
 	m.Lock()
 	defer m.Unlock()
 	m.mdByName[ccMd.Name] = ccMd
@@ -73,6 +78,7 @@ func (m *MetadataMapping) Update(ccMd Metadata) {
 
 // Aggregate aggregates all Metadata to a MetadataSet
 func (m *MetadataMapping) Aggregate() MetadataSet {
+	fmt.Println("==MetadataMapping==Aggregate=========")
 	m.RLock()
 	defer m.RUnlock()
 	var set MetadataSet

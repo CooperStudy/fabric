@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package channelconfig
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric/common/capabilities"
 	cb "github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric/protos/peer"
@@ -35,6 +36,7 @@ type ApplicationConfig struct {
 
 // NewApplicationConfig creates config from an Application config group
 func NewApplicationConfig(appGroup *cb.ConfigGroup, mspConfig *MSPConfigHandler) (*ApplicationConfig, error) {
+	fmt.Println("==NewApplicationConfig=========")
 	ac := &ApplicationConfig{
 		applicationOrgs: make(map[string]ApplicationOrg),
 		protos:          &ApplicationProtos{},
@@ -63,16 +65,19 @@ func NewApplicationConfig(appGroup *cb.ConfigGroup, mspConfig *MSPConfigHandler)
 
 // Organizations returns a map of org ID to ApplicationOrg
 func (ac *ApplicationConfig) Organizations() map[string]ApplicationOrg {
+	fmt.Println("==ApplicationConfig====Organizations=====")
 	return ac.applicationOrgs
 }
 
 // Capabilities returns a map of capability name to Capability
 func (ac *ApplicationConfig) Capabilities() ApplicationCapabilities {
+	fmt.Println("==ApplicationConfig====Capabilities=====")
 	return capabilities.NewApplicationProvider(ac.protos.Capabilities.Capabilities)
 }
 
 // APIPolicyMapper returns a PolicyMapper that maps API names to policies
 func (ac *ApplicationConfig) APIPolicyMapper() PolicyMapper {
+	fmt.Println("==ApplicationConfig====APIPolicyMapper=====")
 	pm := newAPIsProvider(ac.protos.ACLs.Acls)
 
 	return pm

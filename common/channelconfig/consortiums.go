@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package channelconfig
 
 import (
+	"fmt"
 	cb "github.com/hyperledger/fabric/protos/common"
 )
 
@@ -22,6 +23,7 @@ type ConsortiumsConfig struct {
 
 // NewConsortiumsConfig creates a new instance of the consoritums config
 func NewConsortiumsConfig(consortiumsGroup *cb.ConfigGroup, mspConfig *MSPConfigHandler) (*ConsortiumsConfig, error) {
+	fmt.Println("=====NewConsortiumsConfig=")
 	cc := &ConsortiumsConfig{
 		consortiums: make(map[string]Consortium),
 	}
@@ -37,5 +39,6 @@ func NewConsortiumsConfig(consortiumsGroup *cb.ConfigGroup, mspConfig *MSPConfig
 
 // Consortiums returns a map of the current consortiums
 func (cc *ConsortiumsConfig) Consortiums() map[string]Consortium {
+	fmt.Println("=====ConsortiumsConfig===Consortiums====")
 	return cc.consortiums
 }

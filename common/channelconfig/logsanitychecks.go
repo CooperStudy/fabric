@@ -7,10 +7,12 @@ SPDX-License-Identifier: Apache-2.0
 package channelconfig
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric/common/policies"
 )
 
 func LogSanityChecks(res Resources) {
+	fmt.Println("=====LogSanityChecks====")
 	pm := res.PolicyManager()
 	for _, policyName := range []string{policies.ChannelReaders, policies.ChannelWriters} {
 		_, ok := pm.GetPolicy(policyName)
