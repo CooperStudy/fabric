@@ -46,6 +46,7 @@ var formatRegexp = regexp.MustCompile(`%{(color|id|level|message|module|shortfun
 //   - module: a fmt style string formatter without the leading %
 //
 func ParseFormat(spec string) ([]Formatter, error) {
+	fmt.Println("====ParseFormat====")
 	cursor := 0
 	formatters := []Formatter{}
 
@@ -102,6 +103,7 @@ func NewMultiFormatter(formatters ...Formatter) *MultiFormatter {
 // Format iterates over its delegates to format a log record to the provided
 // buffer.
 func (m *MultiFormatter) Format(w io.Writer, entry zapcore.Entry, fields []zapcore.Field) {
+	fmt.Println("====MultiFormatter==Format==")
 	m.mutex.RLock()
 	for i := range m.formatters {
 		m.formatters[i].Format(w, entry, fields)
@@ -111,6 +113,7 @@ func (m *MultiFormatter) Format(w io.Writer, entry zapcore.Entry, fields []zapco
 
 // SetFormatters replaces the delegate formatters.
 func (m *MultiFormatter) SetFormatters(formatters []Formatter) {
+	fmt.Println("====MultiFormatter==SetFormatters==")
 	m.mutex.Lock()
 	m.formatters = formatters
 	m.mutex.Unlock()
@@ -121,12 +124,14 @@ type StringFormatter struct{ Value string }
 
 // Format writes the formatter's fixed string to provided writer.
 func (s StringFormatter) Format(w io.Writer, entry zapcore.Entry, fields []zapcore.Field) {
+	fmt.Println("====StringFormatter==Format==")
 	fmt.Fprintf(w, "%s", s.Value)
 }
 
 // NewFormatter creates the formatter for the provided verb. When a format is
 // not provided, the default format for the verb is used.
 func NewFormatter(verb, format string) (Formatter, error) {
+	fmt.Println("===NewFormatter==")
 	switch verb {
 	case "color":
 		return newColorFormatter(format)
@@ -154,6 +159,7 @@ type ColorFormatter struct {
 }
 
 func newColorFormatter(f string) (ColorFormatter, error) {
+	fmt.Println("===newColorFormatter==")
 	switch f {
 	case "bold":
 		return ColorFormatter{Bold: true}, nil
@@ -168,6 +174,7 @@ func newColorFormatter(f string) (ColorFormatter, error) {
 
 // LevelColor returns the Color associated with a specific zap logging level.
 func (c ColorFormatter) LevelColor(l zapcore.Level) Color {
+	fmt.Println("===ColorFormatter==LevelColor==")
 	switch l {
 	case zapcore.DebugLevel:
 		return ColorCyan
@@ -188,6 +195,7 @@ func (c ColorFormatter) LevelColor(l zapcore.Level) Color {
 
 // Format writes the SGR color code to the provided writer.
 func (c ColorFormatter) Format(w io.Writer, entry zapcore.Entry, fields []zapcore.Field) {
+	fmt.Println("===ColorFormatter==Format==")
 	switch {
 	case c.Reset:
 		fmt.Fprintf(w, ResetColor())
@@ -202,11 +210,13 @@ func (c ColorFormatter) Format(w io.Writer, entry zapcore.Entry, fields []zapcor
 type LevelFormatter struct{ FormatVerb string }
 
 func newLevelFormatter(f string) LevelFormatter {
+	fmt.Println("==newLevelFormatter==")
 	return LevelFormatter{FormatVerb: "%" + stringOrDefault(f, "s")}
 }
 
 // Format writes the logging level to the provided writer.
 func (l LevelFormatter) Format(w io.Writer, entry zapcore.Entry, fields []zapcore.Field) {
+	fmt.Println("==LevelFormatter==Format=")
 	fmt.Fprintf(w, l.FormatVerb, entry.Level.CapitalString())
 }
 
@@ -214,11 +224,13 @@ func (l LevelFormatter) Format(w io.Writer, entry zapcore.Entry, fields []zapcor
 type MessageFormatter struct{ FormatVerb string }
 
 func newMessageFormatter(f string) MessageFormatter {
+	fmt.Println("==newMessageFormatter==")
 	return MessageFormatter{FormatVerb: "%" + stringOrDefault(f, "s")}
 }
 
 // Format writes the log entry message to the provided writer.
 func (m MessageFormatter) Format(w io.Writer, entry zapcore.Entry, fields []zapcore.Field) {
+	fmt.Println("==MessageFormatter==Format==")
 	fmt.Fprintf(w, m.FormatVerb, strings.TrimRight(entry.Message, "\n"))
 }
 
@@ -226,11 +238,13 @@ func (m MessageFormatter) Format(w io.Writer, entry zapcore.Entry, fields []zapc
 type ModuleFormatter struct{ FormatVerb string }
 
 func newModuleFormatter(f string) ModuleFormatter {
+	fmt.Println("==newModuleFormatter==")
 	return ModuleFormatter{FormatVerb: "%" + stringOrDefault(f, "s")}
 }
 
 // Format writes the zap logger name to the specified writer.
 func (m ModuleFormatter) Format(w io.Writer, entry zapcore.Entry, fields []zapcore.Field) {
+	fmt.Println("====ModuleFormatter==Format==")
 	fmt.Fprintf(w, m.FormatVerb, entry.LoggerName)
 }
 
@@ -239,18 +253,23 @@ func (m ModuleFormatter) Format(w io.Writer, entry zapcore.Entry, fields []zapco
 var sequence uint64
 
 // SetSequence explicitly sets the global sequence number.
-func SetSequence(s uint64) { atomic.StoreUint64(&sequence, s) }
+func SetSequence(s uint64) {
+	fmt.Println("====SetSequence==")
+	atomic.StoreUint64(&sequence, s)
+}
 
 // SequenceFormatter formats a global sequence number.
 type SequenceFormatter struct{ FormatVerb string }
 
 func newSequenceFormatter(f string) SequenceFormatter {
+	fmt.Println("====newSequenceFormatter==")
 	return SequenceFormatter{FormatVerb: "%" + stringOrDefault(f, "d")}
 }
 
 // SequenceFormatter increments a global sequence number and writes it to the
 // provided writer.
 func (s SequenceFormatter) Format(w io.Writer, entry zapcore.Entry, fields []zapcore.Field) {
+	fmt.Println("====SequenceFormatter=Format=")
 	fmt.Fprintf(w, s.FormatVerb, atomic.AddUint64(&sequence, 1))
 }
 
@@ -258,12 +277,14 @@ func (s SequenceFormatter) Format(w io.Writer, entry zapcore.Entry, fields []zap
 type ShortFuncFormatter struct{ FormatVerb string }
 
 func newShortFuncFormatter(f string) ShortFuncFormatter {
+	fmt.Println("====newShortFuncFormatter==")
 	return ShortFuncFormatter{FormatVerb: "%" + stringOrDefault(f, "s")}
 }
 
 // Format writes the calling function name to the provided writer. The name is obtained from
 // the runtime and the package and line numbers are discarded.
 func (s ShortFuncFormatter) Format(w io.Writer, entry zapcore.Entry, fields []zapcore.Field) {
+	fmt.Println("====ShortFuncFormatter=Format=")
 	f := runtime.FuncForPC(entry.Caller.PC)
 	if f == nil {
 		fmt.Fprintf(w, s.FormatVerb, "(unknown)")
@@ -279,15 +300,18 @@ func (s ShortFuncFormatter) Format(w io.Writer, entry zapcore.Entry, fields []za
 type TimeFormatter struct{ Layout string }
 
 func newTimeFormatter(f string) TimeFormatter {
+	fmt.Println("====newTimeFormatter===")
 	return TimeFormatter{Layout: stringOrDefault(f, "2006-01-02T15:04:05.999Z07:00")}
 }
 
 // Format writes the log record time stamp to the provided writer.
 func (t TimeFormatter) Format(w io.Writer, entry zapcore.Entry, fields []zapcore.Field) {
+	fmt.Println("====TimeFormatter===Format==")
 	fmt.Fprint(w, entry.Time.Format(t.Layout))
 }
 
 func stringOrDefault(str, dflt string) string {
+	fmt.Println("====stringOrDefault==")
 	if str != "" {
 		return str
 	}

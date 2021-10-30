@@ -26,14 +26,19 @@ const (
 )
 
 func (c Color) Normal() string {
+	fmt.Println("====Color==Normal====")
 	return fmt.Sprintf("\x1b[%dm", c)
 }
 
 func (c Color) Bold() string {
+	fmt.Println("====Color==Bold====")
 	if c == ColorNone {
 		return c.Normal()
 	}
 	return fmt.Sprintf("\x1b[%d;1m", c)
 }
 
-func ResetColor() string { return ColorNone.Normal() }
+func ResetColor() string {
+	fmt.Println("====ResetColor====")
+	return ColorNone.Normal()
+}

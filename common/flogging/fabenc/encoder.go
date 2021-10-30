@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package fabenc
 
 import (
+	"fmt"
 	"io"
 	"time"
 
@@ -28,6 +29,7 @@ type Formatter interface {
 }
 
 func NewFormatEncoder(formatters ...Formatter) *FormatEncoder {
+	fmt.Println("====NewFormatEncoder====")
 	return &FormatEncoder{
 		Encoder: zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
 			MessageKey:     "", // disable
@@ -49,6 +51,7 @@ func NewFormatEncoder(formatters ...Formatter) *FormatEncoder {
 
 // Clone creates a new instance of this encoder with the same configuration.
 func (f *FormatEncoder) Clone() zapcore.Encoder {
+	fmt.Println("====FormatEncoder=Clone===")
 	return &FormatEncoder{
 		Encoder:    f.Encoder.Clone(),
 		formatters: f.formatters,
@@ -60,6 +63,7 @@ func (f *FormatEncoder) Clone() zapcore.Encoder {
 // zapcore.ConsoleEncoder and are appended as JSON to the end of the formatted entry.
 // All entries are terminated by a newline.
 func (f *FormatEncoder) EncodeEntry(entry zapcore.Entry, fields []zapcore.Field) (*buffer.Buffer, error) {
+	fmt.Println("====FormatEncoder=EncodeEntry===")
 	line := f.pool.Get()
 	for _, f := range f.formatters {
 		f.Format(line, entry, fields)

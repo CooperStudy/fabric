@@ -8,6 +8,7 @@ package floggingtest
 
 import (
 	"bytes"
+	"fmt"
 	"regexp"
 	"strings"
 	"sync"
@@ -41,6 +42,7 @@ func newRecorder() *Recorder {
 }
 
 func (r *Recorder) addEntry(e zapcore.Entry, line *buffer.Buffer) {
+	fmt.Println("==Recorder====addEntry=========")
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
@@ -50,6 +52,7 @@ func (r *Recorder) addEntry(e zapcore.Entry, line *buffer.Buffer) {
 }
 
 func (r *Recorder) Reset() {
+	fmt.Println("==Recorder====Reset=========")
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 	r.buffer = gbytes.NewBuffer()
@@ -58,12 +61,14 @@ func (r *Recorder) Reset() {
 }
 
 func (r *Recorder) Buffer() *gbytes.Buffer {
+	fmt.Println("==Recorder====Buffer=========")
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
 	return r.buffer
 }
 
 func (r *Recorder) Entries() []string {
+	fmt.Println("==Recorder====Entries=========")
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
 
@@ -75,6 +80,7 @@ func (r *Recorder) Entries() []string {
 }
 
 func (r *Recorder) EntriesContaining(sub string) []string {
+	fmt.Println("==Recorder====EntriesContaining=========")
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
 
@@ -88,6 +94,7 @@ func (r *Recorder) EntriesContaining(sub string) []string {
 }
 
 func (r *Recorder) EntriesMatching(regex string) []string {
+	fmt.Println("==Recorder====EntriesMatching=========")
 	re := regexp.MustCompile(regex)
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
@@ -102,6 +109,7 @@ func (r *Recorder) EntriesMatching(regex string) []string {
 }
 
 func (r *Recorder) Messages() []string {
+	fmt.Println("==Recorder====Messages=========")
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
 
@@ -113,6 +121,7 @@ func (r *Recorder) Messages() []string {
 }
 
 func (r *Recorder) MessagesContaining(sub string) []string {
+	fmt.Println("==Recorder====MessagesContaining=========")
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
 
@@ -126,6 +135,7 @@ func (r *Recorder) MessagesContaining(sub string) []string {
 }
 
 func (r *Recorder) MessagesMatching(regex string) []string {
+	fmt.Println("==Recorder====MessagesMatching=========")
 	re := regexp.MustCompile(regex)
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
@@ -148,6 +158,7 @@ type RecordingCore struct {
 }
 
 func (r *RecordingCore) Write(e zapcore.Entry, fields []zapcore.Field) error {
+	fmt.Println("==RecordingCore====Write=========")
 	buf, err := r.encoder.EncodeEntry(e, fields)
 	if err != nil {
 		return err
@@ -162,6 +173,7 @@ func (r *RecordingCore) Write(e zapcore.Entry, fields []zapcore.Field) error {
 }
 
 func (r *RecordingCore) Check(e zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
+	fmt.Println("==RecordingCore====Check=========")
 	if r.Enabled(e.Level) {
 		ce = ce.AddCore(e, r)
 	}
@@ -172,6 +184,7 @@ func (r *RecordingCore) Check(e zapcore.Entry, ce *zapcore.CheckedEntry) *zapcor
 }
 
 func (r *RecordingCore) With(fields []zapcore.Field) zapcore.Core {
+	fmt.Println("==RecordingCore====Check=========")
 	clone := &RecordingCore{
 		LevelEnabler: r.LevelEnabler,
 		encoder:      r.encoder.Clone(),
@@ -187,12 +200,14 @@ func (r *RecordingCore) With(fields []zapcore.Field) zapcore.Core {
 }
 
 func (r *RecordingCore) Sync() error {
+	fmt.Println("==RecordingCore====Sync=========")
 	return r.writer.Sync()
 }
 
 type TestingWriter struct{ testing.TB }
 
 func (t *TestingWriter) Write(buf []byte) (int, error) {
+	fmt.Println("==TestingWriter====Write=========")
 	t.Logf("%s", bytes.TrimRight(buf, "\n"))
 	return len(buf), nil
 }
@@ -202,12 +217,14 @@ func (t *TestingWriter) Sync() error { return nil }
 type Option func(r *RecordingCore, l *zap.Logger) *zap.Logger
 
 func Named(loggerName string) Option {
+	fmt.Println("==Named=============")
 	return func(r *RecordingCore, l *zap.Logger) *zap.Logger {
 		return l.Named(loggerName)
 	}
 }
 
 func AtLevel(level zapcore.Level) Option {
+	fmt.Println("==AtLevel=============")
 	return func(r *RecordingCore, l *zap.Logger) *zap.Logger {
 		r.LevelEnabler = zap.LevelEnablerFunc(func(l zapcore.Level) bool {
 			return level.Enabled(l)
@@ -217,6 +234,7 @@ func AtLevel(level zapcore.Level) Option {
 }
 
 func NewTestLogger(tb testing.TB, options ...Option) (*flogging.FabricLogger, *Recorder) {
+	fmt.Println("==NewTestLogger=============")
 	enabler := zap.LevelEnablerFunc(func(l zapcore.Level) bool {
 		return zapcore.DebugLevel.Enabled(l)
 	})

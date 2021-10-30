@@ -20,6 +20,7 @@ import (
 // the provided logger name. The logger that is returned will be named the same
 // as the logger.
 func NewZapLogger(core zapcore.Core, options ...zap.Option) *zap.Logger {
+	fmt.Println("===NewZapLogger=========")
 	return zap.New(
 		core,
 		append([]zap.Option{
@@ -31,6 +32,7 @@ func NewZapLogger(core zapcore.Core, options ...zap.Option) *zap.Logger {
 
 // NewGRPCLogger creates a grpc.Logger that delegates to a zap.Logger.
 func NewGRPCLogger(l *zap.Logger) *zapgrpc.Logger {
+	fmt.Println("===NewGRPCLogger=========")
 	l = l.WithOptions(
 		zap.AddCaller(),
 		zap.AddCallerSkip(3),
@@ -40,6 +42,7 @@ func NewGRPCLogger(l *zap.Logger) *zapgrpc.Logger {
 
 // NewFabricLogger creates a logger that delegates to the zap.SugaredLogger.
 func NewFabricLogger(l *zap.Logger, options ...zap.Option) *FabricLogger {
+	fmt.Println("===NewFabricLogger=========")
 	return &FabricLogger{
 		s: l.WithOptions(append(options, zap.AddCallerSkip(1))...).Sugar(),
 	}
@@ -90,16 +93,22 @@ func (f *FabricLogger) Sync() error                     { return f.s.Sync() }
 func (f *FabricLogger) Zap() *zap.Logger                { return f.s.Desugar() }
 
 func (f *FabricLogger) IsEnabledFor(level zapcore.Level) bool {
+	fmt.Println("===FabricLogger====IsEnabledFor=====")
 	return f.s.Desugar().Core().Enabled(level)
 }
 
 func (f *FabricLogger) With(args ...interface{}) *FabricLogger {
+	fmt.Println("===FabricLogger====With=====")
 	return &FabricLogger{s: f.s.With(args...)}
 }
 
 func (f *FabricLogger) WithOptions(opts ...zap.Option) *FabricLogger {
+	fmt.Println("===FabricLogger====WithOptions=====")
 	l := f.s.Desugar().WithOptions(opts...)
 	return &FabricLogger{s: l.Sugar()}
 }
 
-func formatArgs(args []interface{}) string { return strings.TrimSuffix(fmt.Sprintln(args...), "\n") }
+func formatArgs(args []interface{}) string {
+	fmt.Println("===formatArgs====")
+	return strings.TrimSuffix(fmt.Sprintln(args...), "\n")
+}

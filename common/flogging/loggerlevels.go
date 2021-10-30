@@ -29,6 +29,7 @@ type LoggerLevels struct {
 // DefaultLevel returns the default logging level for loggers that do not have
 // an explicit level set.
 func (l *LoggerLevels) DefaultLevel() zapcore.Level {
+	fmt.Println("==LoggerLevels====DefaultLevel========")
 	l.mutex.RLock()
 	lvl := l.defaultLevel
 	l.mutex.RUnlock()
@@ -40,6 +41,7 @@ func (l *LoggerLevels) DefaultLevel() zapcore.Level {
 // The logging specification has the following form:
 //   [<logger>[,<logger>...]=]<level>[:[<logger>[,<logger>...]=]<level>...]
 func (l *LoggerLevels) ActivateSpec(spec string) error {
+	fmt.Println("==LoggerLevels====ActivateSpec========")
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 
@@ -95,6 +97,7 @@ var loggerNameRegexp = regexp.MustCompile(`^[[:alnum:]_#:-]+(\.[[:alnum:]_#:-]+)
 // characters (other than periods, underscores, pound signs, colons
 // and dashes) are invalid.
 func isValidLoggerName(loggerName string) bool {
+	fmt.Println("==isValidLoggerName==========")
 	return loggerNameRegexp.MatchString(loggerName)
 }
 
@@ -102,6 +105,7 @@ func isValidLoggerName(loggerName string) bool {
 // been explicitly set for the logger, the default logging level will be
 // returned.
 func (l *LoggerLevels) Level(loggerName string) zapcore.Level {
+	fmt.Println("==Level==========")
 	if level, ok := l.cachedLevel(loggerName); ok {
 		return level
 	}
@@ -117,6 +121,7 @@ func (l *LoggerLevels) Level(loggerName string) zapcore.Level {
 // calculateLevel walks the logger name back to find the appropriate
 // log level from the current spec.
 func (l *LoggerLevels) calculateLevel(loggerName string) zapcore.Level {
+	fmt.Println("=LoggerLevels=calculateLevel==========")
 	candidate := loggerName + "."
 	for {
 		if lvl, ok := l.specs[candidate]; ok {
@@ -134,6 +139,7 @@ func (l *LoggerLevels) calculateLevel(loggerName string) zapcore.Level {
 // cachedLevel attempts to retrieve the effective log level for a logger from the
 // cache. If the logger is not found, ok will be false.
 func (l *LoggerLevels) cachedLevel(loggerName string) (lvl zapcore.Level, ok bool) {
+	fmt.Println("=LoggerLevels=cachedLevel==========")
 	l.mutex.RLock()
 	level, ok := l.levelCache[loggerName]
 	l.mutex.RUnlock()
@@ -142,6 +148,7 @@ func (l *LoggerLevels) cachedLevel(loggerName string) (lvl zapcore.Level, ok boo
 
 // Spec returns a normalized version of the active logging spec.
 func (l *LoggerLevels) Spec() string {
+	fmt.Println("=LoggerLevels=Spec==========")
 	l.mutex.RLock()
 	defer l.mutex.RUnlock()
 
