@@ -47,6 +47,7 @@ type DB struct {
 
 // CreateDB constructs a `DB`
 func CreateDB(conf *Conf) *DB {
+	fmt.Println("====CreateDB========")
 	readOpts := &opt.ReadOptions{}
 	writeOptsNoSync := &opt.WriteOptions{}
 	writeOptsSync := &opt.WriteOptions{}
@@ -62,6 +63,7 @@ func CreateDB(conf *Conf) *DB {
 
 // Open opens the underlying db
 func (dbInst *DB) Open() {
+	fmt.Println("====DB=====Open===")
 	dbInst.mux.Lock()
 	defer dbInst.mux.Unlock()
 	if dbInst.dbState == opened {
@@ -83,6 +85,7 @@ func (dbInst *DB) Open() {
 
 // Close closes the underlying db
 func (dbInst *DB) Close() {
+	fmt.Println("====DB=====Close===")
 	dbInst.mux.Lock()
 	defer dbInst.mux.Unlock()
 	if dbInst.dbState == closed {
@@ -96,6 +99,7 @@ func (dbInst *DB) Close() {
 
 // Get returns the value for the given key
 func (dbInst *DB) Get(key []byte) ([]byte, error) {
+	fmt.Println("====DB=====Get===")
 	value, err := dbInst.db.Get(key, dbInst.readOpts)
 	if err == leveldb.ErrNotFound {
 		value = nil
@@ -110,6 +114,7 @@ func (dbInst *DB) Get(key []byte) ([]byte, error) {
 
 // Put saves the key/value
 func (dbInst *DB) Put(key []byte, value []byte, sync bool) error {
+	fmt.Println("====DB=====Put===")
 	wo := dbInst.writeOptsNoSync
 	if sync {
 		wo = dbInst.writeOptsSync
@@ -124,6 +129,7 @@ func (dbInst *DB) Put(key []byte, value []byte, sync bool) error {
 
 // Delete deletes the given key
 func (dbInst *DB) Delete(key []byte, sync bool) error {
+	fmt.Println("====DB=====Delete===")
 	wo := dbInst.writeOptsNoSync
 	if sync {
 		wo = dbInst.writeOptsSync
@@ -140,11 +146,13 @@ func (dbInst *DB) Delete(key []byte, sync bool) error {
 // The resultset contains all the keys that are present in the db between the startKey (inclusive) and the endKey (exclusive).
 // A nil startKey represents the first available key and a nil endKey represent a logical key after the last available key
 func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) iterator.Iterator {
+	fmt.Println("====DB=====GetIterator===")
 	return dbInst.db.NewIterator(&goleveldbutil.Range{Start: startKey, Limit: endKey}, dbInst.readOpts)
 }
 
 // WriteBatch writes a batch
 func (dbInst *DB) WriteBatch(batch *leveldb.Batch, sync bool) error {
+	fmt.Println("====DB=====WriteBatch===")
 	wo := dbInst.writeOptsNoSync
 	if sync {
 		wo = dbInst.writeOptsSync

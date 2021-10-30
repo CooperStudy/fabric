@@ -17,6 +17,7 @@ limitations under the License.
 package fileledger
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/hyperledger/fabric/common/ledger/blkstorage"
@@ -32,6 +33,7 @@ type fileLedgerFactory struct {
 
 // GetOrCreate gets an existing ledger (if it exists) or creates it if it does not
 func (flf *fileLedgerFactory) GetOrCreate(chainID string) (blockledger.ReadWriter, error) {
+	fmt.Println("=========fileLedgerFactory=======GetOrCreate=======")
 	flf.mutex.Lock()
 	defer flf.mutex.Unlock()
 
@@ -53,6 +55,7 @@ func (flf *fileLedgerFactory) GetOrCreate(chainID string) (blockledger.ReadWrite
 
 // ChainIDs returns the chain IDs the factory is aware of
 func (flf *fileLedgerFactory) ChainIDs() []string {
+	fmt.Println("=========fileLedgerFactory=======ChainIDs=======")
 	chainIDs, err := flf.blkstorageProvider.List()
 	if err != nil {
 		logger.Panic(err)
@@ -62,11 +65,13 @@ func (flf *fileLedgerFactory) ChainIDs() []string {
 
 // Close releases all resources acquired by the factory
 func (flf *fileLedgerFactory) Close() {
+	fmt.Println("=========fileLedgerFactory=======Close=======")
 	flf.blkstorageProvider.Close()
 }
 
 // New creates a new ledger factory
 func New(directory string) blockledger.Factory {
+	fmt.Println("=========New======")
 	return &fileLedgerFactory{
 		blkstorageProvider: fsblkstorage.NewProvider(
 			fsblkstorage.NewConf(directory, -1),

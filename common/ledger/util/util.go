@@ -29,6 +29,7 @@ import (
 // The presence of first byte also allows to use the returned bytes as part of other larger byte array such as a
 // composite-key representation in db
 func EncodeOrderPreservingVarUint64(number uint64) []byte {
+	fmt.Println("====EncodeOrderPreservingVarUint64====")
 	bytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(bytes, number)
 	startingIndex := 0
@@ -53,6 +54,7 @@ func EncodeOrderPreservingVarUint64(number uint64) []byte {
 // DecodeOrderPreservingVarUint64 decodes the number from the bytes obtained from method 'EncodeOrderPreservingVarUint64'.
 // Also, returns the number of bytes that are consumed in the process
 func DecodeOrderPreservingVarUint64(bytes []byte) (uint64, int) {
+	fmt.Println("====DecodeOrderPreservingVarUint64====")
 	s, _ := proto.DecodeVarint(bytes)
 	size := int(s)
 	decodedBytes := make([]byte, 8)

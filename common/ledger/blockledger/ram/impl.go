@@ -8,6 +8,7 @@ package ramledger
 
 import (
 	"bytes"
+	"fmt"
 	"sync"
 
 	"github.com/hyperledger/fabric/common/flogging"
@@ -31,12 +32,14 @@ type simpleList struct {
 }
 
 func (s *simpleList) getNext() *simpleList {
+	fmt.Println("=====simpleList===getNext====")
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	return s.next
 }
 
 func (s *simpleList) setNext(n *simpleList) {
+	fmt.Println("=====simpleList===setNext====")
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.next = n
@@ -53,6 +56,7 @@ type ramLedger struct {
 // Next blocks until there is a new block available, or returns an error if the
 // next block is no longer retrievable
 func (cu *cursor) Next() (*cb.Block, cb.Status) {
+	fmt.Println("=====cursor===Next====")
 	// This only loops once, as signal reading indicates non-nil next
 	for {
 		next := cu.list.getNext()
@@ -70,6 +74,7 @@ func (cu *cursor) Close() {}
 // Iterator returns an Iterator, as specified by a ab.SeekInfo message, and its
 // starting block number
 func (rl *ramLedger) Iterator(startPosition *ab.SeekPosition) (blockledger.Iterator, uint64) {
+	fmt.Println("=====ramLedger===Iterator====")
 	rl.lock.RLock()
 	defer rl.lock.RUnlock()
 
@@ -135,6 +140,7 @@ func (rl *ramLedger) Iterator(startPosition *ab.SeekPosition) (blockledger.Itera
 
 // Height returns the number of blocks on the ledger
 func (rl *ramLedger) Height() uint64 {
+	fmt.Println("=====ramLedger===Height====")
 	rl.lock.RLock()
 	defer rl.lock.RUnlock()
 	return rl.newest.block.Header.Number + 1
@@ -142,6 +148,7 @@ func (rl *ramLedger) Height() uint64 {
 
 // Append appends a new block to the ledger
 func (rl *ramLedger) Append(block *cb.Block) error {
+	fmt.Println("=====ramLedger===Append====")
 	rl.lock.Lock()
 	defer rl.lock.Unlock()
 
@@ -162,6 +169,7 @@ func (rl *ramLedger) Append(block *cb.Block) error {
 }
 
 func (rl *ramLedger) appendBlock(block *cb.Block) {
+	fmt.Println("=====ramLedger===appendBlock====")
 	next := &simpleList{
 		signal: make(chan struct{}),
 		block:  block,

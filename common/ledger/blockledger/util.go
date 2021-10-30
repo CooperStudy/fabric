@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package blockledger
 
 import (
+	"fmt"
 	"github.com/golang/protobuf/proto"
 	cb "github.com/hyperledger/fabric/protos/common"
 	ab "github.com/hyperledger/fabric/protos/orderer"
@@ -25,11 +26,13 @@ type NotFoundErrorIterator struct{}
 
 // Next returns nil, cb.Status_NOT_FOUND
 func (nfei *NotFoundErrorIterator) Next() (*cb.Block, cb.Status) {
+	fmt.Println("=====NotFoundErrorIterator===")
 	return nil, cb.Status_NOT_FOUND
 }
 
 // ReadyChan returns a closed channel
 func (nfei *NotFoundErrorIterator) ReadyChan() <-chan struct{} {
+	fmt.Println("=====NotFoundErrorIterator===")
 	return closedChan
 }
 
@@ -41,6 +44,7 @@ func (nfei *NotFoundErrorIterator) Close() {}
 // XXX This will need to be modified to accept marshaled envelopes
 //     to accommodate non-deterministic marshaling
 func CreateNextBlock(rl Reader, messages []*cb.Envelope) *cb.Block {
+	fmt.Println("=====CreateNextBlock===")
 	var nextBlockNumber uint64
 	var previousBlockHash []byte
 
@@ -79,6 +83,7 @@ func CreateNextBlock(rl Reader, messages []*cb.Envelope) *cb.Block {
 
 // GetBlock is a utility method for retrieving a single block
 func GetBlock(rl Reader, index uint64) *cb.Block {
+	fmt.Println("=====GetBlock===")
 	iterator, _ := rl.Iterator(&ab.SeekPosition{
 		Type: &ab.SeekPosition_Specified{
 			Specified: &ab.SeekSpecified{Number: index},

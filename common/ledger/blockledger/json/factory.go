@@ -26,6 +26,7 @@ type jsonLedgerFactory struct {
 
 // GetOrCreate gets an existing ledger (if it exists) or creates it if it does not
 func (jlf *jsonLedgerFactory) GetOrCreate(chainID string) (blockledger.ReadWriter, error) {
+	fmt.Println("======jsonLedgerFactory===GetOrCreate======")
 	jlf.mutex.Lock()
 	defer jlf.mutex.Unlock()
 
@@ -52,6 +53,7 @@ func (jlf *jsonLedgerFactory) GetOrCreate(chainID string) (blockledger.ReadWrite
 
 // newChain creates a new chain backed by a JSON ledger
 func newChain(directory string) blockledger.ReadWriter {
+	fmt.Println("======newChain======")
 	jl := &jsonLedger{
 		directory: directory,
 		signal:    make(chan struct{}),
@@ -65,6 +67,7 @@ func newChain(directory string) blockledger.ReadWriter {
 // initializeBlockHeight verifies that all blocks exist between 0 and the block
 // height, and populates the lastHash
 func (jl *jsonLedger) initializeBlockHeight() {
+	fmt.Println("====jsonLedger==initializeBlockHeight======")
 	infos, err := ioutil.ReadDir(jl.directory)
 	if err != nil {
 		logger.Panic(err)
@@ -100,6 +103,7 @@ func (jl *jsonLedger) initializeBlockHeight() {
 
 // ChainIDs returns the chain IDs the factory is aware of
 func (jlf *jsonLedgerFactory) ChainIDs() []string {
+	fmt.Println("====jsonLedgerFactory==ChainIDs======")
 	jlf.mutex.Lock()
 	defer jlf.mutex.Unlock()
 	ids := make([]string, len(jlf.ledgers))
@@ -115,11 +119,13 @@ func (jlf *jsonLedgerFactory) ChainIDs() []string {
 
 // Close is a no-op for the JSON ledger
 func (jlf *jsonLedgerFactory) Close() {
+	fmt.Println("====jsonLedgerFactory==Close======")
 	return // nothing to do
 }
 
 // New creates a new ledger factory
 func New(directory string) blockledger.Factory {
+	fmt.Println("====New======")
 	logger.Debugf("Initializing ledger at: %s", directory)
 	if err := os.MkdirAll(directory, 0700); err != nil {
 		logger.Panicf("Could not create directory %s: %s", directory, err)

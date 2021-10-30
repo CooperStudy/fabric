@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package fileledger
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/common/ledger"
 	"github.com/hyperledger/fabric/common/ledger/blockledger"
@@ -44,6 +45,7 @@ type fileLedgerIterator struct {
 // Next blocks until there is a new block available, or until Close is called.
 // It returns an error if the next block is no longer retrievable.
 func (i *fileLedgerIterator) Next() (*cb.Block, cb.Status) {
+	fmt.Println("======fileLedgerIterator===Next======")
 	result, err := i.commonIterator.Next()
 	if err != nil {
 		logger.Error(err)
@@ -58,12 +60,14 @@ func (i *fileLedgerIterator) Next() (*cb.Block, cb.Status) {
 
 // Close releases resources acquired by the Iterator
 func (i *fileLedgerIterator) Close() {
+	fmt.Println("======fileLedgerIterator===Close======")
 	i.commonIterator.Close()
 }
 
 // Iterator returns an Iterator, as specified by an ab.SeekInfo message, and its
 // starting block number
 func (fl *FileLedger) Iterator(startPosition *ab.SeekPosition) (blockledger.Iterator, uint64) {
+	fmt.Println("======FileLedger===Iterator======")
 	var startingBlockNumber uint64
 	switch start := startPosition.Type.(type) {
 	case *ab.SeekPosition_Oldest:
@@ -95,6 +99,7 @@ func (fl *FileLedger) Iterator(startPosition *ab.SeekPosition) (blockledger.Iter
 
 // Height returns the number of blocks on the ledger
 func (fl *FileLedger) Height() uint64 {
+	fmt.Println("======FileLedger===Height======")
 	info, err := fl.blockStore.GetBlockchainInfo()
 	if err != nil {
 		logger.Panic(err)
@@ -104,6 +109,7 @@ func (fl *FileLedger) Height() uint64 {
 
 // Append a new block to the ledger
 func (fl *FileLedger) Append(block *cb.Block) error {
+	fmt.Println("======FileLedger===Append======")
 	err := fl.blockStore.AddBlock(block)
 	if err == nil {
 		close(fl.signal)

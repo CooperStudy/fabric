@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package util
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -21,6 +22,7 @@ var logger = flogging.MustGetLogger("kvledger.util")
 
 // CreateDirIfMissing creates a dir for dirPath if not already exists. If the dir is empty it returns true
 func CreateDirIfMissing(dirPath string) (bool, error) {
+	fmt.Println("====CreateDirIfMissing====")
 	// if dirPath does not end with a path separator, it leaves out the last segment while creating directories
 	if !strings.HasSuffix(dirPath, "/") {
 		dirPath = dirPath + "/"
@@ -38,6 +40,7 @@ func CreateDirIfMissing(dirPath string) (bool, error) {
 
 // DirEmpty returns true if the dir at dirPath is empty
 func DirEmpty(dirPath string) (bool, error) {
+	fmt.Println("====DirEmpty====")
 	f, err := os.Open(dirPath)
 	if err != nil {
 		logger.Debugf("Error opening dir [%s]: %+v", dirPath, err)
@@ -56,6 +59,7 @@ func DirEmpty(dirPath string) (bool, error) {
 // FileExists checks whether the given file exists.
 // If the file exists, this method also returns the size of the file.
 func FileExists(filePath string) (bool, int64, error) {
+	fmt.Println("====FileExists====")
 	fileInfo, err := os.Stat(filePath)
 	if os.IsNotExist(err) {
 		return false, 0, nil
@@ -68,6 +72,7 @@ func FileExists(filePath string) (bool, int64, error) {
 
 // ListSubdirs returns the subdirectories
 func ListSubdirs(dirPath string) ([]string, error) {
+	fmt.Println("====ListSubdirs====")
 	subdirs := []string{}
 	files, err := ioutil.ReadDir(dirPath)
 	if err != nil {
@@ -82,6 +87,7 @@ func ListSubdirs(dirPath string) ([]string, error) {
 }
 
 func logDirStatus(msg string, dirPath string) {
+	fmt.Println("====logDirStatus====")
 	exists, _, err := FileExists(dirPath)
 	if err != nil {
 		logger.Errorf("Error checking for dir existence")

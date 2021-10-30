@@ -17,6 +17,7 @@ limitations under the License.
 package ramledger
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/hyperledger/fabric/common/ledger/blockledger"
@@ -31,6 +32,7 @@ type ramLedgerFactory struct {
 
 // GetOrCreate gets an existing ledger (if it exists) or creates it if it does not
 func (rlf *ramLedgerFactory) GetOrCreate(chainID string) (blockledger.ReadWriter, error) {
+   fmt.Println("=====ramLedgerFactory=====GetOrCreate=======")
 	rlf.mutex.Lock()
 	defer rlf.mutex.Unlock()
 
@@ -48,6 +50,7 @@ func (rlf *ramLedgerFactory) GetOrCreate(chainID string) (blockledger.ReadWriter
 
 // newChain creates a new chain backed by a RAM ledger
 func newChain(maxSize int) blockledger.ReadWriter {
+	fmt.Println("=====newChain=====blockledger=======")
 	preGenesis := &cb.Block{
 		Header: &cb.BlockHeader{
 			Number: ^uint64(0),
@@ -68,6 +71,7 @@ func newChain(maxSize int) blockledger.ReadWriter {
 
 // ChainIDs returns the chain IDs the factory is aware of
 func (rlf *ramLedgerFactory) ChainIDs() []string {
+	fmt.Println("=====ramLedgerFactory=====ChainIDs=======")
 	rlf.mutex.Lock()
 	defer rlf.mutex.Unlock()
 	ids := make([]string, len(rlf.ledgers))
@@ -83,11 +87,13 @@ func (rlf *ramLedgerFactory) ChainIDs() []string {
 
 // Close is a no-op for the RAM ledger
 func (rlf *ramLedgerFactory) Close() {
+	fmt.Println("=====ramLedgerFactory====Close=======")
 	return // nothing to do
 }
 
 // New creates a new ledger factory
 func New(maxSize int) blockledger.Factory {
+	fmt.Println("=====New=======")
 	rlf := &ramLedgerFactory{
 		maxSize: maxSize,
 		ledgers: make(map[string]blockledger.ReadWriter),
