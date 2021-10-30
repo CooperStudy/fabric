@@ -8,6 +8,7 @@ package grpclogging
 
 import (
 	"context"
+	"fmt"
 
 	"go.uber.org/zap/zapcore"
 )
@@ -17,6 +18,7 @@ type fieldKeyType struct{}
 var fieldKey = &fieldKeyType{}
 
 func ZapFields(ctx context.Context) []zapcore.Field {
+	fmt.Println("====ZapFields================")
 	fields, ok := ctx.Value(fieldKey).([]zapcore.Field)
 	if ok {
 		return fields
@@ -25,6 +27,7 @@ func ZapFields(ctx context.Context) []zapcore.Field {
 }
 
 func Fields(ctx context.Context) []interface{} {
+	fmt.Println("====Fields================")
 	fields, ok := ctx.Value(fieldKey).([]zapcore.Field)
 	if !ok {
 		return nil
@@ -37,5 +40,6 @@ func Fields(ctx context.Context) []interface{} {
 }
 
 func WithFields(ctx context.Context, fields []zapcore.Field) context.Context {
+	fmt.Println("====WithFields================")
 	return context.WithValue(ctx, fieldKey, fields)
 }

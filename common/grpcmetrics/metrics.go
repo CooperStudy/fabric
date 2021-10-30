@@ -6,7 +6,10 @@ SPDX-License-Identifier: Apache-2.0
 
 package grpcmetrics
 
-import "github.com/hyperledger/fabric/common/metrics"
+import (
+	"fmt"
+	"github.com/hyperledger/fabric/common/metrics"
+)
 
 var (
 	unaryRequestDuration = metrics.HistogramOpts{
@@ -77,6 +80,7 @@ var (
 )
 
 func NewUnaryMetrics(p metrics.Provider) *UnaryMetrics {
+	fmt.Println("===NewUnaryMetrics===")
 	return &UnaryMetrics{
 		RequestDuration:   p.NewHistogram(unaryRequestDuration),
 		RequestsReceived:  p.NewCounter(unaryRequestsReceived),
@@ -85,6 +89,7 @@ func NewUnaryMetrics(p metrics.Provider) *UnaryMetrics {
 }
 
 func NewStreamMetrics(p metrics.Provider) *StreamMetrics {
+	fmt.Println("===NewStreamMetrics===")
 	return &StreamMetrics{
 		RequestDuration:   p.NewHistogram(streamRequestDuration),
 		RequestsReceived:  p.NewCounter(streamRequestsReceived),

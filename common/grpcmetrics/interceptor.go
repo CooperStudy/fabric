@@ -8,6 +8,7 @@ package grpcmetrics
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -22,6 +23,7 @@ type UnaryMetrics struct {
 }
 
 func UnaryServerInterceptor(um *UnaryMetrics) grpc.UnaryServerInterceptor {
+	fmt.Println("===UnaryServerInterceptor======")
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		service, method := serviceMethod(info.FullMethod)
 		um.RequestsReceived.With("service", service, "method", method).Add(1)
@@ -48,6 +50,7 @@ type StreamMetrics struct {
 }
 
 func StreamServerInterceptor(sm *StreamMetrics) grpc.StreamServerInterceptor {
+	fmt.Println("===StreamServerInterceptor======")
 	return func(svc interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		sm := sm
 		service, method := serviceMethod(info.FullMethod)
@@ -73,6 +76,7 @@ func StreamServerInterceptor(sm *StreamMetrics) grpc.StreamServerInterceptor {
 }
 
 func serviceMethod(fullMethod string) (service, method string) {
+	fmt.Println("===serviceMethod======")
 	normalizedMethod := strings.Replace(fullMethod, ".", "_", -1)
 	parts := strings.SplitN(normalizedMethod, "/", -1)
 	if len(parts) != 3 {
@@ -88,11 +92,13 @@ type serverStream struct {
 }
 
 func (ss *serverStream) SendMsg(msg interface{}) error {
+	fmt.Println("===serverStream===SendMsg===")
 	ss.messagesSent.Add(1)
 	return ss.ServerStream.SendMsg(msg)
 }
 
 func (ss *serverStream) RecvMsg(msg interface{}) error {
+	fmt.Println("===serverStream===RecvMsg===")
 	err := ss.ServerStream.RecvMsg(msg)
 	if err == nil {
 		ss.messagesReceived.Add(1)

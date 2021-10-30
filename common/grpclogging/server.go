@@ -8,6 +8,7 @@ package grpclogging
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -33,10 +34,12 @@ type PayloadLeveler interface {
 type LevelerFunc func(ctx context.Context, fullMethod string) zapcore.Level
 
 func (l LevelerFunc) Level(ctx context.Context, fullMethod string) zapcore.Level {
+	fmt.Println("===LevelerFunc==Level===========")
 	return l(ctx, fullMethod)
 }
 
 func (l LevelerFunc) PayloadLevel(ctx context.Context, fullMethod string) zapcore.Level {
+	fmt.Println("===LevelerFunc==PayloadLevel===========")
 	return l(ctx, fullMethod)
 }
 
@@ -51,14 +54,17 @@ type options struct {
 type Option func(o *options)
 
 func WithLeveler(l Leveler) Option {
+	fmt.Println("===WithLeveler==========")
 	return func(o *options) { o.Leveler = l }
 }
 
 func WithPayloadLeveler(l PayloadLeveler) Option {
+	fmt.Println("===WithPayloadLeveler==========")
 	return func(o *options) { o.PayloadLeveler = l }
 }
 
 func applyOptions(opts ...Option) *options {
+	fmt.Println("===applyOptions=========")
 	o := &options{
 		Leveler:        LevelerFunc(func(context.Context, string) zapcore.Level { return zapcore.InfoLevel }),
 		PayloadLeveler: LevelerFunc(func(context.Context, string) zapcore.Level { return DefaultPayloadLevel }),
@@ -72,6 +78,7 @@ func applyOptions(opts ...Option) *options {
 // Levelers will be required and should be provided with the full method info
 
 func UnaryServerInterceptor(logger *zap.Logger, opts ...Option) grpc.UnaryServerInterceptor {
+	fmt.Println("===UnaryServerInterceptor=========")
 	o := applyOptions(opts...)
 
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
@@ -107,6 +114,7 @@ func UnaryServerInterceptor(logger *zap.Logger, opts ...Option) grpc.UnaryServer
 }
 
 func StreamServerInterceptor(logger *zap.Logger, opts ...Option) grpc.StreamServerInterceptor {
+	fmt.Println("===StreamServerInterceptor=========")
 	o := applyOptions(opts...)
 
 	return func(service interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
@@ -138,6 +146,7 @@ func StreamServerInterceptor(logger *zap.Logger, opts ...Option) grpc.StreamServ
 }
 
 func getFields(ctx context.Context, startTime time.Time, method string) []zapcore.Field {
+	fmt.Println("===getFields=========")
 	fields := []zap.Field{zap.Time("grpc.start_time", startTime)}
 	if parts := strings.Split(method, "/"); len(parts) == 3 {
 		fields = append(fields, zap.String("grpc.service", parts[1]), zap.String("grpc.method", parts[2]))
@@ -165,10 +174,12 @@ type serverStream struct {
 }
 
 func (ss *serverStream) Context() context.Context {
+	fmt.Println("===serverStream===Context======")
 	return ss.context
 }
 
 func (ss *serverStream) SendMsg(msg interface{}) error {
+	fmt.Println("===serverStream===SendMsg======")
 	if ce := ss.payloadLogger.Check(ss.payloadLevel, "sending stream message"); ce != nil {
 		ce.Write(ProtoMessage("message", msg))
 	}
@@ -176,6 +187,7 @@ func (ss *serverStream) SendMsg(msg interface{}) error {
 }
 
 func (ss *serverStream) RecvMsg(msg interface{}) error {
+	fmt.Println("===serverStream===RecvMsg======")
 	err := ss.ServerStream.RecvMsg(msg)
 	if ce := ss.payloadLogger.Check(ss.payloadLevel, "received stream message"); ce != nil {
 		ce.Write(ProtoMessage("message", msg))
