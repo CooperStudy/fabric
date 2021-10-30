@@ -12,6 +12,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"fmt"
 	"io/ioutil"
 	"math/big"
 	"net"
@@ -40,7 +41,7 @@ type CA struct {
 // NewCA creates an instance of CA and saves the signing key pair in
 // baseDir/name
 func NewCA(baseDir, org, name, country, province, locality, orgUnit, streetAddress, postalCode string) (*CA, error) {
-
+	fmt.Println("==========NewCA===========")
 	var response error
 	var ca *CA
 
@@ -99,6 +100,7 @@ func NewCA(baseDir, org, name, country, province, locality, orgUnit, streetAddre
 func (ca *CA) SignCertificate(baseDir, name string, ous, sans []string, pub *ecdsa.PublicKey,
 	ku x509.KeyUsage, eku []x509.ExtKeyUsage) (*x509.Certificate, error) {
 
+	fmt.Println("====CA=====SignCertificate===========")
 	template := x509Template()
 	template.KeyUsage = ku
 	template.ExtKeyUsage = eku
@@ -141,6 +143,7 @@ func subjectTemplate() pkix.Name {
 
 // Additional for X509 subject
 func subjectTemplateAdditional(country, province, locality, orgUnit, streetAddress, postalCode string) pkix.Name {
+	fmt.Println("====subjectTemplateAdditional==========")
 	name := subjectTemplate()
 	if len(country) >= 1 {
 		name.Country = []string{country}
@@ -166,7 +169,7 @@ func subjectTemplateAdditional(country, province, locality, orgUnit, streetAddre
 
 // default template for X509 certificates
 func x509Template() x509.Certificate {
-
+	fmt.Println("====x509Template=========")
 	// generate a serial number
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, _ := rand.Int(rand.Reader, serialNumberLimit)
@@ -191,6 +194,7 @@ func x509Template() x509.Certificate {
 func genCertificateECDSA(baseDir, name string, template, parent *x509.Certificate, pub *ecdsa.PublicKey,
 	priv interface{}) (*x509.Certificate, error) {
 
+	fmt.Println("====genCertificateECDSA=========")
 	//create the x509 public cert
 	certBytes, err := x509.CreateCertificate(rand.Reader, template, parent, pub, priv)
 	if err != nil {
@@ -219,6 +223,7 @@ func genCertificateECDSA(baseDir, name string, template, parent *x509.Certificat
 
 // LoadCertificateECDSA load a ecdsa cert from a file in cert path
 func LoadCertificateECDSA(certPath string) (*x509.Certificate, error) {
+	fmt.Println("====LoadCertificateECDSA=========")
 	var cert *x509.Certificate
 	var err error
 

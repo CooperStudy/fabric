@@ -30,6 +30,7 @@ var logger = flogging.MustGetLogger("viperutil")
 type viperGetter func(key string) interface{}
 
 func getKeysRecursively(base string, getKey viperGetter, nodeKeys map[string]interface{}) map[string]interface{} {
+	fmt.Println("===getKeysRecursively================")
 	result := make(map[string]interface{})
 	for key := range nodeKeys {
 		fqKey := base + key
@@ -69,6 +70,7 @@ func getKeysRecursively(base string, getKey viperGetter, nodeKeys map[string]int
 }
 
 func unmarshalJSON(val interface{}) (map[string]string, bool) {
+	fmt.Println("===unmarshalJSON================")
 	mp := map[string]string{}
 	s, ok := val.(string)
 	if !ok {
@@ -87,6 +89,7 @@ func unmarshalJSON(val interface{}) (map[string]string, bool) {
 // as well as parsing strings of the format "[thing1, thing2, thing3]" into string slices
 // Note that whitespace around slice elements is removed
 func customDecodeHook() mapstructure.DecodeHookFunc {
+	fmt.Println("===customDecodeHook================")
 	durationHook := mapstructure.StringToTimeDurationHookFunc()
 	return func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
 		dur, err := mapstructure.DecodeHookExec(durationHook, f, t, data)
@@ -115,6 +118,7 @@ func customDecodeHook() mapstructure.DecodeHookFunc {
 }
 
 func byteSizeDecodeHook() mapstructure.DecodeHookFunc {
+	fmt.Println("===byteSizeDecodeHook================")
 	return func(f reflect.Kind, t reflect.Kind, data interface{}) (interface{}, error) {
 		if f != reflect.String || t != reflect.Uint32 {
 			return data, nil
@@ -150,6 +154,7 @@ func byteSizeDecodeHook() mapstructure.DecodeHookFunc {
 }
 
 func stringFromFileDecodeHook() mapstructure.DecodeHookFunc {
+	fmt.Println("=============stringFromFileDecodeHook==========")
 	return func(f reflect.Kind, t reflect.Kind, data interface{}) (interface{}, error) {
 		// "to" type should be string
 		if t != reflect.String {
@@ -186,6 +191,7 @@ func stringFromFileDecodeHook() mapstructure.DecodeHookFunc {
 }
 
 func pemBlocksFromFileDecodeHook() mapstructure.DecodeHookFunc {
+	fmt.Println("=============pemBlocksFromFileDecodeHook==========")
 	return func(f reflect.Kind, t reflect.Kind, data interface{}) (interface{}, error) {
 		// "to" type should be string
 		if t != reflect.Slice {
@@ -248,6 +254,7 @@ func pemBlocksFromFileDecodeHook() mapstructure.DecodeHookFunc {
 var kafkaVersionConstraints map[sarama.KafkaVersion]version.Constraints
 
 func init() {
+	fmt.Println("=============init==========")
 	kafkaVersionConstraints = make(map[sarama.KafkaVersion]version.Constraints)
 	kafkaVersionConstraints[sarama.V0_8_2_0], _ = version.NewConstraint(">=0.8.2,<0.8.2.1")
 	kafkaVersionConstraints[sarama.V0_8_2_1], _ = version.NewConstraint(">=0.8.2.1,<0.8.2.2")
@@ -263,6 +270,7 @@ func init() {
 }
 
 func kafkaVersionDecodeHook() mapstructure.DecodeHookFunc {
+	fmt.Println("=============kafkaVersionDecodeHook==========")
 	return func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
 		if f.Kind() != reflect.String || t != reflect.TypeOf(sarama.KafkaVersion{}) {
 			return data, nil
@@ -287,6 +295,7 @@ func kafkaVersionDecodeHook() mapstructure.DecodeHookFunc {
 // producing error when extraneous variables are introduced and supporting
 // the time.Duration type
 func EnhancedExactUnmarshal(v *viper.Viper, output interface{}) error {
+	fmt.Println("=============EnhancedExactUnmarshal==========")
 	// AllKeys doesn't actually return all keys, it only returns the base ones
 	baseKeys := v.AllSettings()
 	getterWithClass := func(key string) interface{} { return v.Get(key) } // hide receiver
@@ -316,6 +325,7 @@ func EnhancedExactUnmarshal(v *viper.Viper, output interface{}) error {
 
 // EnhancedExactUnmarshalKey is intended to unmarshal a config file subtreee into a structure
 func EnhancedExactUnmarshalKey(baseKey string, output interface{}) error {
+	fmt.Println("=============EnhancedExactUnmarshalKey==========")
 	m := make(map[string]interface{})
 	m[baseKey] = nil
 	leafKeys := getKeysRecursively("", viper.Get, m)
@@ -338,5 +348,6 @@ func EnhancedExactUnmarshalKey(baseKey string, output interface{}) error {
 
 // Decode is used to decode opaque field in configuration
 func Decode(input interface{}, output interface{}) error {
+	fmt.Println("=============Decode==========")
 	return mapstructure.Decode(input, output)
 }

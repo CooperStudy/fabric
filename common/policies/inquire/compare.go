@@ -26,6 +26,7 @@ type ComparablePrincipal struct {
 // NewComparablePrincipal creates a ComparablePrincipal out of the given MSPPrincipal.
 // Returns nil if a failure occurs.
 func NewComparablePrincipal(principal *msp.MSPPrincipal) *ComparablePrincipal {
+	fmt.Println("=========NewComparablePrincipal==========")
 	if principal == nil {
 		logger.Warning("Principal is nil")
 		return nil
@@ -48,6 +49,7 @@ func NewComparablePrincipal(principal *msp.MSPPrincipal) *ComparablePrincipal {
 // For the ComparablePrincipal x to be found, there needs to be some ComparablePrincipal y in the set
 // such that x.IsA(y) will be true.
 func (cp *ComparablePrincipal) IsFound(set ...*ComparablePrincipal) bool {
+	fmt.Println("=========ComparablePrincipal====IsFound======")
 	for _, cp2 := range set {
 		if cp.IsA(cp2) {
 			return true
@@ -63,6 +65,7 @@ func (cp *ComparablePrincipal) IsFound(set ...*ComparablePrincipal) bool {
 // all identities that satisfy this ComparablePrincipal (are peers)
 // also satisfy the other principal (are members).
 func (cp *ComparablePrincipal) IsA(other *ComparablePrincipal) bool {
+	fmt.Println("=========ComparablePrincipal====IsA======")
 	this := cp
 
 	if other == nil {
@@ -102,6 +105,7 @@ func (cp *ComparablePrincipal) IsA(other *ComparablePrincipal) bool {
 
 // ToOURole converts this ComparablePrincipal to OU principal, and returns nil on failure
 func (cp *ComparablePrincipal) ToOURole() *ComparablePrincipal {
+	fmt.Println("=========ComparablePrincipal====ToOURole======")
 	ouRole := &msp.OrganizationUnit{}
 	err := proto.Unmarshal(cp.principal.Principal, ouRole)
 	if err != nil {
@@ -115,6 +119,7 @@ func (cp *ComparablePrincipal) ToOURole() *ComparablePrincipal {
 
 // ToRole converts this ComparablePrincipal to MSP Role, and returns nil if the conversion failed
 func (cp *ComparablePrincipal) ToRole() *ComparablePrincipal {
+	fmt.Println("=========ComparablePrincipal====ToRole======")
 	mspRole := &msp.MSPRole{}
 	err := proto.Unmarshal(cp.principal.Principal, mspRole)
 	if err != nil {
@@ -131,6 +136,7 @@ type ComparablePrincipalSet []*ComparablePrincipal
 
 // ToPrincipalSet converts this ComparablePrincipalSet to a PrincipalSet
 func (cps ComparablePrincipalSet) ToPrincipalSet() policies.PrincipalSet {
+	fmt.Println("=========ComparablePrincipalSet====ToPrincipalSet======")
 	var res policies.PrincipalSet
 	for _, cp := range cps {
 		res = append(res, cp.principal)
@@ -140,6 +146,7 @@ func (cps ComparablePrincipalSet) ToPrincipalSet() policies.PrincipalSet {
 
 // String returns a string representation of this ComparablePrincipalSet
 func (cps ComparablePrincipalSet) String() string {
+	fmt.Println("=========ComparablePrincipalSet====String======")
 	buff := bytes.Buffer{}
 	buff.WriteString("[")
 	for i, cp := range cps {
@@ -161,6 +168,7 @@ func (cps ComparablePrincipalSet) String() string {
 
 // NewComparablePrincipalSet constructs a ComparablePrincipalSet out of the given PrincipalSet
 func NewComparablePrincipalSet(set policies.PrincipalSet) ComparablePrincipalSet {
+	fmt.Println("========NewComparablePrincipalSet======")
 	var res ComparablePrincipalSet
 	for _, principal := range set {
 		cp := NewComparablePrincipal(principal)
@@ -174,6 +182,7 @@ func NewComparablePrincipalSet(set policies.PrincipalSet) ComparablePrincipalSet
 
 // Clone returns a copy of this ComparablePrincipalSet
 func (cps ComparablePrincipalSet) Clone() ComparablePrincipalSet {
+	fmt.Println("======ComparablePrincipalSet==Clone======")
 	res := make(ComparablePrincipalSet, len(cps))
 	for i, cp := range cps {
 		res[i] = cp

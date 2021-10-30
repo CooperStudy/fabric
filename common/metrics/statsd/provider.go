@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package statsd
 
 import (
+	"fmt"
 	"github.com/go-kit/kit/metrics/statsd"
 	"github.com/hyperledger/fabric/common/metrics"
 	"github.com/hyperledger/fabric/common/metrics/internal/namer"
@@ -19,6 +20,7 @@ type Provider struct {
 }
 
 func (p *Provider) NewCounter(o metrics.CounterOpts) metrics.Counter {
+	fmt.Println("===Provider===NewCounter==========")
 	if o.StatsdFormat == "" {
 		o.StatsdFormat = defaultFormat
 	}
@@ -35,6 +37,7 @@ func (p *Provider) NewCounter(o metrics.CounterOpts) metrics.Counter {
 }
 
 func (p *Provider) NewGauge(o metrics.GaugeOpts) metrics.Gauge {
+	fmt.Println("===Provider===NewGauge==========")
 	if o.StatsdFormat == "" {
 		o.StatsdFormat = defaultFormat
 	}
@@ -51,6 +54,7 @@ func (p *Provider) NewGauge(o metrics.GaugeOpts) metrics.Gauge {
 }
 
 func (p *Provider) NewHistogram(o metrics.HistogramOpts) metrics.Histogram {
+	fmt.Println("===Provider===NewHistogram==========")
 	if o.StatsdFormat == "" {
 		o.StatsdFormat = defaultFormat
 	}
@@ -73,6 +77,7 @@ type Counter struct {
 }
 
 func (c *Counter) Add(delta float64) {
+	fmt.Println("===Counter===Add==========")
 	if c.Counter == nil {
 		panic("label values must be provided by calling With")
 	}
@@ -80,6 +85,7 @@ func (c *Counter) Add(delta float64) {
 }
 
 func (c *Counter) With(labelValues ...string) metrics.Counter {
+	fmt.Println("===Counter===With==========")
 	name := c.namer.Format(labelValues...)
 	return &Counter{Counter: c.statsdProvider.NewCounter(name, 1)}
 }
@@ -91,6 +97,7 @@ type Gauge struct {
 }
 
 func (g *Gauge) Add(delta float64) {
+	fmt.Println("===Gauge===Add==========")
 	if g.Gauge == nil {
 		panic("label values must be provided by calling With")
 	}
@@ -98,6 +105,7 @@ func (g *Gauge) Add(delta float64) {
 }
 
 func (g *Gauge) Set(value float64) {
+	fmt.Println("===Gauge===Set==========")
 	if g.Gauge == nil {
 		panic("label values must be provided by calling With")
 	}
@@ -105,6 +113,7 @@ func (g *Gauge) Set(value float64) {
 }
 
 func (g *Gauge) With(labelValues ...string) metrics.Gauge {
+	fmt.Println("===Gauge===With==========")
 	name := g.namer.Format(labelValues...)
 	return &Gauge{Gauge: g.statsdProvider.NewGauge(name)}
 }
@@ -116,11 +125,13 @@ type Histogram struct {
 }
 
 func (h *Histogram) With(labelValues ...string) metrics.Histogram {
+	fmt.Println("===Histogram===With==========")
 	name := h.namer.Format(labelValues...)
 	return &Histogram{Timing: h.statsdProvider.NewTiming(name, 1)}
 }
 
 func (h *Histogram) Observe(value float64) {
+	fmt.Println("===Histogram===Observe==========")
 	if h.Timing == nil {
 		panic("label values must be provided by calling With")
 	}

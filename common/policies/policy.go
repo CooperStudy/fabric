@@ -60,6 +60,7 @@ type PrincipalSets []PrincipalSet
 
 // ContainingOnly returns PrincipalSets that contain only principals of the given predicate
 func (psSets PrincipalSets) ContainingOnly(f func(*msp.MSPPrincipal) bool) PrincipalSets {
+	fmt.Println("===PrincipalSets==ContainingOnly===")
 	var res PrincipalSets
 	for _, set := range psSets {
 		if !set.ContainingOnly(f) {
@@ -73,6 +74,7 @@ func (psSets PrincipalSets) ContainingOnly(f func(*msp.MSPPrincipal) bool) Princ
 // ContainingOnly returns whether the given PrincipalSet contains only Principals
 // that satisfy the given predicate
 func (ps PrincipalSet) ContainingOnly(f func(*msp.MSPPrincipal) bool) bool {
+	fmt.Println("===PrincipalSet==ContainingOnly===")
 	for _, principal := range ps {
 		if !f(principal) {
 			return false
@@ -83,6 +85,7 @@ func (ps PrincipalSet) ContainingOnly(f func(*msp.MSPPrincipal) bool) bool {
 
 // UniqueSet returns a histogram that is induced by the PrincipalSet
 func (ps PrincipalSet) UniqueSet() map[*msp.MSPPrincipal]int {
+	fmt.Println("===PrincipalSet==UniqueSet===")
 	// Create a histogram that holds the MSPPrincipals and counts them
 	histogram := make(map[struct {
 		cls       int32
@@ -156,6 +159,7 @@ type ManagerImpl struct {
 
 // NewManagerImpl creates a new ManagerImpl with the given CryptoHelper
 func NewManagerImpl(path string, providers map[int32]Provider, root *cb.ConfigGroup) (*ManagerImpl, error) {
+	fmt.Println("===NewManagerImpl=====")
 	var err error
 	_, ok := providers[int32(cb.Policy_IMPLICIT_META)]
 	if ok {
@@ -220,11 +224,13 @@ func NewManagerImpl(path string, providers map[int32]Provider, root *cb.ConfigGr
 type rejectPolicy string
 
 func (rp rejectPolicy) Evaluate(signedData []*cb.SignedData) error {
+	fmt.Println("===rejectPolicy==Evaluate===")
 	return fmt.Errorf("No such policy: '%s'", rp)
 }
 
 // Manager returns the sub-policy manager for a given path and whether it exists
 func (pm *ManagerImpl) Manager(path []string) (Manager, bool) {
+	fmt.Println("===ManagerImpl==Manager===")
 	logger.Debugf("Manager %s looking up path %v", pm.path, path)
 	for manager := range pm.managers {
 		logger.Debugf("Manager %s has managers %s", pm.path, manager)
@@ -247,6 +253,7 @@ type policyLogger struct {
 }
 
 func (pl *policyLogger) Evaluate(signatureSet []*cb.SignedData) error {
+	fmt.Println("===policyLogger==Evaluate===")
 	if logger.IsEnabledFor(zapcore.DebugLevel) {
 		logger.Debugf("== Evaluating %T Policy %s ==", pl.policy, pl.policyName)
 		defer logger.Debugf("== Done Evaluating %T Policy %s", pl.policy, pl.policyName)
@@ -263,6 +270,7 @@ func (pl *policyLogger) Evaluate(signatureSet []*cb.SignedData) error {
 
 // GetPolicy returns a policy and true if it was the policy requested, or false if it is the default reject policy
 func (pm *ManagerImpl) GetPolicy(id string) (Policy, bool) {
+	fmt.Println("===ManagerImpl==GetPolicy===")
 	if id == "" {
 		logger.Errorf("Returning dummy reject all policy because no policy ID supplied")
 		return rejectPolicy(id), false

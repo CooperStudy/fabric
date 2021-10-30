@@ -9,6 +9,7 @@ package main
 import (
 	"bytes"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"text/template"
@@ -28,6 +29,7 @@ var templatePath = flag.String(
 )
 
 func main() {
+	fmt.Println("=======main=============")
 	flag.Parse()
 
 	patterns := flag.Args()

@@ -17,12 +17,14 @@ limitations under the License.
 package protolator
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/golang/protobuf/proto"
 )
 
 func opaqueFrom(opaqueType func() (proto.Message, error), value interface{}, destType reflect.Type) (reflect.Value, error) {
+	fmt.Println("===opaqueFrom=====================")
 	tree := value.(map[string]interface{}) // Safe, already checked
 	nMsg, err := opaqueType()
 	if err != nil {
@@ -39,6 +41,7 @@ func opaqueFrom(opaqueType func() (proto.Message, error), value interface{}, des
 }
 
 func opaqueTo(opaqueType func() (proto.Message, error), value reflect.Value) (interface{}, error) {
+	fmt.Println("===opaqueTo=====================")
 	nMsg, err := opaqueType()
 	if err != nil {
 		return nil, err
@@ -53,6 +56,7 @@ func opaqueTo(opaqueType func() (proto.Message, error), value reflect.Value) (in
 type staticallyOpaqueFieldFactory struct{}
 
 func (soff staticallyOpaqueFieldFactory) Handles(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) bool {
+	fmt.Println("===staticallyOpaqueFieldFactory========Handles=============")
 	opaqueProto, ok := msg.(StaticallyOpaqueFieldProto)
 	if !ok {
 		return false
@@ -62,6 +66,7 @@ func (soff staticallyOpaqueFieldFactory) Handles(msg proto.Message, fieldName st
 }
 
 func (soff staticallyOpaqueFieldFactory) NewProtoField(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) (protoField, error) {
+	fmt.Println("===staticallyOpaqueFieldFactory========NewProtoField=============")
 	opaqueProto := msg.(StaticallyOpaqueFieldProto) // Type checked in Handles
 
 	return &plainField{
@@ -84,6 +89,7 @@ func (soff staticallyOpaqueFieldFactory) NewProtoField(msg proto.Message, fieldN
 type staticallyOpaqueMapFieldFactory struct{}
 
 func (soff staticallyOpaqueMapFieldFactory) Handles(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) bool {
+	fmt.Println("===staticallyOpaqueMapFieldFactory========Handles=============")
 	opaqueProto, ok := msg.(StaticallyOpaqueMapFieldProto)
 	if !ok {
 		return false
@@ -93,6 +99,7 @@ func (soff staticallyOpaqueMapFieldFactory) Handles(msg proto.Message, fieldName
 }
 
 func (soff staticallyOpaqueMapFieldFactory) NewProtoField(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) (protoField, error) {
+	fmt.Println("===staticallyOpaqueMapFieldFactory========NewProtoField=============")
 	opaqueProto := msg.(StaticallyOpaqueMapFieldProto) // Type checked in Handles
 
 	return &mapField{
@@ -119,6 +126,7 @@ func (soff staticallyOpaqueMapFieldFactory) NewProtoField(msg proto.Message, fie
 type staticallyOpaqueSliceFieldFactory struct{}
 
 func (soff staticallyOpaqueSliceFieldFactory) Handles(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) bool {
+	fmt.Println("===staticallyOpaqueSliceFieldFactory========Handles=============")
 	opaqueProto, ok := msg.(StaticallyOpaqueSliceFieldProto)
 	if !ok {
 		return false
@@ -128,6 +136,7 @@ func (soff staticallyOpaqueSliceFieldFactory) Handles(msg proto.Message, fieldNa
 }
 
 func (soff staticallyOpaqueSliceFieldFactory) NewProtoField(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) (protoField, error) {
+	fmt.Println("===staticallyOpaqueSliceFieldFactory========NewProtoField=============")
 	opaqueProto := msg.(StaticallyOpaqueSliceFieldProto) // Type checked in Handles
 
 	return &sliceField{

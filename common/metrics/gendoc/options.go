@@ -22,6 +22,7 @@ import (
 // creating metrics and returns instances that are recreated from the source
 // tree.
 func Options(pkgs []*packages.Package) ([]interface{}, error) {
+	fmt.Println("=======Options=========")
 	var options []interface{}
 	for _, p := range pkgs {
 		for _, f := range p.Syntax {
@@ -38,6 +39,7 @@ func Options(pkgs []*packages.Package) ([]interface{}, error) {
 // FileOptions walks the specified ast.File for options structs used when
 // creating metrics and returns instances that are recreated from the source.
 func FileOptions(f *ast.File) ([]interface{}, error) {
+	fmt.Println("=======FileOptions=========")
 	var imports = walkImports(f)
 	var options []interface{}
 	var errors []error
@@ -97,6 +99,7 @@ func FileOptions(f *ast.File) ([]interface{}, error) {
 }
 
 func walkImports(f *ast.File) map[string]string {
+	fmt.Println("=======walkImports=========")
 	imports := map[string]string{}
 
 	for i := range f.Imports {
@@ -124,6 +127,7 @@ func walkImports(f *ast.File) map[string]string {
 }
 
 func createOption(lit *ast.SelectorExpr) (interface{}, error) {
+	fmt.Println("=======createOption=========")
 	optionName := lit.Sel.Name
 	switch optionName {
 	case "CounterOpts":
@@ -138,6 +142,7 @@ func createOption(lit *ast.SelectorExpr) (interface{}, error) {
 }
 
 func populateOption(lit *ast.CompositeLit, target interface{}) (interface{}, error) {
+	fmt.Println("=======populateOption=========")
 	val := reflect.ValueOf(target).Elem()
 	for _, elem := range lit.Elts {
 		if kv, ok := elem.(*ast.KeyValueExpr); ok {
@@ -175,6 +180,7 @@ func populateOption(lit *ast.CompositeLit, target interface{}) (interface{}, err
 }
 
 func stringSlice(lit *ast.CompositeLit) ([]string, error) {
+	fmt.Println("=======stringSlice=========")
 	var slice []string
 
 	for _, elem := range lit.Elts {

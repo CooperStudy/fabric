@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package goruntime
 
 import (
+	"fmt"
 	"runtime"
 	"time"
 
@@ -44,6 +45,7 @@ type Collector struct {
 }
 
 func NewCollector(p metrics.Provider) *Collector {
+	fmt.Println("===NewCollector================")
 	return &Collector{
 		CgoCalls:       p.NewGauge(cgoCallsGaugeOpts),
 		GoRoutines:     p.NewGauge(goRoutinesGaugeOpts),
@@ -76,6 +78,7 @@ func NewCollector(p metrics.Provider) *Collector {
 }
 
 func (c *Collector) CollectAndPublish(ticks <-chan time.Time) {
+	fmt.Println("===Collector===CollectAndPublish=============")
 	for range ticks {
 		stats := CollectStats()
 		c.Publish(stats)
@@ -83,6 +86,7 @@ func (c *Collector) CollectAndPublish(ticks <-chan time.Time) {
 }
 
 func (c *Collector) Publish(stats Stats) {
+	fmt.Println("===Collector===Publish=============")
 	c.CgoCalls.Set(float64(stats.CgoCalls))
 	c.GoRoutines.Set(float64(stats.GoRoutines))
 	c.ThreadsCreated.Set(float64(stats.ThreadsCreated))
@@ -120,6 +124,7 @@ type Stats struct {
 }
 
 func CollectStats() Stats {
+	fmt.Println("===CollectStats=============")
 	stats := Stats{
 		CgoCalls:   runtime.NumCgoCall(),
 		GoRoutines: runtime.NumGoroutine(),

@@ -24,6 +24,7 @@ type inquireableSignaturePolicy struct {
 // NewInquireableSignaturePolicy creates a signature policy that can be inquired,
 // from a policy and a signature policy.
 func NewInquireableSignaturePolicy(sigPol *common.SignaturePolicyEnvelope) policies.InquireablePolicy {
+	fmt.Println("======NewInquireableSignaturePolicy=====")
 	return &inquireableSignaturePolicy{
 		sigPol: sigPol,
 	}
@@ -32,6 +33,7 @@ func NewInquireableSignaturePolicy(sigPol *common.SignaturePolicyEnvelope) polic
 // SatisfiedBy returns a slice of PrincipalSets that each of them
 // satisfies the policy.
 func (isp *inquireableSignaturePolicy) SatisfiedBy() []policies.PrincipalSet {
+	fmt.Println("===inquireableSignaturePolicy===SatisfiedBy=====")
 	rootId := fmt.Sprintf("%d", 0)
 	root := graph.NewTreeVertex(rootId, isp.sigPol.Rule)
 	computePolicyTree(root)
@@ -47,6 +49,7 @@ func (isp *inquireableSignaturePolicy) SatisfiedBy() []policies.PrincipalSet {
 }
 
 func principalsOfTree(tree *graph.Tree, principals policies.PrincipalSet) policies.PrincipalSet {
+	fmt.Println("===principalsOfTree=====")
 	var principalSet policies.PrincipalSet
 	i := tree.BFS()
 	for {
@@ -76,6 +79,7 @@ func principalsOfTree(tree *graph.Tree, principals policies.PrincipalSet) polici
 }
 
 func computePolicyTree(v *graph.TreeVertex) {
+	fmt.Println("===computePolicyTree=====")
 	sigPol := v.Data.(*common.SignaturePolicy)
 	if p := sigPol.GetNOutOf(); p != nil {
 		v.Threshold = int(p.N)

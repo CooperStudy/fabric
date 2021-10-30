@@ -26,6 +26,7 @@ type implicitMetaPolicy struct {
 
 // NewPolicy creates a new policy based on the policy bytes
 func newImplicitMetaPolicy(data []byte, managers map[string]*ManagerImpl) (*implicitMetaPolicy, error) {
+	fmt.Println("===newImplicitMetaPolicy===")
 	definition := &cb.ImplicitMetaPolicy{}
 	if err := proto.Unmarshal(data, definition); err != nil {
 		return nil, fmt.Errorf("Error unmarshaling to ImplicitMetaPolicy: %s", err)
@@ -65,6 +66,7 @@ func newImplicitMetaPolicy(data []byte, managers map[string]*ManagerImpl) (*impl
 
 // Evaluate takes a set of SignedData and evaluates whether this set of signatures satisfies the policy
 func (imp *implicitMetaPolicy) Evaluate(signatureSet []*cb.SignedData) error {
+	fmt.Println("===implicitMetaPolicy==Evaluate===")
 	logger.Debugf("This is an implicit meta policy, it will trigger other policy evaluations, whose failures may be benign")
 	remaining := imp.threshold
 

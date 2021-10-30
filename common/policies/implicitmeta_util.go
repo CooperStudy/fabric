@@ -17,12 +17,14 @@ limitations under the License.
 package policies
 
 import (
+	"fmt"
 	cb "github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric/protos/utils"
 )
 
 // ImplicitMetaPolicyWithSubPolicy creates an implicitmeta policy
 func ImplicitMetaPolicyWithSubPolicy(subPolicyName string, rule cb.ImplicitMetaPolicy_Rule) *cb.ConfigPolicy {
+	fmt.Println("===ImplicitMetaPolicyWithSubPolicy===")
 	return &cb.ConfigPolicy{
 		Policy: &cb.Policy{
 			Type: int32(cb.Policy_IMPLICIT_META),
@@ -36,6 +38,7 @@ func ImplicitMetaPolicyWithSubPolicy(subPolicyName string, rule cb.ImplicitMetaP
 
 // TemplateImplicitMetaPolicy creates a policy at the specified path with the given policyName and subPolicyName
 func TemplateImplicitMetaPolicyWithSubPolicy(path []string, policyName string, subPolicyName string, rule cb.ImplicitMetaPolicy_Rule) *cb.ConfigGroup {
+	fmt.Println("===TemplateImplicitMetaPolicyWithSubPolicy===")
 	root := cb.NewConfigGroup()
 	group := root
 	for _, element := range path {
@@ -50,20 +53,24 @@ func TemplateImplicitMetaPolicyWithSubPolicy(path []string, policyName string, s
 // TemplateImplicitMetaPolicy creates a policy at the specified path with the given policyName
 // It utilizes the policyName for the subPolicyName as well, as this is the standard usage pattern
 func TemplateImplicitMetaPolicy(path []string, policyName string, rule cb.ImplicitMetaPolicy_Rule) *cb.ConfigGroup {
+	fmt.Println("===TemplateImplicitMetaPolicy===")
 	return TemplateImplicitMetaPolicyWithSubPolicy(path, policyName, policyName, rule)
 }
 
 // TempateImplicitMetaAnyPolicy returns TemplateImplicitMetaPolicy with cb.ImplicitMetaPolicy_ANY as the rule
 func TemplateImplicitMetaAnyPolicy(path []string, policyName string) *cb.ConfigGroup {
+	fmt.Println("===TemplateImplicitMetaAnyPolicy===")
 	return TemplateImplicitMetaPolicy(path, policyName, cb.ImplicitMetaPolicy_ANY)
 }
 
 // TempateImplicitMetaAnyPolicy returns TemplateImplicitMetaPolicy with cb.ImplicitMetaPolicy_ALL as the rule
 func TemplateImplicitMetaAllPolicy(path []string, policyName string) *cb.ConfigGroup {
+	fmt.Println("===TemplateImplicitMetaAllPolicy===")
 	return TemplateImplicitMetaPolicy(path, policyName, cb.ImplicitMetaPolicy_ALL)
 }
 
 // TempateImplicitMetaAnyPolicy returns TemplateImplicitMetaPolicy with cb.ImplicitMetaPolicy_MAJORITY as the rule
 func TemplateImplicitMetaMajorityPolicy(path []string, policyName string) *cb.ConfigGroup {
+	fmt.Println("===TemplateImplicitMetaMajorityPolicy===")
 	return TemplateImplicitMetaPolicy(path, policyName, cb.ImplicitMetaPolicy_MAJORITY)
 }

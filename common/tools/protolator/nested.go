@@ -17,6 +17,7 @@ limitations under the License.
 package protolator
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/golang/protobuf/proto"
@@ -24,6 +25,7 @@ import (
 )
 
 func nestedFrom(value interface{}, destType reflect.Type) (reflect.Value, error) {
+	fmt.Println("======nestedFrom======================")
 	tree := value.(map[string]interface{}) // Safe, already checked
 	result := reflect.New(destType.Elem())
 	nMsg := result.Interface().(proto.Message) // Safe, already checked
@@ -34,6 +36,7 @@ func nestedFrom(value interface{}, destType reflect.Type) (reflect.Value, error)
 }
 
 func nestedTo(value reflect.Value) (interface{}, error) {
+	fmt.Println("======nestedTo======================")
 	nMsg := value.Interface().(proto.Message) // Safe, already checked
 	return recursivelyCreateTreeFromMessage(nMsg)
 }
@@ -43,12 +46,14 @@ var timestampType = reflect.TypeOf(&timestamp.Timestamp{})
 type nestedFieldFactory struct{}
 
 func (nff nestedFieldFactory) Handles(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) bool {
+	fmt.Println("===nestedFieldFactory===Handles======================")
 	// Note, we skip recursing into the field if it is a proto native timestamp, because there is other custom marshaling this conflicts with
 	// this should probably be revisited more generally to prevent custom marshaling of 'well known messages'
 	return fieldType.Kind() == reflect.Ptr && fieldType.AssignableTo(protoMsgType) && !fieldType.AssignableTo(timestampType)
 }
 
 func (nff nestedFieldFactory) NewProtoField(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) (protoField, error) {
+	fmt.Println("===nestedFieldFactory===NewProtoField======================")
 	return &plainField{
 		baseField: baseField{
 			msg:   msg,
@@ -65,10 +70,12 @@ func (nff nestedFieldFactory) NewProtoField(msg proto.Message, fieldName string,
 type nestedMapFieldFactory struct{}
 
 func (nmff nestedMapFieldFactory) Handles(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) bool {
+	fmt.Println("===nestedMapFieldFactory===Handles======================")
 	return fieldType.Kind() == reflect.Map && fieldType.Elem().AssignableTo(protoMsgType) && !fieldType.Elem().AssignableTo(timestampType) && fieldType.Key().Kind() == reflect.String
 }
 
 func (nmff nestedMapFieldFactory) NewProtoField(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) (protoField, error) {
+	fmt.Println("===nestedMapFieldFactory===NewProtoField======================")
 	return &mapField{
 		baseField: baseField{
 			msg:   msg,
@@ -89,10 +96,12 @@ func (nmff nestedMapFieldFactory) NewProtoField(msg proto.Message, fieldName str
 type nestedSliceFieldFactory struct{}
 
 func (nmff nestedSliceFieldFactory) Handles(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) bool {
+	fmt.Println("===nestedSliceFieldFactory===Handles======================")
 	return fieldType.Kind() == reflect.Slice && fieldType.Elem().AssignableTo(protoMsgType) && !fieldType.Elem().AssignableTo(timestampType)
 }
 
 func (nmff nestedSliceFieldFactory) NewProtoField(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) (protoField, error) {
+	fmt.Println("===nestedSliceFieldFactory===NewProtoField======================")
 	return &sliceField{
 		baseField: baseField{
 			msg:   msg,

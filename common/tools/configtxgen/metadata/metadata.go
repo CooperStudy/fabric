@@ -30,6 +30,7 @@ var CommitSHA string
 const ProgramName = "configtxgen"
 
 func GetVersionInfo() string {
+	fmt.Println("==GetVersionInfo=======")
 	if CommitSHA == "" {
 		CommitSHA = "development build"
 	}

@@ -24,6 +24,7 @@ var CommitSHA string
 const ProgramName = "cryptogen"
 
 func GetVersionInfo() string {
+	fmt.Println("====GetVersionInfo=========")
 	if CommitSHA == "" {
 		CommitSHA = "development build"
 	}

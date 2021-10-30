@@ -63,6 +63,7 @@ var (
 var logger = flogging.MustGetLogger("configtxlator")
 
 func main() {
+	fmt.Println("========main========")
 	kingpin.Version("0.0.1")
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
 	// "start" command

@@ -31,11 +31,13 @@ type mspSigner struct {
 // It assumes that the local msp has been already initialized.
 // Look at mspmgmt.LoadLocalMsp for further information.
 func NewSigner() crypto.LocalSigner {
+	fmt.Println("===============NewSigner==============")
 	return &mspSigner{}
 }
 
 // NewSignatureHeader creates a SignatureHeader with the correct signing identity and a valid nonce
 func (s *mspSigner) NewSignatureHeader() (*cb.SignatureHeader, error) {
+	fmt.Println("=======mspSigner========NewSignatureHeader==============")
 	signer, err := mspmgmt.GetLocalMSP().GetDefaultSigningIdentity()
 	if err != nil {
 		return nil, fmt.Errorf("Failed getting MSP-based signer [%s]", err)
@@ -60,6 +62,7 @@ func (s *mspSigner) NewSignatureHeader() (*cb.SignatureHeader, error) {
 
 // Sign a message which should embed a signature header created by NewSignatureHeader
 func (s *mspSigner) Sign(message []byte) ([]byte, error) {
+	fmt.Println("=======mspSigner========Sign==============")
 	signer, err := mspmgmt.GetLocalMSP().GetDefaultSigningIdentity()
 	if err != nil {
 		return nil, fmt.Errorf("Failed getting MSP-based signer [%s]", err)

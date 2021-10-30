@@ -213,6 +213,7 @@ var (
 )
 
 func main() {
+	fmt.Println("====main=========")
 	kingpin.Version("0.0.1")
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
 
@@ -236,6 +237,7 @@ func main() {
 }
 
 func getConfig() (*Config, error) {
+	fmt.Println("====getConfig=========")
 	var configData string
 
 	if *genConfigFile != nil {
@@ -266,6 +268,7 @@ func getConfig() (*Config, error) {
 }
 
 func extend() {
+	fmt.Println("====extend=========")
 	config, err := getConfig()
 	if err != nil {
 		fmt.Printf("Error reading config: %s", err)
@@ -293,6 +296,7 @@ func extend() {
 }
 
 func extendPeerOrg(orgSpec OrgSpec) {
+	fmt.Println("====extendPeerOrg=========")
 	orgName := orgSpec.Domain
 	orgDir := filepath.Join(*inputDir, "peerOrganizations", orgName)
 	if _, err := os.Stat(orgDir); os.IsNotExist(err) {
@@ -338,6 +342,7 @@ func extendPeerOrg(orgSpec OrgSpec) {
 }
 
 func extendOrdererOrg(orgSpec OrgSpec) {
+	fmt.Println("====extendOrdererOrg=========")
 	orgName := orgSpec.Domain
 
 	orgDir := filepath.Join(*inputDir, "ordererOrganizations", orgName)
@@ -371,7 +376,7 @@ func extendOrdererOrg(orgSpec OrgSpec) {
 }
 
 func generate() {
-
+	fmt.Println("====generate=========")
 	config, err := getConfig()
 	if err != nil {
 		fmt.Printf("Error reading config: %s", err)
@@ -398,7 +403,7 @@ func generate() {
 }
 
 func parseTemplate(input string, data interface{}) (string, error) {
-
+	fmt.Println("====parseTemplate=========")
 	t, err := template.New("parse").Parse(input)
 	if err != nil {
 		return "", fmt.Errorf("Error parsing template: %s", err)
@@ -414,7 +419,7 @@ func parseTemplate(input string, data interface{}) (string, error) {
 }
 
 func parseTemplateWithDefault(input, defaultInput string, data interface{}) (string, error) {
-
+	fmt.Println("====parseTemplateWithDefault=========")
 	// Use the default if the input is an empty string
 	if len(input) == 0 {
 		input = defaultInput
@@ -424,6 +429,7 @@ func parseTemplateWithDefault(input, defaultInput string, data interface{}) (str
 }
 
 func renderNodeSpec(domain string, spec *NodeSpec) error {
+	fmt.Println("====renderNodeSpec=========")
 	data := SpecData{
 		Hostname: spec.Hostname,
 		Domain:   domain,
@@ -458,6 +464,7 @@ func renderNodeSpec(domain string, spec *NodeSpec) error {
 }
 
 func renderOrgSpec(orgSpec *OrgSpec, prefix string) error {
+	fmt.Println("====renderOrgSpec=========")
 	// First process all of our templated nodes
 	for i := 0; i < orgSpec.Template.Count; i++ {
 		data := HostnameData{
@@ -501,7 +508,7 @@ func renderOrgSpec(orgSpec *OrgSpec, prefix string) error {
 }
 
 func generatePeerOrg(baseDir string, orgSpec OrgSpec) {
-
+	fmt.Println("====generatePeerOrg=========")
 	orgName := orgSpec.Domain
 
 	fmt.Println(orgName)
@@ -572,6 +579,7 @@ func generatePeerOrg(baseDir string, orgSpec OrgSpec) {
 }
 
 func copyAdminCert(usersDir, adminCertsDir, adminUserName string) error {
+	fmt.Println("====copyAdminCert=========")
 	if _, err := os.Stat(filepath.Join(adminCertsDir,
 		adminUserName+"-cert.pem")); err == nil {
 		return nil
@@ -597,7 +605,7 @@ func copyAdminCert(usersDir, adminCertsDir, adminUserName string) error {
 }
 
 func generateNodes(baseDir string, nodes []NodeSpec, signCA *ca.CA, tlsCA *ca.CA, nodeType int, nodeOUs bool) {
-
+	fmt.Println("====generateNodes=========")
 	for _, node := range nodes {
 		nodeDir := filepath.Join(baseDir, node.CommonName)
 		if _, err := os.Stat(nodeDir); os.IsNotExist(err) {
@@ -611,7 +619,7 @@ func generateNodes(baseDir string, nodes []NodeSpec, signCA *ca.CA, tlsCA *ca.CA
 }
 
 func generateOrdererOrg(baseDir string, orgSpec OrgSpec) {
-
+	fmt.Println("====generateOrdererOrg=========")
 	orgName := orgSpec.Domain
 
 	// generate CAs
@@ -675,6 +683,7 @@ func generateOrdererOrg(baseDir string, orgSpec OrgSpec) {
 }
 
 func copyFile(src, dst string) error {
+	fmt.Println("====copyFile========")
 	in, err := os.Open(src)
 	if err != nil {
 		return err
@@ -694,10 +703,12 @@ func copyFile(src, dst string) error {
 }
 
 func printVersion() {
+	fmt.Println("====printVersion========")
 	fmt.Println(metadata.GetVersionInfo())
 }
 
 func getCA(caDir string, spec OrgSpec, name string) *ca.CA {
+	fmt.Println("====getCA========")
 	_, signer, _ := csp.LoadPrivateKey(caDir)
 	cert, _ := ca.LoadCertificateECDSA(caDir)
 

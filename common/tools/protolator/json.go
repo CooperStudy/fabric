@@ -84,6 +84,7 @@ type baseField struct {
 }
 
 func (bf *baseField) Name() string {
+	fmt.Println("====baseField====Name====")
 	return bf.name
 }
 
@@ -94,6 +95,7 @@ type plainField struct {
 }
 
 func (pf *plainField) PopulateFrom(source interface{}) error {
+	fmt.Println("====plainField====PopulateFrom====")
 	if source == nil {
 		return nil
 	}
@@ -110,6 +112,7 @@ func (pf *plainField) PopulateFrom(source interface{}) error {
 }
 
 func (pf *plainField) PopulateTo() (interface{}, error) {
+	fmt.Println("======plainField=======PopulateTo=======================")
 	if !pf.value.Type().AssignableTo(pf.vType) {
 		return nil, fmt.Errorf("expected field %s for message %T to be assignable to %v but was not. Got %T.", pf.name, pf.msg, pf.fType, pf.value)
 	}
@@ -135,6 +138,7 @@ type mapField struct {
 }
 
 func (mf *mapField) PopulateFrom(source interface{}) error {
+	fmt.Println("======mapField=======PopulateFrom=======================")
 	tree, ok := source.(map[string]interface{})
 	if !ok {
 		return fmt.Errorf("expected map field %s for message %T to be assignable from map[string]interface{} but was not. Got %T", mf.name, mf.msg, source)
@@ -158,6 +162,7 @@ func (mf *mapField) PopulateFrom(source interface{}) error {
 }
 
 func (mf *mapField) PopulateTo() (interface{}, error) {
+	fmt.Println("======mapField=======PopulateTo=======================")
 	result := make(map[string]interface{})
 	keys := mf.value.MapKeys()
 	for _, key := range keys {
@@ -193,6 +198,7 @@ type sliceField struct {
 }
 
 func (sf *sliceField) PopulateFrom(source interface{}) error {
+	fmt.Println("======sliceField=======PopulateFrom=======================")
 	slice, ok := source.([]interface{})
 	if !ok {
 		return fmt.Errorf("expected slice field %s for message %T to be assignable from []interface{} but was not. Got %T", sf.name, sf.msg, source)
@@ -216,6 +222,7 @@ func (sf *sliceField) PopulateFrom(source interface{}) error {
 }
 
 func (sf *sliceField) PopulateTo() (interface{}, error) {
+	fmt.Println("======sliceField=======PopulateTo=======================")
 	result := make([]interface{}, sf.value.Len())
 	for i := range result {
 		subValue := sf.value.Index(i)
@@ -239,6 +246,7 @@ func (sf *sliceField) PopulateTo() (interface{}, error) {
 }
 
 func stringInSlice(target string, slice []string) bool {
+	fmt.Println("======stringInSlice======================")
 	for _, name := range slice {
 		if name == target {
 			return true
@@ -249,6 +257,7 @@ func stringInSlice(target string, slice []string) bool {
 
 // protoToJSON is a simple shortcut wrapper around the proto JSON marshaler
 func protoToJSON(msg proto.Message) ([]byte, error) {
+	fmt.Println("======protoToJSON======================")
 	if reflect.ValueOf(msg).IsNil() {
 		panic("We're nil here")
 	}
@@ -267,6 +276,7 @@ func protoToJSON(msg proto.Message) ([]byte, error) {
 }
 
 func mapToProto(tree map[string]interface{}, msg proto.Message) error {
+	fmt.Println("======mapToProto======================")
 	jsonOut, err := json.Marshal(tree)
 	if err != nil {
 		return err
@@ -278,6 +288,7 @@ func mapToProto(tree map[string]interface{}, msg proto.Message) error {
 // jsonToMap allocates a map[string]interface{}, unmarshals a JSON document into it
 // and returns it, or error
 func jsonToMap(marshaled []byte) (map[string]interface{}, error) {
+	fmt.Println("======jsonToMap======================")
 	tree := make(map[string]interface{})
 	d := json.NewDecoder(bytes.NewReader(marshaled))
 	d.UseNumber()
@@ -307,6 +318,7 @@ var fieldFactories = []protoFieldFactory{
 }
 
 func protoFields(msg proto.Message, uMsg proto.Message) ([]protoField, error) {
+	fmt.Println("======protoFields======================")
 	var result []protoField
 
 	pmVal := reflect.ValueOf(uMsg)
@@ -361,6 +373,7 @@ func protoFields(msg proto.Message, uMsg proto.Message) ([]protoField, error) {
 }
 
 func recursivelyCreateTreeFromMessage(msg proto.Message) (tree map[string]interface{}, err error) {
+	fmt.Println("======recursivelyCreateTreeFromMessage======================")
 	defer func() {
 		// Because this function is recursive, it's difficult to determine which level
 		// of the proto the error originated from, this wrapper leaves breadcrumbs for debugging
@@ -409,6 +422,7 @@ func recursivelyCreateTreeFromMessage(msg proto.Message) (tree map[string]interf
 // as the JSON representation of those messages.  This is done so that the JSON representation is as non-binary
 // and human readable as possible.
 func DeepMarshalJSON(w io.Writer, msg proto.Message) error {
+	fmt.Println("======DeepMarshalJSON======================")
 	root, err := recursivelyCreateTreeFromMessage(msg)
 	if err != nil {
 		return err
@@ -420,6 +434,7 @@ func DeepMarshalJSON(w io.Writer, msg proto.Message) error {
 }
 
 func recursivelyPopulateMessageFromTree(tree map[string]interface{}, msg proto.Message) (err error) {
+	fmt.Println("======recursivelyPopulateMessageFromTree======================")
 	defer func() {
 		// Because this function is recursive, it's difficult to determine which level
 		// of the proto the error orginated from, this wrapper leaves breadcrumbs for debugging
@@ -470,6 +485,7 @@ func recursivelyPopulateMessageFromTree(tree map[string]interface{}, msg proto.M
 // DeepUnmarshalJSON takes JSON output as generated by DeepMarshalJSON and decodes it into msg
 // This includes re-marshaling the expanded nested elements to binary form
 func DeepUnmarshalJSON(r io.Reader, msg proto.Message) error {
+	fmt.Println("======DeepUnmarshalJSON======================")
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
 		return err

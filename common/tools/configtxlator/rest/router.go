@@ -17,10 +17,12 @@ limitations under the License.
 package rest
 
 import (
+	"fmt"
 	"github.com/gorilla/mux"
 )
 
 func NewRouter() *mux.Router {
+	fmt.Println("========NewRouter========")
 	router := mux.NewRouter().StrictSlash(true)
 	router.
 		HandleFunc("/protolator/encode/{msgName}", Encode).

@@ -20,6 +20,7 @@ var CommitSHA string
 const ProgramName = "idemixgen"
 
 func GetVersionInfo() string {
+	fmt.Println("====GetVersionInfo========")
 	if CommitSHA == "" {
 		CommitSHA = "development build"
 	}

@@ -52,6 +52,7 @@ var (
 )
 
 func main() {
+	fmt.Println("====main========")
 	app.HelpFlag.Short('h')
 
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
@@ -109,11 +110,13 @@ func main() {
 }
 
 func printVersion() {
+	fmt.Println("====printVersion========")
 	fmt.Println(metadata.GetVersionInfo())
 }
 
 // writeFile writes bytes to a file and panics in case of an error
 func writeFile(path string, contents []byte) {
+	fmt.Println("====writeFile========")
 	handleError(ioutil.WriteFile(path, contents, 0640))
 }
 

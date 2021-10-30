@@ -31,6 +31,7 @@ var exitCode = 0
 var logger = flogging.MustGetLogger("common.tools.configtxgen")
 
 func doOutputBlock(config *genesisconfig.Profile, channelID string, outputBlock string) error {
+	logger.Info("=========doOutputBlock=========")
 	pgen := encoder.New(config)
 	logger.Info("Generating genesis block")
 	if config.Consortiums == nil {
@@ -46,6 +47,7 @@ func doOutputBlock(config *genesisconfig.Profile, channelID string, outputBlock 
 }
 
 func doOutputChannelCreateTx(conf *genesisconfig.Profile, channelID string, outputChannelCreateTx string) error {
+	logger.Info("=========doOutputChannelCreateTx=========")
 	logger.Info("Generating new channel configtx")
 
 	configtx, err := encoder.MakeChannelCreationTransaction(channelID, nil, conf)
@@ -62,6 +64,7 @@ func doOutputChannelCreateTx(conf *genesisconfig.Profile, channelID string, outp
 }
 
 func doOutputAnchorPeersUpdate(conf *genesisconfig.Profile, channelID string, outputAnchorPeersUpdate string, asOrg string) error {
+	logger.Info("==doOutputAnchorPeersUpdate=======")
 	logger.Info("Generating anchor peer update")
 	if asOrg == "" {
 		return fmt.Errorf("Must specify an organization to update the anchor peer for")
@@ -147,6 +150,7 @@ func doOutputAnchorPeersUpdate(conf *genesisconfig.Profile, channelID string, ou
 }
 
 func doInspectBlock(inspectBlock string) error {
+	logger.Info("=========doInspectBlock=========")
 	logger.Info("Inspecting block")
 	data, err := ioutil.ReadFile(inspectBlock)
 	if err != nil {
@@ -166,6 +170,7 @@ func doInspectBlock(inspectBlock string) error {
 }
 
 func doInspectChannelCreateTx(inspectChannelCreateTx string) error {
+	logger.Info("=========doInspectChannelCreateTx=========")
 	logger.Info("Inspecting transaction")
 	data, err := ioutil.ReadFile(inspectChannelCreateTx)
 	if err != nil {
@@ -187,6 +192,7 @@ func doInspectChannelCreateTx(inspectChannelCreateTx string) error {
 }
 
 func doPrintOrg(t *genesisconfig.TopLevel, printOrg string) error {
+	logger.Info("=========doPrintOrg=========")
 	for _, org := range t.Organizations {
 		if org.Name == printOrg {
 			og, err := encoder.NewOrdererOrgGroup(org)
@@ -204,6 +210,7 @@ func doPrintOrg(t *genesisconfig.TopLevel, printOrg string) error {
 }
 
 func main() {
+	logger.Info("=========main=========")
 	var outputBlock, outputChannelCreateTx, profile, configPath, channelID, inspectBlock, inspectChannelCreateTx, outputAnchorPeersUpdate, asOrg, printOrg string
 
 	flag.StringVar(&outputBlock, "outputBlock", "", "The path to write the genesis block to (if set)")
@@ -306,5 +313,6 @@ func main() {
 }
 
 func printVersion() {
+	logger.Info("=========printVersion=========")
 	fmt.Println(metadata.GetVersionInfo())
 }

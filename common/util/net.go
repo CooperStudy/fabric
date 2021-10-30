@@ -8,11 +8,13 @@ package util
 
 import (
 	"context"
+	"fmt"
 
 	"google.golang.org/grpc/peer"
 )
 
 func ExtractRemoteAddress(ctx context.Context) string {
+	fmt.Println("===ExtractRemoteAddress================")
 	var remoteAddress string
 	p, ok := peer.FromContext(ctx)
 	if !ok {

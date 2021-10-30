@@ -211,6 +211,7 @@ var genesisDefaults = TopLevel{
 // Note, for environment overrides to work properly within a profile, Load
 // should be used instead.
 func LoadTopLevel(configPaths ...string) *TopLevel {
+	fmt.Println("===LoadTopLevel=======")
 	config := viper.New()
 	if len(configPaths) > 0 {
 		for _, p := range configPaths {
@@ -251,6 +252,7 @@ func LoadTopLevel(configPaths ...string) *TopLevel {
 // a given profile. Config paths may optionally be provided and will be used
 // in place of the FABRIC_CFG_PATH env variable.
 func Load(profile string, configPaths ...string) *Profile {
+	fmt.Println("===Load=======")
 	config := viper.New()
 	if len(configPaths) > 0 {
 		for _, p := range configPaths {
@@ -295,6 +297,7 @@ func Load(profile string, configPaths ...string) *Profile {
 }
 
 func (t *TopLevel) completeInitialization(configDir string) {
+	fmt.Println("==TopLevel=completeInitialization=======")
 	for _, org := range t.Organizations {
 		org.completeInitialization(configDir)
 	}
@@ -305,6 +308,7 @@ func (t *TopLevel) completeInitialization(configDir string) {
 }
 
 func (p *Profile) completeInitialization(configDir string) {
+	fmt.Println("==Profile=completeInitialization=======")
 	if p.Application != nil {
 		for _, org := range p.Application.Organizations {
 			org.completeInitialization(configDir)
@@ -332,6 +336,7 @@ func (p *Profile) completeInitialization(configDir string) {
 }
 
 func (r *Resources) completeInitialization() {
+	fmt.Println("==Resources=completeInitialization=======")
 	for {
 		switch {
 		case r.DefaultModPolicy == "":
@@ -343,6 +348,7 @@ func (r *Resources) completeInitialization() {
 }
 
 func (org *Organization) completeInitialization(configDir string) {
+	fmt.Println("==Organization=completeInitialization=======")
 	// set the MSP type; if none is specified we assume BCCSP
 	if org.MSPType == "" {
 		org.MSPType = msp.ProviderTypeToString(msp.FABRIC)
@@ -355,6 +361,7 @@ func (org *Organization) completeInitialization(configDir string) {
 }
 
 func (ord *Orderer) completeInitialization(configDir string) {
+	fmt.Println("==Orderer=completeInitialization=======")
 loop:
 	for {
 		switch {
@@ -462,5 +469,6 @@ loop:
 }
 
 func translatePaths(configDir string, org *Organization) {
+	fmt.Println("==translatePaths=======")
 	cf.TranslatePathInPlace(configDir, &org.MSPDir)
 }
