@@ -6,11 +6,14 @@ SPDX-License-Identifier: Apache-2.0
 
 package graph
 
+import "fmt"
+
 type orderedSet struct {
 	elements []interface{}
 }
 
 func (s *orderedSet) add(o interface{}) {
+	fmt.Println("====orderedSet=======add=================")
 	s.elements = append(s.elements, o)
 }
 
@@ -21,6 +24,7 @@ type indiceSet struct {
 type indiceSets []*indiceSet
 
 func factorial(n int) int {
+	fmt.Println("====factorial================")
 	m := 1
 	for i := 1; i <= n; i++ {
 		m *= i
@@ -29,12 +33,14 @@ func factorial(n int) int {
 }
 
 func nChooseK(n, k int) int {
+	fmt.Println("====nChooseK================")
 	a := factorial(n)
 	b := factorial(n-k) * factorial(k)
 	return a / b
 }
 
 func chooseKoutOfN(n, k int) indiceSets {
+	fmt.Println("====chooseKoutOfN================")
 	var res indiceSets
 	subGroups := &orderedSet{}
 	choose(n, k, 0, nil, subGroups)
@@ -45,6 +51,7 @@ func chooseKoutOfN(n, k int) indiceSets {
 }
 
 func choose(n int, targetAmount int, i int, currentSubGroup []int, subGroups *orderedSet) {
+	fmt.Println("====choose================")
 	// Check if we have enough elements in our current subgroup
 	if len(currentSubGroup) == targetAmount {
 		subGroups.add(&indiceSet{indices: currentSubGroup})
