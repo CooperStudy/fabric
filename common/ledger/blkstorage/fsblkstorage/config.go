@@ -16,7 +16,10 @@ limitations under the License.
 
 package fsblkstorage
 
-import "path/filepath"
+import (
+	"fmt"
+	"path/filepath"
+)
 
 const (
 	// ChainsDir is the name of the directory containing the channel ledgers.
@@ -35,6 +38,7 @@ type Conf struct {
 // NewConf constructs new `Conf`.
 // blockStorageDir is the top level folder under which `FsBlockStore` manages its data
 func NewConf(blockStorageDir string, maxBlockfileSize int) *Conf {
+	fmt.Println("==NewConf=")
 	if maxBlockfileSize <= 0 {
 		maxBlockfileSize = defaultMaxBlockfileSize
 	}
@@ -42,13 +46,16 @@ func NewConf(blockStorageDir string, maxBlockfileSize int) *Conf {
 }
 
 func (conf *Conf) getIndexDir() string {
+	fmt.Println("==Conf=====getIndexDir====")
 	return filepath.Join(conf.blockStorageDir, IndexDir)
 }
 
 func (conf *Conf) getChainsDir() string {
+	fmt.Println("==Conf=====getChainsDir====")
 	return filepath.Join(conf.blockStorageDir, ChainsDir)
 }
 
 func (conf *Conf) getLedgerBlockDir(ledgerid string) string {
+	fmt.Println("==Conf=====getLedgerBlockDir====")
 	return filepath.Join(conf.getChainsDir(), ledgerid)
 }

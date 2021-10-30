@@ -52,6 +52,7 @@ type blockPlacementInfo struct {
 // blockfileStream functions
 ////////////////////////////////////
 func newBlockfileStream(rootDir string, fileNum int, startOffset int64) (*blockfileStream, error) {
+	fmt.Println("===newBlockfileStream===")
 	filePath := deriveBlockfilePath(rootDir, fileNum)
 	logger.Debugf("newBlockfileStream(): filePath=[%s], startOffset=[%d]", filePath, startOffset)
 	var file *os.File
@@ -72,6 +73,7 @@ func newBlockfileStream(rootDir string, fileNum int, startOffset int64) (*blockf
 }
 
 func (s *blockfileStream) nextBlockBytes() ([]byte, error) {
+	fmt.Println("===blockfileStream===nextBlockBytes==")
 	blockBytes, _, err := s.nextBlockBytesAndPlacementInfo()
 	return blockBytes, err
 }
@@ -81,6 +83,7 @@ func (s *blockfileStream) nextBlockBytes() ([]byte, error) {
 // An error `ErrUnexpectedEndOfBlockfile` is returned if a partial written data is detected
 // which is possible towards the tail of the file if a crash had taken place during appending of a block
 func (s *blockfileStream) nextBlockBytesAndPlacementInfo() ([]byte, *blockPlacementInfo, error) {
+	fmt.Println("===blockfileStream===nextBlockBytesAndPlacementInfo==")
 	var lenBytes []byte
 	var err error
 	var fileInfo os.FileInfo
@@ -146,6 +149,7 @@ func (s *blockfileStream) close() error {
 // blockStream functions
 ////////////////////////////////////
 func newBlockStream(rootDir string, startFileNum int, startOffset int64, endFileNum int) (*blockStream, error) {
+	fmt.Println("===newBlockStream===")
 	startFileStream, err := newBlockfileStream(rootDir, startFileNum, startOffset)
 	if err != nil {
 		return nil, err
@@ -154,6 +158,7 @@ func newBlockStream(rootDir string, startFileNum int, startOffset int64, endFile
 }
 
 func (s *blockStream) moveToNextBlockfileStream() error {
+	fmt.Println("===blockStream===moveToNextBlockfileStream==")
 	var err error
 	if err = s.currentFileStream.close(); err != nil {
 		return err
@@ -166,11 +171,13 @@ func (s *blockStream) moveToNextBlockfileStream() error {
 }
 
 func (s *blockStream) nextBlockBytes() ([]byte, error) {
+	fmt.Println("===blockStream===nextBlockBytes==")
 	blockBytes, _, err := s.nextBlockBytesAndPlacementInfo()
 	return blockBytes, err
 }
 
 func (s *blockStream) nextBlockBytesAndPlacementInfo() ([]byte, *blockPlacementInfo, error) {
+	fmt.Println("===blockStream===nextBlockBytesAndPlacementInfo==")
 	var blockBytes []byte
 	var blockPlacementInfo *blockPlacementInfo
 	var err error
@@ -190,10 +197,12 @@ func (s *blockStream) nextBlockBytesAndPlacementInfo() ([]byte, *blockPlacementI
 }
 
 func (s *blockStream) close() error {
+	fmt.Println("===blockStream===close==")
 	return s.currentFileStream.close()
 }
 
 func (i *blockPlacementInfo) String() string {
+	fmt.Println("===blockPlacementInfo===String==")
 	return fmt.Sprintf("fileNum=[%d], startOffset=[%d], bytesOffset=[%d]",
 		i.fileNum, i.blockStartOffset, i.blockBytesOffset)
 }
