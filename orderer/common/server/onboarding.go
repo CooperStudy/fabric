@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package server
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric/common/crypto"
 	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/common/ledger/blockledger"
@@ -28,6 +29,7 @@ type replicationInitiator struct {
 }
 
 func (ri *replicationInitiator) replicateIfNeeded() {
+	fmt.Println("==replicationInitiator==replicateIfNeeded==")
 	if ri.bootstrapBlock.Header.Number == 0 {
 		ri.logger.Debug("Booted with a genesis block, replication isn't an option")
 		return
@@ -79,5 +81,6 @@ type ledgerFactory struct {
 }
 
 func (lf *ledgerFactory) GetOrCreate(chainID string) (cluster.LedgerWriter, error) {
+	fmt.Println("==ledgerFactory==GetOrCreate==")
 	return lf.Factory.GetOrCreate(chainID)
 }

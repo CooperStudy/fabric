@@ -31,6 +31,7 @@ type broadcastSupport struct {
 }
 
 func (bs broadcastSupport) BroadcastChannelSupport(msg *cb.Envelope) (*cb.ChannelHeader, bool, broadcast.ChannelSupport, error) {
+	fmt.Println("==broadcastSupport==BroadcastChannelSupport==")
 	return bs.Registrar.BroadcastChannelSupport(msg)
 }
 
@@ -39,6 +40,7 @@ type deliverSupport struct {
 }
 
 func (ds deliverSupport) GetChain(chainID string) deliver.Chain {
+	fmt.Println("==deliverSupport==GetChain==")
 	chain := ds.Registrar.GetChain(chainID)
 	if chain == nil {
 		return nil
@@ -58,6 +60,7 @@ type responseSender struct {
 }
 
 func (rs *responseSender) SendStatusResponse(status cb.Status) error {
+	fmt.Println("==responseSender==SendStatusResponse==")
 	reply := &ab.DeliverResponse{
 		Type: &ab.DeliverResponse_Status{Status: status},
 	}
@@ -65,6 +68,7 @@ func (rs *responseSender) SendStatusResponse(status cb.Status) error {
 }
 
 func (rs *responseSender) SendBlockResponse(block *cb.Block) error {
+	fmt.Println("==responseSender==SendBlockResponse==")
 	response := &ab.DeliverResponse{
 		Type: &ab.DeliverResponse_Block{Block: block},
 	}
@@ -73,6 +77,7 @@ func (rs *responseSender) SendBlockResponse(block *cb.Block) error {
 
 // NewServer creates an ab.AtomicBroadcastServer based on the broadcast target and ledger Reader
 func NewServer(r *multichannel.Registrar, metricsProvider metrics.Provider, debug *localconfig.Debug, timeWindow time.Duration, mutualTLS bool) ab.AtomicBroadcastServer {
+	fmt.Println("==NewServer==")
 	s := &server{
 		dh: deliver.NewHandler(deliverSupport{Registrar: r}, timeWindow, mutualTLS, deliver.NewMetrics(metricsProvider)),
 		bh: &broadcast.Handler{
@@ -91,6 +96,7 @@ type msgTracer struct {
 }
 
 func (mt *msgTracer) trace(traceDir string, msg *cb.Envelope, err error) {
+	fmt.Println("==msgTracer==trace==")
 	if err != nil {
 		return
 	}
@@ -117,6 +123,7 @@ type broadcastMsgTracer struct {
 }
 
 func (bmt *broadcastMsgTracer) Recv() (*cb.Envelope, error) {
+	fmt.Println("==broadcastMsgTracer==trace==")
 	msg, err := bmt.AtomicBroadcast_BroadcastServer.Recv()
 	if traceDir := bmt.debug.BroadcastTraceDir; traceDir != "" {
 		bmt.trace(bmt.debug.BroadcastTraceDir, msg, err)
@@ -130,6 +137,7 @@ type deliverMsgTracer struct {
 }
 
 func (dmt *deliverMsgTracer) Recv() (*cb.Envelope, error) {
+	fmt.Println("==deliverMsgTracer==trace==")
 	msg, err := dmt.Receiver.Recv()
 	if traceDir := dmt.debug.DeliverTraceDir; traceDir != "" {
 		dmt.trace(traceDir, msg, err)
@@ -139,6 +147,7 @@ func (dmt *deliverMsgTracer) Recv() (*cb.Envelope, error) {
 
 // Broadcast receives a stream of messages from a client for ordering
 func (s *server) Broadcast(srv ab.AtomicBroadcast_BroadcastServer) error {
+	fmt.Println("==server==Broadcast==")
 	logger.Debugf("Starting new Broadcast handler")
 	defer func() {
 		if r := recover(); r != nil {
@@ -157,6 +166,7 @@ func (s *server) Broadcast(srv ab.AtomicBroadcast_BroadcastServer) error {
 
 // Deliver sends a stream of blocks to a client after ordering
 func (s *server) Deliver(srv ab.AtomicBroadcast_DeliverServer) error {
+	fmt.Println("==server==Deliver==")
 	logger.Debugf("Starting new Deliver handler")
 	defer func() {
 		if r := recover(); r != nil {
@@ -190,6 +200,7 @@ func (s *server) Deliver(srv ab.AtomicBroadcast_DeliverServer) error {
 }
 
 func (s *server) sendProducer(srv ab.AtomicBroadcast_DeliverServer) func(msg proto.Message) error {
+	fmt.Println("==server==sendProducer==")
 	return func(msg proto.Message) error {
 		response, ok := msg.(*ab.DeliverResponse)
 		if !ok {

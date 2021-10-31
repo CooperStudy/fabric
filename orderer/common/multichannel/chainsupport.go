@@ -104,21 +104,25 @@ func (cs *ChainSupport) Signer() crypto.LocalSigner {
 }
 
 func (cs *ChainSupport) start() {
+	fmt.Println("==ChainSupport===start==")
 	cs.Chain.Start()
 }
 
 // BlockCutter returns the blockcutter.Receiver instance for this channel.
 func (cs *ChainSupport) BlockCutter() blockcutter.Receiver {
+	fmt.Println("==ChainSupport===BlockCutter==")
 	return cs.cutter
 }
 
 // Validate passes through to the underlying configtx.Validator
 func (cs *ChainSupport) Validate(configEnv *cb.ConfigEnvelope) error {
+	fmt.Println("==ChainSupport===Validate==")
 	return cs.ConfigtxValidator().Validate(configEnv)
 }
 
 // ProposeConfigUpdate passes through to the underlying configtx.Validator
 func (cs *ChainSupport) ProposeConfigUpdate(configtx *cb.Envelope) (*cb.ConfigEnvelope, error) {
+	fmt.Println("==ChainSupport===ProposeConfigUpdate==")
 	env, err := cs.ConfigtxValidator().ProposeConfigUpdate(configtx)
 	if err != nil {
 		return nil, err
@@ -138,16 +142,19 @@ func (cs *ChainSupport) ProposeConfigUpdate(configtx *cb.Envelope) (*cb.ConfigEn
 
 // ChainID passes through to the underlying configtx.Validator
 func (cs *ChainSupport) ChainID() string {
+	fmt.Println("==ChainSupport===ChainID==")
 	return cs.ConfigtxValidator().ChainID()
 }
 
 // ConfigProto passes through to the underlying configtx.Validator
 func (cs *ChainSupport) ConfigProto() *cb.Config {
+	fmt.Println("==ChainSupport===ConfigProto==")
 	return cs.ConfigtxValidator().ConfigProto()
 }
 
 // Sequence passes through to the underlying configtx.Validator
 func (cs *ChainSupport) Sequence() uint64 {
+	fmt.Println("==ChainSupport===Sequence==")
 	return cs.ConfigtxValidator().Sequence()
 }
 
@@ -158,7 +165,10 @@ func (cs *ChainSupport) Sequence() uint64 {
 // If the config envelope passed is nil, then the validation rules used
 // are the ones that were applied at commit of previous blocks.
 func (cs *ChainSupport) VerifyBlockSignature(sd []*cb.SignedData, envelope *cb.ConfigEnvelope) error {
+	fmt.Println("==ChainSupport===VerifyBlockSignature==")
 	policyMgr := cs.PolicyManager()
+
+
 	// If the envelope passed isn't nil, we should use a different policy manager.
 	if envelope != nil {
 		bundle, err := channelconfig.NewBundle(cs.ChainID(), envelope.Config)
