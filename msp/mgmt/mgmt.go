@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package mgmt
 
 import (
+	"fmt"
 	"reflect"
 	"sync"
 
@@ -20,6 +21,7 @@ import (
 
 // LoadLocalMspWithType loads the local MSP with the specified type from the specified directory
 func LoadLocalMspWithType(dir string, bccspConfig *factory.FactoryOpts, mspID, mspType string) error {
+	fmt.Println("=====LoadLocalMspWithType==")
 	if mspID == "" {
 		return errors.New("the local MSP must have an ID")
 	}
@@ -34,6 +36,7 @@ func LoadLocalMspWithType(dir string, bccspConfig *factory.FactoryOpts, mspID, m
 
 // LoadLocalMsp loads the local MSP from the specified directory
 func LoadLocalMsp(dir string, bccspConfig *factory.FactoryOpts, mspID string) error {
+	fmt.Println("=====LoadLocalMsp==")
 	if mspID == "" {
 		return errors.New("the local MSP must have an ID")
 	}
@@ -66,6 +69,7 @@ type mspMgmtMgr struct {
 }
 
 func (mgr *mspMgmtMgr) DeserializeIdentity(serializedIdentity []byte) (msp.Identity, error) {
+	fmt.Println("=====mspMgmtMgr==DeserializeIdentity==")
 	if !mgr.up {
 		return nil, errors.New("channel doesn't exist")
 	}
@@ -73,6 +77,7 @@ func (mgr *mspMgmtMgr) DeserializeIdentity(serializedIdentity []byte) (msp.Ident
 }
 
 func (mgr *mspMgmtMgr) Setup(msps []msp.MSP) error {
+	fmt.Println("=====mspMgmtMgr==Setup==")
 	err := mgr.MSPManager.Setup(msps)
 	if err == nil {
 		mgr.up = true
@@ -83,6 +88,7 @@ func (mgr *mspMgmtMgr) Setup(msps []msp.MSP) error {
 // GetManagerForChain returns the msp manager for the supplied
 // chain; if no such manager exists, one is created
 func GetManagerForChain(chainID string) msp.MSPManager {
+	fmt.Println("====GetManagerForChain==")
 	m.Lock()
 	defer m.Unlock()
 
@@ -107,6 +113,7 @@ func GetManagerForChain(chainID string) msp.MSPManager {
 
 // GetManagers returns all the managers registered
 func GetDeserializers() map[string]msp.IdentityDeserializer {
+	fmt.Println("====GetDeserializers==")
 	m.Lock()
 	defer m.Unlock()
 
@@ -123,6 +130,7 @@ func GetDeserializers() map[string]msp.IdentityDeserializer {
 // parsing to the channelconfig.Resources interface, while preserving the problematic singleton
 // nature of the MSP manager
 func XXXSetMSPManager(chainID string, manager msp.MSPManager) {
+	fmt.Println("====XXXSetMSPManager==")
 	m.Lock()
 	defer m.Unlock()
 
@@ -131,6 +139,7 @@ func XXXSetMSPManager(chainID string, manager msp.MSPManager) {
 
 // GetLocalMSP returns the local msp (and creates it if it doesn't exist)
 func GetLocalMSP() msp.MSP {
+	fmt.Println("====GetLocalMSP==")
 	m.Lock()
 	defer m.Unlock()
 
@@ -144,6 +153,7 @@ func GetLocalMSP() msp.MSP {
 }
 
 func loadLocaMSP() msp.MSP {
+	fmt.Println("====loadLocaMSP==")
 	// determine the type of MSP (by default, we'll use bccspMSP)
 	mspType := viper.GetString("peer.localMspType")
 	if mspType == "" {
@@ -182,6 +192,7 @@ func loadLocaMSP() msp.MSP {
 
 // GetIdentityDeserializer returns the IdentityDeserializer for the given chain
 func GetIdentityDeserializer(chainID string) msp.IdentityDeserializer {
+	fmt.Println("====GetIdentityDeserializer==")
 	if chainID == "" {
 		return GetLocalMSP()
 	}
@@ -192,6 +203,7 @@ func GetIdentityDeserializer(chainID string) msp.IdentityDeserializer {
 // GetLocalSigningIdentityOrPanic returns the local signing identity or panic in case
 // or error
 func GetLocalSigningIdentityOrPanic() msp.SigningIdentity {
+	fmt.Println("====GetLocalSigningIdentityOrPanic==")
 	id, err := GetLocalMSP().GetDefaultSigningIdentity()
 	if err != nil {
 		mspLogger.Panicf("Failed getting local signing identity [%+v]", err)

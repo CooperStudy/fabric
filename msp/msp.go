@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package msp
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/hyperledger/fabric/protos/msp"
@@ -213,6 +214,7 @@ var mspTypeStrings = map[ProviderType]string{
 
 // ProviderTypeToString returns a string that represents the ProviderType integer
 func ProviderTypeToString(id ProviderType) string {
+	fmt.Println("==ProviderTypeToString==")
 	if res, found := mspTypeStrings[id]; found {
 		return res
 	}

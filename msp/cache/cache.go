@@ -22,6 +22,7 @@ const (
 var mspLogger = flogging.MustGetLogger("msp")
 
 func New(o msp.MSP) (msp.MSP, error) {
+	mspLogger.Debugf("=============nwe===============")
 	mspLogger.Debugf("Creating Cache-MSP instance")
 	if o == nil {
 		return nil, errors.Errorf("Invalid passed MSP. It must be different from nil.")
@@ -55,14 +56,17 @@ type cachedIdentity struct {
 }
 
 func (id *cachedIdentity) SatisfiesPrincipal(principal *pmsp.MSPPrincipal) error {
+	mspLogger.Debugf("======cachedIdentity=======SatisfiesPrincipal===============")
 	return id.cache.SatisfiesPrincipal(id.Identity, principal)
 }
 
 func (id *cachedIdentity) Validate() error {
+	mspLogger.Debugf("======cachedIdentity====Validate=========")
 	return id.cache.Validate(id.Identity)
 }
 
 func (c *cachedMSP) DeserializeIdentity(serializedIdentity []byte) (msp.Identity, error) {
+	mspLogger.Debugf("======cachedMSP====DeserializeIdentity=========")
 	id, ok := c.deserializeIdentityCache.get(string(serializedIdentity))
 	if ok {
 		return &cachedIdentity{
@@ -83,12 +87,14 @@ func (c *cachedMSP) DeserializeIdentity(serializedIdentity []byte) (msp.Identity
 }
 
 func (c *cachedMSP) Setup(config *pmsp.MSPConfig) error {
+	mspLogger.Debugf("======cachedMSP====Setup=========")
 	c.cleanCash()
 
 	return c.MSP.Setup(config)
 }
 
 func (c *cachedMSP) Validate(id msp.Identity) error {
+	mspLogger.Debugf("======cachedMSP====Validate=========")
 	identifier := id.GetIdentifier()
 	key := string(identifier.Mspid + ":" + identifier.Id)
 
@@ -107,6 +113,7 @@ func (c *cachedMSP) Validate(id msp.Identity) error {
 }
 
 func (c *cachedMSP) SatisfiesPrincipal(id msp.Identity, principal *pmsp.MSPPrincipal) error {
+	mspLogger.Debugf("======cachedMSP====SatisfiesPrincipal=========")
 	identifier := id.GetIdentifier()
 	identityKey := string(identifier.Mspid + ":" + identifier.Id)
 	principalKey := string(principal.PrincipalClassification) + string(principal.Principal)
@@ -128,6 +135,7 @@ func (c *cachedMSP) SatisfiesPrincipal(id msp.Identity, principal *pmsp.MSPPrinc
 }
 
 func (c *cachedMSP) cleanCash() error {
+	mspLogger.Debugf("======cachedMSP====cleanCash=========")
 	c.deserializeIdentityCache = newSecondChanceCache(deserializeIdentityCacheSize)
 	c.satisfiesPrincipalCache = newSecondChanceCache(satisfiesPrincipalCacheSize)
 	c.validateIdentityCache = newSecondChanceCache(validateIdentityCacheSize)

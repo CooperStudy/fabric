@@ -6,6 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 package msp
 
 import (
+	"fmt"
 	m "github.com/hyperledger/fabric/protos/msp"
 )
 
@@ -22,16 +23,19 @@ const (
 )
 
 func (role Role) getValue() int {
+	fmt.Println("====Role==getValue=")
 	return int(role)
 }
 
 // CheckRole Prove that the desired role is contained or not in the bitmask
 func checkRole(bitmask int, role Role) bool {
+	fmt.Println("====checkRole==")
 	return (bitmask & role.getValue()) == role.getValue()
 }
 
 // GetRoleMaskFromIdemixRoles Receive a list of roles to combine in a single bitmask
 func getRoleMaskFromIdemixRoles(roles []Role) int {
+	fmt.Println("====getRoleMaskFromIdemixRoles==")
 	mask := 0
 	for _, role := range roles {
 		mask = mask | role.getValue()
@@ -41,6 +45,7 @@ func getRoleMaskFromIdemixRoles(roles []Role) int {
 
 // GetRoleMaskFromMSPRoles Receive a list of roles to combine in a single bitmask
 func getRoleMaskFromMSPRoles(roles []*m.MSPRole) int {
+	fmt.Println("====getRoleMaskFromMSPRoles==")
 	mask := 0
 	for _, role := range roles {
 		mask = mask | getIdemixRoleFromMSPRole(role)
@@ -50,26 +55,31 @@ func getRoleMaskFromMSPRoles(roles []*m.MSPRole) int {
 
 // GetRoleMaskFromIdemixRole return a bitmask for one role
 func GetRoleMaskFromIdemixRole(role Role) int {
+	fmt.Println("====GetRoleMaskFromIdemixRole==")
 	return getRoleMaskFromIdemixRoles([]Role{role})
 }
 
 // GetRoleMaskFromMSPRole return a bitmask for one role
 func getRoleMaskFromMSPRole(role *m.MSPRole) int {
+	fmt.Println("====getRoleMaskFromMSPRole==")
 	return getRoleMaskFromMSPRoles([]*m.MSPRole{role})
 }
 
 // GetIdemixRoleFromMSPRole gets a MSP Role type and returns the integer value
 func getIdemixRoleFromMSPRole(role *m.MSPRole) int {
+	fmt.Println("====getIdemixRoleFromMSPRole==")
 	return getIdemixRoleFromMSPRoleType(role.GetRole())
 }
 
 // GetIdemixRoleFromMSPRoleType gets a MSP role type and returns the integer value
 func getIdemixRoleFromMSPRoleType(rtype m.MSPRole_MSPRoleType) int {
+	fmt.Println("====getIdemixRoleFromMSPRoleType==")
 	return getIdemixRoleFromMSPRoleValue(int(rtype))
 }
 
 // GetIdemixRoleFromMSPRoleValue Receives a MSP role value and returns the idemix equivalent
 func getIdemixRoleFromMSPRoleValue(role int) int {
+	fmt.Println("====getIdemixRoleFromMSPRoleValue==")
 	switch role {
 	case int(m.MSPRole_ADMIN):
 		return ADMIN.getValue()

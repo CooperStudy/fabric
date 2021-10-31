@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package msp
 
 import (
+	"fmt"
 	"github.com/pkg/errors"
 )
 
@@ -30,6 +31,7 @@ type NewBaseOpts struct {
 }
 
 func (o *NewBaseOpts) GetVersion() MSPVersion {
+	fmt.Println("====NewBaseOpts==GetVersion===")
 	return o.Version
 }
 
@@ -45,6 +47,7 @@ type IdemixNewOpts struct {
 
 // New create a new MSP instance depending on the passed Opts
 func New(opts NewOpts) (MSP, error) {
+	fmt.Println("====New===")
 	switch opts.(type) {
 	case *BCCSPNewOpts:
 		switch opts.GetVersion() {

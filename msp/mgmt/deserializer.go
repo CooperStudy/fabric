@@ -17,6 +17,7 @@ limitations under the License.
 package mgmt
 
 import (
+	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/msp"
 	mspproto "github.com/hyperledger/fabric/protos/msp"
@@ -49,6 +50,7 @@ func NewDeserializersManager() DeserializersManager {
 type mspDeserializersManager struct{}
 
 func (m *mspDeserializersManager) Deserialize(raw []byte) (*mspproto.SerializedIdentity, error) {
+	fmt.Println("=====mspDeserializersManager===Deserialize==")
 	sId := &mspproto.SerializedIdentity{}
 	err := proto.Unmarshal(raw, sId)
 	if err != nil {
@@ -58,14 +60,17 @@ func (m *mspDeserializersManager) Deserialize(raw []byte) (*mspproto.SerializedI
 }
 
 func (m *mspDeserializersManager) GetLocalMSPIdentifier() string {
+	fmt.Println("=====mspDeserializersManager===GetLocalMSPIdentifier==")
 	id, _ := GetLocalMSP().GetIdentifier()
 	return id
 }
 
 func (m *mspDeserializersManager) GetLocalDeserializer() msp.IdentityDeserializer {
+	fmt.Println("=====mspDeserializersManager===GetLocalDeserializer==")
 	return GetLocalMSP()
 }
 
 func (m *mspDeserializersManager) GetChannelDeserializers() map[string]msp.IdentityDeserializer {
+	fmt.Println("=====mspDeserializersManager===GetChannelDeserializers==")
 	return GetDeserializers()
 }

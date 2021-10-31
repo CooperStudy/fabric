@@ -20,6 +20,7 @@ import (
 )
 
 func (msp *bccspmsp) getCertifiersIdentifier(certRaw []byte) ([]byte, error) {
+	mspLogger.Info("======bccspmsp===getCertifiersIdentifier======")
 	// 1. check that certificate is registered in msp.rootCerts or msp.intermediateCerts
 	cert, err := msp.getCertFromPem(certRaw)
 	if err != nil {
@@ -79,7 +80,9 @@ func (msp *bccspmsp) getCertifiersIdentifier(certRaw []byte) ([]byte, error) {
 }
 
 func (msp *bccspmsp) setupCrypto(conf *m.FabricMSPConfig) error {
+	mspLogger.Info("======bccspmsp===setupCrypto======")
 	msp.cryptoConfig = conf.CryptoConfig
+
 	if msp.cryptoConfig == nil {
 		// Move to defaults
 		msp.cryptoConfig = &m.FabricCryptoConfig{
@@ -101,6 +104,7 @@ func (msp *bccspmsp) setupCrypto(conf *m.FabricMSPConfig) error {
 }
 
 func (msp *bccspmsp) setupCAs(conf *m.FabricMSPConfig) error {
+	mspLogger.Info("======bccspmsp===setupCAs======")
 	// make and fill the set of CA certs - we expect them to be there
 	if len(conf.RootCerts) == 0 {
 		return errors.New("expected at least one CA certificate")
@@ -163,6 +167,8 @@ func (msp *bccspmsp) setupCAs(conf *m.FabricMSPConfig) error {
 }
 
 func (msp *bccspmsp) setupAdmins(conf *m.FabricMSPConfig) error {
+	mspLogger.Info("======bccspmsp===setupAdmins======")
+
 	// make and fill the set of admin certs (if present)
 	msp.admins = make([]Identity, len(conf.Admins))
 	for i, admCert := range conf.Admins {
@@ -178,6 +184,7 @@ func (msp *bccspmsp) setupAdmins(conf *m.FabricMSPConfig) error {
 }
 
 func (msp *bccspmsp) setupCRLs(conf *m.FabricMSPConfig) error {
+	mspLogger.Info("======bccspmsp===setupCRLs======")
 	// setup the CRL (if present)
 	msp.CRL = make([]*pkix.CertificateList, len(conf.RevocationList))
 	for i, crlbytes := range conf.RevocationList {
@@ -198,6 +205,7 @@ func (msp *bccspmsp) setupCRLs(conf *m.FabricMSPConfig) error {
 }
 
 func (msp *bccspmsp) finalizeSetupCAs() error {
+	mspLogger.Info("======bccspmsp===finalizeSetupCAs======")
 	// ensure that our CAs are properly formed and that they are valid
 	for _, id := range append(append([]Identity{}, msp.rootCerts...), msp.intermediateCerts...) {
 		if !id.(*identity).cert.IsCA {
@@ -231,6 +239,7 @@ func (msp *bccspmsp) finalizeSetupCAs() error {
 }
 
 func (msp *bccspmsp) setupNodeOUs(config *m.FabricMSPConfig) error {
+	mspLogger.Info("======bccspmsp===setupNodeOUs======")
 	if config.FabricNodeOus != nil {
 
 		msp.ouEnforcement = config.FabricNodeOus.Enable
@@ -263,6 +272,7 @@ func (msp *bccspmsp) setupNodeOUs(config *m.FabricMSPConfig) error {
 }
 
 func (msp *bccspmsp) setupSigningIdentity(conf *m.FabricMSPConfig) error {
+	mspLogger.Info("======bccspmsp===setupSigningIdentity======")
 	if conf.SigningIdentity != nil {
 		sid, err := msp.getSigningIdentityFromConf(conf.SigningIdentity)
 		if err != nil {
@@ -286,6 +296,7 @@ func (msp *bccspmsp) setupSigningIdentity(conf *m.FabricMSPConfig) error {
 }
 
 func (msp *bccspmsp) setupOUs(conf *m.FabricMSPConfig) error {
+	mspLogger.Info("======bccspmsp===setupOUs======")
 	msp.ouIdentifiers = make(map[string][][]byte)
 	for _, ou := range conf.OrganizationalUnitIdentifiers {
 
@@ -317,7 +328,7 @@ func (msp *bccspmsp) setupOUs(conf *m.FabricMSPConfig) error {
 }
 
 func (msp *bccspmsp) setupTLSCAs(conf *m.FabricMSPConfig) error {
-
+	mspLogger.Info("======bccspmsp===setupTLSCAs======")
 	opts := &x509.VerifyOptions{Roots: x509.NewCertPool(), Intermediates: x509.NewCertPool()}
 
 	// Load TLS root and intermediate CA identities
@@ -370,6 +381,7 @@ func (msp *bccspmsp) setupTLSCAs(conf *m.FabricMSPConfig) error {
 }
 
 func (msp *bccspmsp) setupV1(conf1 *m.FabricMSPConfig) error {
+	mspLogger.Info("======bccspmsp===setupV1======")
 	err := msp.preSetupV1(conf1)
 	if err != nil {
 		return err
@@ -384,6 +396,7 @@ func (msp *bccspmsp) setupV1(conf1 *m.FabricMSPConfig) error {
 }
 
 func (msp *bccspmsp) preSetupV1(conf *m.FabricMSPConfig) error {
+	mspLogger.Info("======bccspmsp===preSetupV1======")
 	// setup crypto config
 	if err := msp.setupCrypto(conf); err != nil {
 		return err
@@ -428,6 +441,7 @@ func (msp *bccspmsp) preSetupV1(conf *m.FabricMSPConfig) error {
 }
 
 func (msp *bccspmsp) postSetupV1(conf *m.FabricMSPConfig) error {
+	mspLogger.Info("======bccspmsp===postSetupV1======")
 	// make sure that admins are valid members as well
 	// this way, when we validate an admin MSP principal
 	// we can simply check for exact match of certs
@@ -442,6 +456,7 @@ func (msp *bccspmsp) postSetupV1(conf *m.FabricMSPConfig) error {
 }
 
 func (msp *bccspmsp) setupV11(conf *m.FabricMSPConfig) error {
+	mspLogger.Info("======bccspmsp===setupV11======")
 	err := msp.preSetupV1(conf)
 	if err != nil {
 		return err
@@ -461,6 +476,7 @@ func (msp *bccspmsp) setupV11(conf *m.FabricMSPConfig) error {
 }
 
 func (msp *bccspmsp) postSetupV11(conf *m.FabricMSPConfig) error {
+	mspLogger.Info("======bccspmsp===postSetupV11======")
 	// Check for OU enforcement
 	if !msp.ouEnforcement {
 		// No enforcement required. Call post setup as per V1

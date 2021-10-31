@@ -40,11 +40,13 @@ type mspManagerImpl struct {
 // note that this instance is not initialized until
 // the Setup method is called
 func NewMSPManager() MSPManager {
+	mspLogger.Info("======NewMSPManager======")
 	return &mspManagerImpl{}
 }
 
 // Setup initializes the internal data structures of this manager and creates MSPs
 func (mgr *mspManagerImpl) Setup(msps []MSP) error {
+	mspLogger.Info("======mspManagerImpl===Setup===")
 	if mgr.up {
 		mspLogger.Infof("MSP manager already up")
 		return nil
@@ -78,11 +80,13 @@ func (mgr *mspManagerImpl) Setup(msps []MSP) error {
 
 // GetMSPs returns the MSPs that are managed by this manager
 func (mgr *mspManagerImpl) GetMSPs() (map[string]MSP, error) {
+	mspLogger.Info("======mspManagerImpl===GetMSPs===")
 	return mgr.mspsMap, nil
 }
 
 // DeserializeIdentity returns an identity given its serialized version supplied as argument
 func (mgr *mspManagerImpl) DeserializeIdentity(serializedID []byte) (Identity, error) {
+	mspLogger.Info("======mspManagerImpl===DeserializeIdentity===")
 	// We first deserialize to a SerializedIdentity to get the MSP ID
 	sId := &msp.SerializedIdentity{}
 	err := proto.Unmarshal(serializedID, sId)
@@ -107,6 +111,7 @@ func (mgr *mspManagerImpl) DeserializeIdentity(serializedID []byte) (Identity, e
 }
 
 func (mgr *mspManagerImpl) IsWellFormed(identity *msp.SerializedIdentity) error {
+	mspLogger.Info("======mspManagerImpl===IsWellFormed===")
 	// Iterate over all the MSPs by their providers, and find at least 1 MSP that can attest
 	// that this identity is well formed
 	for _, mspList := range mgr.mspsByProviders {

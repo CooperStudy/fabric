@@ -17,6 +17,7 @@ limitations under the License.
 package mgmt
 
 import (
+	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/protos/msp"
 	"github.com/pkg/errors"
@@ -36,12 +37,14 @@ type MSPPrincipalGetter interface {
 }
 
 func NewLocalMSPPrincipalGetter() MSPPrincipalGetter {
+	fmt.Println("====NewLocalMSPPrincipalGetter==")
 	return &localMSPPrincipalGetter{}
 }
 
 type localMSPPrincipalGetter struct{}
 
 func (m *localMSPPrincipalGetter) Get(role string) (*msp.MSPPrincipal, error) {
+	fmt.Println("====localMSPPrincipalGetter=Get=")
 	mspid, err := GetLocalMSP().GetIdentifier()
 	if err != nil {
 		return nil, errors.WithMessage(err, "could not extract local msp identifier")
