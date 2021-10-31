@@ -29,6 +29,7 @@ var RequiredImages = []string{
 }
 
 func (c *Components) Build(args ...string) {
+	fmt.Println("=====Components===Build===========")
 	helpers.AssertImagesExist(RequiredImages...)
 
 	if c.Paths == nil {
@@ -60,6 +61,7 @@ func (c *Components) Build(args ...string) {
 }
 
 func (c *Components) Cleanup() {
+	fmt.Println("=====Components===Cleanup===========")
 	for _, path := range c.Paths {
 		err := os.Remove(path)
 		Expect(err).NotTo(HaveOccurred())

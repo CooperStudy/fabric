@@ -6,6 +6,8 @@ SPDX-License-Identifier: Apache-2.0
 
 package commands
 
+import "fmt"
+
 type Peers struct {
 	UserCert string
 	UserKey  string
@@ -15,10 +17,12 @@ type Peers struct {
 }
 
 func (p Peers) SessionName() string {
+	fmt.Println("=============Peers=====SessionName==============")
 	return "discover-peers"
 }
 
 func (p Peers) Args() []string {
+	fmt.Println("=============Peers=====Args==============")
 	return []string{
 		"--userCert", p.UserCert,
 		"--userKey", p.UserKey,
@@ -38,10 +42,12 @@ type Config struct {
 }
 
 func (c Config) SessionName() string {
+	fmt.Println("=============Config=====SessionName==============")
 	return "discover-config"
 }
 
 func (c Config) Args() []string {
+	fmt.Println("=============Config=====Args==============")
 	return []string{
 		"--userCert", c.UserCert,
 		"--userKey", c.UserKey,
@@ -65,10 +71,12 @@ type Endorsers struct {
 }
 
 func (e Endorsers) SessionName() string {
+	fmt.Println("=============Endorsers=====SessionName==============")
 	return "discover-endorsers"
 }
 
 func (e Endorsers) Args() []string {
+	fmt.Println("=============Endorsers=====Args==============")
 	args := []string{
 		"--userCert", e.UserCert,
 		"--userKey", e.UserKey,

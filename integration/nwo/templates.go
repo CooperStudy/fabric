@@ -6,6 +6,8 @@ SPDX-License-Identifier: Apache-2.0
 
 package nwo
 
+import "fmt"
+
 // Templates can be used to provide custom templates to GenerateConfigTree.
 type Templates struct {
 	ConfigTx string `yaml:"configtx,omitempty"`
@@ -15,6 +17,7 @@ type Templates struct {
 }
 
 func (t *Templates) ConfigTxTemplate() string {
+	fmt.Println("=Templates====ConfigTxTemplate====")
 	if t.ConfigTx != "" {
 		return t.ConfigTx
 	}
@@ -22,6 +25,7 @@ func (t *Templates) ConfigTxTemplate() string {
 }
 
 func (t *Templates) CoreTemplate() string {
+	fmt.Println("=Templates====CoreTemplate====")
 	if t.Core != "" {
 		return t.Core
 	}
@@ -29,6 +33,7 @@ func (t *Templates) CoreTemplate() string {
 }
 
 func (t *Templates) CryptoTemplate() string {
+	fmt.Println("=Templates====CryptoTemplate====")
 	if t.Crypto != "" {
 		return t.Crypto
 	}
@@ -36,6 +41,7 @@ func (t *Templates) CryptoTemplate() string {
 }
 
 func (t *Templates) OrdererTemplate() string {
+	fmt.Println("=Templates====OrdererTemplate====")
 	if t.Orderer != "" {
 		return t.Orderer
 	}

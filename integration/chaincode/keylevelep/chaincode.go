@@ -33,6 +33,7 @@ type EndorsementCC struct {
 
 // Init callback
 func (cc *EndorsementCC) Init(stub shim.ChaincodeStubInterface) pb.Response {
+	fmt.Println("==========EndorsementCC=====Init============")
 	err := stub.PutState("pub", []byte("foo"))
 	if err != nil {
 		return shim.Error(err.Error())
@@ -42,6 +43,7 @@ func (cc *EndorsementCC) Init(stub shim.ChaincodeStubInterface) pb.Response {
 
 // Invoke dispatcher
 func (cc *EndorsementCC) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
+	fmt.Println("==========EndorsementCC=====Invoke============")
 	funcName, _ := stub.GetFunctionAndParameters()
 	if function, ok := functions[funcName]; ok {
 		return function(stub)
@@ -63,6 +65,7 @@ var functions = map[string]func(stub shim.ChaincodeStubInterface) pb.Response{
 // addOrgs adds the list of MSP IDs from the invocation parameters
 // to the state's endorsement policy
 func addOrgs(stub shim.ChaincodeStubInterface) pb.Response {
+	fmt.Println("=============addOrgs===========")
 	_, parameters := stub.GetFunctionAndParameters()
 	if len(parameters) < 2 {
 		return shim.Error("No orgs to add specified")
@@ -112,6 +115,7 @@ func addOrgs(stub shim.ChaincodeStubInterface) pb.Response {
 // delOrgs removes the list of MSP IDs from the invocation parameters
 // from the state's endorsement policy
 func delOrgs(stub shim.ChaincodeStubInterface) pb.Response {
+	fmt.Println("=============delOrgs===========")
 	_, parameters := stub.GetFunctionAndParameters()
 	if len(parameters) < 2 {
 		return shim.Error("No orgs to delete specified")
@@ -155,6 +159,7 @@ func delOrgs(stub shim.ChaincodeStubInterface) pb.Response {
 // listOrgs returns the list of organizations currently part of
 // the state's endorsement policy
 func listOrgs(stub shim.ChaincodeStubInterface) pb.Response {
+	fmt.Println("=============listOrgs===========")
 	_, parameters := stub.GetFunctionAndParameters()
 	if len(parameters) < 1 {
 		return shim.Error("No key specified")
@@ -187,6 +192,7 @@ func listOrgs(stub shim.ChaincodeStubInterface) pb.Response {
 
 // delEP deletes the state-based endorsement policy for the key altogether
 func delEP(stub shim.ChaincodeStubInterface) pb.Response {
+	fmt.Println("=============delEP===================")
 	_, parameters := stub.GetFunctionAndParameters()
 	if len(parameters) < 1 {
 		return shim.Error("No key specified")
@@ -210,6 +216,7 @@ func delEP(stub shim.ChaincodeStubInterface) pb.Response {
 
 // setVal sets the value of the KVS key
 func setVal(stub shim.ChaincodeStubInterface) pb.Response {
+	fmt.Println("=============setVal===================")
 	args := stub.GetArgs()
 	if len(args) != 3 {
 		return shim.Error("setval expects two arguments")
@@ -230,6 +237,7 @@ func setVal(stub shim.ChaincodeStubInterface) pb.Response {
 
 // getVal retrieves the value of the KVS key
 func getVal(stub shim.ChaincodeStubInterface) pb.Response {
+	fmt.Println("=============getVal===================")
 	args := stub.GetArgs()
 	if len(args) != 2 {
 		return shim.Error("No key specified")
@@ -252,6 +260,7 @@ func getVal(stub shim.ChaincodeStubInterface) pb.Response {
 
 // invokeCC is used for chaincode to chaincode invocation of a given cc on another channel
 func invokeCC(stub shim.ChaincodeStubInterface) pb.Response {
+	fmt.Println("=============invokeCC===================")
 	args := stub.GetArgs()
 	if len(args) < 3 {
 		return shim.Error("cc2cc expects at least two arguments (channel and chaincode)")

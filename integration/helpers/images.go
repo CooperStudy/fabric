@@ -18,6 +18,7 @@ import (
 )
 
 func AssertImagesExist(imageNames ...string) {
+	fmt.Println("=============AssertImagesExist===================")
 	dockerClient, err := docker.NewClientFromEnv()
 	Expect(err).NotTo(HaveOccurred())
 
@@ -35,6 +36,7 @@ func AssertImagesExist(imageNames ...string) {
 
 // UniqueName generates base-32 enocded UUIDs for container names.
 func UniqueName() string {
+	fmt.Println("=============UniqueName===================")
 	name := base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(util.GenerateBytesUUID())
 	return strings.ToLower(name)
 }

@@ -6,6 +6,8 @@ SPDX-License-Identifier: Apache-2.0
 
 package nwo
 
+import "fmt"
+
 // Config holds the basic information needed to generate
 // fabric configuration files.
 type Config struct {
@@ -21,6 +23,7 @@ type Config struct {
 }
 
 func (c *Config) RemovePeer(orgName, peerName string) {
+	fmt.Println("=====Config===RemovePeer===========")
 	peers := []*Peer{}
 	for _, p := range c.Peers {
 		if p.Organization != orgName || p.Name != peerName {

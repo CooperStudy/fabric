@@ -37,12 +37,14 @@ type marblePrivateDetails struct {
 // Init initializes chaincode
 // ===========================
 func (t *MarblesPrivateChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
+	fmt.Println("========MarblesPrivateChaincode=====Init=========")
 	return shim.Success(nil)
 }
 
 // Invoke - Our entry point for Invocations
 // ========================================
 func (t *MarblesPrivateChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
+	fmt.Println("========MarblesPrivateChaincode=====Invoke=========")
 	function, args := stub.GetFunctionAndParameters()
 	fmt.Println("invoke is running " + function)
 
@@ -71,6 +73,7 @@ func (t *MarblesPrivateChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Re
 // initMarble - create a new marble, store into chaincode state
 // ============================================================
 func (t *MarblesPrivateChaincode) initMarble(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	fmt.Println("========MarblesPrivateChaincode=====initMarble=========")
 	var err error
 
 	//  0-name  1-color  2-size  3-owner  4-price
@@ -155,6 +158,7 @@ func (t *MarblesPrivateChaincode) initMarble(stub shim.ChaincodeStubInterface, a
 // readMarble - read a marble from chaincode state
 // ===============================================
 func (t *MarblesPrivateChaincode) readMarble(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	fmt.Println("========MarblesPrivateChaincode=====readMarble=========")
 	var name, jsonResp string
 	var err error
 
@@ -179,6 +183,7 @@ func (t *MarblesPrivateChaincode) readMarble(stub shim.ChaincodeStubInterface, a
 // readMarblereadMarblePrivateDetails - read a marble private details from chaincode state
 // ===============================================
 func (t *MarblesPrivateChaincode) readMarblePrivateDetails(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	fmt.Println("========MarblesPrivateChaincode=====readMarblePrivateDetails=========")
 	var name, jsonResp string
 	var err error
 
@@ -203,6 +208,7 @@ func (t *MarblesPrivateChaincode) readMarblePrivateDetails(stub shim.ChaincodeSt
 // delete - remove a marble key/value pair from state
 // ==================================================
 func (t *MarblesPrivateChaincode) delete(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	fmt.Println("========MarblesPrivateChaincode=====delete=========")
 	var jsonResp string
 	var marbleJSON marble
 	if len(args) != 1 {

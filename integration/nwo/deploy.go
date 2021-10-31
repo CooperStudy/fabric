@@ -36,6 +36,7 @@ type Chaincode struct {
 // multiple channels as the install will fail on subsequent calls. Instead,
 // simply use InstantiateChaincode().
 func DeployChaincode(n *Network, channel string, orderer *Orderer, chaincode Chaincode, peers ...*Peer) {
+	fmt.Println("=====DeployChaincode==========")
 	if len(peers) == 0 {
 		peers = n.PeersWithChannel(channel)
 	}
@@ -63,6 +64,7 @@ func DeployChaincode(n *Network, channel string, orderer *Orderer, chaincode Cha
 }
 
 func PackageChaincode(n *Network, chaincode Chaincode, peer *Peer) {
+	fmt.Println("=====PackageChaincode==========")
 	sess, err := n.PeerAdminSession(peer, commands.ChaincodePackage{
 		Name:       chaincode.Name,
 		Version:    chaincode.Version,
@@ -75,6 +77,7 @@ func PackageChaincode(n *Network, chaincode Chaincode, peer *Peer) {
 }
 
 func InstallChaincode(n *Network, chaincode Chaincode, peers ...*Peer) {
+	fmt.Println("=====InstallChaincode==========")
 	for _, p := range peers {
 		sess, err := n.PeerAdminSession(p, commands.ChaincodeInstall{
 			Name:        chaincode.Name,
@@ -94,6 +97,7 @@ func InstallChaincode(n *Network, chaincode Chaincode, peers ...*Peer) {
 }
 
 func InstantiateChaincode(n *Network, channel string, orderer *Orderer, chaincode Chaincode, peer *Peer, checkPeers ...*Peer) {
+	fmt.Println("=====InstantiateChaincode==========")
 	sess, err := n.PeerAdminSession(peer, commands.ChaincodeInstantiate{
 		ChannelID:         channel,
 		Orderer:           n.OrdererAddress(orderer, ListenPort),
@@ -111,6 +115,7 @@ func InstantiateChaincode(n *Network, channel string, orderer *Orderer, chaincod
 }
 
 func EnsureInstantiated(n *Network, channel, name, version string, peers ...*Peer) {
+	fmt.Println("=====EnsureInstantiated==========")
 	for _, p := range peers {
 		Eventually(listInstantiated(n, p, channel), n.EventuallyTimeout).Should(
 			gbytes.Say(fmt.Sprintf("Name: %s, Version: %s,", name, version)),
@@ -119,6 +124,7 @@ func EnsureInstantiated(n *Network, channel, name, version string, peers ...*Pee
 }
 
 func UpgradeChaincode(n *Network, channel string, orderer *Orderer, chaincode Chaincode, peers ...*Peer) {
+	fmt.Println("=====UpgradeChaincode==========")
 	if len(peers) == 0 {
 		peers = n.PeersWithChannel(channel)
 	}
@@ -146,6 +152,7 @@ func UpgradeChaincode(n *Network, channel string, orderer *Orderer, chaincode Ch
 }
 
 func listInstantiated(n *Network, peer *Peer, channel string) func() *gbytes.Buffer {
+	fmt.Println("=====listInstantiated==========")
 	return func() *gbytes.Buffer {
 		sess, err := n.PeerAdminSession(peer, commands.ChaincodeListInstantiated{
 			ChannelID: channel,

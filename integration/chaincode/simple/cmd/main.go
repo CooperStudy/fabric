@@ -15,6 +15,7 @@ import (
 )
 
 func main() {
+	fmt.Println("=======main========")
 	err := shim.Start(&simple.SimpleChaincode{})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Exiting Simple chaincode: %s", err)

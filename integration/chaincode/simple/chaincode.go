@@ -19,6 +19,7 @@ type SimpleChaincode struct {
 }
 
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
+	fmt.Println("====SimpleChaincode===Init========")
 	fmt.Println("Init invoked")
 	_, args := stub.GetFunctionAndParameters()
 	var A, B string    // Entities
@@ -58,6 +59,7 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 }
 
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
+	fmt.Println("====SimpleChaincode===Invoke========")
 	fmt.Println("ex02 Invoke")
 	function, args := stub.GetFunctionAndParameters()
 	switch function {
@@ -80,6 +82,7 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 
 // Transaction makes payment of X units from A to B
 func (t *SimpleChaincode) invoke(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	fmt.Println("====SimpleChaincode===invoke========")
 	var A, B string    // Entities
 	var Aval, Bval int // Asset holdings
 	var X int          // Transaction value
@@ -137,6 +140,7 @@ func (t *SimpleChaincode) invoke(stub shim.ChaincodeStubInterface, args []string
 
 // Deletes an entity from state
 func (t *SimpleChaincode) delete(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	fmt.Println("====SimpleChaincode===delete========")
 	if len(args) != 1 {
 		return shim.Error("Incorrect number of arguments. Expecting 1")
 	}
@@ -154,6 +158,7 @@ func (t *SimpleChaincode) delete(stub shim.ChaincodeStubInterface, args []string
 
 // query callback representing the query of a chaincode
 func (t *SimpleChaincode) query(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	fmt.Println("====SimpleChaincode===query========")
 	var A string // Entities
 	var err error
 
@@ -182,6 +187,7 @@ func (t *SimpleChaincode) query(stub shim.ChaincodeStubInterface, args []string)
 
 // respond simply generates a response payload from the args
 func (t *SimpleChaincode) respond(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	fmt.Println("====SimpleChaincode=========respond======")
 	if len(args) != 3 {
 		return shim.Error("expected three arguments")
 	}

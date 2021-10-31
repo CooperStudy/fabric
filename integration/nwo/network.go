@@ -157,6 +157,7 @@ type Network struct {
 // artifacts for the network will be located under rootDir. Ports will be
 // allocated sequentially from the specified startPort.
 func New(c *Config, rootDir string, client *docker.Client, startPort int, components *Components) *Network {
+	fmt.Println("=====New==========")
 	network := &Network{
 		StartPort:    uint16(startPort),
 		RootDir:      rootDir,
@@ -214,48 +215,56 @@ func New(c *Config, rootDir string, client *docker.Client, startPort int, compon
 // ConfigTxPath returns the path to the generated configtxgen configuration
 // file.
 func (n *Network) ConfigTxConfigPath() string {
+	fmt.Println("=====Network==ConfigTxConfigPath========")
 	return filepath.Join(n.RootDir, "configtx.yaml")
 }
 
 // CryptoPath returns the path to the directory where cryptogen will place its
 // generated artifacts.
 func (n *Network) CryptoPath() string {
+	fmt.Println("=====Network==CryptoPath========")
 	return filepath.Join(n.RootDir, "crypto")
 }
 
 // CryptoConfigPath returns the path to the generated cryptogen configuration
 // file.
 func (n *Network) CryptoConfigPath() string {
+	fmt.Println("=====Network==CryptoConfigPath========")
 	return filepath.Join(n.RootDir, "crypto-config.yaml")
 }
 
 // OutputBlockPath returns the path to the genesis block for the named system
 // channel.
 func (n *Network) OutputBlockPath(channelName string) string {
+	fmt.Println("=====Network==OutputBlockPath========")
 	return filepath.Join(n.RootDir, fmt.Sprintf("%s_block.pb", channelName))
 }
 
 // CreateChannelTxPath returns the path to the create channel transaction for
 // the named channel.
 func (n *Network) CreateChannelTxPath(channelName string) string {
+	fmt.Println("=====Network==CreateChannelTxPath========")
 	return filepath.Join(n.RootDir, fmt.Sprintf("%s_tx.pb", channelName))
 }
 
 // OrdererDir returns the path to the configuration directory for the specified
 // Orderer.
 func (n *Network) OrdererDir(o *Orderer) string {
+	fmt.Println("=====Network==OrdererDir========")
 	return filepath.Join(n.RootDir, "orderers", o.ID())
 }
 
 // OrdererConfigPath returns the path to the orderer configuration document for
 // the specified Orderer.
 func (n *Network) OrdererConfigPath(o *Orderer) string {
+	fmt.Println("=====Network==OrdererConfigPath========")
 	return filepath.Join(n.OrdererDir(o), "orderer.yaml")
 }
 
 // ReadOrdererConfig  unmarshals an orderer's orderer.yaml and returns an
 // object approximating its contents.
 func (n *Network) ReadOrdererConfig(o *Orderer) *fabricconfig.Orderer {
+	fmt.Println("=====Network==ReadOrdererConfig========")
 	var orderer fabricconfig.Orderer
 	ordererBytes, err := ioutil.ReadFile(n.OrdererConfigPath(o))
 	Expect(err).NotTo(HaveOccurred())
@@ -269,6 +278,7 @@ func (n *Network) ReadOrdererConfig(o *Orderer) *fabricconfig.Orderer {
 // WriteOrdererConfig serializes the provided configuration as the specified
 // orderer's orderer.yaml document.
 func (n *Network) WriteOrdererConfig(o *Orderer, config *fabricconfig.Orderer) {
+	fmt.Println("=====Network==WriteOrdererConfig========")
 	ordererBytes, err := yaml.Marshal(config)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -279,18 +289,21 @@ func (n *Network) WriteOrdererConfig(o *Orderer, config *fabricconfig.Orderer) {
 // PeerDir returns the path to the configuration directory for the specified
 // Peer.
 func (n *Network) PeerDir(p *Peer) string {
+	fmt.Println("=====Network==PeerDir========")
 	return filepath.Join(n.RootDir, "peers", p.ID())
 }
 
 // PeerConfigPath returns the path to the peer configuration document for the
 // specified peer.
 func (n *Network) PeerConfigPath(p *Peer) string {
+	fmt.Println("=====Network==PeerConfigPath========")
 	return filepath.Join(n.PeerDir(p), "core.yaml")
 }
 
 // ReadPeerConfig unmarshals a peer's core.yaml and returns an object
 // approximating its contents.
 func (n *Network) ReadPeerConfig(p *Peer) *fabricconfig.Core {
+	fmt.Println("=====Network==ReadPeerConfig========")
 	var core fabricconfig.Core
 	coreBytes, err := ioutil.ReadFile(n.PeerConfigPath(p))
 	Expect(err).NotTo(HaveOccurred())
@@ -304,6 +317,7 @@ func (n *Network) ReadPeerConfig(p *Peer) *fabricconfig.Core {
 // WritePeerConfig serializes the provided configuration as the specified
 // peer's core.yaml document.
 func (n *Network) WritePeerConfig(p *Peer, config *fabricconfig.Core) {
+	fmt.Println("=====Network==WritePeerConfig========")
 	coreBytes, err := yaml.Marshal(config)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -314,6 +328,7 @@ func (n *Network) WritePeerConfig(p *Peer, config *fabricconfig.Core) {
 // peerUserCryptoDir returns the path to the directory containing the
 // certificates and keys for the specified user of the peer.
 func (n *Network) peerUserCryptoDir(p *Peer, user, cryptoMaterialType string) string {
+	fmt.Println("=====Network==peerUserCryptoDir========")
 	org := n.Organization(p.Organization)
 	Expect(org).NotTo(BeNil())
 
@@ -323,7 +338,9 @@ func (n *Network) peerUserCryptoDir(p *Peer, user, cryptoMaterialType string) st
 // ordererUserCryptoDir returns the path to the directory containing the
 // certificates and keys for the specified user of the orderer.
 func (n *Network) ordererUserCryptoDir(o *Orderer, user, cryptoMaterialType string) string {
+	fmt.Println("=====Network==ordererUserCryptoDir========")
 	org := n.Organization(o.Organization)
+
 	Expect(org).NotTo(BeNil())
 
 	return n.userCryptoDir(org, "ordererOrganizations", user, cryptoMaterialType)
@@ -332,6 +349,7 @@ func (n *Network) ordererUserCryptoDir(o *Orderer, user, cryptoMaterialType stri
 // userCryptoDir returns the path to the folder with crypto materials for either peers or orderer organizations
 // specific user
 func (n *Network) userCryptoDir(org *Organization, nodeOrganizationType, user, cryptoMaterialType string) string {
+	fmt.Println("=====Network==userCryptoDir========")
 	return filepath.Join(
 		n.RootDir,
 		"crypto",
@@ -346,24 +364,28 @@ func (n *Network) userCryptoDir(org *Organization, nodeOrganizationType, user, c
 // PeerUserMSPDir returns the path to the MSP directory containing the
 // certificates and keys for the specified user of the peer.
 func (n *Network) PeerUserMSPDir(p *Peer, user string) string {
+	fmt.Println("=====Network==PeerUserMSPDir========")
 	return n.peerUserCryptoDir(p, user, "msp")
 }
 
 // OrdererUserMSPDir returns the path to the MSP directory containing the
 // certificates and keys for the specified user of the peer.
 func (n *Network) OrdererUserMSPDir(o *Orderer, user string) string {
+	fmt.Println("=====Network==OrdererUserMSPDir========")
 	return n.ordererUserCryptoDir(o, user, "msp")
 }
 
 // PeerUserTLSDir returns the path to the TLS directory containing the
 // certificates and keys for the specified user of the peer.
 func (n *Network) PeerUserTLSDir(p *Peer, user string) string {
+	fmt.Println("=====Network==PeerUserTLSDir========")
 	return n.peerUserCryptoDir(p, user, "tls")
 }
 
 // PeerUserCert returns the path to the certificate for the specified user in
 // the peer organization.
 func (n *Network) PeerUserCert(p *Peer, user string) string {
+	fmt.Println("=====Network==PeerUserCert========")
 	org := n.Organization(p.Organization)
 	Expect(org).NotTo(BeNil())
 
@@ -377,6 +399,7 @@ func (n *Network) PeerUserCert(p *Peer, user string) string {
 // PeerUserKey returns the path to the private key for the specified user in
 // the peer organization.
 func (n *Network) PeerUserKey(p *Peer, user string) string {
+	fmt.Println("=====Network==PeerUserKey========")
 	org := n.Organization(p.Organization)
 	Expect(org).NotTo(BeNil())
 
@@ -395,6 +418,7 @@ func (n *Network) PeerUserKey(p *Peer, user string) string {
 
 // peerLocalCryptoDir returns the path to the local crypto directory for the peer.
 func (n *Network) peerLocalCryptoDir(p *Peer, cryptoType string) string {
+	fmt.Println("=====Network==peerLocalCryptoDir========")
 	org := n.Organization(p.Organization)
 	Expect(org).NotTo(BeNil())
 
@@ -411,16 +435,19 @@ func (n *Network) peerLocalCryptoDir(p *Peer, cryptoType string) string {
 
 // PeerLocalMSPDir returns the path to the local MSP directory for the peer.
 func (n *Network) PeerLocalMSPDir(p *Peer) string {
+	fmt.Println("=====Network==PeerLocalMSPDir========")
 	return n.peerLocalCryptoDir(p, "msp")
 }
 
 // PeerLocalTLSDir returns the path to the local TLS directory for the peer.
 func (n *Network) PeerLocalTLSDir(p *Peer) string {
+	fmt.Println("=====Network==PeerLocalTLSDir========")
 	return n.peerLocalCryptoDir(p, "tls")
 }
 
 // PeerCert returns the path to the peer's certificate.
 func (n *Network) PeerCert(p *Peer) string {
+	fmt.Println("=====Network==PeerCert========")
 	org := n.Organization(p.Organization)
 	Expect(org).NotTo(BeNil())
 
@@ -433,6 +460,7 @@ func (n *Network) PeerCert(p *Peer) string {
 
 // PeerOrgMSPDir returns the path to the MSP directory of the Peer organization.
 func (n *Network) PeerOrgMSPDir(org *Organization) string {
+	fmt.Println("=====Network==PeerOrgMSPDir========")
 	return filepath.Join(
 		n.RootDir,
 		"crypto",
@@ -445,6 +473,7 @@ func (n *Network) PeerOrgMSPDir(org *Organization) string {
 // OrdererOrgMSPDir returns the path to the MSP directory of the Orderer
 // organization.
 func (n *Network) OrdererOrgMSPDir(o *Organization) string {
+	fmt.Println("=====Network==OrdererOrgMSPDir========")
 	return filepath.Join(
 		n.RootDir,
 		"crypto",
@@ -457,6 +486,7 @@ func (n *Network) OrdererOrgMSPDir(o *Organization) string {
 // OrdererLocalCryptoDir returns the path to the local crypto directory for the
 // Orderer.
 func (n *Network) OrdererLocalCryptoDir(o *Orderer, cryptoType string) string {
+	fmt.Println("=====Network==OrdererLocalCryptoDir========")
 	org := n.Organization(o.Organization)
 	Expect(org).NotTo(BeNil())
 
@@ -474,18 +504,21 @@ func (n *Network) OrdererLocalCryptoDir(o *Orderer, cryptoType string) string {
 // OrdererLocalMSPDir returns the path to the local MSP directory for the
 // Orderer.
 func (n *Network) OrdererLocalMSPDir(o *Orderer) string {
+	fmt.Println("=====Network==OrdererLocalMSPDir========")
 	return n.OrdererLocalCryptoDir(o, "msp")
 }
 
 // OrdererLocalTLSDir returns the path to the local TLS directory for the
 // Orderer.
 func (n *Network) OrdererLocalTLSDir(o *Orderer) string {
+	fmt.Println("=====Network==OrdererLocalTLSDir========")
 	return n.OrdererLocalCryptoDir(o, "tls")
 }
 
 // ProfileForChannel gets the configtxgen profile name associated with the
 // specified channel.
 func (n *Network) ProfileForChannel(channelName string) string {
+	fmt.Println("=====Network==ProfileForChannel========")
 	for _, ch := range n.Channels {
 		if ch.Name == channelName {
 			return ch.Profile
@@ -497,6 +530,7 @@ func (n *Network) ProfileForChannel(channelName string) string {
 // CACertsBundlePath returns the path to the bundle of CA certificates for the
 // network. This bundle is used when connecting to peers.
 func (n *Network) CACertsBundlePath() string {
+	fmt.Println("=====Network==CACertsBundlePath========")
 	return filepath.Join(
 		n.RootDir,
 		"crypto",
@@ -521,6 +555,7 @@ func (n *Network) CACertsBundlePath() string {
 // ${rootDir}/peers/peer1.org2/core.yaml
 //
 func (n *Network) GenerateConfigTree() {
+	fmt.Println("=====Network==GenerateConfigTree========")
 	n.GenerateCryptoConfig()
 	n.GenerateConfigTxConfig()
 	for _, o := range n.Orderers {
@@ -547,6 +582,7 @@ func (n *Network) GenerateConfigTree() {
 // the Network using the channel's Profile attribute. The transactions are
 // written to ${rootDir}/${Channel.Name}_tx.pb.
 func (n *Network) Bootstrap() {
+	fmt.Println("=====Network==Bootstrap========")
 	_, err := n.DockerClient.CreateNetwork(
 		docker.CreateNetworkOptions{
 			Name:   n.NetworkID,
@@ -588,6 +624,7 @@ func (n *Network) Bootstrap() {
 // concatenateTLSCACertificates concatenates all TLS CA certificates into a
 // single file to be used by peer CLI.
 func (n *Network) concatenateTLSCACertificates() {
+	fmt.Println("=====Network==concatenateTLSCACertificates========")
 	bundle := &bytes.Buffer{}
 	for _, tlsCertPath := range n.listTLSCACertificates() {
 		certBytes, err := ioutil.ReadFile(tlsCertPath)
@@ -601,6 +638,7 @@ func (n *Network) concatenateTLSCACertificates() {
 // listTLSCACertificates returns the paths of all TLS CA certificates in the
 // network, across all organizations.
 func (n *Network) listTLSCACertificates() []string {
+	fmt.Println("=====Network==listTLSCACertificates========")
 	fileName2Path := make(map[string]string)
 	filepath.Walk(filepath.Join(n.RootDir, "crypto"), func(path string, info os.FileInfo, err error) error {
 		// File starts with "tlsca" and has "-cert.pem" in it
@@ -620,6 +658,7 @@ func (n *Network) listTLSCACertificates() []string {
 // Cleanup attempts to cleanup docker related artifacts that may
 // have been created by the network.
 func (n *Network) Cleanup() {
+	fmt.Println("=====Network==Cleanup========")
 	nw, err := n.DockerClient.NetworkInfo(n.NetworkID)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -657,6 +696,7 @@ func (n *Network) Cleanup() {
 //
 // The network must be running before this is called.
 func (n *Network) CreateAndJoinChannels(o *Orderer) {
+	fmt.Println("=====Network==CreateAndJoinChannels========")
 	for _, c := range n.Channels {
 		n.CreateAndJoinChannel(o, c.Name)
 	}
@@ -667,6 +707,7 @@ func (n *Network) CreateAndJoinChannels(o *Orderer) {
 //
 // The network must be running before this is called.
 func (n *Network) CreateAndJoinChannel(o *Orderer, channelName string) {
+	fmt.Println("=====Network==CreateAndJoinChannel========")
 	peers := n.PeersWithChannel(channelName)
 	if len(peers) == 0 {
 		return
@@ -680,6 +721,7 @@ func (n *Network) CreateAndJoinChannel(o *Orderer, channelName string) {
 // creates an anchor peer update transaction for each organization, and submits
 // the update transactions to the orderer.
 func (n *Network) UpdateChannelAnchors(o *Orderer, channelName string) {
+	fmt.Println("=====Network==UpdateChannelAnchors========")
 	tempFile, err := ioutil.TempFile("", "update-anchors")
 	Expect(err).NotTo(HaveOccurred())
 	tempFile.Close()
@@ -718,6 +760,7 @@ func (n *Network) UpdateChannelAnchors(o *Orderer, channelName string) {
 //
 // The orderer must be running when this is called.
 func (n *Network) CreateChannel(channelName string, o *Orderer, p *Peer) {
+	fmt.Println("=====Network==CreateChannel========")
 	createChannel := func() int {
 		sess, err := n.PeerAdminSession(p, commands.ChannelCreate{
 			ChannelID:   channelName,
@@ -737,6 +780,7 @@ func (n *Network) CreateChannel(channelName string, o *Orderer, p *Peer) {
 //
 // The orderer and listed peers must be running before this is called.
 func (n *Network) JoinChannel(name string, o *Orderer, peers ...*Peer) {
+	fmt.Println("=====Network==JoinChannel========")
 	if len(peers) == 0 {
 		return
 	}
@@ -766,18 +810,21 @@ func (n *Network) JoinChannel(name string, o *Orderer, peers ...*Peer) {
 
 // Cryptogen starts a gexec.Session for the provided cryptogen command.
 func (n *Network) Cryptogen(command Command) (*gexec.Session, error) {
+	fmt.Println("=====Cryptogen========")
 	cmd := NewCommand(n.Components.Cryptogen(), command)
 	return n.StartSession(cmd, command.SessionName())
 }
 
 // ConfigTxGen starts a gexec.Session for the provided configtxgen command.
 func (n *Network) ConfigTxGen(command Command) (*gexec.Session, error) {
+	fmt.Println("==Network===ConfigTxGen========")
 	cmd := NewCommand(n.Components.ConfigTxGen(), command)
 	return n.StartSession(cmd, command.SessionName())
 }
 
 // Discover starts a gexec.Session for the provided discover command.
 func (n *Network) Discover(command Command) (*gexec.Session, error) {
+	fmt.Println("==Network===Discover========")
 	cmd := NewCommand(n.Components.Discover(), command)
 	cmd.Args = append(cmd.Args, "--peerTLSCA", n.CACertsBundlePath())
 	return n.StartSession(cmd, command.SessionName())
@@ -785,7 +832,9 @@ func (n *Network) Discover(command Command) (*gexec.Session, error) {
 
 // ZooKeeperRunner returns a runner for a ZooKeeper instance.
 func (n *Network) ZooKeeperRunner(idx int) *runner.ZooKeeper {
+	fmt.Println("==Network===ZooKeeperRunner========")
 	colorCode := n.nextColor()
+
 	name := fmt.Sprintf("zookeeper-%d-%s", idx, n.NetworkID)
 
 	return &runner.ZooKeeper{
@@ -805,6 +854,7 @@ func (n *Network) ZooKeeperRunner(idx int) *runner.ZooKeeper {
 }
 
 func (n *Network) minBrokersInSync() int {
+	fmt.Println("==Network===minBrokersInSync========")
 	if n.Consensus.Brokers < 2 {
 		return n.Consensus.Brokers
 	}
@@ -812,6 +862,7 @@ func (n *Network) minBrokersInSync() int {
 }
 
 func (n *Network) defaultBrokerReplication() int {
+	fmt.Println("==Network===defaultBrokerReplication========")
 	if n.Consensus.Brokers < 3 {
 		return n.Consensus.Brokers
 	}
@@ -820,6 +871,7 @@ func (n *Network) defaultBrokerReplication() int {
 
 // BrokerRunner returns a runner for an kafka broker instance.
 func (n *Network) BrokerRunner(id int, zookeepers []string) *runner.Kafka {
+	fmt.Println("==Network===BrokerRunner========")
 	colorCode := n.nextColor()
 	name := fmt.Sprintf("kafka-%d-%s", id, n.NetworkID)
 
@@ -847,6 +899,7 @@ func (n *Network) BrokerRunner(id int, zookeepers []string) *runner.Kafka {
 // BrokerGroupRunner returns a runner that manages the processes that make up
 // the kafka broker network for fabric.
 func (n *Network) BrokerGroupRunner() ifrit.Runner {
+	fmt.Println("==Network===BrokerGroupRunner========")
 	members := grouper.Members{}
 	zookeepers := []string{}
 
@@ -867,6 +920,7 @@ func (n *Network) BrokerGroupRunner() ifrit.Runner {
 // OrdererRunner returns an ifrit.Runner for the specified orderer. The runner
 // can be used to start and manage an orderer process.
 func (n *Network) OrdererRunner(o *Orderer) *ginkgomon.Runner {
+	fmt.Println("==Network===OrdererRunner========")
 	cmd := exec.Command(n.Components.Orderer())
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, fmt.Sprintf("FABRIC_CFG_PATH=%s", n.OrdererDir(o)))
@@ -890,6 +944,7 @@ func (n *Network) OrdererRunner(o *Orderer) *ginkgomon.Runner {
 // OrdererGroupRunner returns a runner that can be used to start and stop all
 // orderers in a network.
 func (n *Network) OrdererGroupRunner() ifrit.Runner {
+	fmt.Println("==Network===OrdererGroupRunner========")
 	members := grouper.Members{}
 	for _, o := range n.Orderers {
 		members = append(members, grouper.Member{Name: o.ID(), Runner: n.OrdererRunner(o)})
@@ -900,6 +955,7 @@ func (n *Network) OrdererGroupRunner() ifrit.Runner {
 // PeerRunner returns an ifrit.Runner for the specified peer. The runner can be
 // used to start and manage a peer process.
 func (n *Network) PeerRunner(p *Peer) *ginkgomon.Runner {
+	fmt.Println("==Network===PeerRunner========")
 	cmd := n.peerCommand(
 		commands.NodeStart{PeerID: p.ID()},
 		fmt.Sprintf("FABRIC_CFG_PATH=%s", n.PeerDir(p)),
@@ -917,6 +973,7 @@ func (n *Network) PeerRunner(p *Peer) *ginkgomon.Runner {
 // PeerGroupRunner returns a runner that can be used to start and stop all
 // peers in a network.
 func (n *Network) PeerGroupRunner() ifrit.Runner {
+	fmt.Println("==Network===PeerGroupRunner========")
 	members := grouper.Members{}
 	for _, p := range n.Peers {
 		members = append(members, grouper.Member{Name: p.ID(), Runner: n.PeerRunner(p)})
@@ -927,6 +984,7 @@ func (n *Network) PeerGroupRunner() ifrit.Runner {
 // NetworkGroupRunner returns a runner that can be used to start and stop an
 // entire fabric network.
 func (n *Network) NetworkGroupRunner() ifrit.Runner {
+	fmt.Println("==Network===NetworkGroupRunner========")
 	members := grouper.Members{
 		{Name: "brokers", Runner: n.BrokerGroupRunner()},
 		{Name: "orderers", Runner: n.OrdererGroupRunner()},
@@ -936,6 +994,7 @@ func (n *Network) NetworkGroupRunner() ifrit.Runner {
 }
 
 func (n *Network) peerCommand(command Command, env ...string) *exec.Cmd {
+	fmt.Println("==Network===peerCommand========")
 	cmd := NewCommand(n.Components.Peer(), command)
 	cmd.Env = append(cmd.Env, env...)
 	if ConnectsToOrderer(command) {
@@ -957,6 +1016,7 @@ func (n *Network) peerCommand(command Command, env ...string) *exec.Cmd {
 }
 
 func flagCount(flag string, args []string) int {
+	fmt.Println("==flagCount========")
 	var c int
 	for _, arg := range args {
 		if arg == flag {
@@ -970,6 +1030,7 @@ func flagCount(flag string, args []string) int {
 // peer command. This is intended to be used by short running peer cli commands
 // that execute in the context of a peer configuration.
 func (n *Network) PeerAdminSession(p *Peer, command Command) (*gexec.Session, error) {
+	fmt.Println("=Network=PeerAdminSession========")
 	return n.PeerUserSession(p, "Admin", command)
 }
 
@@ -977,6 +1038,7 @@ func (n *Network) PeerAdminSession(p *Peer, command Command) (*gexec.Session, er
 // command. This is intended to be used by short running peer cli commands that
 // execute in the context of a peer configuration.
 func (n *Network) PeerUserSession(p *Peer, user string, command Command) (*gexec.Session, error) {
+	fmt.Println("=Network=PeerUserSession========")
 	cmd := n.peerCommand(
 		command,
 		fmt.Sprintf("FABRIC_CFG_PATH=%s", n.PeerDir(p)),
@@ -988,6 +1050,7 @@ func (n *Network) PeerUserSession(p *Peer, user string, command Command) (*gexec
 // OrdererAdminSession execute a gexec.Session as an orderer node admin user. This is used primarily
 // to generate orderer configuration updates
 func (n *Network) OrdererAdminSession(o *Orderer, p *Peer, command Command) (*gexec.Session, error) {
+	fmt.Println("=Network=OrdererAdminSession========")
 	cmd := n.peerCommand(
 		command,
 		"CORE_PEER_LOCALMSPID=OrdererMSP",
@@ -999,6 +1062,7 @@ func (n *Network) OrdererAdminSession(o *Orderer, p *Peer, command Command) (*ge
 
 // Peer returns the information about the named Peer in the named organization.
 func (n *Network) Peer(orgName, peerName string) *Peer {
+	fmt.Println("=Network=Peer========")
 	for _, p := range n.PeersInOrg(orgName) {
 		if p.Name == peerName {
 			return p
@@ -1009,6 +1073,7 @@ func (n *Network) Peer(orgName, peerName string) *Peer {
 
 // the function creates a new DiscoveredPeer from the peer and chaincodes passed as arguments
 func (n *Network) DiscoveredPeer(p *Peer, chaincodes ...string) DiscoveredPeer {
+	fmt.Println("=Network=DiscoveredPeer========")
 	peerCert, err := ioutil.ReadFile(n.PeerCert(p))
 	Expect(err).NotTo(HaveOccurred())
 
@@ -1022,6 +1087,7 @@ func (n *Network) DiscoveredPeer(p *Peer, chaincodes ...string) DiscoveredPeer {
 
 // Orderer returns the information about the named Orderer.
 func (n *Network) Orderer(name string) *Orderer {
+	fmt.Println("=Network=Orderer========")
 	for _, o := range n.Orderers {
 		if o.Name == name {
 			return o
@@ -1032,6 +1098,7 @@ func (n *Network) Orderer(name string) *Orderer {
 
 // Organization returns the information about the named Organization.
 func (n *Network) Organization(orgName string) *Organization {
+	fmt.Println("=Network=Organization========")
 	for _, org := range n.Organizations {
 		if org.Name == orgName {
 			return org
@@ -1042,6 +1109,7 @@ func (n *Network) Organization(orgName string) *Organization {
 
 // Consortium returns information about the named Consortium.
 func (n *Network) Consortium(name string) *Consortium {
+	fmt.Println("=Network=Consortium========")
 	for _, c := range n.Consortiums {
 		if c.Name == name {
 			return c
@@ -1052,6 +1120,7 @@ func (n *Network) Consortium(name string) *Consortium {
 
 // PeerOrgs returns all Organizations associated with at least one Peer.
 func (n *Network) PeerOrgs() []*Organization {
+	fmt.Println("=Network=PeerOrgs========")
 	orgsByName := map[string]*Organization{}
 	for _, p := range n.Peers {
 		orgsByName[p.Organization] = n.Organization(p.Organization)
@@ -1067,6 +1136,7 @@ func (n *Network) PeerOrgs() []*Organization {
 // PeersWithChannel returns all Peer instances that have joined the named
 // channel.
 func (n *Network) PeersWithChannel(chanName string) []*Peer {
+	fmt.Println("=Network=PeersWithChannel========")
 	peers := []*Peer{}
 	for _, p := range n.Peers {
 		for _, c := range p.Channels {
@@ -1081,6 +1151,7 @@ func (n *Network) PeersWithChannel(chanName string) []*Peer {
 // AnchorsForChannel returns all Peer instances that are anchors for the
 // named channel.
 func (n *Network) AnchorsForChannel(chanName string) []*Peer {
+	fmt.Println("=Network=AnchorsForChannel========")
 	anchors := []*Peer{}
 	for _, p := range n.Peers {
 		for _, pc := range p.Channels {
@@ -1095,6 +1166,7 @@ func (n *Network) AnchorsForChannel(chanName string) []*Peer {
 // AnchorsInOrg returns all peers that are an anchor for at least one channel
 // in the named organization.
 func (n *Network) AnchorsInOrg(orgName string) []*Peer {
+	fmt.Println("=Network=AnchorsInOrg========")
 	anchors := []*Peer{}
 	for _, p := range n.PeersInOrg(orgName) {
 		if p.Anchor() {
@@ -1113,6 +1185,7 @@ func (n *Network) AnchorsInOrg(orgName string) []*Peer {
 
 // OrderersInOrg returns all Orderer instances owned by the named organaiztion.
 func (n *Network) OrderersInOrg(orgName string) []*Orderer {
+	fmt.Println("=Network=OrderersInOrg========")
 	orderers := []*Orderer{}
 	for _, o := range n.Orderers {
 		if o.Organization == orgName {
@@ -1125,6 +1198,7 @@ func (n *Network) OrderersInOrg(orgName string) []*Orderer {
 // OrgsForOrderers returns all Organization instances that own at least one of
 // the named orderers.
 func (n *Network) OrgsForOrderers(ordererNames []string) []*Organization {
+	fmt.Println("=Network=OrgsForOrderers========")
 	orgsByName := map[string]*Organization{}
 	for _, name := range ordererNames {
 		orgName := n.Orderer(name).Organization
@@ -1140,6 +1214,7 @@ func (n *Network) OrgsForOrderers(ordererNames []string) []*Organization {
 // OrdererOrgs returns all Organization instances that own at least one
 // orderer.
 func (n *Network) OrdererOrgs() []*Organization {
+	fmt.Println("=Network=OrdererOrgs========")
 	orgsByName := map[string]*Organization{}
 	for _, o := range n.Orderers {
 		orgsByName[o.Organization] = n.Organization(o.Organization)
@@ -1155,6 +1230,7 @@ func (n *Network) OrdererOrgs() []*Organization {
 // PeersInOrg returns all Peer instances that are owned by the named
 // organization.
 func (n *Network) PeersInOrg(orgName string) []*Peer {
+	fmt.Println("=Network=PeersInOrg========")
 	peers := []*Peer{}
 	for _, o := range n.Peers {
 		if o.Organization == orgName {
@@ -1166,6 +1242,7 @@ func (n *Network) PeersInOrg(orgName string) []*Peer {
 
 // ReservePort allocates the next available port.
 func (n *Network) ReservePort() uint16 {
+	fmt.Println("=Network=ReservePort========")
 	n.StartPort++
 	return n.StartPort - 1
 }
@@ -1184,6 +1261,7 @@ const (
 
 // PeerPortNames returns the list of ports that need to be reserved for a Peer.
 func PeerPortNames() []PortName {
+	fmt.Println("=Network=PeerPortNames========")
 	return []PortName{ListenPort, ChaincodePort, EventsPort, ProfilePort, OperationsPort}
 }
 
@@ -1201,6 +1279,7 @@ func BrokerPortNames() []PortName {
 
 // BrokerAddresses returns the list of broker addresses for the network.
 func (n *Network) BrokerAddresses(portName PortName) []string {
+	fmt.Println("=Network=BrokerAddresses========")
 	addresses := []string{}
 	for _, ports := range n.PortsByBrokerID {
 		addresses = append(addresses, fmt.Sprintf("127.0.0.1:%d", ports[portName]))
@@ -1215,11 +1294,13 @@ func (n *Network) BrokerAddresses(portName PortName) []string {
 // This assumes that the orderer is listening on 0.0.0.0 or 127.0.0.1 and is
 // available on the loopback address.
 func (n *Network) OrdererAddress(o *Orderer, portName PortName) string {
+	fmt.Println("=Network=OrdererAddress========")
 	return fmt.Sprintf("127.0.0.1:%d", n.OrdererPort(o, portName))
 }
 
 // OrdererPort returns the named port reserved for the Orderer instance.
 func (n *Network) OrdererPort(o *Orderer, portName PortName) uint16 {
+	fmt.Println("=Network=OrdererPort========")
 	ordererPorts := n.PortsByOrdererID[o.ID()]
 	Expect(ordererPorts).NotTo(BeNil())
 	return ordererPorts[portName]
@@ -1232,17 +1313,20 @@ func (n *Network) OrdererPort(o *Orderer, portName PortName) uint16 {
 // This assumes that the peer is listening on 0.0.0.0 and is available on the
 // loopback address.
 func (n *Network) PeerAddress(p *Peer, portName PortName) string {
+	fmt.Println("=Network=PeerAddress========")
 	return fmt.Sprintf("127.0.0.1:%d", n.PeerPort(p, portName))
 }
 
 // PeerPort returns the named port reserved for the Peer instance.
 func (n *Network) PeerPort(p *Peer, portName PortName) uint16 {
+	fmt.Println("=Network=PeerPort========")
 	peerPorts := n.PortsByPeerID[p.ID()]
 	Expect(peerPorts).NotTo(BeNil())
 	return peerPorts[portName]
 }
 
 func (n *Network) nextColor() string {
+	fmt.Println("=Network=nextColor========")
 	color := n.colorIndex%14 + 31
 	if color > 37 {
 		color = color + 90 - 37
@@ -1255,6 +1339,7 @@ func (n *Network) nextColor() string {
 // StartSession executes a command session. This should be used to launch
 // command line tools that are expected to run to completion.
 func (n *Network) StartSession(cmd *exec.Cmd, name string) (*gexec.Session, error) {
+	fmt.Println("=Network=StartSession========")
 	ansiColorCode := n.nextColor()
 	return gexec.Start(
 		cmd,
@@ -1270,6 +1355,7 @@ func (n *Network) StartSession(cmd *exec.Cmd, name string) (*gexec.Session, erro
 }
 
 func (n *Network) GenerateCryptoConfig() {
+	fmt.Println("=Network=GenerateCryptoConfig========")
 	crypto, err := os.Create(n.CryptoConfigPath())
 	Expect(err).NotTo(HaveOccurred())
 	defer crypto.Close()
@@ -1283,6 +1369,7 @@ func (n *Network) GenerateCryptoConfig() {
 }
 
 func (n *Network) GenerateConfigTxConfig() {
+	fmt.Println("=Network=GenerateConfigTxConfig========")
 	config, err := os.Create(n.ConfigTxConfigPath())
 	Expect(err).NotTo(HaveOccurred())
 	defer config.Close()
@@ -1296,6 +1383,7 @@ func (n *Network) GenerateConfigTxConfig() {
 }
 
 func (n *Network) GenerateOrdererConfig(o *Orderer) {
+	fmt.Println("=Network=GenerateOrdererConfig========")
 	err := os.MkdirAll(n.OrdererDir(o), 0755)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -1316,6 +1404,7 @@ func (n *Network) GenerateOrdererConfig(o *Orderer) {
 }
 
 func (n *Network) GenerateCoreConfig(p *Peer) {
+	fmt.Println("=Network=GenerateCoreConfig========")
 	err := os.MkdirAll(n.PeerDir(p), 0755)
 	Expect(err).NotTo(HaveOccurred())
 

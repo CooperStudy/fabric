@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package nwo
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -24,6 +25,7 @@ import (
 // GetConfigBlock retrieves the current config block for a channel and
 // unmarshals it.
 func GetConfigBlock(n *Network, peer *Peer, orderer *Orderer, channel string) *common.Config {
+	fmt.Println("=====GetConfigBlock==========")
 	tempDir, err := ioutil.TempDir("", "getConfigBlock")
 	Expect(err).NotTo(HaveOccurred())
 	defer os.RemoveAll(tempDir)
@@ -63,6 +65,7 @@ func GetConfigBlock(n *Network, peer *Peer, orderer *Orderer, channel string) *c
 // UpdateConfig computes, signs, and submits a configuration update and waits
 // for the update to complete.
 func UpdateConfig(n *Network, orderer *Orderer, channel string, current, updated *common.Config, submitter *Peer, additionalSigners ...*Peer) {
+	fmt.Println("=====UpdateConfig==========")
 	tempDir, err := ioutil.TempDir("", "updateConfig")
 	Expect(err).NotTo(HaveOccurred())
 	defer os.RemoveAll(tempDir)
@@ -113,6 +116,7 @@ func UpdateConfig(n *Network, orderer *Orderer, channel string, current, updated
 // UpdateOrdererConfig computes, signs, and submits a configuration update which requires orderers signature and waits
 // for the update to complete.
 func UpdateOrdererConfig(n *Network, orderer *Orderer, channel string, current, updated *common.Config, submitter *Peer, additionalSigners ...*Orderer) {
+	fmt.Println("=====UpdateOrdererConfig==========")
 	tempDir, err := ioutil.TempDir("", "updateConfig")
 	Expect(err).NotTo(HaveOccurred())
 	defer os.RemoveAll(tempDir)
@@ -164,6 +168,7 @@ func UpdateOrdererConfig(n *Network, orderer *Orderer, channel string, current, 
 // current config block. This can be used to detect whena configuration change
 // has completed.
 func CurrentConfigBlockNumber(n *Network, peer *Peer, orderer *Orderer, channel string) uint64 {
+	fmt.Println("=====CurrentConfigBlockNumber==========")
 	tempDir, err := ioutil.TempDir("", "currentConfigBlock")
 	Expect(err).NotTo(HaveOccurred())
 	defer os.RemoveAll(tempDir)
@@ -187,6 +192,7 @@ func CurrentConfigBlockNumber(n *Network, peer *Peer, orderer *Orderer, channel 
 
 // UnmarshalBlockFromFile unmarshals a proto encoded block from a file.
 func UnmarshalBlockFromFile(blockFile string) *common.Block {
+	fmt.Println("=====UnmarshalBlockFromFile==========")
 	blockBytes, err := ioutil.ReadFile(blockFile)
 	Expect(err).NotTo(HaveOccurred())
 

@@ -6,6 +6,8 @@ SPDX-License-Identifier: Apache-2.0
 
 package nwo
 
+import "fmt"
+
 func BasicSolo() *Config {
 	return &Config{
 		Organizations: []*Organization{{
@@ -87,6 +89,7 @@ func BasicSolo() *Config {
 }
 
 func BasicKafka() *Config {
+	fmt.Println("=BasicKafka========")
 	config := BasicSolo()
 	config.Consensus.Type = "kafka"
 	config.Consensus.ZooKeepers = 1
@@ -95,6 +98,7 @@ func BasicKafka() *Config {
 }
 
 func BasicEtcdRaft() *Config {
+	fmt.Println("=BasicEtcdRaft========")
 	config := BasicSolo()
 	config.Consensus.Type = "etcdraft"
 	config.Profiles = []*Profile{{
@@ -110,6 +114,7 @@ func BasicEtcdRaft() *Config {
 }
 
 func MultiChannelEtcdRaft() *Config {
+	fmt.Println("=MultiChannelEtcdRaft========")
 	config := BasicSolo()
 	config.Consensus.Type = "etcdraft"
 	config.Profiles = []*Profile{{
@@ -136,6 +141,7 @@ func MultiChannelEtcdRaft() *Config {
 }
 
 func MultiNodeEtcdRaft() *Config {
+	fmt.Println("=MultiNodeEtcdRaft========")
 	config := BasicEtcdRaft()
 	config.Orderers = []*Orderer{
 		{Name: "orderer1", Organization: "OrdererOrg"},

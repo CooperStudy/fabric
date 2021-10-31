@@ -6,6 +6,8 @@ SPDX-License-Identifier: Apache-2.0
 
 package commands
 
+import "fmt"
+
 type OutputBlock struct {
 	ChannelID   string
 	Profile     string
@@ -14,10 +16,12 @@ type OutputBlock struct {
 }
 
 func (o OutputBlock) SessionName() string {
+	fmt.Println("=============OutputBlock=====SessionName==============")
 	return "configtxgen-output-block"
 }
 
 func (o OutputBlock) Args() []string {
+	fmt.Println("=============OutputBlock=====Args==============")
 	return []string{
 		"-channelID", o.ChannelID,
 		"-profile", o.Profile,
@@ -34,10 +38,12 @@ type CreateChannelTx struct {
 }
 
 func (c CreateChannelTx) SessionName() string {
+	fmt.Println("=============CreateChannelTx=====SessionName==============")
 	return "configtxgen-create-channel-tx"
 }
 
 func (c CreateChannelTx) Args() []string {
+	fmt.Println("=============CreateChannelTx=====Args==============")
 	return []string{
 		"-channelID", c.ChannelID,
 		"-profile", c.Profile,
@@ -55,10 +61,12 @@ type OutputAnchorPeersUpdate struct {
 }
 
 func (o OutputAnchorPeersUpdate) SessionName() string {
+	fmt.Println("=============OutputAnchorPeersUpdate=====SessionName==============")
 	return "configtxgen-output-anchor-peers-update"
 }
 
 func (o OutputAnchorPeersUpdate) Args() []string {
+	fmt.Println("=============OutputAnchorPeersUpdate=====Args==============")
 	return []string{
 		"-channelID", o.ChannelID,
 		"-profile", o.Profile,

@@ -15,6 +15,7 @@ import (
 )
 
 func main() {
+	fmt.Println("===============main============")
 	err := shim.Start(&keylevelep.EndorsementCC{})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Exiting SBE chaincode: %s", err)
