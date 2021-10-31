@@ -51,6 +51,7 @@ type ZooKeeper struct {
 }
 
 func (z *ZooKeeper) Run(sigCh <-chan os.Signal, ready chan<- struct{}) error {
+	fmt.Println("===ZooKeeper==Run==")
 	if z.Image == "" {
 		z.Image = ZooKeeperDefaultImage
 	}
@@ -180,6 +181,7 @@ func (z *ZooKeeper) Run(sigCh <-chan os.Signal, ready chan<- struct{}) error {
 }
 
 func (z *ZooKeeper) wait() <-chan error {
+	fmt.Println("===ZooKeeper==wait==")
 	exitCh := make(chan error)
 	go func() {
 		exitCode, err := z.Client.WaitContainer(z.containerID)
@@ -193,6 +195,7 @@ func (z *ZooKeeper) wait() <-chan error {
 }
 
 func (z *ZooKeeper) streamLogs(ctx context.Context) error {
+	fmt.Println("===ZooKeeper==streamLogs==")
 	if z.ErrorStream == nil && z.OutputStream == nil {
 		return nil
 	}
@@ -210,14 +213,17 @@ func (z *ZooKeeper) streamLogs(ctx context.Context) error {
 }
 
 func (z *ZooKeeper) ContainerID() string {
+	fmt.Println("===ZooKeeper==ContainerID==")
 	return z.containerID
 }
 
 func (z *ZooKeeper) ContainerAddress() string {
+	fmt.Println("===ZooKeeper==ContainerAddress==")
 	return z.containerAddress
 }
 
 func (z *ZooKeeper) Start() error {
+	fmt.Println("===ZooKeeper==Start==")
 	p := ifrit.Invoke(z)
 
 	select {
@@ -229,6 +235,7 @@ func (z *ZooKeeper) Start() error {
 }
 
 func (z *ZooKeeper) Stop() error {
+	fmt.Println("===ZooKeeper==Stop==")
 	z.mutex.Lock()
 	if z.stopped {
 		z.mutex.Unlock()
