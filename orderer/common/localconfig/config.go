@@ -274,6 +274,7 @@ var Defaults = TopLevel{
 // Load parses the orderer YAML file and environment, producing
 // a struct suitable for config use, returning error on failure.
 func Load() (*TopLevel, error) {
+	fmt.Println("==Load==")
 	config := viper.New()
 	coreconfig.InitViper(config, "orderer")
 	config.SetEnvPrefix(Prefix)
@@ -295,6 +296,7 @@ func Load() (*TopLevel, error) {
 }
 
 func (c *TopLevel) completeInitialization(configDir string) {
+	fmt.Println("==TopLevel==completeInitialization==")
 	defer func() {
 		// Translate any paths for cluster TLS configuration if applicable
 		if c.General.Cluster.ClientPrivateKey != "" {
@@ -418,6 +420,7 @@ func (c *TopLevel) completeInitialization(configDir string) {
 }
 
 func translateCAs(configDir string, certificateAuthorities []string) []string {
+	fmt.Println("==translateCAs==")
 	var results []string
 	for _, ca := range certificateAuthorities {
 		result := coreconfig.TranslatePath(configDir, ca)

@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package multichannel
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/golang/protobuf/proto"
@@ -41,7 +42,9 @@ type BlockWriter struct {
 }
 
 func newBlockWriter(lastBlock *cb.Block, r *Registrar, support blockWriterSupport) *BlockWriter {
+	fmt.Println("==newBlockWriter==")
 	bw := &BlockWriter{
+
 		support:       support,
 		lastConfigSeq: support.Sequence(),
 		lastBlock:     lastBlock,
@@ -64,6 +67,7 @@ func newBlockWriter(lastBlock *cb.Block, r *Registrar, support blockWriterSuppor
 
 // CreateNextBlock creates a new block with the next block number, and the given contents.
 func (bw *BlockWriter) CreateNextBlock(messages []*cb.Envelope) *cb.Block {
+	fmt.Println("==newBlockWriter=CreateNextBlock===")
 	previousBlockHash := bw.lastBlock.Header.Hash()
 
 	data := &cb.BlockData{
@@ -89,6 +93,7 @@ func (bw *BlockWriter) CreateNextBlock(messages []*cb.Envelope) *cb.Block {
 // This call will block until the new config has taken effect, then will return
 // while the block is written asynchronously to disk.
 func (bw *BlockWriter) WriteConfigBlock(block *cb.Block, encodedMetadataValue []byte) {
+	fmt.Println("==BlockWriter=WriteConfigBlock===")
 	ctx, err := utils.ExtractEnvelope(block, 0)
 	if err != nil {
 		logger.Panicf("Told to write a config block, but could not get configtx: %s", err)
@@ -146,6 +151,7 @@ func (bw *BlockWriter) WriteConfigBlock(block *cb.Block, encodedMetadataValue []
 // then release the lock.  This allows the calling thread to begin assembling the next block
 // before the commit phase is complete.
 func (bw *BlockWriter) WriteBlock(block *cb.Block, encodedMetadataValue []byte) {
+	fmt.Println("==BlockWriter=WriteBlock===")
 	bw.committingBlock.Lock()
 	bw.lastBlock = block
 
@@ -158,6 +164,7 @@ func (bw *BlockWriter) WriteBlock(block *cb.Block, encodedMetadataValue []byte) 
 // commitBlock should only ever be invoked with the bw.committingBlock held
 // this ensures that the encoded config sequence numbers stay in sync
 func (bw *BlockWriter) commitBlock(encodedMetadataValue []byte) {
+	fmt.Println("==BlockWriter=commitBlock===")
 	// Set the orderer-related metadata field
 	if encodedMetadataValue != nil {
 		bw.lastBlock.Metadata.Metadata[cb.BlockMetadataIndex_ORDERER] = utils.MarshalOrPanic(&cb.Metadata{Value: encodedMetadataValue})
@@ -173,6 +180,7 @@ func (bw *BlockWriter) commitBlock(encodedMetadataValue []byte) {
 }
 
 func (bw *BlockWriter) addBlockSignature(block *cb.Block) {
+	fmt.Println("==BlockWriter=addBlockSignature===")
 	blockSignature := &cb.MetadataSignature{
 		SignatureHeader: utils.MarshalOrPanic(utils.NewSignatureHeaderOrPanic(bw.support)),
 	}
@@ -192,6 +200,7 @@ func (bw *BlockWriter) addBlockSignature(block *cb.Block) {
 }
 
 func (bw *BlockWriter) addLastConfigSignature(block *cb.Block) {
+	fmt.Println("==BlockWriter=addLastConfigSignature===")
 	configSeq := bw.support.Sequence()
 	if configSeq > bw.lastConfigSeq {
 		logger.Debugf("[channel: %s] Detected lastConfigSeq transitioning from %d to %d, setting lastConfigBlockNum from %d to %d", bw.support.ChainID(), bw.lastConfigSeq, configSeq, bw.lastConfigBlockNum, block.Header.Number)

@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package multichannel
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric/common/channelconfig"
 	"github.com/hyperledger/fabric/common/crypto"
 	"github.com/hyperledger/fabric/common/ledger/blockledger"
@@ -36,6 +37,7 @@ func newChainSupport(
 	signer crypto.LocalSigner,
 	blockcutterMetrics *blockcutter.Metrics,
 ) *ChainSupport {
+	fmt.Println("==newChainSupport===")
 	// Read in the last block and metadata for the channel
 	lastBlock := blockledger.GetBlock(ledgerResources, ledgerResources.Height()-1)
 
@@ -83,6 +85,7 @@ func newChainSupport(
 // Block returns a block with the following number,
 // or nil if such a block doesn't exist.
 func (cs *ChainSupport) Block(number uint64) *cb.Block {
+	fmt.Println("==ChainSupport===Block==")
 	if cs.Height() <= number {
 		return nil
 	}
@@ -90,11 +93,13 @@ func (cs *ChainSupport) Block(number uint64) *cb.Block {
 }
 
 func (cs *ChainSupport) Reader() blockledger.Reader {
+	fmt.Println("==ChainSupport===Reader==")
 	return cs
 }
 
 // Signer returns the crypto.Localsigner for this channel.
 func (cs *ChainSupport) Signer() crypto.LocalSigner {
+	fmt.Println("==ChainSupport===Signer==")
 	return cs
 }
 

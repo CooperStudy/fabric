@@ -9,6 +9,7 @@ package cluster
 import (
 	"bytes"
 	"crypto/x509"
+	"fmt"
 	"sync"
 	"sync/atomic"
 
@@ -45,6 +46,7 @@ type ConnectionStore struct {
 
 // NewConnectionStore creates a new ConnectionStore with the given SecureDialer
 func NewConnectionStore(dialer SecureDialer) *ConnectionStore {
+	fmt.Println("=========NewConnectionStore=============")
 	connMapping := &ConnectionStore{
 		Connections: make(ConnByCertMap),
 		dialer:      dialer,
@@ -55,6 +57,7 @@ func NewConnectionStore(dialer SecureDialer) *ConnectionStore {
 // verifyHandshake returns a predicate that verifies that the remote node authenticates
 // itself with the given TLS certificate
 func (c *ConnectionStore) verifyHandshake(endpoint string, certificate []byte) RemoteVerifier {
+	fmt.Println("=========ConnectionStore===verifyHandshake==========")
 	return func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
 		if bytes.Equal(certificate, rawCerts[0]) {
 			return nil
@@ -65,6 +68,7 @@ func (c *ConnectionStore) verifyHandshake(endpoint string, certificate []byte) R
 
 // Disconnect closes the gRPC connection that is mapped to the given certificate
 func (c *ConnectionStore) Disconnect(expectedServerCert []byte) {
+	fmt.Println("=========ConnectionStore===Disconnect==========")
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -79,6 +83,7 @@ func (c *ConnectionStore) Disconnect(expectedServerCert []byte) {
 // Connection obtains a connection to the given endpoint and expects the given server certificate
 // to be presented by the remote node
 func (c *ConnectionStore) Connection(endpoint string, expectedServerCert []byte) (*grpc.ClientConn, error) {
+	fmt.Println("=========ConnectionStore===Connection==========")
 	c.lock.RLock()
 	conn, alreadyConnected := c.Connections.Lookup(expectedServerCert)
 	c.lock.RUnlock()
@@ -94,6 +99,7 @@ func (c *ConnectionStore) Connection(endpoint string, expectedServerCert []byte)
 // connect connects to the given endpoint and expects the given TLS server certificate
 // to be presented at the time of authentication
 func (c *ConnectionStore) connect(endpoint string, expectedServerCert []byte) (*grpc.ClientConn, error) {
+	fmt.Println("=========ConnectionStore===connect==========")
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	// Check again to see if some other goroutine has already connected while

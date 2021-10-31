@@ -32,6 +32,7 @@ type SystemChannel struct {
 
 // NewSystemChannel creates a new system channel message processor.
 func NewSystemChannel(support StandardChannelSupport, templator ChannelConfigTemplator, filters *RuleSet) *SystemChannel {
+	fmt.Println("==NewSystemChannel==")
 	logger.Debugf("Creating system channel msg processor for channel %s", support.ChainID())
 	return &SystemChannel{
 		StandardChannel: NewStandardChannel(support, filters),
@@ -41,6 +42,7 @@ func NewSystemChannel(support StandardChannelSupport, templator ChannelConfigTem
 
 // CreateSystemChannelFilters creates the set of filters for the ordering system chain.
 func CreateSystemChannelFilters(chainCreator ChainCreator, ledgerResources channelconfig.Resources) *RuleSet {
+	fmt.Println("==CreateSystemChannelFilters==")
 	ordererConfig, ok := ledgerResources.OrdererConfig()
 	if !ok {
 		logger.Panicf("Cannot create system channel filters without orderer config")
@@ -57,6 +59,7 @@ func CreateSystemChannelFilters(chainCreator ChainCreator, ledgerResources chann
 // ProcessNormalMsg handles normal messages, rejecting them if they are not bound for the system channel ID
 // with ErrChannelDoesNotExist.
 func (s *SystemChannel) ProcessNormalMsg(msg *cb.Envelope) (configSeq uint64, err error) {
+	fmt.Println("==SystemChannel==ProcessNormalMsg==")
 	channelID, err := utils.ChannelID(msg)
 	if err != nil {
 		return 0, err
@@ -77,6 +80,7 @@ func (s *SystemChannel) ProcessNormalMsg(msg *cb.Envelope) (configSeq uint64, er
 // or, for channel creation.  In the channel creation case, the CONFIG_UPDATE is wrapped into a resulting
 // ORDERER_TRANSACTION, and in the standard CONFIG_UPDATE case, a resulting CONFIG message
 func (s *SystemChannel) ProcessConfigUpdateMsg(envConfigUpdate *cb.Envelope) (config *cb.Envelope, configSeq uint64, err error) {
+	fmt.Println("==SystemChannel==ProcessConfigUpdateMsg==")
 	channelID, err := utils.ChannelID(envConfigUpdate)
 	if err != nil {
 		return nil, 0, err
@@ -133,7 +137,9 @@ func (s *SystemChannel) ProcessConfigUpdateMsg(envConfigUpdate *cb.Envelope) (co
 //   - `HeaderType_ORDERER_TRANSACTION`: it's a channel creation message, we unpack `ConfigUpdate` envelope
 //     and run `ProcessConfigUpdateMsg` on it
 func (s *SystemChannel) ProcessConfigMsg(env *cb.Envelope) (*cb.Envelope, uint64, error) {
+	fmt.Println("==SystemChannel==ProcessConfigMsg==")
 	payload, err := utils.UnmarshalPayload(env.Payload)
+
 	if err != nil {
 		return nil, 0, err
 	}
@@ -201,6 +207,7 @@ type DefaultTemplator struct {
 
 // NewDefaultTemplator returns an instance of the DefaultTemplator.
 func NewDefaultTemplator(support DefaultTemplatorSupport) *DefaultTemplator {
+	fmt.Println("==NewDefaultTemplator==")
 	return &DefaultTemplator{
 		support: support,
 	}
@@ -208,6 +215,7 @@ func NewDefaultTemplator(support DefaultTemplatorSupport) *DefaultTemplator {
 
 // NewChannelConfig creates a new template channel configuration based on the current config in the ordering system channel.
 func (dt *DefaultTemplator) NewChannelConfig(envConfigUpdate *cb.Envelope) (channelconfig.Resources, error) {
+	fmt.Println("==DefaultTemplator==NewChannelConfig==")
 	configUpdatePayload, err := utils.UnmarshalPayload(envConfigUpdate.Payload)
 	if err != nil {
 		return nil, fmt.Errorf("Failing initial channel config creation because of payload unmarshaling error: %s", err)
@@ -340,6 +348,7 @@ func (dt *DefaultTemplator) NewChannelConfig(envConfigUpdate *cb.Envelope) (chan
 
 // zeroVersions recursively iterates over a config tree, setting all versions to zero
 func zeroVersions(cg *cb.ConfigGroup) {
+	fmt.Println("==zeroVersions==")
 	cg.Version = 0
 
 	for _, value := range cg.Values {

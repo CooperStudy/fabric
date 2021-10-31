@@ -30,6 +30,7 @@ type SigFilter struct {
 // NewSigFilter creates a new signature filter, at every evaluation, the policy manager is called
 // to retrieve the latest version of the policy
 func NewSigFilter(policyName string, support SigFilterSupport) *SigFilter {
+	fmt.Println("==NewSigFilter===")
 	return &SigFilter{
 		policyName: policyName,
 		support:    support,
@@ -38,6 +39,7 @@ func NewSigFilter(policyName string, support SigFilterSupport) *SigFilter {
 
 // Apply applies the policy given, resulting in Reject or Forward, never Accept
 func (sf *SigFilter) Apply(message *cb.Envelope) error {
+	fmt.Println("==SigFilter==Apply=")
 	signedData, err := message.AsSignedData()
 
 	if err != nil {

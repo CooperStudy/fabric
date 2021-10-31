@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package msgprocessor
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric/common/channelconfig"
 	"github.com/hyperledger/fabric/common/crypto"
 	"github.com/hyperledger/fabric/common/policies"
@@ -38,6 +39,7 @@ type StandardChannel struct {
 
 // NewStandardChannel creates a new standard message processor
 func NewStandardChannel(support StandardChannelSupport, filters *RuleSet) *StandardChannel {
+	fmt.Println("==NewStandardChannel=")
 	return &StandardChannel{
 		filters: filters,
 		support: support,
@@ -46,6 +48,7 @@ func NewStandardChannel(support StandardChannelSupport, filters *RuleSet) *Stand
 
 // CreateStandardChannelFilters creates the set of filters for a normal (non-system) chain
 func CreateStandardChannelFilters(filterSupport channelconfig.Resources) *RuleSet {
+	fmt.Println("==CreateStandardChannelFilters=")
 	ordererConfig, ok := filterSupport.OrdererConfig()
 	if !ok {
 		logger.Panicf("Missing orderer config")
@@ -60,6 +63,7 @@ func CreateStandardChannelFilters(filterSupport channelconfig.Resources) *RuleSe
 
 // ClassifyMsg inspects the message to determine which type of processing is necessary
 func (s *StandardChannel) ClassifyMsg(chdr *cb.ChannelHeader) Classification {
+	fmt.Println("==StandardChannel=ClassifyMsg==")
 	switch chdr.Type {
 	case int32(cb.HeaderType_CONFIG_UPDATE):
 		return ConfigUpdateMsg
@@ -77,6 +81,7 @@ func (s *StandardChannel) ClassifyMsg(chdr *cb.ChannelHeader) Classification {
 // ProcessNormalMsg will check the validity of a message based on the current configuration.  It returns the current
 // configuration sequence number and nil on success, or an error if the message is not valid
 func (s *StandardChannel) ProcessNormalMsg(env *cb.Envelope) (configSeq uint64, err error) {
+	fmt.Println("==StandardChannel=ProcessNormalMsg==")
 	configSeq = s.support.Sequence()
 	err = s.filters.Apply(env)
 	return
@@ -86,6 +91,7 @@ func (s *StandardChannel) ProcessNormalMsg(env *cb.Envelope) (configSeq uint64, 
 // return the resulting config message and the configSeq the config was computed from.  If the config impetus message
 // is invalid, an error is returned.
 func (s *StandardChannel) ProcessConfigUpdateMsg(env *cb.Envelope) (config *cb.Envelope, configSeq uint64, err error) {
+	fmt.Println("==StandardChannel=ProcessConfigUpdateMsg==")
 	logger.Debugf("Processing config update message for channel %s", s.support.ChainID())
 
 	// Call Sequence first.  If seq advances between proposal and acceptance, this is okay, and will cause reprocessing
@@ -122,6 +128,7 @@ func (s *StandardChannel) ProcessConfigUpdateMsg(env *cb.Envelope) (config *cb.E
 // ProcessConfigMsg takes an envelope of type `HeaderType_CONFIG`, unpacks the `ConfigEnvelope` from it
 // extracts the `ConfigUpdate` from `LastUpdate` field, and calls `ProcessConfigUpdateMsg` on it.
 func (s *StandardChannel) ProcessConfigMsg(env *cb.Envelope) (config *cb.Envelope, configSeq uint64, err error) {
+	fmt.Println("==StandardChannel=ProcessConfigMsg==")
 	logger.Debugf("Processing config message for channel %s", s.support.ChainID())
 
 	configEnvelope := &cb.ConfigEnvelope{}

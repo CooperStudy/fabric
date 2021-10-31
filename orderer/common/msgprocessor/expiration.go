@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package msgprocessor
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/hyperledger/fabric/common/channelconfig"
@@ -33,6 +34,7 @@ type expirationRejectRule struct {
 
 // Apply checks whether the identity that created the envelope has expired
 func (exp *expirationRejectRule) Apply(message *common.Envelope) error {
+	fmt.Println("==expirationRejectRule=Apply===")
 	ordererConf, ok := exp.filterSupport.OrdererConfig()
 	if !ok {
 		logger.Panic("Programming error: orderer config not found")

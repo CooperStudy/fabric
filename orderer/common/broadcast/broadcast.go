@@ -64,6 +64,7 @@ type Handler struct {
 
 // Handle reads requests from a Broadcast stream, processes them, and returns the responses to the stream
 func (bh *Handler) Handle(srv ab.AtomicBroadcast_BroadcastServer) error {
+	logger.Info("=======Handler=====Handle===============")
 	addr := util.ExtractRemoteAddress(srv.Context())
 	logger.Debugf("Starting new broadcast loop for %s", addr)
 	for {
@@ -101,6 +102,7 @@ type MetricsTracker struct {
 }
 
 func (mt *MetricsTracker) Record(resp *ab.BroadcastResponse) {
+	logger.Info("=======MetricsTracker=====Record===============")
 	labels := []string{
 		"status", resp.Status.String(),
 		"channel", mt.ChannelID,
@@ -121,19 +123,23 @@ func (mt *MetricsTracker) Record(resp *ab.BroadcastResponse) {
 }
 
 func (mt *MetricsTracker) BeginValidate() {
+	logger.Info("=======MetricsTracker=====BeginValidate===============")
 	mt.ValidateStartTime = time.Now()
 }
 
 func (mt *MetricsTracker) EndValidate() {
+	logger.Info("=======MetricsTracker=====EndValidate===============")
 	mt.ValidateDuration = time.Since(mt.ValidateStartTime)
 }
 
 func (mt *MetricsTracker) BeginEnqueue() {
+	logger.Info("=======MetricsTracker=====BeginEnqueue===============")
 	mt.EnqueueStartTime = time.Now()
 }
 
 // ProcessMessage validates and enqueues a single message
 func (bh *Handler) ProcessMessage(msg *cb.Envelope, addr string) (resp *ab.BroadcastResponse) {
+	logger.Info("=======Handler=====ProcessMessage===============")
 	tracker := &MetricsTracker{
 		ChannelID: "unknown",
 		TxType:    "unknown",
@@ -208,6 +214,7 @@ func (bh *Handler) ProcessMessage(msg *cb.Envelope, addr string) (resp *ab.Broad
 
 // ClassifyError converts an error type into a status code.
 func ClassifyError(err error) cb.Status {
+	logger.Info("=======ClassifyError===============")
 	switch errors.Cause(err) {
 	case msgprocessor.ErrChannelDoesNotExist:
 		return cb.Status_NOT_FOUND

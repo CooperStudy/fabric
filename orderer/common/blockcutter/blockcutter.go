@@ -43,6 +43,7 @@ type receiver struct {
 
 // NewReceiverImpl creates a Receiver implementation based on the given configtxorderer manager
 func NewReceiverImpl(channelID string, sharedConfigFetcher OrdererConfigFetcher, metrics *Metrics) Receiver {
+	logger.Info("===========NewReceiverImpl=======================")
 	return &receiver{
 		sharedConfigFetcher: sharedConfigFetcher,
 		Metrics:             metrics,
@@ -67,6 +68,7 @@ func NewReceiverImpl(channelID string, sharedConfigFetcher OrdererConfigFetcher,
 //
 // Note that messageBatches can not be greater than 2.
 func (r *receiver) Ordered(msg *cb.Envelope) (messageBatches [][]*cb.Envelope, pending bool) {
+	logger.Info("===========receiver===Ordered====================")
 	if len(r.pendingBatch) == 0 {
 		// We are beginning a new batch, mark the time
 		r.PendingBatchStartTime = time.Now()
@@ -125,6 +127,7 @@ func (r *receiver) Ordered(msg *cb.Envelope) (messageBatches [][]*cb.Envelope, p
 
 // Cut returns the current batch and starts a new one
 func (r *receiver) Cut() []*cb.Envelope {
+	logger.Info("===========receiver===Cut====================")
 	r.Metrics.BlockFillDuration.With("channel", r.ChannelID).Observe(time.Since(r.PendingBatchStartTime).Seconds())
 	r.PendingBatchStartTime = time.Time{}
 	batch := r.pendingBatch
@@ -134,5 +137,6 @@ func (r *receiver) Cut() []*cb.Envelope {
 }
 
 func messageSizeBytes(message *cb.Envelope) uint32 {
+	logger.Info("===========messageSizeBytes===================")
 	return uint32(len(message.Payload) + len(message.Signature))
 }
