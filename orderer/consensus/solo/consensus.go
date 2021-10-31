@@ -36,14 +36,17 @@ type message struct {
 // It accepts messages being delivered via Order/Configure, orders them, and then uses the blockcutter to form the messages
 // into blocks before writing to the given ledger
 func New() consensus.Consenter {
+	fmt.Println("=========New==========")
 	return &consenter{}
 }
 
 func (solo *consenter) HandleChain(support consensus.ConsenterSupport, metadata *cb.Metadata) (consensus.Chain, error) {
+	fmt.Println("=========consenter=======HandleChain===")
 	return newChain(support), nil
 }
 
 func newChain(support consensus.ConsenterSupport) *chain {
+	fmt.Println("=========newChain===")
 	return &chain{
 		support:  support,
 		sendChan: make(chan *message),
@@ -56,6 +59,7 @@ func (ch *chain) Start() {
 }
 
 func (ch *chain) Halt() {
+	fmt.Println("=====chain====Halt===")
 	select {
 	case <-ch.exitChan:
 		// Allow multiple halts without panic
@@ -65,11 +69,13 @@ func (ch *chain) Halt() {
 }
 
 func (ch *chain) WaitReady() error {
+	fmt.Println("=====chain====WaitReady===")
 	return nil
 }
 
 // Order accepts normal messages for ordering
 func (ch *chain) Order(env *cb.Envelope, configSeq uint64) error {
+	fmt.Println("=====chain====Order===")
 	select {
 	case ch.sendChan <- &message{
 		configSeq: configSeq,
@@ -83,6 +89,7 @@ func (ch *chain) Order(env *cb.Envelope, configSeq uint64) error {
 
 // Configure accepts configuration update messages for ordering
 func (ch *chain) Configure(config *cb.Envelope, configSeq uint64) error {
+	fmt.Println("=====chain====Configure===")
 	select {
 	case ch.sendChan <- &message{
 		configSeq: configSeq,
@@ -96,10 +103,12 @@ func (ch *chain) Configure(config *cb.Envelope, configSeq uint64) error {
 
 // Errored only closes on exit
 func (ch *chain) Errored() <-chan struct{} {
+	fmt.Println("=====chain====Errored===")
 	return ch.exitChan
 }
 
 func (ch *chain) main() {
+	fmt.Println("=====chain====main===")
 	var timer <-chan time.Time
 	var err error
 
