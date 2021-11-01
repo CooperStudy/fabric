@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -120,6 +121,7 @@ type ChannelCmdFactory struct {
 
 // InitCmdFactory init the ChannelCmdFactory with clients to endorser and orderer according to params
 func InitCmdFactory(isEndorserRequired, isPeerDeliverRequired, isOrdererRequired bool) (*ChannelCmdFactory, error) {
+	fmt.Println("========InitCmdFactory==========")
 	if isPeerDeliverRequired && isOrdererRequired {
 		// this is likely a bug during development caused by adding a new cmd
 		return nil, errors.New("ERROR - only a single deliver source is currently supported")

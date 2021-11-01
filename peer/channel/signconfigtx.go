@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
+	"fmt"
 	"io/ioutil"
 
 	"github.com/hyperledger/fabric/protos/utils"
@@ -14,6 +15,7 @@ import (
 )
 
 func signconfigtxCmd(cf *ChannelCmdFactory) *cobra.Command {
+	fmt.Println("====signconfigtxCmd====")
 	signconfigtxCmd := &cobra.Command{
 		Use:   "signconfigtx",
 		Short: "Signs a configtx update.",
@@ -31,6 +33,7 @@ func signconfigtxCmd(cf *ChannelCmdFactory) *cobra.Command {
 }
 
 func sign(cmd *cobra.Command, args []string, cf *ChannelCmdFactory) error {
+	fmt.Println("====sign====")
 	if channelTxFile == "" {
 		return InvalidCreateTx("No configtx file name supplied")
 	}

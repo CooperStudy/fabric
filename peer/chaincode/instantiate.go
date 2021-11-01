@@ -25,6 +25,7 @@ const instantiateDesc = "Deploy the specified chaincode to the network."
 
 // instantiateCmd returns the cobra command for Chaincode Deploy
 func instantiateCmd(cf *ChaincodeCmdFactory) *cobra.Command {
+	fmt.Println("========instantiateCmd================")
 	chaincodeInstantiateCmd = &cobra.Command{
 		Use:       instantiateCmdName,
 		Short:     fmt.Sprint(instantiateDesc),
@@ -55,6 +56,7 @@ func instantiateCmd(cf *ChaincodeCmdFactory) *cobra.Command {
 
 //instantiate the command via Endorser
 func instantiate(cmd *cobra.Command, cf *ChaincodeCmdFactory) (*protcommon.Envelope, error) {
+	fmt.Println("========instantiate================")
 	spec, err := getChaincodeSpec(cmd)
 	if err != nil {
 		return nil, err
@@ -104,6 +106,7 @@ func instantiate(cmd *cobra.Command, cf *ChaincodeCmdFactory) (*protcommon.Envel
 // (hash) is printed to STDOUT for use by subsequent chaincode-related CLI
 // commands.
 func chaincodeDeploy(cmd *cobra.Command, args []string, cf *ChaincodeCmdFactory) error {
+	fmt.Println("========chaincodeDeploy================")
 	if channelID == "" {
 		return errors.New("The required parameter 'channelID' is empty. Rerun the command with -C flag")
 	}

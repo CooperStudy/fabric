@@ -8,6 +8,7 @@ package clilogging
 
 import (
 	"context"
+	"fmt"
 
 	pb "github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
@@ -15,6 +16,7 @@ import (
 )
 
 func setLogSpecCmd(cf *LoggingCmdFactory) *cobra.Command {
+	fmt.Println("====setLogSpecCmd====")
 	var loggingSetLogSpecCmd = &cobra.Command{
 		Use:   "setlogspec",
 		Short: "Sets the logging spec.",
@@ -28,6 +30,7 @@ func setLogSpecCmd(cf *LoggingCmdFactory) *cobra.Command {
 }
 
 func setLogSpec(cf *LoggingCmdFactory, cmd *cobra.Command, args []string) (err error) {
+	fmt.Println("====setLogSpec====")
 	err = checkLoggingCmdParams(cmd, args)
 	if err == nil {
 		// Parsing of the command line is done so silence cmd usage

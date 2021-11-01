@@ -8,12 +8,13 @@ package clilogging
 
 import (
 	"context"
-
+	"fmt"
 	"github.com/hyperledger/fabric/protos/peer"
 	"github.com/spf13/cobra"
 )
 
 func revertLevelsCmd(cf *LoggingCmdFactory) *cobra.Command {
+
 	var loggingRevertLevelsCmd = &cobra.Command{
 		Use:   "revertlevels",
 		Short: "Reverts the logging spec to the peer's spec at startup.",
@@ -26,6 +27,7 @@ func revertLevelsCmd(cf *LoggingCmdFactory) *cobra.Command {
 }
 
 func revertLevels(cf *LoggingCmdFactory, cmd *cobra.Command, args []string) (err error) {
+	fmt.Println("====revertLevels====")
 	err = checkLoggingCmdParams(cmd, args)
 	if err == nil {
 		// Parsing of the command line is done so silence cmd usage

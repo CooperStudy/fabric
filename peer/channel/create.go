@@ -38,6 +38,7 @@ import (
 type ConfigTxFileNotFound string
 
 func (e ConfigTxFileNotFound) Error() string {
+	fmt.Println("=====ConfigTxFileNotFound===Error==========")
 	return fmt.Sprintf("channel create configuration tx file not found %s", string(e))
 }
 
@@ -45,10 +46,12 @@ func (e ConfigTxFileNotFound) Error() string {
 type InvalidCreateTx string
 
 func (e InvalidCreateTx) Error() string {
+	fmt.Println("=====InvalidCreateTx===Error==========")
 	return fmt.Sprintf("Invalid channel create transaction : %s", string(e))
 }
 
 func createCmd(cf *ChannelCmdFactory) *cobra.Command {
+	fmt.Println("=====createCmd============")
 	createCmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a channel",
@@ -69,6 +72,7 @@ func createCmd(cf *ChannelCmdFactory) *cobra.Command {
 }
 
 func createChannelFromDefaults(cf *ChannelCmdFactory) (*cb.Envelope, error) {
+	fmt.Println("=====createChannelFromDefaults============")
 	chCrtEnv, err := encoder.MakeChannelCreationTransaction(channelID, localsigner.NewSigner(), genesisconfig.Load(genesisconfig.SampleSingleMSPChannelProfile))
 	if err != nil {
 		return nil, err
@@ -78,6 +82,7 @@ func createChannelFromDefaults(cf *ChannelCmdFactory) (*cb.Envelope, error) {
 }
 
 func createChannelFromConfigTx(configTxFileName string) (*cb.Envelope, error) {
+	fmt.Println("=====createChannelFromConfigTx============")
 	cftx, err := ioutil.ReadFile(configTxFileName)
 	if err != nil {
 		return nil, ConfigTxFileNotFound(err.Error())
@@ -87,6 +92,7 @@ func createChannelFromConfigTx(configTxFileName string) (*cb.Envelope, error) {
 }
 
 func sanityCheckAndSignConfigTx(envConfigUpdate *cb.Envelope) (*cb.Envelope, error) {
+	fmt.Println("=====sanityCheckAndSignConfigTx============")
 	payload, err := utils.ExtractPayload(envConfigUpdate)
 	if err != nil {
 		return nil, InvalidCreateTx("bad payload")
@@ -142,6 +148,7 @@ func sanityCheckAndSignConfigTx(envConfigUpdate *cb.Envelope) (*cb.Envelope, err
 }
 
 func sendCreateChainTransaction(cf *ChannelCmdFactory) error {
+	fmt.Println("=====sendCreateChainTransaction============")
 	var err error
 	var chCrtEnv *cb.Envelope
 
@@ -172,6 +179,7 @@ func sendCreateChainTransaction(cf *ChannelCmdFactory) error {
 }
 
 func executeCreate(cf *ChannelCmdFactory) error {
+	fmt.Println("=====executeCreate============")
 	err := sendCreateChainTransaction(cf)
 	if err != nil {
 		return err
@@ -200,6 +208,7 @@ func executeCreate(cf *ChannelCmdFactory) error {
 }
 
 func getGenesisBlock(cf *ChannelCmdFactory) (*cb.Block, error) {
+	fmt.Println("=====getGenesisBlock============")
 	timer := time.NewTimer(timeout)
 	defer timer.Stop()
 
@@ -225,6 +234,7 @@ func getGenesisBlock(cf *ChannelCmdFactory) (*cb.Block, error) {
 }
 
 func create(cmd *cobra.Command, args []string, cf *ChannelCmdFactory) error {
+	fmt.Println("=====create============")
 	// the global chainID filled by the "-c" command
 	if channelID == common.UndefinedParamValue {
 		return errors.New("must supply channel ID")

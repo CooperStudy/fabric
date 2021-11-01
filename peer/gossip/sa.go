@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package gossip
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/gossip/api"
 	"github.com/hyperledger/fabric/msp/mgmt"
@@ -29,6 +30,7 @@ type mspSecurityAdvisor struct {
 // NewSecurityAdvisor creates a new instance of mspSecurityAdvisor
 // that implements MessageCryptoService
 func NewSecurityAdvisor(deserializer mgmt.DeserializersManager) api.SecurityAdvisor {
+	fmt.Println("======NewSecurityAdvisor======")
 	return &mspSecurityAdvisor{deserializer: deserializer}
 }
 
@@ -38,6 +40,8 @@ func NewSecurityAdvisor(deserializer mgmt.DeserializersManager) api.SecurityAdvi
 // This method does not validate peerIdentity.
 // This validation is supposed to be done appropriately during the execution flow.
 func (advisor *mspSecurityAdvisor) OrgByPeerIdentity(peerIdentity api.PeerIdentityType) api.OrgIdentityType {
+	fmt.Println("===mspSecurityAdvisor===OrgByPeerIdentity======")
+
 	// Validate arguments
 	if len(peerIdentity) == 0 {
 		saLogger.Error("Invalid Peer Identity. It must be different from nil.")

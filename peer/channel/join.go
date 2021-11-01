@@ -54,6 +54,7 @@ func joinCmd(cf *ChannelCmdFactory) *cobra.Command {
 type GBFileNotFoundErr string
 
 func (e GBFileNotFoundErr) Error() string {
+	fmt.Println("=====GBFileNotFoundErr====Error=======")
 	return fmt.Sprintf("genesis block file not found %s", string(e))
 }
 
@@ -61,10 +62,12 @@ func (e GBFileNotFoundErr) Error() string {
 type ProposalFailedErr string
 
 func (e ProposalFailedErr) Error() string {
+	fmt.Println("=====ProposalFailedErr====Error=======")
 	return fmt.Sprintf("proposal failed (err: %s)", string(e))
 }
 
 func getJoinCCSpec() (*pb.ChaincodeSpec, error) {
+	fmt.Println("====getJoinCCSpec======")
 	if genesisBlockPath == common.UndefinedParamValue {
 		return nil, errors.New("Must supply genesis block file")
 	}
@@ -86,6 +89,7 @@ func getJoinCCSpec() (*pb.ChaincodeSpec, error) {
 }
 
 func executeJoin(cf *ChannelCmdFactory) (err error) {
+	fmt.Println("====executeJoin======")
 	spec, err := getJoinCCSpec()
 	if err != nil {
 		return err
@@ -129,6 +133,7 @@ func executeJoin(cf *ChannelCmdFactory) (err error) {
 }
 
 func join(cmd *cobra.Command, args []string, cf *ChannelCmdFactory) error {
+	fmt.Println("====join======")
 	if genesisBlockPath == common.UndefinedParamValue {
 		return errors.New("Must supply genesis block path")
 	}

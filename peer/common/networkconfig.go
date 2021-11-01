@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package common
 
 import (
+	"fmt"
 	"io/ioutil"
 
 	"github.com/pkg/errors"
@@ -156,6 +157,7 @@ type TLSKeyPair struct {
 // GetConfig unmarshals the provided connection profile into a network
 // configuration struct
 func GetConfig(fileName string) (*NetworkConfig, error) {
+	fmt.Println("===GetConfig===")
 	if fileName == "" {
 		return nil, errors.New("filename cannot be empty")
 	}

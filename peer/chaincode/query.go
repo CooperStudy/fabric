@@ -17,6 +17,7 @@ var chaincodeQueryCmd *cobra.Command
 
 // queryCmd returns the cobra command for Chaincode Query
 func queryCmd(cf *ChaincodeCmdFactory) *cobra.Command {
+	fmt.Println("========queryCmd==========")
 	chaincodeQueryCmd = &cobra.Command{
 		Use:       "query",
 		Short:     fmt.Sprintf("Query using the specified %s.", chainFuncName),
@@ -45,6 +46,7 @@ func queryCmd(cf *ChaincodeCmdFactory) *cobra.Command {
 }
 
 func chaincodeQuery(cmd *cobra.Command, cf *ChaincodeCmdFactory) error {
+	fmt.Println("========chaincodeQuery==========")
 	if channelID == "" {
 		return errors.New("The required parameter 'channelID' is empty. Rerun the command with -C flag")
 	}

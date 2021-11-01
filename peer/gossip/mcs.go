@@ -50,6 +50,7 @@ type MSPMessageCryptoService struct {
 // 2. an instance of crypto.LocalSigner
 // 3. an identity deserializer manager
 func NewMCS(channelPolicyManagerGetter policies.ChannelPolicyManagerGetter, localSigner crypto.LocalSigner, deserializer mgmt.DeserializersManager) *MSPMessageCryptoService {
+	fmt.Println("==========NewMCS=======")
 	return &MSPMessageCryptoService{channelPolicyManagerGetter: channelPolicyManagerGetter, localSigner: localSigner, deserializer: deserializer}
 }
 
@@ -57,6 +58,7 @@ func NewMCS(channelPolicyManagerGetter policies.ChannelPolicyManagerGetter, loca
 // If the identity is invalid, revoked, expired it returns an error.
 // Else, returns nil
 func (s *MSPMessageCryptoService) ValidateIdentity(peerIdentity api.PeerIdentityType) error {
+	fmt.Println("======MSPMessageCryptoService====ValidateIdentity=======")
 	// As prescribed by the contract of method,
 	// below we check only that peerIdentity is not
 	// invalid, revoked or expired.
@@ -72,6 +74,7 @@ func (s *MSPMessageCryptoService) ValidateIdentity(peerIdentity api.PeerIdentity
 // This method does not validate peerIdentity.
 // This validation is supposed to be done appropriately during the execution flow.
 func (s *MSPMessageCryptoService) GetPKIidOfCert(peerIdentity api.PeerIdentityType) common.PKIidType {
+	fmt.Println("======MSPMessageCryptoService====GetPKIidOfCert=======")
 	// Validate arguments
 	if len(peerIdentity) == 0 {
 		mcsLogger.Error("Invalid Peer Identity. It must be different from nil.")
@@ -108,6 +111,7 @@ func (s *MSPMessageCryptoService) GetPKIidOfCert(peerIdentity api.PeerIdentityTy
 // sequence number that the block's header contains.
 // else returns error
 func (s *MSPMessageCryptoService) VerifyBlock(chainID common.ChainID, seqNum uint64, signedBlock []byte) error {
+	fmt.Println("======MSPMessageCryptoService====VerifyBlock=======")
 	// - Convert signedBlock to common.Block.
 	block, err := utils.GetBlockFromBlockBytes(signedBlock)
 	if err != nil {
@@ -188,6 +192,7 @@ func (s *MSPMessageCryptoService) VerifyBlock(chainID common.ChainID, seqNum uin
 // Sign signs msg with this peer's signing key and outputs
 // the signature if no error occurred.
 func (s *MSPMessageCryptoService) Sign(msg []byte) ([]byte, error) {
+	fmt.Println("======MSPMessageCryptoService====Sign=======")
 	return s.localSigner.Sign(msg)
 }
 
@@ -195,6 +200,7 @@ func (s *MSPMessageCryptoService) Sign(msg []byte) ([]byte, error) {
 // If the verification succeeded, Verify returns nil meaning no error occurred.
 // If peerIdentity is nil, then the verification fails.
 func (s *MSPMessageCryptoService) Verify(peerIdentity api.PeerIdentityType, signature, message []byte) error {
+	fmt.Println("======MSPMessageCryptoService====Verify=======")
 	identity, chainID, err := s.getValidatedIdentity(peerIdentity)
 	if err != nil {
 		mcsLogger.Errorf("Failed getting validated identity from peer identity [%s]", err)
@@ -221,6 +227,7 @@ func (s *MSPMessageCryptoService) Verify(peerIdentity api.PeerIdentityType, sign
 // If the verification succeeded, Verify returns nil meaning no error occurred.
 // If peerIdentity is nil, then the verification fails.
 func (s *MSPMessageCryptoService) VerifyByChannel(chainID common.ChainID, peerIdentity api.PeerIdentityType, signature, message []byte) error {
+	fmt.Println("======MSPMessageCryptoService====VerifyByChannel=======")
 	// Validate arguments
 	if len(peerIdentity) == 0 {
 		return errors.New("Invalid Peer Identity. It must be different from nil.")
@@ -247,6 +254,7 @@ func (s *MSPMessageCryptoService) VerifyByChannel(chainID common.ChainID, peerId
 }
 
 func (s *MSPMessageCryptoService) Expiration(peerIdentity api.PeerIdentityType) (time.Time, error) {
+	fmt.Println("======MSPMessageCryptoService====Expiration=======")
 	id, _, err := s.getValidatedIdentity(peerIdentity)
 	if err != nil {
 		return time.Time{}, errors.Wrap(err, "Unable to extract msp.Identity from peer Identity")
@@ -256,6 +264,8 @@ func (s *MSPMessageCryptoService) Expiration(peerIdentity api.PeerIdentityType) 
 }
 
 func (s *MSPMessageCryptoService) getValidatedIdentity(peerIdentity api.PeerIdentityType) (msp.Identity, common.ChainID, error) {
+	fmt.Println("======MSPMessageCryptoService====getValidatedIdentity=======")
+
 	// Validate arguments
 	if len(peerIdentity) == 0 {
 		return nil, nil, errors.New("Invalid Peer Identity. It must be different from nil.")

@@ -38,6 +38,7 @@ import (
 
 // checkSpec to see if chaincode resides within current package capture for language.
 func checkSpec(spec *pb.ChaincodeSpec) error {
+	fmt.Println("=============checkSpec==================")
 	// Don't allow nil value
 	if spec == nil {
 		return errors.New("expected chaincode specification, nil received")
@@ -48,6 +49,7 @@ func checkSpec(spec *pb.ChaincodeSpec) error {
 
 // getChaincodeDeploymentSpec get chaincode deployment spec given the chaincode spec
 func getChaincodeDeploymentSpec(spec *pb.ChaincodeSpec, crtPkg bool) (*pb.ChaincodeDeploymentSpec, error) {
+	fmt.Println("=============getChaincodeDeploymentSpec==================")
 	var codePackageBytes []byte
 	if chaincode.IsDevMode() == false && crtPkg {
 		var err error
@@ -67,6 +69,7 @@ func getChaincodeDeploymentSpec(spec *pb.ChaincodeSpec, crtPkg bool) (*pb.Chainc
 
 // getChaincodeSpec get chaincode spec from the cli cmd pramameters
 func getChaincodeSpec(cmd *cobra.Command) (*pb.ChaincodeSpec, error) {
+	fmt.Println("=============getChaincodeSpec==================")
 	spec := &pb.ChaincodeSpec{}
 	if err := checkChaincodeCmdParams(cmd); err != nil {
 		// unset usage silence because it's a command line usage error
@@ -90,6 +93,7 @@ func getChaincodeSpec(cmd *cobra.Command) (*pb.ChaincodeSpec, error) {
 }
 
 func chaincodeInvokeOrQuery(cmd *cobra.Command, invoke bool, cf *ChaincodeCmdFactory) (err error) {
+	fmt.Println("=============chaincodeInvokeOrQuery==================")
 	spec, err := getChaincodeSpec(cmd)
 	if err != nil {
 		return err
@@ -165,6 +169,7 @@ type collectionConfigJson struct {
 // from the supplied file; the supplied file must contain a
 // json-formatted array of collectionConfigJson elements
 func getCollectionConfigFromFile(ccFile string) ([]byte, error) {
+	fmt.Println("=============getCollectionConfigFromFile==================")
 	fileBytes, err := ioutil.ReadFile(ccFile)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not read file '%s'", ccFile)
@@ -177,6 +182,7 @@ func getCollectionConfigFromFile(ccFile string) ([]byte, error) {
 // from the supplied byte array; the byte array must contain a
 // json-formatted array of collectionConfigJson elements
 func getCollectionConfigFromBytes(cconfBytes []byte) ([]byte, error) {
+	fmt.Println("=============getCollectionConfigFromBytes==================")
 	cconf := &[]collectionConfigJson{}
 	err := json.Unmarshal(cconfBytes, cconf)
 	if err != nil {
@@ -217,6 +223,7 @@ func getCollectionConfigFromBytes(cconfBytes []byte) ([]byte, error) {
 }
 
 func checkChaincodeCmdParams(cmd *cobra.Command) error {
+	fmt.Println("=============checkChaincodeCmdParams==================")
 	// we need chaincode name for everything, including deploy
 	if chaincodeName == common.UndefinedParamValue {
 		return errors.Errorf("must supply value for %s name parameter", chainFuncName)
@@ -290,6 +297,7 @@ func checkChaincodeCmdParams(cmd *cobra.Command) error {
 }
 
 func validatePeerConnectionParameters(cmdName string) error {
+	fmt.Println("=============validatePeerConnectionParameters==================")
 	if connectionProfile != common.UndefinedParamValue {
 		networkConfig, err := common.GetConfig(connectionProfile)
 		if err != nil {
@@ -342,6 +350,7 @@ type ChaincodeCmdFactory struct {
 
 // InitCmdFactory init the ChaincodeCmdFactory with default clients
 func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) (*ChaincodeCmdFactory, error) {
+	fmt.Println("=============InitCmdFactory==================")
 	var err error
 	var endorserClients []pb.EndorserClient
 	var deliverClients []api.PeerDeliverClient
@@ -434,7 +443,9 @@ func ChaincodeInvokeOrQuery(
 	deliverClients []api.PeerDeliverClient,
 	bc common.BroadcastClient,
 ) (*pb.ProposalResponse, error) {
+	fmt.Println("=============ChaincodeInvokeOrQuery==================")
 	// Build the ChaincodeInvocationSpec message
+
 	invocation := &pb.ChaincodeInvocationSpec{ChaincodeSpec: spec}
 
 	creator, err := signer.Serialize()
@@ -550,6 +561,7 @@ type deliverClient struct {
 }
 
 func newDeliverGroup(deliverClients []api.PeerDeliverClient, peerAddresses []string, certificate tls.Certificate, channelID string, txid string) *deliverGroup {
+	fmt.Println("=============newDeliverGroup==================")
 	clients := make([]*deliverClient, len(deliverClients))
 	for i, client := range deliverClients {
 		dc := &deliverClient{
@@ -574,6 +586,7 @@ func newDeliverGroup(deliverClients []api.PeerDeliverClient, peerAddresses []str
 // to timeout. An error will be returned whenever even a single
 // deliver client fails to connect to its peer
 func (dg *deliverGroup) Connect(ctx context.Context) error {
+	fmt.Println("=========deliverGroup====Connect==================")
 	dg.wg.Add(len(dg.Clients))
 	for _, client := range dg.Clients {
 		go dg.ClientConnect(ctx, client)
@@ -599,6 +612,7 @@ func (dg *deliverGroup) Connect(ctx context.Context) error {
 // provided deliver client, setting the deliverGroup's Error
 // field upon any error
 func (dg *deliverGroup) ClientConnect(ctx context.Context, dc *deliverClient) {
+	fmt.Println("=========deliverGroup====ClientConnect==================")
 	defer dg.wg.Done()
 	df, err := dc.Client.DeliverFiltered(ctx)
 	if err != nil {
@@ -622,6 +636,7 @@ func (dg *deliverGroup) ClientConnect(ctx context.Context, dc *deliverClient) {
 // either receive a block with the txid, an error, or for the
 // context to timeout
 func (dg *deliverGroup) Wait(ctx context.Context) error {
+	fmt.Println("=========deliverGroup====Wait==================")
 	if len(dg.Clients) == 0 {
 		return nil
 	}
@@ -650,6 +665,7 @@ func (dg *deliverGroup) Wait(ctx context.Context) error {
 // ClientWait waits for the specified deliver client to receive
 // a block event with the requested txid
 func (dg *deliverGroup) ClientWait(dc *deliverClient) {
+	fmt.Println("=========deliverGroup====ClientWait==================")
 	defer dg.wg.Done()
 	for {
 		resp, err := dc.Connection.Recv()
@@ -682,18 +698,21 @@ func (dg *deliverGroup) ClientWait(dc *deliverClient) {
 // WaitForWG waits for the deliverGroup's wait group and closes
 // the channel when ready
 func (dg *deliverGroup) WaitForWG(readyCh chan struct{}) {
+	fmt.Println("=========deliverGroup====WaitForWG==================")
 	dg.wg.Wait()
 	close(readyCh)
 }
 
 // setError serializes an error for the deliverGroup
 func (dg *deliverGroup) setError(err error) {
+	fmt.Println("=========deliverGroup====setError==================")
 	dg.mutex.Lock()
 	dg.Error = err
 	dg.mutex.Unlock()
 }
 
 func createDeliverEnvelope(channelID string, certificate tls.Certificate) *pcommon.Envelope {
+	fmt.Println("========createDeliverEnvelope================")
 	var tlsCertHash []byte
 	// check for client certificate and create hash if present
 	if len(certificate.Certificate) > 0 {

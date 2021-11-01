@@ -96,7 +96,7 @@ func init() {
 
 // InitConfig initializes viper config
 func InitConfig(cmdRoot string) error {
-
+	fmt.Println("====InitConfig==")
 	err := config.InitViper(nil, cmdRoot)
 	if err != nil {
 		return err
@@ -120,6 +120,7 @@ func InitConfig(cmdRoot string) error {
 
 // InitCrypto initializes crypto for this peer
 func InitCrypto(mspMgrConfigDir, localMSPID, localMSPType string) error {
+	fmt.Println("====InitCrypto==")
 	var err error
 	// Check whether msp folder exists
 	fi, err := os.Stat(mspMgrConfigDir)
@@ -151,12 +152,14 @@ func InitCrypto(mspMgrConfigDir, localMSPID, localMSPType string) error {
 // SetBCCSPKeystorePath sets the file keystore path for the SW BCCSP provider
 // to an absolute path relative to the config file
 func SetBCCSPKeystorePath() {
+	fmt.Println("====SetBCCSPKeystorePath==")
 	viper.Set("peer.BCCSP.SW.FileKeyStore.KeyStore",
 		config.GetPath("peer.BCCSP.SW.FileKeyStore.KeyStore"))
 }
 
 // GetDefaultSigner return a default Signer(Default/PERR) for cli
 func GetDefaultSigner() (msp.SigningIdentity, error) {
+	fmt.Println("====GetDefaultSigner==")
 	signer, err := mspmgmt.GetLocalMSP().GetDefaultSigningIdentity()
 	if err != nil {
 		return nil, errors.WithMessage(err, "error obtaining the default signing identity")
@@ -167,6 +170,7 @@ func GetDefaultSigner() (msp.SigningIdentity, error) {
 
 // GetOrdererEndpointOfChain returns orderer endpoints of given chain
 func GetOrdererEndpointOfChain(chainID string, signer msp.SigningIdentity, endorserClient pb.EndorserClient) ([]string, error) {
+	fmt.Println("====GetOrdererEndpointOfChain==")
 	// query cscc for chain config block
 	invocation := &pb.ChaincodeInvocationSpec{
 		ChaincodeSpec: &pb.ChaincodeSpec{
@@ -224,6 +228,7 @@ func GetOrdererEndpointOfChain(chainID string, signer msp.SigningIdentity, endor
 
 // CheckLogLevel checks that a given log level string is valid
 func CheckLogLevel(level string) error {
+	fmt.Println("====CheckLogLevel==")
 	if !flogging.IsValidLevel(level) {
 		return errors.Errorf("invalid log level provided - %s", level)
 	}
@@ -231,6 +236,7 @@ func CheckLogLevel(level string) error {
 }
 
 func configFromEnv(prefix string) (address, override string, clientConfig comm.ClientConfig, err error) {
+	fmt.Println("====configFromEnv==")
 	address = viper.GetString(prefix + ".address")
 	override = viper.GetString(prefix + ".tls.serverhostoverride")
 	clientConfig = comm.ClientConfig{}
@@ -272,6 +278,7 @@ func configFromEnv(prefix string) (address, override string, clientConfig comm.C
 }
 
 func InitCmd(cmd *cobra.Command, args []string) {
+	fmt.Println("====InitCmd==")
 	err := InitConfig(CmdRoot)
 	if err != nil { // Handle errors reading the config file
 		mainLogger.Errorf("Fatal error when initializing %s config : %s", CmdRoot, err)

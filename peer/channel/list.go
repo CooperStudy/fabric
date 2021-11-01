@@ -51,6 +51,7 @@ func listCmd(cf *ChannelCmdFactory) *cobra.Command {
 }
 
 func (cc *endorserClient) getChannels() ([]*pb.ChannelInfo, error) {
+	fmt.Println("====endorserClient==getChannels====")
 	var err error
 
 	invocation := &pb.ChaincodeInvocationSpec{
@@ -93,6 +94,7 @@ func (cc *endorserClient) getChannels() ([]*pb.ChannelInfo, error) {
 }
 
 func list(cf *ChannelCmdFactory) error {
+	fmt.Println("====list====")
 	var err error
 	if cf == nil {
 		cf, err = InitCmdFactory(EndorserRequired, PeerDeliverNotRequired, OrdererNotRequired)

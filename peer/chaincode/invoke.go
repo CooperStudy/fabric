@@ -17,6 +17,7 @@ var chaincodeInvokeCmd *cobra.Command
 
 // invokeCmd returns the cobra command for Chaincode Invoke
 func invokeCmd(cf *ChaincodeCmdFactory) *cobra.Command {
+	fmt.Println("========invokeCmd================")
 	chaincodeInvokeCmd = &cobra.Command{
 		Use:       "invoke",
 		Short:     fmt.Sprintf("Invoke the specified %s.", chainFuncName),
@@ -42,6 +43,7 @@ func invokeCmd(cf *ChaincodeCmdFactory) *cobra.Command {
 }
 
 func chaincodeInvoke(cmd *cobra.Command, cf *ChaincodeCmdFactory) error {
+	fmt.Println("========chaincodeInvoke================")
 	if channelID == "" {
 		return errors.New("The required parameter 'channelID' is empty. Rerun the command with -C flag")
 	}

@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package clilogging
 
 import (
+	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/common/crypto"
 	"github.com/hyperledger/fabric/peer/common"
@@ -27,6 +28,7 @@ type LoggingCmdFactory struct {
 
 // InitCmdFactory init the LoggingCmdFactory with default admin client
 func InitCmdFactory() (*LoggingCmdFactory, error) {
+	fmt.Println("====InitCmdFactory====")
 	var err error
 	var adminClient pb.AdminClient
 
@@ -56,6 +58,7 @@ func InitCmdFactory() (*LoggingCmdFactory, error) {
 }
 
 func checkLoggingCmdParams(cmd *cobra.Command, args []string) error {
+	fmt.Println("====checkLoggingCmdParams====")
 	var err error
 	if cmd.Name() == "revertlevels" || cmd.Name() == "getlogspec" {
 		if len(args) > 0 {

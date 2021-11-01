@@ -17,6 +17,7 @@ limitations under the License.
 package common
 
 import (
+	"fmt"
 	cb "github.com/hyperledger/fabric/protos/common"
 	ab "github.com/hyperledger/fabric/protos/orderer"
 	"github.com/pkg/errors"
@@ -34,6 +35,7 @@ type broadcastClient struct {
 
 // GetBroadcastClient creates a simple instance of the BroadcastClient interface
 func GetBroadcastClient() (BroadcastClient, error) {
+	fmt.Println("====GetBroadcastClient====")
 	oc, err := NewOrdererClientFromEnv()
 	if err != nil {
 		return nil, err
@@ -47,6 +49,7 @@ func GetBroadcastClient() (BroadcastClient, error) {
 }
 
 func (s *broadcastClient) getAck() error {
+	fmt.Println("====broadcastClient==getAck==")
 	msg, err := s.client.Recv()
 	if err != nil {
 		return err
@@ -59,6 +62,7 @@ func (s *broadcastClient) getAck() error {
 
 //Send data to orderer
 func (s *broadcastClient) Send(env *cb.Envelope) error {
+	fmt.Println("====broadcastClient==Send==")
 	if err := s.client.Send(env); err != nil {
 		return errors.WithMessage(err, "could not send")
 	}
@@ -69,5 +73,6 @@ func (s *broadcastClient) Send(env *cb.Envelope) error {
 }
 
 func (s *broadcastClient) Close() error {
+	fmt.Println("====broadcastClient==Close==")
 	return s.client.CloseSend()
 }

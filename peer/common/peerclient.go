@@ -26,6 +26,7 @@ type PeerClient struct {
 // NewPeerClientFromEnv creates an instance of a PeerClient from the global
 // Viper instance
 func NewPeerClientFromEnv() (*PeerClient, error) {
+	fmt.Println("==NewPeerClientFromEnv===")
 	address, override, clientConfig, err := configFromEnv("peer")
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to load config for PeerClient")
@@ -36,6 +37,7 @@ func NewPeerClientFromEnv() (*PeerClient, error) {
 // NewPeerClientForAddress creates an instance of a PeerClient using the
 // provided peer address and, if TLS is enabled, the TLS root cert file
 func NewPeerClientForAddress(address, tlsRootCertFile string) (*PeerClient, error) {
+	fmt.Println("==NewPeerClientForAddress===")
 	if address == "" {
 		return nil, errors.New("peer address must be set")
 	}
@@ -56,6 +58,7 @@ func NewPeerClientForAddress(address, tlsRootCertFile string) (*PeerClient, erro
 }
 
 func newPeerClientForClientConfig(address, override string, clientConfig comm.ClientConfig) (*PeerClient, error) {
+	fmt.Println("==newPeerClientForClientConfig===")
 	gClient, err := comm.NewGRPCClient(clientConfig)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to create PeerClient from config")
@@ -70,6 +73,7 @@ func newPeerClientForClientConfig(address, override string, clientConfig comm.Cl
 
 // Endorser returns a client for the Endorser service
 func (pc *PeerClient) Endorser() (pb.EndorserClient, error) {
+	fmt.Println("==PeerClient==Endorser===")
 	conn, err := pc.commonClient.NewConnection(pc.address, pc.sn)
 	if err != nil {
 		return nil, errors.WithMessage(err, fmt.Sprintf("endorser client failed to connect to %s", pc.address))
@@ -79,6 +83,7 @@ func (pc *PeerClient) Endorser() (pb.EndorserClient, error) {
 
 // Deliver returns a client for the Deliver service
 func (pc *PeerClient) Deliver() (pb.Deliver_DeliverClient, error) {
+	fmt.Println("==PeerClient==Deliver===")
 	conn, err := pc.commonClient.NewConnection(pc.address, pc.sn)
 	if err != nil {
 		return nil, errors.WithMessage(err, fmt.Sprintf("deliver client failed to connect to %s", pc.address))
@@ -89,6 +94,7 @@ func (pc *PeerClient) Deliver() (pb.Deliver_DeliverClient, error) {
 // PeerDeliver returns a client for the Deliver service for peer-specific use
 // cases (i.e. DeliverFiltered)
 func (pc *PeerClient) PeerDeliver() (api.PeerDeliverClient, error) {
+	fmt.Println("==PeerClient==PeerDeliver===")
 	conn, err := pc.commonClient.NewConnection(pc.address, pc.sn)
 	if err != nil {
 		return nil, errors.WithMessage(err, fmt.Sprintf("deliver client failed to connect to %s", pc.address))
@@ -99,6 +105,7 @@ func (pc *PeerClient) PeerDeliver() (api.PeerDeliverClient, error) {
 
 // Admin returns a client for the Admin service
 func (pc *PeerClient) Admin() (pb.AdminClient, error) {
+	fmt.Println("==PeerClient==Admin===")
 	conn, err := pc.commonClient.NewConnection(pc.address, pc.sn)
 	if err != nil {
 		return nil, errors.WithMessage(err, fmt.Sprintf("admin client failed to connect to %s", pc.address))
@@ -108,6 +115,7 @@ func (pc *PeerClient) Admin() (pb.AdminClient, error) {
 
 // Certificate returns the TLS client certificate (if available)
 func (pc *PeerClient) Certificate() tls.Certificate {
+	fmt.Println("==PeerClient==Certificate===")
 	return pc.commonClient.Certificate()
 }
 
@@ -116,6 +124,7 @@ func (pc *PeerClient) Certificate() tls.Certificate {
 // from the configuration settings for "peer.address" and
 // "peer.tls.rootcert.file"
 func GetEndorserClient(address, tlsRootCertFile string) (pb.EndorserClient, error) {
+	fmt.Println("==GetEndorserClient==")
 	var peerClient *PeerClient
 	var err error
 	if address != "" {
@@ -131,6 +140,7 @@ func GetEndorserClient(address, tlsRootCertFile string) (pb.EndorserClient, erro
 
 // GetCertificate returns the client's TLS certificate
 func GetCertificate() (tls.Certificate, error) {
+	fmt.Println("==GetCertificate==")
 	peerClient, err := NewPeerClientFromEnv()
 	if err != nil {
 		return tls.Certificate{}, err
@@ -141,6 +151,7 @@ func GetCertificate() (tls.Certificate, error) {
 // GetAdminClient returns a new admin client.  The target address for
 // the client is taken from the configuration setting "peer.address"
 func GetAdminClient() (pb.AdminClient, error) {
+	fmt.Println("==GetAdminClient==")
 	peerClient, err := NewPeerClientFromEnv()
 	if err != nil {
 		return nil, err
@@ -153,6 +164,7 @@ func GetAdminClient() (pb.AdminClient, error) {
 // from the configuration settings for "peer.address" and
 // "peer.tls.rootcert.file"
 func GetDeliverClient(address, tlsRootCertFile string) (pb.Deliver_DeliverClient, error) {
+	fmt.Println("==GetDeliverClient==")
 	var peerClient *PeerClient
 	var err error
 	if address != "" {
@@ -171,6 +183,7 @@ func GetDeliverClient(address, tlsRootCertFile string) (pb.Deliver_DeliverClient
 // from the configuration settings for "peer.address" and
 // "peer.tls.rootcert.file"
 func GetPeerDeliverClient(address, tlsRootCertFile string) (api.PeerDeliverClient, error) {
+	fmt.Println("==GetPeerDeliverClient==")
 	var peerClient *PeerClient
 	var err error
 	if address != "" {

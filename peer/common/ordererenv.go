@@ -6,6 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 package common
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -27,6 +28,7 @@ var (
 
 // SetOrdererEnv adds orderer-specific settings to the global Viper environment
 func SetOrdererEnv(cmd *cobra.Command, args []string) {
+	fmt.Println("==SetOrdererEnv===")
 	// read in the legacy logging level settings and, if set,
 	// notify users of the FABRIC_LOGGING_SPEC env variable
 	var loggingLevel string

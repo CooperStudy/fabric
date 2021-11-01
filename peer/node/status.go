@@ -39,6 +39,7 @@ var nodeStatusCmd = &cobra.Command{
 }
 
 func status() (err error) {
+	fmt.Println("===status======")
 	adminClient, err := common.GetAdminClient()
 	if err != nil {
 		logger.Warningf("%s", err)

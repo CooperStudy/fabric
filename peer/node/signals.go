@@ -9,6 +9,7 @@ SPDX-License-Identifier: Apache-2.0
 package node
 
 import (
+	"fmt"
 	"os"
 	"syscall"
 
@@ -16,6 +17,7 @@ import (
 )
 
 func addPlatformSignals(sigs map[os.Signal]func()) map[os.Signal]func() {
+	fmt.Println("===addPlatformSignals======")
 	sigs[syscall.SIGUSR1] = func() { diag.LogGoRoutines(logger.Named("diag")) }
 	return sigs
 }
