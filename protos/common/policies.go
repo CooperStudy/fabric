@@ -23,10 +23,12 @@ import (
 )
 
 func (p *Policy) VariablyOpaqueFields() []string {
+	fmt.Println("===Policy==VariablyOpaqueFields==")
 	return []string{"value"}
 }
 
 func (p *Policy) VariablyOpaqueFieldProto(name string) (proto.Message, error) {
+	fmt.Println("===Policy==VariablyOpaqueFieldProto==")
 	if name != p.VariablyOpaqueFields()[0] {
 		return nil, fmt.Errorf("not a marshaled field: %s", name)
 	}

@@ -41,6 +41,7 @@ type Signable interface {
 
 // AsSignedData returns the set of signatures for the ConfigUpdateEnvelope as SignedData or an error indicating why this was not possible
 func (ce *ConfigUpdateEnvelope) AsSignedData() ([]*SignedData, error) {
+	fmt.Println("==========ConfigUpdateEnvelope===AsSignedData===========")
 	if ce == nil {
 		return nil, fmt.Errorf("No signatures for nil SignedConfigItem")
 	}
@@ -66,6 +67,7 @@ func (ce *ConfigUpdateEnvelope) AsSignedData() ([]*SignedData, error) {
 
 // AsSignedData returns the signatures for the Envelope as SignedData slice of length 1 or an error indicating why this was not possible
 func (env *Envelope) AsSignedData() ([]*SignedData, error) {
+	fmt.Println("==========Envelope===AsSignedData===========")
 	if env == nil {
 		return nil, fmt.Errorf("No signatures for nil Envelope")
 	}

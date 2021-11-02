@@ -40,6 +40,7 @@ type DynamicChannelGroup struct {
 }
 
 func (dcg *DynamicChannelGroup) DynamicMapFieldProto(name string, key string, base proto.Message) (proto.Message, error) {
+	fmt.Println("===DynamicChannelGroup==DynamicMapFieldProto==")
 	switch name {
 	case "groups":
 		cg, ok := base.(*ConfigGroup)
@@ -72,6 +73,7 @@ type DynamicChannelConfigValue struct {
 }
 
 func (dccv *DynamicChannelConfigValue) VariablyOpaqueFieldProto(name string) (proto.Message, error) {
+	fmt.Println("===DynamicChannelConfigValue==VariablyOpaqueFieldProto==")
 	if name != dccv.VariablyOpaqueFields()[0] {
 		return nil, fmt.Errorf("not a marshaled field: %s", name)
 	}
@@ -92,12 +94,14 @@ func (dccv *DynamicChannelConfigValue) VariablyOpaqueFieldProto(name string) (pr
 }
 
 func (dccv *DynamicChannelConfigValue) Underlying() proto.Message {
+	fmt.Println("===DynamicChannelConfigValue==Underlying==")
 	return dccv.ConfigValue
 }
 
 type DynamicConsortiumsGroupFactory struct{}
 
 func (dogf DynamicConsortiumsGroupFactory) DynamicConfigGroup(cg *ConfigGroup) proto.Message {
+	fmt.Println("===DynamicConsortiumsGroupFactory==DynamicConfigGroup==")
 	return &DynamicConsortiumsGroup{
 		ConfigGroup: cg,
 	}
@@ -108,6 +112,7 @@ type DynamicConsortiumsGroup struct {
 }
 
 func (dcg *DynamicConsortiumsGroup) DynamicMapFieldProto(name string, key string, base proto.Message) (proto.Message, error) {
+	fmt.Println("===DynamicConsortiumsGroup==DynamicMapFieldProto==")
 	switch name {
 	case "groups":
 		cg, ok := base.(*ConfigGroup)
@@ -126,6 +131,7 @@ func (dcg *DynamicConsortiumsGroup) DynamicMapFieldProto(name string, key string
 }
 
 func (dcg *DynamicConsortiumsGroup) Underlying() proto.Message {
+	fmt.Println("===DynamicConsortiumsGroup==Underlying==")
 	return dcg.ConfigGroup
 }
 
@@ -134,6 +140,7 @@ type DynamicConsortiumGroup struct {
 }
 
 func (dcg *DynamicConsortiumGroup) DynamicMapFieldProto(name string, key string, base proto.Message) (proto.Message, error) {
+	fmt.Println("===DynamicConsortiumGroup==DynamicMapFieldProto==")
 	switch name {
 	case "groups":
 		cg, ok := base.(*ConfigGroup)
@@ -159,6 +166,7 @@ func (dcg *DynamicConsortiumGroup) DynamicMapFieldProto(name string, key string,
 }
 
 func (dcg *DynamicConsortiumGroup) Underlying() proto.Message {
+	fmt.Println("===DynamicConsortiumGroup==Underlying==")
 	return dcg.ConfigGroup
 }
 
@@ -168,6 +176,7 @@ type DynamicConsortiumConfigValue struct {
 }
 
 func (dccv *DynamicConsortiumConfigValue) VariablyOpaqueFieldProto(name string) (proto.Message, error) {
+	fmt.Println("===DynamicConsortiumConfigValue==VariablyOpaqueFieldProto==")
 	if name != dccv.VariablyOpaqueFields()[0] {
 		return nil, fmt.Errorf("not a marshaled field: %s", name)
 	}
@@ -184,6 +193,7 @@ type DynamicConsortiumOrgGroup struct {
 }
 
 func (dcg *DynamicConsortiumOrgGroup) DynamicMapFieldProto(name string, key string, base proto.Message) (proto.Message, error) {
+	fmt.Println("===DynamicConsortiumOrgGroup==DynamicMapFieldProto==")
 	switch name {
 	case "groups":
 		return nil, fmt.Errorf("ConsortiumOrg groups do not support sub groups")
@@ -208,6 +218,7 @@ type DynamicConsortiumOrgConfigValue struct {
 }
 
 func (dcocv *DynamicConsortiumOrgConfigValue) VariablyOpaqueFieldProto(name string) (proto.Message, error) {
+	fmt.Println("===DynamicConsortiumOrgConfigValue==VariablyOpaqueFieldProto==")
 	if name != dcocv.VariablyOpaqueFields()[0] {
 		return nil, fmt.Errorf("not a marshaled field: %s", name)
 	}

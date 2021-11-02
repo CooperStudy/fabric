@@ -53,6 +53,7 @@ func (m *HashingAlgorithm) XXX_DiscardUnknown() {
 var xxx_messageInfo_HashingAlgorithm proto.InternalMessageInfo
 
 func (m *HashingAlgorithm) GetName() string {
+	fmt.Println("===HashingAlgorithm==GetName==")
 	if m != nil {
 		return m.Name
 	}
@@ -95,6 +96,7 @@ func (m *BlockDataHashingStructure) XXX_DiscardUnknown() {
 var xxx_messageInfo_BlockDataHashingStructure proto.InternalMessageInfo
 
 func (m *BlockDataHashingStructure) GetWidth() uint32 {
+	fmt.Println("===BlockDataHashingStructure==GetWidth==")
 	if m != nil {
 		return m.Width
 	}
@@ -174,6 +176,7 @@ func (m *Consortium) XXX_DiscardUnknown() {
 var xxx_messageInfo_Consortium proto.InternalMessageInfo
 
 func (m *Consortium) GetName() string {
+	fmt.Println("===Consortium==GetName==")
 	if m != nil {
 		return m.Name
 	}
@@ -242,6 +245,7 @@ func (m *Capabilities) XXX_DiscardUnknown() {
 var xxx_messageInfo_Capabilities proto.InternalMessageInfo
 
 func (m *Capabilities) GetCapabilities() map[string]*Capability {
+	fmt.Println("===Capabilities==GetCapabilities==")
 	if m != nil {
 		return m.Capabilities
 	}

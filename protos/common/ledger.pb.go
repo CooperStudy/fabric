@@ -54,6 +54,7 @@ func (m *BlockchainInfo) XXX_DiscardUnknown() {
 var xxx_messageInfo_BlockchainInfo proto.InternalMessageInfo
 
 func (m *BlockchainInfo) GetHeight() uint64 {
+	fmt.Println("===BlockchainInfo==GetHeight==")
 	if m != nil {
 		return m.Height
 	}
@@ -61,6 +62,7 @@ func (m *BlockchainInfo) GetHeight() uint64 {
 }
 
 func (m *BlockchainInfo) GetCurrentBlockHash() []byte {
+	fmt.Println("===BlockchainInfo==GetCurrentBlockHash==")
 	if m != nil {
 		return m.CurrentBlockHash
 	}
@@ -68,6 +70,7 @@ func (m *BlockchainInfo) GetCurrentBlockHash() []byte {
 }
 
 func (m *BlockchainInfo) GetPreviousBlockHash() []byte {
+	fmt.Println("===BlockchainInfo==GetPreviousBlockHash==")
 	if m != nil {
 		return m.PreviousBlockHash
 	}
