@@ -211,6 +211,7 @@ func (m *Metadata) XXX_DiscardUnknown() {
 var xxx_messageInfo_Metadata proto.InternalMessageInfo
 
 func (m *Metadata) GetValue() []byte {
+	fmt.Println("===Metadata=============GetValue=======")
 	if m != nil {
 		return m.Value
 	}
@@ -218,6 +219,7 @@ func (m *Metadata) GetValue() []byte {
 }
 
 func (m *Metadata) GetSignatures() []*MetadataSignature {
+	fmt.Println("===Metadata=============GetSignatures=======")
 	if m != nil {
 		return m.Signatures
 	}
@@ -257,6 +259,7 @@ func (m *MetadataSignature) XXX_DiscardUnknown() {
 var xxx_messageInfo_MetadataSignature proto.InternalMessageInfo
 
 func (m *MetadataSignature) GetSignatureHeader() []byte {
+	fmt.Println("===MetadataSignature=============GetSignatureHeader=======")
 	if m != nil {
 		return m.SignatureHeader
 	}
@@ -264,6 +267,7 @@ func (m *MetadataSignature) GetSignatureHeader() []byte {
 }
 
 func (m *MetadataSignature) GetSignature() []byte {
+	fmt.Println("===MetadataSignature=============GetSignature=======")
 	if m != nil {
 		return m.Signature
 	}
@@ -303,6 +307,7 @@ func (m *Header) XXX_DiscardUnknown() {
 var xxx_messageInfo_Header proto.InternalMessageInfo
 
 func (m *Header) GetChannelHeader() []byte {
+	fmt.Println("===Header=============GetChannelHeader=======")
 	if m != nil {
 		return m.ChannelHeader
 	}
@@ -310,6 +315,7 @@ func (m *Header) GetChannelHeader() []byte {
 }
 
 func (m *Header) GetSignatureHeader() []byte {
+	fmt.Println("===Header=============GetSignatureHeader=======")
 	if m != nil {
 		return m.SignatureHeader
 	}
@@ -376,6 +382,7 @@ func (m *ChannelHeader) XXX_DiscardUnknown() {
 var xxx_messageInfo_ChannelHeader proto.InternalMessageInfo
 
 func (m *ChannelHeader) GetType() int32 {
+	fmt.Println("===ChannelHeader=============GetType=======")
 	if m != nil {
 		return m.Type
 	}
@@ -383,6 +390,7 @@ func (m *ChannelHeader) GetType() int32 {
 }
 
 func (m *ChannelHeader) GetVersion() int32 {
+	fmt.Println("===ChannelHeader=============GetVersion=======")
 	if m != nil {
 		return m.Version
 	}
@@ -390,6 +398,7 @@ func (m *ChannelHeader) GetVersion() int32 {
 }
 
 func (m *ChannelHeader) GetTimestamp() *timestamp.Timestamp {
+	fmt.Println("===ChannelHeader=============GetTimestamp=======")
 	if m != nil {
 		return m.Timestamp
 	}
@@ -397,6 +406,7 @@ func (m *ChannelHeader) GetTimestamp() *timestamp.Timestamp {
 }
 
 func (m *ChannelHeader) GetChannelId() string {
+	fmt.Println("===ChannelHeader=============GetChannelId=======")
 	if m != nil {
 		return m.ChannelId
 	}
@@ -404,6 +414,7 @@ func (m *ChannelHeader) GetChannelId() string {
 }
 
 func (m *ChannelHeader) GetTxId() string {
+	fmt.Println("===ChannelHeader=============GetTxId=======")
 	if m != nil {
 		return m.TxId
 	}
@@ -411,6 +422,7 @@ func (m *ChannelHeader) GetTxId() string {
 }
 
 func (m *ChannelHeader) GetEpoch() uint64 {
+	fmt.Println("===ChannelHeader=============GetEpoch=======")
 	if m != nil {
 		return m.Epoch
 	}
@@ -418,6 +430,7 @@ func (m *ChannelHeader) GetEpoch() uint64 {
 }
 
 func (m *ChannelHeader) GetExtension() []byte {
+	fmt.Println("===ChannelHeader=============GetExtension=======")
 	if m != nil {
 		return m.Extension
 	}
@@ -425,6 +438,7 @@ func (m *ChannelHeader) GetExtension() []byte {
 }
 
 func (m *ChannelHeader) GetTlsCertHash() []byte {
+	fmt.Println("===ChannelHeader=============GetTlsCertHash=======")
 	if m != nil {
 		return m.TlsCertHash
 	}
@@ -466,6 +480,7 @@ func (m *SignatureHeader) XXX_DiscardUnknown() {
 var xxx_messageInfo_SignatureHeader proto.InternalMessageInfo
 
 func (m *SignatureHeader) GetCreator() []byte {
+	fmt.Println("===SignatureHeader=============GetCreator=======")
 	if m != nil {
 		return m.Creator
 	}
@@ -473,6 +488,7 @@ func (m *SignatureHeader) GetCreator() []byte {
 }
 
 func (m *SignatureHeader) GetNonce() []byte {
+	fmt.Println("===SignatureHeader=============GetNonce=======")
 	if m != nil {
 		return m.Nonce
 	}
@@ -515,6 +531,7 @@ func (m *Payload) XXX_DiscardUnknown() {
 var xxx_messageInfo_Payload proto.InternalMessageInfo
 
 func (m *Payload) GetHeader() *Header {
+	fmt.Println("===Payload=============GetHeader=======")
 	if m != nil {
 		return m.Header
 	}
@@ -522,6 +539,7 @@ func (m *Payload) GetHeader() *Header {
 }
 
 func (m *Payload) GetData() []byte {
+	fmt.Println("===Payload=============GetData=======")
 	if m != nil {
 		return m.Data
 	}
@@ -564,6 +582,7 @@ func (m *Envelope) XXX_DiscardUnknown() {
 var xxx_messageInfo_Envelope proto.InternalMessageInfo
 
 func (m *Envelope) GetPayload() []byte {
+	fmt.Println("===Envelope=============GetPayload=======")
 	if m != nil {
 		return m.Payload
 	}
@@ -571,6 +590,7 @@ func (m *Envelope) GetPayload() []byte {
 }
 
 func (m *Envelope) GetSignature() []byte {
+	fmt.Println("===Envelope=============GetSignature=======")
 	if m != nil {
 		return m.Signature
 	}
@@ -615,6 +635,7 @@ func (m *Block) XXX_DiscardUnknown() {
 var xxx_messageInfo_Block proto.InternalMessageInfo
 
 func (m *Block) GetHeader() *BlockHeader {
+	fmt.Println("===Block=============GetHeader=======")
 	if m != nil {
 		return m.Header
 	}
@@ -622,6 +643,7 @@ func (m *Block) GetHeader() *BlockHeader {
 }
 
 func (m *Block) GetData() *BlockData {
+	fmt.Println("===Block=============GetData=======")
 	if m != nil {
 		return m.Data
 	}
@@ -629,6 +651,7 @@ func (m *Block) GetData() *BlockData {
 }
 
 func (m *Block) GetMetadata() *BlockMetadata {
+	fmt.Println("===Block=============GetMetadata=======")
 	if m != nil {
 		return m.Metadata
 	}
@@ -672,6 +695,7 @@ func (m *BlockHeader) XXX_DiscardUnknown() {
 var xxx_messageInfo_BlockHeader proto.InternalMessageInfo
 
 func (m *BlockHeader) GetNumber() uint64 {
+	fmt.Println("===BlockHeader=============GetNumber=======")
 	if m != nil {
 		return m.Number
 	}
@@ -679,6 +703,7 @@ func (m *BlockHeader) GetNumber() uint64 {
 }
 
 func (m *BlockHeader) GetPreviousHash() []byte {
+	fmt.Println("===BlockHeader=============GetPreviousHash=======")
 	if m != nil {
 		return m.PreviousHash
 	}
@@ -686,6 +711,7 @@ func (m *BlockHeader) GetPreviousHash() []byte {
 }
 
 func (m *BlockHeader) GetDataHash() []byte {
+	fmt.Println("===BlockHeader=============GetDataHash=======")
 	if m != nil {
 		return m.DataHash
 	}
@@ -724,6 +750,7 @@ func (m *BlockData) XXX_DiscardUnknown() {
 var xxx_messageInfo_BlockData proto.InternalMessageInfo
 
 func (m *BlockData) GetData() [][]byte {
+	fmt.Println("===BlockData=============GetData=======")
 	if m != nil {
 		return m.Data
 	}
@@ -762,6 +789,7 @@ func (m *BlockMetadata) XXX_DiscardUnknown() {
 var xxx_messageInfo_BlockMetadata proto.InternalMessageInfo
 
 func (m *BlockMetadata) GetMetadata() [][]byte {
+	fmt.Println("===BlockMetadata=============GetMetadata=======")
 	if m != nil {
 		return m.Metadata
 	}
