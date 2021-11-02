@@ -55,6 +55,7 @@ const (
 )
 
 func addValue(cg *cb.ConfigGroup, value channelconfig.ConfigValue, modPolicy string) {
+	fmt.Println("===================addValue============")
 	cg.Values[value.Key()] = &cb.ConfigValue{
 		Value:     utils.MarshalOrPanic(value.Value()),
 		ModPolicy: modPolicy,
@@ -62,6 +63,7 @@ func addValue(cg *cb.ConfigGroup, value channelconfig.ConfigValue, modPolicy str
 }
 
 func addPolicy(cg *cb.ConfigGroup, policy policies.ConfigPolicy, modPolicy string) {
+	fmt.Println("===================addPolicy============")
 	fmt.Println("===addPolicy=")
 	cg.Policies[policy.Key()] = &cb.ConfigPolicy{
 		Policy:    policy.Value(),

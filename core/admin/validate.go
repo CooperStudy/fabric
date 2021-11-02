@@ -8,6 +8,7 @@ package admin
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/hyperledger/fabric/common/util"
@@ -27,6 +28,7 @@ type validator struct {
 }
 
 func (v *validator) validate(ctx context.Context, env *common.Envelope) (*peer.AdminOperation, error) {
+	fmt.Println("===validator==validate==")
 	op, sd, err := validateStructure(ctx, env)
 	if err != nil {
 		return nil, err
@@ -41,6 +43,7 @@ func (v *validator) validate(ctx context.Context, env *common.Envelope) (*peer.A
 }
 
 func validateStructure(ctx context.Context, env *common.Envelope) (*peer.AdminOperation, []*common.SignedData, error) {
+	fmt.Println("===validateStructure====")
 	if ctx == nil {
 		return nil, nil, errors.New("nil context")
 	}

@@ -36,6 +36,7 @@ type defaultACLProvider struct {
 }
 
 func NewDefaultACLProvider() ACLProvider {
+	fmt.Println("====NewDefaultACLProvider============")
 	d := &defaultACLProvider{}
 	d.initialize()
 
@@ -43,6 +44,7 @@ func NewDefaultACLProvider() ACLProvider {
 }
 
 func (d *defaultACLProvider) initialize() {
+	fmt.Println("====defaultACLProvider=====initialize=======")
 	d.policyChecker = policy.NewPolicyChecker(
 		peer.NewChannelPolicyManagerGetter(),
 		mgmt.GetLocalMSP(),
@@ -101,6 +103,7 @@ func (d *defaultACLProvider) initialize() {
 
 //this should cover an exhaustive list of everything called from the peer
 func (d *defaultACLProvider) defaultPolicy(resName string, cprovider bool) string {
+	fmt.Println("====defaultACLProvider=====defaultPolicy=======")
 	var pol string
 	if cprovider {
 		pol = d.cResourcePolicyMap[resName]
@@ -112,6 +115,7 @@ func (d *defaultACLProvider) defaultPolicy(resName string, cprovider bool) strin
 
 //CheckACL provides default (v 1.0) behavior by mapping resources to their ACL for a channel
 func (d *defaultACLProvider) CheckACL(resName string, channelID string, idinfo interface{}) error {
+	fmt.Println("====defaultACLProvider=====CheckACL=======")
 	policy := d.defaultPolicy(resName, true)
 	if policy == "" {
 		aclLogger.Errorf("Unmapped policy for %s", resName)

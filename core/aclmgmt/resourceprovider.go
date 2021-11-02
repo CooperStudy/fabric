@@ -21,6 +21,7 @@ import (
 type PolicyNotFound string
 
 func (e PolicyNotFound) Error() string {
+	fmt.Println("====PolicyNotFound=====Error=======")
 	return fmt.Sprintf("policy %s not found", string(e))
 }
 
@@ -28,6 +29,7 @@ func (e PolicyNotFound) Error() string {
 type InvalidIdInfo string
 
 func (e InvalidIdInfo) Error() string {
+	fmt.Println("====InvalidIdInfo=====Error=======")
 	return fmt.Sprintf("Invalid id for policy [%s]", string(e))
 }
 
@@ -41,10 +43,12 @@ type policyEvaluator interface {
 
 //policyEvaluatorImpl implements policyEvaluator
 type policyEvaluatorImpl struct {
+
 	bundle channelconfig.Resources
 }
 
 func (pe *policyEvaluatorImpl) PolicyRefForAPI(resName string) string {
+	fmt.Println("===policyEvaluatorImpl==PolicyRefForAPI=====")
 	app, exists := pe.bundle.ApplicationConfig()
 	if !exists {
 		return ""
@@ -59,6 +63,7 @@ func (pe *policyEvaluatorImpl) PolicyRefForAPI(resName string) string {
 }
 
 func (pe *policyEvaluatorImpl) Evaluate(polName string, sd []*common.SignedData) error {
+	fmt.Println("===policyEvaluatorImpl==Evaluate=====")
 	policy, ok := pe.bundle.PolicyManager().GetPolicy(polName)
 	if !ok {
 		return PolicyNotFound(polName)
@@ -85,12 +90,14 @@ type aclmgmtPolicyProviderImpl struct {
 
 //GetPolicyName returns the policy name given the resource string
 func (rp *aclmgmtPolicyProviderImpl) GetPolicyName(resName string) string {
+	fmt.Println("===policyEvaluatorImpl==GetPolicyName=====")
 	return rp.pEvaluator.PolicyRefForAPI(resName)
 }
 
 //CheckACL implements AClProvider's CheckACL interface so it can be registered
 //as a provider with aclmgmt
 func (rp *aclmgmtPolicyProviderImpl) CheckACL(polName string, idinfo interface{}) error {
+	fmt.Println("===aclmgmtPolicyProviderImpl==CheckACL=====")
 	aclLogger.Debugf("acl check(%s)", polName)
 
 	//we will implement other identifiers. In the end we just need a SignedData
@@ -153,11 +160,13 @@ type resourceProvider struct {
 
 //create a new resourceProvider
 func newResourceProvider(rg ResourceGetter, defprov ACLProvider) *resourceProvider {
+	fmt.Println("===newResourceProvider=====")
 	return &resourceProvider{rg, defprov}
 }
 
 //CheckACL implements the ACL
 func (rp *resourceProvider) CheckACL(resName string, channelID string, idinfo interface{}) error {
+	fmt.Println("===resourceProvider===CheckACL==")
 	resCfg := rp.resGetter(channelID)
 
 	if resCfg != nil {
