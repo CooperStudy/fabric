@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package persistence
 
 import (
+	"fmt"
 	"io/ioutil"
 
 	"github.com/hyperledger/fabric/common/chaincode"
@@ -48,6 +49,7 @@ type PackageProvider struct {
 // ChaincodeInstallPackages and then falls back to searching for
 // ChaincodeDeploymentSpecs
 func (p *PackageProvider) GetChaincodeCodePackage(name, version string) ([]byte, error) {
+	fmt.Println("======PackageProvider======GetChaincodeCodePackage=============")
 	codePackage, err := p.getCodePackageFromStore(name, version)
 	if err == nil {
 		return codePackage, nil
@@ -70,6 +72,7 @@ func (p *PackageProvider) GetChaincodeCodePackage(name, version string) ([]byte,
 // GetCodePackageFromStore gets the code package bytes from the package
 // provider's Store, which persists ChaincodeInstallPackages
 func (p *PackageProvider) getCodePackageFromStore(name, version string) ([]byte, error) {
+	fmt.Println("======PackageProvider======getCodePackageFromStore=============")
 	hash, err := p.Store.RetrieveHash(name, version)
 	if _, ok := err.(*CodePackageNotFoundErr); ok {
 		return nil, err
@@ -94,6 +97,7 @@ func (p *PackageProvider) getCodePackageFromStore(name, version string) ([]byte,
 // GetCodePackageFromLegacyPP gets the code packages bytes from the
 // legacy package provider, which persists ChaincodeDeploymentSpecs
 func (p *PackageProvider) getCodePackageFromLegacyPP(name, version string) ([]byte, error) {
+	fmt.Println("======PackageProvider======getCodePackageFromLegacyPP=============")
 	codePackage, err := p.LegacyPP.GetChaincodeCodePackage(name, version)
 	if err != nil {
 		return nil, errors.Wrap(err, "error loading code package from ChaincodeDeploymentSpec")
@@ -104,6 +108,7 @@ func (p *PackageProvider) getCodePackageFromLegacyPP(name, version string) ([]by
 // ListInstalledChaincodes returns metadata (name, version, and ID) for
 // each chaincode installed on a peer
 func (p *PackageProvider) ListInstalledChaincodes() ([]chaincode.InstalledChaincode, error) {
+	fmt.Println("======PackageProvider======ListInstalledChaincodes=============")
 	// first look through ChaincodeInstallPackages
 	installedChaincodes, err := p.Store.ListInstalledChaincodes()
 

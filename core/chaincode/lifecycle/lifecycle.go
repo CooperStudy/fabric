@@ -33,6 +33,7 @@ type Lifecycle struct {
 // InstallChaincode installs a given chaincode to the peer's chaincode store.
 // It returns the hash to reference the chaincode by or an error on failure.
 func (l *Lifecycle) InstallChaincode(name, version string, chaincodeInstallPackage []byte) ([]byte, error) {
+	fmt.Println("=====Lifecycle==InstallChaincode==")
 	// Let's validate that the chaincodeInstallPackage is at least well formed before writing it
 	_, err := l.PackageParser.Parse(chaincodeInstallPackage)
 	if err != nil {
@@ -49,6 +50,7 @@ func (l *Lifecycle) InstallChaincode(name, version string, chaincodeInstallPacka
 
 // QueryInstalledChaincode returns the hash of an installed chaincode of a given name and version.
 func (l *Lifecycle) QueryInstalledChaincode(name, version string) ([]byte, error) {
+	fmt.Println("=====Lifecycle==QueryInstalledChaincode==")
 	hash, err := l.ChaincodeStore.RetrieveHash(name, version)
 	if err != nil {
 		return nil, errors.WithMessage(err, fmt.Sprintf("could not retrieve hash for chaincode '%s:%s'", name, version))

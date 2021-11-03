@@ -42,41 +42,49 @@ type SCC struct {
 
 // Name returns "+lifecycle"
 func (scc *SCC) Name() string {
+	fmt.Println("=====SCC==Name==")
 	return "+lifecycle"
 }
 
 // Path returns "github.com/hyperledger/fabric/core/chaincode/lifecycle"
 func (scc *SCC) Path() string {
+	fmt.Println("=====SCC==Path==")
 	return "github.com/hyperledger/fabric/core/chaincode/lifecycle"
 }
 
 // InitArgs returns nil
 func (scc *SCC) InitArgs() [][]byte {
+	fmt.Println("=====SCC==InitArgs==")
 	return nil
 }
 
 // Chaincode returns a reference to itself
 func (scc *SCC) Chaincode() shim.Chaincode {
+	fmt.Println("=====SCC==Chaincode==")
 	return scc
 }
 
 // InvokableExternal returns true
 func (scc *SCC) InvokableExternal() bool {
+	fmt.Println("=====SCC==InvokableExternal==")
 	return true
 }
 
 // InvokableCC2CC returns true
 func (scc *SCC) InvokableCC2CC() bool {
+	fmt.Println("=====SCC==InvokableCC2CC==")
 	return true
 }
 
 // Enabled returns true
 func (scc *SCC) Enabled() bool {
+	fmt.Println("=====SCC==Enabled==")
 	return true
 }
 
 // Init is mostly useless for system chaincodes and always returns success
 func (scc *SCC) Init(stub shim.ChaincodeStubInterface) pb.Response {
+	fmt.Println("=====SCC==Init==")
 	return shim.Success(nil)
 }
 
@@ -84,6 +92,7 @@ func (scc *SCC) Init(stub shim.ChaincodeStubInterface) pb.Response {
 // underlying lifecycle operation.  All functions take a single argument of
 // type marshaled lb.<FunctionName>Args and return a marshaled lb.<FunctionName>Result
 func (scc *SCC) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
+	fmt.Println("=====SCC==Invoke==")
 	args := stub.GetArgs()
 	if len(args) == 0 {
 		return shim.Error("lifecycle scc must be invoked with arguments")
