@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package cc
 
 import (
+	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/common/chaincode"
 	"github.com/hyperledger/fabric/core/common/ccprovider"
@@ -26,6 +27,7 @@ type ChaincodePredicate func(cc chaincode.Metadata) bool
 
 // DeployedChaincodes retrieves the metadata of the given deployed chaincodes
 func DeployedChaincodes(q Query, filter ChaincodePredicate, loadCollections bool, chaincodes ...string) (chaincode.MetadataSet, error) {
+	fmt.Println("===DeployedChaincodes==")
 	defer q.Done()
 
 	var res chaincode.MetadataSet
@@ -79,6 +81,7 @@ func DeployedChaincodes(q Query, filter ChaincodePredicate, loadCollections bool
 }
 
 func deployedCCToNameVersion(cc chaincode.Metadata) nameVersion {
+	fmt.Println("===deployedCCToNameVersion==")
 	return nameVersion{
 		name:    cc.Name,
 		version: cc.Version,
@@ -86,7 +89,9 @@ func deployedCCToNameVersion(cc chaincode.Metadata) nameVersion {
 }
 
 func extractCCInfo(data []byte) (*ccprovider.ChaincodeData, error) {
+	fmt.Println("===extractCCInfo==")
 	cd := &ccprovider.ChaincodeData{}
+
 	if err := proto.Unmarshal(data, cd); err != nil {
 		return nil, errors.Wrap(err, "failed unmarshaling lscc read value into ChaincodeData")
 	}
@@ -99,6 +104,7 @@ type nameVersion struct {
 }
 
 func installedCCToNameVersion(cc chaincode.InstalledChaincode) nameVersion {
+	fmt.Println("===installedCCToNameVersion==")
 	return nameVersion{
 		name:    cc.Name,
 		version: cc.Version,
@@ -106,6 +112,7 @@ func installedCCToNameVersion(cc chaincode.InstalledChaincode) nameVersion {
 }
 
 func names(installedChaincodes []chaincode.InstalledChaincode) []string {
+	fmt.Println("===names==")
 	var ccs []string
 	for _, cc := range installedChaincodes {
 		ccs = append(ccs, cc.Name)

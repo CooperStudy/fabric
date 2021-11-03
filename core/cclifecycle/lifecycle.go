@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package cc
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/hyperledger/fabric/common/chaincode"
@@ -44,6 +45,7 @@ type HandleMetadataUpdate func(channel string, chaincodes chaincode.MetadataSet)
 // LifeCycleChangeListener runs whenever there is a change to the metadata
 // // of a chaincode in the context of a specific channel
 func (mdUpdate HandleMetadataUpdate) LifeCycleChangeListener(channel string, chaincodes chaincode.MetadataSet) {
+	fmt.Println("===HandleMetadataUpdate==LifeCycleChangeListener==")
 	mdUpdate(channel, chaincodes)
 }
 
@@ -60,6 +62,7 @@ type Enumerate func() ([]chaincode.InstalledChaincode, error)
 
 // Enumerate enumerates chaincodes
 func (listCCs Enumerate) Enumerate() ([]chaincode.InstalledChaincode, error) {
+	fmt.Println("===Enumerate==Enumerate==")
 	return listCCs()
 }
 
@@ -87,11 +90,13 @@ type QueryCreatorFunc func() (Query, error)
 
 // NewQuery creates a new Query, or error on failure
 func (qc QueryCreatorFunc) NewQuery() (Query, error) {
+	fmt.Println("===QueryCreatorFunc==NewQuery==")
 	return qc()
 }
 
 // NewLifeCycle creates a new Lifecycle instance
 func NewLifeCycle(installedChaincodes Enumerator) (*Lifecycle, error) {
+	fmt.Println("===NewLifeCycle==NewLifeCycle==")
 	installedCCs, err := installedChaincodes.Enumerate()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed listing installed chaincodes")
@@ -109,6 +114,7 @@ func NewLifeCycle(installedChaincodes Enumerator) (*Lifecycle, error) {
 // Metadata returns the metadata of the chaincode on the given channel,
 // or nil if not found or an error occurred at retrieving it
 func (lc *Lifecycle) Metadata(channel string, cc string, collections bool) *chaincode.Metadata {
+	fmt.Println("===Lifecycle==Metadata==")
 	queryCreator := lc.queryCreatorsByChannel[channel]
 	if queryCreator == nil {
 		Logger.Warning("Requested Metadata for non-existent channel", channel)
@@ -139,6 +145,7 @@ func (lc *Lifecycle) Metadata(channel string, cc string, collections bool) *chai
 }
 
 func (lc *Lifecycle) initMetadataForChannel(channel string, queryCreator QueryCreator) error {
+	fmt.Println("===Lifecycle==initMetadataForChannel==")
 	if lc.isChannelMetadataInitialized(channel) {
 		return nil
 	}
@@ -157,6 +164,7 @@ func (lc *Lifecycle) initMetadataForChannel(channel string, queryCreator QueryCr
 }
 
 func (lc *Lifecycle) createMetadataForChannel(channel string, newQuery QueryCreator) {
+	fmt.Println("===Lifecycle==createMetadataForChannel==")
 	lc.Lock()
 	defer lc.Unlock()
 	lc.deployedCCsByChannel[channel] = chaincode.NewMetadataMapping()
@@ -164,6 +172,7 @@ func (lc *Lifecycle) createMetadataForChannel(channel string, newQuery QueryCrea
 }
 
 func (lc *Lifecycle) isChannelMetadataInitialized(channel string) bool {
+	fmt.Println("===Lifecycle==isChannelMetadataInitialized==")
 	lc.RLock()
 	defer lc.RUnlock()
 	_, exists := lc.deployedCCsByChannel[channel]
@@ -171,6 +180,7 @@ func (lc *Lifecycle) isChannelMetadataInitialized(channel string) bool {
 }
 
 func (lc *Lifecycle) updateState(channel string, ccUpdate chaincode.MetadataSet) {
+	fmt.Println("===Lifecycle==updateState==")
 	lc.RLock()
 	defer lc.RUnlock()
 	for _, cc := range ccUpdate {
@@ -179,6 +189,7 @@ func (lc *Lifecycle) updateState(channel string, ccUpdate chaincode.MetadataSet)
 }
 
 func (lc *Lifecycle) fireChangeListeners(channel string) {
+	fmt.Println("===Lifecycle==fireChangeListeners==")
 	lc.RLock()
 	md := lc.deployedCCsByChannel[channel]
 	lc.RUnlock()
@@ -191,6 +202,7 @@ func (lc *Lifecycle) fireChangeListeners(channel string) {
 
 // NewChannelSubscription subscribes to a channel
 func (lc *Lifecycle) NewChannelSubscription(channel string, queryCreator QueryCreator) (*Subscription, error) {
+	fmt.Println("===Lifecycle==NewChannelSubscription==")
 	sub := &Subscription{
 		lc:             lc,
 		channel:        channel,
@@ -208,6 +220,7 @@ func (lc *Lifecycle) NewChannelSubscription(channel string, queryCreator QueryCr
 
 // AddListener registers the given listener to be triggered upon a lifecycle change
 func (lc *Lifecycle) AddListener(listener LifeCycleChangeListener) {
+	fmt.Println("===Lifecycle==AddListener==")
 	lc.Lock()
 	defer lc.Unlock()
 	lc.listeners = append(lc.listeners, listener)

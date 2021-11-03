@@ -8,6 +8,7 @@ package cc
 
 import (
 	"bytes"
+	"fmt"
 	"sync"
 
 	"github.com/hyperledger/fabric/common/chaincode"
@@ -29,12 +30,14 @@ type depCCsRetriever func(Query, ChaincodePredicate, bool, ...string) (chaincode
 // HandleChaincodeDeploy is expected to be invoked when a chaincode is deployed via a deploy transaction and the chaicndoe was already
 // installed on the peer. This also gets invoked when an already deployed chaincode is installed on the peer
 func (sub *Subscription) HandleChaincodeDeploy(chaincodeDefinition *cceventmgmt.ChaincodeDefinition, dbArtifactsTar []byte) error {
+	fmt.Println("===Subscription==HandleChaincodeDeploy==")
 	Logger.Debug("Channel", sub.channel, "got a new deployment:", chaincodeDefinition)
 	sub.pendingUpdates <- chaincodeDefinition
 	return nil
 }
 
 func (sub *Subscription) processPendingUpdate(ccDef *cceventmgmt.ChaincodeDefinition) {
+	fmt.Println("===Subscription==processPendingUpdate==")
 	query, err := sub.queryCreator.NewQuery()
 	if err != nil {
 		Logger.Errorf("Failed creating a new query for channel %s: %v", sub.channel, err)
@@ -58,6 +61,7 @@ func (sub *Subscription) processPendingUpdate(ccDef *cceventmgmt.ChaincodeDefini
 // ChaincodeDeployDone gets invoked when the chaincode deploy transaction or chaincode install
 // (the context in which the above function was invoked)
 func (sub *Subscription) ChaincodeDeployDone(succeeded bool) {
+	fmt.Println("===Subscription==ChaincodeDeployDone==")
 	// Run a new goroutine which would dispatch a single pending update.
 	// This is to prevent any ledger locks being obtained during the state query
 	// to affect the locks held while invoking this method by the ledger itself.
@@ -76,6 +80,7 @@ func (sub *Subscription) ChaincodeDeployDone(succeeded bool) {
 }
 
 func queryChaincodeDefinitions(query Query, ccs []chaincode.InstalledChaincode, deployedCCs depCCsRetriever) (chaincode.MetadataSet, error) {
+	fmt.Println("===queryChaincodeDefinitions==")
 	// map from string and version to chaincode ID
 	installedCCsToIDs := make(map[nameVersion][]byte)
 	// Populate the map

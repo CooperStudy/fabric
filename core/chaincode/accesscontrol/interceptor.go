@@ -30,6 +30,7 @@ type ChaincodeStream interface {
 type authorization func(message *pb.ChaincodeMessage, stream grpc.ServerStream) error
 
 func newInterceptor(srv pb.ChaincodeSupportServer, auth authorization) pb.ChaincodeSupportServer {
+	fmt.Println("===newInterceptor==")
 	return &interceptor{
 		next: srv,
 		auth: auth,
@@ -38,6 +39,7 @@ func newInterceptor(srv pb.ChaincodeSupportServer, auth authorization) pb.Chainc
 
 // Register makes the interceptor implement ChaincodeSupportServer
 func (i *interceptor) Register(stream pb.ChaincodeSupport_RegisterServer) error {
+	fmt.Println("===interceptor==Register==")
 	is := &interceptedStream{
 		incMessages:  make(chan *pb.ChaincodeMessage, 1),
 		stream:       stream,
@@ -66,11 +68,13 @@ type interceptedStream struct {
 
 // Send sends a chaincode message
 func (is *interceptedStream) Send(msg *pb.ChaincodeMessage) error {
+	fmt.Println("===interceptedStream==Send==")
 	return is.stream.Send(msg)
 }
 
 // Recv receives a chaincode message
 func (is *interceptedStream) Recv() (*pb.ChaincodeMessage, error) {
+	fmt.Println("===interceptedStream==Recv==")
 	msg, ok := <-is.incMessages
 	if !ok {
 		return is.stream.Recv()
