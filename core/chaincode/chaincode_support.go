@@ -75,6 +75,7 @@ func NewChaincodeSupport(
 	appConfig ApplicationConfigRetriever,
 	metricsProvider metrics.Provider,
 ) *ChaincodeSupport {
+	fmt.Println("====NewChaincodeSupport======")
 	cs := &ChaincodeSupport{
 		UserRunsCC:       userRunsCC,
 		Keepalive:        config.Keepalive,
@@ -121,6 +122,7 @@ func NewChaincodeSupport(
 // as in the case of v1.0-v1.2 lifecycle, the chaincode will not yet be
 // defined in the LSCC table
 func (cs *ChaincodeSupport) LaunchInit(ccci *ccprovider.ChaincodeContainerInfo) error {
+	fmt.Println("====ChaincodeSupport==LaunchInit====")
 	cname := ccci.Name + ":" + ccci.Version
 	if cs.HandlerRegistry.Handler(cname) != nil {
 		return nil
@@ -133,6 +135,7 @@ func (cs *ChaincodeSupport) LaunchInit(ccci *ccprovider.ChaincodeContainerInfo) 
 // blocks until the peer side handler gets into ready state or encounters a fatal
 // error. If the chaincode is already running, it simply returns.
 func (cs *ChaincodeSupport) Launch(chainID, chaincodeName, chaincodeVersion string, qe ledger.QueryExecutor) (*Handler, error) {
+	fmt.Println("====ChaincodeSupport==Launch====")
 	cname := chaincodeName + ":" + chaincodeVersion
 	if h := cs.HandlerRegistry.Handler(cname); h != nil {
 		return h, nil
@@ -164,11 +167,13 @@ func (cs *ChaincodeSupport) Launch(chainID, chaincodeName, chaincodeVersion stri
 
 // Stop stops a chaincode if running.
 func (cs *ChaincodeSupport) Stop(ccci *ccprovider.ChaincodeContainerInfo) error {
+	fmt.Println("====ChaincodeSupport==Stop====")
 	return cs.Runtime.Stop(ccci)
 }
 
 // HandleChaincodeStream implements ccintf.HandleChaincodeStream for all vms to call with appropriate stream
 func (cs *ChaincodeSupport) HandleChaincodeStream(stream ccintf.ChaincodeStream) error {
+	fmt.Println("====ChaincodeSupport==HandleChaincodeStream====")
 	handler := &Handler{
 		Invoker:                    cs,
 		DefinitionGetter:           cs.Lifecycle,
@@ -192,11 +197,13 @@ func (cs *ChaincodeSupport) HandleChaincodeStream(stream ccintf.ChaincodeStream)
 
 // Register the bidi stream entry point called by chaincode to register with the Peer.
 func (cs *ChaincodeSupport) Register(stream pb.ChaincodeSupport_RegisterServer) error {
+	fmt.Println("====ChaincodeSupport==Register====")
 	return cs.HandleChaincodeStream(stream)
 }
 
 // createCCMessage creates a transaction message.
 func createCCMessage(messageType pb.ChaincodeMessage_Type, cid string, txid string, cMsg *pb.ChaincodeInput) (*pb.ChaincodeMessage, error) {
+	fmt.Println("====createCCMessage====")
 	payload, err := proto.Marshal(cMsg)
 	if err != nil {
 		return nil, err
@@ -215,6 +222,7 @@ func createCCMessage(messageType pb.ChaincodeMessage_Type, cid string, txid stri
 // It does not attempt to start the chaincode based on the information from lifecycle, but instead
 // accepts the container information directly in the form of a ChaincodeDeploymentSpec.
 func (cs *ChaincodeSupport) ExecuteLegacyInit(txParams *ccprovider.TransactionParams, cccid *ccprovider.CCContext, spec *pb.ChaincodeDeploymentSpec) (*pb.Response, *pb.ChaincodeEvent, error) {
+	fmt.Println("====ChaincodeSupport===ExecuteLegacyInit=")
 	ccci := ccprovider.DeploymentSpecToChaincodeContainerInfo(spec)
 	ccci.Version = cccid.Version
 
@@ -235,11 +243,13 @@ func (cs *ChaincodeSupport) ExecuteLegacyInit(txParams *ccprovider.TransactionPa
 
 // Execute invokes chaincode and returns the original response.
 func (cs *ChaincodeSupport) Execute(txParams *ccprovider.TransactionParams, cccid *ccprovider.CCContext, input *pb.ChaincodeInput) (*pb.Response, *pb.ChaincodeEvent, error) {
+	fmt.Println("====ChaincodeSupport===Execute=")
 	resp, err := cs.Invoke(txParams, cccid, input)
 	return processChaincodeExecutionResult(txParams.TxID, cccid.Name, resp, err)
 }
 
 func processChaincodeExecutionResult(txid, ccName string, resp *pb.ChaincodeMessage, err error) (*pb.Response, *pb.ChaincodeEvent, error) {
+	fmt.Println("====processChaincodeExecutionResult=")
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to execute transaction %s", txid)
 	}
@@ -270,6 +280,7 @@ func processChaincodeExecutionResult(txid, ccName string, resp *pb.ChaincodeMess
 }
 
 func (cs *ChaincodeSupport) InvokeInit(txParams *ccprovider.TransactionParams, cccid *ccprovider.CCContext, input *pb.ChaincodeInput) (*pb.ChaincodeMessage, error) {
+	fmt.Println("====ChaincodeSupport=")
 	h, err := cs.Launch(txParams.ChannelID, cccid.Name, cccid.Version, txParams.TXSimulator)
 	if err != nil {
 		return nil, err
@@ -281,6 +292,7 @@ func (cs *ChaincodeSupport) InvokeInit(txParams *ccprovider.TransactionParams, c
 // Invoke will invoke chaincode and return the message containing the response.
 // The chaincode will be launched if it is not already running.
 func (cs *ChaincodeSupport) Invoke(txParams *ccprovider.TransactionParams, cccid *ccprovider.CCContext, input *pb.ChaincodeInput) (*pb.ChaincodeMessage, error) {
+	fmt.Println("====ChaincodeSupport=Invoke==")
 	h, err := cs.Launch(txParams.ChannelID, cccid.Name, cccid.Version, txParams.TXSimulator)
 	if err != nil {
 		return nil, err
@@ -303,7 +315,9 @@ func (cs *ChaincodeSupport) Invoke(txParams *ccprovider.TransactionParams, cccid
 
 // execute executes a transaction and waits for it to complete until a timeout value.
 func (cs *ChaincodeSupport) execute(cctyp pb.ChaincodeMessage_Type, txParams *ccprovider.TransactionParams, cccid *ccprovider.CCContext, input *pb.ChaincodeInput, h *Handler) (*pb.ChaincodeMessage, error) {
+	fmt.Println("====ChaincodeSupport=execute==")
 	input.Decorations = txParams.ProposalDecorations
+
 	ccMsg, err := createCCMessage(cctyp, txParams.ChannelID, txParams.TxID, input)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to create chaincode message")

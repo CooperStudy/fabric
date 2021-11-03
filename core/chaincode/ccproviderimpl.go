@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package chaincode
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric/core/common/ccprovider"
 	pb "github.com/hyperledger/fabric/protos/peer"
 )
@@ -17,20 +18,24 @@ type CCProviderImpl struct {
 }
 
 func NewProvider(cs *ChaincodeSupport) *CCProviderImpl {
+	fmt.Println("=======NewProvider======")
 	return &CCProviderImpl{cs: cs}
 }
 
 // Execute executes the chaincode given context and spec (invocation or deploy)
 func (c *CCProviderImpl) Execute(txParams *ccprovider.TransactionParams, cccid *ccprovider.CCContext, input *pb.ChaincodeInput) (*pb.Response, *pb.ChaincodeEvent, error) {
+	fmt.Println("====CCProviderImpl===Execute======")
 	return c.cs.Execute(txParams, cccid, input)
 }
 
 // ExecuteLegacyInit executes a chaincode which is not in the LSCC table
 func (c *CCProviderImpl) ExecuteLegacyInit(txParams *ccprovider.TransactionParams, cccid *ccprovider.CCContext, spec *pb.ChaincodeDeploymentSpec) (*pb.Response, *pb.ChaincodeEvent, error) {
+	fmt.Println("====CCProviderImpl===ExecuteLegacyInit======")
 	return c.cs.ExecuteLegacyInit(txParams, cccid, spec)
 }
 
 // Stop stops the chaincode given context and spec
 func (c *CCProviderImpl) Stop(ccci *ccprovider.ChaincodeContainerInfo) error {
+	fmt.Println("====CCProviderImpl===Stop======")
 	return c.cs.Stop(ccci)
 }

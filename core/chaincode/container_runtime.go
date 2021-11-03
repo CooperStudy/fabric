@@ -45,6 +45,7 @@ type ContainerRuntime struct {
 
 // Start launches chaincode in a runtime environment.
 func (c *ContainerRuntime) Start(ccci *ccprovider.ChaincodeContainerInfo, codePackage []byte) error {
+	fmt.Println("====ContainerRuntime==Start==")
 	cname := ccci.Name + ":" + ccci.Version
 
 	lc, err := c.LaunchConfig(cname, ccci.Type)
@@ -83,6 +84,7 @@ func (c *ContainerRuntime) Start(ccci *ccprovider.ChaincodeContainerInfo, codePa
 
 // Stop terminates chaincode and its container runtime environment.
 func (c *ContainerRuntime) Stop(ccci *ccprovider.ChaincodeContainerInfo) error {
+	fmt.Println("====ContainerRuntime==Stop==")
 	scr := container.StopContainerReq{
 		CCID: ccintf.CCID{
 			Name:    ccci.Name,
@@ -107,6 +109,7 @@ const (
 )
 
 func (c *ContainerRuntime) getTLSFiles(keyPair *accesscontrol.CertAndPrivKeyPair) map[string][]byte {
+	fmt.Println("====ContainerRuntime==getTLSFiles==")
 	if keyPair == nil {
 		return nil
 	}
@@ -127,6 +130,7 @@ type LaunchConfig struct {
 
 // LaunchConfig creates the LaunchConfig for chaincode running in a container.
 func (c *ContainerRuntime) LaunchConfig(cname string, ccType string) (*LaunchConfig, error) {
+	fmt.Println("====ContainerRuntime==LaunchConfig==")
 	var lc LaunchConfig
 
 	// common environment variables
@@ -169,6 +173,7 @@ func (c *ContainerRuntime) LaunchConfig(cname string, ccType string) (*LaunchCon
 }
 
 func (lc *LaunchConfig) String() string {
+	fmt.Println("====LaunchConfig==String==")
 	buf := &bytes.Buffer{}
 	if len(lc.Args) > 0 {
 		fmt.Fprintf(buf, "executable:%q,", lc.Args[0])
