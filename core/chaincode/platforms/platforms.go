@@ -46,6 +46,7 @@ type PackageWriter interface {
 type PackageWriterWrapper func(name string, payload []byte, tw *tar.Writer) error
 
 func (pw PackageWriterWrapper) Write(name string, payload []byte, tw *tar.Writer) error {
+	fmt.Println("=====PackageWriterWrapper===Write=========")
 	return pw(name, payload, tw)
 }
 
@@ -57,6 +58,7 @@ type Registry struct {
 var logger = flogging.MustGetLogger("chaincode.platform")
 
 func NewRegistry(platformTypes ...Platform) *Registry {
+	fmt.Println("=====NewRegistry=========")
 	platforms := make(map[string]Platform)
 	for _, platform := range platformTypes {
 		if _, ok := platforms[platform.Name()]; ok {
@@ -71,6 +73,7 @@ func NewRegistry(platformTypes ...Platform) *Registry {
 }
 
 func (r *Registry) ValidateSpec(ccType, path string) error {
+	fmt.Println("=====Registry====ValidateSpec=====")
 	platform, ok := r.Platforms[ccType]
 	if !ok {
 		return fmt.Errorf("Unknown chaincodeType: %s", ccType)
@@ -79,6 +82,7 @@ func (r *Registry) ValidateSpec(ccType, path string) error {
 }
 
 func (r *Registry) ValidateDeploymentSpec(ccType string, codePackage []byte) error {
+	fmt.Println("=====Registry====ValidateDeploymentSpec=====")
 	platform, ok := r.Platforms[ccType]
 	if !ok {
 		return fmt.Errorf("Unknown chaincodeType: %s", ccType)
@@ -87,6 +91,7 @@ func (r *Registry) ValidateDeploymentSpec(ccType string, codePackage []byte) err
 }
 
 func (r *Registry) GetMetadataProvider(ccType string, codePackage []byte) (MetadataProvider, error) {
+	fmt.Println("=====Registry====GetMetadataProvider=====")
 	platform, ok := r.Platforms[ccType]
 	if !ok {
 		return nil, fmt.Errorf("Unknown chaincodeType: %s", ccType)
@@ -95,6 +100,7 @@ func (r *Registry) GetMetadataProvider(ccType string, codePackage []byte) (Metad
 }
 
 func (r *Registry) GetDeploymentPayload(ccType, path string) ([]byte, error) {
+	fmt.Println("=====Registry====GetDeploymentPayload=====")
 	platform, ok := r.Platforms[ccType]
 	if !ok {
 		return nil, fmt.Errorf("Unknown chaincodeType: %s", ccType)
@@ -104,6 +110,7 @@ func (r *Registry) GetDeploymentPayload(ccType, path string) ([]byte, error) {
 }
 
 func (r *Registry) GenerateDockerfile(ccType, name, version string) (string, error) {
+	fmt.Println("=====Registry====GenerateDockerfile=====")
 	platform, ok := r.Platforms[ccType]
 	if !ok {
 		return "", fmt.Errorf("Unknown chaincodeType: %s", ccType)
@@ -144,6 +151,7 @@ func (r *Registry) GenerateDockerfile(ccType, name, version string) (string, err
 }
 
 func (r *Registry) StreamDockerBuild(ccType, path string, codePackage []byte, inputFiles map[string][]byte, tw *tar.Writer) error {
+	fmt.Println("=====Registry====StreamDockerBuild=====")
 	var err error
 
 	// ----------------------------------------------------------------------------------------------------
@@ -176,7 +184,7 @@ func (r *Registry) StreamDockerBuild(ccType, path string, codePackage []byte, in
 }
 
 func (r *Registry) GenerateDockerBuild(ccType, path, name, version string, codePackage []byte) (io.Reader, error) {
-
+	fmt.Println("=====Registry====GenerateDockerBuild=====")
 	inputFiles := make(map[string][]byte)
 
 	// ----------------------------------------------------------------------------------------------------
