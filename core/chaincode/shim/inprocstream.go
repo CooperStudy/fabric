@@ -27,6 +27,7 @@ import (
 type SendPanicFailure string
 
 func (e SendPanicFailure) Error() string {
+	fmt.Println("=====SendPanicFailure=============")
 	return fmt.Sprintf("send failure %s", string(e))
 }
 
@@ -37,10 +38,12 @@ type inProcStream struct {
 }
 
 func newInProcStream(recv <-chan *pb.ChaincodeMessage, send chan<- *pb.ChaincodeMessage) *inProcStream {
+	fmt.Println("=====newInProcStream=============")
 	return &inProcStream{recv, send}
 }
 
 func (s *inProcStream) Send(msg *pb.ChaincodeMessage) (err error) {
+	fmt.Println("=====inProcStream===Send==========")
 	err = nil
 
 	//send may happen on a closed channel when the system is
@@ -56,6 +59,7 @@ func (s *inProcStream) Send(msg *pb.ChaincodeMessage) (err error) {
 }
 
 func (s *inProcStream) Recv() (*pb.ChaincodeMessage, error) {
+	fmt.Println("=====inProcStream===Recv==========")
 	msg, ok := <-s.recv
 	if !ok {
 		return nil, errors.New("channel is closed")
@@ -64,5 +68,6 @@ func (s *inProcStream) Recv() (*pb.ChaincodeMessage, error) {
 }
 
 func (s *inProcStream) CloseSend() error {
+	fmt.Println("=====inProcStream===CloseSend==========")
 	return nil
 }
