@@ -66,6 +66,7 @@ type Mgr struct{}
 // ProcessAttributeRequestsForCert add attributes to an X509 certificate, given
 // attribute requests and attributes.
 func (mgr *Mgr) ProcessAttributeRequestsForCert(requests []AttributeRequest, attributes []Attribute, cert *x509.Certificate) error {
+	fmt.Println("===Mgr========ProcessAttributeRequestsForCert===================")
 	attrs, err := mgr.ProcessAttributeRequests(requests, attributes)
 	if err != nil {
 		return err
@@ -76,6 +77,7 @@ func (mgr *Mgr) ProcessAttributeRequestsForCert(requests []AttributeRequest, att
 // ProcessAttributeRequests takes an array of attribute requests and an identity's attributes
 // and returns an Attributes object containing the requested attributes.
 func (mgr *Mgr) ProcessAttributeRequests(requests []AttributeRequest, attributes []Attribute) (*Attributes, error) {
+	fmt.Println("===Mgr========ProcessAttributeRequests===================")
 	attrsMap := map[string]string{}
 	attrs := &Attributes{Attrs: attrsMap}
 	missingRequiredAttrs := []string{}
@@ -103,6 +105,7 @@ func (mgr *Mgr) ProcessAttributeRequests(requests []AttributeRequest, attributes
 
 // AddAttributesToCert adds public attribute info to an X509 certificate.
 func (mgr *Mgr) AddAttributesToCert(attrs *Attributes, cert *x509.Certificate) error {
+	fmt.Println("===Mgr========AddAttributesToCert===================")
 	buf, err := json.Marshal(attrs)
 	if err != nil {
 		return errors.Wrap(err, "Failed to marshal attributes")
@@ -118,6 +121,7 @@ func (mgr *Mgr) AddAttributesToCert(attrs *Attributes, cert *x509.Certificate) e
 
 // GetAttributesFromCert gets the attributes from a certificate.
 func (mgr *Mgr) GetAttributesFromCert(cert *x509.Certificate) (*Attributes, error) {
+	fmt.Println("===Mgr========GetAttributesFromCert===================")
 	// Get certificate attributes from the certificate if it exists
 	buf, err := getAttributesFromCert(cert)
 	if err != nil {
@@ -135,6 +139,7 @@ func (mgr *Mgr) GetAttributesFromCert(cert *x509.Certificate) (*Attributes, erro
 }
 
 func (mgr *Mgr) GetAttributesFromIdemix(creator []byte) (*Attributes, error) {
+	fmt.Println("===Mgr========GetAttributesFromIdemix===================")
 	if creator == nil {
 		return nil, errors.New("creator is nil")
 	}
@@ -189,6 +194,7 @@ type Attributes struct {
 
 // Names returns the names of the attributes
 func (a *Attributes) Names() []string {
+	fmt.Println("===Attributes========Names===================")
 	i := 0
 	names := make([]string, len(a.Attrs))
 	for name := range a.Attrs {
@@ -200,12 +206,14 @@ func (a *Attributes) Names() []string {
 
 // Contains returns true if the named attribute is found
 func (a *Attributes) Contains(name string) bool {
+	fmt.Println("===Attributes========Contains===================")
 	_, ok := a.Attrs[name]
 	return ok
 }
 
 // Value returns an attribute's value
 func (a *Attributes) Value(name string) (string, bool, error) {
+	fmt.Println("===Attributes========Value===================")
 	attr, ok := a.Attrs[name]
 	return attr, ok, nil
 }
@@ -213,6 +221,7 @@ func (a *Attributes) Value(name string) (string, bool, error) {
 // True returns nil if the value of attribute 'name' is true;
 // otherwise, an appropriate error is returned.
 func (a *Attributes) True(name string) error {
+	fmt.Println("===Attributes========True===================")
 	val, ok, err := a.Value(name)
 	if err != nil {
 		return err
@@ -228,6 +237,7 @@ func (a *Attributes) True(name string) error {
 
 // Get the attribute info from a certificate extension, or return nil if not found
 func getAttributesFromCert(cert *x509.Certificate) ([]byte, error) {
+	fmt.Println("===getAttributesFromCert=================")
 	for _, ext := range cert.Extensions {
 		if isAttrOID(ext.Id) {
 			return ext.Value, nil
@@ -238,6 +248,7 @@ func getAttributesFromCert(cert *x509.Certificate) ([]byte, error) {
 
 // Is the object ID equal to the attribute info object ID?
 func isAttrOID(oid asn1.ObjectIdentifier) bool {
+	fmt.Println("===isAttrOID=================")
 	if len(oid) != len(AttrOID) {
 		return false
 	}
@@ -251,6 +262,7 @@ func isAttrOID(oid asn1.ObjectIdentifier) bool {
 
 // Get an attribute from 'attrs' by its name, or nil if not found
 func getAttrByName(name string, attrs []Attribute) Attribute {
+	fmt.Println("===getAttrByName=================")
 	for _, attr := range attrs {
 		if attr.GetName() == name {
 			return attr
