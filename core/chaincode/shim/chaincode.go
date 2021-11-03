@@ -80,6 +80,7 @@ var streamGetter peerStreamGetter
 
 //the non-mock user CC stream establishment func
 func userChaincodeStreamGetter(name string) (PeerChaincodeStream, error) {
+	fmt.Println("=====userChaincodeStreamGetter====")
 	flag.StringVar(&peerAddress, "peer.address", "", "peer address")
 	if viper.GetBool("peer.tls.enabled") {
 		keyPath := viper.GetString("tls.client.key.path")
@@ -129,6 +130,7 @@ func userChaincodeStreamGetter(name string) (PeerChaincodeStream, error) {
 
 // chaincodes.
 func Start(cc Chaincode) error {
+	fmt.Println("=====Start====")
 	// If Start() is called, we assume this is a standalone chaincode and set
 	// up formatted logging.
 	SetupChaincodeLogging()
@@ -161,6 +163,7 @@ func Start(cc Chaincode) error {
 // IsEnabledForLogLevel checks to see if the chaincodeLogger is enabled for a specific logging level
 // used primarily for testing
 func IsEnabledForLogLevel(logLevel string) bool {
+	fmt.Println("=====IsEnabledForLogLevel====")
 	lvl, _ := logging.LogLevel(logLevel)
 	return chaincodeLogger.IsEnabledFor(lvl)
 }
@@ -171,10 +174,12 @@ var loggingSetup sync.Once
 // to the values of CORE_CHAINCODE_LOGGING_FORMAT, CORE_CHAINCODE_LOGGING_LEVEL
 // and CORE_CHAINCODE_LOGGING_SHIM set from core.yaml by chaincode_support.go
 func SetupChaincodeLogging() {
+	fmt.Println("=====SetupChaincodeLogging====")
 	loggingSetup.Do(setupChaincodeLogging)
 }
 
 func setupChaincodeLogging() {
+	fmt.Println("=====setupChaincodeLogging====")
 	// This is the default log config from 1.2
 	const defaultLogFormat = "%{color}%{time:2006-01-02 15:04:05.000 MST} [%{module}] %{shortfunc} -> %{level:.4s} %{id:03x}%{color:reset} %{message}"
 	const defaultLevel = logging.INFO
@@ -232,6 +237,7 @@ func setupChaincodeLogging() {
 
 // this has been moved from the 1.2 logging implementation
 func initFromSpec(spec string, defaultLevel logging.Level) {
+	fmt.Println("=====initFromSpec====")
 	levelAll := defaultLevel
 	var err error
 
@@ -272,6 +278,7 @@ func initFromSpec(spec string, defaultLevel logging.Level) {
 // StartInProc is an entry point for system chaincodes bootstrap. It is not an
 // API for chaincodes.
 func StartInProc(env []string, args []string, cc Chaincode, recv <-chan *pb.ChaincodeMessage, send chan<- *pb.ChaincodeMessage) error {
+	fmt.Println("=====StartInProc====")
 	chaincodeLogger.Debugf("in proc %v", args)
 
 	var chaincodename string
@@ -293,6 +300,7 @@ func StartInProc(env []string, args []string, cc Chaincode, recv <-chan *pb.Chai
 }
 
 func getPeerAddress() string {
+	fmt.Println("=====getPeerAddress====")
 	if peerAddress != "" {
 		return peerAddress
 	}
@@ -305,6 +313,7 @@ func getPeerAddress() string {
 }
 
 func newPeerClientConnection() (*grpc.ClientConn, error) {
+	fmt.Println("=====newPeerClientConnection====")
 	var peerAddress = getPeerAddress()
 	// set the keepalive options to match static settings for chaincode server
 	kaOpts := &comm.KeepaliveOptions{
@@ -319,6 +328,7 @@ func newPeerClientConnection() (*grpc.ClientConn, error) {
 }
 
 func chatWithPeer(chaincodename string, stream PeerChaincodeStream, cc Chaincode) error {
+	fmt.Println("=====chatWithPeer====")
 	// Create the shim handler responsible for all control logic
 	handler := newChaincodeHandler(stream, cc)
 	defer stream.CloseSend()
@@ -390,6 +400,7 @@ func chatWithPeer(chaincodename string, stream PeerChaincodeStream, cc Chaincode
 // ChaincodeInvocation functionality
 
 func (stub *ChaincodeStub) init(handler *Handler, channelId string, txid string, input *pb.ChaincodeInput, signedProposal *pb.SignedProposal) error {
+	fmt.Println("=====ChaincodeStub==init==")
 	stub.TxID = txid
 	stub.ChannelId = channelId
 	stub.args = input.Args
@@ -426,15 +437,18 @@ func (stub *ChaincodeStub) init(handler *Handler, channelId string, txid string,
 
 // GetTxID returns the transaction ID for the proposal
 func (stub *ChaincodeStub) GetTxID() string {
+	fmt.Println("=====ChaincodeStub==GetTxID==")
 	return stub.TxID
 }
 
 // GetChannelID returns the channel for the proposal
 func (stub *ChaincodeStub) GetChannelID() string {
+	fmt.Println("=====ChaincodeStub==GetChannelID==")
 	return stub.ChannelId
 }
 
 func (stub *ChaincodeStub) GetDecorations() map[string][]byte {
+	fmt.Println("=====ChaincodeStub==GetDecorations==")
 	return stub.decorations
 }
 
@@ -442,6 +456,7 @@ func (stub *ChaincodeStub) GetDecorations() map[string][]byte {
 
 // InvokeChaincode documentation can be found in interfaces.go
 func (stub *ChaincodeStub) InvokeChaincode(chaincodeName string, args [][]byte, channel string) pb.Response {
+	fmt.Println("=====ChaincodeStub==InvokeChaincode==")
 	// Internally we handle chaincode name as a composite name
 	if channel != "" {
 		chaincodeName = chaincodeName + "/" + channel
@@ -453,6 +468,7 @@ func (stub *ChaincodeStub) InvokeChaincode(chaincodeName string, args [][]byte, 
 
 // GetState documentation can be found in interfaces.go
 func (stub *ChaincodeStub) GetState(key string) ([]byte, error) {
+	fmt.Println("=====ChaincodeStub==GetState==")
 	// Access public data by setting the collection to empty string
 	collection := ""
 	return stub.handler.handleGetState(collection, key, stub.ChannelId, stub.TxID)
@@ -460,11 +476,13 @@ func (stub *ChaincodeStub) GetState(key string) ([]byte, error) {
 
 // SetStateValidationParameter documentation can be found in interfaces.go
 func (stub *ChaincodeStub) SetStateValidationParameter(key string, ep []byte) error {
+	fmt.Println("=====ChaincodeStub==SetStateValidationParameter==")
 	return stub.handler.handlePutStateMetadataEntry("", key, stub.validationParameterMetakey, ep, stub.ChannelId, stub.TxID)
 }
 
 // GetStateValidationParameter documentation can be found in interfaces.go
 func (stub *ChaincodeStub) GetStateValidationParameter(key string) ([]byte, error) {
+	fmt.Println("=====ChaincodeStub==GetStateValidationParameter==")
 	md, err := stub.handler.handleGetStateMetadata("", key, stub.ChannelId, stub.TxID)
 	if err != nil {
 		return nil, err
@@ -477,6 +495,7 @@ func (stub *ChaincodeStub) GetStateValidationParameter(key string) ([]byte, erro
 
 // PutState documentation can be found in interfaces.go
 func (stub *ChaincodeStub) PutState(key string, value []byte) error {
+	fmt.Println("=====ChaincodeStub==PutState==")
 	if key == "" {
 		return errors.New("key must not be an empty string")
 	}
@@ -486,6 +505,7 @@ func (stub *ChaincodeStub) PutState(key string, value []byte) error {
 }
 
 func (stub *ChaincodeStub) createStateQueryIterator(response *pb.QueryResponse) *StateQueryIterator {
+	fmt.Println("=====ChaincodeStub==createStateQueryIterator==")
 	return &StateQueryIterator{CommonIterator: &CommonIterator{
 		handler:    stub.handler,
 		channelId:  stub.ChannelId,
@@ -496,6 +516,7 @@ func (stub *ChaincodeStub) createStateQueryIterator(response *pb.QueryResponse) 
 
 // GetQueryResult documentation can be found in interfaces.go
 func (stub *ChaincodeStub) GetQueryResult(query string) (StateQueryIteratorInterface, error) {
+	fmt.Println("=====ChaincodeStub==GetQueryResult==")
 	// Access public data by setting the collection to empty string
 	collection := ""
 	// ignore QueryResponseMetadata as it is not applicable for a rich query without pagination
@@ -506,6 +527,7 @@ func (stub *ChaincodeStub) GetQueryResult(query string) (StateQueryIteratorInter
 
 // DelState documentation can be found in interfaces.go
 func (stub *ChaincodeStub) DelState(key string) error {
+	fmt.Println("=====ChaincodeStub==DelState==")
 	// Access public data by setting the collection to empty string
 	collection := ""
 	return stub.handler.handleDelState(collection, key, stub.ChannelId, stub.TxID)
@@ -515,6 +537,7 @@ func (stub *ChaincodeStub) DelState(key string) error {
 
 // GetPrivateData documentation can be found in interfaces.go
 func (stub *ChaincodeStub) GetPrivateData(collection string, key string) ([]byte, error) {
+	fmt.Println("=====ChaincodeStub==GetPrivateData==")
 	if collection == "" {
 		return nil, fmt.Errorf("collection must not be an empty string")
 	}
@@ -523,6 +546,7 @@ func (stub *ChaincodeStub) GetPrivateData(collection string, key string) ([]byte
 
 // PutPrivateData documentation can be found in interfaces.go
 func (stub *ChaincodeStub) PutPrivateData(collection string, key string, value []byte) error {
+	fmt.Println("=====ChaincodeStub==PutPrivateData==")
 	if collection == "" {
 		return fmt.Errorf("collection must not be an empty string")
 	}
@@ -534,6 +558,7 @@ func (stub *ChaincodeStub) PutPrivateData(collection string, key string, value [
 
 // DelPrivateData documentation can be found in interfaces.go
 func (stub *ChaincodeStub) DelPrivateData(collection string, key string) error {
+	fmt.Println("=====ChaincodeStub==DelPrivateData==")
 	if collection == "" {
 		return fmt.Errorf("collection must not be an empty string")
 	}
@@ -542,6 +567,7 @@ func (stub *ChaincodeStub) DelPrivateData(collection string, key string) error {
 
 // GetPrivateDataByRange documentation can be found in interfaces.go
 func (stub *ChaincodeStub) GetPrivateDataByRange(collection, startKey, endKey string) (StateQueryIteratorInterface, error) {
+	fmt.Println("=====ChaincodeStub==GetPrivateDataByRange==")
 	if collection == "" {
 		return nil, fmt.Errorf("collection must not be an empty string")
 	}
@@ -558,6 +584,7 @@ func (stub *ChaincodeStub) GetPrivateDataByRange(collection, startKey, endKey st
 }
 
 func (stub *ChaincodeStub) createRangeKeysForPartialCompositeKey(objectType string, attributes []string) (string, string, error) {
+	fmt.Println("=====ChaincodeStub==createRangeKeysForPartialCompositeKey==")
 	partialCompositeKey, err := stub.CreateCompositeKey(objectType, attributes)
 	if err != nil {
 		return "", "", err
@@ -570,6 +597,7 @@ func (stub *ChaincodeStub) createRangeKeysForPartialCompositeKey(objectType stri
 
 // GetPrivateDataByPartialCompositeKey documentation can be found in interfaces.go
 func (stub *ChaincodeStub) GetPrivateDataByPartialCompositeKey(collection, objectType string, attributes []string) (StateQueryIteratorInterface, error) {
+	fmt.Println("=====ChaincodeStub==GetPrivateDataByPartialCompositeKey==")
 	if collection == "" {
 		return nil, fmt.Errorf("collection must not be an empty string")
 	}
@@ -586,6 +614,7 @@ func (stub *ChaincodeStub) GetPrivateDataByPartialCompositeKey(collection, objec
 
 // GetPrivateDataQueryResult documentation can be found in interfaces.go
 func (stub *ChaincodeStub) GetPrivateDataQueryResult(collection, query string) (StateQueryIteratorInterface, error) {
+	fmt.Println("=====ChaincodeStub==GetPrivateDataQueryResult==")
 	if collection == "" {
 		return nil, fmt.Errorf("collection must not be an empty string")
 	}
@@ -597,6 +626,7 @@ func (stub *ChaincodeStub) GetPrivateDataQueryResult(collection, query string) (
 
 // GetPrivateDataValidationParameter documentation can be found in interfaces.go
 func (stub *ChaincodeStub) GetPrivateDataValidationParameter(collection, key string) ([]byte, error) {
+	fmt.Println("=====ChaincodeStub==GetPrivateDataValidationParameter==")
 	md, err := stub.handler.handleGetStateMetadata(collection, key, stub.ChannelId, stub.TxID)
 	if err != nil {
 		return nil, err
@@ -609,6 +639,7 @@ func (stub *ChaincodeStub) GetPrivateDataValidationParameter(collection, key str
 
 // SetPrivateDataValidationParameter documentation can be found in interfaces.go
 func (stub *ChaincodeStub) SetPrivateDataValidationParameter(collection, key string, ep []byte) error {
+	fmt.Println("=====ChaincodeStub==SetPrivateDataValidationParameter==")
 	return stub.handler.handlePutStateMetadataEntry(collection, key, stub.validationParameterMetakey, ep, stub.ChannelId, stub.TxID)
 }
 
@@ -639,6 +670,7 @@ const (
 )
 
 func createQueryResponseMetadata(metadataBytes []byte) (*pb.QueryResponseMetadata, error) {
+	fmt.Println("=====createQueryResponseMetadata==")
 	metadata := &pb.QueryResponseMetadata{}
 	err := proto.Unmarshal(metadataBytes, metadata)
 	if err != nil {
@@ -650,7 +682,7 @@ func createQueryResponseMetadata(metadataBytes []byte) (*pb.QueryResponseMetadat
 
 func (stub *ChaincodeStub) handleGetStateByRange(collection, startKey, endKey string,
 	metadata []byte) (StateQueryIteratorInterface, *pb.QueryResponseMetadata, error) {
-
+	fmt.Println("=====ChaincodeStub==handleGetStateByRange==")
 	response, err := stub.handler.handleGetStateByRange(collection, startKey, endKey, metadata, stub.ChannelId, stub.TxID)
 	if err != nil {
 		return nil, nil, err
@@ -666,7 +698,11 @@ func (stub *ChaincodeStub) handleGetStateByRange(collection, startKey, endKey st
 }
 
 func (stub *ChaincodeStub) handleGetQueryResult(collection, query string,
+
 	metadata []byte) (StateQueryIteratorInterface, *pb.QueryResponseMetadata, error) {
+	fmt.Println("=====ChaincodeStub==handleGetQueryResult==")
+
+
 
 	response, err := stub.handler.handleGetQueryResult(collection, query, metadata, stub.ChannelId, stub.TxID)
 	if err != nil {
@@ -684,6 +720,7 @@ func (stub *ChaincodeStub) handleGetQueryResult(collection, query string,
 
 // GetStateByRange documentation can be found in interfaces.go
 func (stub *ChaincodeStub) GetStateByRange(startKey, endKey string) (StateQueryIteratorInterface, error) {
+	fmt.Println("=====ChaincodeStub==GetStateByRange==")
 	if startKey == "" {
 		startKey = emptyKeySubstitute
 	}
@@ -700,6 +737,7 @@ func (stub *ChaincodeStub) GetStateByRange(startKey, endKey string) (StateQueryI
 
 // GetHistoryForKey documentation can be found in interfaces.go
 func (stub *ChaincodeStub) GetHistoryForKey(key string) (HistoryQueryIteratorInterface, error) {
+	fmt.Println("=====ChaincodeStub==GetHistoryForKey==")
 	response, err := stub.handler.handleGetHistoryForKey(key, stub.ChannelId, stub.TxID)
 	if err != nil {
 		return nil, err
@@ -709,15 +747,18 @@ func (stub *ChaincodeStub) GetHistoryForKey(key string) (HistoryQueryIteratorInt
 
 //CreateCompositeKey documentation can be found in interfaces.go
 func (stub *ChaincodeStub) CreateCompositeKey(objectType string, attributes []string) (string, error) {
+	fmt.Println("=====ChaincodeStub==CreateCompositeKey==")
 	return createCompositeKey(objectType, attributes)
 }
 
 //SplitCompositeKey documentation can be found in interfaces.go
 func (stub *ChaincodeStub) SplitCompositeKey(compositeKey string) (string, []string, error) {
+	fmt.Println("=====ChaincodeStub==SplitCompositeKey==")
 	return splitCompositeKey(compositeKey)
 }
 
 func createCompositeKey(objectType string, attributes []string) (string, error) {
+	fmt.Println("=====createCompositeKey==")
 	if err := validateCompositeKeyAttribute(objectType); err != nil {
 		return "", err
 	}
@@ -732,6 +773,7 @@ func createCompositeKey(objectType string, attributes []string) (string, error) 
 }
 
 func splitCompositeKey(compositeKey string) (string, []string, error) {
+	fmt.Println("=====splitCompositeKey==")
 	componentIndex := 1
 	components := []string{}
 	for i := 1; i < len(compositeKey); i++ {
@@ -744,6 +786,7 @@ func splitCompositeKey(compositeKey string) (string, []string, error) {
 }
 
 func validateCompositeKeyAttribute(str string) error {
+	fmt.Println("=====validateCompositeKeyAttribute==")
 	if !utf8.ValidString(str) {
 		return errors.Errorf("not a valid utf8 string: [%x]", str)
 	}
@@ -761,6 +804,7 @@ func validateCompositeKeyAttribute(str string) error {
 //is the namespace for compositeKey). This helps in avoding simple/composite
 //key collisions.
 func validateSimpleKeys(simpleKeys ...string) error {
+	fmt.Println("=====validateSimpleKeys==")
 	for _, key := range simpleKeys {
 		if len(key) > 0 && key[0] == compositeKeyNamespace[0] {
 			return errors.Errorf(`first character of the key [%s] contains a null character which is not allowed`, key)
@@ -776,6 +820,7 @@ func validateSimpleKeys(simpleKeys ...string) error {
 //a partial composite key. For a full composite key, an iter with empty response
 //would be returned.
 func (stub *ChaincodeStub) GetStateByPartialCompositeKey(objectType string, attributes []string) (StateQueryIteratorInterface, error) {
+	fmt.Println("=====ChaincodeStub==GetStateByPartialCompositeKey==")
 	collection := ""
 	startKey, endKey, err := stub.createRangeKeysForPartialCompositeKey(objectType, attributes)
 	if err != nil {
@@ -788,6 +833,7 @@ func (stub *ChaincodeStub) GetStateByPartialCompositeKey(objectType string, attr
 }
 
 func createQueryMetadata(pageSize int32, bookmark string) ([]byte, error) {
+	fmt.Println("=====createQueryMetadata==")
 	// Construct the QueryMetadata with a page size and a bookmark needed for pagination
 	metadata := &pb.QueryMetadata{PageSize: pageSize, Bookmark: bookmark}
 	metadataBytes, err := proto.Marshal(metadata)
@@ -798,8 +844,10 @@ func createQueryMetadata(pageSize int32, bookmark string) ([]byte, error) {
 }
 
 func (stub *ChaincodeStub) GetStateByRangeWithPagination(startKey, endKey string, pageSize int32,
+
 	bookmark string) (StateQueryIteratorInterface, *pb.QueryResponseMetadata, error) {
 
+	fmt.Println("=====ChaincodeStub==GetStateByRangeWithPagination==")
 	if startKey == "" {
 		startKey = emptyKeySubstitute
 	}
@@ -818,8 +866,11 @@ func (stub *ChaincodeStub) GetStateByRangeWithPagination(startKey, endKey string
 }
 
 func (stub *ChaincodeStub) GetStateByPartialCompositeKeyWithPagination(objectType string, keys []string,
+
 	pageSize int32, bookmark string) (StateQueryIteratorInterface, *pb.QueryResponseMetadata, error) {
 
+
+	fmt.Println("======ChaincodeStub=====GetStateByPartialCompositeKeyWithPagination======================")
 	collection := ""
 
 	metadata, err := createQueryMetadata(pageSize, bookmark)
@@ -835,8 +886,10 @@ func (stub *ChaincodeStub) GetStateByPartialCompositeKeyWithPagination(objectTyp
 }
 
 func (stub *ChaincodeStub) GetQueryResultWithPagination(query string, pageSize int32,
+
 	bookmark string) (StateQueryIteratorInterface, *pb.QueryResponseMetadata, error) {
 	// Access public data by setting the collection to empty string
+	fmt.Println("======ChaincodeStub=====GetQueryResultWithPagination======================")
 	collection := ""
 
 	metadata, err := createQueryMetadata(pageSize, bookmark)
@@ -847,6 +900,7 @@ func (stub *ChaincodeStub) GetQueryResultWithPagination(query string, pageSize i
 }
 
 func (iter *StateQueryIterator) Next() (*queryresult.KV, error) {
+	fmt.Println("======ChaincodeStub=====Next======================")
 	if result, err := iter.nextResult(STATE_QUERY_RESULT); err == nil {
 		return result.(*queryresult.KV), err
 	} else {
@@ -855,6 +909,7 @@ func (iter *StateQueryIterator) Next() (*queryresult.KV, error) {
 }
 
 func (iter *HistoryQueryIterator) Next() (*queryresult.KeyModification, error) {
+	fmt.Println("======HistoryQueryIterator=====Next======================")
 	if result, err := iter.nextResult(HISTORY_QUERY_RESULT); err == nil {
 		return result.(*queryresult.KeyModification), err
 	} else {
@@ -864,6 +919,7 @@ func (iter *HistoryQueryIterator) Next() (*queryresult.KeyModification, error) {
 
 // HasNext documentation can be found in interfaces.go
 func (iter *CommonIterator) HasNext() bool {
+	fmt.Println("======CommonIterator=====HasNext======================")
 	if iter.currentLoc < len(iter.response.Results) || iter.response.HasMore {
 		return true
 	}
@@ -876,7 +932,7 @@ func (iter *CommonIterator) HasNext() bool {
 // interface that can hold values of any type.
 func (iter *CommonIterator) getResultFromBytes(queryResultBytes *pb.QueryResultBytes,
 	rType resultType) (commonledger.QueryResult, error) {
-
+	fmt.Println("======CommonIterator=====getResultFromBytes======================")
 	if rType == STATE_QUERY_RESULT {
 		stateQueryResult := &queryresult.KV{}
 		if err := proto.Unmarshal(queryResultBytes.ResultBytes, stateQueryResult); err != nil {
@@ -895,6 +951,7 @@ func (iter *CommonIterator) getResultFromBytes(queryResultBytes *pb.QueryResultB
 }
 
 func (iter *CommonIterator) fetchNextQueryResult() error {
+	fmt.Println("======CommonIterator=====fetchNextQueryResult======================")
 	if response, err := iter.handler.handleQueryStateNext(iter.response.Id, iter.channelId, iter.txid); err == nil {
 		iter.currentLoc = 0
 		iter.response = response
@@ -908,6 +965,7 @@ func (iter *CommonIterator) fetchNextQueryResult() error {
 // from the state or history query iterator. Note that commonledger.QueryResult is an
 // empty golang interface that can hold values of any type.
 func (iter *CommonIterator) nextResult(rType resultType) (commonledger.QueryResult, error) {
+	fmt.Println("======CommonIterator=====nextResult======================")
 	if iter.currentLoc < len(iter.response.Results) {
 		// On valid access of an element from cached results
 		queryResult, err := iter.getResultFromBytes(iter.response.Results[iter.currentLoc], rType)
@@ -938,17 +996,20 @@ func (iter *CommonIterator) nextResult(rType resultType) (commonledger.QueryResu
 
 // Close documentation can be found in interfaces.go
 func (iter *CommonIterator) Close() error {
+	fmt.Println("======CommonIterator=====Close======================")
 	_, err := iter.handler.handleQueryStateClose(iter.response.Id, iter.channelId, iter.txid)
 	return err
 }
 
 // GetArgs documentation can be found in interfaces.go
 func (stub *ChaincodeStub) GetArgs() [][]byte {
+	fmt.Println("======ChaincodeStub=====GetArgs======================")
 	return stub.args
 }
 
 // GetStringArgs documentation can be found in interfaces.go
 func (stub *ChaincodeStub) GetStringArgs() []string {
+	fmt.Println("======ChaincodeStub=====GetStringArgs======================")
 	args := stub.GetArgs()
 	strargs := make([]string, 0, len(args))
 	for _, barg := range args {
@@ -959,6 +1020,7 @@ func (stub *ChaincodeStub) GetStringArgs() []string {
 
 // GetFunctionAndParameters documentation can be found in interfaces.go
 func (stub *ChaincodeStub) GetFunctionAndParameters() (function string, params []string) {
+	fmt.Println("======ChaincodeStub=====GetFunctionAndParameters======================")
 	allargs := stub.GetStringArgs()
 	function = ""
 	params = []string{}
@@ -971,26 +1033,31 @@ func (stub *ChaincodeStub) GetFunctionAndParameters() (function string, params [
 
 // GetCreator documentation can be found in interfaces.go
 func (stub *ChaincodeStub) GetCreator() ([]byte, error) {
+	fmt.Println("======ChaincodeStub=====GetCreator======================")
 	return stub.creator, nil
 }
 
 // GetTransient documentation can be found in interfaces.go
 func (stub *ChaincodeStub) GetTransient() (map[string][]byte, error) {
+	fmt.Println("======ChaincodeStub=====GetTransient======================")
 	return stub.transient, nil
 }
 
 // GetBinding documentation can be found in interfaces.go
 func (stub *ChaincodeStub) GetBinding() ([]byte, error) {
+	fmt.Println("======ChaincodeStub=====GetBinding======================")
 	return stub.binding, nil
 }
 
 // GetSignedProposal documentation can be found in interfaces.go
 func (stub *ChaincodeStub) GetSignedProposal() (*pb.SignedProposal, error) {
+	fmt.Println("======ChaincodeStub=====GetSignedProposal======================")
 	return stub.signedProposal, nil
 }
 
 // GetArgsSlice documentation can be found in interfaces.go
 func (stub *ChaincodeStub) GetArgsSlice() ([]byte, error) {
+	fmt.Println("======ChaincodeStub=====GetArgsSlice======================")
 	args := stub.GetArgs()
 	res := []byte{}
 	for _, barg := range args {
@@ -1001,6 +1068,7 @@ func (stub *ChaincodeStub) GetArgsSlice() ([]byte, error) {
 
 // GetTxTimestamp documentation can be found in interfaces.go
 func (stub *ChaincodeStub) GetTxTimestamp() (*timestamp.Timestamp, error) {
+	fmt.Println("======ChaincodeStub=====GetTxTimestamp======================")
 	hdr, err := utils.GetHeader(stub.proposal.Header)
 	if err != nil {
 		return nil, err
@@ -1017,6 +1085,7 @@ func (stub *ChaincodeStub) GetTxTimestamp() (*timestamp.Timestamp, error) {
 
 // SetEvent documentation can be found in interfaces.go
 func (stub *ChaincodeStub) SetEvent(name string, payload []byte) error {
+	fmt.Println("======ChaincodeStub=====SetEvent======================")
 	if name == "" {
 		return errors.New("event name can not be nil string")
 	}
@@ -1081,6 +1150,7 @@ func SetLoggingLevel(level LoggingLevel) {
 // WARNING, NOTICE, INFO or DEBUG into an element of the LoggingLevel
 // type. In the event of errors the level returned is LogError.
 func LogLevel(levelString string) (LoggingLevel, error) {
+	fmt.Println("=====LogLevel======================")
 	l, err := logging.LogLevel(levelString)
 	level := LoggingLevel(l)
 	if err != nil {
@@ -1103,6 +1173,7 @@ type ChaincodeLogger struct {
 // by this object can be distinguished from shim logs by the name provided,
 // which will appear in the logs.
 func NewLogger(name string) *ChaincodeLogger {
+	fmt.Println("=====NewLogger======================")
 	return &ChaincodeLogger{logging.MustGetLogger(name)}
 }
 
@@ -1110,81 +1181,95 @@ func NewLogger(name string) *ChaincodeLogger {
 // the levels are actually controlled by the name given when the logger is
 // created, so loggers should be given unique names other than "shim".
 func (c *ChaincodeLogger) SetLevel(level LoggingLevel) {
+	fmt.Println("=====ChaincodeLogger===SetLevel===================")
 	logging.SetLevel(logging.Level(level), c.logger.Module)
 }
 
 // IsEnabledFor returns true if the logger is enabled to creates logs at the
 // given logging level.
 func (c *ChaincodeLogger) IsEnabledFor(level LoggingLevel) bool {
+	fmt.Println("=====ChaincodeLogger===IsEnabledFor===================")
 	return c.logger.IsEnabledFor(logging.Level(level))
 }
 
 // Debug logs will only appear if the ChaincodeLogger LoggingLevel is set to
 // LogDebug.
 func (c *ChaincodeLogger) Debug(args ...interface{}) {
+	fmt.Println("=====ChaincodeLogger===Debug===================")
 	c.logger.Debug(args...)
 }
 
 // Info logs will appear if the ChaincodeLogger LoggingLevel is set to
 // LogInfo or LogDebug.
 func (c *ChaincodeLogger) Info(args ...interface{}) {
+	fmt.Println("=====ChaincodeLogger===Info===================")
 	c.logger.Info(args...)
 }
 
 // Notice logs will appear if the ChaincodeLogger LoggingLevel is set to
 // LogNotice, LogInfo or LogDebug.
 func (c *ChaincodeLogger) Notice(args ...interface{}) {
+	fmt.Println("=====ChaincodeLogger===Notice===================")
 	c.logger.Notice(args...)
 }
 
 // Warning logs will appear if the ChaincodeLogger LoggingLevel is set to
 // LogWarning, LogNotice, LogInfo or LogDebug.
 func (c *ChaincodeLogger) Warning(args ...interface{}) {
+	fmt.Println("=====ChaincodeLogger===Warning===================")
 	c.logger.Warning(args...)
 }
 
 // Error logs will appear if the ChaincodeLogger LoggingLevel is set to
 // LogError, LogWarning, LogNotice, LogInfo or LogDebug.
 func (c *ChaincodeLogger) Error(args ...interface{}) {
+	fmt.Println("=====ChaincodeLogger===Error===================")
 	c.logger.Error(args...)
 }
 
 // Critical logs always appear; They can not be disabled.
 func (c *ChaincodeLogger) Critical(args ...interface{}) {
+	fmt.Println("=====ChaincodeLogger===Critical===================")
 	c.logger.Critical(args...)
 }
 
 // Debugf logs will only appear if the ChaincodeLogger LoggingLevel is set to
 // LogDebug.
 func (c *ChaincodeLogger) Debugf(format string, args ...interface{}) {
+	fmt.Println("=====ChaincodeLogger===Debugf===================")
 	c.logger.Debugf(format, args...)
 }
 
 // Infof logs will appear if the ChaincodeLogger LoggingLevel is set to
 // LogInfo or LogDebug.
 func (c *ChaincodeLogger) Infof(format string, args ...interface{}) {
+	fmt.Println("=====ChaincodeLogger===Infof===================")
 	c.logger.Infof(format, args...)
 }
 
 // Noticef logs will appear if the ChaincodeLogger LoggingLevel is set to
 // LogNotice, LogInfo or LogDebug.
 func (c *ChaincodeLogger) Noticef(format string, args ...interface{}) {
+	fmt.Println("=====ChaincodeLogger===Noticef===================")
 	c.logger.Noticef(format, args...)
 }
 
 // Warningf logs will appear if the ChaincodeLogger LoggingLevel is set to
 // LogWarning, LogNotice, LogInfo or LogDebug.
 func (c *ChaincodeLogger) Warningf(format string, args ...interface{}) {
+	fmt.Println("=====ChaincodeLogger===Warningf===================")
 	c.logger.Warningf(format, args...)
 }
 
 // Errorf logs will appear if the ChaincodeLogger LoggingLevel is set to
 // LogError, LogWarning, LogNotice, LogInfo or LogDebug.
 func (c *ChaincodeLogger) Errorf(format string, args ...interface{}) {
+	fmt.Println("=====ChaincodeLogger===Errorf===================")
 	c.logger.Errorf(format, args...)
 }
 
 // Criticalf logs always appear; They can not be disabled.
 func (c *ChaincodeLogger) Criticalf(format string, args ...interface{}) {
+	fmt.Println("=====ChaincodeLogger===Criticalf===================")
 	c.logger.Criticalf(format, args...)
 }
