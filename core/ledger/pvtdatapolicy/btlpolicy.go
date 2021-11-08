@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package pvtdatapolicy
 
 import (
+	"fmt"
 	"math"
 	"sync"
 
@@ -40,6 +41,7 @@ type btlkey struct {
 
 // ConstructBTLPolicy constructs an instance of LSCCBasedBTLPolicy
 func ConstructBTLPolicy(collInfoProvider collectionInfoProvider) BTLPolicy {
+	fmt.Println("===ConstructBTLPolicy===")
 	return &LSCCBasedBTLPolicy{
 		collInfoProvider: collInfoProvider,
 		cache:            make(map[btlkey]uint64),
@@ -48,6 +50,7 @@ func ConstructBTLPolicy(collInfoProvider collectionInfoProvider) BTLPolicy {
 
 // GetBTL implements corresponding function in interface `BTLPolicyMgr`
 func (p *LSCCBasedBTLPolicy) GetBTL(namesapce string, collection string) (uint64, error) {
+	fmt.Println("===LSCCBasedBTLPolicy==GetBTL===")
 	var btl uint64
 	var ok bool
 	key := btlkey{namesapce, collection}
@@ -75,6 +78,7 @@ func (p *LSCCBasedBTLPolicy) GetBTL(namesapce string, collection string) (uint64
 
 // GetExpiringBlock implements function from the interface `BTLPolicy`
 func (p *LSCCBasedBTLPolicy) GetExpiringBlock(namesapce string, collection string, committingBlock uint64) (uint64, error) {
+	fmt.Println("===LSCCBasedBTLPolicy==GetExpiringBlock===")
 	btl, err := p.GetBTL(namesapce, collection)
 	if err != nil {
 		return 0, err

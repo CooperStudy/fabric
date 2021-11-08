@@ -6,11 +6,15 @@ SPDX-License-Identifier: Apache-2.0
 
 package pvtdatastorage
 
+import "fmt"
+
 func newExpiryData() *ExpiryData {
+	fmt.Println("======newExpiryData=======")
 	return &ExpiryData{Map: make(map[string]*Collections)}
 }
 
 func (e *ExpiryData) getOrCreateCollections(ns string) *Collections {
+	fmt.Println("======ExpiryData==getOrCreateCollections=====")
 	collections, ok := e.Map[ns]
 	if !ok {
 		collections = &Collections{
@@ -32,6 +36,7 @@ func (e *ExpiryData) getOrCreateCollections(ns string) *Collections {
 }
 
 func (e *ExpiryData) addPresentData(ns, coll string, txNum uint64) {
+	fmt.Println("======ExpiryData==addPresentData=====")
 	collections := e.getOrCreateCollections(ns)
 
 	txNums, ok := collections.Map[coll]
@@ -43,12 +48,15 @@ func (e *ExpiryData) addPresentData(ns, coll string, txNum uint64) {
 }
 
 func (e *ExpiryData) addMissingData(ns, coll string) {
+	fmt.Println("======ExpiryData==addMissingData=====")
 	collections := e.getOrCreateCollections(ns)
 	collections.MissingDataMap[coll] = true
 }
 
 func newCollElgInfo(nsCollMap map[string][]string) *CollElgInfo {
+	fmt.Println("======newCollElgInfo=====")
 	m := &CollElgInfo{NsCollMap: map[string]*CollNames{}}
+
 	for ns, colls := range nsCollMap {
 		collNames, ok := m.NsCollMap[ns]
 		if !ok {

@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package pvtdatastorage
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric/core/ledger"
 	"github.com/hyperledger/fabric/core/ledger/pvtdatapolicy"
 )
@@ -92,6 +93,7 @@ type ErrIllegalCall struct {
 }
 
 func (err *ErrIllegalCall) Error() string {
+	fmt.Println("======ErrIllegalCall==Error===")
 	return err.msg
 }
 
@@ -101,6 +103,7 @@ type ErrIllegalArgs struct {
 }
 
 func (err *ErrIllegalArgs) Error() string {
+	fmt.Println("======ErrIllegalArgs==Error===")
 	return err.msg
 }
 
@@ -110,5 +113,6 @@ type ErrOutOfRange struct {
 }
 
 func (err *ErrOutOfRange) Error() string {
+	fmt.Println("======ErrOutOfRange==Error===")
 	return err.msg
 }

@@ -18,12 +18,14 @@ import (
 
 // InitializeTestEnv initializes ledgermgmt for tests
 func InitializeTestEnv() {
+	fmt.Println("=====InitializeTestEnv====")
 	remove()
 	InitializeTestEnvWithInitializer(nil)
 }
 
 // InitializeTestEnvWithInitializer initializes ledgermgmt for tests with the supplied Initializer
 func InitializeTestEnvWithInitializer(initializer *Initializer) {
+	fmt.Println("=====InitializeTestEnvWithInitializer====")
 	remove()
 	InitializeExistingTestEnvWithInitializer(initializer)
 }
@@ -32,6 +34,7 @@ func InitializeTestEnvWithInitializer(initializer *Initializer) {
 // This function does not remove the existing ledgers and is used in upgrade tests
 // TODO ledgermgmt should be reworked to move the package scoped functions to a struct
 func InitializeExistingTestEnvWithInitializer(initializer *Initializer) {
+	fmt.Println("=====InitializeExistingTestEnvWithInitializer====")
 	if initializer == nil {
 		initializer = &Initializer{}
 	}
@@ -54,6 +57,7 @@ func CleanupTestEnv() {
 }
 
 func remove() {
+	fmt.Println("====remove====")
 	path := ledgerconfig.GetRootPath()
 	fmt.Printf("removing dir = %s\n", path)
 	err := os.RemoveAll(path)

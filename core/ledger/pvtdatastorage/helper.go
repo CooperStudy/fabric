@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package pvtdatastorage
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/hyperledger/fabric/core/ledger"
@@ -16,7 +17,9 @@ import (
 )
 
 func prepareStoreEntries(blockNum uint64, pvtData []*ledger.TxPvtData, btlPolicy pvtdatapolicy.BTLPolicy,
+
 	missingPvtData ledger.TxMissingPvtDataMap) (*storeEntries, error) {
+	fmt.Println("===prepareStoreEntries=====")
 	dataEntries := prepareDataEntries(blockNum, pvtData)
 
 	missingDataEntries := prepareMissingDataEntries(blockNum, missingPvtData)
@@ -33,6 +36,7 @@ func prepareStoreEntries(blockNum uint64, pvtData []*ledger.TxPvtData, btlPolicy
 }
 
 func prepareDataEntries(blockNum uint64, pvtData []*ledger.TxPvtData) []*dataEntry {
+	fmt.Println("===prepareDataEntries=====")
 	var dataEntries []*dataEntry
 	for _, txPvtdata := range pvtData {
 		for _, nsPvtdata := range txPvtdata.WriteSet.NsPvtRwset {
@@ -49,8 +53,10 @@ func prepareDataEntries(blockNum uint64, pvtData []*ledger.TxPvtData) []*dataEnt
 }
 
 func prepareMissingDataEntries(committingBlk uint64, missingPvtData ledger.TxMissingPvtDataMap) map[missingDataKey]*bitset.BitSet {
-	missingDataEntries := make(map[missingDataKey]*bitset.BitSet)
 
+	fmt.Println("===prepareMissingDataEntries=====")
+
+	missingDataEntries := make(map[missingDataKey]*bitset.BitSet)
 	for txNum, missingData := range missingPvtData {
 		for _, nsColl := range missingData {
 			key := missingDataKey{nsCollBlk{nsColl.Namespace, nsColl.Collection, committingBlk},
@@ -71,8 +77,10 @@ func prepareMissingDataEntries(committingBlk uint64, missingPvtData ledger.TxMis
 // prepareExpiryEntries returns expiry entries for both private data which is present in the committingBlk
 // and missing private.
 func prepareExpiryEntries(committingBlk uint64, dataEntries []*dataEntry, missingDataEntries map[missingDataKey]*bitset.BitSet,
+
 	btlPolicy pvtdatapolicy.BTLPolicy) ([]*expiryEntry, error) {
 
+	fmt.Println("===prepareExpiryEntries=====")
 	var expiryEntries []*expiryEntry
 	mapByExpiringBlk := make(map[uint64]*ExpiryData)
 
@@ -96,6 +104,8 @@ func prepareExpiryEntries(committingBlk uint64, dataEntries []*dataEntry, missin
 
 // prepareExpiryDataForPresentData creates expiryData for non-missing pvt data
 func prepareExpiryEntriesForPresentData(mapByExpiringBlk map[uint64]*ExpiryData, dataKey *dataKey, btlPolicy pvtdatapolicy.BTLPolicy) error {
+
+	fmt.Println("===prepareExpiryEntriesForPresentData=====")
 	expiringBlk, err := btlPolicy.GetExpiringBlock(dataKey.ns, dataKey.coll, dataKey.blkNum)
 	if err != nil {
 		return err
@@ -112,6 +122,7 @@ func prepareExpiryEntriesForPresentData(mapByExpiringBlk map[uint64]*ExpiryData,
 
 // prepareExpiryDataForMissingData creates expiryData for missing pvt data
 func prepareExpiryEntriesForMissingData(mapByExpiringBlk map[uint64]*ExpiryData, missingKey *missingDataKey, btlPolicy pvtdatapolicy.BTLPolicy) error {
+	fmt.Println("===prepareExpiryEntriesForMissingData=====")
 	expiringBlk, err := btlPolicy.GetExpiringBlock(missingKey.ns, missingKey.coll, missingKey.blkNum)
 	if err != nil {
 		return err
@@ -127,6 +138,7 @@ func prepareExpiryEntriesForMissingData(mapByExpiringBlk map[uint64]*ExpiryData,
 }
 
 func getOrCreateExpiryData(mapByExpiringBlk map[uint64]*ExpiryData, expiringBlk uint64) *ExpiryData {
+	fmt.Println("===getOrCreateExpiryData=====")
 	expiryData, ok := mapByExpiringBlk[expiringBlk]
 	if !ok {
 		expiryData = newExpiryData()
@@ -137,6 +149,7 @@ func getOrCreateExpiryData(mapByExpiringBlk map[uint64]*ExpiryData, expiringBlk 
 
 // deriveKeys constructs dataKeys and missingDataKey from an expiryEntry
 func deriveKeys(expiryEntry *expiryEntry) (dataKeys []*dataKey, missingDataKeys []*missingDataKey) {
+	fmt.Println("===deriveKeys=====")
 	for ns, colls := range expiryEntry.value.Map {
 		// 1. constructs dataKeys of expired existing pvt data
 		for coll, txNums := range colls.Map {
@@ -159,10 +172,12 @@ func deriveKeys(expiryEntry *expiryEntry) (dataKeys []*dataKey, missingDataKeys 
 }
 
 func passesFilter(dataKey *dataKey, filter ledger.PvtNsCollFilter) bool {
+	fmt.Println("===passesFilter=====")
 	return filter == nil || filter.Has(dataKey.ns, dataKey.coll)
 }
 
 func isExpired(key nsCollBlk, btl pvtdatapolicy.BTLPolicy, latestBlkNum uint64) (bool, error) {
+	fmt.Println("===isExpired=====")
 	expiringBlk, err := btl.GetExpiringBlock(key.ns, key.coll, key.blkNum)
 	if err != nil {
 		return false, err
@@ -172,6 +187,7 @@ func isExpired(key nsCollBlk, btl pvtdatapolicy.BTLPolicy, latestBlkNum uint64) 
 }
 
 func neverExpires(expiringBlkNum uint64) bool {
+	fmt.Println("===neverExpires=====")
 	return expiringBlkNum == math.MaxUint64
 }
 
@@ -183,10 +199,14 @@ type txPvtdataAssembler struct {
 }
 
 func newTxPvtdataAssembler(blockNum, txNum uint64) *txPvtdataAssembler {
+	fmt.Println("===newTxPvtdataAssembler=====")
 	return &txPvtdataAssembler{blockNum, txNum, &rwset.TxPvtReadWriteSet{}, nil, true}
 }
 
 func (a *txPvtdataAssembler) add(ns string, collPvtWset *rwset.CollectionPvtReadWriteSet) {
+
+
+	fmt.Println("===txPvtdataAssembler===add==")
 	// start a NsWset
 	if a.firstCall {
 		a.currentNsWSet = &rwset.NsPvtReadWriteSet{Namespace: ns}
@@ -203,6 +223,7 @@ func (a *txPvtdataAssembler) add(ns string, collPvtWset *rwset.CollectionPvtRead
 }
 
 func (a *txPvtdataAssembler) done() {
+	fmt.Println("===txPvtdataAssembler===done==")
 	if a.currentNsWSet != nil {
 		a.txWset.NsPvtRwset = append(a.txWset.NsPvtRwset, a.currentNsWSet)
 	}
@@ -210,6 +231,7 @@ func (a *txPvtdataAssembler) done() {
 }
 
 func (a *txPvtdataAssembler) getTxPvtdata() *ledger.TxPvtData {
+	fmt.Println("===txPvtdataAssembler===getTxPvtdata==")
 	a.done()
 	return &ledger.TxPvtData{SeqInBlock: a.txNum, WriteSet: a.txWset}
 }

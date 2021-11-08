@@ -6,6 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 package kvledger
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/hyperledger/fabric/common/metrics"
@@ -21,6 +22,7 @@ type stats struct {
 }
 
 func newStats(metricsProvider metrics.Provider) *stats {
+	fmt.Println("==newStats===")
 	stats := &stats{}
 	stats.blockchainHeight = metricsProvider.NewGauge(blockchainHeightOpts)
 	stats.blockProcessingTime = metricsProvider.NewHistogram(blockProcessingTimeOpts)
@@ -36,32 +38,38 @@ type ledgerStats struct {
 }
 
 func (s *stats) ledgerStats(ledgerid string) *ledgerStats {
+	fmt.Println("==stats==ledgerStats=")
 	return &ledgerStats{
 		s, ledgerid,
 	}
 }
 
 func (s *ledgerStats) updateBlockchainHeight(height uint64) {
+	fmt.Println("==ledgerStats==updateBlockchainHeight=")
 	// casting uint64 to float64 guarentees precision for the numbers upto 9,007,199,254,740,992 (1<<53)
 	// since, we are not expecting the blockchains of this scale anytime soon, we go ahead with this for now.
 	s.stats.blockchainHeight.With("channel", s.ledgerid).Set(float64(height))
 }
 
 func (s *ledgerStats) updateBlockProcessingTime(timeTaken time.Duration) {
+	fmt.Println("==ledgerStats==updateBlockProcessingTime=")
 	s.stats.blockProcessingTime.With("channel", s.ledgerid).Observe(timeTaken.Seconds())
 }
 
 func (s *ledgerStats) updateBlockstorageCommitTime(timeTaken time.Duration) {
+	fmt.Println("==ledgerStats==updateBlockstorageCommitTime=")
 	s.stats.blockstorageCommitTime.With("channel", s.ledgerid).Observe(timeTaken.Seconds())
 }
 
 func (s *ledgerStats) updateStatedbCommitTime(timeTaken time.Duration) {
+	fmt.Println("==ledgerStats==updateStatedbCommitTime=")
 	s.stats.statedbCommitTime.With("channel", s.ledgerid).Observe(timeTaken.Seconds())
 }
 
 func (s *ledgerStats) updateTransactionsStats(
 	txstatsInfo []*txmgr.TxStatInfo,
 ) {
+	fmt.Println("==ledgerStats==updateTransactionsStats=")
 	for _, txstat := range txstatsInfo {
 		transactionTypeStr := "unknown"
 		if txstat.TxType != -1 {

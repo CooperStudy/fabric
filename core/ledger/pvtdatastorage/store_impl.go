@@ -107,6 +107,7 @@ type entriesForPvtDataOfOldBlocks struct {
 
 // NewProvider instantiates a StoreProvider
 func NewProvider() Provider {
+	fmt.Println("======NewProvider===")
 	dbPath := ledgerconfig.GetPvtdataStorePath()
 	dbProvider := leveldbhelper.NewProvider(&leveldbhelper.Conf{DBPath: dbPath})
 	return &provider{dbProvider: dbProvider}
@@ -114,6 +115,7 @@ func NewProvider() Provider {
 
 // OpenStore returns a handle to a store
 func (p *provider) OpenStore(ledgerid string) (Store, error) {
+	fmt.Println("==provider====OpenStore===")
 	dbHandle := p.dbProvider.GetDBHandle(ledgerid)
 	s := &store{db: dbHandle, ledgerid: ledgerid,
 		collElgProcSync: &collElgProcSync{
@@ -132,6 +134,7 @@ func (p *provider) OpenStore(ledgerid string) (Store, error) {
 
 // Close closes the store
 func (p *provider) Close() {
+	fmt.Println("==provider====Close===")
 	p.dbProvider.Close()
 }
 
@@ -139,6 +142,7 @@ func (p *provider) Close() {
 //////////////////////////////////////////
 
 func (s *store) initState() error {
+	fmt.Println("==store====initState===")
 	var err error
 	var blist lastUpdatedOldBlocksList
 	if s.isEmpty, s.lastCommittedBlock, err = s.getLastCommittedBlockNum(); err != nil {
@@ -158,11 +162,13 @@ func (s *store) initState() error {
 }
 
 func (s *store) Init(btlPolicy pvtdatapolicy.BTLPolicy) {
+	fmt.Println("==store====Init===")
 	s.btlPolicy = btlPolicy
 }
 
 // Prepare implements the function in the interface `Store`
 func (s *store) Prepare(blockNum uint64, pvtData []*ledger.TxPvtData, missingPvtData ledger.TxMissingPvtDataMap) error {
+	fmt.Println("==store====Prepare===")
 	if s.batchPending {
 		return &ErrIllegalCall{`A pending batch exists as as result of last invoke to "Prepare" call.
 			 Invoke "Commit" or "Rollback" on the pending batch before invoking "Prepare" function`}
@@ -216,6 +222,8 @@ func (s *store) Prepare(blockNum uint64, pvtData []*ledger.TxPvtData, missingPvt
 
 // Commit implements the function in the interface `Store`
 func (s *store) Commit() error {
+
+   fmt.Println("=======store==========Commit===")
 	if !s.batchPending {
 		return &ErrIllegalCall{"No pending batch to commit"}
 	}
@@ -244,6 +252,9 @@ func (s *store) Commit() error {
 // (beacuse of some data may be missing next time), the additional expiry entries are just
 // a Noop
 func (s *store) Rollback() error {
+
+	fmt.Println("=======store==========Rollback===")
+
 	if !s.batchPending {
 		return &ErrIllegalCall{"No pending batch to rollback"}
 	}
@@ -277,6 +288,8 @@ func (s *store) Rollback() error {
 // (3) create a db update batch from the update entries
 // (4) commit the update entries to the pvtStore
 func (s *store) CommitPvtDataOfOldBlocks(blocksPvtData map[uint64][]*ledger.TxPvtData) error {
+
+	fmt.Println("=======store==========CommitPvtDataOfOldBlocks===")
 	if s.isLastUpdatedOldBlocksSet {
 		return &ErrIllegalCall{`The lastUpdatedOldBlocksList is set. It means that the
 		stateDB may not be in sync with the pvtStore`}
@@ -310,6 +323,8 @@ func (s *store) CommitPvtDataOfOldBlocks(blocksPvtData map[uint64][]*ledger.TxPv
 }
 
 func constructDataEntriesFromBlocksPvtData(blocksPvtData map[uint64][]*ledger.TxPvtData) []*dataEntry {
+
+	fmt.Println("=======constructDataEntriesFromBlocksPvtData===")
 	// construct dataEntries for all pvtData
 	var dataEntries []*dataEntry
 	for blkNum, pvtData := range blocksPvtData {
@@ -320,6 +335,7 @@ func constructDataEntriesFromBlocksPvtData(blocksPvtData map[uint64][]*ledger.Tx
 }
 
 func (s *store) constructUpdateEntriesFromDataEntries(dataEntries []*dataEntry) (*entriesForPvtDataOfOldBlocks, error) {
+	fmt.Println("====store===constructUpdateEntriesFromDataEntries===")
 	updateEntries := &entriesForPvtDataOfOldBlocks{
 		dataEntries:        make(map[dataKey]*rwset.CollectionPvtReadWriteSet),
 		expiryEntries:      make(map[expiryKey]*ExpiryData),
@@ -371,6 +387,7 @@ func (s *store) constructUpdateEntriesFromDataEntries(dataEntries []*dataEntry) 
 }
 
 func (s *store) constructExpiryKeyFromDataEntry(dataEntry *dataEntry) (expiryKey, error) {
+	fmt.Println("====store===constructExpiryKeyFromDataEntry===")
 	// get the expiryBlk number to construct the expiryKey
 	nsCollBlk := dataEntry.key.nsCollBlk
 	expiringBlk, err := s.btlPolicy.GetExpiringBlock(nsCollBlk.ns, nsCollBlk.coll, nsCollBlk.blkNum)
@@ -381,6 +398,7 @@ func (s *store) constructExpiryKeyFromDataEntry(dataEntry *dataEntry) (expiryKey
 }
 
 func (s *store) getExpiryDataFromUpdateEntriesOrStore(updateEntries *entriesForPvtDataOfOldBlocks, expiryKey expiryKey) (*ExpiryData, error) {
+	fmt.Println("====store===getExpiryDataFromUpdateEntriesOrStore===")
 	expiryData, ok := updateEntries.expiryEntries[expiryKey]
 	if !ok {
 		var err error
@@ -393,6 +411,7 @@ func (s *store) getExpiryDataFromUpdateEntriesOrStore(updateEntries *entriesForP
 }
 
 func (s *store) getMissingDataFromUpdateEntriesOrStore(updateEntries *entriesForPvtDataOfOldBlocks, nsCollBlk nsCollBlk) (*bitset.BitSet, error) {
+	fmt.Println("====store===getMissingDataFromUpdateEntriesOrStore===")
 	missingData, ok := updateEntries.missingDataEntries[nsCollBlk]
 	if !ok {
 		var err error
@@ -406,11 +425,13 @@ func (s *store) getMissingDataFromUpdateEntriesOrStore(updateEntries *entriesFor
 }
 
 func (updateEntries *entriesForPvtDataOfOldBlocks) addDataEntry(dataEntry *dataEntry) {
+	fmt.Println("====entriesForPvtDataOfOldBlocks===addDataEntry===")
 	dataKey := dataKey{dataEntry.key.nsCollBlk, dataEntry.key.txNum}
 	updateEntries.dataEntries[dataKey] = dataEntry.value
 }
 
 func (updateEntries *entriesForPvtDataOfOldBlocks) updateAndAddExpiryEntry(expiryEntry *expiryEntry, dataKey *dataKey) {
+	fmt.Println("====entriesForPvtDataOfOldBlocks===updateAndAddExpiryEntry===")
 	txNum := dataKey.txNum
 	nsCollBlk := dataKey.nsCollBlk
 	// update
@@ -425,7 +446,7 @@ func (updateEntries *entriesForPvtDataOfOldBlocks) updateAndAddExpiryEntry(expir
 }
 
 func (updateEntries *entriesForPvtDataOfOldBlocks) updateAndAddMissingDataEntry(missingData *bitset.BitSet, dataKey *dataKey) {
-
+	fmt.Println("====entriesForPvtDataOfOldBlocks===updateAndAddMissingDataEntry===")
 	txNum := dataKey.txNum
 	nsCollBlk := dataKey.nsCollBlk
 	// update
@@ -435,6 +456,8 @@ func (updateEntries *entriesForPvtDataOfOldBlocks) updateAndAddMissingDataEntry(
 }
 
 func constructUpdateBatchFromUpdateEntries(updateEntries *entriesForPvtDataOfOldBlocks) (*leveldbhelper.UpdateBatch, error) {
+
+	fmt.Println("====constructUpdateBatchFromUpdateEntries===")
 	batch := leveldbhelper.NewUpdateBatch()
 
 	// add the following four types of entries to the update batch: (1) new data entries
@@ -463,6 +486,7 @@ func constructUpdateBatchFromUpdateEntries(updateEntries *entriesForPvtDataOfOld
 }
 
 func addNewDataEntriesToUpdateBatch(batch *leveldbhelper.UpdateBatch, entries *entriesForPvtDataOfOldBlocks) error {
+	fmt.Println("====addNewDataEntriesToUpdateBatch===")
 	var keyBytes, valBytes []byte
 	var err error
 	for dataKey, pvtData := range entries.dataEntries {
@@ -476,6 +500,7 @@ func addNewDataEntriesToUpdateBatch(batch *leveldbhelper.UpdateBatch, entries *e
 }
 
 func addUpdatedExpiryEntriesToUpdateBatch(batch *leveldbhelper.UpdateBatch, entries *entriesForPvtDataOfOldBlocks) error {
+	fmt.Println("====addUpdatedExpiryEntriesToUpdateBatch===")
 	var keyBytes, valBytes []byte
 	var err error
 	for expiryKey, expiryData := range entries.expiryEntries {
@@ -489,6 +514,7 @@ func addUpdatedExpiryEntriesToUpdateBatch(batch *leveldbhelper.UpdateBatch, entr
 }
 
 func addUpdatedMissingDataEntriesToUpdateBatch(batch *leveldbhelper.UpdateBatch, entries *entriesForPvtDataOfOldBlocks) error {
+	fmt.Println("====addUpdatedMissingDataEntriesToUpdateBatch===")
 	var keyBytes, valBytes []byte
 	var err error
 	for nsCollBlk, missingData := range entries.missingDataEntries {
@@ -507,6 +533,7 @@ func addUpdatedMissingDataEntriesToUpdateBatch(batch *leveldbhelper.UpdateBatch,
 }
 
 func addLastUpdatedOldBlocksList(batch *leveldbhelper.UpdateBatch, entries *entriesForPvtDataOfOldBlocks) {
+	fmt.Println("====addLastUpdatedOldBlocksList===")
 	// create a list of blocks' pvtData which are being stored. If this list is
 	// found during the recovery, the stateDB may not be in sync with the pvtData
 	// and needs recovery. In a normal flow, once the stateDB is synced, the
@@ -537,6 +564,7 @@ func addLastUpdatedOldBlocksList(batch *leveldbhelper.UpdateBatch, entries *entr
 }
 
 func (s *store) commitBatch(batch *leveldbhelper.UpdateBatch) error {
+	fmt.Println("===store=commitBatch===")
 	// commit the batch to the store
 	if err := s.db.WriteBatch(batch, true); err != nil {
 		return err
@@ -547,6 +575,7 @@ func (s *store) commitBatch(batch *leveldbhelper.UpdateBatch) error {
 
 // GetLastUpdatedOldBlocksPvtData implements the function in the interface `Store`
 func (s *store) GetLastUpdatedOldBlocksPvtData() (map[uint64][]*ledger.TxPvtData, error) {
+	fmt.Println("===store=GetLastUpdatedOldBlocksPvtData===")
 	if !s.isLastUpdatedOldBlocksSet {
 		return nil, nil
 	}
@@ -566,6 +595,8 @@ func (s *store) GetLastUpdatedOldBlocksPvtData() (map[uint64][]*ledger.TxPvtData
 }
 
 func (s *store) getLastUpdatedOldBlocksList() ([]uint64, error) {
+	fmt.Println("===store=getLastUpdatedOldBlocksList===")
+
 	var v []byte
 	var err error
 	if v, err = s.db.Get(lastUpdatedOldBlocksKey); err != nil {
@@ -593,6 +624,7 @@ func (s *store) getLastUpdatedOldBlocksList() ([]uint64, error) {
 
 // ResetLastUpdatedOldBlocksList implements the function in the interface `Store`
 func (s *store) ResetLastUpdatedOldBlocksList() error {
+	fmt.Println("===store=ResetLastUpdatedOldBlocksList===")
 	batch := leveldbhelper.NewUpdateBatch()
 	batch.Delete(lastUpdatedOldBlocksKey)
 	if err := s.db.WriteBatch(batch, true); err != nil {
@@ -606,6 +638,7 @@ func (s *store) ResetLastUpdatedOldBlocksList() error {
 // If the store is empty or the last committed block number is smaller then the
 // requested block number, an 'ErrOutOfRange' is thrown
 func (s *store) GetPvtDataByBlockNum(blockNum uint64, filter ledger.PvtNsCollFilter) ([]*ledger.TxPvtData, error) {
+	fmt.Println("===store=GetPvtDataByBlockNum===")
 	logger.Debugf("Get private data for block [%d], filter=%#v", blockNum, filter)
 	if s.isEmpty {
 		return nil, &ErrOutOfRange{"The store is empty"}
@@ -663,6 +696,8 @@ func (s *store) GetPvtDataByBlockNum(blockNum uint64, filter ledger.PvtNsCollFil
 
 // InitLastCommittedBlock implements the function in the interface `Store`
 func (s *store) InitLastCommittedBlock(blockNum uint64) error {
+	fmt.Println("===store=InitLastCommittedBlock===")
+
 	if !(s.isEmpty && !s.batchPending) {
 		return &ErrIllegalCall{"The private data store is not empty. InitLastCommittedBlock() function call is not allowed"}
 	}
@@ -679,6 +714,8 @@ func (s *store) InitLastCommittedBlock(blockNum uint64) error {
 
 // GetMissingPvtDataInfoForMostRecentBlocks implements the function in the interface `Store`
 func (s *store) GetMissingPvtDataInfoForMostRecentBlocks(maxBlock int) (ledger.MissingPvtDataInfo, error) {
+	fmt.Println("===store=GetMissingPvtDataInfoForMostRecentBlocks===")
+
 	// we assume that this function would be called by the gossip only after processing the
 	// last retrieved missing pvtdata info and committing the same.
 	if maxBlock < 1 {
@@ -756,6 +793,8 @@ func (s *store) GetMissingPvtDataInfoForMostRecentBlocks(maxBlock int) (ledger.M
 
 // ProcessCollsEligibilityEnabled implements the function in the interface `Store`
 func (s *store) ProcessCollsEligibilityEnabled(committingBlk uint64, nsCollMap map[string][]string) error {
+	fmt.Println("===store=ProcessCollsEligibilityEnabled===")
+
 	key := encodeCollElgKey(committingBlk)
 	m := newCollElgInfo(nsCollMap)
 	val, err := encodeCollElgVal(m)
@@ -772,6 +811,7 @@ func (s *store) ProcessCollsEligibilityEnabled(committingBlk uint64, nsCollMap m
 }
 
 func (s *store) performPurgeIfScheduled(latestCommittedBlk uint64) {
+	fmt.Println("===store=performPurgeIfScheduled===")
 	if latestCommittedBlk%ledgerconfig.GetPvtdataStorePurgeInterval() != 0 {
 		return
 	}
@@ -788,6 +828,7 @@ func (s *store) performPurgeIfScheduled(latestCommittedBlk uint64) {
 }
 
 func (s *store) purgeExpiredData(minBlkNum, maxBlkNum uint64) error {
+	fmt.Println("===store=purgeExpiredData===")
 	batch := leveldbhelper.NewUpdateBatch()
 	expiryEntries, err := s.retrieveExpiryEntries(minBlkNum, maxBlkNum)
 	if err != nil || len(expiryEntries) == 0 {
@@ -811,6 +852,7 @@ func (s *store) purgeExpiredData(minBlkNum, maxBlkNum uint64) error {
 }
 
 func (s *store) retrieveExpiryEntries(minBlkNum, maxBlkNum uint64) ([]*expiryEntry, error) {
+	fmt.Println("===store=retrieveExpiryEntries===")
 	startKey, endKey := getExpiryKeysForRangeScan(minBlkNum, maxBlkNum)
 	logger.Debugf("retrieveExpiryEntries(): startKey=%#v, endKey=%#v", startKey, endKey)
 	itr := s.db.GetIterator(startKey, endKey)
@@ -831,6 +873,7 @@ func (s *store) retrieveExpiryEntries(minBlkNum, maxBlkNum uint64) ([]*expiryEnt
 }
 
 func (s *store) launchCollElgProc() {
+	fmt.Println("===store=launchCollElgProc===")
 	maxBatchSize := ledgerconfig.GetPvtdataStoreCollElgProcMaxDbBatchSize()
 	batchesInterval := ledgerconfig.GetPvtdataStoreCollElgProcDbBatchesInterval()
 	go func() {
@@ -845,6 +888,7 @@ func (s *store) launchCollElgProc() {
 }
 
 func (s *store) processCollElgEvents(maxBatchSize, batchesInterval int) {
+	fmt.Println("===store=processCollElgEvents===")
 	logger.Debugf("Starting to process collection eligibility events")
 	s.purgerLock.Lock()
 	defer s.purgerLock.Unlock()
@@ -906,6 +950,7 @@ func (s *store) processCollElgEvents(maxBatchSize, batchesInterval int) {
 
 // LastCommittedBlockHeight implements the function in the interface `Store`
 func (s *store) LastCommittedBlockHeight() (uint64, error) {
+	fmt.Println("===store=LastCommittedBlockHeight===")
 	if s.isEmpty {
 		return 0, nil
 	}
@@ -914,11 +959,13 @@ func (s *store) LastCommittedBlockHeight() (uint64, error) {
 
 // HasPendingBatch implements the function in the interface `Store`
 func (s *store) HasPendingBatch() (bool, error) {
+	fmt.Println("===store=HasPendingBatch===")
 	return s.batchPending, nil
 }
 
 // IsEmpty implements the function in the interface `Store`
 func (s *store) IsEmpty() (bool, error) {
+	fmt.Println("===store=IsEmpty===")
 	return s.isEmpty, nil
 }
 
@@ -928,6 +975,7 @@ func (s *store) Shutdown() {
 }
 
 func (s *store) nextBlockNum() uint64 {
+	fmt.Println("===store=nextBlockNum===")
 	if s.isEmpty {
 		return 0
 	}
@@ -935,6 +983,7 @@ func (s *store) nextBlockNum() uint64 {
 }
 
 func (s *store) hasPendingCommit() (bool, error) {
+	fmt.Println("===store=hasPendingCommit===")
 	var v []byte
 	var err error
 	if v, err = s.db.Get(pendingCommitKey); err != nil {
@@ -944,6 +993,7 @@ func (s *store) hasPendingCommit() (bool, error) {
 }
 
 func (s *store) getLastCommittedBlockNum() (bool, uint64, error) {
+	fmt.Println("===store=getLastCommittedBlockNum===")
 	var v []byte
 	var err error
 	if v, err = s.db.Get(lastCommittedBlkkey); v == nil || err != nil {
@@ -957,6 +1007,7 @@ type collElgProcSync struct {
 }
 
 func (sync *collElgProcSync) notify() {
+	fmt.Println("===collElgProcSync=notify===")
 	select {
 	case sync.notification <- true:
 		logger.Debugf("Signaled to collection eligibility processing routine")
@@ -966,10 +1017,12 @@ func (sync *collElgProcSync) notify() {
 }
 
 func (sync *collElgProcSync) waitForNotification() {
+	fmt.Println("===collElgProcSync=waitForNotification===")
 	<-sync.notification
 }
 
 func (sync *collElgProcSync) done() {
+	fmt.Println("===collElgProcSync=done===")
 	select {
 	case sync.procComplete <- true:
 	default:
@@ -977,10 +1030,12 @@ func (sync *collElgProcSync) done() {
 }
 
 func (sync *collElgProcSync) waitForDone() {
+	fmt.Println("===collElgProcSync=waitForDone===")
 	<-sync.procComplete
 }
 
 func (s *store) getBitmapOfMissingDataKey(missingDataKey *missingDataKey) (*bitset.BitSet, error) {
+	fmt.Println("===store=getBitmapOfMissingDataKey===")
 	var v []byte
 	var err error
 	if v, err = s.db.Get(encodeMissingDataKey(missingDataKey)); err != nil {
@@ -993,6 +1048,7 @@ func (s *store) getBitmapOfMissingDataKey(missingDataKey *missingDataKey) (*bits
 }
 
 func (s *store) getExpiryDataOfExpiryKey(expiryKey *expiryKey) (*ExpiryData, error) {
+	fmt.Println("===store=getExpiryDataOfExpiryKey===")
 	var v []byte
 	var err error
 	if v, err = s.db.Get(encodeExpiryKey(expiryKey)); err != nil {
