@@ -49,6 +49,7 @@ type connProducer struct {
 // NewConnectionProducer creates a new ConnectionProducer with given endpoints and connection factory.
 // It returns nil, if the given endpoints slice is empty.
 func NewConnectionProducer(factory ConnectionFactory, endpoints []string) ConnectionProducer {
+	fmt.Println("=====NewConnectionProducer==")
 	if len(endpoints) == 0 {
 		return nil
 	}
@@ -59,6 +60,7 @@ func NewConnectionProducer(factory ConnectionFactory, endpoints []string) Connec
 // Returns the connection, the endpoint selected, nil on success.
 // Returns nil, "", error on failure
 func (cp *connProducer) NewConnection() (*grpc.ClientConn, string, error) {
+	fmt.Println("=====connProducer==NewConnection==")
 	cp.Lock()
 	defer cp.Unlock()
 
@@ -87,6 +89,7 @@ func (cp *connProducer) NewConnection() (*grpc.ClientConn, string, error) {
 // UpdateEndpoints updates the endpoints of the ConnectionProducer
 // to be the given endpoints
 func (cp *connProducer) UpdateEndpoints(endpoints []string) {
+	fmt.Println("=====connProducer==UpdateEndpoints==")
 	if len(endpoints) == 0 {
 		// Ignore updates with empty endpoints
 		return
@@ -105,6 +108,7 @@ func (cp *connProducer) UpdateEndpoints(endpoints []string) {
 }
 
 func (cp *connProducer) DisableEndpoint(endpoint string) {
+	fmt.Println("=====connProducer==DisableEndpoint==")
 	cp.Lock()
 	defer cp.Unlock()
 
@@ -122,6 +126,7 @@ func (cp *connProducer) DisableEndpoint(endpoint string) {
 }
 
 func shuffle(a []string) []string {
+	fmt.Println("=====shuffle==")
 	n := len(a)
 	returnedSlice := make([]string, n)
 	rand.Seed(time.Now().UnixNano())
@@ -134,6 +139,7 @@ func shuffle(a []string) []string {
 
 // GetEndpoints returns configured endpoints for ordering service
 func (cp *connProducer) GetEndpoints() []string {
+	fmt.Println("=====connProducer==GetEndpoints==")
 	cp.RLock()
 	defer cp.RUnlock()
 	return cp.endpoints

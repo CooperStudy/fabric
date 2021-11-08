@@ -6,7 +6,10 @@ SPDX-License-Identifier: Apache-2.0
 
 package comm
 
-import "github.com/hyperledger/fabric/common/metrics"
+import (
+	"fmt"
+	"github.com/hyperledger/fabric/common/metrics"
+)
 
 var (
 	openConnCounterOpts = metrics.CounterOpts{
@@ -25,6 +28,7 @@ var (
 )
 
 func NewServerStatsHandler(p metrics.Provider) *ServerStatsHandler {
+	fmt.Println("=====NewServerStatsHandler==")
 	return &ServerStatsHandler{
 		OpenConnCounter:   p.NewCounter(openConnCounterOpts),
 		ClosedConnCounter: p.NewCounter(closedConnCounterOpts),

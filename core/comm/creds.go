@@ -10,6 +10,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"net"
 
 	"github.com/hyperledger/fabric/common/flogging"
@@ -33,7 +34,7 @@ var (
 func NewServerTransportCredentials(
 	serverConfig *tls.Config,
 	logger *flogging.FabricLogger) credentials.TransportCredentials {
-
+	fmt.Println("======NewServerTransportCredentials======")
 	// NOTE: unlike the default grpc/credentials implementation, we do not
 	// clone the tls.Config which allows us to update it dynamically
 	serverConfig.NextProtos = alpnProtoStr
@@ -53,12 +54,15 @@ type serverCreds struct {
 
 // ClientHandShake is not implemented for `serverCreds`.
 func (sc *serverCreds) ClientHandshake(context.Context,
+
 	string, net.Conn) (net.Conn, credentials.AuthInfo, error) {
+	fmt.Println("======serverCreds====ClientHandshake==")
 	return nil, nil, ClientHandshakeNotImplError
 }
 
 // ServerHandshake does the authentication handshake for servers.
 func (sc *serverCreds) ServerHandshake(rawConn net.Conn) (net.Conn, credentials.AuthInfo, error) {
+	fmt.Println("======serverCreds====ServerHandshake==")
 	conn := tls.Server(rawConn, sc.serverConfig)
 	if err := conn.Handshake(); err != nil {
 		if sc.logger != nil {
@@ -72,6 +76,7 @@ func (sc *serverCreds) ServerHandshake(rawConn net.Conn) (net.Conn, credentials.
 
 // Info provides the ProtocolInfo of this TransportCredentials.
 func (sc *serverCreds) Info() credentials.ProtocolInfo {
+	fmt.Println("======serverCreds====Info==")
 	return credentials.ProtocolInfo{
 		SecurityProtocol: "tls",
 		SecurityVersion:  "1.2",
@@ -80,6 +85,7 @@ func (sc *serverCreds) Info() credentials.ProtocolInfo {
 
 // Clone makes a copy of this TransportCredentials.
 func (sc *serverCreds) Clone() credentials.TransportCredentials {
+	fmt.Println("======serverCreds====Clone==")
 	creds := NewServerTransportCredentials(sc.serverConfig, sc.logger)
 	return creds
 }
@@ -87,5 +93,6 @@ func (sc *serverCreds) Clone() credentials.TransportCredentials {
 // OverrideServerName overrides the server name used to verify the hostname
 // on the returned certificates from the server.
 func (sc *serverCreds) OverrideServerName(string) error {
+	fmt.Println("======serverCreds====OverrideServerName==")
 	return OverrrideHostnameNotSupportedError
 }

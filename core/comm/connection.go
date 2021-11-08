@@ -47,7 +47,7 @@ type CredentialSupport struct {
 
 // GetCredentialSupport returns the singleton CredentialSupport instance
 func GetCredentialSupport() *CredentialSupport {
-
+	fmt.Println("======GetCredentialSupport===========")
 	once.Do(func() {
 		credSupport = &CredentialSupport{
 			CASupport: &CASupport{
@@ -64,6 +64,7 @@ func GetCredentialSupport() *CredentialSupport {
 // certificates returned should be used to set the trusted server roots for
 // TLS clients.
 func (cas *CASupport) GetServerRootCAs() (appRootCAs, ordererRootCAs [][]byte) {
+	fmt.Println("======CASupport=====GetServerRootCAs======")
 	cas.RLock()
 	defer cas.RUnlock()
 
@@ -88,6 +89,7 @@ func (cas *CASupport) GetServerRootCAs() (appRootCAs, ordererRootCAs [][]byte) {
 // certificates returned should be used to set the trusted client roots for
 // TLS servers.
 func (cas *CASupport) GetClientRootCAs() (appRootCAs, ordererRootCAs [][]byte) {
+	fmt.Println("======CASupport=====GetClientRootCAs======")
 	cas.RLock()
 	defer cas.RUnlock()
 
@@ -110,11 +112,13 @@ func (cas *CASupport) GetClientRootCAs() (appRootCAs, ordererRootCAs [][]byte) {
 // SetClientCertificate sets the tls.Certificate to use for gRPC client
 // connections
 func (cs *CredentialSupport) SetClientCertificate(cert tls.Certificate) {
+	fmt.Println("======CredentialSupport=====SetClientCertificate======")
 	cs.clientCert = cert
 }
 
 // GetClientCertificate returns the client certificate of the CredentialSupport
 func (cs *CredentialSupport) GetClientCertificate() tls.Certificate {
+	fmt.Println("======CredentialSupport=====GetClientCertificate======")
 	return cs.clientCert
 }
 
@@ -122,6 +126,7 @@ func (cs *CredentialSupport) GetClientCertificate() tls.Certificate {
 // clients which communicate with ordering service endpoints.
 // If the channel isn't found, error is returned.
 func (cs *CredentialSupport) GetDeliverServiceCredentials(channelID string) (credentials.TransportCredentials, error) {
+	fmt.Println("======CredentialSupport=====GetDeliverServiceCredentials======")
 	cs.RLock()
 	defer cs.RUnlock()
 
@@ -158,6 +163,7 @@ func (cs *CredentialSupport) GetDeliverServiceCredentials(channelID string) (cre
 // GetPeerCredentials returns GRPC transport credentials for use by GRPC
 // clients which communicate with remote peer endpoints.
 func (cs *CredentialSupport) GetPeerCredentials() credentials.TransportCredentials {
+	fmt.Println("======CredentialSupport=====GetPeerCredentials======")
 	var creds credentials.TransportCredentials
 	tlsConfig := &tls.Config{
 		Certificates: []tls.Certificate{cs.clientCert},
@@ -177,6 +183,7 @@ func (cs *CredentialSupport) GetPeerCredentials() credentials.TransportCredentia
 }
 
 func getEnv(key, def string) string {
+	fmt.Println("======getEnv======")
 	val := os.Getenv(key)
 	if len(val) > 0 {
 		return val
@@ -187,7 +194,12 @@ func getEnv(key, def string) string {
 
 // NewClientConnectionWithAddress Returns a new grpc.ClientConn to the given address
 func NewClientConnectionWithAddress(peerAddress string, block bool, tslEnabled bool,
+
 	creds credentials.TransportCredentials, ka *KeepaliveOptions) (*grpc.ClientConn, error) {
+
+
+	fmt.Println("======NewClientConnectionWithAddress======")
+
 	var opts []grpc.DialOption
 
 	if ka != nil {
@@ -219,6 +231,7 @@ func NewClientConnectionWithAddress(peerAddress string, block bool, tslEnabled b
 }
 
 func InitTLSForShim(key, certStr string) credentials.TransportCredentials {
+	fmt.Println("======InitTLSForShim======")
 	var sn string
 	priv, err := base64.StdEncoding.DecodeString(key)
 	if err != nil {

@@ -10,6 +10,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -34,6 +35,7 @@ type GRPCClient struct {
 // NewGRPCClient creates a new implementation of GRPCClient given an address
 // and client configuration
 func NewGRPCClient(config ClientConfig) (*GRPCClient, error) {
+	fmt.Println("=============NewGRPCClient===========")
 	client := &GRPCClient{}
 
 	// parse secure options
@@ -70,7 +72,7 @@ func NewGRPCClient(config ClientConfig) (*GRPCClient, error) {
 }
 
 func (client *GRPCClient) parseSecureOptions(opts *SecureOptions) error {
-
+	fmt.Println("======GRPCClient=======parseSecureOptions===========")
 	if opts == nil || !opts.UseTLS {
 		return nil
 	}
@@ -111,6 +113,7 @@ func (client *GRPCClient) parseSecureOptions(opts *SecureOptions) error {
 // Certificate returns the tls.Certificate used to make TLS connections
 // when client certificates are required by the server
 func (client *GRPCClient) Certificate() tls.Certificate {
+	fmt.Println("======GRPCClient=======parseSecureOptions===========")
 	cert := tls.Certificate{}
 	if client.tlsConfig != nil && len(client.tlsConfig.Certificates) > 0 {
 		cert = client.tlsConfig.Certificates[0]
@@ -121,30 +124,34 @@ func (client *GRPCClient) Certificate() tls.Certificate {
 // TLSEnabled is a flag indicating whether to use TLS for client
 // connections
 func (client *GRPCClient) TLSEnabled() bool {
+	fmt.Println("======GRPCClient=======TLSEnabled===========")
 	return client.tlsConfig != nil
 }
 
 // MutualTLSRequired is a flag indicating whether the client
 // must send a certificate when making TLS connections
 func (client *GRPCClient) MutualTLSRequired() bool {
+	fmt.Println("======GRPCClient=======MutualTLSRequired===========")
 	return client.tlsConfig != nil &&
 		len(client.tlsConfig.Certificates) > 0
 }
 
 // SetMaxRecvMsgSize sets the maximum message size the client can receive
 func (client *GRPCClient) SetMaxRecvMsgSize(size int) {
+	fmt.Println("======GRPCClient=======SetMaxRecvMsgSize===========")
 	client.maxRecvMsgSize = size
 }
 
 // SetMaxSendMsgSize sets the maximum message size the client can send
 func (client *GRPCClient) SetMaxSendMsgSize(size int) {
+	fmt.Println("======GRPCClient=======SetMaxSendMsgSize===========")
 	client.maxSendMsgSize = size
 }
 
 // SetServerRootCAs sets the list of authorities used to verify server
 // certificates based on a list of PEM-encoded X509 certificate authorities
 func (client *GRPCClient) SetServerRootCAs(serverRoots [][]byte) error {
-
+	fmt.Println("======GRPCClient=======SetServerRootCAs===========")
 	// NOTE: if no serverRoots are specified, the current cert pool will be
 	// replaced with an empty one
 	certPool := x509.NewCertPool()
@@ -164,6 +171,7 @@ func (client *GRPCClient) SetServerRootCAs(serverRoots [][]byte) error {
 func (client *GRPCClient) NewConnection(address string, serverNameOverride string) (
 	*grpc.ClientConn, error) {
 
+	fmt.Println("======GRPCClient=======NewConnection===========")
 	var dialOpts []grpc.DialOption
 	dialOpts = append(dialOpts, client.dialOpts...)
 

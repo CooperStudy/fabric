@@ -9,6 +9,7 @@ package comm
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"time"
 
 	"github.com/hyperledger/fabric/common/flogging"
@@ -132,6 +133,7 @@ type Metrics struct {
 // ServerKeepaliveOptions returns gRPC keepalive options for server.  If
 // opts is nil, the default keepalive options are returned
 func ServerKeepaliveOptions(ka *KeepaliveOptions) []grpc.ServerOption {
+	fmt.Println("======ServerKeepaliveOptions===========")
 	// use default keepalive options if nil
 	if ka == nil {
 		ka = DefaultKeepaliveOptions
@@ -154,6 +156,7 @@ func ServerKeepaliveOptions(ka *KeepaliveOptions) []grpc.ServerOption {
 // ClientKeepaliveOptions returns gRPC keepalive options for clients.  If
 // opts is nil, the default keepalive options are returned
 func ClientKeepaliveOptions(ka *KeepaliveOptions) []grpc.DialOption {
+	fmt.Println("======ClientKeepaliveOptions===========")
 	// use default keepalive options if nil
 	if ka == nil {
 		ka = DefaultKeepaliveOptions
