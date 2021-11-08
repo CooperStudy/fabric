@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 )
 
@@ -20,6 +21,7 @@ type Chain struct {
 // NewChain creates a new Middleware chain. The chain will call the Middleware
 // in the order provided.
 func NewChain(middlewares ...Middleware) Chain {
+	fmt.Println("=========NewChain============")
 	return Chain{
 		mw: append([]Middleware{}, middlewares...),
 	}
@@ -27,6 +29,7 @@ func NewChain(middlewares ...Middleware) Chain {
 
 // Handler returns an http.Handler for this chain.
 func (c Chain) Handler(h http.Handler) http.Handler {
+	fmt.Println("=====Chain====Handler============")
 	if h == nil {
 		h = http.DefaultServeMux
 	}
