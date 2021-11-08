@@ -51,6 +51,7 @@ func (m *VersionFieldProto) XXX_DiscardUnknown() {
 var xxx_messageInfo_VersionFieldProto proto.InternalMessageInfo
 
 func (m *VersionFieldProto) GetVersionBytes() []byte {
+	fmt.Println("==VersionFieldProto==GetVersionBytes==")
 	if m != nil {
 		return m.VersionBytes
 	}
@@ -58,6 +59,7 @@ func (m *VersionFieldProto) GetVersionBytes() []byte {
 }
 
 func (m *VersionFieldProto) GetMetadata() []byte {
+	fmt.Println("==VersionFieldProto==GetMetadata==")
 	if m != nil {
 		return m.Metadata
 	}
@@ -65,10 +67,14 @@ func (m *VersionFieldProto) GetMetadata() []byte {
 }
 
 func init() {
+	fmt.Println("==init1==")
 	proto.RegisterType((*VersionFieldProto)(nil), "msgs.VersionFieldProto")
 }
 
-func init() { proto.RegisterFile("msgs.proto", fileDescriptor_msgs_41c2b9a37861a33d) }
+func init() {
+	fmt.Println("==init2==")
+	proto.RegisterFile("msgs.proto", fileDescriptor_msgs_41c2b9a37861a33d)
+}
 
 var fileDescriptor_msgs_41c2b9a37861a33d = []byte{
 	// 177 bytes of a gzipped FileDescriptorProto

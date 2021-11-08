@@ -103,6 +103,7 @@ type VersionedValue struct {
 
 // IsDelete returns true if this update indicates delete of a key
 func (vv *VersionedValue) IsDelete() bool {
+	fmt.Println("==VersionedValue==IsDelete==")
 	return vv.Value == nil
 }
 
@@ -132,6 +133,7 @@ type nsUpdates struct {
 }
 
 func newNsUpdates() *nsUpdates {
+	fmt.Println("=newNsUpdates==")
 	return &nsUpdates{make(map[string]*VersionedValue)}
 }
 
@@ -142,11 +144,13 @@ type UpdateBatch struct {
 
 // NewUpdateBatch constructs an instance of a Batch
 func NewUpdateBatch() *UpdateBatch {
+	fmt.Println("=NewUpdateBatch==")
 	return &UpdateBatch{make(map[string]*nsUpdates)}
 }
 
 // Get returns the VersionedValue for the given namespace and key
 func (batch *UpdateBatch) Get(ns string, key string) *VersionedValue {
+	fmt.Println("=UpdateBatch==Get===")
 	nsUpdates, ok := batch.updates[ns]
 	if !ok {
 		return nil
@@ -160,12 +164,14 @@ func (batch *UpdateBatch) Get(ns string, key string) *VersionedValue {
 
 // Put adds a key with value only. The metadata is assumed to be nil
 func (batch *UpdateBatch) Put(ns string, key string, value []byte, version *version.Height) {
+	fmt.Println("=UpdateBatch==Put===")
 	batch.PutValAndMetadata(ns, key, value, nil, version)
 }
 
 // PutValAndMetadata adds a key with value and metadata
 // TODO introducing a new function to limit the refactoring. Later in a separate CR, the 'Put' function above should be removed
 func (batch *UpdateBatch) PutValAndMetadata(ns string, key string, value []byte, metadata []byte, version *version.Height) {
+	fmt.Println("=UpdateBatch==PutValAndMetadata===")
 	if value == nil {
 		panic("Nil value not allowed. Instead call 'Delete' function")
 	}
@@ -174,11 +180,13 @@ func (batch *UpdateBatch) PutValAndMetadata(ns string, key string, value []byte,
 
 // Delete deletes a Key and associated value
 func (batch *UpdateBatch) Delete(ns string, key string, version *version.Height) {
+	fmt.Println("=UpdateBatch==Delete===")
 	batch.Update(ns, key, &VersionedValue{nil, nil, version})
 }
 
 // Exists checks whether the given key exists in the batch
 func (batch *UpdateBatch) Exists(ns string, key string) bool {
+	fmt.Println("=UpdateBatch==Exists===")
 	nsUpdates, ok := batch.updates[ns]
 	if !ok {
 		return false
@@ -189,6 +197,7 @@ func (batch *UpdateBatch) Exists(ns string, key string) bool {
 
 // GetUpdatedNamespaces returns the names of the namespaces that are updated
 func (batch *UpdateBatch) GetUpdatedNamespaces() []string {
+	fmt.Println("=UpdateBatch==GetUpdatedNamespaces===")
 	namespaces := make([]string, len(batch.updates))
 	i := 0
 	for ns := range batch.updates {
@@ -200,11 +209,13 @@ func (batch *UpdateBatch) GetUpdatedNamespaces() []string {
 
 // Update updates the batch with a latest entry for a namespace and a key
 func (batch *UpdateBatch) Update(ns string, key string, vv *VersionedValue) {
+	fmt.Println("=UpdateBatch==Update===")
 	batch.getOrCreateNsUpdates(ns).m[key] = vv
 }
 
 // GetUpdates returns all the updates for a namespace
 func (batch *UpdateBatch) GetUpdates(ns string) map[string]*VersionedValue {
+	fmt.Println("=UpdateBatch==GetUpdates===")
 	nsUpdates, ok := batch.updates[ns]
 	if !ok {
 		return nil
@@ -220,10 +231,12 @@ func (batch *UpdateBatch) GetUpdates(ns string) map[string]*VersionedValue {
 // where the UpdateBatch represents the union of the modifications performed by the preceding valid transactions in the same block
 // (Assuming Group commit approach where we commit all the updates caused by a block together).
 func (batch *UpdateBatch) GetRangeScanIterator(ns string, startKey string, endKey string) QueryResultsIterator {
+	fmt.Println("=UpdateBatch==GetRangeScanIterator===")
 	return newNsIterator(ns, startKey, endKey, batch)
 }
 
 func (batch *UpdateBatch) getOrCreateNsUpdates(ns string) *nsUpdates {
+	fmt.Println("=UpdateBatch==getOrCreateNsUpdates===")
 	nsUpdates := batch.updates[ns]
 	if nsUpdates == nil {
 		nsUpdates = newNsUpdates()
@@ -241,6 +254,7 @@ type nsIterator struct {
 }
 
 func newNsIterator(ns string, startKey string, endKey string, batch *UpdateBatch) *nsIterator {
+	fmt.Println("===newNsIterator===")
 	nsUpdates, ok := batch.updates[ns]
 	if !ok {
 		return &nsIterator{}
@@ -263,6 +277,7 @@ func newNsIterator(ns string, startKey string, endKey string, batch *UpdateBatch
 
 // Next gives next key and versioned value. It returns a nil when exhausted
 func (itr *nsIterator) Next() (QueryResult, error) {
+	fmt.Println("===nsIterator==Next===")
 	if itr.nextIndex >= itr.lastIndex {
 		return nil, nil
 	}
@@ -274,11 +289,13 @@ func (itr *nsIterator) Next() (QueryResult, error) {
 
 // Close implements the method from QueryResult interface
 func (itr *nsIterator) Close() {
+	fmt.Println("===nsIterator==Close===")
 	// do nothing
 }
 
 // GetBookmarkAndClose implements the method from QueryResult interface
 func (itr *nsIterator) GetBookmarkAndClose() string {
+	fmt.Println("===nsIterator==GetBookmarkAndClose===")
 	// do nothing
 	return ""
 }
@@ -287,6 +304,7 @@ const optionLimit = "limit"
 
 // ValidateRangeMetadata validates the JSON containing attributes for the range query
 func ValidateRangeMetadata(metadata map[string]interface{}) error {
+	fmt.Println("===ValidateRangeMetadata===")
 	for key, keyVal := range metadata {
 		switch key {
 

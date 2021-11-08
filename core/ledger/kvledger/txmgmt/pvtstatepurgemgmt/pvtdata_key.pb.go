@@ -50,6 +50,7 @@ func (m *PvtdataKeys) XXX_DiscardUnknown() {
 var xxx_messageInfo_PvtdataKeys proto.InternalMessageInfo
 
 func (m *PvtdataKeys) GetMap() map[string]*Collections {
+	fmt.Println("==PvtdataKeys====GetMap====")
 	if m != nil {
 		return m.Map
 	}
@@ -88,6 +89,7 @@ func (m *Collections) XXX_DiscardUnknown() {
 var xxx_messageInfo_Collections proto.InternalMessageInfo
 
 func (m *Collections) GetMap() map[string]*KeysAndHashes {
+	fmt.Println("==Collections====GetMap====")
 	if m != nil {
 		return m.Map
 	}
@@ -126,6 +128,7 @@ func (m *KeysAndHashes) XXX_DiscardUnknown() {
 var xxx_messageInfo_KeysAndHashes proto.InternalMessageInfo
 
 func (m *KeysAndHashes) GetList() []*KeyAndHash {
+	fmt.Println("==KeysAndHashes====")
 	if m != nil {
 		return m.List
 	}
@@ -165,6 +168,7 @@ func (m *KeyAndHash) XXX_DiscardUnknown() {
 var xxx_messageInfo_KeyAndHash proto.InternalMessageInfo
 
 func (m *KeyAndHash) GetKey() string {
+	fmt.Println("==KeyAndHash==GetKey==")
 	if m != nil {
 		return m.Key
 	}
@@ -172,6 +176,7 @@ func (m *KeyAndHash) GetKey() string {
 }
 
 func (m *KeyAndHash) GetHash() []byte {
+	fmt.Println("==KeyAndHash==GetHash==")
 	if m != nil {
 		return m.Hash
 	}
@@ -179,6 +184,7 @@ func (m *KeyAndHash) GetHash() []byte {
 }
 
 func init() {
+	fmt.Println("==init1===")
 	proto.RegisterType((*PvtdataKeys)(nil), "pvtstatepurgemgmt.PvtdataKeys")
 	proto.RegisterMapType((map[string]*Collections)(nil), "pvtstatepurgemgmt.PvtdataKeys.MapEntry")
 	proto.RegisterType((*Collections)(nil), "pvtstatepurgemgmt.Collections")
@@ -187,7 +193,9 @@ func init() {
 	proto.RegisterType((*KeyAndHash)(nil), "pvtstatepurgemgmt.KeyAndHash")
 }
 
-func init() { proto.RegisterFile("pvtdata_key.proto", fileDescriptor_pvtdata_key_a4c461a959db81b6) }
+func init() {
+	fmt.Println("==init2===")
+	proto.RegisterFile("pvtdata_key.proto", fileDescriptor_pvtdata_key_a4c461a959db81b6) }
 
 var fileDescriptor_pvtdata_key_a4c461a959db81b6 = []byte{
 	// 297 bytes of a gzipped FileDescriptorProto

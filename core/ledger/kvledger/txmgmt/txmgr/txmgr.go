@@ -17,6 +17,7 @@ limitations under the License.
 package txmgr
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric/core/ledger"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/version"
 	"github.com/hyperledger/fabric/protos/common"
@@ -51,6 +52,7 @@ type ErrUnsupportedTransaction struct {
 }
 
 func (e *ErrUnsupportedTransaction) Error() string {
+	fmt.Println("==ErrUnsupportedTransaction==Error==")
 	return e.Msg
 }
 
@@ -62,5 +64,6 @@ type ErrPvtdataNotAvailable struct {
 }
 
 func (e *ErrPvtdataNotAvailable) Error() string {
+	fmt.Println("==ErrPvtdataNotAvailable==Error==")
 	return e.Msg
 }

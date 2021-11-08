@@ -32,6 +32,7 @@ type queryHelper struct {
 }
 
 func newQueryHelper(txmgr *LockBasedTxMgr, rwsetBuilder *rwsetutil.RWSetBuilder) *queryHelper {
+	fmt.Println("==newQueryHelper==")
 	helper := &queryHelper{txmgr: txmgr, rwsetBuilder: rwsetBuilder}
 	validator := newCollNameValidator(txmgr.ccInfoProvider, &lockBasedQueryExecutor{helper: helper})
 	helper.collNameValidator = validator
@@ -39,6 +40,7 @@ func newQueryHelper(txmgr *LockBasedTxMgr, rwsetBuilder *rwsetutil.RWSetBuilder)
 }
 
 func (h *queryHelper) getState(ns string, key string) ([]byte, []byte, error) {
+	fmt.Println("==queryHelper=getState====")
 	if err := h.checkDone(); err != nil {
 		return nil, nil, err
 	}
@@ -54,6 +56,7 @@ func (h *queryHelper) getState(ns string, key string) ([]byte, []byte, error) {
 }
 
 func (h *queryHelper) getStateMultipleKeys(namespace string, keys []string) ([][]byte, error) {
+	fmt.Println("==queryHelper=getStateMultipleKeys====")
 	if err := h.checkDone(); err != nil {
 		return nil, err
 	}
@@ -73,6 +76,7 @@ func (h *queryHelper) getStateMultipleKeys(namespace string, keys []string) ([][
 }
 
 func (h *queryHelper) getStateRangeScanIterator(namespace string, startKey string, endKey string) (ledger.QueryResultsIterator, error) {
+	fmt.Println("==queryHelper=getStateRangeScanIterator====")
 	if err := h.checkDone(); err != nil {
 		return nil, err
 	}
@@ -86,6 +90,7 @@ func (h *queryHelper) getStateRangeScanIterator(namespace string, startKey strin
 }
 
 func (h *queryHelper) getStateRangeScanIteratorWithMetadata(namespace string, startKey string, endKey string, metadata map[string]interface{}) (ledger.QueryResultsIterator, error) {
+	fmt.Println("==queryHelper=getStateRangeScanIteratorWithMetadata====")
 	if err := h.checkDone(); err != nil {
 		return nil, err
 	}
@@ -99,6 +104,7 @@ func (h *queryHelper) getStateRangeScanIteratorWithMetadata(namespace string, st
 }
 
 func (h *queryHelper) executeQuery(namespace, query string) (commonledger.ResultsIterator, error) {
+	fmt.Println("==queryHelper=executeQuery====")
 	if err := h.checkDone(); err != nil {
 		return nil, err
 	}
@@ -110,6 +116,7 @@ func (h *queryHelper) executeQuery(namespace, query string) (commonledger.Result
 }
 
 func (h *queryHelper) executeQueryWithMetadata(namespace, query string, metadata map[string]interface{}) (ledger.QueryResultsIterator, error) {
+	fmt.Println("==queryHelper=executeQueryWithMetadata====")
 	if err := h.checkDone(); err != nil {
 		return nil, err
 	}
@@ -121,6 +128,7 @@ func (h *queryHelper) executeQueryWithMetadata(namespace, query string, metadata
 }
 
 func (h *queryHelper) getPrivateData(ns, coll, key string) ([]byte, error) {
+	fmt.Println("==queryHelper=getPrivateData====")
 	if err := h.validateCollName(ns, coll); err != nil {
 		return nil, err
 	}
@@ -155,6 +163,7 @@ func (h *queryHelper) getPrivateData(ns, coll, key string) ([]byte, error) {
 }
 
 func (h *queryHelper) getPrivateDataValueHash(ns, coll, key string) (valueHash, metadataBytes []byte, err error) {
+	fmt.Println("==queryHelper=getPrivateDataValueHash====")
 	if err := h.validateCollName(ns, coll); err != nil {
 		return nil, nil, err
 	}
@@ -175,6 +184,7 @@ func (h *queryHelper) getPrivateDataValueHash(ns, coll, key string) (valueHash, 
 }
 
 func (h *queryHelper) getPrivateDataMultipleKeys(ns, coll string, keys []string) ([][]byte, error) {
+	fmt.Println("==queryHelper=getPrivateDataMultipleKeys====")
 	if err := h.validateCollName(ns, coll); err != nil {
 		return nil, err
 	}
@@ -197,6 +207,7 @@ func (h *queryHelper) getPrivateDataMultipleKeys(ns, coll string, keys []string)
 }
 
 func (h *queryHelper) getPrivateDataRangeScanIterator(namespace, collection, startKey, endKey string) (commonledger.ResultsIterator, error) {
+	fmt.Println("==queryHelper=getPrivateDataRangeScanIterator====")
 	if err := h.validateCollName(namespace, collection); err != nil {
 		return nil, err
 	}
@@ -211,6 +222,7 @@ func (h *queryHelper) getPrivateDataRangeScanIterator(namespace, collection, sta
 }
 
 func (h *queryHelper) executeQueryOnPrivateData(namespace, collection, query string) (commonledger.ResultsIterator, error) {
+	fmt.Println("==queryHelper=executeQueryOnPrivateData====")
 	if err := h.validateCollName(namespace, collection); err != nil {
 		return nil, err
 	}
@@ -225,6 +237,7 @@ func (h *queryHelper) executeQueryOnPrivateData(namespace, collection, query str
 }
 
 func (h *queryHelper) getStateMetadata(ns string, key string) (map[string][]byte, error) {
+	fmt.Println("==queryHelper=getStateMetadata====")
 	if err := h.checkDone(); err != nil {
 		return nil, err
 	}
@@ -244,6 +257,7 @@ func (h *queryHelper) getStateMetadata(ns string, key string) (map[string][]byte
 }
 
 func (h *queryHelper) getPrivateDataMetadata(ns, coll, key string) (map[string][]byte, error) {
+	fmt.Println("==queryHelper=getPrivateDataMetadata====")
 	if h.rwsetBuilder == nil {
 		// reads versions are not getting recorded, retrieve metadata value via optimized path
 		return h.getPrivateDataMetadataByHash(ns, coll, util.ComputeStringHash(key))
@@ -262,6 +276,7 @@ func (h *queryHelper) getPrivateDataMetadata(ns, coll, key string) (map[string][
 }
 
 func (h *queryHelper) getPrivateDataMetadataByHash(ns, coll string, keyhash []byte) (map[string][]byte, error) {
+	fmt.Println("==queryHelper=getPrivateDataMetadataByHash====")
 	if err := h.validateCollName(ns, coll); err != nil {
 		return nil, err
 	}
@@ -280,6 +295,7 @@ func (h *queryHelper) getPrivateDataMetadataByHash(ns, coll string, keyhash []by
 }
 
 func (h *queryHelper) done() {
+	fmt.Println("==queryHelper=done====")
 	if h.doneInvoked {
 		return
 	}
@@ -294,6 +310,7 @@ func (h *queryHelper) done() {
 }
 
 func (h *queryHelper) addRangeQueryInfo() {
+	fmt.Println("==queryHelper=addRangeQueryInfo====")
 	for _, itr := range h.itrs {
 		if h.rwsetBuilder != nil {
 			results, hash, err := itr.rangeQueryResultsHelper.Done()
@@ -313,6 +330,7 @@ func (h *queryHelper) addRangeQueryInfo() {
 }
 
 func (h *queryHelper) checkDone() error {
+	fmt.Println("==queryHelper=checkDone====")
 	if h.doneInvoked {
 		return errors.New("this instance should not be used after calling Done()")
 	}
@@ -320,6 +338,7 @@ func (h *queryHelper) checkDone() error {
 }
 
 func (h *queryHelper) validateCollName(ns, coll string) error {
+	fmt.Println("==queryHelper=validateCollName====")
 	return h.collNameValidator.validateCollName(ns, coll)
 }
 
@@ -338,6 +357,7 @@ type resultsItr struct {
 
 func newResultsItr(ns string, startKey string, endKey string, metadata map[string]interface{},
 	db statedb.VersionedDB, rwsetBuilder *rwsetutil.RWSetBuilder, enableHashing bool, maxDegree uint32) (*resultsItr, error) {
+	fmt.Println("==newResultsItr====")
 	var err error
 	var dbItr statedb.ResultsIterator
 	if metadata == nil {
@@ -372,6 +392,7 @@ func newResultsItr(ns string, startKey string, endKey string, metadata map[strin
 // set the EndKey and ItrExhausted in the Close() function but it may not be desirable to change
 // transactional behaviour based on whether the Close() was invoked or not
 func (itr *resultsItr) Next() (commonledger.QueryResult, error) {
+	fmt.Println("==resultsItr==Next==")
 	queryResult, err := itr.dbItr.Next()
 	if err != nil {
 		return nil, err
@@ -386,6 +407,7 @@ func (itr *resultsItr) Next() (commonledger.QueryResult, error) {
 
 // GetBookmarkAndClose implements method in interface ledger.ResultsIterator
 func (itr *resultsItr) GetBookmarkAndClose() string {
+	fmt.Println("==resultsItr==GetBookmarkAndClose==")
 	returnBookmark := ""
 	if queryResultIterator, ok := itr.dbItr.(statedb.QueryResultsIterator); ok {
 		returnBookmark = queryResultIterator.GetBookmarkAndClose()
@@ -399,6 +421,7 @@ func (itr *resultsItr) GetBookmarkAndClose() string {
 //                            or b) the last key that was supplied in the original query (if the iterator is exhausted)
 // 2) The ItrExhausted - set to true if the iterator is going to return nil as a result of the Next() call
 func (itr *resultsItr) updateRangeQueryInfo(queryResult statedb.QueryResult) {
+	fmt.Println("==resultsItr==updateRangeQueryInfo==")
 	if itr.rwSetBuilder == nil {
 		return
 	}
@@ -419,6 +442,7 @@ func (itr *resultsItr) updateRangeQueryInfo(queryResult statedb.QueryResult) {
 
 // Close implements method in interface ledger.ResultsIterator
 func (itr *resultsItr) Close() {
+	fmt.Println("==resultsItr==Close==")
 	itr.dbItr.Close()
 }
 
@@ -429,7 +453,7 @@ type queryResultsItr struct {
 
 // Next implements method in interface ledger.ResultsIterator
 func (itr *queryResultsItr) Next() (commonledger.QueryResult, error) {
-
+	fmt.Println("==queryResultsItr==Next==")
 	queryResult, err := itr.DBItr.Next()
 	if err != nil {
 		return nil, err
@@ -448,10 +472,12 @@ func (itr *queryResultsItr) Next() (commonledger.QueryResult, error) {
 
 // Close implements method in interface ledger.ResultsIterator
 func (itr *queryResultsItr) Close() {
+	fmt.Println("==queryResultsItr==Close==")
 	itr.DBItr.Close()
 }
 
 func (itr *queryResultsItr) GetBookmarkAndClose() string {
+	fmt.Println("==queryResultsItr==GetBookmarkAndClose==")
 	returnBookmark := ""
 	if queryResultIterator, ok := itr.DBItr.(statedb.QueryResultsIterator); ok {
 		returnBookmark = queryResultIterator.GetBookmarkAndClose()
@@ -460,6 +486,7 @@ func (itr *queryResultsItr) GetBookmarkAndClose() string {
 }
 
 func decomposeVersionedValue(versionedValue *statedb.VersionedValue) ([]byte, []byte, *version.Height) {
+	fmt.Println("==decomposeVersionedValue==")
 	var value []byte
 	var metadata []byte
 	var ver *version.Height
@@ -480,6 +507,7 @@ type pvtdataResultsItr struct {
 
 // Next implements method in interface ledger.ResultsIterator
 func (itr *pvtdataResultsItr) Next() (commonledger.QueryResult, error) {
+	fmt.Println("==pvtdataResultsItr==Next==")
 	queryResult, err := itr.dbItr.Next()
 	if err != nil {
 		return nil, err
@@ -497,5 +525,6 @@ func (itr *pvtdataResultsItr) Next() (commonledger.QueryResult, error) {
 
 // Close implements method in interface ledger.ResultsIterator
 func (itr *pvtdataResultsItr) Close() {
+	fmt.Println("==pvtdataResultsItr==Close==")
 	itr.dbItr.Close()
 }

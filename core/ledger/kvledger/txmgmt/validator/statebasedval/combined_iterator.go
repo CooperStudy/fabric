@@ -17,6 +17,7 @@ limitations under the License.
 package statebasedval
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb"
@@ -51,8 +52,9 @@ type combinedIterator struct {
 }
 
 func newCombinedIterator(db statedb.VersionedDB, updates *statedb.UpdateBatch,
-	ns string, startKey string, endKey string, includeEndKey bool) (*combinedIterator, error) {
 
+	ns string, startKey string, endKey string, includeEndKey bool) (*combinedIterator, error) {
+	fmt.Println("==newCombinedIterator====")
 	var dbItr statedb.ResultsIterator
 	var updatesItr statedb.ResultsIterator
 	var err error
@@ -75,6 +77,7 @@ func newCombinedIterator(db statedb.VersionedDB, updates *statedb.UpdateBatch,
 // Next returns the KV from either dbItr or updatesItr that gives the next smaller key
 // If both gives the same keys, then it returns the KV from updatesItr.
 func (itr *combinedIterator) Next() (statedb.QueryResult, error) {
+	fmt.Println("==combinedIterator==Next==")
 	if itr.dbItem == nil && itr.updatesItem == nil {
 		logger.Debugf("dbItem and updatesItem both are nil.")
 		return itr.serveEndKeyIfNeeded()
@@ -119,10 +122,12 @@ func (itr *combinedIterator) Next() (statedb.QueryResult, error) {
 }
 
 func (itr *combinedIterator) Close() {
+	fmt.Println("==combinedIterator==Close==")
 	itr.dbItr.Close()
 }
 
 func (itr *combinedIterator) GetBookmarkAndClose() string {
+	fmt.Println("==combinedIterator==GetBookmarkAndClose==")
 	itr.Close()
 	return ""
 }
@@ -130,6 +135,7 @@ func (itr *combinedIterator) GetBookmarkAndClose() string {
 // serveEndKeyIfNeeded returns the endKey only once and only if includeEndKey was set to true
 // in the constructor of combinedIterator.
 func (itr *combinedIterator) serveEndKeyIfNeeded() (statedb.QueryResult, error) {
+	fmt.Println("==combinedIterator==serveEndKeyIfNeeded==")
 	if !itr.includeEndKey || itr.endKeyServed {
 		logger.Debugf("Endkey not to be served. Returning nil... [toInclude=%t, alreadyServed=%t]",
 			itr.includeEndKey, itr.endKeyServed)
@@ -161,6 +167,7 @@ func (itr *combinedIterator) serveEndKeyIfNeeded() (statedb.QueryResult, error) 
 }
 
 func compareKeys(item1 statedb.QueryResult, item2 statedb.QueryResult) int {
+	fmt.Println("==compareKeys=")
 	if item1 == nil {
 		if item2 == nil {
 			return 0
@@ -175,5 +182,6 @@ func compareKeys(item1 statedb.QueryResult, item2 statedb.QueryResult) int {
 }
 
 func isDelete(item statedb.QueryResult) bool {
+	fmt.Println("==isDelete=")
 	return item.(*statedb.VersionedKV).Value == nil
 }

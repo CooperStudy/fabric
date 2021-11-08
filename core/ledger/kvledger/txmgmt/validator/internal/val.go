@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package internal
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/privacyenabledstate"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwsetutil"
@@ -47,6 +48,7 @@ type PubAndHashUpdates struct {
 
 // NewPubAndHashUpdates constructs an empty PubAndHashUpdates
 func NewPubAndHashUpdates() *PubAndHashUpdates {
+	fmt.Println("==NewPubAndHashUpdates==")
 	return &PubAndHashUpdates{
 		privacyenabledstate.NewPubUpdateBatch(),
 		privacyenabledstate.NewHashedUpdateBatch(),
@@ -55,6 +57,7 @@ func NewPubAndHashUpdates() *PubAndHashUpdates {
 
 // ContainsPvtWrites returns true if this transaction is not limited to affecting the public data only
 func (t *Transaction) ContainsPvtWrites() bool {
+	fmt.Println("==Transaction==ContainsPvtWrites==")
 	for _, ns := range t.RWSet.NsRwSets {
 		for _, coll := range ns.CollHashedRwSets {
 			if coll.PvtRwSetHash != nil {
@@ -68,6 +71,7 @@ func (t *Transaction) ContainsPvtWrites() bool {
 // RetrieveHash returns the hash of the private write-set present
 // in the public data for a given namespace-collection
 func (t *Transaction) RetrieveHash(ns string, coll string) []byte {
+	fmt.Println("==Transaction==RetrieveHash==")
 	if t.RWSet == nil {
 		return nil
 	}
@@ -87,6 +91,7 @@ func (t *Transaction) RetrieveHash(ns string, coll string) []byte {
 
 // ApplyWriteSet adds (or deletes) the key/values present in the write set to the PubAndHashUpdates
 func (u *PubAndHashUpdates) ApplyWriteSet(txRWSet *rwsetutil.TxRwSet, txHeight *version.Height, db privacyenabledstate.DB) error {
+	fmt.Println("==PubAndHashUpdates==ApplyWriteSet==")
 	txops, err := prepareTxOps(txRWSet, txHeight, u, db)
 	logger.Debugf("txops=%#v", txops)
 	if err != nil {

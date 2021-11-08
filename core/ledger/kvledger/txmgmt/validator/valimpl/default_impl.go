@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package valimpl
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/core/ledger"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/privacyenabledstate"
@@ -33,12 +34,17 @@ type DefaultImpl struct {
 // NewStatebasedValidator constructs a validator that internally manages statebased validator and in addition
 // handles the tasks that are agnostic to a particular validation scheme such as parsing the block and handling the pvt data
 func NewStatebasedValidator(txmgr txmgr.TxMgr, db privacyenabledstate.DB) validator.Validator {
+	fmt.Println("==NewStatebasedValidator==")
 	return &DefaultImpl{txmgr, db, statebasedval.NewValidator(db)}
 }
 
 // ValidateAndPrepareBatch implements the function in interface validator.Validator
 func (impl *DefaultImpl) ValidateAndPrepareBatch(blockAndPvtdata *ledger.BlockAndPvtData,
+
 	doMVCCValidation bool) (*privacyenabledstate.UpdateBatch, []*txmgr.TxStatInfo, error) {
+
+
+	fmt.Println("==DefaultImpl==ValidateAndPrepareBatch==")
 	block := blockAndPvtdata.Block
 	logger.Debugf("ValidateAndPrepareBatch() for block number = [%d]", block.Header.Number)
 	var internalBlock *internal.Block

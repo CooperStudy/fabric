@@ -55,6 +55,7 @@ type Provider struct {
 // NewProvider instantiates a new Provider.
 // This is not thread-safe and assumed to be synchronized be the caller
 func NewProvider() (ledger.PeerLedgerProvider, error) {
+	fmt.Println("===NewProvider==")
 	logger.Info("Initializing ledger provider")
 	// Initialize the ID store (inventory of chainIds/ledgerIds)
 	idStore := openIDStore(ledgerconfig.GetLedgerProviderPath())

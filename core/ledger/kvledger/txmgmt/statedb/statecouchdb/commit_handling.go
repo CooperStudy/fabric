@@ -31,6 +31,7 @@ type subNsCommitter struct {
 
 // buildCommitters build the batches of type subNsCommitter. This functions processes different namespaces in parallel
 func (vdb *VersionedDB) buildCommitters(updates *statedb.UpdateBatch) ([]batch, error) {
+	fmt.Println("========VersionedDB====buildCommitters=========")
 	namespaces := updates.GetUpdatedNamespaces()
 	var nsCommitterBuilder []batch
 	for _, ns := range namespaces {
@@ -61,6 +62,7 @@ func (vdb *VersionedDB) buildCommitters(updates *statedb.UpdateBatch) ([]batch, 
 // execute implements the function in `batch` interface. This function builds one or more `subNsCommitter`s that
 // cover the updates for a namespace
 func (builder *nsCommittersBuilder) execute() error {
+	fmt.Println("========nsCommittersBuilder====execute=========")
 	if err := addRevisionsForMissingKeys(builder.revisions, builder.db, builder.updates); err != nil {
 		return err
 	}
@@ -85,11 +87,13 @@ func (builder *nsCommittersBuilder) execute() error {
 
 // execute implements the function in `batch` interface. This function commits the updates managed by a `subNsCommitter`
 func (committer *subNsCommitter) execute() error {
+	fmt.Println("========subNsCommitter====execute=========")
 	return commitUpdates(committer.db, committer.batchUpdateMap)
 }
 
 // commitUpdates commits the given updates to couchdb
 func commitUpdates(db *couchdb.CouchDatabase, batchUpdateMap map[string]*batchableDocument) error {
+	fmt.Println("========commitUpdates========")
 	//Add the documents to the batch update array
 	batchUpdateDocs := []*couchdb.CouchDoc{}
 	for _, updateDocument := range batchUpdateMap {
@@ -151,6 +155,7 @@ type nsFlusher struct {
 }
 
 func (vdb *VersionedDB) ensureFullCommit(dbs []*couchdb.CouchDatabase) error {
+	fmt.Println("========VersionedDB==ensureFullCommit======")
 	var flushers []batch
 	for _, db := range dbs {
 		flushers = append(flushers, &nsFlusher{db})
@@ -159,6 +164,7 @@ func (vdb *VersionedDB) ensureFullCommit(dbs []*couchdb.CouchDatabase) error {
 }
 
 func (f *nsFlusher) execute() error {
+	fmt.Println("========nsFlusher==execute======")
 	dbResponse, err := f.db.EnsureFullCommit()
 	if err != nil || dbResponse.Ok != true {
 		logger.Errorf("Failed to perform full commit")
@@ -168,6 +174,7 @@ func (f *nsFlusher) execute() error {
 }
 
 func addRevisionsForMissingKeys(revisions map[string]string, db *couchdb.CouchDatabase, nsUpdates map[string]*statedb.VersionedValue) error {
+	fmt.Println("=======addRevisionsForMissingKeys======")
 	var missingKeys []string
 	for key := range nsUpdates {
 		_, ok := revisions[key]

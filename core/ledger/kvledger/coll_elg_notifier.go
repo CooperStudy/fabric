@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package kvledger
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric/core/ledger"
 	"github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric/protos/ledger/rwset/kvrwset"
@@ -22,6 +23,7 @@ type collElgNotifier struct {
 
 // InterestedInNamespaces implements function in interface ledger.StateListener
 func (n *collElgNotifier) InterestedInNamespaces() []string {
+	fmt.Println("===collElgNotifier===InterestedInNamespaces==")
 	return n.deployedChaincodeInfoProvider.Namespaces()
 }
 
@@ -34,6 +36,7 @@ func (n *collElgNotifier) InterestedInNamespaces() []string {
 // Finally, it causes an invocation to function 'ProcessCollsEligibilityEnabled' on ledger store with a map {ns:colls}
 // that contains the details of <ns, coll> combination for which the eligibility of the peer is switched on.
 func (n *collElgNotifier) HandleStateUpdates(trigger *ledger.StateUpdateTrigger) error {
+	fmt.Println("===collElgNotifier===HandleStateUpdates==")
 	nsCollMap := map[string][]string{}
 	qe := trigger.CommittedStateQueryExecutor
 	postCommitQE := trigger.PostCommitQueryExecutor
@@ -78,18 +81,22 @@ func (n *collElgNotifier) HandleStateUpdates(trigger *ledger.StateUpdateTrigger)
 }
 
 func (n *collElgNotifier) registerListener(ledgerID string, listener collElgListener) {
+	fmt.Println("===collElgNotifier===registerListener==")
 	n.listeners[ledgerID] = listener
 }
 
 func (n *collElgNotifier) invokeLedgerSpecificNotifier(ledgerID string, commtingBlk uint64, nsCollMap map[string][]string) {
+	fmt.Println("===collElgNotifier===invokeLedgerSpecificNotifier==")
 	listener := n.listeners[ledgerID]
 	listener.ProcessCollsEligibilityEnabled(commtingBlk, nsCollMap)
 }
 
 // elgEnabledCollNames returns the names of the collections for which the peer is not eligible as per 'existingPkg' and is eligible as per 'postCommitPkg'
 func (n *collElgNotifier) elgEnabledCollNames(ledgerID string,
+
 	existingPkg, postCommitPkg *common.CollectionConfigPackage) ([]string, error) {
 
+	fmt.Println("===collElgNotifier===elgEnabledCollNames==")
 	collectionNames := []string{}
 	exisingConfs := retrieveCollConfs(existingPkg)
 	postCommitConfs := retrieveCollConfs(postCommitPkg)
@@ -119,6 +126,7 @@ func (n *collElgNotifier) elgEnabledCollNames(ledgerID string,
 
 // elgEnabled returns true if the peer is not eligible for a collection as per 'existingPolicy' and is eligible as per 'postCommitPolicy'
 func (n *collElgNotifier) elgEnabled(ledgerID string, existingPolicy, postCommitPolicy *common.CollectionPolicyConfig) (bool, error) {
+	fmt.Println("===collElgNotifier===elgEnabled==")
 	existingMember, err := n.membershipInfoProvider.AmMemberOf(ledgerID, existingPolicy)
 	if err != nil || existingMember {
 		return false, err
@@ -127,6 +135,7 @@ func (n *collElgNotifier) elgEnabled(ledgerID string, existingPolicy, postCommit
 }
 
 func convertToKVWrites(stateUpdates ledger.StateUpdates) map[string][]*kvrwset.KVWrite {
+	fmt.Println("===convertToKVWrites=====")
 	m := map[string][]*kvrwset.KVWrite{}
 	for ns, updates := range stateUpdates {
 		m[ns] = updates.([]*kvrwset.KVWrite)
@@ -136,6 +145,7 @@ func convertToKVWrites(stateUpdates ledger.StateUpdates) map[string][]*kvrwset.K
 
 // StateCommitDone implements function in interface ledger.StateListener
 func (n *collElgNotifier) StateCommitDone(ledgerID string) {
+
 	// Noop
 }
 
@@ -144,6 +154,7 @@ type collElgListener interface {
 }
 
 func retrieveCollConfs(collConfPkg *common.CollectionConfigPackage) []*common.StaticCollectionConfig {
+	fmt.Println("===retrieveCollConfs=====")
 	if collConfPkg == nil {
 		return nil
 	}

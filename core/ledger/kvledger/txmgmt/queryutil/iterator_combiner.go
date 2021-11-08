@@ -20,6 +20,7 @@ type itrCombiner struct {
 }
 
 func newItrCombiner(namespace string, baseIterators []statedb.ResultsIterator) (*itrCombiner, error) {
+	fmt.Println("==newItrCombiner========")
 	var holders []*itrHolder
 	for _, itr := range baseIterators {
 		res, err := itr.Next()
@@ -41,6 +42,7 @@ func newItrCombiner(namespace string, baseIterators []statedb.ResultsIterator) (
 // gives the lexicographically smallest key. Then, it saves that value, and advances the chosen iterator.
 // If the chosen iterator is out of elements, then that iterator is closed, and removed from the list of iterators.
 func (combiner *itrCombiner) Next() (commonledger.QueryResult, error) {
+	fmt.Println("==itrCombiner====Next====")
 	logger.Debugf("Iterators position at beginning: %s", combiner.holders)
 	if len(combiner.holders) == 0 {
 		return nil, nil
@@ -79,6 +81,7 @@ func (combiner *itrCombiner) Next() (commonledger.QueryResult, error) {
 // moveItrAndRemoveIfExhausted moves the iterator at index i to the next item. If the iterator gets exhausted
 // then the iterator is removed from the underlying slice
 func (combiner *itrCombiner) moveItrAndRemoveIfExhausted(i int) (removed bool, err error) {
+	fmt.Println("==itrCombiner====moveItrAndRemoveIfExhausted====")
 	holder := combiner.holders[i]
 	exhausted, err := holder.moveToNext()
 	if err != nil {
@@ -94,16 +97,19 @@ func (combiner *itrCombiner) moveItrAndRemoveIfExhausted(i int) (removed bool, e
 
 // kvAt returns the kv available from iterator at index i
 func (combiner *itrCombiner) kvAt(i int) *statedb.VersionedKV {
+	fmt.Println("==itrCombiner====kvAt====")
 	return combiner.holders[i].kv
 }
 
 // keyAt returns the key available from iterator at index i
 func (combiner *itrCombiner) keyAt(i int) string {
+	fmt.Println("==itrCombiner====keyAt====")
 	return combiner.kvAt(i).Key
 }
 
 // Close closes all the underlying iterators
 func (combiner *itrCombiner) Close() {
+	fmt.Println("==itrCombiner====Close====")
 	for _, holder := range combiner.holders {
 		holder.itr.Close()
 	}
@@ -117,6 +123,7 @@ type itrHolder struct {
 
 // moveToNext fetches the next item to keep in buffer and returns true if the iterator is exhausted
 func (holder *itrHolder) moveToNext() (exhausted bool, err error) {
+	fmt.Println("==itrHolder====moveToNext====")
 	var res statedb.QueryResult
 	if res, err = holder.itr.Next(); err != nil {
 		return false, err
@@ -129,5 +136,6 @@ func (holder *itrHolder) moveToNext() (exhausted bool, err error) {
 
 // String returns the key that the holder has in the buffer for serving as a next key
 func (holder *itrHolder) String() string {
+	fmt.Println("==itrHolder====String====")
 	return fmt.Sprintf("{%s}", holder.kv.Key)
 }
