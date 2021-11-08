@@ -33,14 +33,17 @@ const (
 )
 
 func getReConnectTotalTimeThreshold() time.Duration {
+	fmt.Println("==getReConnectTotalTimeThreshold===")
 	return util.GetDurationOrDefault("peer.deliveryclient.reconnectTotalTimeThreshold", defaultReConnectTotalTimeThreshold)
 }
 
 func getConnectionTimeout() time.Duration {
+	fmt.Println("==getConnectionTimeout===")
 	return util.GetDurationOrDefault("peer.deliveryclient.connTimeout", defaultConnectionTimeout)
 }
 
 func getReConnectBackoffThreshold() float64 {
+	fmt.Println("==getReConnectBackoffThreshold===")
 	return util.GetFloat64OrDefault("peer.deliveryclient.reConnectBackoffThreshold", defaultReConnectBackoffThreshold)
 }
 
@@ -97,6 +100,7 @@ type Config struct {
 // the specified in the configuration ordering service, in case it
 // fails to dial to it, return nil
 func NewDeliverService(conf *Config) (DeliverService, error) {
+	fmt.Println("==NewDeliverService===")
 	ds := &deliverServiceImpl{
 		conf:           conf,
 		blockProviders: make(map[string]blocksprovider.BlocksProvider),
@@ -108,6 +112,7 @@ func NewDeliverService(conf *Config) (DeliverService, error) {
 }
 
 func (d *deliverServiceImpl) UpdateEndpoints(chainID string, endpoints []string) error {
+	fmt.Println("==deliverServiceImpl===UpdateEndpoints==")
 	// Use chainID to obtain blocks provider and pass endpoints
 	// for update
 	if bp, ok := d.blockProviders[chainID]; ok {
@@ -119,6 +124,7 @@ func (d *deliverServiceImpl) UpdateEndpoints(chainID string, endpoints []string)
 }
 
 func (d *deliverServiceImpl) validateConfiguration() error {
+	fmt.Println("==deliverServiceImpl===validateConfiguration==")
 	conf := d.conf
 	if len(conf.Endpoints) == 0 {
 		return errors.New("no endpoints specified")
@@ -143,6 +149,7 @@ func (d *deliverServiceImpl) validateConfiguration() error {
 // that spawns in go routine to read new blocks starting from the position provided by ledger
 // info instance.
 func (d *deliverServiceImpl) StartDeliverForChannel(chainID string, ledgerInfo blocksprovider.LedgerInfo, finalizer func()) error {
+	fmt.Println("==deliverServiceImpl===StartDeliverForChannel==")
 	d.lock.Lock()
 	defer d.lock.Unlock()
 	if d.stopping {
@@ -164,6 +171,7 @@ func (d *deliverServiceImpl) StartDeliverForChannel(chainID string, ledgerInfo b
 }
 
 func (d *deliverServiceImpl) launchBlockProvider(chainID string, finalizer func()) {
+	fmt.Println("==deliverServiceImpl===launchBlockProvider==")
 	d.lock.RLock()
 	pb := d.blockProviders[chainID]
 	d.lock.RUnlock()
@@ -177,6 +185,7 @@ func (d *deliverServiceImpl) launchBlockProvider(chainID string, finalizer func(
 
 // StopDeliverForChannel stops blocks delivery for channel by stopping channel block provider
 func (d *deliverServiceImpl) StopDeliverForChannel(chainID string) error {
+	fmt.Println("==deliverServiceImpl===StopDeliverForChannel==")
 	d.lock.Lock()
 	defer d.lock.Unlock()
 	if d.stopping {
@@ -198,6 +207,7 @@ func (d *deliverServiceImpl) StopDeliverForChannel(chainID string) error {
 
 // Stop all service and release resources
 func (d *deliverServiceImpl) Stop() {
+	fmt.Println("==deliverServiceImpl===Stop==")
 	d.lock.Lock()
 	defer d.lock.Unlock()
 	// Marking flag to indicate the shutdown of the delivery service
@@ -209,6 +219,7 @@ func (d *deliverServiceImpl) Stop() {
 }
 
 func (d *deliverServiceImpl) newClient(chainID string, ledgerInfoProvider blocksprovider.LedgerInfo) *broadcastClient {
+	fmt.Println("==deliverServiceImpl===newClient==")
 	reconnectBackoffThreshold := getReConnectBackoffThreshold()
 	reconnectTotalTimeThreshold := getReConnectTotalTimeThreshold()
 	requester := &blocksRequester{
@@ -233,6 +244,7 @@ func (d *deliverServiceImpl) newClient(chainID string, ledgerInfoProvider blocks
 }
 
 func DefaultConnectionFactory(channelID string) func(endpoint string) (*grpc.ClientConn, error) {
+	fmt.Println("==DefaultConnectionFactory==")
 	return func(endpoint string) (*grpc.ClientConn, error) {
 		dialOpts := []grpc.DialOption{grpc.WithBlock()}
 		// set max send/recv msg sizes
@@ -266,5 +278,6 @@ func DefaultConnectionFactory(channelID string) func(endpoint string) (*grpc.Cli
 }
 
 func DefaultABCFactory(conn *grpc.ClientConn) orderer.AtomicBroadcastClient {
+	fmt.Println("==DefaultABCFactory==")
 	return orderer.NewAtomicBroadcastClient(conn)
 }

@@ -54,6 +54,7 @@ func (*CDSData) ProtoMessage() {}
 
 //Equals data equals other
 func (data *CDSData) Equals(other *CDSData) bool {
+	fmt.Println("==CDSData==Equals==")
 	return other != nil && bytes.Equal(data.CodeHash, other.CodeHash) && bytes.Equal(data.MetaDataHash, other.MetaDataHash)
 }
 
@@ -75,6 +76,7 @@ func (ccpack *CDSPackage) reset() {
 
 // GetId gets the fingerprint of the chaincode based on package computation
 func (ccpack *CDSPackage) GetId() []byte {
+	fmt.Println("==CDSPackage==GetId==")
 	//this has to be after creating a package and initializing it
 	//If those steps fail, GetId() should never be called
 	if ccpack.id == nil {
@@ -85,6 +87,7 @@ func (ccpack *CDSPackage) GetId() []byte {
 
 // GetDepSpec gets the ChaincodeDeploymentSpec from the package
 func (ccpack *CDSPackage) GetDepSpec() *pb.ChaincodeDeploymentSpec {
+	fmt.Println("==CDSPackage==GetDepSpec==")
 	//this has to be after creating a package and initializing it
 	//If those steps fail, GetDepSpec() should never be called
 	if ccpack.depSpec == nil {
@@ -95,6 +98,7 @@ func (ccpack *CDSPackage) GetDepSpec() *pb.ChaincodeDeploymentSpec {
 
 // GetDepSpecBytes gets the serialized ChaincodeDeploymentSpec from the package
 func (ccpack *CDSPackage) GetDepSpecBytes() []byte {
+	fmt.Println("==CDSPackage==GetDepSpecBytes==")
 	//this has to be after creating a package and initializing it
 	//If those steps fail, GetDepSpecBytes() should never be called
 	if ccpack.buf == nil {
@@ -105,11 +109,13 @@ func (ccpack *CDSPackage) GetDepSpecBytes() []byte {
 
 // GetPackageObject gets the ChaincodeDeploymentSpec as proto.Message
 func (ccpack *CDSPackage) GetPackageObject() proto.Message {
+	fmt.Println("==CDSPackage==GetPackageObject==")
 	return ccpack.depSpec
 }
 
 // GetChaincodeData gets the ChaincodeData
 func (ccpack *CDSPackage) GetChaincodeData() *ChaincodeData {
+	fmt.Println("==CDSPackage==GetChaincodeData==")
 	//this has to be after creating a package and initializing it
 	//If those steps fail, GetChaincodeData() should never be called
 	if ccpack.depSpec == nil || ccpack.datab == nil || ccpack.id == nil {
@@ -119,6 +125,7 @@ func (ccpack *CDSPackage) GetChaincodeData() *ChaincodeData {
 }
 
 func (ccpack *CDSPackage) getCDSData(cds *pb.ChaincodeDeploymentSpec) ([]byte, []byte, *CDSData, error) {
+	fmt.Println("==CDSPackage==getCDSData==")
 	// check for nil argument. It is an assertion that getCDSData
 	// is never called on a package that did not go through/succeed
 	// package initialization.
@@ -174,6 +181,7 @@ func (ccpack *CDSPackage) getCDSData(cds *pb.ChaincodeDeploymentSpec) ([]byte, [
 // ValidateCC returns error if the chaincode is not found or if its not a
 // ChaincodeDeploymentSpec
 func (ccpack *CDSPackage) ValidateCC(ccdata *ChaincodeData) error {
+	fmt.Println("==CDSPackage==ValidateCC==")
 	if ccpack.depSpec == nil {
 		return fmt.Errorf("uninitialized package")
 	}
@@ -211,6 +219,7 @@ func (ccpack *CDSPackage) ValidateCC(ccdata *ChaincodeData) error {
 
 //InitFromBuffer sets the buffer if valid and returns ChaincodeData
 func (ccpack *CDSPackage) InitFromBuffer(buf []byte) (*ChaincodeData, error) {
+	fmt.Println("==CDSPackage==InitFromBuffer==")
 	//incase ccpack is reused
 	ccpack.reset()
 
@@ -236,6 +245,7 @@ func (ccpack *CDSPackage) InitFromBuffer(buf []byte) (*ChaincodeData, error) {
 
 //InitFromFS returns the chaincode and its package from the file system
 func (ccpack *CDSPackage) InitFromPath(ccname string, ccversion string, path string) ([]byte, *pb.ChaincodeDeploymentSpec, error) {
+	fmt.Println("==CDSPackage==InitFromPath==")
 	//incase ccpack is reused
 	ccpack.reset()
 
@@ -258,11 +268,13 @@ func (ccpack *CDSPackage) InitFromPath(ccname string, ccversion string, path str
 
 //InitFromFS returns the chaincode and its package from the file system
 func (ccpack *CDSPackage) InitFromFS(ccname string, ccversion string) ([]byte, *pb.ChaincodeDeploymentSpec, error) {
+	fmt.Println("==CDSPackage==InitFromFS==")
 	return ccpack.InitFromPath(ccname, ccversion, chaincodeInstallPath)
 }
 
 //PutChaincodeToFS - serializes chaincode to a package on the file system
 func (ccpack *CDSPackage) PutChaincodeToFS() error {
+	fmt.Println("==CDSPackage==PutChaincodeToFS==")
 	if ccpack.buf == nil {
 		return fmt.Errorf("uninitialized package")
 	}

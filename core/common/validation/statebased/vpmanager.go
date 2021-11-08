@@ -22,6 +22,7 @@ type ValidationParameterUpdatedError struct {
 }
 
 func (f *ValidationParameterUpdatedError) Error() string {
+	fmt.Println("==ValidationParameterUpdatedError==Error==")
 	return fmt.Sprintf("validation parameters for key [%s] in namespace [%s:%s] have been changed in transaction %d of block %d", f.Key, f.CC, f.Coll, f.Txnum, f.Height)
 }
 

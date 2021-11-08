@@ -27,6 +27,7 @@ import (
 type SendPanicFailure string
 
 func (e SendPanicFailure) Error() string {
+	fmt.Println("==SendPanicFailure===Error==")
 	return fmt.Sprintf("send failure %s", string(e))
 }
 
@@ -37,10 +38,12 @@ type inProcStream struct {
 }
 
 func newInProcStream(recv <-chan *pb.ChaincodeMessage, send chan<- *pb.ChaincodeMessage) *inProcStream {
+	fmt.Println("==newInProcStream==")
 	return &inProcStream{recv, send}
 }
 
 func (s *inProcStream) Send(msg *pb.ChaincodeMessage) (err error) {
+	fmt.Println("==inProcStream==Send==")
 	//send may happen on a closed channel when the system is
 	//shutting down. Just catch the exception and return error
 	defer func() {
@@ -54,6 +57,7 @@ func (s *inProcStream) Send(msg *pb.ChaincodeMessage) (err error) {
 }
 
 func (s *inProcStream) Recv() (*pb.ChaincodeMessage, error) {
+	fmt.Println("==inProcStream==Recv==")
 	msg, ok := <-s.recv
 	if !ok {
 		return nil, errors.New("channel is closed")

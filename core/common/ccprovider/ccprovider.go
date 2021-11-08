@@ -66,6 +66,7 @@ type CCPackage interface {
 
 // SetChaincodesPath sets the chaincode path for this peer
 func SetChaincodesPath(path string) {
+	fmt.Println("==SetChaincodesPath=")
 	if s, err := os.Stat(path); err != nil {
 		if os.IsNotExist(err) {
 			if err := os.Mkdir(path, 0755); err != nil {
@@ -82,6 +83,7 @@ func SetChaincodesPath(path string) {
 }
 
 func GetChaincodePackage(ccname string, ccversion string) ([]byte, error) {
+	fmt.Println("==GetChaincodePackage=")
 	return GetChaincodePackageFromPath(ccname, ccversion, chaincodeInstallPath)
 }
 
@@ -89,6 +91,7 @@ func GetChaincodePackage(ccname string, ccversion string) ([]byte, error) {
 // detect garbage strings in unmarshaled proto fields where printable
 // characters are expected.
 func isPrintable(name string) bool {
+	fmt.Println("==isPrintable=")
 	notASCII := func(r rune) bool {
 		return !unicode.IsPrint(r)
 	}
@@ -97,6 +100,7 @@ func isPrintable(name string) bool {
 
 // GetChaincodePackage returns the chaincode package from the file system
 func GetChaincodePackageFromPath(ccname string, ccversion string, ccInstallPath string) ([]byte, error) {
+	fmt.Println("==GetChaincodePackageFromPath=")
 	path := fmt.Sprintf("%s/%s.%s", ccInstallPath, ccname, ccversion)
 	var ccbytes []byte
 	var err error
@@ -108,6 +112,7 @@ func GetChaincodePackageFromPath(ccname string, ccversion string, ccInstallPath 
 
 // ChaincodePackageExists returns whether the chaincode package exists in the file system
 func ChaincodePackageExists(ccname string, ccversion string) (bool, error) {
+	fmt.Println("==ChaincodePackageExists=")
 	path := filepath.Join(chaincodeInstallPath, ccname+"."+ccversion)
 	_, err := os.Stat(path)
 	if err == nil {
@@ -129,10 +134,12 @@ type CCInfoFSImpl struct{}
 // GetChaincodeFromFS this is a wrapper for hiding package implementation.
 // It calls GetChaincodeFromPath with the chaincodeInstallPath
 func (cifs *CCInfoFSImpl) GetChaincode(ccname string, ccversion string) (CCPackage, error) {
+	fmt.Println("==CCInfoFSImpl=GetChaincode==")
 	return cifs.GetChaincodeFromPath(ccname, ccversion, chaincodeInstallPath)
 }
 
 func (cifs *CCInfoFSImpl) GetChaincodeCodePackage(ccname, ccversion string) ([]byte, error) {
+	fmt.Println("==CCInfoFSImpl=GetChaincodeCodePackage==")
 	ccpack, err := cifs.GetChaincode(ccname, ccversion)
 	if err != nil {
 		return nil, err
@@ -142,6 +149,7 @@ func (cifs *CCInfoFSImpl) GetChaincodeCodePackage(ccname, ccversion string) ([]b
 
 // GetChaincodeFromPath this is a wrapper for hiding package implementation.
 func (*CCInfoFSImpl) GetChaincodeFromPath(ccname string, ccversion string, path string) (CCPackage, error) {
+	fmt.Println("==CCInfoFSImpl=GetChaincodeFromPath==")
 	// try raw CDS
 	cccdspack := &CDSPackage{}
 	_, _, err := cccdspack.InitFromPath(ccname, ccversion, path)
@@ -160,6 +168,7 @@ func (*CCInfoFSImpl) GetChaincodeFromPath(ccname string, ccversion string, path 
 // PutChaincodeIntoFS is a wrapper for putting raw ChaincodeDeploymentSpec
 //using CDSPackage. This is only used in UTs
 func (*CCInfoFSImpl) PutChaincode(depSpec *pb.ChaincodeDeploymentSpec) (CCPackage, error) {
+	fmt.Println("==CCInfoFSImpl=PutChaincode==")
 	buf, err := proto.Marshal(depSpec)
 	if err != nil {
 		return nil, err
@@ -184,6 +193,7 @@ type ChaincodeExtractor func(ccname string, ccversion string, path string) (CCPa
 
 // ListInstalledChaincodes retrieves the installed chaincodes
 func (cifs *CCInfoFSImpl) ListInstalledChaincodes(dir string, ls DirEnumerator, ccFromPath ChaincodeExtractor) ([]chaincode.InstalledChaincode, error) {
+	fmt.Println("==CCInfoFSImpl=ListInstalledChaincodes==")
 	var chaincodes []chaincode.InstalledChaincode
 	if _, err := os.Stat(dir); err != nil && os.IsNotExist(err) {
 		return nil, nil
@@ -234,6 +244,7 @@ var ccInfoCache = NewCCInfoCache(ccInfoFSProvider)
 
 // GetChaincodeFromFS retrieves chaincode information from the file system
 func GetChaincodeFromFS(ccname string, ccversion string) (CCPackage, error) {
+	fmt.Println("==GetChaincodeFromFS=")
 	return ccInfoFSProvider.GetChaincode(ccname, ccversion)
 }
 
@@ -241,17 +252,20 @@ func GetChaincodeFromFS(ccname string, ccversion string) (CCPackage, error) {
 // also in the cache to prime it) if the cache is enabled, or directly
 // from the file system otherwise
 func PutChaincodeIntoFS(depSpec *pb.ChaincodeDeploymentSpec) error {
+	fmt.Println("==PutChaincodeIntoFS=")
 	_, err := ccInfoFSProvider.PutChaincode(depSpec)
 	return err
 }
 
 // GetChaincodeData gets chaincode data from cache if there's one
 func GetChaincodeData(ccname string, ccversion string) (*ChaincodeData, error) {
+	fmt.Println("==GetChaincodeData=")
 	ccproviderLogger.Debugf("Getting chaincode data for <%s, %s> from cache", ccname, ccversion)
 	return ccInfoCache.GetChaincodeData(ccname, ccversion)
 }
 
 func CheckInstantiationPolicy(name, version string, cdLedger *ChaincodeData) error {
+	fmt.Println("==CheckInstantiationPolicy=")
 	ccdata, err := GetChaincodeData(name, version)
 	if err != nil {
 		return err
@@ -281,6 +295,7 @@ func CheckInstantiationPolicy(name, version string, cdLedger *ChaincodeData) err
 // GetCCPackage tries each known package implementation one by one
 // till the right package is found
 func GetCCPackage(buf []byte) (CCPackage, error) {
+	fmt.Println("==GetCCPackage=")
 	// try raw CDS
 	cds := &CDSPackage{}
 	if ccdata, err := cds.InitFromBuffer(buf); err != nil {
@@ -326,6 +341,7 @@ func GetCCPackage(buf []byte) (CCPackage, error) {
 // been installed (but not necessarily instantiated) on the peer by searching
 // the chaincode install path
 func GetInstalledChaincodes() (*pb.ChaincodeQueryResponse, error) {
+	fmt.Println("==GetInstalledChaincodes=")
 	files, err := ioutil.ReadDir(chaincodeInstallPath)
 	if err != nil {
 		return nil, err
@@ -390,6 +406,7 @@ type CCContext struct {
 
 // GetCanonicalName returns the canonical name associated with the proposal context
 func (cccid *CCContext) GetCanonicalName() string {
+	fmt.Println("==CCContext=GetCanonicalName==")
 	return cccid.Name + ":" + cccid.Version
 }
 
@@ -451,16 +468,19 @@ type ChaincodeData struct {
 
 // CCName returns the name of this chaincode (the name it was put in the ChaincodeRegistry with).
 func (cd *ChaincodeData) CCName() string {
+	fmt.Println("==ChaincodeData=CCName==")
 	return cd.Name
 }
 
 // Hash returns the hash of the chaincode.
 func (cd *ChaincodeData) Hash() []byte {
+	fmt.Println("==ChaincodeData=Hash==")
 	return cd.Id
 }
 
 // CCVersion returns the version of the chaincode.
 func (cd *ChaincodeData) CCVersion() string {
+	fmt.Println("==ChaincodeData=CCVersion==")
 	return cd.Version
 }
 
@@ -469,22 +489,32 @@ func (cd *ChaincodeData) CCVersion() string {
 // and the bytes returned are the argument to the validation (in the case of
 // 'vscc', this is a marshaled pb.VSCCArgs message).
 func (cd *ChaincodeData) Validation() (string, []byte) {
+	fmt.Println("==ChaincodeData=Validation==")
 	return cd.Vscc, cd.Policy
 }
 
 // Endorsement returns how to endorse proposals for this chaincode.
 // The string returns is the name of the endorsement method (usually 'escc').
 func (cd *ChaincodeData) Endorsement() string {
+	fmt.Println("==ChaincodeData=Endorsement==")
 	return cd.Escc
 }
 
 // implement functions needed from proto.Message for proto's mar/unmarshal functions
 
 // Reset resets
-func (cd *ChaincodeData) Reset() { *cd = ChaincodeData{} }
+func (cd *ChaincodeData) Reset() {
+	fmt.Println("==ChaincodeData=Reset==")
+	*cd = ChaincodeData{}
+}
+
 
 // String converts to string
-func (cd *ChaincodeData) String() string { return proto.CompactTextString(cd) }
+func (cd *ChaincodeData) String() string {
+	fmt.Println("==ChaincodeData=String==")
+	return proto.CompactTextString(cd)
+}
+
 
 // ProtoMessage just exists to make proto happy
 func (*ChaincodeData) ProtoMessage() {}
@@ -532,6 +562,7 @@ type ChaincodeProvider interface {
 }
 
 func DeploymentSpecToChaincodeContainerInfo(cds *pb.ChaincodeDeploymentSpec) *ChaincodeContainerInfo {
+	fmt.Println("==DeploymentSpecToChaincodeContainerInfo==")
 	return &ChaincodeContainerInfo{
 		Name:          cds.Name(),
 		Version:       cds.Version(),

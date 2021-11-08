@@ -41,6 +41,7 @@ type CCID struct {
 
 //GetName returns canonical chaincode name based on the fields of CCID
 func (ccid *CCID) GetName() string {
+	fmt.Println("==CCID====GetName=")
 	if ccid.Version != "" {
 		return fmt.Sprintf("%s-%s", ccid.Name, ccid.Version)
 	}

@@ -51,11 +51,13 @@ type broadcastClient struct {
 
 // NewBroadcastClient returns a broadcastClient with the given params
 func NewBroadcastClient(prod comm.ConnectionProducer, clFactory clientFactory, onConnect broadcastSetup, bos retryPolicy) *broadcastClient {
+	fmt.Println("==NewBroadcastClient==")
 	return &broadcastClient{prod: prod, onConnect: onConnect, shouldRetry: bos, createClient: clFactory, stopChan: make(chan struct{}, 1)}
 }
 
 // Recv receives a message from the ordering service
 func (bc *broadcastClient) Recv() (*orderer.DeliverResponse, error) {
+	fmt.Println("==broadcastClient==Recv===")
 	o, err := bc.try(func() (interface{}, error) {
 		if bc.shouldStop() {
 			return nil, errors.New("closing")
@@ -70,6 +72,7 @@ func (bc *broadcastClient) Recv() (*orderer.DeliverResponse, error) {
 
 // Send sends a message to the ordering service
 func (bc *broadcastClient) Send(msg *common.Envelope) error {
+	fmt.Println("==broadcastClient==Send===")
 	_, err := bc.try(func() (interface{}, error) {
 		if bc.shouldStop() {
 			return nil, errors.New("closing")
@@ -80,6 +83,7 @@ func (bc *broadcastClient) Send(msg *common.Envelope) error {
 }
 
 func (bc *broadcastClient) trySend(msg *common.Envelope) (interface{}, error) {
+	fmt.Println("==broadcastClient==trySend===")
 	bc.mutex.Lock()
 	stream := bc.blocksDeliverer
 	bc.mutex.Unlock()
@@ -90,6 +94,7 @@ func (bc *broadcastClient) trySend(msg *common.Envelope) (interface{}, error) {
 }
 
 func (bc *broadcastClient) tryReceive() (*orderer.DeliverResponse, error) {
+	fmt.Println("==broadcastClient==tryReceive===")
 	bc.mutex.Lock()
 	stream := bc.blocksDeliverer
 	bc.mutex.Unlock()
@@ -100,6 +105,7 @@ func (bc *broadcastClient) tryReceive() (*orderer.DeliverResponse, error) {
 }
 
 func (bc *broadcastClient) try(action func() (interface{}, error)) (interface{}, error) {
+	fmt.Println("==broadcastClient==try===")
 	attempt := 0
 	var totalRetryTime time.Duration
 	var backoffDuration time.Duration
@@ -131,6 +137,7 @@ func (bc *broadcastClient) try(action func() (interface{}, error)) (interface{},
 }
 
 func (bc *broadcastClient) doAction(action func() (interface{}, error), actionOnNewConnection func()) (interface{}, error) {
+	fmt.Println("==broadcastClient==doAction===")
 	bc.mutex.Lock()
 	conn := bc.conn
 	bc.mutex.Unlock()
@@ -150,6 +157,7 @@ func (bc *broadcastClient) doAction(action func() (interface{}, error), actionOn
 }
 
 func (bc *broadcastClient) sleep(duration time.Duration) {
+	fmt.Println("==broadcastClient==sleep===")
 	select {
 	case <-time.After(duration):
 	case <-bc.stopChan:
@@ -157,6 +165,7 @@ func (bc *broadcastClient) sleep(duration time.Duration) {
 }
 
 func (bc *broadcastClient) connect() error {
+	fmt.Println("==broadcastClient==connect===")
 	bc.mutex.Lock()
 	bc.endpoint = ""
 	bc.mutex.Unlock()
@@ -187,6 +196,7 @@ func (bc *broadcastClient) connect() error {
 }
 
 func (bc *broadcastClient) afterConnect(conn *grpc.ClientConn, abc orderer.AtomicBroadcast_DeliverClient, cf context.CancelFunc, endpoint string) error {
+	fmt.Println("==broadcastClient==afterConnect===")
 	logger.Debug("Entering")
 	defer logger.Debug("Exiting")
 	bc.mutex.Lock()
@@ -222,11 +232,13 @@ func (bc *broadcastClient) afterConnect(conn *grpc.ClientConn, abc orderer.Atomi
 }
 
 func (bc *broadcastClient) shouldStop() bool {
+	fmt.Println("==broadcastClient==shouldStop===")
 	return atomic.LoadInt32(&bc.stopFlag) == int32(1)
 }
 
 // Close makes the client close its connection and shut down
 func (bc *broadcastClient) Close() {
+	fmt.Println("==broadcastClient==Close===")
 	logger.Debug("Entering")
 	defer logger.Debug("Exiting")
 	bc.mutex.Lock()
@@ -245,6 +257,7 @@ func (bc *broadcastClient) Close() {
 
 // Disconnect makes the client close the existing connection and makes current endpoint unavailable for time interval, if disableEndpoint set to true
 func (bc *broadcastClient) Disconnect(disableEndpoint bool) {
+	fmt.Println("==broadcastClient==Disconnect===")
 	logger.Debug("Entering")
 	defer logger.Debug("Exiting")
 	bc.mutex.Lock()
@@ -263,11 +276,14 @@ func (bc *broadcastClient) Disconnect(disableEndpoint bool) {
 
 // UpdateEndpoints update endpoints to new values
 func (bc *broadcastClient) UpdateEndpoints(endpoints []string) {
+	fmt.Println("==broadcastClient==UpdateEndpoints===")
 	bc.prod.UpdateEndpoints(endpoints)
+
 }
 
 // GetEndpoints returns ordering service endpoints
 func (bc *broadcastClient) GetEndpoints() []string {
+	fmt.Println("==broadcastClient==GetEndpoints===")
 	return bc.prod.GetEndpoints()
 }
 
@@ -278,6 +294,7 @@ type connection struct {
 }
 
 func (c *connection) Close() error {
+	fmt.Println("==connection==Close===")
 	var err error
 	c.Once.Do(func() {
 		c.cancel()

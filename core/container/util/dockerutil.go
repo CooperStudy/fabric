@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package util
 
 import (
+	"fmt"
 	"runtime"
 	"strings"
 
@@ -18,6 +19,7 @@ import (
 
 //NewDockerClient creates a docker client
 func NewDockerClient() (client *docker.Client, err error) {
+	fmt.Println("==NewDockerClient==")
 	endpoint := viper.GetString("vm.endpoint")
 	tlsenabled := viper.GetBool("vm.docker.tls.enabled")
 	if tlsenabled {
@@ -32,6 +34,7 @@ func NewDockerClient() (client *docker.Client, err error) {
 }
 
 func ParseDockerfileTemplate(template string) string {
+	fmt.Println("==ParseDockerfileTemplate==")
 	r := strings.NewReplacer(
 		"$(ARCH)", runtime.GOARCH,
 		"$(PROJECT_VERSION)", metadata.Version,

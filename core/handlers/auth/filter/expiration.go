@@ -8,6 +8,7 @@ package filter
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/hyperledger/fabric/common/crypto"
@@ -19,6 +20,7 @@ import (
 
 // NewExpirationCheckFilter creates a new Filter that checks identity expiration
 func NewExpirationCheckFilter() auth.Filter {
+	fmt.Println("==NewExpirationCheckFilter==")
 	return &expirationCheckFilter{}
 }
 
@@ -28,10 +30,12 @@ type expirationCheckFilter struct {
 
 // Init initializes the Filter with the next EndorserServer
 func (f *expirationCheckFilter) Init(next peer.EndorserServer) {
+	fmt.Println("==expirationCheckFilter==Init==")
 	f.next = next
 }
 
 func validateProposal(signedProp *peer.SignedProposal) error {
+	fmt.Println("==validateProposal===")
 	prop, err := utils.GetProposal(signedProp.ProposalBytes)
 	if err != nil {
 		return errors.Wrap(err, "failed parsing proposal")
@@ -55,6 +59,7 @@ func validateProposal(signedProp *peer.SignedProposal) error {
 
 // ProcessProposal processes a signed proposal
 func (f *expirationCheckFilter) ProcessProposal(ctx context.Context, signedProp *peer.SignedProposal) (*peer.ProposalResponse, error) {
+	fmt.Println("==expirationCheckFilter==ProcessProposal===")
 	if err := validateProposal(signedProp); err != nil {
 		return nil, err
 	}

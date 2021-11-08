@@ -39,6 +39,7 @@ type SupportImpl struct {
 }
 
 func (s *SupportImpl) NewQueryCreator(channel string) (QueryCreator, error) {
+	fmt.Println("==SupportImpl==NewQueryCreator==")
 	lgr := s.Peer.GetLedger(channel)
 	if lgr == nil {
 		return nil, errors.Errorf("channel %s doesn't exist", channel)
@@ -47,12 +48,14 @@ func (s *SupportImpl) NewQueryCreator(channel string) (QueryCreator, error) {
 }
 
 func (s *SupportImpl) SigningIdentityForRequest(*pb.SignedProposal) (SigningIdentity, error) {
+	fmt.Println("==SupportImpl==SigningIdentityForRequest==")
 	return s.SignerSupport, nil
 }
 
 // IsSysCCAndNotInvokableExternal returns true if the supplied chaincode is
 // ia system chaincode and it NOT invokable
 func (s *SupportImpl) IsSysCCAndNotInvokableExternal(name string) bool {
+	fmt.Println("==SupportImpl==IsSysCCAndNotInvokableExternal==")
 	return s.SysCCProvider.IsSysCCAndNotInvokableExternal(name)
 }
 
@@ -60,6 +63,7 @@ func (s *SupportImpl) IsSysCCAndNotInvokableExternal(name string) bool {
 // a client may obtain more than one such simulator; they are made unique
 // by way of the supplied txid
 func (s *SupportImpl) GetTxSimulator(ledgername string, txid string) (ledger.TxSimulator, error) {
+	fmt.Println("==SupportImpl==GetTxSimulator==")
 	lgr := s.Peer.GetLedger(ledgername)
 	if lgr == nil {
 		return nil, errors.Errorf("Channel does not exist: %s", ledgername)
@@ -70,6 +74,7 @@ func (s *SupportImpl) GetTxSimulator(ledgername string, txid string) (ledger.TxS
 // GetHistoryQueryExecutor gives handle to a history query executor for the
 // specified ledger
 func (s *SupportImpl) GetHistoryQueryExecutor(ledgername string) (ledger.HistoryQueryExecutor, error) {
+	fmt.Println("==SupportImpl==GetHistoryQueryExecutor==")
 	lgr := s.Peer.GetLedger(ledgername)
 	if lgr == nil {
 		return nil, errors.Errorf("Channel does not exist: %s", ledgername)
@@ -79,6 +84,7 @@ func (s *SupportImpl) GetHistoryQueryExecutor(ledgername string) (ledger.History
 
 // GetTransactionByID retrieves a transaction by id
 func (s *SupportImpl) GetTransactionByID(chid, txID string) (*pb.ProcessedTransaction, error) {
+	fmt.Println("==SupportImpl==GetTransactionByID==")
 	lgr := s.Peer.GetLedger(chid)
 	if lgr == nil {
 		return nil, errors.Errorf("failed to look up the ledger for Channel %s", chid)
@@ -92,6 +98,7 @@ func (s *SupportImpl) GetTransactionByID(chid, txID string) (*pb.ProcessedTransa
 
 // GetLedgerHeight returns ledger height for given channelID
 func (s *SupportImpl) GetLedgerHeight(channelID string) (uint64, error) {
+	fmt.Println("==SupportImpl==GetLedgerHeight==")
 	lgr := s.Peer.GetLedger(channelID)
 	if lgr == nil {
 		return 0, errors.Errorf("failed to look up the ledger for Channel %s", channelID)
@@ -108,11 +115,13 @@ func (s *SupportImpl) GetLedgerHeight(channelID string) (uint64, error) {
 // IsSysCC returns true if the name matches a system chaincode's
 // system chaincode names are system, chain wide
 func (s *SupportImpl) IsSysCC(name string) bool {
+	fmt.Println("==SupportImpl==IsSysCC==")
 	return s.SysCCProvider.IsSysCC(name)
 }
 
 // GetChaincode returns the CCPackage from the fs
 func (s *SupportImpl) GetChaincodeDeploymentSpecFS(cds *pb.ChaincodeDeploymentSpec) (*pb.ChaincodeDeploymentSpec, error) {
+	fmt.Println("==SupportImpl==GetChaincodeDeploymentSpecFS==")
 	ccpack, err := ccprovider.GetChaincodeFromFS(cds.ChaincodeSpec.ChaincodeId.Name, cds.ChaincodeSpec.ChaincodeId.Version)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not get chaincode from fs")
@@ -123,6 +132,7 @@ func (s *SupportImpl) GetChaincodeDeploymentSpecFS(cds *pb.ChaincodeDeploymentSp
 
 // ExecuteInit a deployment proposal and return the chaincode response
 func (s *SupportImpl) ExecuteLegacyInit(txParams *ccprovider.TransactionParams, cid, name, version, txid string, signedProp *pb.SignedProposal, prop *pb.Proposal, cds *pb.ChaincodeDeploymentSpec) (*pb.Response, *pb.ChaincodeEvent, error) {
+	fmt.Println("==SupportImpl==ExecuteLegacyInit==")
 	cccid := &ccprovider.CCContext{
 		Name:    name,
 		Version: version,
@@ -133,6 +143,7 @@ func (s *SupportImpl) ExecuteLegacyInit(txParams *ccprovider.TransactionParams, 
 
 // Execute a proposal and return the chaincode response
 func (s *SupportImpl) Execute(txParams *ccprovider.TransactionParams, cid, name, version, txid string, signedProp *pb.SignedProposal, prop *pb.Proposal, input *pb.ChaincodeInput) (*pb.Response, *pb.ChaincodeEvent, error) {
+	fmt.Println("==SupportImpl==Execute==")
 	cccid := &ccprovider.CCContext{
 		Name:    name,
 		Version: version,
@@ -149,18 +160,22 @@ func (s *SupportImpl) Execute(txParams *ccprovider.TransactionParams, cid, name,
 
 // GetChaincodeDefinition returns ccprovider.ChaincodeDefinition for the chaincode with the supplied name
 func (s *SupportImpl) GetChaincodeDefinition(chaincodeName string, txsim ledger.QueryExecutor) (ccprovider.ChaincodeDefinition, error) {
+	fmt.Println("==SupportImpl==GetChaincodeDefinition==")
 	return s.ChaincodeSupport.Lifecycle.ChaincodeDefinition(chaincodeName, txsim)
 }
 
 // CheckACL checks the ACL for the resource for the Channel using the
 // SignedProposal from which an id can be extracted for testing against a policy
 func (s *SupportImpl) CheckACL(signedProp *pb.SignedProposal, chdr *common.ChannelHeader, shdr *common.SignatureHeader, hdrext *pb.ChaincodeHeaderExtension) error {
+	fmt.Println("==SupportImpl==CheckACL==")
 	return s.ACLProvider.CheckACL(resources.Peer_Propose, chdr.ChannelId, signedProp)
+
 }
 
 // IsJavaCC returns true if the CDS package bytes describe a chaincode
 // that requires the java runtime environment to execute
 func (s *SupportImpl) IsJavaCC(buf []byte) (bool, error) {
+	fmt.Println("==SupportImpl==IsJavaCC==")
 	//the inner dep spec will contain the type
 	ccpack, err := ccprovider.GetCCPackage(buf)
 	if err != nil {
@@ -173,11 +188,13 @@ func (s *SupportImpl) IsJavaCC(buf []byte) (bool, error) {
 // CheckInstantiationPolicy returns an error if the instantiation in the supplied
 // ChaincodeDefinition differs from the instantiation policy stored on the ledger
 func (s *SupportImpl) CheckInstantiationPolicy(name, version string, cd ccprovider.ChaincodeDefinition) error {
+	fmt.Println("==SupportImpl==CheckInstantiationPolicy==")
 	return ccprovider.CheckInstantiationPolicy(name, version, cd.(*ccprovider.ChaincodeData))
 }
 
 // GetApplicationConfig returns the configtxapplication.SharedConfig for the Channel
 // and whether the Application config exists
 func (s *SupportImpl) GetApplicationConfig(cid string) (channelconfig.Application, bool) {
+	fmt.Println("==SupportImpl==GetApplicationConfig==")
 	return s.PeerSupport.GetApplicationConfig(cid)
 }

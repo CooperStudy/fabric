@@ -45,6 +45,7 @@ var (
 type SysCCRegisteredErr string
 
 func (s SysCCRegisteredErr) Error() string {
+	fmt.Println("=SysCCRegisteredErr==Error==")
 	return fmt.Sprintf("%s already registered", string(s))
 }
 
@@ -62,6 +63,7 @@ type Registry struct {
 // the chaincode support used to be a latent dependency, snuck in on the context, but now
 // it is being made an explicit part of the startup.
 func NewRegistry() *Registry {
+	fmt.Println("=NewRegistry=")
 	return &Registry{
 		typeRegistry: make(map[string]*inprocContainer),
 		instRegistry: make(map[string]*inprocContainer),
@@ -70,11 +72,13 @@ func NewRegistry() *Registry {
 
 // NewVM creates an inproc VM instance
 func (r *Registry) NewVM() container.VM {
+	fmt.Println("=Registry===NewVM===")
 	return NewInprocVM(r)
 }
 
 //Register registers system chaincode with given path. The deploy should be called to initialize
 func (r *Registry) Register(ccid *ccintf.CCID, cc shim.Chaincode) error {
+	fmt.Println("=Registry===Register===")
 	name := ccid.GetName()
 	inprocLogger.Debugf("Registering chaincode instance: %s", name)
 	tmp := r.typeRegistry[name]
@@ -94,12 +98,14 @@ type InprocVM struct {
 
 // NewInprocVM creates a new InprocVM
 func NewInprocVM(r *Registry) *InprocVM {
+	fmt.Println("=NewInprocVM===")
 	return &InprocVM{
 		registry: r,
 	}
 }
 
 func (vm *InprocVM) getInstance(ipctemplate *inprocContainer, instName string, args []string, env []string) (*inprocContainer, error) {
+	fmt.Println("==InprocVM===getInstance==")
 	ipc := vm.registry.instRegistry[instName]
 	if ipc != nil {
 		inprocLogger.Warningf("chaincode instance exists for %s", instName)
@@ -118,6 +124,7 @@ func (vm *InprocVM) getInstance(ipctemplate *inprocContainer, instName string, a
 }
 
 func (ipc *inprocContainer) launchInProc(id string, args []string, env []string) error {
+	fmt.Println("==inprocContainer===launchInProc==")
 	if ipc.ChaincodeSupport == nil {
 		inprocLogger.Panicf("Chaincode support is nil, most likely you forgot to set it immediately after calling inproccontroller.NewRegsitry()")
 	}
@@ -176,6 +183,7 @@ func (ipc *inprocContainer) launchInProc(id string, args []string, env []string)
 
 //Start starts a previously registered system codechain
 func (vm *InprocVM) Start(ccid ccintf.CCID, args []string, env []string, filesToUpload map[string][]byte, builder container.Builder) error {
+	fmt.Println("==InprocVM===Start==")
 	path := ccid.GetName()
 
 	ipctemplate := vm.registry.typeRegistry[path]
@@ -212,6 +220,7 @@ func (vm *InprocVM) Start(ccid ccintf.CCID, args []string, env []string, filesTo
 
 //Stop stops a system codechain
 func (vm *InprocVM) Stop(ccid ccintf.CCID, timeout uint, dontkill bool, dontremove bool) error {
+	fmt.Println("==InprocVM===Stop==")
 	path := ccid.GetName()
 
 	ipctemplate := vm.registry.typeRegistry[path]
@@ -241,6 +250,7 @@ func (vm *InprocVM) Stop(ccid ccintf.CCID, timeout uint, dontkill bool, dontremo
 // HealthCheck is provided in order to implement the VMProvider interface.
 // It always returns nil..
 func (vm *InprocVM) HealthCheck(ctx context.Context) error {
+	fmt.Println("==InprocVM===HealthCheck==")
 	return nil
 }
 
@@ -248,5 +258,6 @@ func (vm *InprocVM) HealthCheck(ctx context.Context) error {
 // process.  It accepts a format function parameter to allow different
 // formatting based on the desired use of the name.
 func (vm *InprocVM) GetVMName(ccid ccintf.CCID) string {
+	fmt.Println("==InprocVM===GetVMName==")
 	return ccid.GetName()
 }

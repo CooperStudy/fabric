@@ -16,6 +16,7 @@ import (
 
 // IsChaincodeDeployed returns true if the chaincode with given name and version is deployed
 func IsChaincodeDeployed(chainid, ccName, ccVersion string, ccHash []byte, sccp sysccprovider.SystemChaincodeProvider) (bool, error) {
+	fmt.Println("==IsChaincodeDeployed===")
 	qe, err := sccp.GetQueryExecutorForLedger(chainid)
 	if err != nil {
 		return false, fmt.Errorf("Could not retrieve QueryExecutor for channel %s, error %s", chainid, err)

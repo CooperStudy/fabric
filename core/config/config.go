@@ -16,6 +16,7 @@ import (
 )
 
 func dirExists(path string) bool {
+	fmt.Println("==dirExists=====")
 	fi, err := os.Stat(path)
 	if err != nil {
 		return false
@@ -24,6 +25,7 @@ func dirExists(path string) bool {
 }
 
 func AddConfigPath(v *viper.Viper, p string) {
+	fmt.Println("==AddConfigPath=====")
 	if v != nil {
 		v.AddConfigPath(p)
 	} else {
@@ -38,6 +40,7 @@ func AddConfigPath(v *viper.Viper, p string) {
 // file that specified it.  Absolute paths are passed unscathed.
 //----------------------------------------------------------------------------------
 func TranslatePath(base, p string) string {
+	fmt.Println("==TranslatePath=====")
 	if filepath.IsAbs(p) {
 		return p
 	}
@@ -53,6 +56,7 @@ func TranslatePath(base, p string) string {
 // passed unscathed.
 //----------------------------------------------------------------------------------
 func TranslatePathInPlace(base string, p *string) {
+	fmt.Println("==TranslatePathInPlace=====")
 	*p = TranslatePath(base, *p)
 }
 
@@ -69,6 +73,7 @@ func TranslatePathInPlace(base string, p *string) {
 //
 //----------------------------------------------------------------------------------
 func GetPath(key string) string {
+	fmt.Println("==GetPath=====")
 	p := viper.GetString(key)
 	if p == "" {
 		return ""
@@ -88,6 +93,7 @@ const OfficialPath = "/etc/hyperledger/fabric"
 // Viper instance
 //----------------------------------------------------------------------------------
 func InitViper(v *viper.Viper, configName string) error {
+	fmt.Println("==InitViper=====")
 	var altPath = os.Getenv("FABRIC_CFG_PATH")
 	if altPath != "" {
 		// If the user has overridden the path with an envvar, its the only path

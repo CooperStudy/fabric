@@ -116,6 +116,7 @@ type validateResult struct {
 
 // NewEndorserServer creates and returns a new Endorser server instance.
 func NewEndorserServer(privDist privateDataDistributor, s Support, pr *platforms.Registry) *Endorser {
+	fmt.Println("==NewEndorserServer==")
 	e := &Endorser{
 		distributePrivateData: privDist,
 		s:                     s,
@@ -127,6 +128,7 @@ func NewEndorserServer(privDist privateDataDistributor, s Support, pr *platforms
 
 // call specified chaincode (system or user)
 func (e *Endorser) callChaincode(txParams *ccprovider.TransactionParams, version string, input *pb.ChaincodeInput, cid *pb.ChaincodeID) (*pb.Response, *pb.ChaincodeEvent, error) {
+	fmt.Println("==Endorser==callChaincode==")
 	endorserLogger.Infof("[%s][%s] Entry chaincode: %s", txParams.ChannelID, shorttxid(txParams.TxID), cid)
 	defer func(start time.Time) {
 		logger := endorserLogger.WithOptions(zap.AddCallerSkip(1))
@@ -187,6 +189,7 @@ func (e *Endorser) callChaincode(txParams *ccprovider.TransactionParams, version
 }
 
 func (e *Endorser) SanitizeUserCDS(userCDS *pb.ChaincodeDeploymentSpec) (*pb.ChaincodeDeploymentSpec, error) {
+	fmt.Println("==Endorser==SanitizeUserCDS==")
 	fsCDS, err := e.s.GetChaincodeDeploymentSpecFS(userCDS)
 	if err != nil {
 		return nil, errors.Wrapf(err, "cannot deploy a chaincode which is not installed")
@@ -201,6 +204,7 @@ func (e *Endorser) SanitizeUserCDS(userCDS *pb.ChaincodeDeploymentSpec) (*pb.Cha
 
 // SimulateProposal simulates the proposal by calling the chaincode
 func (e *Endorser) SimulateProposal(txParams *ccprovider.TransactionParams, cid *pb.ChaincodeID) (ccprovider.ChaincodeDefinition, *pb.Response, []byte, *pb.ChaincodeEvent, error) {
+	fmt.Println("==Endorser==SimulateProposal==")
 	endorserLogger.Debugf("[%s][%s] Entry chaincode: %s", txParams.ChannelID, shorttxid(txParams.TxID), cid)
 	defer endorserLogger.Debugf("[%s][%s] Exit", txParams.ChannelID, shorttxid(txParams.TxID))
 	// we do expect the payload to be a ChaincodeInvocationSpec
@@ -285,6 +289,7 @@ func (e *Endorser) SimulateProposal(txParams *ccprovider.TransactionParams, cid 
 
 // endorse the proposal by calling the ESCC
 func (e *Endorser) endorseProposal(_ context.Context, chainID string, txid string, signedProp *pb.SignedProposal, proposal *pb.Proposal, response *pb.Response, simRes []byte, event *pb.ChaincodeEvent, visibility []byte, ccid *pb.ChaincodeID, txsim ledger.TxSimulator, cd ccprovider.ChaincodeDefinition) (*pb.ProposalResponse, error) {
+	fmt.Println("==Endorser==endorseProposal==")
 	endorserLogger.Debugf("[%s][%s] Entry chaincode: %s", chainID, shorttxid(txid), ccid)
 	defer endorserLogger.Debugf("[%s][%s] Exit", chainID, shorttxid(txid))
 
@@ -336,6 +341,7 @@ func (e *Endorser) endorseProposal(_ context.Context, chainID string, txid strin
 
 // preProcess checks the tx proposal headers, uniqueness and ACL
 func (e *Endorser) preProcess(signedProp *pb.SignedProposal) (*validateResult, error) {
+	fmt.Println("==Endorser==preProcess==")
 	vr := &validateResult{}
 	// at first, we check whether the message is valid
 	prop, hdr, hdrExt, err := validation.ValidateProposalMessage(signedProp)
@@ -400,6 +406,7 @@ func (e *Endorser) preProcess(signedProp *pb.SignedProposal) (*validateResult, e
 
 // ProcessProposal process the Proposal
 func (e *Endorser) ProcessProposal(ctx context.Context, signedProp *pb.SignedProposal) (*pb.ProposalResponse, error) {
+	fmt.Println("==Endorser==ProcessProposal==")
 	addr := util.ExtractRemoteAddress(ctx)
 	endorserLogger.Debug("Entering: request from", addr)
 	defer endorserLogger.Debug("Exit: request from", addr)
@@ -506,6 +513,7 @@ func (e *Endorser) ProcessProposal(ctx context.Context, signedProp *pb.SignedPro
 // determine whether or not a transaction simulator should be
 // obtained for a proposal.
 func acquireTxSimulator(chainID string, ccid *pb.ChaincodeID) bool {
+	fmt.Println("==acquireTxSimulator==")
 	if chainID == "" {
 		return false
 	}
@@ -525,6 +533,7 @@ func acquireTxSimulator(chainID string, ccid *pb.ChaincodeID) bool {
 // ~~TODO utilize a common shorttxid utility across packages.~~
 // TODO use a formal type for transaction ID and make it a stringer
 func shorttxid(txid string) string {
+	fmt.Println("==shorttxid==")
 	if len(txid) < 8 {
 		return txid
 	}

@@ -33,6 +33,7 @@ type policyChecker struct {
 }
 
 func (p *policyChecker) checkCCEPIfCondition(cc string, blockNum, txNum uint64, condition bool) commonerrors.TxValidationError {
+	fmt.Println("==policyChecker==checkCCEPIfCondition==")
 	if condition {
 		return nil
 	}
@@ -49,14 +50,17 @@ func (p *policyChecker) checkCCEPIfCondition(cc string, blockNum, txNum uint64, 
 }
 
 func (p *policyChecker) checkCCEPIfNotChecked(cc string, blockNum, txNum uint64) commonerrors.TxValidationError {
+	fmt.Println("==policyChecker==checkCCEPIfNotChecked==")
 	return p.checkCCEPIfCondition(cc, blockNum, txNum, p.ccEPChecked)
 }
 
 func (p *policyChecker) checkCCEPIfNoEPChecked(cc string, blockNum, txNum uint64) commonerrors.TxValidationError {
+	fmt.Println("==policyChecker==checkCCEPIfNoEPChecked==")
 	return p.checkCCEPIfCondition(cc, blockNum, txNum, p.someEPChecked)
 }
 
 func (p *policyChecker) checkSBAndCCEP(cc, coll, key string, blockNum, txNum uint64) commonerrors.TxValidationError {
+	fmt.Println("==policyChecker==checkSBAndCCEP==")
 	// see if there is a key-level validation parameter for this key
 	vp, err := p.vpmgr.GetValidationParameterForKey(cc, coll, key, blockNum, txNum)
 	if err != nil {
@@ -123,6 +127,7 @@ type KeyLevelValidator struct {
 }
 
 func NewKeyLevelValidator(policySupport validation.PolicyEvaluator, vpmgr KeyLevelValidationParameterManager) *KeyLevelValidator {
+	fmt.Println("==NewKeyLevelValidator==")
 	return &KeyLevelValidator{
 		vpmgr:         vpmgr,
 		policySupport: policySupport,
@@ -131,6 +136,7 @@ func NewKeyLevelValidator(policySupport validation.PolicyEvaluator, vpmgr KeyLev
 }
 
 func (klv *KeyLevelValidator) invokeOnce(block *common.Block, txnum uint64) *sync.Once {
+	fmt.Println("==KeyLevelValidator==KeyLevelValidator==")
 	klv.blockDep.mutex.Lock()
 	defer klv.blockDep.mutex.Unlock()
 
@@ -143,6 +149,7 @@ func (klv *KeyLevelValidator) invokeOnce(block *common.Block, txnum uint64) *syn
 }
 
 func (klv *KeyLevelValidator) extractDependenciesForTx(blockNum, txNum uint64, envelopeBytes []byte) {
+	fmt.Println("==KeyLevelValidator==extractDependenciesForTx==")
 	env, err := utils.GetEnvelopeFromBlock(envelopeBytes)
 	if err != nil {
 		logger.Warningf("while executing GetEnvelopeFromBlock got error '%s', skipping tx at height (%d,%d)", err, blockNum, txNum)
@@ -184,6 +191,7 @@ func (klv *KeyLevelValidator) extractDependenciesForTx(blockNum, txNum uint64, e
 
 // PreValidate implements the function of the StateBasedValidator interface
 func (klv *KeyLevelValidator) PreValidate(txNum uint64, block *common.Block) {
+	fmt.Println("==KeyLevelValidator==PreValidate==")
 	for i := int64(txNum); i >= 0; i-- {
 		txPosition := uint64(i)
 
@@ -196,6 +204,7 @@ func (klv *KeyLevelValidator) PreValidate(txNum uint64, block *common.Block) {
 
 // Validate implements the function of the StateBasedValidator interface
 func (klv *KeyLevelValidator) Validate(cc string, blockNum, txNum uint64, rwsetBytes, prp, ccEP []byte, endorsements []*peer.Endorsement) commonerrors.TxValidationError {
+	fmt.Println("==KeyLevelValidator==Validate==")
 	// construct signature set
 	signatureSet := []*common.SignedData{}
 	for _, endorsement := range endorsements {
@@ -285,10 +294,12 @@ func (klv *KeyLevelValidator) Validate(cc string, blockNum, txNum uint64, rwsetB
 
 // PostValidate implements the function of the StateBasedValidator interface
 func (klv *KeyLevelValidator) PostValidate(cc string, blockNum, txNum uint64, err error) {
+	fmt.Println("==KeyLevelValidator==PostValidate==")
 	klv.vpmgr.SetTxValidationResult(cc, blockNum, txNum, err)
 }
 
 func policyErr(err error) *commonerrors.VSCCEndorsementPolicyError {
+	fmt.Println("==policyErr==")
 	return &commonerrors.VSCCEndorsementPolicyError{
 		Err: err,
 	}

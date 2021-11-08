@@ -48,6 +48,7 @@ type MapBasedPluginMapper map[string]endorsement.PluginFactory
 
 // PluginFactoryByName returns a plugin factory for the given plugin name, or nil if not found
 func (m MapBasedPluginMapper) PluginFactoryByName(name PluginName) endorsement.PluginFactory {
+	fmt.Println("==MapBasedPluginMapper==PluginFactoryByName==")
 	return m[string(name)]
 }
 
@@ -67,6 +68,7 @@ type Context struct {
 
 // String returns a text representation of this context
 func (c Context) String() string {
+	fmt.Println("==Context==String==")
 	return fmt.Sprintf("{plugin: %s, channel: %s, tx: %s, chaincode: %s}", c.PluginName, c.Channel, c.TxID, c.ChaincodeID.Name)
 }
 
@@ -81,6 +83,7 @@ type PluginSupport struct {
 
 // NewPluginEndorser endorses with using a plugin
 func NewPluginEndorser(ps *PluginSupport) *PluginEndorser {
+	fmt.Println("==NewPluginEndorser==")
 	return &PluginEndorser{
 		SigningIdentityFetcher:  ps.SigningIdentityFetcher,
 		PluginMapper:            ps.PluginMapper,
@@ -101,6 +104,7 @@ type pluginsByChannel struct {
 }
 
 func (pbc *pluginsByChannel) createPluginIfAbsent(channel string) (endorsement.Plugin, error) {
+	fmt.Println("==pluginsByChannel==createPluginIfAbsent==")
 	pbc.RLock()
 	plugin, exists := pbc.channels2Plugins[channel]
 	pbc.RUnlock()
@@ -125,6 +129,7 @@ func (pbc *pluginsByChannel) createPluginIfAbsent(channel string) (endorsement.P
 }
 
 func (pbc *pluginsByChannel) initPlugin(plugin endorsement.Plugin, channel string) (endorsement.Plugin, error) {
+	fmt.Println("==pluginsByChannel==initPlugin==")
 	var dependencies []endorsement.Dependency
 	var err error
 	// If this is a channel endorsement, add the channel state as a dependency
@@ -160,6 +165,7 @@ type PluginEndorser struct {
 
 // EndorseWithPlugin endorses the response with a plugin
 func (pe *PluginEndorser) EndorseWithPlugin(ctx Context) (*pb.ProposalResponse, error) {
+	fmt.Println("==PluginEndorser==EndorseWithPlugin==")
 	endorserLogger.Debug("Entering endorsement for", ctx)
 
 	if ctx.Response == nil {
@@ -200,6 +206,7 @@ func (pe *PluginEndorser) EndorseWithPlugin(ctx Context) (*pb.ProposalResponse, 
 
 // getAndStorePlugin returns a plugin instance for the given plugin name and channel
 func (pe *PluginEndorser) getOrCreatePlugin(plugin PluginName, channel string) (endorsement.Plugin, error) {
+	fmt.Println("==PluginEndorser==getOrCreatePlugin==")
 	pluginFactory := pe.PluginFactoryByName(plugin)
 	if pluginFactory == nil {
 		return nil, errors.Errorf("plugin with name %s wasn't found", plugin)
@@ -210,6 +217,7 @@ func (pe *PluginEndorser) getOrCreatePlugin(plugin PluginName, channel string) (
 }
 
 func (pe *PluginEndorser) getOrCreatePluginChannelMapping(plugin PluginName, pf endorsement.PluginFactory) *pluginsByChannel {
+	fmt.Println("==PluginEndorser==getOrCreatePluginChannelMapping==")
 	pe.Lock()
 	defer pe.Unlock()
 	endorserChannelMapping, exists := pe.pluginChannelMapping[PluginName(plugin)]
@@ -225,6 +233,7 @@ func (pe *PluginEndorser) getOrCreatePluginChannelMapping(plugin PluginName, pf 
 }
 
 func proposalResponsePayloadFromContext(ctx Context) ([]byte, error) {
+	fmt.Println("==proposalResponsePayloadFromContext==")
 	hdr, err := putils.GetHeader(ctx.Proposal.Header)
 	if err != nil {
 		endorserLogger.Warning("Failed parsing header", err)

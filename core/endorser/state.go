@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package endorser
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric/core/handlers/endorsement/api/state"
 	"github.com/hyperledger/fabric/core/ledger"
 	"github.com/hyperledger/fabric/core/transientstore"
@@ -28,6 +29,7 @@ type ChannelState struct {
 
 // FetchState fetches state
 func (cs *ChannelState) FetchState() (endorsement.State, error) {
+	fmt.Println("==ChannelState==FetchState==")
 	qe, err := cs.NewQueryExecutor()
 	if err != nil {
 		return nil, err
@@ -47,6 +49,7 @@ type StateContext struct {
 
 // GetTransientByTXID returns the private data associated with this transaction ID.
 func (sc *StateContext) GetTransientByTXID(txID string) ([]*rwset.TxPvtReadWriteSet, error) {
+	fmt.Println("==StateContext==GetTransientByTXID==")
 	scanner, err := sc.Store.GetTxPvtRWSetByTxid(txID, nil)
 	if err != nil {
 		return nil, errors.WithStack(err)

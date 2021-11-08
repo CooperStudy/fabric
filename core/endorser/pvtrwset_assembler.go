@@ -45,6 +45,7 @@ type rwSetAssembler struct {
 // information about collections config available related
 // to private read-write set
 func (as *rwSetAssembler) AssemblePvtRWSet(privData *rwset.TxPvtReadWriteSet, txsim CollectionConfigRetriever) (*transientstore.TxPvtReadWriteSetWithConfigInfo, error) {
+	fmt.Println("==rwSetAssembler==AssemblePvtRWSet==")
 	txPvtRwSetWithConfig := &transientstore.TxPvtReadWriteSetWithConfigInfo{
 		PvtRwset:          privData,
 		CollectionConfigs: make(map[string]*common.CollectionConfigPackage),
@@ -75,6 +76,7 @@ func (as *rwSetAssembler) AssemblePvtRWSet(privData *rwset.TxPvtReadWriteSet, tx
 }
 
 func (as *rwSetAssembler) trimCollectionConfigs(pvtData *transientstore.TxPvtReadWriteSetWithConfigInfo) {
+	fmt.Println("==rwSetAssembler==trimCollectionConfigs==")
 	flags := make(map[string]map[string]struct{})
 	for _, pvtRWset := range pvtData.PvtRwset.NsPvtRwset {
 		namespace := pvtRWset.Namespace

@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package decoration
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric/protos/peer"
 )
 
@@ -17,8 +18,9 @@ type Decorator interface {
 }
 
 // Apply decorators in the order provided
-func Apply(proposal *peer.Proposal, input *peer.ChaincodeInput,
-	decorators ...Decorator) *peer.ChaincodeInput {
+func Apply(proposal *peer.Proposal, input *peer.ChaincodeInput, decorators ...Decorator) *peer.ChaincodeInput {
+
+	fmt.Println("=======Apply==================")
 	for _, decorator := range decorators {
 		input = decorator.Decorate(proposal, input)
 	}

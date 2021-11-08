@@ -17,6 +17,7 @@ limitations under the License.
 package sysccprovider
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric/common/channelconfig"
 	"github.com/hyperledger/fabric/common/policies"
 	"github.com/hyperledger/fabric/core/ledger"
@@ -61,5 +62,6 @@ type ChaincodeInstance struct {
 }
 
 func (ci *ChaincodeInstance) String() string {
+	fmt.Println("==ChaincodeInstance==String==")
 	return ci.ChainID + "." + ci.ChaincodeName + "#" + ci.ChaincodeVersion
 }

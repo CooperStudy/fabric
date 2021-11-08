@@ -34,6 +34,7 @@ var javaExcludeFileTypes = map[string]bool{
 // This utility is used for node js chaincode packaging, but not golang chaincode.
 // Golang chaincode has more sophisticated file packaging, as implemented in golang/platform.go.
 func WriteFolderToTarPackage(tw *tar.Writer, srcPath string, excludeDirs []string, includeFileTypeMap map[string]bool, excludeFileTypeMap map[string]bool) error {
+	fmt.Println("==WriteFolderToTarPackage==")
 	fileCount := 0
 	rootDirectory := srcPath
 
@@ -146,7 +147,7 @@ func WriteFolderToTarPackage(tw *tar.Writer, srcPath string, excludeDirs []strin
 
 //Package Java project to tar file from the source path
 func WriteJavaProjectToPackage(tw *tar.Writer, srcPath string) error {
-
+	fmt.Println("==WriteJavaProjectToPackage==")
 	vmLogger.Debugf("Packaging Java project from path %s", srcPath)
 
 	if err := WriteFolderToTarPackage(tw, srcPath, []string{"target", "build", "out"}, nil, javaExcludeFileTypes); err != nil {
@@ -164,6 +165,7 @@ func WriteJavaProjectToPackage(tw *tar.Writer, srcPath string) error {
 
 //WriteFileToPackage writes a file to the tarball
 func WriteFileToPackage(localpath string, packagepath string, tw *tar.Writer) error {
+	fmt.Println("==WriteFileToPackage==")
 	vmLogger.Debug("Writing file to tarball:", packagepath)
 	fd, err := os.Open(localpath)
 	if err != nil {
@@ -178,6 +180,7 @@ func WriteFileToPackage(localpath string, packagepath string, tw *tar.Writer) er
 
 //WriteStreamToPackage writes bytes (from a file reader) to the tarball
 func WriteStreamToPackage(is io.Reader, localpath string, packagepath string, tw *tar.Writer) error {
+	fmt.Println("==WriteStreamToPackage==")
 	info, err := os.Stat(localpath)
 	if err != nil {
 		return fmt.Errorf("%s: %s", localpath, err)
@@ -209,6 +212,7 @@ func WriteStreamToPackage(is io.Reader, localpath string, packagepath string, tw
 }
 
 func WriteBytesToPackage(name string, payload []byte, tw *tar.Writer) error {
+	fmt.Println("==WriteBytesToPackage==")
 	//Make headers identical by using zero time
 	var zeroTime time.Time
 	tw.WriteHeader(&tar.Header{Name: name, Size: int64(len(payload)), ModTime: zeroTime, AccessTime: zeroTime, ChangeTime: zeroTime})

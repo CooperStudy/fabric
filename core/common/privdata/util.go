@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package privdata
 
 import (
+	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/hyperledger/fabric/common/policies"
@@ -16,6 +17,7 @@ import (
 )
 
 func getPolicy(collectionPolicyConfig *common.CollectionPolicyConfig, deserializer msp.IdentityDeserializer) (policies.Policy, error) {
+	fmt.Println("==getPolicy==")
 	if collectionPolicyConfig == nil {
 		return nil, errors.New("Collection policy config is nil")
 	}

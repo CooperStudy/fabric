@@ -32,6 +32,7 @@ type TarFileEntry struct {
 // The state db artifacts are expected to contain state db specific artifacts such as index specification in the case of couchdb.
 // This function is intented to be used during chaincode instantiate/upgrade so that statedb artifacts can be created.
 func ExtractStatedbArtifactsForChaincode(ccname, ccversion string, pr *platforms.Registry) (installed bool, statedbArtifactsTar []byte, err error) {
+	fmt.Println("==ExtractStatedbArtifactsForChaincode===")
 	ccpackage, err := GetChaincodeFromFS(ccname, ccversion)
 	if err != nil {
 		// TODO for now, we assume that an error indicates that the chaincode is not installed on the peer.
@@ -49,6 +50,7 @@ func ExtractStatedbArtifactsForChaincode(ccname, ccversion string, pr *platforms
 // The state db artifacts are expected to contain state db specific artifacts such as index specification in the case of couchdb.
 // This function is called during chaincode instantiate/upgrade (from above), and from install, so that statedb artifacts can be created.
 func ExtractStatedbArtifactsFromCCPackage(ccpackage CCPackage, pr *platforms.Registry) (statedbArtifactsTar []byte, err error) {
+	fmt.Println("==ExtractStatedbArtifactsFromCCPackage===")
 	cds := ccpackage.GetDepSpec()
 	metaprov, err := pr.GetMetadataProvider(cds.CCType(), cds.Bytes())
 	if err != nil {
@@ -67,7 +69,7 @@ func ExtractStatedbArtifactsFromCCPackage(ccpackage CCPackage, pr *platforms.Reg
 // An empty string will have the effect of returning all statedb metadata.  This is useful in validating an
 // archive in the future with multiple database types
 func ExtractFileEntries(tarBytes []byte, databaseType string) (map[string][]*TarFileEntry, error) {
-
+	fmt.Println("==ExtractFileEntries===")
 	indexArtifacts := map[string][]*TarFileEntry{}
 	tarReader := tar.NewReader(bytes.NewReader(tarBytes))
 	for {

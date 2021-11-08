@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package privdata
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/hyperledger/fabric/core/ledger"
@@ -129,16 +130,19 @@ const (
 
 // BuildCollectionKVSKey constructs the collection config key for a given chaincode name
 func BuildCollectionKVSKey(ccname string) string {
+	fmt.Println("==BuildCollectionKVSKey==")
 	return ccname + collectionSeparator + collectionSuffix
 }
 
 // IsCollectionConfigKey detects if a key is a collection key
 func IsCollectionConfigKey(key string) bool {
+	fmt.Println("==IsCollectionConfigKey==")
 	return strings.Contains(key, collectionSeparator)
 }
 
 // GetCCNameFromCollectionConfigKey returns the chaincode name given a collection config key
 func GetCCNameFromCollectionConfigKey(key string) string {
+	fmt.Println("==GetCCNameFromCollectionConfigKey==")
 	splittedKey := strings.Split(key, collectionSeparator)
 	return splittedKey[0]
 }

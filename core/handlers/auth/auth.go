@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package auth
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric/protos/peer"
 )
 
@@ -21,6 +22,7 @@ type Filter interface {
 // ChainFilters chains the given auth filters in the order provided.
 // the last filter always forwards to the endorser
 func ChainFilters(endorser peer.EndorserServer, filters ...Filter) peer.EndorserServer {
+	fmt.Println("====ChainFilters=")
 	if len(filters) == 0 {
 		return endorser
 	}

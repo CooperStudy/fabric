@@ -18,6 +18,7 @@ package validation
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/common/channelconfig"
@@ -34,6 +35,7 @@ var putilsLogger = flogging.MustGetLogger("protoutils")
 
 // validateChaincodeProposalMessage checks the validity of a Proposal message of type CHAINCODE
 func validateChaincodeProposalMessage(prop *pb.Proposal, hdr *common.Header) (*pb.ChaincodeHeaderExtension, error) {
+	fmt.Println("==validateChaincodeProposalMessage=====")
 	if prop == nil || hdr == nil {
 		return nil, errors.New("nil arguments")
 	}
@@ -74,6 +76,7 @@ func validateChaincodeProposalMessage(prop *pb.Proposal, hdr *common.Header) (*p
 // this function returns Header and ChaincodeHeaderExtension messages since they
 // have been unmarshalled and validated
 func ValidateProposalMessage(signedProp *pb.SignedProposal) (*pb.Proposal, *common.Header, *pb.ChaincodeHeaderExtension, error) {
+	fmt.Println("==ValidateProposalMessage=====")
 	if signedProp == nil {
 		return nil, nil, nil, errors.New("nil arguments")
 	}
@@ -151,6 +154,7 @@ func ValidateProposalMessage(signedProp *pb.SignedProposal) (*pb.Proposal, *comm
 // this function returns nil if the creator
 // is a valid cert and the signature is valid
 func checkSignatureFromCreator(creatorBytes []byte, sig []byte, msg []byte, ChainID string) error {
+	fmt.Println("==checkSignatureFromCreator=====")
 	putilsLogger.Debugf("begin")
 
 	// check for nil argument
@@ -192,6 +196,7 @@ func checkSignatureFromCreator(creatorBytes []byte, sig []byte, msg []byte, Chai
 
 // checks for a valid SignatureHeader
 func validateSignatureHeader(sHdr *common.SignatureHeader) error {
+	fmt.Println("==validateSignatureHeader=====")
 	// check for nil argument
 	if sHdr == nil {
 		return errors.New("nil SignatureHeader provided")
@@ -212,6 +217,7 @@ func validateSignatureHeader(sHdr *common.SignatureHeader) error {
 
 // checks for a valid ChannelHeader
 func validateChannelHeader(cHdr *common.ChannelHeader) error {
+	fmt.Println("==validateChannelHeader=====")
 	// check for nil argument
 	if cHdr == nil {
 		return errors.New("nil ChannelHeader provided")
@@ -244,6 +250,7 @@ func validateChannelHeader(cHdr *common.ChannelHeader) error {
 
 // checks for a valid Header
 func validateCommonHeader(hdr *common.Header) (*common.ChannelHeader, *common.SignatureHeader, error) {
+	fmt.Println("==validateCommonHeader=====")
 	if hdr == nil {
 		return nil, nil, errors.New("nil header")
 	}
@@ -274,6 +281,7 @@ func validateCommonHeader(hdr *common.Header) (*common.ChannelHeader, *common.Si
 // validateConfigTransaction validates the payload of a
 // transaction assuming its type is CONFIG
 func validateConfigTransaction(data []byte, hdr *common.Header) error {
+	fmt.Println("==validateConfigTransaction=====")
 	putilsLogger.Debugf("validateConfigTransaction starts for data %p, header %s", data, hdr)
 
 	// check for nil argument
@@ -289,6 +297,7 @@ func validateConfigTransaction(data []byte, hdr *common.Header) error {
 // validateEndorserTransaction validates the payload of a
 // transaction assuming its type is ENDORSER_TRANSACTION
 func validateEndorserTransaction(data []byte, hdr *common.Header) error {
+	fmt.Println("==validateEndorserTransaction=====")
 	putilsLogger.Debugf("validateEndorserTransaction starts for data %p, header %s", data, hdr)
 
 	// check for nil argument
@@ -372,6 +381,7 @@ func validateEndorserTransaction(data []byte, hdr *common.Header) error {
 
 // ValidateTransaction checks that the transaction envelope is properly formed
 func ValidateTransaction(e *common.Envelope, c channelconfig.ApplicationCapabilities) (*common.Payload, pb.TxValidationCode) {
+	fmt.Println("==ValidateTransaction=====")
 	putilsLogger.Debugf("ValidateTransactionEnvelope starts for envelope %p", e)
 
 	// check for nil argument
