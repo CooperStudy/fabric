@@ -17,6 +17,7 @@ limitations under the License.
 package couchdb
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/spf13/viper"
@@ -36,6 +37,7 @@ type CouchDBDef struct {
 //GetCouchDBDefinition exposes the useCouchDB variable
 func GetCouchDBDefinition() *CouchDBDef {
 
+	fmt.Println("=======GetCouchDBDefinition========")
 	couchDBAddress := viper.GetString("ledger.state.couchDBConfig.couchDBAddress")
 	username := viper.GetString("ledger.state.couchDBConfig.username")
 	password := viper.GetString("ledger.state.couchDBConfig.password")

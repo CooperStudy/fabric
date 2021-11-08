@@ -6,6 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 package couchdb
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/hyperledger/fabric/common/metrics"
@@ -27,12 +28,14 @@ type stats struct {
 }
 
 func newStats(metricsProvider metrics.Provider) *stats {
+	fmt.Println("==newStats====")
 	return &stats{
 		apiProcessingTime: metricsProvider.NewHistogram(apiProcessingTimeOpts),
 	}
 }
 
 func (s *stats) observeProcessingTime(startTime time.Time, dbName, functionName, result string) {
+	fmt.Println("==stats==observeProcessingTime====")
 	s.apiProcessingTime.With(
 		"database", dbName,
 		"function_name", functionName,

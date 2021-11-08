@@ -258,6 +258,7 @@ type BlockPvtData struct {
 
 // Add adds a given missing private data in the MissingPrivateDataList
 func (txMissingPvtData TxMissingPvtDataMap) Add(txNum uint64, ns, coll string, isEligible bool) {
+	fmt.Println("=TxMissingPvtDataMap===Add==")
 	txMissingPvtData[txNum] = append(txMissingPvtData[txNum], &MissingPvtData{ns, coll, isEligible})
 }
 
@@ -269,11 +270,13 @@ type PvtNsCollFilter map[string]PvtCollFilter
 
 // NewPvtNsCollFilter constructs an empty PvtNsCollFilter
 func NewPvtNsCollFilter() PvtNsCollFilter {
+	fmt.Println("===NewPvtNsCollFilter==")
 	return make(map[string]PvtCollFilter)
 }
 
 // Has returns true if the pvtdata includes the data for collection <ns,coll>
 func (pvtdata *TxPvtData) Has(ns string, coll string) bool {
+	fmt.Println("===TxPvtData==Has===")
 	if pvtdata.WriteSet == nil {
 		return false
 	}
@@ -291,6 +294,7 @@ func (pvtdata *TxPvtData) Has(ns string, coll string) bool {
 
 // Add adds a namespace-collection tuple to the filter
 func (filter PvtNsCollFilter) Add(ns string, coll string) {
+	fmt.Println("===PvtNsCollFilter==Add===")
 	collFilter, ok := filter[ns]
 	if !ok {
 		collFilter = make(map[string]bool)
@@ -301,6 +305,7 @@ func (filter PvtNsCollFilter) Add(ns string, coll string) {
 
 // Has returns true if the filter has the entry for tuple namespace-collection
 func (filter PvtNsCollFilter) Has(ns string, coll string) bool {
+	fmt.Println("===PvtNsCollFilter==Has===")
 	collFilter, ok := filter[ns]
 	if !ok {
 		return false
@@ -316,11 +321,13 @@ type TxSimulationResults struct {
 
 // GetPubSimulationBytes returns the serialized bytes of public readwrite set
 func (txSim *TxSimulationResults) GetPubSimulationBytes() ([]byte, error) {
+	fmt.Println("===GetPubSimulationBytes===")
 	return proto.Marshal(txSim.PubSimulationResults)
 }
 
 // GetPvtSimulationBytes returns the serialized bytes of private readwrite set
 func (txSim *TxSimulationResults) GetPvtSimulationBytes() ([]byte, error) {
+	fmt.Println("===TxSimulationResults===GetPvtSimulationBytes==")
 	if !txSim.ContainsPvtWrites() {
 		return nil, nil
 	}
@@ -329,6 +336,7 @@ func (txSim *TxSimulationResults) GetPvtSimulationBytes() ([]byte, error) {
 
 // ContainsPvtWrites returns true if the simulation results include the private writes
 func (txSim *TxSimulationResults) ContainsPvtWrites() bool {
+	fmt.Println("===TxSimulationResults===ContainsPvtWrites==")
 	return txSim.PvtSimulationResults != nil
 }
 
@@ -393,6 +401,7 @@ type CollectionConfigInfo struct {
 
 // Add adds a missing data entry to the MissingPvtDataInfo Map
 func (missingPvtDataInfo MissingPvtDataInfo) Add(blkNum, txNum uint64, ns, coll string) {
+	fmt.Println("===MissingPvtDataInfo===Add==")
 	missingBlockPvtDataInfo, ok := missingPvtDataInfo[blkNum]
 	if !ok {
 		missingBlockPvtDataInfo = make(MissingBlockPvtdataInfo)
@@ -418,6 +427,7 @@ type ErrCollectionConfigNotYetAvailable struct {
 }
 
 func (e *ErrCollectionConfigNotYetAvailable) Error() string {
+	fmt.Println("===ErrCollectionConfigNotYetAvailable===Error==")
 	return e.Msg
 }
 
@@ -425,6 +435,7 @@ func (e *ErrCollectionConfigNotYetAvailable) Error() string {
 type NotFoundInIndexErr string
 
 func (NotFoundInIndexErr) Error() string {
+	fmt.Println("===NotFoundInIndexErr===Error==")
 	return "Entry not found in index"
 }
 
@@ -435,6 +446,7 @@ type CollConfigNotDefinedError struct {
 }
 
 func (e *CollConfigNotDefinedError) Error() string {
+	fmt.Println("===CollConfigNotDefinedError===Error==")
 	return fmt.Sprintf("collection config not defined for chaincode [%s], pass the collection configuration upon chaincode definition/instantiation", e.Ns)
 }
 
@@ -445,6 +457,7 @@ type InvalidCollNameError struct {
 }
 
 func (e *InvalidCollNameError) Error() string {
+	fmt.Println("===InvalidCollNameError===Error==")
 	return fmt.Sprintf("collection [%s] not defined in the collection config for chaincode [%s]", e.Coll, e.Ns)
 }
 
