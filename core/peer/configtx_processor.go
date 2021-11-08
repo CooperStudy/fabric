@@ -26,6 +26,7 @@ type configtxProcessor struct {
 
 // newTxProcessor constructs a new instance of txProcessor
 func newConfigTxProcessor() customtx.Processor {
+	fmt.Println("====newConfigTxProcessor=")
 	return &configtxProcessor{}
 }
 
@@ -38,6 +39,7 @@ func newConfigTxProcessor() customtx.Processor {
 // or the ledger is synching the state with the blockchain, during start up), the full config is computed using
 // the most recent configs from statedb
 func (tp *configtxProcessor) GenerateSimulationResults(txEnv *common.Envelope, simulator ledger.TxSimulator, initializingLedger bool) error {
+	fmt.Println("====configtxProcessor===GenerateSimulationResults==")
 	payload := utils.UnmarshalPayloadOrPanic(txEnv.Payload)
 	channelHdr := utils.UnmarshalChannelHeaderOrPanic(payload.Header.ChannelHeader)
 	txType := common.HeaderType(channelHdr.GetType())
@@ -53,6 +55,7 @@ func (tp *configtxProcessor) GenerateSimulationResults(txEnv *common.Envelope, s
 }
 
 func processChannelConfigTx(txEnv *common.Envelope, simulator ledger.TxSimulator) error {
+	fmt.Println("====processChannelConfigTx===")
 	configEnvelope := &common.ConfigEnvelope{}
 	if _, err := utils.UnmarshalEnvelopeOfType(txEnv, common.HeaderType_CONFIG, configEnvelope); err != nil {
 		return err
@@ -72,6 +75,7 @@ func processChannelConfigTx(txEnv *common.Envelope, simulator ledger.TxSimulator
 }
 
 func persistConf(simulator ledger.TxSimulator, key string, config *common.Config) error {
+	fmt.Println("====persistConf===")
 	serializedConfig, err := serialize(config)
 	if err != nil {
 		return err
@@ -80,6 +84,7 @@ func persistConf(simulator ledger.TxSimulator, key string, config *common.Config
 }
 
 func retrievePersistedConf(queryExecuter ledger.QueryExecutor, key string) (*common.Config, error) {
+	fmt.Println("====retrievePersistedConf===")
 	serializedConfig, err := queryExecuter.GetState(peerNamespace, key)
 	if err != nil {
 		return nil, err

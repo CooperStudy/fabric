@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package operations
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/hyperledger/fabric/common/metrics"
@@ -26,6 +27,7 @@ var (
 )
 
 func versionGauge(provider metrics.Provider) metrics.Gauge {
+	fmt.Println("====versionGauge===")
 	switch provider.(type) {
 	case *prometheus.Provider:
 		gaugeLock.Lock()

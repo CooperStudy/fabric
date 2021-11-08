@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 )
 
@@ -17,12 +18,14 @@ type requireCert struct {
 // RequireCert is used to ensure that a verified TLS client certificate was
 // used for authentication.
 func RequireCert() Middleware {
+	fmt.Println("====RequireCert========")
 	return func(next http.Handler) http.Handler {
 		return &requireCert{next: next}
 	}
 }
 
 func (r *requireCert) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	fmt.Println("====requireCert=====ServeHTTP===")
 	switch {
 	case req.TLS == nil:
 		fallthrough

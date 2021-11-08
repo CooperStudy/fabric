@@ -8,6 +8,7 @@ package middleware
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 )
 
@@ -16,6 +17,7 @@ var requestIDKey = requestIDKeyType{}
 type requestIDKeyType struct{}
 
 func RequestID(ctx context.Context) string {
+	fmt.Println("====RequestID========")
 	if reqID, ok := ctx.Value(requestIDKey).(string); ok {
 		return reqID
 	}
@@ -30,12 +32,14 @@ type requestID struct {
 }
 
 func WithRequestID(generator GenerateIDFunc) Middleware {
+	fmt.Println("=====WithRequestID============")
 	return func(next http.Handler) http.Handler {
 		return &requestID{next: next, generateID: generator}
 	}
 }
 
 func (r *requestID) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	fmt.Println("=====requestID====ServeHTTP========")
 	reqID := req.Header.Get("X-Request-Id")
 	if reqID == "" {
 		reqID = r.generateID()
