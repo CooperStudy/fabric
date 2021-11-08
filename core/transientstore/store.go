@@ -8,6 +8,7 @@ package transientstore
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/common/flogging"
@@ -121,18 +122,21 @@ type RwsetScanner struct {
 
 // NewStoreProvider instantiates TransientStoreProvider
 func NewStoreProvider() StoreProvider {
+	fmt.Println("===NewStoreProvider==")
 	dbProvider := leveldbhelper.NewProvider(&leveldbhelper.Conf{DBPath: GetTransientStorePath()})
 	return &storeProvider{dbProvider: dbProvider}
 }
 
 // OpenStore returns a handle to a ledgerId in Store
 func (provider *storeProvider) OpenStore(ledgerID string) (Store, error) {
+	fmt.Println("==storeProvider=OpenStore==")
 	dbHandle := provider.dbProvider.GetDBHandle(ledgerID)
 	return &store{db: dbHandle, ledgerID: ledgerID}, nil
 }
 
 // Close closes the TransientStoreProvider
 func (provider *storeProvider) Close() {
+	fmt.Println("==storeProvider=Close==")
 	provider.dbProvider.Close()
 }
 
@@ -140,8 +144,10 @@ func (provider *storeProvider) Close() {
 // based on txid and the block height the private data was received at
 // TODO: Once the related gossip changes are made as per FAB-5096, remove this function.
 func (s *store) Persist(txid string, blockHeight uint64,
+
 	privateSimulationResults *rwset.TxPvtReadWriteSet) error {
 
+	fmt.Println("==store=Persist==")
 	logger.Debugf("Persisting private data to transient store for txid [%s] at block height [%d]", txid, blockHeight)
 
 	dbBatch := leveldbhelper.NewUpdateBatch()
@@ -188,8 +194,10 @@ func (s *store) Persist(txid string, blockHeight uint64,
 // TODO: Once the related gossip changes are made as per FAB-5096, rename this function to Persist
 // form PersistWithConfig.
 func (s *store) PersistWithConfig(txid string, blockHeight uint64,
+
 	privateSimulationResultsWithConfig *transientstore.TxPvtReadWriteSetWithConfigInfo) error {
 
+	fmt.Println("==store=PersistWithConfig==")
 	logger.Debugf("Persisting private data to transient store for txid [%s] at block height [%d]", txid, blockHeight)
 
 	dbBatch := leveldbhelper.NewUpdateBatch()
@@ -242,6 +250,7 @@ func (s *store) PersistWithConfig(txid string, blockHeight uint64,
 // write sets persisted from different endorsers.
 func (s *store) GetTxPvtRWSetByTxid(txid string, filter ledger.PvtNsCollFilter) (RWSetScanner, error) {
 
+	fmt.Println("==store=GetTxPvtRWSetByTxid==")
 	logger.Debugf("Getting private data from transient store for transaction %s", txid)
 
 	// Construct startKey and endKey to do an range query
@@ -256,7 +265,7 @@ func (s *store) GetTxPvtRWSetByTxid(txid string, filter ledger.PvtNsCollFilter) 
 // transient store. PurgeByTxids() is expected to be called by coordinator after
 // committing a block to ledger.
 func (s *store) PurgeByTxids(txids []string) error {
-
+	fmt.Println("==store=PurgeByTxids==")
 	logger.Debug("Purging private data from transient store for committed txids")
 
 	dbBatch := leveldbhelper.NewUpdateBatch()
@@ -303,6 +312,7 @@ func (s *store) PurgeByTxids(txids []string) error {
 // transaction that gets endorsed may not be submitted by the client for commit)
 func (s *store) PurgeByHeight(maxBlockNumToRetain uint64) error {
 
+	fmt.Println("==store=PurgeByHeight==")
 	logger.Debugf("Purging orphaned private data from transient store received prior to block [%d]", maxBlockNumToRetain)
 
 	// Do a range query with 0 as startKey and maxBlockNumToRetain-1 as endKey
@@ -339,6 +349,8 @@ func (s *store) PurgeByHeight(maxBlockNumToRetain uint64) error {
 
 // GetMinTransientBlkHt returns the lowest block height remaining in transient store
 func (s *store) GetMinTransientBlkHt() (uint64, error) {
+
+	fmt.Println("==store=GetMinTransientBlkHt==")
 	// Current approach performs a range query on purgeIndex with startKey
 	// as 0 (i.e., blockHeight) and returns the first key which denotes
 	// the lowest block height remaining in transient store. An alternative approach
@@ -366,6 +378,7 @@ func (s *store) Shutdown() {
 // It returns whether the iterator is exhausted.
 // TODO: Once the related gossip changes are made as per FAB-5096, remove this function
 func (scanner *RwsetScanner) Next() (*EndorserPvtSimulationResults, error) {
+	fmt.Println("==RwsetScanner=Next==")
 	if !scanner.dbItr.Next() {
 		return nil, nil
 	}
@@ -389,6 +402,7 @@ func (scanner *RwsetScanner) Next() (*EndorserPvtSimulationResults, error) {
 // It returns whether the iterator is exhausted.
 // TODO: Once the related gossip changes are made as per FAB-5096, rename this function to Next
 func (scanner *RwsetScanner) NextWithConfig() (*EndorserPvtSimulationResultsWithConfig, error) {
+	fmt.Println("==RwsetScanner=NextWithConfig==")
 	if !scanner.dbItr.Next() {
 		return nil, nil
 	}
@@ -430,5 +444,6 @@ func (scanner *RwsetScanner) NextWithConfig() (*EndorserPvtSimulationResultsWith
 
 // Close releases resource held by the iterator
 func (scanner *RwsetScanner) Close() {
+	fmt.Println("==RwsetScanner=Close==")
 	scanner.dbItr.Release()
 }

@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package peer
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric/common/channelconfig"
 )
 
@@ -30,6 +31,7 @@ type supportImpl struct {
 }
 
 func (s *supportImpl) GetApplicationConfig(cid string) (channelconfig.Application, bool) {
+	fmt.Println("===supportImpl===GetApplicationConfig==")
 	cc := s.operations.GetChannelConfig(cid)
 	if cc == nil {
 		return nil, false

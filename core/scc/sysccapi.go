@@ -104,6 +104,7 @@ type SelfDescribingSysCC interface {
 
 // registerSysCC registers the given system chaincode with the peer
 func (p *Provider) registerSysCC(syscc SelfDescribingSysCC) (bool, error) {
+	fmt.Println("===Provider==registerSysCC==")
 	if !syscc.Enabled() || !isWhitelisted(syscc) {
 		sysccLogger.Info(fmt.Sprintf("system chaincode (%s,%s,%t) disabled", syscc.Name(), syscc.Path(), syscc.Enabled()))
 		return false, nil
@@ -132,6 +133,7 @@ func (p *Provider) registerSysCC(syscc SelfDescribingSysCC) (bool, error) {
 
 // deploySysCC deploys the given system chaincode on a chain
 func deploySysCC(chainID string, ccprov ccprovider.ChaincodeProvider, syscc SelfDescribingSysCC) error {
+	fmt.Println("===deploySysCC==")
 	if !syscc.Enabled() || !isWhitelisted(syscc) {
 		sysccLogger.Info(fmt.Sprintf("system chaincode (%s,%s) disabled", syscc.Name(), syscc.Path()))
 		return nil
@@ -187,6 +189,7 @@ func deploySysCC(chainID string, ccprov ccprovider.ChaincodeProvider, syscc Self
 
 // deDeploySysCC stops the system chaincode and deregisters it from inproccontroller
 func deDeploySysCC(chainID string, ccprov ccprovider.ChaincodeProvider, syscc SelfDescribingSysCC) error {
+	fmt.Println("===deDeploySysCC==")
 	// XXX This is an ugly hack, version should be tied to the chaincode instance, not he peer binary
 	version := util.GetSysCCVersion()
 
@@ -204,6 +207,7 @@ func deDeploySysCC(chainID string, ccprov ccprovider.ChaincodeProvider, syscc Se
 }
 
 func isWhitelisted(syscc SelfDescribingSysCC) bool {
+	fmt.Println("===isWhitelisted==")
 	chaincodes := viper.GetStringMapString("chaincode.system")
 	val, ok := chaincodes[syscc.Name()]
 	enabled := val == "enable" || val == "true" || val == "yes"

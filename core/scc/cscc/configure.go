@@ -36,6 +36,7 @@ import (
 // New creates a new instance of the CSCC.
 // Typically, only one will be created per peer instance.
 func New(ccp ccprovider.ChaincodeProvider, sccp sysccprovider.SystemChaincodeProvider, aclProvider aclmgmt.ACLProvider) *PeerConfiger {
+	fmt.Println("===New===")
 	return &PeerConfiger{
 		policyChecker: policy.NewPolicyChecker(
 			peer.NewChannelPolicyManagerGetter(),
@@ -49,13 +50,34 @@ func New(ccp ccprovider.ChaincodeProvider, sccp sysccprovider.SystemChaincodePro
 	}
 }
 
-func (e *PeerConfiger) Name() string              { return "cscc" }
-func (e *PeerConfiger) Path() string              { return "github.com/hyperledger/fabric/core/scc/cscc" }
-func (e *PeerConfiger) InitArgs() [][]byte        { return nil }
-func (e *PeerConfiger) Chaincode() shim.Chaincode { return e }
-func (e *PeerConfiger) InvokableExternal() bool   { return true }
-func (e *PeerConfiger) InvokableCC2CC() bool      { return false }
-func (e *PeerConfiger) Enabled() bool             { return true }
+func (e *PeerConfiger) Name() string              {
+	fmt.Println("===PeerConfiger==Name===")
+	return "cscc"
+}
+func (e *PeerConfiger) Path() string              {
+	fmt.Println("===PeerConfiger==Path===")
+	return "github.com/hyperledger/fabric/core/scc/cscc"
+}
+func (e *PeerConfiger) InitArgs() [][]byte        {
+	fmt.Println("===PeerConfiger========")
+	return nil
+}
+func (e *PeerConfiger) Chaincode() shim.Chaincode {
+	fmt.Println("===PeerConfiger==Chaincode======")
+	return e
+}
+func (e *PeerConfiger) InvokableExternal() bool   {
+	fmt.Println("===PeerConfiger==InvokableExternal======")
+	return true
+}
+func (e *PeerConfiger) InvokableCC2CC() bool      {
+	fmt.Println("===PeerConfiger==InvokableCC2CC======")
+	return false
+}
+func (e *PeerConfiger) Enabled() bool             {
+	fmt.Println("===PeerConfiger==Enabled======")
+	return true
+}
 
 // PeerConfiger implements the configuration handler for the peer. For every
 // configuration transaction coming in from the ordering service, the
@@ -81,6 +103,7 @@ const (
 
 // Init is mostly useless from an SCC perspective
 func (e *PeerConfiger) Init(stub shim.ChaincodeStubInterface) pb.Response {
+	fmt.Println("===PeerConfiger==Init======")
 	cnflogger.Info("Init CSCC")
 	return shim.Success(nil)
 }
@@ -96,6 +119,7 @@ func (e *PeerConfiger) Init(stub shim.ChaincodeStubInterface) pb.Response {
 // UpdateConfigBlock; otherwise it is the chain id
 // TODO: Improve the scc interface to avoid marshal/unmarshal args
 func (e *PeerConfiger) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
+	fmt.Println("===PeerConfiger==Invoke======")
 	args := stub.GetArgs()
 
 	if len(args) < 1 {
@@ -121,6 +145,7 @@ func (e *PeerConfiger) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 }
 
 func (e *PeerConfiger) InvokeNoShim(args [][]byte, sp *pb.SignedProposal) pb.Response {
+	fmt.Println("===PeerConfiger==InvokeNoShim======")
 	var err error
 	fname := string(args[0])
 
@@ -197,6 +222,7 @@ func (e *PeerConfiger) InvokeNoShim(args [][]byte, sp *pb.SignedProposal) pb.Res
 
 // validateConfigBlock validate configuration block to see whenever it's contains valid config transaction
 func validateConfigBlock(block *common.Block) error {
+	fmt.Println("===validateConfigBlock======")
 	envelopeConfig, err := utils.ExtractEnvelope(block, 0)
 	if err != nil {
 		return errors.Errorf("Failed to %s", err)
@@ -233,6 +259,7 @@ func validateConfigBlock(block *common.Block) error {
 // Since it is the first block, it is the genesis block containing configuration
 // for this chain, so we want to update the Chain object with this info
 func joinChain(chainID string, block *common.Block, ccp ccprovider.ChaincodeProvider, sccp sysccprovider.SystemChaincodeProvider) pb.Response {
+	fmt.Println("===joinChain======")
 	if err := peer.CreateChainFromBlock(block, ccp, sccp); err != nil {
 		return shim.Error(err.Error())
 	}
@@ -245,6 +272,7 @@ func joinChain(chainID string, block *common.Block, ccp ccprovider.ChaincodeProv
 // Return the current configuration block for the specified chainID. If the
 // peer doesn't belong to the chain, return error
 func getConfigBlock(chainID []byte) pb.Response {
+	fmt.Println("===getConfigBlock======")
 	if chainID == nil {
 		return shim.Error("ChainID must not be nil.")
 	}
@@ -263,6 +291,7 @@ func getConfigBlock(chainID []byte) pb.Response {
 // getConfigTree returns the current channel configuration for the specified chainID.
 // If the peer doesn't belong to the chain, returns error
 func (e *PeerConfiger) getConfigTree(chainID []byte) pb.Response {
+	fmt.Println("===PeerConfiger===getConfigTree===")
 	if chainID == nil {
 		return shim.Error("Chain ID must not be nil")
 	}
@@ -279,6 +308,7 @@ func (e *PeerConfiger) getConfigTree(chainID []byte) pb.Response {
 }
 
 func (e *PeerConfiger) simulateConfigTreeUpdate(chainID []byte, envb []byte) pb.Response {
+	fmt.Println("===PeerConfiger===simulateConfigTreeUpdate===")
 	if chainID == nil {
 		return shim.Error("Chain ID must not be nil")
 	}
@@ -302,6 +332,7 @@ func (e *PeerConfiger) simulateConfigTreeUpdate(chainID []byte, envb []byte) pb.
 }
 
 func supportByType(pc *PeerConfiger, chainID []byte, env *common.Envelope) (config.Config, error) {
+	fmt.Println("===supportByType===")
 	payload := &common.Payload{}
 
 	if err := proto.Unmarshal(env.Payload, payload); err != nil {
@@ -322,6 +353,7 @@ func supportByType(pc *PeerConfiger, chainID []byte, env *common.Envelope) (conf
 
 // getChannels returns information about all channels for this peer
 func getChannels() pb.Response {
+	fmt.Println("===getChannels===")
 	channelInfoArray := peer.GetChannelsInfo()
 
 	// add array with info about all channels for this peer

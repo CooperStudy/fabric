@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package peer
 
 import (
+	"fmt"
 	configtxtest "github.com/hyperledger/fabric/common/configtx/test"
 	mockchannelconfig "github.com/hyperledger/fabric/common/mocks/config"
 	mockconfigtx "github.com/hyperledger/fabric/common/mocks/configtx"
@@ -17,6 +18,7 @@ import (
 
 //MockInitialize resets chains for test env
 func MockInitialize() {
+	fmt.Println("====MockInitialize===")
 	ledgermgmt.InitializeTestEnvWithInitializer(
 		&ledgermgmt.Initializer{
 			CustomTxProcessors: ConfigTxProcessors,

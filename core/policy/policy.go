@@ -54,12 +54,14 @@ type policyChecker struct {
 
 // NewPolicyChecker creates a new instance of PolicyChecker
 func NewPolicyChecker(channelPolicyManagerGetter policies.ChannelPolicyManagerGetter, localMSP msp.IdentityDeserializer, principalGetter mgmt.MSPPrincipalGetter) PolicyChecker {
+	fmt.Println("===NewPolicyChecker==")
 	return &policyChecker{channelPolicyManagerGetter, localMSP, principalGetter}
 }
 
 // CheckPolicy checks that the passed signed proposal is valid with the respect to
 // passed policy on the passed channel.
 func (p *policyChecker) CheckPolicy(channelID, policyName string, signedProp *pb.SignedProposal) error {
+	fmt.Println("===policyChecker==CheckPolicy==")
 	if channelID == "" {
 		return p.CheckPolicyNoChannel(policyName, signedProp)
 	}
@@ -106,6 +108,7 @@ func (p *policyChecker) CheckPolicy(channelID, policyName string, signedProp *pb
 // CheckPolicyNoChannel checks that the passed signed proposal is valid with the respect to
 // passed policy on the local MSP.
 func (p *policyChecker) CheckPolicyNoChannel(policyName string, signedProp *pb.SignedProposal) error {
+	fmt.Println("===policyChecker==CheckPolicyNoChannel==")
 	if policyName == "" {
 		return errors.New("Invalid policy name during channelless check policy. Name must be different from nil.")
 	}
@@ -154,6 +157,7 @@ func (p *policyChecker) CheckPolicyNoChannel(policyName string, signedProp *pb.S
 // CheckPolicyBySignedData checks that the passed signed data is valid with the respect to
 // passed policy on the passed channel.
 func (p *policyChecker) CheckPolicyBySignedData(channelID, policyName string, sd []*common.SignedData) error {
+	fmt.Println("===policyChecker==CheckPolicyBySignedData==")
 	if channelID == "" {
 		return errors.New("Invalid channel ID name during check policy on signed data. Name must be different from nil.")
 	}
@@ -195,6 +199,7 @@ type PolicyCheckerFactory interface {
 // RegisterPolicyCheckerFactory is to be called once to set
 // the factory that will be used to obtain instances of PolicyChecker
 func RegisterPolicyCheckerFactory(f PolicyCheckerFactory) {
+	fmt.Println("===RegisterPolicyCheckerFactory==")
 	pcFactory = f
 }
 
@@ -202,6 +207,7 @@ func RegisterPolicyCheckerFactory(f PolicyCheckerFactory) {
 // the actual implementation is controlled by the factory that
 // is registered via RegisterPolicyCheckerFactory
 func GetPolicyChecker() PolicyChecker {
+	fmt.Println("===GetPolicyChecker==")
 	if pcFactory == nil {
 		panic("The factory must be set first via RegisterPolicyCheckerFactory")
 	}

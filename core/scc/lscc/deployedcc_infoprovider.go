@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package lscc
 
 import (
+	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/core/common/ccprovider"
 	"github.com/hyperledger/fabric/core/common/privdata"
@@ -26,11 +27,13 @@ type DeployedCCInfoProvider struct {
 
 // Namespaces implements function in interface ledger.DeployedChaincodeInfoProvider
 func (p *DeployedCCInfoProvider) Namespaces() []string {
+	fmt.Println("===DeployedCCInfoProvider===Namespaces==")
 	return []string{lsccNamespace}
 }
 
 // UpdatedChaincodes implements function in interface ledger.DeployedChaincodeInfoProvider
 func (p *DeployedCCInfoProvider) UpdatedChaincodes(stateUpdates map[string][]*kvrwset.KVWrite) ([]*ledger.ChaincodeLifecycleInfo, error) {
+	fmt.Println("===DeployedCCInfoProvider===UpdatedChaincodes==")
 	lsccUpdates := stateUpdates[lsccNamespace]
 	lifecycleInfo := []*ledger.ChaincodeLifecycleInfo{}
 	updatedCCNames := map[string]bool{}
@@ -59,6 +62,7 @@ func (p *DeployedCCInfoProvider) UpdatedChaincodes(stateUpdates map[string][]*kv
 
 // ChaincodeInfo implements function in interface ledger.DeployedChaincodeInfoProvider
 func (p *DeployedCCInfoProvider) ChaincodeInfo(chaincodeName string, qe ledger.SimpleQueryExecutor) (*ledger.DeployedChaincodeInfo, error) {
+	fmt.Println("===DeployedCCInfoProvider===ChaincodeInfo==")
 	chaincodeDataBytes, err := qe.GetState(lsccNamespace, chaincodeName)
 	if err != nil || chaincodeDataBytes == nil {
 		return nil, err
@@ -81,6 +85,7 @@ func (p *DeployedCCInfoProvider) ChaincodeInfo(chaincodeName string, qe ledger.S
 
 // CollectionInfo implements function in interface ledger.DeployedChaincodeInfoProvider
 func (p *DeployedCCInfoProvider) CollectionInfo(chaincodeName, collectionName string, qe ledger.SimpleQueryExecutor) (*common.StaticCollectionConfig, error) {
+	fmt.Println("===DeployedCCInfoProvider===CollectionInfo==")
 	collConfigPkg, err := fetchCollConfigPkg(chaincodeName, qe)
 	if err != nil || collConfigPkg == nil {
 		return nil, err
@@ -95,6 +100,7 @@ func (p *DeployedCCInfoProvider) CollectionInfo(chaincodeName, collectionName st
 }
 
 func fetchCollConfigPkg(chaincodeName string, qe ledger.SimpleQueryExecutor) (*common.CollectionConfigPackage, error) {
+	fmt.Println("===fetchCollConfigPkg==")
 	collKey := privdata.BuildCollectionKVSKey(chaincodeName)
 	collectionConfigPkgBytes, err := qe.GetState(lsccNamespace, collKey)
 	if err != nil || collectionConfigPkgBytes == nil {

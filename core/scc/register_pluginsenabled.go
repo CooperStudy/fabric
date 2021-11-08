@@ -11,6 +11,7 @@ package scc
 
 // CreatePluginSysCCs creates all of the system chaincodes which are loaded by plugin
 func CreatePluginSysCCs(p *Provider) []SelfDescribingSysCC {
+	fmt.Println("===CreatePluginSysCCs====")
 	var sdscs []SelfDescribingSysCC
 	for _, pscc := range loadSysCCs(p) {
 		sdscs = append(sdscs, &SysCCWrapper{SCC: pscc})

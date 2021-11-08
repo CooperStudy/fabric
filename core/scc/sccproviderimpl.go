@@ -17,6 +17,7 @@ import (
 
 // NewProvider creates a new Provider instance
 func NewProvider(pOps peer.Operations, pSup peer.Support, r Registrar) *Provider {
+	fmt.Println("===NewProvider====")
 	return &Provider{
 		Peer:        pOps,
 		PeerSupport: pSup,
@@ -34,6 +35,7 @@ type Provider struct {
 
 // RegisterSysCC registers a system chaincode with the syscc provider.
 func (p *Provider) RegisterSysCC(scc SelfDescribingSysCC) {
+	fmt.Println("===Provider==RegisterSysCC==")
 	p.SysCCs = append(p.SysCCs, scc)
 	_, err := p.registerSysCC(scc)
 	if err != nil {
@@ -43,6 +45,7 @@ func (p *Provider) RegisterSysCC(scc SelfDescribingSysCC) {
 
 // IsSysCC returns true if the supplied chaincode is a system chaincode
 func (p *Provider) IsSysCC(name string) bool {
+	fmt.Println("===Provider==IsSysCC==")
 	for _, sysCC := range p.SysCCs {
 		if sysCC.Name() == name {
 			return true
@@ -58,6 +61,7 @@ func (p *Provider) IsSysCC(name string) bool {
 // is a system chaincode and *CANNOT* be invoked through
 // a cc2cc invocation
 func (p *Provider) IsSysCCAndNotInvokableCC2CC(name string) bool {
+	fmt.Println("===Provider==IsSysCCAndNotInvokableCC2CC==")
 	for _, sysCC := range p.SysCCs {
 		if sysCC.Name() == name {
 			return !sysCC.InvokableCC2CC()
@@ -73,7 +77,9 @@ func (p *Provider) IsSysCCAndNotInvokableCC2CC(name string) bool {
 
 // GetQueryExecutorForLedger returns a query executor for the specified channel
 func (p *Provider) GetQueryExecutorForLedger(cid string) (ledger.QueryExecutor, error) {
+	fmt.Println("===Provider==GetQueryExecutorForLedger==")
 	l := p.Peer.GetLedger(cid)
+
 	if l == nil {
 		return nil, fmt.Errorf("Could not retrieve ledger for channel %s", cid)
 	}
@@ -85,6 +91,7 @@ func (p *Provider) GetQueryExecutorForLedger(cid string) (ledger.QueryExecutor, 
 // is a system chaincode and *CANNOT* be invoked through
 // a proposal to this peer
 func (p *Provider) IsSysCCAndNotInvokableExternal(name string) bool {
+	fmt.Println("===Provider==IsSysCCAndNotInvokableExternal==")
 	for _, sysCC := range p.SysCCs {
 		if sysCC.Name() == name {
 			return !sysCC.InvokableExternal()
@@ -101,16 +108,19 @@ func (p *Provider) IsSysCCAndNotInvokableExternal(name string) bool {
 // GetApplicationConfig returns the configtxapplication.SharedConfig for the channel
 // and whether the Application config exists
 func (p *Provider) GetApplicationConfig(cid string) (channelconfig.Application, bool) {
+	fmt.Println("===Provider==GetApplicationConfig==")
 	return p.PeerSupport.GetApplicationConfig(cid)
 }
 
 // Returns the policy manager associated to the passed channel
 // and whether the policy manager exists
 func (p *Provider) PolicyManager(channelID string) (policies.Manager, bool) {
+	fmt.Println("===Provider==PolicyManager==")
 	m := p.Peer.GetPolicyManager(channelID)
 	return m, (m != nil)
 }
 
 func isDeprecatedSysCC(name string) bool {
+	fmt.Println("===isDeprecatedSysCC==")
 	return name == "vscc" || name == "escc"
 }
