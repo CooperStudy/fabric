@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package builtin
 
 import (
+	"fmt"
 	. "github.com/hyperledger/fabric/core/handlers/endorsement/api"
 	. "github.com/hyperledger/fabric/core/handlers/endorsement/api/identities"
 	"github.com/hyperledger/fabric/protos/peer"
@@ -34,6 +35,7 @@ type DefaultEndorsement struct {
 // The payload that was given as input (could be modified within this function)
 // Or error on failure
 func (e *DefaultEndorsement) Endorse(prpBytes []byte, sp *peer.SignedProposal) (*peer.Endorsement, []byte, error) {
+	fmt.Println("=====DefaultEndorsement====Endorse========")
 	signer, err := e.SigningIdentityForRequest(sp)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed fetching signing identity")
@@ -55,6 +57,7 @@ func (e *DefaultEndorsement) Endorse(prpBytes []byte, sp *peer.SignedProposal) (
 
 // Init injects dependencies into the instance of the Plugin
 func (e *DefaultEndorsement) Init(dependencies ...Dependency) error {
+	fmt.Println("=====DefaultEndorsement====Init========")
 	for _, dep := range dependencies {
 		sIDFetcher, isSigningIdentityFetcher := dep.(SigningIdentityFetcher)
 		if !isSigningIdentityFetcher {

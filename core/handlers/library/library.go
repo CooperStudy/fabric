@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package library
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric/core/handlers/auth"
 	"github.com/hyperledger/fabric/core/handlers/auth/filter"
 	"github.com/hyperledger/fabric/core/handlers/decoration"
@@ -28,12 +29,14 @@ type HandlerLibrary struct {
 // It needs to be initialized via a call to Init()
 // and be passed a peer.EndorserServer
 func (r *HandlerLibrary) DefaultAuth() auth.Filter {
+	fmt.Println("====HandlerLibrary===DefaultAuth====")
 	return filter.NewFilter()
 }
 
 // ExpirationCheck is an auth filter which blocks requests
 // from identities with expired x509 certificates
 func (r *HandlerLibrary) ExpirationCheck() auth.Filter {
+	fmt.Println("====HandlerLibrary===ExpirationCheck====")
 	return filter.NewExpirationCheckFilter()
 }
 
@@ -41,13 +44,16 @@ func (r *HandlerLibrary) ExpirationCheck() auth.Filter {
 // that doesn't do anything with the input, simply
 // returns the input as output.
 func (r *HandlerLibrary) DefaultDecorator() decoration.Decorator {
+	fmt.Println("====HandlerLibrary===DefaultDecorator====")
 	return decorator.NewDecorator()
 }
 
 func (r *HandlerLibrary) DefaultEndorsement() endorsement.PluginFactory {
+	fmt.Println("====HandlerLibrary===DefaultEndorsement====")
 	return &builtin.DefaultEndorsementFactory{}
 }
 
 func (r *HandlerLibrary) DefaultValidation() validation.PluginFactory {
+	fmt.Println("====HandlerLibrary===DefaultValidation====")
 	return &DefaultValidationFactory{}
 }

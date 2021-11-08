@@ -33,6 +33,7 @@ import (
 
 // checkInstantiationPolicy evaluates an instantiation policy against a signed proposal
 func (vscc *Validator) checkInstantiationPolicy(chainName string, env *common.Envelope, instantiationPolicy []byte, payl *common.Payload) commonerrors.TxValidationError {
+	fmt.Println("==Validator==checkInstantiationPolicy==")
 	// get the signature header
 	shdr, err := utils.GetSignatureHeader(payl.Header.SignatureHeader)
 	if err != nil {
@@ -53,6 +54,7 @@ func (vscc *Validator) checkInstantiationPolicy(chainName string, env *common.En
 }
 
 func validateNewCollectionConfigs(newCollectionConfigs []*common.CollectionConfig) error {
+	fmt.Println("==validateNewCollectionConfigs==")
 	newCollectionsMap := make(map[string]bool, len(newCollectionConfigs))
 	// Process each collection config from a set of collection configs
 	for _, newCollectionConfig := range newCollectionConfigs {
@@ -100,6 +102,7 @@ func validateNewCollectionConfigs(newCollectionConfigs []*common.CollectionConfi
 
 // validateSpOrConcat checks if the supplied signature policy is just an OR-concatenation of identities
 func validateSpOrConcat(sp *common.SignaturePolicy) error {
+	fmt.Println("==validateSpOrConcat==")
 	if sp.GetNOutOf() == nil {
 		return nil
 	}
@@ -119,6 +122,7 @@ func validateSpOrConcat(sp *common.SignaturePolicy) error {
 
 func checkForMissingCollections(newCollectionsMap map[string]*common.StaticCollectionConfig, oldCollectionConfigs []*common.CollectionConfig,
 ) error {
+	fmt.Println("==checkForMissingCollections==")
 	var missingCollections []string
 
 	// In the new collection config package, ensure that there is one entry per old collection. Any
@@ -149,6 +153,7 @@ func checkForMissingCollections(newCollectionsMap map[string]*common.StaticColle
 
 func checkForModifiedCollectionsBTL(newCollectionsMap map[string]*common.StaticCollectionConfig, oldCollectionConfigs []*common.CollectionConfig,
 ) error {
+	fmt.Println("==checkForModifiedCollectionsBTL==")
 	var modifiedCollectionsBTL []string
 
 	// In the new collection config package, ensure that the block to live value is not
@@ -179,6 +184,7 @@ func checkForModifiedCollectionsBTL(newCollectionsMap map[string]*common.StaticC
 
 func validateNewCollectionConfigsAgainstOld(newCollectionConfigs []*common.CollectionConfig, oldCollectionConfigs []*common.CollectionConfig,
 ) error {
+	fmt.Println("==validateNewCollectionConfigsAgainstOld==")
 	newCollectionsMap := make(map[string]*common.StaticCollectionConfig, len(newCollectionConfigs))
 
 	for _, newCollectionConfig := range newCollectionConfigs {
@@ -200,6 +206,7 @@ func validateNewCollectionConfigsAgainstOld(newCollectionConfigs []*common.Colle
 }
 
 func validateCollectionName(collectionName string) error {
+	fmt.Println("==validateCollectionName==")
 	if collectionName == "" {
 		return fmt.Errorf("empty collection-name is not allowed")
 	}
@@ -222,6 +229,7 @@ func (vscc *Validator) validateRWSetAndCollection(
 	ac channelconfig.ApplicationCapabilities,
 	channelName string,
 ) commonerrors.TxValidationError {
+	fmt.Println("==Validator==validateRWSetAndCollection==")
 	/********************************************/
 	/* security check 0.a - validation of rwset */
 	/********************************************/
@@ -341,6 +349,7 @@ func (vscc *Validator) ValidateLSCCInvocation(
 	payl *common.Payload,
 	ac channelconfig.ApplicationCapabilities,
 ) commonerrors.TxValidationError {
+	fmt.Println("==Validator==ValidateLSCCInvocation==")
 	cpp, err := utils.GetChaincodeProposalPayload(cap.ChaincodeProposalPayload)
 	if err != nil {
 		logger.Errorf("VSCC error: GetChaincodeProposalPayload failed, err %s", err)
@@ -589,6 +598,7 @@ func (vscc *Validator) ValidateLSCCInvocation(
 }
 
 func (vscc *Validator) getInstantiatedCC(chid, ccid string) (cd *ccprovider.ChaincodeData, exists bool, err error) {
+	fmt.Println("==Validator==getInstantiatedCC==")
 	qe, err := vscc.stateFetcher.FetchState()
 	if err != nil {
 		err = fmt.Errorf("could not retrieve QueryExecutor for channel %s, error %s", chid, err)
@@ -623,6 +633,7 @@ type state struct {
 
 // GetState retrieves the value for the given key in the given namespace
 func (s *state) GetState(namespace string, key string) ([]byte, error) {
+	fmt.Println("==Validator==GetState==")
 	values, err := s.GetStateMultipleKeys(namespace, []string{key})
 	if err != nil {
 		return nil, err

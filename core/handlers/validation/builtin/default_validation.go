@@ -44,6 +44,7 @@ type TransactionValidator interface {
 }
 
 func (v *DefaultValidation) Validate(block *common.Block, namespace string, txPosition int, actionPosition int, contextData ...validation.ContextDatum) error {
+	fmt.Println("==DefaultValidation==Validate==")
 	if len(contextData) == 0 {
 		logger.Panicf("Expected to receive policy bytes in context data")
 	}
@@ -79,6 +80,7 @@ func (v *DefaultValidation) Validate(block *common.Block, namespace string, txPo
 }
 
 func convertErrorTypeOrPanic(err error) error {
+	fmt.Println("=convertErrorTypeOrPanic==")
 	if err == nil {
 		return nil
 	}
@@ -95,6 +97,8 @@ func convertErrorTypeOrPanic(err error) error {
 }
 
 func (v *DefaultValidation) Init(dependencies ...validation.Dependency) error {
+
+	fmt.Println("=========DefaultValidation====Init=================")
 	var (
 		d  IdentityDeserializer
 		c  Capabilities

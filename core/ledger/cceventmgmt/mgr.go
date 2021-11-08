@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package cceventmgmt
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/hyperledger/fabric/common/flogging"
@@ -19,15 +20,18 @@ var mgr *Mgr
 
 // Initialize initializes event mgmt
 func Initialize(ccInfoProvider ChaincodeInfoProvider) {
+	fmt.Println("========Initialize=================")
 	initialize(ccInfoProvider)
 }
 
 func initialize(ccInfoProvider ChaincodeInfoProvider) {
+	fmt.Println("========initialize=================")
 	mgr = newMgr(ccInfoProvider)
 }
 
 // GetMgr returns the reference to singleton event manager
 func GetMgr() *Mgr {
+	fmt.Println("========GetMgr=================")
 	return mgr
 }
 
@@ -44,6 +48,7 @@ type Mgr struct {
 }
 
 func newMgr(chaincodeInfoProvider ChaincodeInfoProvider) *Mgr {
+	fmt.Println("========newMgr=================")
 	return &Mgr{
 		infoProvider:         chaincodeInfoProvider,
 		ccLifecycleListeners: make(map[string][]ChaincodeLifecycleEventListener),
@@ -53,6 +58,7 @@ func newMgr(chaincodeInfoProvider ChaincodeInfoProvider) *Mgr {
 // Register registers a ChaincodeLifecycleEventListener for given ledgerid
 // Since, `Register` is expected to be invoked when creating/opening a ledger instance
 func (m *Mgr) Register(ledgerid string, l ChaincodeLifecycleEventListener) {
+	fmt.Println("====Mgr====Register=================")
 	// write lock to synchronize concurrent 'chaincode install' operations with ledger creation/open
 	m.rwlock.Lock()
 	defer m.rwlock.Unlock()
@@ -68,6 +74,7 @@ func (m *Mgr) Register(ledgerid string, l ChaincodeLifecycleEventListener) {
 // the deployed chaincode. So, in function `HandleChaincodeInstall`, we explicitly check for chaincode deployed
 // in this stored `chaincodeDefinitions`
 func (m *Mgr) HandleChaincodeDeploy(chainid string, chaincodeDefinitions []*ChaincodeDefinition) error {
+	fmt.Println("====Mgr====HandleChaincodeDeploy=================")
 	logger.Debugf("Channel [%s]: Handling chaincode deploy event for chaincode [%s]", chainid, chaincodeDefinitions)
 	// Read lock to allow concurrent deploy on multiple channels but to synchronize concurrent `chaincode install` operation
 	m.rwlock.RLock()
@@ -93,6 +100,7 @@ func (m *Mgr) HandleChaincodeDeploy(chainid string, chaincodeDefinitions []*Chai
 
 // ChaincodeDeployDone is expected to be called when the deploy transaction state is committed
 func (m *Mgr) ChaincodeDeployDone(chainid string) {
+	fmt.Println("====Mgr====ChaincodeDeployDone=================")
 	// release the lock aquired in function `HandleChaincodeDeploy`
 	defer m.rwlock.RUnlock()
 	if m.callbackStatus.isDeployPending(chainid) {
@@ -103,6 +111,7 @@ func (m *Mgr) ChaincodeDeployDone(chainid string) {
 
 // HandleChaincodeInstall is expected to get invoked during installation of a chaincode package
 func (m *Mgr) HandleChaincodeInstall(chaincodeDefinition *ChaincodeDefinition, dbArtifacts []byte) error {
+	fmt.Println("====Mgr====HandleChaincodeInstall=================")
 	logger.Debugf("HandleChaincodeInstall() - chaincodeDefinition=%#v", chaincodeDefinition)
 	// Write lock prevents concurrent deploy operations
 	m.rwlock.Lock()
@@ -132,6 +141,7 @@ func (m *Mgr) HandleChaincodeInstall(chaincodeDefinition *ChaincodeDefinition, d
 
 // ChaincodeInstallDone is expected to get invoked when chaincode install finishes
 func (m *Mgr) ChaincodeInstallDone(succeeded bool) {
+	fmt.Println("====Mgr====ChaincodeInstallDone=================")
 	// release the lock acquired in function `HandleChaincodeInstall`
 	defer m.rwlock.Unlock()
 	for chainid := range m.callbackStatus.installPending {
@@ -141,6 +151,7 @@ func (m *Mgr) ChaincodeInstallDone(succeeded bool) {
 }
 
 func (m *Mgr) invokeHandler(chainid string, chaincodeDefinition *ChaincodeDefinition, dbArtifactsTar []byte) error {
+	fmt.Println("====Mgr====invokeHandler=================")
 	listeners := m.ccLifecycleListeners[chainid]
 	for _, listener := range listeners {
 		if err := listener.HandleChaincodeDeploy(chaincodeDefinition, dbArtifactsTar); err != nil {
@@ -151,6 +162,7 @@ func (m *Mgr) invokeHandler(chainid string, chaincodeDefinition *ChaincodeDefini
 }
 
 func (m *Mgr) invokeDoneOnHandlers(chainid string, succeeded bool) {
+	fmt.Println("====Mgr====invokeDoneOnHandlers=================")
 	listeners := m.ccLifecycleListeners[chainid]
 	for _, listener := range listeners {
 		listener.ChaincodeDeployDone(succeeded)
@@ -164,42 +176,49 @@ type callbackStatus struct {
 }
 
 func newCallbackStatus() *callbackStatus {
+	fmt.Println("====newCallbackStatus=================")
 	return &callbackStatus{
 		deployPending:  make(map[string]bool),
 		installPending: make(map[string]bool)}
 }
 
 func (s *callbackStatus) setDeployPending(channelID string) {
+	fmt.Println("====callbackStatus=====setDeployPending============")
 	s.l.Lock()
 	defer s.l.Unlock()
 	s.deployPending[channelID] = true
 }
 
 func (s *callbackStatus) unsetDeployPending(channelID string) {
+	fmt.Println("====callbackStatus=====unsetDeployPending============")
 	s.l.Lock()
 	defer s.l.Unlock()
 	delete(s.deployPending, channelID)
 }
 
 func (s *callbackStatus) isDeployPending(channelID string) bool {
+	fmt.Println("====callbackStatus=====isDeployPending============")
 	s.l.Lock()
 	defer s.l.Unlock()
 	return s.deployPending[channelID]
 }
 
 func (s *callbackStatus) setInstallPending(channelID string) {
+	fmt.Println("====callbackStatus=====setInstallPending============")
 	s.l.Lock()
 	defer s.l.Unlock()
 	s.installPending[channelID] = true
 }
 
 func (s *callbackStatus) unsetInstallPending(channelID string) {
+	fmt.Println("====callbackStatus=====unsetInstallPending============")
 	s.l.Lock()
 	defer s.l.Unlock()
 	delete(s.installPending, channelID)
 }
 
 func (s *callbackStatus) isInstallPending(channelID string) bool {
+	fmt.Println("====callbackStatus=====isInstallPending============")
 	s.l.Lock()
 	defer s.l.Unlock()
 	return s.installPending[channelID]

@@ -36,6 +36,7 @@ var validCollectionNameRegex = regexp.MustCompile(ccmetadata.AllowedCharsCollect
 // New creates a new instance of the default VSCC
 // Typically this will only be invoked once per peer
 func New(c Capabilities, s StateFetcher, d IdentityDeserializer, pe PolicyEvaluator) *Validator {
+	fmt.Println("==New==")
 	vpmgr := &KeyLevelValidationParameterManagerImpl{StateFetcher: s}
 	sbv := NewKeyLevelValidator(pe, vpmgr)
 
@@ -75,6 +76,7 @@ func (vscc *Validator) extractValidationArtifacts(
 	txPosition int,
 	actionPosition int,
 ) (*validationArtifacts, error) {
+	fmt.Println("==Validator=extractValidationArtifacts===")
 	// get the envelope...
 	env, err := utils.GetEnvelopeFromBlock(block.Data.Data[txPosition])
 	if err != nil {
@@ -153,6 +155,7 @@ func (vscc *Validator) Validate(
 	actionPosition int,
 	policyBytes []byte,
 ) commonerrors.TxValidationError {
+	fmt.Println("==Validator=Validate===")
 	vscc.stateBasedValidator.PreValidate(uint64(txPosition), block)
 
 	va, err := vscc.extractValidationArtifacts(block, txPosition, actionPosition)
@@ -192,6 +195,7 @@ func (vscc *Validator) Validate(
 }
 
 func policyErr(err error) *commonerrors.VSCCEndorsementPolicyError {
+	fmt.Println("==policyErr==")
 	return &commonerrors.VSCCEndorsementPolicyError{
 		Err: err,
 	}

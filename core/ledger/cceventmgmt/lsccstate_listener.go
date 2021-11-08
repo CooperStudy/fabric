@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package cceventmgmt
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric/core/ledger"
 	"github.com/hyperledger/fabric/protos/ledger/rwset/kvrwset"
 )
@@ -20,6 +21,7 @@ type KVLedgerLSCCStateListener struct {
 // and invokes `HandleChaincodeDeploy` function on chaincode event manager (which in turn is responsible for creation of statedb
 // artifacts for the chaincode statedata)
 func (listener *KVLedgerLSCCStateListener) HandleStateUpdates(trigger *ledger.StateUpdateTrigger) error {
+	fmt.Println("=========KVLedgerLSCCStateListener====HandleStateUpdates=================")
 	channelName, kvWrites, postCommitQE, deployCCInfoProvider :=
 		trigger.LedgerID, convertToKVWrites(trigger.StateUpdates), trigger.PostCommitQueryExecutor, listener.DeployedChaincodeInfoProvider
 
@@ -51,15 +53,18 @@ func (listener *KVLedgerLSCCStateListener) HandleStateUpdates(trigger *ledger.St
 
 // InterestedInNamespaces implements function from interface `ledger.StateListener`
 func (listener *KVLedgerLSCCStateListener) InterestedInNamespaces() []string {
+	fmt.Println("=========KVLedgerLSCCStateListener====InterestedInNamespaces=================")
 	return listener.DeployedChaincodeInfoProvider.Namespaces()
 }
 
 // StateCommitDone implements function from interface `ledger.StateListener`
 func (listener *KVLedgerLSCCStateListener) StateCommitDone(channelName string) {
+	fmt.Println("=========KVLedgerLSCCStateListener====StateCommitDone=================")
 	GetMgr().ChaincodeDeployDone(channelName)
 }
 
 func convertToKVWrites(stateUpdates ledger.StateUpdates) map[string][]*kvrwset.KVWrite {
+	fmt.Println("========convertToKVWrites=================")
 	m := map[string][]*kvrwset.KVWrite{}
 	for ns, updates := range stateUpdates {
 		m[ns] = updates.([]*kvrwset.KVWrite)

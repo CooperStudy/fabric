@@ -26,6 +26,7 @@ type DefaultEndorsementFactory struct {
 
 // New returns an endorsement plugin that behaves as the default endorsement system chaincode
 func (*DefaultEndorsementFactory) New() Plugin {
+	fmt.Println("=====DefaultEndorsementFactory====New========")
 	return &DefaultEndorsement{}
 }
 
@@ -40,6 +41,7 @@ type DefaultEndorsement struct {
 // The payload that was given as input (could be modified within this function)
 // Or error on failure
 func (e *DefaultEndorsement) Endorse(prpBytes []byte, sp *peer.SignedProposal) (*peer.Endorsement, []byte, error) {
+	fmt.Println("=====DefaultEndorsement====Endorse========")
 	signer, err := e.SigningIdentityForRequest(sp)
 	if err != nil {
 		return nil, nil, errors.New(fmt.Sprintf("failed fetching signing identity: %v", err))
@@ -61,6 +63,7 @@ func (e *DefaultEndorsement) Endorse(prpBytes []byte, sp *peer.SignedProposal) (
 
 // Init injects dependencies into the instance of the Plugin
 func (e *DefaultEndorsement) Init(dependencies ...Dependency) error {
+	fmt.Println("=====DefaultEndorsement====Init========")
 	for _, dep := range dependencies {
 		sIDFetcher, isSigningIdentityFetcher := dep.(SigningIdentityFetcher)
 		if !isSigningIdentityFetcher {
@@ -74,5 +77,6 @@ func (e *DefaultEndorsement) Init(dependencies ...Dependency) error {
 
 // NewPluginFactory is the function ran by the plugin infrastructure to create an endorsement plugin factory.
 func NewPluginFactory() PluginFactory {
+	fmt.Println("====NewPluginFactory=======")
 	return &DefaultEndorsementFactory{}
 }
