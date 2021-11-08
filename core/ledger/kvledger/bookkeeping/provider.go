@@ -37,20 +37,24 @@ type provider struct {
 
 // NewProvider instantiates a new provider
 func NewProvider() Provider {
+	fmt.Println("==NewProvider===")
 	dbProvider := leveldbhelper.NewProvider(&leveldbhelper.Conf{DBPath: getInternalBookkeeperPath()})
 	return &provider{dbProvider: dbProvider}
 }
 
 // GetDBHandle implements the function in the interface 'BookkeeperProvider'
 func (provider *provider) GetDBHandle(ledgerID string, cat Category) *leveldbhelper.DBHandle {
+	fmt.Println("==provider===GetDBHandle==")
 	return provider.dbProvider.GetDBHandle(fmt.Sprintf(ledgerID+"/%d", cat))
 }
 
 // Close implements the function in the interface 'BookKeeperProvider'
 func (provider *provider) Close() {
+	fmt.Println("==provider===Close==")
 	provider.dbProvider.Close()
 }
 
 func getInternalBookkeeperPath() string {
+	fmt.Println("==getInternalBookkeeperPath==")
 	return ledgerconfig.GetInternalBookkeeperPath()
 }

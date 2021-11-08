@@ -18,6 +18,7 @@ package historydb
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/hyperledger/fabric/common/ledger/util"
 )
@@ -28,7 +29,7 @@ var CompositeKeySep = []byte{0x00}
 //ConstructCompositeHistoryKey builds the History Key of namespace~key~blocknum~trannum
 // using an order preserving encoding so that history query results are ordered by height
 func ConstructCompositeHistoryKey(ns string, key string, blocknum uint64, trannum uint64) []byte {
-
+	fmt.Println("==ConstructCompositeHistoryKey==")
 	var compositeKey []byte
 	compositeKey = append(compositeKey, []byte(ns)...)
 	compositeKey = append(compositeKey, CompositeKeySep...)
@@ -43,6 +44,7 @@ func ConstructCompositeHistoryKey(ns string, key string, blocknum uint64, trannu
 //ConstructPartialCompositeHistoryKey builds a partial History Key namespace~key~
 // for use in history key range queries
 func ConstructPartialCompositeHistoryKey(ns string, key string, endkey bool) []byte {
+	fmt.Println("==ConstructPartialCompositeHistoryKey==")
 	var compositeKey []byte
 	compositeKey = append(compositeKey, []byte(ns)...)
 	compositeKey = append(compositeKey, CompositeKeySep...)
@@ -56,6 +58,7 @@ func ConstructPartialCompositeHistoryKey(ns string, key string, endkey bool) []b
 
 //SplitCompositeHistoryKey splits the key bytes using a separator
 func SplitCompositeHistoryKey(bytesToSplit []byte, separator []byte) ([]byte, []byte) {
+	fmt.Println("==SplitCompositeHistoryKey==")
 	split := bytes.SplitN(bytesToSplit, separator, 2)
 	return split[0], split[1]
 }

@@ -96,46 +96,55 @@ type nsBatch struct {
 
 // NewUpdateBatch creates and empty UpdateBatch
 func NewUpdateBatch() *UpdateBatch {
+	fmt.Println("==NewUpdateBatch=")
 	return &UpdateBatch{NewPubUpdateBatch(), NewHashedUpdateBatch(), NewPvtUpdateBatch()}
 }
 
 // NewPubUpdateBatch creates an empty PubUpdateBatch
 func NewPubUpdateBatch() *PubUpdateBatch {
+	fmt.Println("==NewPubUpdateBatch=")
 	return &PubUpdateBatch{statedb.NewUpdateBatch()}
 }
 
 // NewHashedUpdateBatch creates an empty HashedUpdateBatch
 func NewHashedUpdateBatch() *HashedUpdateBatch {
+	fmt.Println("==NewHashedUpdateBatch=")
 	return &HashedUpdateBatch{make(map[string]nsBatch)}
 }
 
 // NewPvtUpdateBatch creates an empty PvtUpdateBatch
 func NewPvtUpdateBatch() *PvtUpdateBatch {
+	fmt.Println("==NewPvtUpdateBatch=")
 	return &PvtUpdateBatch{make(map[string]nsBatch)}
 }
 
 // IsEmpty returns true if there exists any updates
 func (b UpdateMap) IsEmpty() bool {
+	fmt.Println("==UpdateMap=IsEmpty==")
 	return len(b) == 0
 }
 
 // Put sets the value in the batch for a given combination of namespace and collection name
 func (b UpdateMap) Put(ns, coll, key string, value []byte, version *version.Height) {
+	fmt.Println("==UpdateMap=Put==")
 	b.PutValAndMetadata(ns, coll, key, value, nil, version)
 }
 
 // PutValAndMetadata adds a key with value and metadata
 func (b UpdateMap) PutValAndMetadata(ns, coll, key string, value []byte, metadata []byte, version *version.Height) {
+	fmt.Println("==UpdateMap=PutValAndMetadata==")
 	b.getOrCreateNsBatch(ns).PutValAndMetadata(coll, key, value, metadata, version)
 }
 
 // Delete adds a delete marker in the batch for a given combination of namespace and collection name
 func (b UpdateMap) Delete(ns, coll, key string, version *version.Height) {
+	fmt.Println("==UpdateMap=Delete==")
 	b.getOrCreateNsBatch(ns).Delete(coll, key, version)
 }
 
 // Get retrieves the value from the batch for a given combination of namespace and collection name
 func (b UpdateMap) Get(ns, coll, key string) *statedb.VersionedValue {
+	fmt.Println("==UpdateMap=Get==")
 	nsPvtBatch, ok := b[ns]
 	if !ok {
 		return nil
@@ -145,6 +154,7 @@ func (b UpdateMap) Get(ns, coll, key string) *statedb.VersionedValue {
 
 // Contains returns true if the given <ns,coll,key> tuple is present in the batch
 func (b UpdateMap) Contains(ns, coll, key string) bool {
+	fmt.Println("==UpdateMap=Contains==")
 	nsBatch, ok := b[ns]
 	if !ok {
 		return false
@@ -153,10 +163,12 @@ func (b UpdateMap) Contains(ns, coll, key string) bool {
 }
 
 func (nsb nsBatch) GetCollectionNames() []string {
+	fmt.Println("==nsBatch=GetCollectionNames==")
 	return nsb.GetUpdatedNamespaces()
 }
 
 func (b UpdateMap) getOrCreateNsBatch(ns string) nsBatch {
+	fmt.Println("==UpdateMap=getOrCreateNsBatch==")
 	batch, ok := b[ns]
 	if !ok {
 		batch = nsBatch{statedb.NewUpdateBatch()}
@@ -167,27 +179,32 @@ func (b UpdateMap) getOrCreateNsBatch(ns string) nsBatch {
 
 // Contains returns true if the given <ns,coll,keyHash> tuple is present in the batch
 func (h HashedUpdateBatch) Contains(ns, coll string, keyHash []byte) bool {
+	fmt.Println("==HashedUpdateBatch=Contains==")
 	return h.UpdateMap.Contains(ns, coll, string(keyHash))
 }
 
 // Put overrides the function in UpdateMap for allowing the key to be a []byte instead of a string
 func (h HashedUpdateBatch) Put(ns, coll string, key []byte, value []byte, version *version.Height) {
+	fmt.Println("==HashedUpdateBatch=Put==")
 	h.PutValHashAndMetadata(ns, coll, key, value, nil, version)
 }
 
 // PutValHashAndMetadata adds a key with value and metadata
 // TODO introducing a new function to limit the refactoring. Later in a separate CR, the 'Put' function above should be removed
 func (h HashedUpdateBatch) PutValHashAndMetadata(ns, coll string, key []byte, value []byte, metadata []byte, version *version.Height) {
+	fmt.Println("==HashedUpdateBatch=PutValHashAndMetadata==")
 	h.UpdateMap.PutValAndMetadata(ns, coll, string(key), value, metadata, version)
 }
 
 // Delete overrides the function in UpdateMap for allowing the key to be a []byte instead of a string
 func (h HashedUpdateBatch) Delete(ns, coll string, key []byte, version *version.Height) {
+	fmt.Println("==HashedUpdateBatch=Delete==")
 	h.UpdateMap.Delete(ns, coll, string(key), version)
 }
 
 // ToCompositeKeyMap rearranges the update batch data in the form of a single map
 func (h HashedUpdateBatch) ToCompositeKeyMap() map[HashedCompositeKey]*statedb.VersionedValue {
+	fmt.Println("==HashedUpdateBatch=ToCompositeKeyMap==")
 	m := make(map[HashedCompositeKey]*statedb.VersionedValue)
 	for ns, nsBatch := range h.UpdateMap {
 		for _, coll := range nsBatch.GetCollectionNames() {
@@ -204,6 +221,7 @@ type PvtdataCompositeKeyMap map[PvtdataCompositeKey]*statedb.VersionedValue
 
 // ToCompositeKeyMap rearranges the update batch data in the form of a single map
 func (p PvtUpdateBatch) ToCompositeKeyMap() PvtdataCompositeKeyMap {
+	fmt.Println("==PvtUpdateBatch=ToCompositeKeyMap==")
 	m := make(PvtdataCompositeKeyMap)
 	for ns, nsBatch := range p.UpdateMap {
 		for _, coll := range nsBatch.GetCollectionNames() {
@@ -217,5 +235,6 @@ func (p PvtUpdateBatch) ToCompositeKeyMap() PvtdataCompositeKeyMap {
 
 // String returns a print friendly form of HashedCompositeKey
 func (hck *HashedCompositeKey) String() string {
+	fmt.Println("==HashedCompositeKey=String==")
 	return fmt.Sprintf("ns=%s, collection=%s, keyHash=%x", hck.Namespace, hck.CollectionName, hck.KeyHash)
 }

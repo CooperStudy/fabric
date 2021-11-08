@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package privacyenabledstate
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric/common/ledger/util/leveldbhelper"
 )
 
@@ -16,6 +17,7 @@ type metadataHint struct {
 }
 
 func newMetadataHint(bookkeeper *leveldbhelper.DBHandle) *metadataHint {
+	fmt.Println("==newMetadataHint==")
 	cache := map[string]bool{}
 	itr := bookkeeper.GetIterator(nil, nil)
 	defer itr.Release()
@@ -27,10 +29,12 @@ func newMetadataHint(bookkeeper *leveldbhelper.DBHandle) *metadataHint {
 }
 
 func (h *metadataHint) metadataEverUsedFor(namespace string) bool {
+	fmt.Println("==metadataHint=metadataEverUsedFor===")
 	return h.cache[namespace]
 }
 
 func (h *metadataHint) setMetadataUsedFlag(updates *UpdateBatch) {
+	fmt.Println("==metadataHint=setMetadataUsedFlag===")
 	batch := leveldbhelper.NewUpdateBatch()
 	for ns := range filterNamespacesThatHasMetadata(updates) {
 		if h.cache[ns] {
@@ -43,6 +47,7 @@ func (h *metadataHint) setMetadataUsedFlag(updates *UpdateBatch) {
 }
 
 func filterNamespacesThatHasMetadata(updates *UpdateBatch) map[string]bool {
+	fmt.Println("==filterNamespacesThatHasMetadata===")
 	namespaces := map[string]bool{}
 	pubUpdates, hashUpdates := updates.PubUpdates, updates.HashUpdates
 	// add ns for public data
