@@ -68,7 +68,7 @@ type CommService interface {
 	Forward(msg proto.ReceivedMessage)
 }
 
-// NetworkMember is a peer's representation
+// NetworkMember is a peer's representation 表示
 type NetworkMember struct {
 	Endpoint         string
 	Metadata         []byte
@@ -80,6 +80,7 @@ type NetworkMember struct {
 
 // String returns a string representation of the NetworkMember
 func (n NetworkMember) String() string {
+	fmt.Println("=====NetworkMember========String====")
 	return fmt.Sprintf("Endpoint: %s, InternalEndpoint: %s, PKI-ID: %s, Metadata: %x", n.Endpoint, n.InternalEndpoint, n.PKIid, n.Metadata)
 }
 
@@ -87,6 +88,7 @@ func (n NetworkMember) String() string {
 // while preferring internal endpoint over the standard
 // endpoint
 func (n NetworkMember) PreferredEndpoint() string {
+	fmt.Println("=======NetworkMember========PreferredEndpoint==")
 	if n.InternalEndpoint != "" {
 		return n.InternalEndpoint
 	}
