@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package comm
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/hyperledger/fabric/gossip/common"
@@ -23,6 +24,7 @@ type ChannelDeMultiplexer struct {
 
 // NewChannelDemultiplexer creates a new ChannelDeMultiplexer
 func NewChannelDemultiplexer() *ChannelDeMultiplexer {
+	fmt.Println("==NewChannelDemultiplexer==")
 	return &ChannelDeMultiplexer{
 		channels: make([]*channel, 0),
 		lock:     &sync.RWMutex{},
@@ -35,12 +37,14 @@ type channel struct {
 }
 
 func (m *ChannelDeMultiplexer) isClosed() bool {
+	fmt.Println("==ChannelDeMultiplexer==isClosed==")
 	return m.closed
 }
 
 // Close closes this channel, which makes all channels registered before
 // to close as well.
 func (m *ChannelDeMultiplexer) Close() {
+	fmt.Println("==ChannelDeMultiplexer==Close==")
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	m.closed = true
@@ -52,6 +56,7 @@ func (m *ChannelDeMultiplexer) Close() {
 
 // AddChannel registers a channel with a certain predicate
 func (m *ChannelDeMultiplexer) AddChannel(predicate common.MessageAcceptor) chan interface{} {
+	fmt.Println("==ChannelDeMultiplexer==AddChannel==")
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	ch := &channel{ch: make(chan interface{}, 10), pred: predicate}
@@ -62,6 +67,7 @@ func (m *ChannelDeMultiplexer) AddChannel(predicate common.MessageAcceptor) chan
 // DeMultiplex broadcasts the message to all channels that were returned
 // by AddChannel calls and that hold the respected predicates.
 func (m *ChannelDeMultiplexer) DeMultiplex(msg interface{}) {
+	fmt.Println("==ChannelDeMultiplexer==DeMultiplex==")
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 	if m.isClosed() {

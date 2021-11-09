@@ -104,6 +104,7 @@ type SendCriteria struct {
 
 // String returns a string representation of this SendCriteria
 func (sc SendCriteria) String() string {
+	fmt.Println("====SendCriteria===String==")
 	return fmt.Sprintf("channel: %s, tout: %v, minAck: %d, maxPeers: %d", sc.Channel, sc.Timeout, sc.MinAck, sc.MaxPeers)
 }
 

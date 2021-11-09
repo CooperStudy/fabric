@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package privdata
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric/core/ledger"
 	"github.com/hyperledger/fabric/core/transientstore"
 	"github.com/hyperledger/fabric/gossip/privdata/common"
@@ -59,6 +60,7 @@ func NewDataRetriever(store DataStore) StorageDataRetriever {
 // CollectionRWSet retrieves for give digest relevant private data if
 // available otherwise returns nil, bool which is true if data fetched from ledger and false if was fetched from transient store, and an error
 func (dr *dataRetriever) CollectionRWSet(digests []*gossip2.PvtDataDigest, blockNum uint64) (Dig2PvtRWSetWithConfig, bool, error) {
+	fmt.Println("====dataRetriever==CollectionRWSet===")
 	height, err := dr.store.LedgerHeight()
 	if err != nil {
 		// if there is an error getting info from the ledger, we need to try to read from transient store
@@ -100,6 +102,7 @@ func (dr *dataRetriever) CollectionRWSet(digests []*gossip2.PvtDataDigest, block
 }
 
 func (dr *dataRetriever) fromLedger(digests []*gossip2.PvtDataDigest, blockNum uint64) (Dig2PvtRWSetWithConfig, error) {
+	fmt.Println("====dataRetriever==fromLedger===")
 	filter := make(map[string]ledger.PvtCollFilter)
 	for _, dig := range digests {
 		if _, ok := filter[dig.Namespace]; !ok {
@@ -168,6 +171,7 @@ func (dr *dataRetriever) fromLedger(digests []*gossip2.PvtDataDigest, blockNum u
 }
 
 func (dr *dataRetriever) fromTransientStore(dig *gossip2.PvtDataDigest, filter map[string]ledger.PvtCollFilter) (*util.PrivateRWSetWithConfig, error) {
+	fmt.Println("====dataRetriever==fromTransientStore===")
 	results := &util.PrivateRWSetWithConfig{}
 	it, err := dr.store.GetTxPvtRWSetByTxid(dig.TxId, filter)
 	if err != nil {
@@ -221,6 +225,7 @@ func (dr *dataRetriever) fromTransientStore(dig *gossip2.PvtDataDigest, filter m
 }
 
 func (dr *dataRetriever) extractPvtRWsets(pvtRWSets []*rwset.NsPvtReadWriteSet, namespace string, collectionName string) []util.PrivateRWSet {
+	fmt.Println("====dataRetriever==extractPvtRWsets===")
 	pRWsets := []util.PrivateRWSet{}
 
 	// Iterate over all namespaces

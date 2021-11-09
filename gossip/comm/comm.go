@@ -77,6 +77,7 @@ type AggregatedSendResult []SendResult
 
 // AckCount returns the number of successful acknowledgements
 func (ar AggregatedSendResult) AckCount() int {
+	fmt.Println("=====AggregatedSendResult=====AckCount=========")
 	c := 0
 	for _, ack := range ar {
 		if ack.error == nil {
@@ -88,12 +89,14 @@ func (ar AggregatedSendResult) AckCount() int {
 
 // NackCount returns the number of unsuccessful acknowledgements
 func (ar AggregatedSendResult) NackCount() int {
+	fmt.Println("=====AggregatedSendResult=====NackCount=========")
 	return len(ar) - ar.AckCount()
 }
 
 // String returns a JSONed string representation
 // of the AggregatedSendResult
 func (ar AggregatedSendResult) String() string {
+	fmt.Println("=====AggregatedSendResult=====String=========")
 	errMap := map[string]int{}
 	for _, ack := range ar {
 		if ack.error == nil {
@@ -116,5 +119,6 @@ func (ar AggregatedSendResult) String() string {
 
 // String converts a RemotePeer to a string
 func (p *RemotePeer) String() string {
+	fmt.Println("=====RemotePeer=====String=========")
 	return fmt.Sprintf("%s, PKIid:%v", p.Endpoint, p.PKIID)
 }

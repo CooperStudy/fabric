@@ -96,6 +96,7 @@ type Coordinator interface {
 type dig2sources map[privdatacommon.DigKey][]*peer.Endorsement
 
 func (d2s dig2sources) keys() []privdatacommon.DigKey {
+	fmt.Println("======dig2sources==keys===")
 	res := make([]privdatacommon.DigKey, 0, len(d2s))
 	for dig := range d2s {
 		res = append(res, dig)
@@ -128,6 +129,7 @@ type coordinator struct {
 
 // NewCoordinator creates a new instance of coordinator
 func NewCoordinator(support Support, selfSignedData common.SignedData) Coordinator {
+	fmt.Println("=====NewCoordinator===")
 	transientBlockRetention := uint64(viper.GetInt(transientBlockRetentionConfigKey))
 	if transientBlockRetention == 0 {
 		logger.Warning("Configuration key", transientBlockRetentionConfigKey, "isn't set, defaulting to", transientBlockRetentionDefault)
@@ -138,11 +140,13 @@ func NewCoordinator(support Support, selfSignedData common.SignedData) Coordinat
 
 // StorePvtData used to persist private date into transient store
 func (c *coordinator) StorePvtData(txID string, privData *transientstore2.TxPvtReadWriteSetWithConfigInfo, blkHeight uint64) error {
+	fmt.Println("=====coordinator===StorePvtData===")
 	return c.TransientStore.PersistWithConfig(txID, blkHeight, privData)
 }
 
 // StoreBlock stores block with private data into the ledger
 func (c *coordinator) StoreBlock(block *common.Block, privateDataSets util.PvtDataCollections) error {
+	fmt.Println("=====coordinator===StoreBlock===")
 	if block.Data == nil {
 		return errors.New("Block data is empty")
 	}
@@ -254,7 +258,9 @@ func (c *coordinator) StoreBlock(block *common.Block, privateDataSets util.PvtDa
 }
 
 func (c *coordinator) fetchFromPeers(blockSeq uint64, ownedRWsets map[rwSetKey][]byte, privateInfo *privateDataInfo) {
+	fmt.Println("=====coordinator===fetchFromPeers===")
 	dig2src := make(map[privdatacommon.DigKey][]*peer.Endorsement)
+
 	privateInfo.missingKeys.foreach(func(k rwSetKey) {
 		logger.Debug("Fetching", k, "from peers")
 		dig := privdatacommon.DigKey{
@@ -312,6 +318,7 @@ func (c *coordinator) fetchFromPeers(blockSeq uint64, ownedRWsets map[rwSetKey][
 }
 
 func (c *coordinator) fetchMissingFromTransientStore(missing rwSetKeysByTxIDs, ownedRWsets map[rwSetKey][]byte) {
+	fmt.Println("=====coordinator===fetchMissingFromTransientStore===")
 	// Check transient store
 	for txAndSeq, filter := range missing.FiltersByTxIDs() {
 		c.fetchFromTransientStore(txAndSeq, filter, ownedRWsets)
@@ -319,6 +326,7 @@ func (c *coordinator) fetchMissingFromTransientStore(missing rwSetKeysByTxIDs, o
 }
 
 func (c *coordinator) fetchFromTransientStore(txAndSeq txAndSeqInBlock, filter ledger.PvtNsCollFilter, ownedRWsets map[rwSetKey][]byte) {
+	fmt.Println("=====coordinator===fetchFromTransientStore===")
 	iterator, err := c.TransientStore.GetTxPvtRWSetByTxid(txAndSeq.txID, filter)
 	if err != nil {
 		logger.Warning("Failed obtaining iterator from transient store:", err)
@@ -362,6 +370,7 @@ func (c *coordinator) fetchFromTransientStore(txAndSeq txAndSeqInBlock, filter l
 
 // computeOwnedRWsets identifies which block private data we already have
 func computeOwnedRWsets(block *common.Block, blockPvtData util.PvtDataCollections) (rwsetByKeys, error) {
+	fmt.Println("=====computeOwnedRWsets===")
 	lastBlockSeq := len(block.Data.Data) - 1
 
 	ownedRWsets := make(map[rwSetKey][]byte)
@@ -402,6 +411,7 @@ func computeOwnedRWsets(block *common.Block, blockPvtData util.PvtDataCollection
 type readWriteSets []readWriteSet
 
 func (s readWriteSets) toRWSet() *rwset.TxPvtReadWriteSet {
+	fmt.Println("=====readWriteSets===toRWSet===")
 	namespaces := make(map[string]*rwset.NsPvtReadWriteSet)
 	dataModel := rwset.TxReadWriteSet_KV
 	for _, rws := range s {
@@ -436,6 +446,7 @@ type readWriteSet struct {
 type rwsetByKeys map[rwSetKey][]byte
 
 func (s rwsetByKeys) bySeqsInBlock() map[uint64]readWriteSets {
+	fmt.Println("=====rwsetByKeys===bySeqsInBlock===")
 	res := make(map[uint64]readWriteSets)
 	for k, rws := range s {
 		res[k.seqInBlock] = append(res[k.seqInBlock], readWriteSet{
@@ -450,6 +461,7 @@ type rwsetKeys map[rwSetKey]struct{}
 
 // String returns a string representation of the rwsetKeys
 func (s rwsetKeys) String() string {
+	fmt.Println("=====rwsetKeys===String===")
 	var buffer bytes.Buffer
 	for k := range s {
 		buffer.WriteString(fmt.Sprintf("%s\n", k.String()))
@@ -459,6 +471,7 @@ func (s rwsetKeys) String() string {
 
 // foreach invokes given function in each key
 func (s rwsetKeys) foreach(f func(key rwSetKey)) {
+	fmt.Println("=====rwsetKeys===foreach===")
 	for k := range s {
 		f(k)
 	}
@@ -466,6 +479,7 @@ func (s rwsetKeys) foreach(f func(key rwSetKey)) {
 
 // exclude removes all keys accepted by the given predicate.
 func (s rwsetKeys) exclude(exists func(key rwSetKey) bool) {
+	fmt.Println("=====rwsetKeys===exclude===")
 	for k := range s {
 		if exists(k) {
 			delete(s, k)
@@ -481,6 +495,7 @@ type txAndSeqInBlock struct {
 type rwSetKeysByTxIDs map[txAndSeqInBlock][]rwSetKey
 
 func (s rwSetKeysByTxIDs) flatten() rwsetKeys {
+	fmt.Println("=====rwSetKeysByTxIDs===flatten===")
 	m := make(map[rwSetKey]struct{})
 	for _, keys := range s {
 		for _, k := range keys {
@@ -491,6 +506,7 @@ func (s rwSetKeysByTxIDs) flatten() rwsetKeys {
 }
 
 func (s rwSetKeysByTxIDs) FiltersByTxIDs() map[txAndSeqInBlock]ledger.PvtNsCollFilter {
+	fmt.Println("=====rwSetKeysByTxIDs===FiltersByTxIDs===")
 	filters := make(map[txAndSeqInBlock]ledger.PvtNsCollFilter)
 	for txAndSeq, rwsKeys := range s {
 		filter := ledger.NewPvtNsCollFilter()
@@ -513,10 +529,13 @@ type rwSetKey struct {
 
 // String returns a string representation of the rwSetKey
 func (k *rwSetKey) String() string {
+	fmt.Println("=====rwSetKey===String===")
 	return fmt.Sprintf("txID: %s, seq: %d, namespace: %s, collection: %s, hash: %s", k.txID, k.seqInBlock, k.namespace, k.collection, k.hash)
 }
 
 func (k *rwSetKey) toTxPvtReadWriteSet(rws []byte) *rwset.TxPvtReadWriteSet {
+	fmt.Println("=====rwSetKey===toTxPvtReadWriteSet===")
+
 	return &rwset.TxPvtReadWriteSet{
 		DataModel: rwset.TxReadWriteSet_KV,
 		NsPvtRwset: []*rwset.NsPvtReadWriteSet{
@@ -538,6 +557,7 @@ type blockData [][]byte
 type blockConsumer func(seqInBlock uint64, chdr *common.ChannelHeader, txRWSet *rwsetutil.TxRwSet, endorsers []*peer.Endorsement) error
 
 func (data blockData) forEachTxn(txsFilter txValidationFlags, consumer blockConsumer) (txns, error) {
+	fmt.Println("=====blockData===forEachTxn===")
 	var txList []string
 	for seqInBlock, envBytes := range data {
 		env, err := utils.GetEnvelopeFromBlock(envBytes)
@@ -606,6 +626,7 @@ func (data blockData) forEachTxn(txsFilter txValidationFlags, consumer blockCons
 }
 
 func endorsersFromOrgs(ns string, col string, endorsers []*peer.Endorsement, orgs []string) []*peer.Endorsement {
+	fmt.Println("=====endorsersFromOrgs===")
 	var res []*peer.Endorsement
 	for _, e := range endorsers {
 		sID := &msp.SerializedIdentity{}
@@ -633,6 +654,7 @@ type privateDataInfo struct {
 
 // listMissingPrivateData identifies missing private write sets and attempts to retrieve them from local transient store
 func (c *coordinator) listMissingPrivateData(block *common.Block, ownedRWsets map[rwSetKey][]byte) (*privateDataInfo, error) {
+	fmt.Println("=====coordinator===listMissingPrivateData==")
 	if block.Metadata == nil || len(block.Metadata.Metadata) <= int(common.BlockMetadataIndex_TRANSACTIONS_FILTER) {
 		return nil, errors.New("Block.Metadata is nil or Block.Metadata lacks a Tx filter bitmap")
 	}
@@ -698,6 +720,7 @@ type transactionInspector struct {
 }
 
 func (bi *transactionInspector) inspectTransaction(seqInBlock uint64, chdr *common.ChannelHeader, txRWSet *rwsetutil.TxRwSet, endorsers []*peer.Endorsement) error {
+	fmt.Println("=====transactionInspector===inspectTransaction==")
 	for _, ns := range txRWSet.NsRwSets {
 		for _, hashedCollection := range ns.CollHashedRwSets {
 			if !containsWrites(chdr.TxId, ns.NameSpace, hashedCollection) {
@@ -752,6 +775,7 @@ func (bi *transactionInspector) inspectTransaction(seqInBlock uint64, chdr *comm
 // accessPolicyForCollection retrieves a CollectionAccessPolicy for a given namespace, collection name
 // that corresponds to a given ChannelHeader
 func (c *coordinator) accessPolicyForCollection(chdr *common.ChannelHeader, namespace string, col string) (privdata.CollectionAccessPolicy, error) {
+	fmt.Println("=====coordinator===accessPolicyForCollection==")
 	cp := common.CollectionCriteria{
 		Channel:    chdr.ChannelId,
 		Namespace:  namespace,
@@ -769,6 +793,7 @@ func (c *coordinator) accessPolicyForCollection(chdr *common.ChannelHeader, name
 
 // isEligible checks if this peer is eligible for a given CollectionAccessPolicy
 func (c *coordinator) isEligible(ap privdata.CollectionAccessPolicy, namespace string, col string) bool {
+	fmt.Println("=====coordinator===isEligible==")
 	filt := ap.AccessFilter()
 	eligible := filt(c.selfSignedData)
 	if !eligible {
@@ -787,6 +812,7 @@ type seqAndDataModel struct {
 type aggregatedCollections map[seqAndDataModel]map[string][]*rwset.CollectionPvtReadWriteSet
 
 func (ac aggregatedCollections) addCollection(seqInBlock uint64, dm rwset.TxReadWriteSet_DataModel, namespace string, col *rwset.CollectionPvtReadWriteSet) {
+	fmt.Println("=====aggregatedCollections===addCollection==")
 	seq := seqAndDataModel{
 		dataModel: dm,
 		seq:       seqInBlock,
@@ -798,6 +824,7 @@ func (ac aggregatedCollections) addCollection(seqInBlock uint64, dm rwset.TxRead
 }
 
 func (ac aggregatedCollections) asPrivateData() []*ledger.TxPvtData {
+	fmt.Println("=====aggregatedCollections===asPrivateData==")
 	var data []*ledger.TxPvtData
 	for seq, ns := range ac {
 		txPrivateData := &ledger.TxPvtData{
@@ -822,6 +849,7 @@ func (ac aggregatedCollections) asPrivateData() []*ledger.TxPvtData {
 // transactions in the block related to these private data, to get the correct placement
 // need to read TxPvtData.SeqInBlock field
 func (c *coordinator) GetPvtDataAndBlockByNum(seqNum uint64, peerAuthInfo common.SignedData) (*common.Block, util.PvtDataCollections, error) {
+	fmt.Println("=====coordinator===GetPvtDataAndBlockByNum==")
 	blockAndPvtData, err := c.Committer.GetPvtDataAndBlockByNum(seqNum)
 	if err != nil {
 		return nil, nil, err
@@ -868,6 +896,7 @@ func (c *coordinator) GetPvtDataAndBlockByNum(seqNum uint64, peerAuthInfo common
 
 // containsWrites checks whether the given CollHashedRwSet contains writes
 func containsWrites(txID string, namespace string, colHashedRWSet *rwsetutil.CollHashedRwSet) bool {
+	fmt.Println("====containsWrites==")
 	if colHashedRWSet.HashedRwSet == nil {
 		logger.Warningf("HashedRWSet of tx %s, namespace %s, collection %s is nil", txID, namespace, colHashedRWSet.CollectionName)
 		return false

@@ -8,6 +8,7 @@ package identity
 
 import (
 	"bytes"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -70,6 +71,7 @@ type identityMapperImpl struct {
 
 // NewIdentityMapper method, all we need is a reference to a MessageCryptoService
 func NewIdentityMapper(mcs api.MessageCryptoService, selfIdentity api.PeerIdentityType, onPurge purgeTrigger, sa api.SecurityAdvisor) Mapper {
+	fmt.Println("====NewIdentityMapper===")
 	selfPKIID := mcs.GetPKIidOfCert(selfIdentity)
 	idMapper := &identityMapperImpl{
 		onPurge:    onPurge,
@@ -87,6 +89,7 @@ func NewIdentityMapper(mcs api.MessageCryptoService, selfIdentity api.PeerIdenti
 }
 
 func (is *identityMapperImpl) periodicalPurgeUnusedIdentities() {
+	fmt.Println("====identityMapperImpl==periodicalPurgeUnusedIdentities==")
 	usageTh := GetIdentityUsageThreshold()
 	for {
 		select {
@@ -103,6 +106,7 @@ func (is *identityMapperImpl) periodicalPurgeUnusedIdentities() {
 // put associates an identity to its given pkiID, and returns an error
 // in case the given pkiID doesn't match the identity
 func (is *identityMapperImpl) Put(pkiID common.PKIidType, identity api.PeerIdentityType) error {
+	fmt.Println("====identityMapperImpl==Put==")
 	if pkiID == nil {
 		return errors.New("PKIID is nil")
 	}
@@ -151,6 +155,7 @@ func (is *identityMapperImpl) Put(pkiID common.PKIidType, identity api.PeerIdent
 // get returns the identity of a given pkiID, or error if such an identity
 // isn't found
 func (is *identityMapperImpl) Get(pkiID common.PKIidType) (api.PeerIdentityType, error) {
+	fmt.Println("====identityMapperImpl==Get==")
 	is.RLock()
 	defer is.RUnlock()
 	storedIdentity, exists := is.pkiID2Cert[string(pkiID)]
@@ -163,10 +168,12 @@ func (is *identityMapperImpl) Get(pkiID common.PKIidType) (api.PeerIdentityType,
 // Sign signs a message, returns a signed message on success
 // or an error on failure
 func (is *identityMapperImpl) Sign(msg []byte) ([]byte, error) {
+	fmt.Println("====identityMapperImpl==Sign==")
 	return is.mcs.Sign(msg)
 }
 
 func (is *identityMapperImpl) Stop() {
+	fmt.Println("====identityMapperImpl==Stop==")
 	is.Once.Do(func() {
 		is.stopChan <- struct{}{}
 	})
@@ -174,6 +181,7 @@ func (is *identityMapperImpl) Stop() {
 
 // Verify verifies a signed message
 func (is *identityMapperImpl) Verify(vkID, signature, message []byte) error {
+	fmt.Println("====identityMapperImpl==Verify==")
 	cert, err := is.Get(vkID)
 	if err != nil {
 		return err
@@ -183,11 +191,13 @@ func (is *identityMapperImpl) Verify(vkID, signature, message []byte) error {
 
 // GetPKIidOfCert returns the PKI-ID of a certificate
 func (is *identityMapperImpl) GetPKIidOfCert(identity api.PeerIdentityType) common.PKIidType {
+	fmt.Println("====identityMapperImpl==GetPKIidOfCert==")
 	return is.mcs.GetPKIidOfCert(identity)
 }
 
 // SuspectPeers re-validates all peers that match the given predicate
 func (is *identityMapperImpl) SuspectPeers(isSuspected api.PeerSuspector) {
+	fmt.Println("====identityMapperImpl==SuspectPeers==")
 	for _, identity := range is.validateIdentities(isSuspected) {
 		identity.cancelExpirationTimer()
 		is.delete(identity.pkiID, identity.peerIdentity)
@@ -197,6 +207,7 @@ func (is *identityMapperImpl) SuspectPeers(isSuspected api.PeerSuspector) {
 // validateIdentities returns a list of identities that have been revoked, expired or haven't been
 // used for a long time
 func (is *identityMapperImpl) validateIdentities(isSuspected api.PeerSuspector) []*storedIdentity {
+	fmt.Println("====identityMapperImpl==validateIdentities==")
 	now := time.Now()
 	usageTh := GetIdentityUsageThreshold()
 	is.RLock()
@@ -219,6 +230,7 @@ func (is *identityMapperImpl) validateIdentities(isSuspected api.PeerSuspector) 
 
 // IdentityInfo returns information known peer identities
 func (is *identityMapperImpl) IdentityInfo() api.PeerIdentitySet {
+	fmt.Println("====identityMapperImpl==IdentityInfo==")
 	var res api.PeerIdentitySet
 	is.RLock()
 	defer is.RUnlock()
@@ -233,6 +245,7 @@ func (is *identityMapperImpl) IdentityInfo() api.PeerIdentitySet {
 }
 
 func (is *identityMapperImpl) delete(pkiID common.PKIidType, identity api.PeerIdentityType) {
+	fmt.Println("====identityMapperImpl==delete==")
 	is.Lock()
 	defer is.Unlock()
 	is.onPurge(pkiID, identity)
@@ -248,6 +261,7 @@ type storedIdentity struct {
 }
 
 func newStoredIdentity(pkiID common.PKIidType, identity api.PeerIdentityType, expirationTimer *time.Timer, org api.OrgIdentityType) *storedIdentity {
+	fmt.Println("====newStoredIdentity==")
 	return &storedIdentity{
 		pkiID:           pkiID,
 		lastAccessTime:  time.Now().UnixNano(),
@@ -258,15 +272,18 @@ func newStoredIdentity(pkiID common.PKIidType, identity api.PeerIdentityType, ex
 }
 
 func (si *storedIdentity) fetchIdentity() api.PeerIdentityType {
+	fmt.Println("====storedIdentity==fetchIdentity==")
 	atomic.StoreInt64(&si.lastAccessTime, time.Now().UnixNano())
 	return si.peerIdentity
 }
 
 func (si *storedIdentity) fetchLastAccessTime() time.Time {
+	fmt.Println("====storedIdentity==fetchLastAccessTime==")
 	return time.Unix(0, atomic.LoadInt64(&si.lastAccessTime))
 }
 
 func (si *storedIdentity) cancelExpirationTimer() {
+	fmt.Println("====storedIdentity==cancelExpirationTimer==")
 	if si.expirationTimer == nil {
 		return
 	}
@@ -277,6 +294,7 @@ func (si *storedIdentity) cancelExpirationTimer() {
 // Identities that are not used at least once during the given time
 // are purged
 func SetIdentityUsageThreshold(duration time.Duration) {
+	fmt.Println("====SetIdentityUsageThreshold==")
 	atomic.StoreInt64((*int64)(&usageThreshold), int64(duration))
 }
 
@@ -284,5 +302,6 @@ func SetIdentityUsageThreshold(duration time.Duration) {
 // Identities that are not used at least once during the usage threshold
 // duration are purged.
 func GetIdentityUsageThreshold() time.Duration {
+	fmt.Println("====GetIdentityUsageThreshold==")
 	return time.Duration(atomic.LoadInt64((*int64)(&usageThreshold)))
 }

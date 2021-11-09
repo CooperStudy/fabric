@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package gossip
 
 import (
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -36,6 +37,7 @@ type batchingEmitter interface {
 // latency: the maximum delay that each message can be stored without being forwarded
 // cb: a callback that is called in order for the forwarding to take place
 func newBatchingEmitter(iterations, burstSize int, latency time.Duration, cb emitBatchCallback) batchingEmitter {
+	fmt.Println("====newBatchingEmitter===")
 	if iterations < 0 {
 		panic(errors.Errorf("Got a negative iterations number"))
 	}
@@ -58,6 +60,7 @@ func newBatchingEmitter(iterations, burstSize int, latency time.Duration, cb emi
 }
 
 func (p *batchingEmitterImpl) periodicEmit() {
+	fmt.Println("====batchingEmitterImpl===periodicEmit==")
 	for !p.toDie() {
 		time.Sleep(p.delay)
 		p.lock.Lock()
@@ -67,6 +70,7 @@ func (p *batchingEmitterImpl) periodicEmit() {
 }
 
 func (p *batchingEmitterImpl) emit() {
+	fmt.Println("====batchingEmitterImpl===emit==")
 	if p.toDie() {
 		return
 	}
@@ -83,6 +87,7 @@ func (p *batchingEmitterImpl) emit() {
 }
 
 func (p *batchingEmitterImpl) decrementCounters() {
+	fmt.Println("====batchingEmitterImpl===decrementCounters==")
 	n := len(p.buff)
 	for i := 0; i < n; i++ {
 		msg := p.buff[i]
@@ -96,6 +101,7 @@ func (p *batchingEmitterImpl) decrementCounters() {
 }
 
 func (p *batchingEmitterImpl) toDie() bool {
+	fmt.Println("====batchingEmitterImpl===toDie==")
 	return atomic.LoadInt32(&(p.stopFlag)) == int32(1)
 }
 
@@ -115,16 +121,19 @@ type batchedMessage struct {
 }
 
 func (p *batchingEmitterImpl) Stop() {
+	fmt.Println("====batchingEmitterImpl===Stop==")
 	atomic.StoreInt32(&(p.stopFlag), int32(1))
 }
 
 func (p *batchingEmitterImpl) Size() int {
+	fmt.Println("====batchingEmitterImpl===Size==")
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	return len(p.buff)
 }
 
 func (p *batchingEmitterImpl) Add(message interface{}) {
+	fmt.Println("====batchingEmitterImpl===Add==")
 	if p.iterations == 0 {
 		return
 	}

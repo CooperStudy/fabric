@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package util
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/hyperledger/fabric/common/flogging"
@@ -52,6 +53,7 @@ type Logger interface {
 
 // GetLogger returns a logger for given gossip logger name and peerID
 func GetLogger(name string, peerID string) Logger {
+	fmt.Println("===GetLogger==")
 	if peerID != "" && testMode {
 		name = name + "#" + peerID
 	}
@@ -71,6 +73,7 @@ func GetLogger(name string, peerID string) Logger {
 
 // SetupTestLogging sets the default log levels for gossip unit tests
 func SetupTestLogging() {
+	fmt.Println("===SetupTestLogging==")
 	testMode = true
 	flogging.InitFromSpec(defaultTestSpec)
 }

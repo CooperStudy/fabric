@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package msgstore
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -35,6 +36,7 @@ func NewMessageStore(pol common.MessageReplacingPolicy, trigger invalidationTrig
 // policy and invalidation trigger passed. It supports old message expiration after msgTTL, during expiration first external
 // lock taken, expiration callback invoked and external lock released. Callback and external lock can be nil.
 func NewMessageStoreExpirable(pol common.MessageReplacingPolicy, trigger invalidationTrigger, msgTTL time.Duration, externalLock func(), externalUnlock func(), externalExpire func(interface{})) MessageStore {
+	fmt.Println("====NewMessageStoreExpirable==")
 	store := newMsgStore(pol, trigger)
 	store.msgTTL = msgTTL
 
@@ -55,6 +57,7 @@ func NewMessageStoreExpirable(pol common.MessageReplacingPolicy, trigger invalid
 }
 
 func newMsgStore(pol common.MessageReplacingPolicy, trigger invalidationTrigger) *messageStoreImpl {
+	fmt.Println("====newMsgStore==")
 	return &messageStoreImpl{
 		pol:        pol,
 		messages:   make([]*msg, 0),
@@ -120,6 +123,7 @@ type msg struct {
 
 // add adds a message to the store
 func (s *messageStoreImpl) Add(message interface{}) bool {
+	fmt.Println("====messageStoreImpl===Add====")
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -142,6 +146,7 @@ func (s *messageStoreImpl) Add(message interface{}) bool {
 }
 
 func (s *messageStoreImpl) Purge(shouldBePurged func(interface{}) bool) {
+	fmt.Println("====messageStoreImpl===Purge====")
 	shouldMsgBePurged := func(m *msg) bool {
 		return shouldBePurged(m.data)
 	}
@@ -164,6 +169,7 @@ func (s *messageStoreImpl) Purge(shouldBePurged func(interface{}) bool) {
 
 // Checks if message is valid for insertion to store
 func (s *messageStoreImpl) CheckValid(message interface{}) bool {
+	fmt.Println("====messageStoreImpl===CheckValid====")
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
@@ -177,6 +183,7 @@ func (s *messageStoreImpl) CheckValid(message interface{}) bool {
 
 // size returns the amount of messages in the store
 func (s *messageStoreImpl) Size() int {
+	fmt.Println("====messageStoreImpl===Size====")
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	return len(s.messages) - s.expiredCount
@@ -184,6 +191,7 @@ func (s *messageStoreImpl) Size() int {
 
 // get returns all messages in the store
 func (s *messageStoreImpl) Get() []interface{} {
+	fmt.Println("====messageStoreImpl===Get====")
 	res := make([]interface{}, 0)
 
 	s.lock.RLock()
@@ -198,6 +206,7 @@ func (s *messageStoreImpl) Get() []interface{} {
 }
 
 func (s *messageStoreImpl) expireMessages() {
+	fmt.Println("====messageStoreImpl===expireMessages====")
 	s.externalLock()
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -225,6 +234,7 @@ func (s *messageStoreImpl) expireMessages() {
 }
 
 func (s *messageStoreImpl) isPurgeNeeded(shouldBePurged func(*msg) bool) bool {
+	fmt.Println("====messageStoreImpl===isPurgeNeeded====")
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	for _, m := range s.messages {
@@ -236,6 +246,7 @@ func (s *messageStoreImpl) isPurgeNeeded(shouldBePurged func(*msg) bool) bool {
 }
 
 func (s *messageStoreImpl) expirationRoutine() {
+	fmt.Println("====messageStoreImpl===expirationRoutine====")
 	for {
 		select {
 		case <-s.doneCh:
@@ -257,6 +268,7 @@ func (s *messageStoreImpl) expirationRoutine() {
 }
 
 func (s *messageStoreImpl) Stop() {
+	fmt.Println("====messageStoreImpl===Stop====")
 	stopFunc := func() {
 		close(s.doneCh)
 	}
@@ -264,5 +276,6 @@ func (s *messageStoreImpl) Stop() {
 }
 
 func (s *messageStoreImpl) expirationCheckInterval() time.Duration {
+	fmt.Println("====messageStoreImpl===expirationCheckInterval====")
 	return s.msgTTL / 100
 }

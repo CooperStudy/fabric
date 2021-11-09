@@ -8,6 +8,7 @@ package gossip
 
 import (
 	"bytes"
+	"fmt"
 	"sync"
 	"sync/atomic"
 
@@ -27,6 +28,7 @@ type channelState struct {
 }
 
 func (cs *channelState) stop() {
+	fmt.Println("====channelState===stop==")
 	if cs.isStopping() {
 		return
 	}
@@ -39,10 +41,12 @@ func (cs *channelState) stop() {
 }
 
 func (cs *channelState) isStopping() bool {
+	fmt.Println("====channelState===isStopping==")
 	return atomic.LoadInt32(&cs.stopping) == int32(1)
 }
 
 func (cs *channelState) lookupChannelForMsg(msg proto.ReceivedMessage) channel.GossipChannel {
+	fmt.Println("====channelState===lookupChannelForMsg==")
 	if msg.GetGossipMessage().IsStateInfoPullRequestMsg() {
 		sipr := msg.GetGossipMessage().GetStateInfoPullReq()
 		mac := sipr.Channel_MAC
@@ -53,6 +57,7 @@ func (cs *channelState) lookupChannelForMsg(msg proto.ReceivedMessage) channel.G
 }
 
 func (cs *channelState) lookupChannelForGossipMsg(msg *proto.GossipMessage) channel.GossipChannel {
+	fmt.Println("====channelState===lookupChannelForGossipMsg==")
 	if !msg.IsStateInfoMsg() {
 		// If we reached here then the message isn't:
 		// 1) StateInfoPullRequest
@@ -69,6 +74,7 @@ func (cs *channelState) lookupChannelForGossipMsg(msg *proto.GossipMessage) chan
 }
 
 func (cs *channelState) getGossipChannelByMAC(receivedMAC []byte, pkiID common.PKIidType) channel.GossipChannel {
+	fmt.Println("====channelState===getGossipChannelByMAC==")
 	// Iterate over the channels, and try to find a channel that the computation
 	// of the MAC is equal to the MAC on the message.
 	// If it is, then the peer that signed the message knows the name of the channel
@@ -85,6 +91,7 @@ func (cs *channelState) getGossipChannelByMAC(receivedMAC []byte, pkiID common.P
 }
 
 func (cs *channelState) getGossipChannelByChainID(chainID common.ChainID) channel.GossipChannel {
+	fmt.Println("====channelState===getGossipChannelByChainID==")
 	if cs.isStopping() {
 		return nil
 	}
@@ -94,6 +101,7 @@ func (cs *channelState) getGossipChannelByChainID(chainID common.ChainID) channe
 }
 
 func (cs *channelState) joinChannel(joinMsg api.JoinChannelMessage, chainID common.ChainID) {
+	fmt.Println("====channelState===joinChannel==")
 	if cs.isStopping() {
 		return
 	}
@@ -115,6 +123,7 @@ type gossipAdapterImpl struct {
 }
 
 func (ga *gossipAdapterImpl) GetConf() channel.Config {
+	fmt.Println("====gossipAdapterImpl===GetConf==")
 	return channel.Config{
 		ID:                          ga.conf.ID,
 		MaxBlockCountToStore:        ga.conf.MaxBlockCountToStore,
@@ -129,6 +138,7 @@ func (ga *gossipAdapterImpl) GetConf() channel.Config {
 }
 
 func (ga *gossipAdapterImpl) Sign(msg *proto.GossipMessage) (*proto.SignedGossipMessage, error) {
+	fmt.Println("====gossipAdapterImpl===Sign==")
 	signer := func(msg []byte) ([]byte, error) {
 		return ga.mcs.Sign(msg)
 	}
@@ -147,6 +157,7 @@ func (ga *gossipAdapterImpl) Sign(msg *proto.GossipMessage) (*proto.SignedGossip
 
 // Gossip gossips a message
 func (ga *gossipAdapterImpl) Gossip(msg *proto.SignedGossipMessage) {
+	fmt.Println("====gossipAdapterImpl===Gossip==")
 	ga.gossipServiceImpl.emitter.Add(&emittedGossipMessage{
 		SignedGossipMessage: msg,
 		filter: func(_ common.PKIidType) bool {
@@ -157,6 +168,7 @@ func (ga *gossipAdapterImpl) Gossip(msg *proto.SignedGossipMessage) {
 
 // Forward sends message to the next hops
 func (ga *gossipAdapterImpl) Forward(msg proto.ReceivedMessage) {
+	fmt.Println("====gossipAdapterImpl===Forward==")
 	ga.gossipServiceImpl.emitter.Add(&emittedGossipMessage{
 		SignedGossipMessage: msg.GetGossipMessage(),
 		filter:              msg.GetConnectionInfo().ID.IsNotSameFilter,
@@ -164,23 +176,27 @@ func (ga *gossipAdapterImpl) Forward(msg proto.ReceivedMessage) {
 }
 
 func (ga *gossipAdapterImpl) Send(msg *proto.SignedGossipMessage, peers ...*comm.RemotePeer) {
+	fmt.Println("====gossipAdapterImpl===Send==")
 	ga.gossipServiceImpl.comm.Send(msg, peers...)
 }
 
 // ValidateStateInfoMessage returns error if a message isn't valid
 // nil otherwise
 func (ga *gossipAdapterImpl) ValidateStateInfoMessage(msg *proto.SignedGossipMessage) error {
+	fmt.Println("====gossipAdapterImpl===ValidateStateInfoMessage==")
 	return ga.gossipServiceImpl.validateStateInfoMsg(msg)
 }
 
 // GetOrgOfPeer returns the organization identifier of a certain peer
 func (ga *gossipAdapterImpl) GetOrgOfPeer(PKIID common.PKIidType) api.OrgIdentityType {
+	fmt.Println("====gossipAdapterImpl===GetOrgOfPeer==")
 	return ga.gossipServiceImpl.getOrgOfPeer(PKIID)
 }
 
 // GetIdentityByPKIID returns an identity of a peer with a certain
 // pkiID, or nil if not found
 func (ga *gossipAdapterImpl) GetIdentityByPKIID(pkiID common.PKIidType) api.PeerIdentityType {
+	fmt.Println("====gossipAdapterImpl===GetIdentityByPKIID==")
 	identity, err := ga.idMapper.Get(pkiID)
 	if err != nil {
 		return nil

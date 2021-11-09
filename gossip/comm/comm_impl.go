@@ -47,10 +47,12 @@ type SecurityAdvisor interface {
 
 // SetDialTimeout sets the dial timeout
 func SetDialTimeout(timeout time.Duration) {
+	fmt.Println("=====SetDialTimeout=========")
 	viper.Set("peer.gossip.dialTimeout", timeout)
 }
 
 func (c *commImpl) SetDialOpts(opts ...grpc.DialOption) {
+	fmt.Println("=====commImpl==SetDialOpts=======")
 	if len(opts) == 0 {
 		c.logger.Warning("Given an empty set of grpc.DialOption, aborting")
 		return
@@ -60,8 +62,11 @@ func (c *commImpl) SetDialOpts(opts ...grpc.DialOption) {
 
 // NewCommInstanceWithServer creates a comm instance that creates an underlying gRPC server
 func NewCommInstanceWithServer(port int, idMapper identity.Mapper, peerIdentity api.PeerIdentityType,
+
 	secureDialOpts api.PeerSecureDialOpts, sa api.SecurityAdvisor, dialOpts ...grpc.DialOption) (Comm, error) {
 
+
+	fmt.Println("=====NewCommInstanceWithServer=======")
 	var ll net.Listener
 	var s *grpc.Server
 	var certs *common.TLSCertificates
@@ -107,9 +112,11 @@ func NewCommInstanceWithServer(port int, idMapper identity.Mapper, peerIdentity 
 
 // NewCommInstance creates a new comm instance that binds itself to the given gRPC server
 func NewCommInstance(s *grpc.Server, certs *common.TLSCertificates, idStore identity.Mapper,
+
 	peerIdentity api.PeerIdentityType, secureDialOpts api.PeerSecureDialOpts, sa api.SecurityAdvisor,
 	dialOpts ...grpc.DialOption) (Comm, error) {
 
+	fmt.Println("=====NewCommInstance=======")
 	commInst, err := NewCommInstanceWithServer(-1, idStore, peerIdentity, secureDialOpts, sa, dialOpts...)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -147,6 +154,7 @@ type commImpl struct {
 }
 
 func (c *commImpl) createConnection(endpoint string, expectedPKIID common.PKIidType) (*connection, error) {
+	fmt.Println("=====commImpl==createConnection=====")
 	var err error
 	var cc *grpc.ClientConn
 	var stream proto.Gossip_GossipStreamClient
@@ -225,6 +233,7 @@ func (c *commImpl) createConnection(endpoint string, expectedPKIID common.PKIidT
 }
 
 func (c *commImpl) Send(msg *proto.SignedGossipMessage, peers ...*RemotePeer) {
+	fmt.Println("=====commImpl==Send=====")
 	if c.isStopping() || len(peers) == 0 {
 		return
 	}
@@ -238,6 +247,7 @@ func (c *commImpl) Send(msg *proto.SignedGossipMessage, peers ...*RemotePeer) {
 }
 
 func (c *commImpl) sendToEndpoint(peer *RemotePeer, msg *proto.SignedGossipMessage, shouldBlock blockingBehavior) {
+	fmt.Println("=====commImpl==sendToEndpoint=====")
 	if c.isStopping() {
 		return
 	}
@@ -259,10 +269,12 @@ func (c *commImpl) sendToEndpoint(peer *RemotePeer, msg *proto.SignedGossipMessa
 }
 
 func (c *commImpl) isStopping() bool {
+	fmt.Println("=====commImpl==isStopping=====")
 	return atomic.LoadInt32(&c.stopping) == int32(1)
 }
 
 func (c *commImpl) Probe(remotePeer *RemotePeer) error {
+	fmt.Println("=====commImpl==Probe=====")
 	var dialOpts []grpc.DialOption
 	endpoint := remotePeer.Endpoint
 	pkiID := remotePeer.PKIID
@@ -291,6 +303,7 @@ func (c *commImpl) Probe(remotePeer *RemotePeer) error {
 }
 
 func (c *commImpl) Handshake(remotePeer *RemotePeer) (api.PeerIdentityType, error) {
+	fmt.Println("=====commImpl==Handshake=====")
 	var dialOpts []grpc.DialOption
 	dialOpts = append(dialOpts, c.secureDialOpts()...)
 	dialOpts = append(dialOpts, grpc.WithBlock())
@@ -329,6 +342,7 @@ func (c *commImpl) Handshake(remotePeer *RemotePeer) (api.PeerIdentityType, erro
 }
 
 func (c *commImpl) Accept(acceptor common.MessageAcceptor) <-chan proto.ReceivedMessage {
+	fmt.Println("=====commImpl==Accept=====")
 	genericChan := c.msgPublisher.AddChannel(acceptor)
 	specificChan := make(chan proto.ReceivedMessage, 10)
 
@@ -367,15 +381,18 @@ func (c *commImpl) Accept(acceptor common.MessageAcceptor) <-chan proto.Received
 }
 
 func (c *commImpl) PresumedDead() <-chan common.PKIidType {
+	fmt.Println("=====commImpl==PresumedDead=====")
 	return c.deadEndpoints
 }
 
 func (c *commImpl) CloseConn(peer *RemotePeer) {
+	fmt.Println("=====commImpl==CloseConn=====")
 	c.logger.Debug("Closing connection for", peer)
 	c.connStore.closeConn(peer)
 }
 
 func (c *commImpl) closeSubscriptions() {
+	fmt.Println("=====commImpl==closeSubscriptions=====")
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	for _, ch := range c.subscriptions {
@@ -384,6 +401,7 @@ func (c *commImpl) closeSubscriptions() {
 }
 
 func (c *commImpl) Stop() {
+	fmt.Println("=====commImpl==Stop=====")
 	if !atomic.CompareAndSwapInt32(&c.stopping, 0, int32(1)) {
 		return
 	}
@@ -404,10 +422,12 @@ func (c *commImpl) Stop() {
 }
 
 func (c *commImpl) GetPKIid() common.PKIidType {
+	fmt.Println("=====commImpl==GetPKIid=====")
 	return c.PKIID
 }
 
 func extractRemoteAddress(stream stream) string {
+	fmt.Println("====extractRemoteAddress====")
 	var remoteAddress string
 	p, ok := peer.FromContext(stream.Context())
 	if ok {
@@ -419,6 +439,7 @@ func extractRemoteAddress(stream stream) string {
 }
 
 func (c *commImpl) authenticateRemotePeer(stream stream, initiator bool) (*proto.ConnectionInfo, error) {
+	fmt.Println("==commImpl==authenticateRemotePeer====")
 	ctx := stream.Context()
 	remoteAddress := extractRemoteAddress(stream)
 	remoteCertHash := extractCertificateHashFromContext(ctx)
@@ -511,6 +532,8 @@ func (c *commImpl) authenticateRemotePeer(stream stream, initiator bool) (*proto
 
 // SendWithAck sends a message to remote peers, waiting for acknowledgement from minAck of them, or until a certain timeout expires
 func (c *commImpl) SendWithAck(msg *proto.SignedGossipMessage, timeout time.Duration, minAck int, peers ...*RemotePeer) AggregatedSendResult {
+
+	fmt.Println("==commImpl==SendWithAck====")
 	if len(peers) == 0 {
 		return nil
 	}
@@ -567,6 +590,7 @@ func (c *commImpl) SendWithAck(msg *proto.SignedGossipMessage, timeout time.Dura
 }
 
 func (c *commImpl) GossipStream(stream proto.Gossip_GossipStreamServer) error {
+	fmt.Println("==commImpl==GossipStream====")
 	if c.isStopping() {
 		return fmt.Errorf("Shutting down")
 	}
@@ -600,10 +624,12 @@ func (c *commImpl) GossipStream(stream proto.Gossip_GossipStreamServer) error {
 }
 
 func (c *commImpl) Ping(context.Context, *proto.Empty) (*proto.Empty, error) {
+	fmt.Println("==commImpl==Ping====")
 	return &proto.Empty{}, nil
 }
 
 func (c *commImpl) disconnect(pkiID common.PKIidType) {
+	fmt.Println("==commImpl==disconnect====")
 	if c.isStopping() {
 		return
 	}
@@ -612,6 +638,7 @@ func (c *commImpl) disconnect(pkiID common.PKIidType) {
 }
 
 func readWithTimeout(stream interface{}, timeout time.Duration, address string) (*proto.SignedGossipMessage, error) {
+	fmt.Println("==readWithTimeout====")
 	incChan := make(chan *proto.SignedGossipMessage, 1)
 	errChan := make(chan error, 1)
 	go func() {
@@ -648,6 +675,7 @@ func readWithTimeout(stream interface{}, timeout time.Duration, address string) 
 }
 
 func (c *commImpl) createConnectionMsg(pkiID common.PKIidType, certHash []byte, cert api.PeerIdentityType, signer proto.Signer) (*proto.SignedGossipMessage, error) {
+	fmt.Println("==commImpl==createConnectionMsg==")
 	m := &proto.GossipMessage{
 		Tag:   proto.GossipMessage_EMPTY,
 		Nonce: 0,
@@ -673,6 +701,7 @@ type stream interface {
 }
 
 func createGRPCLayer(port int) (*grpc.Server, net.Listener, api.PeerSecureDialOpts, *common.TLSCertificates) {
+	fmt.Println("==createGRPCLayer==")
 	var s *grpc.Server
 	var ll net.Listener
 	var err error
@@ -710,5 +739,6 @@ func createGRPCLayer(port int) (*grpc.Server, net.Listener, api.PeerSecureDialOp
 }
 
 func topicForAck(nonce uint64, pkiID common.PKIidType) string {
+	fmt.Println("==topicForAck==")
 	return fmt.Sprintf("%d %s", nonce, hex.EncodeToString(pkiID))
 }

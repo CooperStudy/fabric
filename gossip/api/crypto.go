@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package api
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/hyperledger/fabric/gossip/common"
@@ -73,6 +74,7 @@ type PeerIdentitySet []PeerIdentityInfo
 
 // ByOrg sorts the PeerIdentitySet by organizations of its peers
 func (pis PeerIdentitySet) ByOrg() map[string]PeerIdentitySet {
+	fmt.Println("======PeerIdentitySet=======ByOrg==============")
 	m := make(map[string]PeerIdentitySet)
 	for _, id := range pis {
 		m[string(id.Organization)] = append(m[string(id.Organization)], id)
@@ -82,6 +84,7 @@ func (pis PeerIdentitySet) ByOrg() map[string]PeerIdentitySet {
 
 // ByOrg sorts the PeerIdentitySet by PKI-IDs of its peers
 func (pis PeerIdentitySet) ByID() map[string]PeerIdentityInfo {
+	fmt.Println("======PeerIdentitySet=======ByID==============")
 	m := make(map[string]PeerIdentityInfo)
 	for _, id := range pis {
 		m[string(id.PKIId)] = id

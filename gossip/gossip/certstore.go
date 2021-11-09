@@ -9,6 +9,7 @@ package gossip
 import (
 	"bytes"
 	"encoding/hex"
+	"fmt"
 
 	"github.com/hyperledger/fabric/gossip/api"
 	"github.com/hyperledger/fabric/gossip/common"
@@ -29,6 +30,7 @@ type certStore struct {
 }
 
 func newCertStore(puller pull.Mediator, idMapper identity.Mapper, selfIdentity api.PeerIdentityType, mcs api.MessageCryptoService) *certStore {
+	fmt.Println("====newCertStore=====")
 	selfPKIID := idMapper.GetPKIidOfCert(selfIdentity)
 	logger := util.GetLogger(util.GossipLogger, hex.EncodeToString(selfPKIID))
 
@@ -62,6 +64,7 @@ func newCertStore(puller pull.Mediator, idMapper identity.Mapper, selfIdentity a
 }
 
 func (cs *certStore) handleMessage(msg proto.ReceivedMessage) {
+	fmt.Println("====certStore===handleMessage==")
 	if update := msg.GetGossipMessage().GetDataUpdate(); update != nil {
 		for _, env := range update.Data {
 			m, err := env.ToGossipMessage()
@@ -83,6 +86,7 @@ func (cs *certStore) handleMessage(msg proto.ReceivedMessage) {
 }
 
 func (cs *certStore) validateIdentityMsg(msg *proto.SignedGossipMessage) error {
+	fmt.Println("====certStore===validateIdentityMsg==")
 	idMsg := msg.GetPeerIdentity()
 	if idMsg == nil {
 		return errors.Errorf("Identity empty: %+v", msg)
@@ -108,6 +112,7 @@ func (cs *certStore) validateIdentityMsg(msg *proto.SignedGossipMessage) error {
 }
 
 func (cs *certStore) createIdentityMessage() (*proto.SignedGossipMessage, error) {
+	fmt.Println("====certStore===createIdentityMessage==")
 	pi := &proto.PeerIdentity{
 		Cert:     cs.selfIdentity,
 		Metadata: nil,
@@ -132,10 +137,12 @@ func (cs *certStore) createIdentityMessage() (*proto.SignedGossipMessage, error)
 }
 
 func (cs *certStore) suspectPeers(isSuspected api.PeerSuspector) {
+	fmt.Println("====certStore===suspectPeers==")
 	cs.idMapper.SuspectPeers(isSuspected)
 }
 
 func (cs *certStore) stop() {
+	fmt.Println("====certStore===stop==")
 	cs.pull.Stop()
 	cs.idMapper.Stop()
 }

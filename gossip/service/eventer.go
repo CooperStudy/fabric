@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package service
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/hyperledger/fabric/common/channelconfig"
@@ -50,6 +51,7 @@ type configEventer struct {
 }
 
 func newConfigEventer(receiver configEventReceiver) *configEventer {
+	fmt.Println("===newConfigEventer=====")
 	return &configEventer{
 		receiver: receiver,
 	}
@@ -60,6 +62,7 @@ func newConfigEventer(receiver configEventReceiver) *configEventer {
 // but only if the configuration value actually changed
 // Note, that a changing sequence number is ignored as changing configuration
 func (ce *configEventer) ProcessConfigUpdate(config Config) {
+	fmt.Println("===configEventer===ProcessConfigUpdate==")
 	logger.Debugf("Processing new config for channel %s", config.ChainID())
 	orgMap := cloneOrgConfig(config.Organizations())
 	if ce.lastConfig != nil && reflect.DeepEqual(ce.lastConfig.orgMap, orgMap) {
@@ -84,6 +87,7 @@ func (ce *configEventer) ProcessConfigUpdate(config Config) {
 }
 
 func cloneOrgConfig(src map[string]channelconfig.ApplicationOrg) map[string]channelconfig.ApplicationOrg {
+	fmt.Println("===cloneOrgConfig==")
 	clone := make(map[string]channelconfig.ApplicationOrg)
 	for k, v := range src {
 		clone[k] = &appGrp{
@@ -102,13 +106,16 @@ type appGrp struct {
 }
 
 func (ag *appGrp) Name() string {
+	fmt.Println("===appGrp==Name==")
 	return ag.name
 }
 
 func (ag *appGrp) MSPID() string {
+	fmt.Println("===appGrp==MSPID==")
 	return ag.mspID
 }
 
 func (ag *appGrp) AnchorPeers() []*peer.AnchorPeer {
+	fmt.Println("===appGrp==AnchorPeers==")
 	return ag.anchorPeers
 }

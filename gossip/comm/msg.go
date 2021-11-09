@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package comm
 
 import (
+	"fmt"
 	"sync"
 
 	proto "github.com/hyperledger/fabric/protos/gossip"
@@ -24,11 +25,13 @@ type ReceivedMessageImpl struct {
 // GetSourceEnvelope Returns the Envelope the ReceivedMessage was
 // constructed with
 func (m *ReceivedMessageImpl) GetSourceEnvelope() *proto.Envelope {
+	fmt.Println("==ReceivedMessageImpl==GetSourceEnvelope==")
 	return m.Envelope
 }
 
 // Respond sends a msg to the source that sent the ReceivedMessageImpl
 func (m *ReceivedMessageImpl) Respond(msg *proto.GossipMessage) {
+	fmt.Println("==ReceivedMessageImpl==Respond==")
 	sMsg, err := msg.NoopSign()
 	if err != nil {
 		err = errors.WithStack(err)
@@ -40,18 +43,22 @@ func (m *ReceivedMessageImpl) Respond(msg *proto.GossipMessage) {
 
 // GetGossipMessage returns the inner GossipMessage
 func (m *ReceivedMessageImpl) GetGossipMessage() *proto.SignedGossipMessage {
+	fmt.Println("==ReceivedMessageImpl==GetGossipMessage==")
 	return m.SignedGossipMessage
 }
 
 // GetConnectionInfo returns information about the remote peer
 // that send the message
 func (m *ReceivedMessageImpl) GetConnectionInfo() *proto.ConnectionInfo {
+	fmt.Println("==ReceivedMessageImpl==GetConnectionInfo==")
 	return m.connInfo
 }
 
 // Ack returns to the sender an acknowledgement for the message
 func (m *ReceivedMessageImpl) Ack(err error) {
+	fmt.Println("==ReceivedMessageImpl==Ack==")
 	ackMsg := &proto.GossipMessage{
+
 		Nonce: m.GetGossipMessage().Nonce,
 		Content: &proto.GossipMessage_Ack{
 			Ack: &proto.Acknowledgement{},
