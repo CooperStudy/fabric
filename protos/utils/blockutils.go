@@ -72,8 +72,6 @@ func GetMetadataFromBlockOrPanic(block *cb.Block, index cb.BlockMetadataIndex) *
 		panic(err)
 	}
 	return md
-
-
 }
 
 // GetLastConfigIndexFromBlock retrieves the index of the last config block as
@@ -95,6 +93,7 @@ func GetLastConfigIndexFromBlock(block *cb.Block) (uint64, error) {
 // GetLastConfigIndexFromBlockOrPanic retrieves the index of the last config
 // block as encoded in the block metadata, or panics on error
 func GetLastConfigIndexFromBlockOrPanic(block *cb.Block) uint64 {
+	fmt.Println("===========GetLastConfigIndexFromBlockOrPanic========")
 	index, err := GetLastConfigIndexFromBlock(block)
 	if err != nil {
 		panic(err)
@@ -104,6 +103,7 @@ func GetLastConfigIndexFromBlockOrPanic(block *cb.Block) uint64 {
 
 // GetBlockFromBlockBytes marshals the bytes into Block
 func GetBlockFromBlockBytes(blockBytes []byte) (*cb.Block, error) {
+	fmt.Println("===========GetBlockFromBlockBytes========")
 	block := &cb.Block{}
 	err := proto.Unmarshal(blockBytes, block)
 	if err != nil {
@@ -114,6 +114,7 @@ func GetBlockFromBlockBytes(blockBytes []byte) (*cb.Block, error) {
 
 // CopyBlockMetadata copies metadata from one block into another
 func CopyBlockMetadata(src *cb.Block, dst *cb.Block) {
+	fmt.Println("===========CopyBlockMetadata========")
 	dst.Metadata = src.Metadata
 	// Once copied initialize with rest of the
 	// required metadata positions.
@@ -122,6 +123,7 @@ func CopyBlockMetadata(src *cb.Block, dst *cb.Block) {
 
 // InitBlockMetadata copies metadata from one block into another
 func InitBlockMetadata(block *cb.Block) {
+	fmt.Println("===========InitBlockMetadata========")
 	if block.Metadata == nil {
 		block.Metadata = &cb.BlockMetadata{Metadata: [][]byte{{}, {}, {}}}
 	} else if len(block.Metadata.Metadata) < int(cb.BlockMetadataIndex_TRANSACTIONS_FILTER+1) {
