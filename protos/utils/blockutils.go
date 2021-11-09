@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package utils
 
 import (
+	"fmt"
 	"github.com/golang/protobuf/proto"
 	cb "github.com/hyperledger/fabric/protos/common"
 	"github.com/pkg/errors"
@@ -15,6 +16,7 @@ import (
 // GetChainIDFromBlockBytes returns chain ID given byte array which represents
 // the block
 func GetChainIDFromBlockBytes(bytes []byte) (string, error) {
+	fmt.Println("===========GetChainIDFromBlockBytes========")
 	block, err := GetBlockFromBlockBytes(bytes)
 	if err != nil {
 		return "", err
@@ -25,6 +27,7 @@ func GetChainIDFromBlockBytes(bytes []byte) (string, error) {
 
 // GetChainIDFromBlock returns chain ID in the block
 func GetChainIDFromBlock(block *cb.Block) (string, error) {
+	fmt.Println("===========GetChainIDFromBlock========")
 	if block == nil || block.Data == nil || block.Data.Data == nil || len(block.Data.Data) == 0 {
 		return "", errors.Errorf("failed to retrieve channel id - block is empty")
 	}
@@ -51,6 +54,7 @@ func GetChainIDFromBlock(block *cb.Block) (string, error) {
 
 // GetMetadataFromBlock retrieves metadata at the specified index.
 func GetMetadataFromBlock(block *cb.Block, index cb.BlockMetadataIndex) (*cb.Metadata, error) {
+	fmt.Println("===========GetMetadataFromBlock========")
 	md := &cb.Metadata{}
 	err := proto.Unmarshal(block.Metadata.Metadata[index], md)
 	if err != nil {
@@ -62,6 +66,7 @@ func GetMetadataFromBlock(block *cb.Block, index cb.BlockMetadataIndex) (*cb.Met
 // GetMetadataFromBlockOrPanic retrieves metadata at the specified index, or
 // panics on error
 func GetMetadataFromBlockOrPanic(block *cb.Block, index cb.BlockMetadataIndex) *cb.Metadata {
+	fmt.Println("===========GetMetadataFromBlockOrPanic========")
 	md, err := GetMetadataFromBlock(block, index)
 	if err != nil {
 		panic(err)
@@ -72,6 +77,7 @@ func GetMetadataFromBlockOrPanic(block *cb.Block, index cb.BlockMetadataIndex) *
 // GetLastConfigIndexFromBlock retrieves the index of the last config block as
 // encoded in the block metadata
 func GetLastConfigIndexFromBlock(block *cb.Block) (uint64, error) {
+	fmt.Println("===========GetLastConfigIndexFromBlock========")
 	md, err := GetMetadataFromBlock(block, cb.BlockMetadataIndex_LAST_CONFIG)
 	if err != nil {
 		return 0, err

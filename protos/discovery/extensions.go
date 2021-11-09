@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package discovery
 
 import (
+	"fmt"
 	"github.com/golang/protobuf/proto"
 )
 
@@ -23,6 +24,8 @@ const (
 
 // GetType returns the type of the request
 func (q *Query) GetType() QueryType {
+
+	fmt.Println("==========Query===GetType===========")
 	if q.GetCcQuery() != nil {
 		return ChaincodeQueryType
 	}
@@ -42,6 +45,7 @@ func (q *Query) GetType() QueryType {
 // and returns the serialized Request in its object form.
 // Returns an error in case the operation fails.
 func (sr *SignedRequest) ToRequest() (*Request, error) {
+	fmt.Println("==========SignedRequest===ToRequest===========")
 	req := &Request{}
 	return req, proto.Unmarshal(sr.Payload, req)
 }
@@ -49,6 +53,7 @@ func (sr *SignedRequest) ToRequest() (*Request, error) {
 // ConfigAt returns the ConfigResult at a given index in the Response,
 // or an Error if present.
 func (m *Response) ConfigAt(i int) (*ConfigResult, *Error) {
+	fmt.Println("==========Response===ConfigAt===========")
 	r := m.Results[i]
 	return r.GetConfigResult(), r.GetError()
 }
@@ -56,6 +61,7 @@ func (m *Response) ConfigAt(i int) (*ConfigResult, *Error) {
 // MembershipAt returns the PeerMembershipResult at a given index in the Response,
 // or an Error if present.
 func (m *Response) MembershipAt(i int) (*PeerMembershipResult, *Error) {
+	fmt.Println("==========Response===MembershipAt===========")
 	r := m.Results[i]
 	return r.GetMembers(), r.GetError()
 }
@@ -63,6 +69,7 @@ func (m *Response) MembershipAt(i int) (*PeerMembershipResult, *Error) {
 // EndorsersAt returns the PeerMembershipResult at a given index in the Response,
 // or an Error if present.
 func (m *Response) EndorsersAt(i int) (*ChaincodeQueryResult, *Error) {
+	fmt.Println("==========Response===EndorsersAt===========")
 	r := m.Results[i]
 	return r.GetCcQueryRes(), r.GetError()
 }

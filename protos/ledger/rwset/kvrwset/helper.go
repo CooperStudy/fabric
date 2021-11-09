@@ -18,10 +18,12 @@ package kvrwset
 
 import (
 	"bytes"
+	"fmt"
 )
 
 // SetRawReads sets the 'readsInfo' field to raw KVReads performed by the query
 func (rqi *RangeQueryInfo) SetRawReads(kvReads []*KVRead) {
+	fmt.Println("===RangeQueryInfo=====SetRawReads==")
 	rqi.ReadsInfo = &RangeQueryInfo_RawReads{
 		RawReads: &QueryReads{
 			KvReads: kvReads,
@@ -31,11 +33,13 @@ func (rqi *RangeQueryInfo) SetRawReads(kvReads []*KVRead) {
 
 // SetMerkelSummary sets the 'readsInfo' field to merkle summary of the raw KVReads of query results
 func (rqi *RangeQueryInfo) SetMerkelSummary(merkleSummary *QueryReadsMerkleSummary) {
+	fmt.Println("===RangeQueryInfo=====SetMerkelSummary==")
 	rqi.ReadsInfo = &RangeQueryInfo_ReadsMerkleHashes{merkleSummary}
 }
 
 // Equal verifies whether the give MerkleSummary is equals to this
 func (ms *QueryReadsMerkleSummary) Equal(anotherMS *QueryReadsMerkleSummary) bool {
+	fmt.Println("===QueryReadsMerkleSummary=====Equal==")
 	if anotherMS == nil {
 		return false
 	}
