@@ -45,6 +45,7 @@ type DiscoverySupport struct {
 
 // NewDiscoverySupport creates a new DiscoverySupport
 func NewDiscoverySupport(getLastConfigBlock CurrentConfigBlockGetter) *DiscoverySupport {
+	fmt.Println("=======NewDiscoverySupport=")
 	return &DiscoverySupport{
 		CurrentConfigBlockGetter: getLastConfigBlock,
 	}
@@ -52,7 +53,9 @@ func NewDiscoverySupport(getLastConfigBlock CurrentConfigBlockGetter) *Discovery
 
 // Config returns the channel's configuration
 func (s *DiscoverySupport) Config(channel string) (*discovery.ConfigResult, error) {
+	fmt.Println("=======DiscoverySupport=Config==")
 	block := s.GetCurrConfigBlock(channel)
+
 	if block == nil {
 		return nil, errors.Errorf("could not get last config block for channel %s", channel)
 	}
@@ -102,6 +105,7 @@ func (s *DiscoverySupport) Config(channel string) (*discovery.ConfigResult, erro
 }
 
 func computeOrdererEndpoints(ordererGrp map[string]*common.ConfigGroup, ordererAddresses *common.OrdererAddresses) (map[string]*discovery.Endpoints, error) {
+	fmt.Println("=======computeOrdererEndpoints==")
 	res := make(map[string]*discovery.Endpoints)
 	for name, group := range ordererGrp {
 		mspConfig := &msp.MSPConfig{}
@@ -139,6 +143,7 @@ func computeOrdererEndpoints(ordererGrp map[string]*common.ConfigGroup, ordererA
 }
 
 func appendMSPConfigs(ordererGrp, appGrp map[string]*common.ConfigGroup, output map[string]*msp.FabricMSPConfig) error {
+	fmt.Println("=======appendMSPConfigs==")
 	for _, group := range []map[string]*common.ConfigGroup{ordererGrp, appGrp} {
 		for _, grp := range group {
 			mspConfig := &msp.MSPConfig{}
@@ -164,6 +169,7 @@ func appendMSPConfigs(ordererGrp, appGrp map[string]*common.ConfigGroup, output 
 }
 
 func ValidateConfigEnvelope(ce *common.ConfigEnvelope) error {
+	fmt.Println("=======ValidateConfigEnvelope==")
 	if ce.Config == nil {
 		return fmt.Errorf("field Config is nil")
 	}

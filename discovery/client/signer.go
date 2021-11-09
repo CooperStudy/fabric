@@ -8,6 +8,7 @@ package discovery
 
 import (
 	"encoding/hex"
+	"fmt"
 	"sync"
 
 	"github.com/hyperledger/fabric/common/util"
@@ -25,6 +26,7 @@ type MemoizeSigner struct {
 // NewMemoizeSigner creates a new MemoizeSigner that signs
 // message with the given sign function
 func NewMemoizeSigner(signFunc Signer, maxEntries uint) *MemoizeSigner {
+	fmt.Println("====NewMemoizeSigner==")
 	return &MemoizeSigner{
 		maxEntries: maxEntries,
 		memory:     make(map[string][]byte),
@@ -35,6 +37,7 @@ func NewMemoizeSigner(signFunc Signer, maxEntries uint) *MemoizeSigner {
 // Signer signs a message and returns the signature and nil,
 // or nil and error on failure
 func (ms *MemoizeSigner) Sign(msg []byte) ([]byte, error) {
+	fmt.Println("====MemoizeSigner==Sign==")
 	sig, isInMemory := ms.lookup(msg)
 	if isInMemory {
 		return sig, nil
@@ -50,6 +53,7 @@ func (ms *MemoizeSigner) Sign(msg []byte) ([]byte, error) {
 // lookup looks up the given message in memory and returns
 // the signature, if the message is in memory
 func (ms *MemoizeSigner) lookup(msg []byte) ([]byte, bool) {
+	fmt.Println("====MemoizeSigner==lookup==")
 	ms.RLock()
 	defer ms.RUnlock()
 	sig, exists := ms.memory[msgDigest(msg)]
@@ -57,6 +61,7 @@ func (ms *MemoizeSigner) lookup(msg []byte) ([]byte, bool) {
 }
 
 func (ms *MemoizeSigner) memorize(msg, signature []byte) {
+	fmt.Println("====MemoizeSigner==memorize==")
 	if ms.maxEntries == 0 {
 		return
 	}
@@ -76,6 +81,7 @@ func (ms *MemoizeSigner) memorize(msg, signature []byte) {
 // evict evicts random messages from memory
 // until its size is smaller than maxEntries
 func (ms *MemoizeSigner) shrinkMemory() {
+	fmt.Println("====MemoizeSigner==shrinkMemory==")
 	ms.Lock()
 	defer ms.Unlock()
 	for len(ms.memory) > (int)(ms.maxEntries) {
@@ -85,6 +91,7 @@ func (ms *MemoizeSigner) shrinkMemory() {
 
 // evictFromMemory evicts a random message from memory
 func (ms *MemoizeSigner) evictFromMemory() {
+	fmt.Println("====MemoizeSigner==evictFromMemory==")
 	for dig := range ms.memory {
 		delete(ms.memory, dig)
 		return
@@ -93,5 +100,6 @@ func (ms *MemoizeSigner) evictFromMemory() {
 
 // msgDigest returns a digest of a given message
 func msgDigest(msg []byte) string {
+	fmt.Println("====msgDigest==")
 	return hex.EncodeToString(util.ComputeSHA256(msg))
 }

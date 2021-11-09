@@ -53,6 +53,7 @@ type Config struct {
 
 // String returns a string representation of this Config
 func (c Config) String() string {
+	fmt.Println("=======Config==String==")
 	if c.AuthCacheEnabled {
 		return fmt.Sprintf("TLS: %t, authCacheMaxSize: %d, authCachePurgeRatio: %f", c.TLS, c.AuthCacheMaxSize, c.AuthCachePurgeRetentionRatio)
 	}
@@ -64,6 +65,7 @@ type peerMapping map[string]*discovery.Peer
 
 // NewService creates a new discovery service instance
 func NewService(config Config, sup Support) *service {
+	fmt.Println("======NewService==")
 	s := &service{
 		auth: newAuthCache(sup, authCacheConfig{
 			enabled:             config.AuthCacheEnabled,
@@ -85,6 +87,7 @@ func NewService(config Config, sup Support) *service {
 }
 
 func (s *service) Discover(ctx context.Context, request *discovery.SignedRequest) (*discovery.Response, error) {
+	fmt.Println("===service===Discover==")
 	addr := util.ExtractRemoteAddress(ctx)
 	req, err := validateStructure(ctx, request, s.config.TLS, comm.ExtractCertificateHashFromContext)
 	if err != nil {
@@ -103,6 +106,7 @@ func (s *service) Discover(ctx context.Context, request *discovery.SignedRequest
 }
 
 func (s *service) processQuery(query *discovery.Query, request *discovery.SignedRequest, identity []byte, addr string) *discovery.QueryResult {
+	fmt.Println("===service===processQuery==")
 	if query.Channel != "" && !s.ChannelExists(query.Channel) {
 		logger.Warning("got query for channel", query.Channel, "from", addr, "but it doesn't exist")
 		return accessDenied
@@ -119,6 +123,7 @@ func (s *service) processQuery(query *discovery.Query, request *discovery.Signed
 }
 
 func (s *service) dispatch(q *discovery.Query) *discovery.QueryResult {
+	fmt.Println("===service===dispatch==")
 	dispatchers := s.channelDispatchers
 	// Ensure local queries are routed only to channel-less dispatchers
 	if q.Channel == "" {
@@ -132,6 +137,7 @@ func (s *service) dispatch(q *discovery.Query) *discovery.QueryResult {
 }
 
 func (s *service) chaincodeQuery(q *discovery.Query) *discovery.QueryResult {
+	fmt.Println("===service===chaincodeQuery==")
 	if err := validateCCQuery(q.GetCcQuery()); err != nil {
 		return wrapError(err)
 	}
@@ -155,6 +161,7 @@ func (s *service) chaincodeQuery(q *discovery.Query) *discovery.QueryResult {
 }
 
 func (s *service) configQuery(q *discovery.Query) *discovery.QueryResult {
+	fmt.Println("===service===configQuery==")
 	conf, err := s.Config(q.Channel)
 	if err != nil {
 		logger.Errorf("Failed fetching config for channel %s: %v", q.Channel, err)
@@ -168,6 +175,7 @@ func (s *service) configQuery(q *discovery.Query) *discovery.QueryResult {
 }
 
 func wrapPeerResponse(peersByOrg map[string]*discovery.Peers) *discovery.QueryResult {
+	fmt.Println("===wrapPeerResponse==")
 	return &discovery.QueryResult{
 		Result: &discovery.QueryResult_Members{
 			Members: &discovery.PeerMembershipResult{
@@ -178,6 +186,7 @@ func wrapPeerResponse(peersByOrg map[string]*discovery.Peers) *discovery.QueryRe
 }
 
 func (s *service) channelMembershipResponse(q *discovery.Query) *discovery.QueryResult {
+	fmt.Println("==service===channelMembershipResponse==")
 	chanPeers, err := s.PeersAuthorizedByCriteria(common2.ChainID(q.Channel), q.GetPeerQuery().Filter)
 	if err != nil {
 		return wrapError(err)
@@ -201,6 +210,7 @@ func (s *service) channelMembershipResponse(q *discovery.Query) *discovery.Query
 }
 
 func (s *service) localMembershipResponse(q *discovery.Query) *discovery.QueryResult {
+	fmt.Println("==service===localMembershipResponse==")
 	membersByOrgs := make(map[string]*discovery.Peers)
 	for org, ids2Peers := range s.computeMembership(q) {
 		membersByOrgs[org] = &discovery.Peers{}
@@ -212,6 +222,7 @@ func (s *service) localMembershipResponse(q *discovery.Query) *discovery.QueryRe
 }
 
 func (s *service) computeMembership(_ *discovery.Query) map[string]peerMapping {
+	fmt.Println("==service===computeMembership==")
 	peersByOrg := make(map[string]peerMapping)
 	peerAliveInfo := discovery2.Members(s.Peers()).ByID()
 	for org, peerIdentities := range s.IdentityInfo().ByOrg() {
@@ -234,6 +245,7 @@ func (s *service) computeMembership(_ *discovery.Query) map[string]peerMapping {
 
 // validateStructure validates that the request contains all the needed fields and that they are computed correctly
 func validateStructure(ctx context.Context, request *discovery.SignedRequest, tlsEnabled bool, certHashFromContext certHashExtractor) (*discovery.Request, error) {
+	fmt.Println("==validateStructure==")
 	if request == nil {
 		return nil, errors.New("nil request")
 	}
@@ -263,6 +275,7 @@ func validateStructure(ctx context.Context, request *discovery.SignedRequest, tl
 }
 
 func validateCCQuery(ccQuery *discovery.ChaincodeQuery) error {
+	fmt.Println("==validateCCQuery==")
 	if len(ccQuery.Interests) == 0 {
 		return errors.New("chaincode query must have at least one chaincode interest")
 	}
@@ -283,6 +296,7 @@ func validateCCQuery(ccQuery *discovery.ChaincodeQuery) error {
 }
 
 func wrapError(err error) *discovery.QueryResult {
+	fmt.Println("==wrapError==")
 	return &discovery.QueryResult{
 		Result: &discovery.QueryResult_Error{
 			Error: &discovery.Error{

@@ -9,6 +9,7 @@ package discovery
 import (
 	"encoding/asn1"
 	"encoding/hex"
+	"fmt"
 	"sync"
 
 	"github.com/hyperledger/fabric/common/util"
@@ -55,6 +56,7 @@ type authCache struct {
 }
 
 func newAuthCache(s acSupport, conf authCacheConfig) *authCache {
+	fmt.Println("=======newAuthCache====")
 	return &authCache{
 		acSupport:       s,
 		credentialCache: make(map[string]*accessCache),
@@ -65,6 +67,7 @@ func newAuthCache(s acSupport, conf authCacheConfig) *authCache {
 // Eligible returns whether the given peer is eligible for receiving
 // service from the discovery service for a given channel
 func (ac *authCache) EligibleForService(channel string, data common.SignedData) error {
+	fmt.Println("=======authCache==EligibleForService==")
 	if !ac.conf.enabled {
 		return ac.acSupport.EligibleForService(channel, data)
 	}
@@ -92,6 +95,7 @@ type accessCache struct {
 }
 
 func (ac *authCache) newAccessCache(channel string) *accessCache {
+	fmt.Println("=======authCache==newAccessCache==")
 	return &accessCache{
 		channel: channel,
 		ac:      ac,
@@ -100,6 +104,7 @@ func (ac *authCache) newAccessCache(channel string) *accessCache {
 }
 
 func (cache *accessCache) EligibleForService(data common.SignedData) error {
+	fmt.Println("=======authCache==EligibleForService==")
 	key, err := signedDataToKey(data)
 	if err != nil {
 		logger.Warningf("Failed computing key of signed data: +%v", err)
@@ -139,12 +144,14 @@ func (cache *accessCache) EligibleForService(data common.SignedData) error {
 }
 
 func (cache *accessCache) isPurgeNeeded() bool {
+	fmt.Println("=======accessCache==isPurgeNeeded==")
 	cache.RLock()
 	defer cache.RUnlock()
 	return len(cache.entries)+1 > cache.ac.conf.maxCacheSize
 }
 
 func (cache *accessCache) purgeEntriesIfNeeded() {
+	fmt.Println("=======accessCache==purgeEntriesIfNeeded==")
 	if !cache.isPurgeNeeded() {
 		return
 	}
@@ -166,12 +173,14 @@ func (cache *accessCache) purgeEntriesIfNeeded() {
 }
 
 func (cache *accessCache) isValid(currSeq uint64) bool {
+	fmt.Println("=======accessCache==isValid==")
 	cache.RLock()
 	defer cache.RUnlock()
 	return currSeq == cache.lastSequence
 }
 
 func (cache *accessCache) configChange(currSeq uint64) {
+	fmt.Println("=======accessCache==configChange==")
 	cache.Lock()
 	defer cache.Unlock()
 	cache.lastSequence = currSeq
@@ -180,6 +189,7 @@ func (cache *accessCache) configChange(currSeq uint64) {
 }
 
 func (cache *accessCache) lookup(key string) (cacheHit bool, lookupResult error) {
+	fmt.Println("=======accessCache==lookup==")
 	cache.RLock()
 	defer cache.RUnlock()
 
@@ -188,6 +198,7 @@ func (cache *accessCache) lookup(key string) (cacheHit bool, lookupResult error)
 }
 
 func signedDataToKey(data common.SignedData) (string, error) {
+	fmt.Println("=======signedDataToKey==")
 	b, err := asBytes(data)
 	if err != nil {
 		return "", errors.Wrap(err, "failed marshaling signed data")

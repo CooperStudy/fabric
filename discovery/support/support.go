@@ -6,7 +6,10 @@ SPDX-License-Identifier: Apache-2.0
 
 package support
 
-import "github.com/hyperledger/fabric/discovery"
+import (
+	"fmt"
+	"github.com/hyperledger/fabric/discovery"
+)
 
 // DiscoverySupport aggregates all the support needed for the discovery service
 type DiscoverySupport struct {
@@ -25,6 +28,7 @@ func NewDiscoverySupport(
 	config discovery.ConfigSupport,
 	sequence discovery.ConfigSequenceSupport,
 ) *DiscoverySupport {
+	fmt.Println("=======NewDiscoverySupport====")
 	return &DiscoverySupport{
 		AccessControlSupport:  access,
 		GossipSupport:         gossip,

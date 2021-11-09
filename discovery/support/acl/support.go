@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package acl
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric/common/channelconfig"
 	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/common/policies"
@@ -59,12 +60,14 @@ type DiscoverySupport struct {
 
 // NewDiscoverySupport creates a new DiscoverySupport
 func NewDiscoverySupport(v Verifier, e Evaluator, chanConf ChannelConfigGetter) *DiscoverySupport {
+	fmt.Println("=======NewDiscoverySupport==========")
 	return &DiscoverySupport{Verifier: v, Evaluator: e, ChannelConfigGetter: chanConf}
 }
 
 // Eligible returns whether the given peer is eligible for receiving
 // service from the discovery service for a given channel
 func (s *DiscoverySupport) EligibleForService(channel string, data cb.SignedData) error {
+	fmt.Println("=======DiscoverySupport====EligibleForService======")
 	if channel == "" {
 		return s.Evaluate([]*cb.SignedData{&data})
 	}
@@ -73,6 +76,7 @@ func (s *DiscoverySupport) EligibleForService(channel string, data cb.SignedData
 
 // ConfigSequence returns the configuration sequence of the given channel
 func (s *DiscoverySupport) ConfigSequence(channel string) uint64 {
+	fmt.Println("=======DiscoverySupport====ConfigSequence======")
 	// No sequence if the channel is empty
 	if channel == "" {
 		return 0
@@ -89,6 +93,7 @@ func (s *DiscoverySupport) ConfigSequence(channel string) uint64 {
 }
 
 func (s *DiscoverySupport) SatisfiesPrincipal(channel string, rawIdentity []byte, principal *msp.MSPPrincipal) error {
+	fmt.Println("=======DiscoverySupport====SatisfiesPrincipal======")
 	conf := s.GetChannelConfig(channel)
 	if conf == nil {
 		return errors.Errorf("channel %s doesn't exist", channel)
@@ -116,6 +121,7 @@ type ChannelPolicyManagerGetter interface {
 
 // NewChannelVerifier returns a new channel verifier from the given policy and policy manager getter
 func NewChannelVerifier(policy string, polMgr policies.ChannelPolicyManagerGetter) *ChannelVerifier {
+	fmt.Println("=======NewChannelVerifier======")
 	return &ChannelVerifier{
 		Policy:                     policy,
 		ChannelPolicyManagerGetter: polMgr,
@@ -133,6 +139,7 @@ type ChannelVerifier struct {
 // If the verification succeeded, Verify returns nil meaning no error occurred.
 // If peerIdentity is nil, then the verification fails.
 func (cv *ChannelVerifier) VerifyByChannel(channel string, sd *cb.SignedData) error {
+	fmt.Println("=======ChannelVerifier===VerifyByChannel===")
 	mgr, _ := cv.Manager(channel)
 	if mgr == nil {
 		return errors.Errorf("policy manager for channel %s doesn't exist", channel)

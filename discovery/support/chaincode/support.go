@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package chaincode
 
 import (
+	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/common/chaincode"
 	"github.com/hyperledger/fabric/common/flogging"
@@ -29,6 +30,7 @@ type DiscoverySupport struct {
 
 // NewDiscoverySupport creates a new DiscoverySupport
 func NewDiscoverySupport(ci MetadataRetriever) *DiscoverySupport {
+	fmt.Println("=======NewDiscoverySupport===")
 	s := &DiscoverySupport{
 		ci: ci,
 	}
@@ -36,6 +38,7 @@ func NewDiscoverySupport(ci MetadataRetriever) *DiscoverySupport {
 }
 
 func (s *DiscoverySupport) PolicyByChaincode(channel string, cc string) policies.InquireablePolicy {
+	fmt.Println("=======DiscoverySupport==PolicyByChaincode=")
 	chaincodeData := s.ci.Metadata(channel, cc, false)
 	if chaincodeData == nil {
 		logger.Info("Chaincode", cc, "wasn't found")

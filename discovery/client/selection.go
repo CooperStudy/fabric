@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package discovery
 
 import (
+	"fmt"
 	"math/rand"
 	"sort"
 	"time"
@@ -57,12 +58,14 @@ var (
 type noPriorities struct{}
 
 func (nc noPriorities) Compare(_ Peer, _ Peer) Priority {
+	fmt.Println("====noPriorities==Compare==")
 	return 0
 }
 
 type byHeight struct{}
 
 func (*byHeight) Compare(left Peer, right Peer) Priority {
+	fmt.Println("====byHeight==Compare==")
 	leftHeight := left.StateInfoMessage.GetStateInfo().Properties.LedgerHeight
 	rightHeight := right.StateInfoMessage.GetStateInfo().Properties.LedgerHeight
 
@@ -76,12 +79,15 @@ func (*byHeight) Compare(left Peer, right Peer) Priority {
 }
 
 func noExclusion(_ Peer) bool {
+	fmt.Println("====noExclusion==")
 	return false
 }
 
 // ExcludeHosts returns a ExclusionFilter that excludes the given endpoints
 func ExcludeHosts(endpoints ...string) ExclusionFilter {
+	fmt.Println("====ExcludeHosts==")
 	m := make(map[string]struct{})
+
 	for _, endpoint := range endpoints {
 		m[endpoint] = struct{}{}
 	}
@@ -93,6 +99,7 @@ func ExcludeHosts(endpoints ...string) ExclusionFilter {
 
 // ExcludeByHost creates a ExclusionFilter out of the given exclusion predicate
 func ExcludeByHost(reject func(host string) bool) ExclusionFilter {
+	fmt.Println("====ExcludeByHost==")
 	return selectionFunc(func(p Peer) bool {
 		endpoint := p.AliveMessage.GetAliveMsg().Membership.Endpoint
 		var internalEndpoint string
@@ -106,6 +113,7 @@ func ExcludeByHost(reject func(host string) bool) ExclusionFilter {
 
 // Filter filters the endorsers according to the given ExclusionFilter
 func (endorsers Endorsers) Filter(f ExclusionFilter) Endorsers {
+	fmt.Println("====Endorsers==Filter==")
 	var res Endorsers
 	for _, e := range endorsers {
 		if !f.Exclude(*e) {
@@ -117,6 +125,7 @@ func (endorsers Endorsers) Filter(f ExclusionFilter) Endorsers {
 
 // Shuffle sorts the endorsers in random order
 func (endorsers Endorsers) Shuffle() Endorsers {
+	fmt.Println("====Endorsers==Shuffle==")
 	res := make(Endorsers, len(endorsers))
 	rand.Seed(time.Now().UnixNano())
 	for i, index := range rand.Perm(len(endorsers)) {
@@ -132,6 +141,7 @@ type endorserSort struct {
 
 // Sort sorts the endorsers according to the given PrioritySelector
 func (endorsers Endorsers) Sort(ps PrioritySelector) Endorsers {
+	fmt.Println("====Endorsers==Sort==")
 	sort.Sort(&endorserSort{
 		Endorsers:        endorsers,
 		PrioritySelector: ps,
@@ -140,10 +150,12 @@ func (endorsers Endorsers) Sort(ps PrioritySelector) Endorsers {
 }
 
 func (es *endorserSort) Len() int {
+	fmt.Println("====endorserSort==Len==")
 	return len(es.Endorsers)
 }
 
 func (es *endorserSort) Less(i, j int) bool {
+	fmt.Println("====endorserSort==Less==")
 	e1 := es.Endorsers[i]
 	e2 := es.Endorsers[j]
 	less := es.Compare(*e1, *e2)
@@ -151,5 +163,6 @@ func (es *endorserSort) Less(i, j int) bool {
 }
 
 func (es *endorserSort) Swap(i, j int) {
+	fmt.Println("====endorserSort==Swap==")
 	es.Endorsers[i], es.Endorsers[j] = es.Endorsers[j], es.Endorsers[i]
 }

@@ -77,6 +77,7 @@ type peerPrincipalEvaluator func(member NetworkMember, principal *msp.MSPPrincip
 
 // PeersForEndorsement returns an EndorsementDescriptor for a given set of peers, channel, and chaincode
 func (ea *endorsementAnalyzer) PeersForEndorsement(chainID common.ChainID, interest *discovery.ChaincodeInterest) (*discovery.EndorsementDescriptor, error) {
+	fmt.Println("==endorsementAnalyzer===PeersForEndorsement===")
 	chanMembership, err := ea.PeersAuthorizedByCriteria(chainID, interest)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -104,6 +105,7 @@ func (ea *endorsementAnalyzer) PeersForEndorsement(chainID common.ChainID, inter
 }
 
 func (ea *endorsementAnalyzer) PeersAuthorizedByCriteria(chainID common.ChainID, interest *discovery.ChaincodeInterest) (Members, error) {
+	fmt.Println("==endorsementAnalyzer===PeersAuthorizedByCriteria===")
 	peersOfChannel := ea.PeersOfChannel(chainID)
 	if interest == nil || len(interest.Chaincodes) == 0 {
 		return peersOfChannel, nil
@@ -137,6 +139,7 @@ type context struct {
 }
 
 func (ea *endorsementAnalyzer) computeEndorsementResponse(ctx *context) (*discovery.EndorsementDescriptor, error) {
+	fmt.Println("==endorsementAnalyzer===computeEndorsementResponse===")
 	// mapPrincipalsToGroups returns a mapping from principals to their corresponding groups.
 	// groups are just human readable representations that mask the principals behind them
 	principalGroups := mapPrincipalsToGroups(ctx.principalsSets)
@@ -168,6 +171,7 @@ func (ea *endorsementAnalyzer) computeEndorsementResponse(ctx *context) (*discov
 }
 
 func (ea *endorsementAnalyzer) computePrincipalSets(chainID common.ChainID, interest *discovery.ChaincodeInterest) (policies.PrincipalSets, error) {
+	fmt.Println("==endorsementAnalyzer===computePrincipalSets===")
 	var inquireablePolicies []policies.InquireablePolicy
 	for _, chaincode := range interest.Chaincodes {
 		pol := ea.PolicyByChaincode(string(chainID), chaincode.Name)
@@ -218,6 +222,7 @@ type metadataAndColFilter struct {
 }
 
 func loadMetadataAndFilters(ctx metadataAndFilterContext) (*metadataAndColFilter, error) {
+	fmt.Println("==loadMetadataAndFilters===")
 	var metadata []*chaincode.Metadata
 	var filters []identityFilter
 
@@ -247,6 +252,7 @@ func loadMetadataAndFilters(ctx metadataAndFilterContext) (*metadataAndColFilter
 }
 
 func computeFiltersWithMetadata(filters identityFilters, metadata []*chaincode.Metadata, identityInfoByID map[string]api.PeerIdentityInfo) *metadataAndColFilter {
+	fmt.Println("==computeFiltersWithMetadata===")
 	if len(filters) == 0 {
 		return &metadataAndColFilter{
 			md:                 metadata,
@@ -277,6 +283,7 @@ func noopMemberFilter(_ NetworkMember) bool {
 // combine combines all identityFilters into a single identityFilter which only accepts identities
 // which all the original filters accept
 func (filters identityFilters) combine() identityFilter {
+	fmt.Println("==identityFilters===combine===")
 	return func(identity api.PeerIdentityType) bool {
 		for _, f := range filters {
 			if !f(identity) {
@@ -290,6 +297,7 @@ func (filters identityFilters) combine() identityFilter {
 // toMemberFilter converts this identityFilter to a memberFilter based on the given mapping
 // from PKI-ID as strings, to PeerIdentityInfo which holds the peer identities
 func (idf identityFilter) toMemberFilter(identityInfoByID map[string]api.PeerIdentityInfo) memberFilter {
+	fmt.Println("==========identityFilter=====toMemberFilter===============")
 	return func(member NetworkMember) bool {
 		identity, exists := identityInfoByID[string(member.PKIid)]
 		if !exists {
@@ -300,6 +308,7 @@ func (idf identityFilter) toMemberFilter(identityInfoByID map[string]api.PeerIde
 }
 
 func (ea *endorsementAnalyzer) satisfiesPrincipal(channel string, identitiesOfMembers memberIdentities) peerPrincipalEvaluator {
+	fmt.Println("==========endorsementAnalyzer=====satisfiesPrincipal===============")
 	return func(member NetworkMember, principal *msp.MSPPrincipal) bool {
 		err := ea.SatisfiesPrincipal(channel, identitiesOfMembers.identityByPKIID(member.PKIid), principal)
 		if err == nil {
@@ -327,6 +336,7 @@ type peerMembershipCriteria struct {
 // principal combination (that includes the principal corresponding to the group),
 // such that there are enough peers to satisfy the principal combination.
 func endorsersByGroup(criteria *peerMembershipCriteria) map[string]*discovery.Peers {
+	fmt.Println("==========endorsersByGroup==============")
 	satGraph := criteria.satGraph
 	idOfMembers := criteria.idOfMembers
 	chanMemberById := criteria.chanMemberById
@@ -361,6 +371,7 @@ func endorsersByGroup(criteria *peerMembershipCriteria) map[string]*discovery.Pe
 // a group (alias for a principal) to a threshold of peers that need to endorse,
 // and that satisfy the corresponding principal.
 func computeLayouts(principalsSets []policies.PrincipalSet, principalGroups principalGroupMapper, satGraph *principalPeerGraph) []*discovery.Layout {
+	fmt.Println("==========computeLayouts==============")
 	var layouts []*discovery.Layout
 	// principalsSets is a collection of combinations of principals,
 	// such that each combination (given enough peers) satisfies the endorsement policy.
@@ -391,6 +402,7 @@ func computeLayouts(principalsSets []policies.PrincipalSet, principalGroups prin
 }
 
 func isLayoutSatisfied(layout map[string]uint32, satGraph *principalPeerGraph) bool {
+	fmt.Println("==========isLayoutSatisfied==============")
 	for grp, plurality := range layout {
 		// Do we have more than <plurality> peers connected to the principal?
 		if len(satGraph.principalVertices[grp].Neighbors()) < int(plurality) {
@@ -411,6 +423,7 @@ type principalAndPeerData struct {
 }
 
 func principalsToPeersGraph(data principalAndPeerData, satisfiesPrincipal peerPrincipalEvaluator) *principalPeerGraph {
+	fmt.Println("==========principalsToPeersGraph==============")
 	// Create the peer vertices
 	peerVertices := make([]*graph.Vertex, len(data.members))
 	for i, member := range data.members {
@@ -441,6 +454,7 @@ func principalsToPeersGraph(data principalAndPeerData, satisfiesPrincipal peerPr
 }
 
 func mapPrincipalsToGroups(principalsSets []policies.PrincipalSet) principalGroupMapper {
+	fmt.Println("==========mapPrincipalsToGroups==============")
 	groupMapper := make(principalGroupMapper)
 	totalPrincipals := make(map[principalKey]struct{})
 	for _, principalSet := range principalsSets {
@@ -460,10 +474,12 @@ func mapPrincipalsToGroups(principalsSets []policies.PrincipalSet) principalGrou
 type memberIdentities map[string]api.PeerIdentityType
 
 func (m memberIdentities) identityByPKIID(id common.PKIidType) api.PeerIdentityType {
+	fmt.Println("=======memberIdentities===identityByPKIID==============")
 	return m[string(id)]
 }
 
 func computeIdentitiesOfMembers(identitySet api.PeerIdentitySet, members map[string]NetworkMember) memberIdentities {
+	fmt.Println("=======computeIdentitiesOfMembers=============")
 	identitiesByPKIID := make(map[string]api.PeerIdentityType)
 	identitiesOfMembers := make(map[string]api.PeerIdentityType, len(members))
 	for _, identity := range identitySet {
@@ -481,6 +497,7 @@ func computeIdentitiesOfMembers(identitySet api.PeerIdentitySet, members map[str
 type principalGroupMapper map[principalKey]string
 
 func (mapper principalGroupMapper) group(principal principalKey) string {
+	fmt.Println("=======principalGroupMapper===group==========")
 	if grp, exists := mapper[principal]; exists {
 		return grp
 	}
@@ -495,6 +512,7 @@ type principalKey struct {
 }
 
 func (pk principalKey) toPrincipal() *msp.MSPPrincipal {
+	fmt.Println("=======principalKey===toPrincipal==========")
 	return &msp.MSPPrincipal{
 		PrincipalClassification: msp.MSPPrincipal_Classification(pk.cls),
 		Principal:               []byte(pk.principal),
@@ -506,6 +524,7 @@ type layouts []*discovery.Layout
 
 // groupsSet returns a set of groups that the layouts contain
 func (l layouts) groupsSet() map[string]struct{} {
+	fmt.Println("=======layouts===groupsSet==========")
 	m := make(map[string]struct{})
 	for _, layout := range l {
 		for grp := range layout.QuantitiesByGroup {
@@ -516,6 +535,7 @@ func (l layouts) groupsSet() map[string]struct{} {
 }
 
 func peersWithChaincode(metadata ...*chaincode.Metadata) func(member NetworkMember) bool {
+	fmt.Println("=======peersWithChaincode==========")
 	return func(member NetworkMember) bool {
 		if member.Properties == nil {
 			return false
@@ -536,6 +556,7 @@ func peersWithChaincode(metadata ...*chaincode.Metadata) func(member NetworkMemb
 }
 
 func mergePrincipalSets(cpss []inquire.ComparablePrincipalSets) (inquire.ComparablePrincipalSets, error) {
+	fmt.Println("=======mergePrincipalSets==========")
 	// Obtain the first ComparablePrincipalSet first
 	var cps inquire.ComparablePrincipalSets
 	cps, cpss, err := popComparablePrincipalSets(cpss)
@@ -550,6 +571,7 @@ func mergePrincipalSets(cpss []inquire.ComparablePrincipalSets) (inquire.Compara
 }
 
 func popComparablePrincipalSets(sets []inquire.ComparablePrincipalSets) (inquire.ComparablePrincipalSets, []inquire.ComparablePrincipalSets, error) {
+	fmt.Println("=======popComparablePrincipalSets==========")
 	if len(sets) == 0 {
 		return nil, nil, errors.New("no principal sets remained after filtering")
 	}
