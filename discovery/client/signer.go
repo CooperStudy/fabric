@@ -39,6 +39,8 @@ func NewMemoizeSigner(signFunc Signer, maxEntries uint) *MemoizeSigner {
 func (ms *MemoizeSigner) Sign(msg []byte) ([]byte, error) {
 	fmt.Println("====MemoizeSigner==Sign==")
 	sig, isInMemory := ms.lookup(msg)
+	fmt.Println("===sig===",sig)
+	fmt.Println("===isInMemory===",isInMemory)
 	if isInMemory {
 		return sig, nil
 	}

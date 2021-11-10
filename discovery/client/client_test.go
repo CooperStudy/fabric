@@ -11,6 +11,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"github.com/hyperledger/fabric/common/util"
 	"io/ioutil"
 	"net"
 	"path/filepath"
@@ -22,7 +23,6 @@ import (
 	"github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/hyperledger/fabric/common/chaincode"
 	"github.com/hyperledger/fabric/common/policies"
-	"github.com/hyperledger/fabric/common/util"
 	"github.com/hyperledger/fabric/core/comm"
 	fabricdisc "github.com/hyperledger/fabric/discovery"
 	"github.com/hyperledger/fabric/discovery/endorsement"
@@ -299,6 +299,7 @@ func createConnector(t *testing.T, certificate tls.Certificate, targetPort int) 
 	tlsConf.RootCAs.AppendCertsFromPEM(caCert)
 
 	addr := fmt.Sprintf("localhost:%d", targetPort)
+	fmt.Printf("===========addr:%v==========\n",addr)
 	return func() (*grpc.ClientConn, error) {
 		conn, err := grpc.Dial(addr, grpc.WithBlock(), grpc.WithTransportCredentials(credentials.NewTLS(tlsConf)))
 		assert.NoError(t, err)
@@ -365,199 +366,213 @@ func createDiscoveryService(sup *mockSupport) discovery.DiscoveryServer {
 }
 
 func TestClient(t *testing.T) {
+	fmt.Println("====start====")
+	filepath.Join("testdata", "client", "cert.pem")  //testdata/client/cert.pem
 	clientCert := loadFileOrPanic(filepath.Join("testdata", "client", "cert.pem"))
 	clientKey := loadFileOrPanic(filepath.Join("testdata", "client", "key.pem"))
 	clientTLSCert, err := tls.X509KeyPair(clientCert, clientKey)
 	assert.NoError(t, err)
+
 	server := createGRPCServer(t)
 	sup := &mockSupport{}
 	service := createDiscoveryService(sup)
 	discovery.RegisterDiscoveryServer(server.Server(), service)
 	go server.Start()
-
 	_, portStr, _ := net.SplitHostPort(server.Address())
 	port, _ := strconv.ParseInt(portStr, 10, 64)
-	connect := createConnector(t, clientTLSCert, int(port))
+	fmt.Println("port",port)
 
+	//time.Sleep(1000*time.Second)
+	fmt.Println("clientTLSCert.Certificate[0]",clientTLSCert.Certificate)
+	//clientTLSCert.Certificate[0] [[48 130 2 58 48 130 1 225 160 3 2 1 2 2 16 55 120 200 180 152 185 106 98 102 228 58 128 125 14 142 192 48 10 6 8 42 134 72 206 61 4 3 2 48 118 49 11 48 9 6 3 85 4 6 19 2 85 83 49 19 48 17 6 3 85 4 8 19 10 67 97 108 105 102 111 114 110 105 97 49 22 48 20 6 3 85 4 7 19 13 83 97 110 32 70 114 97 110 99 105 115 99 111 49 25 48 23 6 3 85 4 10 19 16 111 114 103 49 46 101 120 97 109 112 108 101 46 99 111 109 49 31 48 29 6 3 85 4 3 19 22 116 108 115 99 97 46 111 114 103 49 46 101 120 97 109 112 108 101 46 99 111 109 48 30 23 13 49 56 48 49 48 52 48 56 53 49 49 52 90 23 13 50 56 48 49 48 50 48 56 53 49 49 52 90 48 91 49 11 48 9 6 3 85 4 6 19 2 85 83 49 19 48 17 6 3 85 4 8 19 10 67 97 108 105 102 111 114 110 105 97 49 22 48 20 6 3 85 4 7 19 13 83 97 110 32 70 114 97 110 99 105 115 99 111 49 31 48 29 6 3 85 4 3 12 22 85 115 101 114 49 64 111 114 103 49 46 101 120 97 109 112 108 101 46 99 111 109 48 89 48 19 6 7 42 134 72 206 61 2 1 6 8 42 134 72 206 61 3 1 7 3 66 0 4 118 71 117 206 168 151 69 175 118 74 211 27 245 83 174 227 62 218 102 91 234 131 207 116 231 101 167 50 74 186 110 8 255 54 183 17 136 208 211 185 122 98 239 203 100 73 145 66 233 77 78 166 163 1 81 154 156 209 109 162 127 251 67 71 163 108 48 106 48 14 6 3 85 29 15 1 1 255 4 4 3 2 5 160 48 29 6 3 85 29 37 4 22 48 20 6 8 43 6 1 5 5 7 3 1 6 8 43 6 1 5 5 7 3 2 48 12 6 3 85 29 19 1 1 255 4 2 48 0 48 43 6 3 85 29 35 4 36 48 34 128 32 220 110 180 70 36 144 118 46 15 50 205 0 40 49 11 202 18 18 25 121 63 36 242 56 128 247 251 165 20 142 220 127 48 10 6 8 42 134 72 206 61 4 3 2 3 71 0 48 68 2 32 58 231 153 32 168 106 104 18 222 221 131 157 206 253 128 18 119 208 188 6 219 85 136 15 180 221 179 151 91 193 211 54 2 32 6 209 213 49 158 214 198 175 184 121 203 151 23 105 93 14 221 97 106 23 249 208 217 139 79 53 207 173 167 140 124 207]]
+	fmt.Println("clientTLSCert.Certificate[0]",len(clientTLSCert.Certificate))
+
+
+	connect := createConnector(t, clientTLSCert, int(port))
+	//
 	signer := func(msg []byte) ([]byte, error) {
+		fmt.Println("==signer===")
 		return msg, nil
 	}
+
+
 	authInfo := &discovery.AuthInfo{
 		ClientIdentity:    []byte{1, 2, 3},
 		ClientTlsCertHash: util.ComputeSHA256(clientTLSCert.Certificate[0]),
 	}
-	cl := NewClient(connect, signer, signerCacheSize)
-
+	cl := NewClient(connect, signer, signerCacheSize)//初始化操作
+	fmt.Println("cl",cl)
 	sup.On("PeersOfChannel").Return(channelPeersWithoutChaincodes).Times(2)
 	req := NewRequest()
 	req.OfChannel("mychannel").AddPeersQuery().AddConfigQuery().AddLocalPeersQuery().AddEndorsersQuery(interest("mycc"))
 	r, err := cl.Send(ctx, req, authInfo)
 	assert.NoError(t, err)
+	fmt.Println("r",r)
 
-	t.Run("Channel mismatch", func(t *testing.T) {
-		// Check behavior for channels that we didn't query for.
-		fakeChannel := r.ForChannel("fakeChannel")
-		peers, err := fakeChannel.Peers()
-		assert.Equal(t, ErrNotFound, err)
-		assert.Nil(t, peers)
-
-		endorsers, err := fakeChannel.Endorsers(ccCall("mycc"), NoFilter)
-		assert.Equal(t, ErrNotFound, err)
-		assert.Nil(t, endorsers)
-
-		conf, err := fakeChannel.Config()
-		assert.Equal(t, ErrNotFound, err)
-		assert.Nil(t, conf)
-	})
-
-	t.Run("Peer membership query", func(t *testing.T) {
-		// Check response for the correct channel
-		mychannel := r.ForChannel("mychannel")
-		conf, err := mychannel.Config()
-		assert.NoError(t, err)
-		assert.Equal(t, expectedConf.Msps, conf.Msps)
-		assert.Equal(t, expectedConf.Orderers, conf.Orderers)
-		peers, err := mychannel.Peers()
-		assert.NoError(t, err)
-		// We should see all peers as provided above
-		assert.Len(t, peers, 8)
-		// Check response for peers when doing a local query
-		peers, err = r.ForLocal().Peers()
-		assert.NoError(t, err)
-		assert.Len(t, peers, len(peerIdentities))
-	})
-
-	t.Run("Endorser query without chaincode installed", func(t *testing.T) {
-		mychannel := r.ForChannel("mychannel")
-		endorsers, err := mychannel.Endorsers(ccCall("mycc"), NoFilter)
-		// However, since we didn't provide any chaincodes to these peers - the server shouldn't
-		// be able to construct the descriptor.
-		// Just check that the appropriate error is returned, and nothing crashes.
-		assert.Contains(t, err.Error(), "failed constructing descriptor for chaincode")
-		assert.Nil(t, endorsers)
-	})
-
-	t.Run("Endorser query with chaincodes installed", func(t *testing.T) {
-		// Next, we check the case when the peers publish chaincode for themselves.
-		sup.On("PeersOfChannel").Return(channelPeersWithChaincodes).Times(2)
-		req = NewRequest()
-		req.OfChannel("mychannel").AddPeersQuery().AddEndorsersQuery(interest("mycc"))
-		r, err = cl.Send(ctx, req, authInfo)
-		assert.NoError(t, err)
-
-		mychannel := r.ForChannel("mychannel")
-		peers, err := mychannel.Peers()
-		assert.NoError(t, err)
-		assert.Len(t, peers, 8)
-
-		// We should get a valid endorsement descriptor from the service
-		endorsers, err := mychannel.Endorsers(ccCall("mycc"), NoFilter)
-		assert.NoError(t, err)
-		// The combinations of endorsers should be in the expected combinations
-		assert.Contains(t, expectedOrgCombinations, getMSPs(endorsers))
-	})
-
-	t.Run("Endorser query with cc2cc and collections", func(t *testing.T) {
-		sup.On("PeersOfChannel").Return(channelPeersWithChaincodes).Twice()
-		req = NewRequest()
-		myccOnly := ccCall("mycc")
-		myccAndmycc2 := ccCall("mycc", "mycc2")
-		myccAndmycc2[1].CollectionNames = append(myccAndmycc2[1].CollectionNames, "col")
-		req.OfChannel("mychannel").AddEndorsersQuery(cc2ccInterests(myccAndmycc2, myccOnly)...)
-		r, err = cl.Send(ctx, req, authInfo)
-		assert.NoError(t, err)
-		mychannel := r.ForChannel("mychannel")
-
-		// Check the endorsers for the non cc2cc call
-		endorsers, err := mychannel.Endorsers(ccCall("mycc"), NoFilter)
-		assert.NoError(t, err)
-		assert.Contains(t, expectedOrgCombinations, getMSPs(endorsers))
-		// Check the endorsers for the cc2cc call with collections
-		call := ccCall("mycc", "mycc2")
-		call[1].CollectionNames = append(call[1].CollectionNames, "col")
-		endorsers, err = mychannel.Endorsers(call, NoFilter)
-		assert.NoError(t, err)
-		assert.Contains(t, expectedOrgCombinations2, getMSPs(endorsers))
-	})
-
-	t.Run("Peer membership query with collections and chaincodes", func(t *testing.T) {
-		sup.On("PeersOfChannel").Return(channelPeersWithChaincodes).Once()
-		interest := ccCall("mycc2")
-		interest[0].CollectionNames = append(interest[0].CollectionNames, "col")
-		req = NewRequest().OfChannel("mychannel").AddPeersQuery(interest...)
-		r, err = cl.Send(ctx, req, authInfo)
-		assert.NoError(t, err)
-		mychannel := r.ForChannel("mychannel")
-		peers, err := mychannel.Peers(interest...)
-		assert.NoError(t, err)
-		// We should see all peers that aren't in ORG A since it's not part of the collection
-		for _, p := range peers {
-			assert.NotEqual(t, "A", p.MSPID)
-		}
-		assert.Len(t, peers, 6)
-	})
-
-	t.Run("Endorser query with PrioritiesByHeight selector", func(t *testing.T) {
-		sup.On("PeersOfChannel").Return(channelPeersWithDifferentLedgerHeights).Twice()
-		req = NewRequest()
-		req.OfChannel("mychannel").AddEndorsersQuery(interest("mycc3"))
-		r, err = cl.Send(ctx, req, authInfo)
-		assert.NoError(t, err)
-		mychannel := r.ForChannel("mychannel")
-
-		// acceptablePeers are the ones at the highest ledger height for each org
-		acceptablePeers := []string{"p5", "p7", "p9", "p11", "p15"}
-		used := make(map[string]struct{})
-		for i := 0; i < 10; i++ {
-			endorsers, err := mychannel.Endorsers(ccCall("mycc3"), NewFilter(PrioritiesByHeight, NoExclusion))
-			assert.NoError(t, err)
-			names := getNames(endorsers)
-			assert.Subset(t, acceptablePeers, names)
-			for _, name := range names {
-				used[name] = struct{}{}
-			}
-		}
-		assert.Equalf(t, len(acceptablePeers), len(used), "expecting each endorser to be returned at least once")
-	})
-
-	t.Run("Endorser query with custom filter", func(t *testing.T) {
-		sup.On("PeersOfChannel").Return(channelPeersWithDifferentLedgerHeights).Twice()
-		req = NewRequest()
-		req.OfChannel("mychannel").AddEndorsersQuery(interest("mycc3"))
-		r, err = cl.Send(ctx, req, authInfo)
-		assert.NoError(t, err)
-		mychannel := r.ForChannel("mychannel")
-
-		threshold := uint64(3) // Use peers within 3 of the max height of the org peers
-		acceptablePeers := []string{"p1", "p9", "p3", "p5", "p6", "p7", "p10", "p11", "p12", "p14", "p15"}
-		used := make(map[string]struct{})
-
-		for i := 0; i < 30; i++ {
-			endorsers, err := mychannel.Endorsers(ccCall("mycc3"), &ledgerHeightFilter{threshold: threshold})
-			assert.NoError(t, err)
-			names := getNames(endorsers)
-			assert.Subset(t, acceptablePeers, names)
-			for _, name := range names {
-				used[name] = struct{}{}
-			}
-		}
-		assert.Equalf(t, len(acceptablePeers), len(used), "expecting each endorser to be returned at least once")
-
-		threshold = 0 // only use the peers at the highest ledger height (same as using the PrioritiesByHeight selector)
-		acceptablePeers = []string{"p5", "p7", "p9", "p11", "p15"}
-		used = make(map[string]struct{})
-		for i := 0; i < 10; i++ {
-			endorsers, err := mychannel.Endorsers(ccCall("mycc3"), &ledgerHeightFilter{threshold: threshold})
-			assert.NoError(t, err)
-			names := getNames(endorsers)
-			assert.Subset(t, acceptablePeers, names)
-			for _, name := range names {
-				used[name] = struct{}{}
-			}
-		}
-		t.Logf("Used peers: %#v\n", used)
-		assert.Equalf(t, len(acceptablePeers), len(used), "expecting each endorser to be returned at least once")
-	})
+	//t.Run("Channel mismatch", func(t *testing.T) {
+	//	// Check behavior for channels that we didn't query for.
+	//	fakeChannel := r.ForChannel("fakeChannel")
+	//	peers, err := fakeChannel.Peers()
+	//	assert.Equal(t, ErrNotFound, err)
+	//	assert.Nil(t, peers)
+	//
+	//	endorsers, err := fakeChannel.Endorsers(ccCall("mycc"), NoFilter)
+	//	assert.Equal(t, ErrNotFound, err)
+	//	assert.Nil(t, endorsers)
+	//
+	//	conf, err := fakeChannel.Config()
+	//	assert.Equal(t, ErrNotFound, err)
+	//	assert.Nil(t, conf)
+	//})
+	//
+	//t.Run("Peer membership query", func(t *testing.T) {
+	//	// Check response for the correct channel
+	//	mychannel := r.ForChannel("mychannel")
+	//	conf, err := mychannel.Config()
+	//	assert.NoError(t, err)
+	//	assert.Equal(t, expectedConf.Msps, conf.Msps)
+	//	assert.Equal(t, expectedConf.Orderers, conf.Orderers)
+	//	peers, err := mychannel.Peers()
+	//	assert.NoError(t, err)
+	//	// We should see all peers as provided above
+	//	assert.Len(t, peers, 8)
+	//	// Check response for peers when doing a local query
+	//	peers, err = r.ForLocal().Peers()
+	//	assert.NoError(t, err)
+	//	assert.Len(t, peers, len(peerIdentities))
+	//})
+	//
+	//t.Run("Endorser query without chaincode installed", func(t *testing.T) {
+	//	mychannel := r.ForChannel("mychannel")
+	//	endorsers, err := mychannel.Endorsers(ccCall("mycc"), NoFilter)
+	//	// However, since we didn't provide any chaincodes to these peers - the server shouldn't
+	//	// be able to construct the descriptor.
+	//	// Just check that the appropriate error is returned, and nothing crashes.
+	//	assert.Contains(t, err.Error(), "failed constructing descriptor for chaincode")
+	//	assert.Nil(t, endorsers)
+	//})
+	//
+	//t.Run("Endorser query with chaincodes installed", func(t *testing.T) {
+	//	// Next, we check the case when the peers publish chaincode for themselves.
+	//	sup.On("PeersOfChannel").Return(channelPeersWithChaincodes).Times(2)
+	//	req = NewRequest()
+	//	req.OfChannel("mychannel").AddPeersQuery().AddEndorsersQuery(interest("mycc"))
+	//	r, err = cl.Send(ctx, req, authInfo)
+	//	assert.NoError(t, err)
+	//
+	//	mychannel := r.ForChannel("mychannel")
+	//	peers, err := mychannel.Peers()
+	//	assert.NoError(t, err)
+	//	assert.Len(t, peers, 8)
+	//
+	//	// We should get a valid endorsement descriptor from the service
+	//	endorsers, err := mychannel.Endorsers(ccCall("mycc"), NoFilter)
+	//	assert.NoError(t, err)
+	//	// The combinations of endorsers should be in the expected combinations
+	//	assert.Contains(t, expectedOrgCombinations, getMSPs(endorsers))
+	//})
+	//
+	//t.Run("Endorser query with cc2cc and collections", func(t *testing.T) {
+	//	sup.On("PeersOfChannel").Return(channelPeersWithChaincodes).Twice()
+	//	req = NewRequest()
+	//	myccOnly := ccCall("mycc")
+	//	myccAndmycc2 := ccCall("mycc", "mycc2")
+	//	myccAndmycc2[1].CollectionNames = append(myccAndmycc2[1].CollectionNames, "col")
+	//	req.OfChannel("mychannel").AddEndorsersQuery(cc2ccInterests(myccAndmycc2, myccOnly)...)
+	//	r, err = cl.Send(ctx, req, authInfo)
+	//	assert.NoError(t, err)
+	//	mychannel := r.ForChannel("mychannel")
+	//
+	//	// Check the endorsers for the non cc2cc call
+	//	endorsers, err := mychannel.Endorsers(ccCall("mycc"), NoFilter)
+	//	assert.NoError(t, err)
+	//	assert.Contains(t, expectedOrgCombinations, getMSPs(endorsers))
+	//	// Check the endorsers for the cc2cc call with collections
+	//	call := ccCall("mycc", "mycc2")
+	//	call[1].CollectionNames = append(call[1].CollectionNames, "col")
+	//	endorsers, err = mychannel.Endorsers(call, NoFilter)
+	//	assert.NoError(t, err)
+	//	assert.Contains(t, expectedOrgCombinations2, getMSPs(endorsers))
+	//})
+	//
+	//t.Run("Peer membership query with collections and chaincodes", func(t *testing.T) {
+	//	sup.On("PeersOfChannel").Return(channelPeersWithChaincodes).Once()
+	//	interest := ccCall("mycc2")
+	//	interest[0].CollectionNames = append(interest[0].CollectionNames, "col")
+	//	req = NewRequest().OfChannel("mychannel").AddPeersQuery(interest...)
+	//	r, err = cl.Send(ctx, req, authInfo)
+	//	assert.NoError(t, err)
+	//	mychannel := r.ForChannel("mychannel")
+	//	peers, err := mychannel.Peers(interest...)
+	//	assert.NoError(t, err)
+	//	// We should see all peers that aren't in ORG A since it's not part of the collection
+	//	for _, p := range peers {
+	//		assert.NotEqual(t, "A", p.MSPID)
+	//	}
+	//	assert.Len(t, peers, 6)
+	//})
+	//
+	//t.Run("Endorser query with PrioritiesByHeight selector", func(t *testing.T) {
+	//	sup.On("PeersOfChannel").Return(channelPeersWithDifferentLedgerHeights).Twice()
+	//	req = NewRequest()
+	//	req.OfChannel("mychannel").AddEndorsersQuery(interest("mycc3"))
+	//	r, err = cl.Send(ctx, req, authInfo)
+	//	assert.NoError(t, err)
+	//	mychannel := r.ForChannel("mychannel")
+	//
+	//	// acceptablePeers are the ones at the highest ledger height for each org
+	//	acceptablePeers := []string{"p5", "p7", "p9", "p11", "p15"}
+	//	used := make(map[string]struct{})
+	//	for i := 0; i < 10; i++ {
+	//		endorsers, err := mychannel.Endorsers(ccCall("mycc3"), NewFilter(PrioritiesByHeight, NoExclusion))
+	//		assert.NoError(t, err)
+	//		names := getNames(endorsers)
+	//		assert.Subset(t, acceptablePeers, names)
+	//		for _, name := range names {
+	//			used[name] = struct{}{}
+	//		}
+	//	}
+	//	assert.Equalf(t, len(acceptablePeers), len(used), "expecting each endorser to be returned at least once")
+	//})
+	//
+	//t.Run("Endorser query with custom filter", func(t *testing.T) {
+	//	sup.On("PeersOfChannel").Return(channelPeersWithDifferentLedgerHeights).Twice()
+	//	req = NewRequest()
+	//	req.OfChannel("mychannel").AddEndorsersQuery(interest("mycc3"))
+	//	r, err = cl.Send(ctx, req, authInfo)
+	//	assert.NoError(t, err)
+	//	mychannel := r.ForChannel("mychannel")
+	//
+	//	threshold := uint64(3) // Use peers within 3 of the max height of the org peers
+	//	acceptablePeers := []string{"p1", "p9", "p3", "p5", "p6", "p7", "p10", "p11", "p12", "p14", "p15"}
+	//	used := make(map[string]struct{})
+	//
+	//	for i := 0; i < 30; i++ {
+	//		endorsers, err := mychannel.Endorsers(ccCall("mycc3"), &ledgerHeightFilter{threshold: threshold})
+	//		assert.NoError(t, err)
+	//		names := getNames(endorsers)
+	//		assert.Subset(t, acceptablePeers, names)
+	//		for _, name := range names {
+	//			used[name] = struct{}{}
+	//		}
+	//	}
+	//	assert.Equalf(t, len(acceptablePeers), len(used), "expecting each endorser to be returned at least once")
+	//
+	//	threshold = 0 // only use the peers at the highest ledger height (same as using the PrioritiesByHeight selector)
+	//	acceptablePeers = []string{"p5", "p7", "p9", "p11", "p15"}
+	//	used = make(map[string]struct{})
+	//	for i := 0; i < 10; i++ {
+	//		endorsers, err := mychannel.Endorsers(ccCall("mycc3"), &ledgerHeightFilter{threshold: threshold})
+	//		assert.NoError(t, err)
+	//		names := getNames(endorsers)
+	//		assert.Subset(t, acceptablePeers, names)
+	//		for _, name := range names {
+	//			used[name] = struct{}{}
+	//		}
+	//	}
+	//	t.Logf("Used peers: %#v\n", used)
+	//	assert.Equalf(t, len(acceptablePeers), len(used), "expecting each endorser to be returned at least once")
+	//})
 }
 
 func TestUnableToSign(t *testing.T) {

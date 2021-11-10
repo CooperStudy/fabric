@@ -48,6 +48,7 @@ func NewGRPCServer(address string, serverConfig ServerConfig) (*GRPCServer, erro
 		return nil, errors.New("Missing address parameter")
 	}
 	//create our listener
+	fmt.Println("=====address===",address)//localhost:0
 	lis, err := net.Listen("tcp", address)
 
 	if err != nil {
@@ -60,6 +61,7 @@ func NewGRPCServer(address string, serverConfig ServerConfig) (*GRPCServer, erro
 // an existing net.Listener instance using default keepalive
 func NewGRPCServerFromListener(listener net.Listener, serverConfig ServerConfig) (*GRPCServer, error) {
 	fmt.Println("=====NewGRPCServerFromListener==")
+	fmt.Println("==addr",listener.Addr().String())//127.0.0.1:36689
 	grpcServer := &GRPCServer{
 		address:  listener.Addr().String(),
 		listener: listener,
@@ -71,9 +73,12 @@ func NewGRPCServerFromListener(listener net.Listener, serverConfig ServerConfig)
 
 	//check SecOpts
 	var secureConfig SecureOptions
+
+	fmt.Println("==================serverConfig.SecOpts================",serverConfig.SecOpts)
 	if serverConfig.SecOpts != nil {
 		secureConfig = *serverConfig.SecOpts
 	}
+	fmt.Println("========secureConfig.UseTLS======",secureConfig.UseTLS)//true
 	if secureConfig.UseTLS {
 		//both key and cert are required
 		if secureConfig.Key != nil && secureConfig.Certificate != nil {
@@ -82,9 +87,11 @@ func NewGRPCServerFromListener(listener net.Listener, serverConfig ServerConfig)
 			if err != nil {
 				return nil, err
 			}
+			fmt.Println("==cert====",cert)//==cert==== {[[48 130 2
 			grpcServer.serverCertificate.Store(cert)
 
 			//set up our TLS config
+			fmt.Println("===============len(secureConfig.CipherSuites)===========",len(secureConfig.CipherSuites))//0
 			if len(secureConfig.CipherSuites) == 0 {
 				secureConfig.CipherSuites = DefaultTLSCipherSuites
 			}

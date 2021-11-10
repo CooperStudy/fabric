@@ -248,6 +248,7 @@ func newContext() *context {
 //	- ROLE takes the value of any of the RoleXXX constants representing
 //    the required role
 func FromString(policy string) (*common.SignaturePolicyEnvelope, error) {
+	fmt.Println("==policy==",policy)//OR(AND('A.member', 'B.member'), 'C.member', AND('A.member', 'D.member'))
 	fmt.Println("==========FromString=========")
 	// first we translate the and/or business into outof gates
 	intermediate, err := govaluate.NewEvaluableExpressionWithFunctions(
