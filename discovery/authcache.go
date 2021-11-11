@@ -68,7 +68,7 @@ func newAuthCache(s acSupport, conf authCacheConfig) *authCache {
 // service from the discovery service for a given channel
 func (ac *authCache) EligibleForService(channel string, data common.SignedData) error {
 	fmt.Println("=======authCache==EligibleForService==")
-	fmt.Println("=======!ac.conf.enabled================",!ac.conf.enabled)
+	fmt.Println("=======!ac.conf.enabled================",!ac.conf.enabled)//true
 	if !ac.conf.enabled {
 		return ac.acSupport.EligibleForService(channel, data)
 	}

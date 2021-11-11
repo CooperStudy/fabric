@@ -29,6 +29,8 @@ func (p PKIidType) String() string {
 	if p == nil {
 		return "<nil>"
 	}
+	fmt.Println("====p byte",p)
+	fmt.Println("========p hex=======",hex.EncodeToString(p))
 	return hex.EncodeToString(p)
 }
 

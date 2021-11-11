@@ -39,7 +39,10 @@ func NewDiscoverySupport(ci MetadataRetriever) *DiscoverySupport {
 
 func (s *DiscoverySupport) PolicyByChaincode(channel string, cc string) policies.InquireablePolicy {
 	fmt.Println("=======DiscoverySupport==PolicyByChaincode=")
+	fmt.Println("============channel=======",channel)
+	fmt.Println("============cc=======",cc)
 	chaincodeData := s.ci.Metadata(channel, cc, false)
+	fmt.Println("==========chaincodeData==================",chaincodeData)
 	if chaincodeData == nil {
 		logger.Info("Chaincode", cc, "wasn't found")
 		return nil
@@ -49,6 +52,8 @@ func (s *DiscoverySupport) PolicyByChaincode(channel string, cc string) policies
 		logger.Warning("Failed unmarshaling policy for chaincode", cc, ":", err)
 		return nil
 	}
+	fmt.Println("=======len(pol.Identities)===========",len(pol.Identities))
+	fmt.Println("=======pol.Rule===========",pol.Rule)
 	if len(pol.Identities) == 0 || pol.Rule == nil {
 		logger.Warningf("Invalid policy, either Identities(%v) or Rule(%v) are empty:", pol.Identities, pol.Rule)
 		return nil

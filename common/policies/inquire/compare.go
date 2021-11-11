@@ -34,13 +34,21 @@ func NewComparablePrincipal(principal *msp.MSPPrincipal) *ComparablePrincipal {
 	cp := &ComparablePrincipal{
 		principal: principal,
 	}
+	fmt.Println("===========principal.PrincipalClassification===============",principal.PrincipalClassification)
 	switch principal.PrincipalClassification {
 	case msp.MSPPrincipal_ROLE:
+		fmt.Println("======msp.MSPPrincipal_ROLE==============")
+		fmt.Println("=====cp.ToRole=========",cp.ToRole())
 		return cp.ToRole()
 	case msp.MSPPrincipal_ORGANIZATION_UNIT:
+		fmt.Println("======msp.MSPPrincipal_ORGANIZATION_UNIT==============")
+		fmt.Println("=====cp.ToOURole========",cp.ToOURole())
 		return cp.ToOURole()
 	}
+	fmt.Println("===========int32(principal.PrincipalClassification)============",int32(principal.PrincipalClassification))
+
 	mapping := msp.MSPPrincipal_Classification_name[int32(principal.PrincipalClassification)]
+	fmt.Println("===========mapping============",mapping)
 	logger.Warning("Received an unsupported principal type:", principal.PrincipalClassification, "mapped to", mapping)
 	return nil
 }
@@ -171,6 +179,7 @@ func NewComparablePrincipalSet(set policies.PrincipalSet) ComparablePrincipalSet
 	fmt.Println("========NewComparablePrincipalSet======")
 	var res ComparablePrincipalSet
 	for _, principal := range set {
+		fmt.Println("=======principal======",principal)
 		cp := NewComparablePrincipal(principal)
 		if cp == nil {
 			return nil

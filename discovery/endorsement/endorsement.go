@@ -107,13 +107,16 @@ func (ea *endorsementAnalyzer) PeersForEndorsement(chainID common.ChainID, inter
 
 func (ea *endorsementAnalyzer) PeersAuthorizedByCriteria(chainID common.ChainID, interest *discovery.ChaincodeInterest) (Members, error) {
 	fmt.Println("==endorsementAnalyzer===PeersAuthorizedByCriteria===")
+	fmt.Println("=====chainID====", chainID)
 	peersOfChannel := ea.PeersOfChannel(chainID)
-	fmt.Println("==========endorsementAnalyzer===PeersAuthorizedByCriteria================")
+	fmt.Println("======peersOfChannel====", peersOfChannel)
 	if interest == nil || len(interest.Chaincodes) == 0 {
 		return peersOfChannel, nil
 	}
 	identities := ea.IdentityInfo()
+	fmt.Println("====identities======", identities)
 	identitiesByID := identities.ByID()
+	fmt.Println("====identities======", identitiesByID)
 	metadataAndCollectionFilters, err := loadMetadataAndFilters(metadataAndFilterContext{
 		identityInfoByID: identitiesByID,
 		interest:         interest,
@@ -176,6 +179,9 @@ func (ea *endorsementAnalyzer) computePrincipalSets(chainID common.ChainID, inte
 	fmt.Println("==endorsementAnalyzer===computePrincipalSets===")
 	var inquireablePolicies []policies.InquireablePolicy
 	for _, chaincode := range interest.Chaincodes {
+		fmt.Println("===========chaincode=========",chaincode)
+		fmt.Println("==========string(chainID)=======",string(chainID))
+		fmt.Println("======chaincode.Name====",chaincode.Name)
 		pol := ea.PolicyByChaincode(string(chainID), chaincode.Name)
 		if pol == nil {
 			logger.Debug("Policy for chaincode '", chaincode, "'doesn't exist")
@@ -229,6 +235,7 @@ func loadMetadataAndFilters(ctx metadataAndFilterContext) (*metadataAndColFilter
 	var filters []identityFilter
 
 	for _, chaincode := range ctx.interest.Chaincodes {
+		fmt.Println("===========chaincode===========", chaincode)
 		ccMD := ctx.fetch.Metadata(string(ctx.chainID), chaincode.Name, len(chaincode.CollectionNames) > 0)
 		if ccMD == nil {
 			return nil, errors.Errorf("No metadata was found for chaincode %s in channel %s", chaincode.Name, string(ctx.chainID))
@@ -255,6 +262,7 @@ func loadMetadataAndFilters(ctx metadataAndFilterContext) (*metadataAndColFilter
 
 func computeFiltersWithMetadata(filters identityFilters, metadata []*chaincode.Metadata, identityInfoByID map[string]api.PeerIdentityInfo) *metadataAndColFilter {
 	fmt.Println("==computeFiltersWithMetadata===")
+	fmt.Println("===len(filters)=====", len(filters))
 	if len(filters) == 0 {
 		return &metadataAndColFilter{
 			md:                 metadata,
@@ -301,7 +309,11 @@ func (filters identityFilters) combine() identityFilter {
 func (idf identityFilter) toMemberFilter(identityInfoByID map[string]api.PeerIdentityInfo) memberFilter {
 	fmt.Println("==========identityFilter=====toMemberFilter===============")
 	return func(member NetworkMember) bool {
+
 		identity, exists := identityInfoByID[string(member.PKIid)]
+		fmt.Println("===============member.PKIid==============", string(member.PKIid))
+		fmt.Println("=======identity============", identity)
+		fmt.Println("=======exists============", exists)
 		if !exists {
 			return false
 		}
@@ -538,17 +550,26 @@ func (l layouts) groupsSet() map[string]struct{} {
 
 func peersWithChaincode(metadata ...*chaincode.Metadata) func(member NetworkMember) bool {
 	fmt.Println("=======peersWithChaincode==========")
+	fmt.Println("======metadata============", metadata)
 	return func(member NetworkMember) bool {
+		fmt.Println("====member.Properties=====", member.Properties)
 		if member.Properties == nil {
 			return false
 		}
 		for _, ccMD := range metadata {
+			fmt.Println("====ccMD=======", ccMD)
 			var found bool
 			for _, cc := range member.Properties.Chaincodes {
+				fmt.Println("===========cc=====", cc)
+				fmt.Println("===========cc.Name=====", cc.Name)
+				fmt.Println("===========ccMD.Name=====", ccMD.Name)
+				fmt.Println("===========cc.Version=====", cc.Version)
+				fmt.Println("===========ccMD.Version=====", ccMD.Version)
 				if cc.Name == ccMD.Name && cc.Version == ccMD.Version {
 					found = true
 				}
 			}
+			fmt.Println("====found===",found)
 			if !found {
 				return false
 			}

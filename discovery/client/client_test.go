@@ -969,7 +969,6 @@ func (*mockSupport) ChannelExists(channel string) bool {
 }
 
 func (ms *mockSupport) PeersOfChannel(gossipcommon.ChainID) gdisc.Members {
-
 	return ms.Called().Get(0).(gdisc.Members)
 }
 

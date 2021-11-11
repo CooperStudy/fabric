@@ -57,12 +57,12 @@ func (c Config) String() string {
 	//[Created with config TLS: true, auth cache disabled]
 	a := ""
 	if c.AuthCacheEnabled {
-		a= fmt.Sprintf("TLS: %t, authCacheMaxSize: %d, authCachePurgeRatio: %f", c.TLS, c.AuthCacheMaxSize, c.AuthCachePurgeRetentionRatio)
-	    fmt.Println("==c.AuthCacheEnabled======",a)
+		a = fmt.Sprintf("TLS: %t, authCacheMaxSize: %d, authCachePurgeRatio: %f", c.TLS, c.AuthCacheMaxSize, c.AuthCachePurgeRetentionRatio)
+		fmt.Println("==c.AuthCacheEnabled======", a)
 		return a
 	}
-	a =  fmt.Sprintf("TLS: %t, auth cache disabled", c.TLS)
-	fmt.Println("==a======",a)//TLS: true, auth cache disabled
+	a = fmt.Sprintf("TLS: %t, auth cache disabled", c.TLS)
+	fmt.Println("==a======", a) //TLS: true, auth cache disabled
 	return a
 }
 
@@ -113,13 +113,16 @@ func (s *service) Discover(ctx context.Context, request *discovery.SignedRequest
 
 func (s *service) processQuery(query *discovery.Query, request *discovery.SignedRequest, identity []byte, addr string) *discovery.QueryResult {
 	fmt.Println("===service===processQuery==")
-	fmt.Println("========query.Channel==========",query.Channel)
-    fmt.Println("===========!s.ChannelExists(query.Channel)=============",s.ChannelExists(query.Channel))
+	fmt.Println("========query.Channel==========", query.Channel)//mychannel
+	fmt.Println("===========!s.ChannelExists(query.Channel)=============", s.ChannelExists(query.Channel)) // true
 	if query.Channel != "" && !s.ChannelExists(query.Channel) {
 		logger.Warning("got query for channel", query.Channel, "from", addr, "but it doesn't exist")
 		return accessDenied
 	}
 
+	fmt.Println("=========request.Payload=======",request.Payload)
+	fmt.Println("===========request.Signature========",request.Signature)
+	fmt.Println("===========request.identity========",identity)
 	if err := s.auth.EligibleForService(query.Channel, common.SignedData{
 		Data:      request.Payload,
 		Signature: request.Signature,
@@ -133,18 +136,18 @@ func (s *service) processQuery(query *discovery.Query, request *discovery.Signed
 
 func (s *service) dispatch(q *discovery.Query) *discovery.QueryResult {
 	fmt.Println("===service===dispatch==")
-	fmt.Println("==========q=======",q)
+	fmt.Println("==========q=======", q)// channel:"mychannel" config_query:<>   local_peers:<>
 	dispatchers := s.channelDispatchers
-	fmt.Println("=======dispatchers============",dispatchers)
+	fmt.Println("=======dispatchers============", dispatchers)//map[1:0xd54ce0 3:0xd54d30 2:0xd54d80] map[1:0xd54ce0 3:0xd54d30 2:0xd54d80]
 	// Ensure local queries are routed only to channel-less dispatchers
 	if q.Channel == "" {
 		dispatchers = s.localDispatchers
-		fmt.Println("=========s.localDispatchers=====",s.localDispatchers)
+		fmt.Println("=========s.localDispatchers=====", s.localDispatchers)
 	}
-	fmt.Println("========q.GetType()======",q.GetType())
+	fmt.Println("========q.GetType()======", q.GetType()) //1
 	dispatchQuery, exists := dispatchers[q.GetType()]
-	fmt.Println("=========dispatchQuery==================",dispatchQuery)
-	fmt.Println("================exists==============",exists)
+	fmt.Println("=========dispatchQuery==================", dispatchQuery) //0xd54d80
+	fmt.Println("================exists==============", exists)            //true
 	if !exists {
 		return wrapError(errors.New("unknown or missing request type"))
 	}
@@ -191,6 +194,7 @@ func (s *service) configQuery(q *discovery.Query) *discovery.QueryResult {
 
 func wrapPeerResponse(peersByOrg map[string]*discovery.Peers) *discovery.QueryResult {
 	fmt.Println("===wrapPeerResponse==")
+	fmt.Println("=============peersByOrg=============", peersByOrg)
 	return &discovery.QueryResult{
 		Result: &discovery.QueryResult_Members{
 			Members: &discovery.PeerMembershipResult{
@@ -203,7 +207,10 @@ func wrapPeerResponse(peersByOrg map[string]*discovery.Peers) *discovery.QueryRe
 func (s *service) channelMembershipResponse(q *discovery.Query) *discovery.QueryResult {
 	fmt.Println("==service===channelMembershipResponse==")
 
+	fmt.Println("============common2.ChainID(q.Channel)==========", common2.ChainID(q.Channel))
+	fmt.Println("==========q.GetPeerQuery().Filter==", q.GetPeerQuery().Filter)
 	chanPeers, err := s.PeersAuthorizedByCriteria(common2.ChainID(q.Channel), q.GetPeerQuery().Filter)
+	fmt.Println("==========chanPeers=========", chanPeers)
 	if err != nil {
 		return wrapError(err)
 	}
@@ -229,6 +236,7 @@ func (s *service) localMembershipResponse(q *discovery.Query) *discovery.QueryRe
 	fmt.Println("==service===localMembershipResponse==")
 	membersByOrgs := make(map[string]*discovery.Peers)
 	for org, ids2Peers := range s.computeMembership(q) {
+
 		membersByOrgs[org] = &discovery.Peers{}
 		for _, peer := range ids2Peers {
 			membersByOrgs[org].Peers = append(membersByOrgs[org].Peers, peer)
@@ -240,22 +248,40 @@ func (s *service) localMembershipResponse(q *discovery.Query) *discovery.QueryRe
 func (s *service) computeMembership(_ *discovery.Query) map[string]peerMapping {
 	fmt.Println("==service===computeMembership==")
 	peersByOrg := make(map[string]peerMapping)
-	peerAliveInfo := discovery2.Members(s.Peers()).ByID()
+
+	p := s.Peers()
+	fmt.Println("========s.Peers()====", p)
+	peerAliveInfo := discovery2.Members(p).ByID()
+	fmt.Println("==========peerAliveInfo============",peerAliveInfo)
 	for org, peerIdentities := range s.IdentityInfo().ByOrg() {
+		fmt.Println("===========org========",org)
+		fmt.Println("======peerIdentities======",peerIdentities)
 		peersForCurrentOrg := make(peerMapping)
 		peersByOrg[org] = peersForCurrentOrg
 		for _, id := range peerIdentities {
+			fmt.Println("==================id",id)
 			// Check peer exists in alive membership view
+			a := string(id.PKIId)
+			fmt.Println("===========id.PKIId===========",a)
 			aliveInfo, exists := peerAliveInfo[string(id.PKIId)]
+
+			fmt.Println("==========aliveInfo=============",aliveInfo)
+			fmt.Println("==========exists=============",exists)
 			if !exists {
 				continue
 			}
+
+			fmt.Println("=========id.PKIId==========",string(id.PKIId))
+			fmt.Println("==============id.Identity===========",id.Identity)
+			fmt.Println("==============aliveInfo.Envelope===========",aliveInfo.Envelope)
 			peersForCurrentOrg[string(id.PKIId)] = &discovery.Peer{
 				Identity:       id.Identity,
 				MembershipInfo: aliveInfo.Envelope,
 			}
+			fmt.Println("=====peersForCurrentOrg=========",peersForCurrentOrg)
 		}
 	}
+
 	return peersByOrg
 }
 
