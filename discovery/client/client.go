@@ -60,22 +60,30 @@ type Request struct {
 func (req *Request) AddConfigQuery() *Request {
 	fmt.Println("=====Request===AddConfigQuery==========")
 	ch := req.lastChannel
+
 	q := &discovery.Query_ConfigQuery{
 		ConfigQuery: &discovery.ConfigQuery{},
 	}
+	fmt.Println("=======ch",ch)
+	fmt.Println("=======q",q)
 	req.Queries = append(req.Queries, &discovery.Query{
 		Channel: ch,
 		Query:   q,
 	})
 	req.addQueryMapping(discovery.ConfigQueryType, ch)
+	fmt.Println("====req=",req)
 	return req
 }
 
 // AddEndorsersQuery adds to the request a query for given chaincodes
 // interests are the chaincode interests that the client wants to query for.
 // All interests for a given channel should be supplied in an aggregated slice
+// AddEndorsersQuery 向请求添加对给定链码的查询
+// 兴趣是客户端想要查询的链码兴趣。
+// 应在聚合切片中提供给定频道的所有兴趣
 func (req *Request) AddEndorsersQuery(interests ...*discovery.ChaincodeInterest) (*Request, error) {
 	fmt.Println("=====Request===AddEndorsersQuery==========")
+	fmt.Println("=======interests========",interests)
 	if err := validateInterests(interests...); err != nil {
 		return nil, err
 	}
@@ -109,12 +117,13 @@ func (req *Request) AddLocalPeersQuery() *Request {
 	})
 	var ic InvocationChain
 	req.addQueryMapping(discovery.LocalMembershipQueryType, channnelAndInvocationChain("", ic))
+	fmt.Println("=============req",req)
 	return req
 }
 
 // AddPeersQuery adds to the request a peer query
 func (req *Request) AddPeersQuery(invocationChain ...*discovery.ChaincodeCall) *Request {
-	fmt.Println("=====Request===AddPeersQuery==========")
+	fmt.Println("=====Request===AddPeersQuery==========invocationChain",invocationChain)
 	ch := req.lastChannel
 	q := &discovery.Query_PeerQuery{
 		PeerQuery: &discovery.PeerMembershipQuery{
@@ -138,25 +147,33 @@ func (req *Request) AddPeersQuery(invocationChain ...*discovery.ChaincodeCall) *
 
 func channnelAndInvocationChain(ch string, ic InvocationChain) string {
 	fmt.Println("====channnelAndInvocationChain=========")
-	return fmt.Sprintf("%s %s", ch, ic.String())
+	a:= fmt.Sprintf("%s %s", ch, ic.String())
+	fmt.Println("=======a",a)
+	return a
 }
 
 // OfChannel sets the next queries added to be in the given channel's context
 func (req *Request) OfChannel(ch string) *Request {
-	fmt.Println("====Request===OfChannel======")
+	fmt.Println("====Request===OfChannel======ch",ch)
 	req.lastChannel = ch
 	return req
 }
 
 func (req *Request) addChaincodeQueryMapping(invocationChains []InvocationChain) {
 	fmt.Println("====Request===addChaincodeQueryMapping======")
+	fmt.Println("==req.lastIndex==",req.lastIndex)
+	fmt.Println("==invocationChains==",invocationChains)
 	req.invocationChainMapping[req.lastIndex] = invocationChains
 }
 
 func (req *Request) addQueryMapping(queryType discovery.QueryType, key string) {
 	fmt.Println("====Request===addQueryMapping======")
+	fmt.Println("=====queryType====",queryType)
+	fmt.Println("=====key====",key)
+	fmt.Println("=====req.lastIndex====",req.lastIndex)
 	req.queryMapping[queryType][key] = req.lastIndex
 	req.lastIndex++
+	fmt.Println("===req.lastIndex===",req.lastIndex)
 }
 
 // Send sends the request and returns the response, or error on failure
@@ -631,10 +648,12 @@ func validateStateInfoMessage(message *gossip.SignedGossipMessage) error {
 
 func validateInterests(interests ...*discovery.ChaincodeInterest) error {
 	fmt.Println("====validateInterests==")
+	fmt.Println("=======len(interests)=====",len(interests))
 	if len(interests) == 0 {
 		return errors.New("no chaincode interests given")
 	}
 	for _, interest := range interests {
+		fmt.Println("=======interest========",interest)
 		if interest == nil {
 			return errors.New("chaincode interest is nil")
 		}
@@ -652,7 +671,9 @@ type InvocationChain []*discovery.ChaincodeCall
 func (ic InvocationChain) String() string {
 	fmt.Println("====InvocationChain==String==")
 	s, _ := json.Marshal(ic)
-	return string(s)
+	a := string(s)
+	fmt.Println("====a==",a)
+	return a
 }
 
 // ValidateInvocationChain validates the InvocationChain's structure
@@ -662,6 +683,7 @@ func (ic InvocationChain) ValidateInvocationChain() error {
 		return errors.New("invocation chain should not be empty")
 	}
 	for _, cc := range ic {
+		fmt.Println("=========cc===",cc)
 		if cc.Name == "" {
 			return errors.New("chaincode name should not be empty")
 		}

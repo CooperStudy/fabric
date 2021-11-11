@@ -39,7 +39,7 @@ func NewMemoizeSigner(signFunc Signer, maxEntries uint) *MemoizeSigner {
 func (ms *MemoizeSigner) Sign(msg []byte) ([]byte, error) {
 	fmt.Println("====MemoizeSigner==Sign==")
 	sig, isInMemory := ms.lookup(msg)
-	fmt.Println("===sig===",sig)
+	fmt.Println("===sig===",sig)//[]
 	fmt.Println("===isInMemory===",isInMemory)
 	if isInMemory {
 		return sig, nil
@@ -103,5 +103,9 @@ func (ms *MemoizeSigner) evictFromMemory() {
 // msgDigest returns a digest of a given message
 func msgDigest(msg []byte) string {
 	fmt.Println("====msgDigest==")
-	return hex.EncodeToString(util.ComputeSHA256(msg))
+	fmt.Println("====msg====",msg)
+	fmt.Println("======util.ComputeSHA256(msg)=====",util.ComputeSHA256(msg))
+	a:= hex.EncodeToString(util.ComputeSHA256(msg))
+	fmt.Println("=============a===========",a)
+	return a
 }
