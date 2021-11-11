@@ -36,6 +36,7 @@ func (s *DiscoverySupport) ChannelExists(channel string) bool {
 // and also subscribed to the channel given
 func (s *DiscoverySupport) PeersOfChannel(chain common.ChainID) discovery.Members {
 	fmt.Println("=======DiscoverySupport=PeersOfChannel===")
+	fmt.Println("====chain=======",chain)
 	msg := s.SelfChannelInfo(chain)
 	if msg == nil {
 		return nil

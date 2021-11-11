@@ -318,7 +318,9 @@ func (gc *gossipChannel) Self() *proto.SignedGossipMessage {
 	fmt.Println("====gossipChannel==Self===")
 	gc.RLock()
 	defer gc.RUnlock()
-	return gc.stateInfoMsg
+	a:= gc.stateInfoMsg
+	fmt.Println("============a",a)
+	return a
 }
 
 // LeaveChannel makes the peer leave the channel

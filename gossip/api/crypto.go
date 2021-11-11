@@ -87,8 +87,11 @@ func (pis PeerIdentitySet) ByID() map[string]PeerIdentityInfo {
 	fmt.Println("======PeerIdentitySet=======ByID==============")
 	m := make(map[string]PeerIdentityInfo)
 	for _, id := range pis {
+		fmt.Println("==id===",id)
+		fmt.Println("===string(id.PKIId)======",string(id.PKIId))
 		m[string(id.PKIId)] = id
 	}
+	fmt.Println("======PeerIdentitySet==================",m)
 	return m
 }
 

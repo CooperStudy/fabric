@@ -771,6 +771,7 @@ func (g *gossipServiceImpl) SelfMembershipInfo() discovery.NetworkMember {
 func (g *gossipServiceImpl) SelfChannelInfo(chain common.ChainID) *proto.SignedGossipMessage {
 	fmt.Println("====gossipServiceImpl===SelfChannelInfo=======")
 	ch := g.chanState.getGossipChannelByChainID(chain)
+	fmt.Println("===========ch",ch)
 	if ch == nil {
 		return nil
 	}
