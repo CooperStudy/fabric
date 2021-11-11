@@ -829,6 +829,9 @@ func (pe *principalEvaluator) SatisfiesPrincipal(channel string, identity []byte
 	proto.Unmarshal(identity, sID)
 	p := &msp.MSPRole{}
 	proto.Unmarshal(principal.Principal, p)
+
+	fmt.Println("=====sID.Mspid=======",sID.Mspid)
+	fmt.Println("===========p.MspIdentifier==========",p.MspIdentifier)
 	if sID.Mspid == p.MspIdentifier {
 		return nil
 	}

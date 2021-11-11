@@ -69,6 +69,7 @@ func (p *peerImpl) CreateChainFromBlock(cb *common.Block, ccp ccprovider.Chainco
 }
 func (p *peerImpl) GetChannelConfig(cid string) channelconfig.Resources {
 	fmt.Println("===peerImpl===GetChannelConfig==")
+	fmt.Println("===cid====",cid)
 	return p.getChannelConfig(cid)
 }
 func (p *peerImpl) GetChannelsInfo() []*pb.ChannelInfo           {

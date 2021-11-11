@@ -485,9 +485,11 @@ func GetStableChannelConfig(cid string) channelconfig.Resources {
 // GetChannelConfig returns the channel configuration of the chain with channel ID. Note that this
 // call returns nil if chain cid has not been created.
 func GetChannelConfig(cid string) channelconfig.Resources {
-	fmt.Println("===GetChannelConfig===")
+	fmt.Println("=========fabric core peer peer.go======GetChannelConfig=============")
 	chains.RLock()
 	defer chains.RUnlock()
+	fmt.Println("=========cid",cid)
+	fmt.Println("======chains.list=======",chains.list)
 	if c, ok := chains.list[cid]; ok {
 		return c.cs
 	}

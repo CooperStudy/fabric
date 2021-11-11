@@ -469,10 +469,13 @@ func principalsToPeersGraph(data principalAndPeerData, satisfiesPrincipal peerPr
 
 func mapPrincipalsToGroups(principalsSets []policies.PrincipalSet) principalGroupMapper {
 	fmt.Println("==========mapPrincipalsToGroups==============")
+	fmt.Println("============principalsSets========",principalsSets)
 	groupMapper := make(principalGroupMapper)
 	totalPrincipals := make(map[principalKey]struct{})
 	for _, principalSet := range principalsSets {
+		fmt.Println("=====principalSet===",principalSet)
 		for _, principal := range principalSet {
+			fmt.Println("=====principal===",principal)
 			totalPrincipals[principalKey{
 				principal: string(principal.Principal),
 				cls:       int32(principal.PrincipalClassification),
@@ -513,10 +516,14 @@ type principalGroupMapper map[principalKey]string
 func (mapper principalGroupMapper) group(principal principalKey) string {
 	fmt.Println("=======principalGroupMapper===group==========")
 	if grp, exists := mapper[principal]; exists {
+		fmt.Println("======grp======",grp)
+		fmt.Println("======exists======",exists)
 		return grp
 	}
 	grp := fmt.Sprintf("G%d", len(mapper))
+	fmt.Println("=====grp====",grp)
 	mapper[principal] = grp
+	fmt.Println("======mapper====",mapper)
 	return grp
 }
 
@@ -527,6 +534,10 @@ type principalKey struct {
 
 func (pk principalKey) toPrincipal() *msp.MSPPrincipal {
 	fmt.Println("=======principalKey===toPrincipal==========")
+	fmt.Println("=========pk.cls=======",pk.cls)
+	fmt.Println("========msp.MSPPrincipal_Classification(pk.cls)======",msp.MSPPrincipal_Classification(pk.cls))
+
+	fmt.Println("=========pk.principal======",pk.principal)
 	return &msp.MSPPrincipal{
 		PrincipalClassification: msp.MSPPrincipal_Classification(pk.cls),
 		Principal:               []byte(pk.principal),
@@ -599,5 +610,8 @@ func popComparablePrincipalSets(sets []inquire.ComparablePrincipalSets) (inquire
 		return nil, nil, errors.New("no principal sets remained after filtering")
 	}
 	cps, cpss := sets[0], sets[1:]
+	fmt.Println("====sets",sets)
+	fmt.Println("=====cps",cps)
+	fmt.Println("=====cpss",cpss)
 	return cps, cpss, nil
 }

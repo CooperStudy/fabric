@@ -136,6 +136,8 @@ func (cp *ComparablePrincipal) ToRole() *ComparablePrincipal {
 	}
 	cp.mspID = mspRole.MspIdentifier
 	cp.role = mspRole
+	fmt.Println("=====cp.mspID====",cp.mspID)
+	fmt.Println("=====cp.role====",cp.role)
 	return cp
 }
 
@@ -147,8 +149,10 @@ func (cps ComparablePrincipalSet) ToPrincipalSet() policies.PrincipalSet {
 	fmt.Println("=========ComparablePrincipalSet====ToPrincipalSet======")
 	var res policies.PrincipalSet
 	for _, cp := range cps {
+		fmt.Println("=====cp===",cp)
 		res = append(res, cp.principal)
 	}
+	fmt.Println("===========res",res)
 	return res
 }
 

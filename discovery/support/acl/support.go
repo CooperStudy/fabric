@@ -31,6 +31,8 @@ type ChannelConfigGetterFunc func(cid string) channelconfig.Resources
 
 // GetChannelConfig returns the resources of the channel config
 func (f ChannelConfigGetterFunc) GetChannelConfig(cid string) channelconfig.Resources {
+	fmt.Println("=====ChannelConfigGetterFunc==========GetChannelConfig============")
+	fmt.Println("==================cid================",cid)
 	return f(cid)
 }
 
