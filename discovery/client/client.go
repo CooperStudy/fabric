@@ -64,14 +64,15 @@ func (req *Request) AddConfigQuery() *Request {
 	q := &discovery.Query_ConfigQuery{
 		ConfigQuery: &discovery.ConfigQuery{},
 	}
-	fmt.Println("=======ch",ch)
-	fmt.Println("=======q",q)
+	fmt.Println("=======ch",ch)//mychannel
+	fmt.Println("=======q",q)//&{}
 	req.Queries = append(req.Queries, &discovery.Query{
 		Channel: ch,
 		Query:   q,
 	})
 	req.addQueryMapping(discovery.ConfigQueryType, ch)
 	fmt.Println("====req=",req)
+	//queries:<channel:"mychannel" peer_query:<filter:<> > > queries:<channel:"mychannel" config_query:<> >
 	return req
 }
 
@@ -83,7 +84,7 @@ func (req *Request) AddConfigQuery() *Request {
 // 应在聚合切片中提供给定频道的所有兴趣
 func (req *Request) AddEndorsersQuery(interests ...*discovery.ChaincodeInterest) (*Request, error) {
 	fmt.Println("=====Request===AddEndorsersQuery==========")
-	fmt.Println("=======interests========",interests)
+	fmt.Println("=======interests========",interests)//[chaincodes:<name:"mycc" > ]
 	if err := validateInterests(interests...); err != nil {
 		return nil, err
 	}
@@ -118,12 +119,13 @@ func (req *Request) AddLocalPeersQuery() *Request {
 	var ic InvocationChain
 	req.addQueryMapping(discovery.LocalMembershipQueryType, channnelAndInvocationChain("", ic))
 	fmt.Println("=============req",req)
+	//queries:<channel:"mychannel" peer_query:<filter:<> > > queries:<channel:"mychannel" config_query:<> > queries:<local_peers:<> >
 	return req
 }
 
 // AddPeersQuery adds to the request a peer query
 func (req *Request) AddPeersQuery(invocationChain ...*discovery.ChaincodeCall) *Request {
-	fmt.Println("=====Request===AddPeersQuery==========invocationChain",invocationChain)
+	fmt.Println("=====Request===AddPeersQuery==========invocationChain",invocationChain)//[]
 	ch := req.lastChannel
 	q := &discovery.Query_PeerQuery{
 		PeerQuery: &discovery.PeerMembershipQuery{
@@ -148,32 +150,32 @@ func (req *Request) AddPeersQuery(invocationChain ...*discovery.ChaincodeCall) *
 func channnelAndInvocationChain(ch string, ic InvocationChain) string {
 	fmt.Println("====channnelAndInvocationChain=========")
 	a:= fmt.Sprintf("%s %s", ch, ic.String())
-	fmt.Println("=======a",a)
+	fmt.Println("=======a",a)//mychannel null
 	return a
 }
 
 // OfChannel sets the next queries added to be in the given channel's context
 func (req *Request) OfChannel(ch string) *Request {
-	fmt.Println("====Request===OfChannel======ch",ch)
+	fmt.Println("====Request===OfChannel======ch",ch)//mychannel
 	req.lastChannel = ch
 	return req
 }
 
 func (req *Request) addChaincodeQueryMapping(invocationChains []InvocationChain) {
 	fmt.Println("====Request===addChaincodeQueryMapping======")
-	fmt.Println("==req.lastIndex==",req.lastIndex)
-	fmt.Println("==invocationChains==",invocationChains)
+	fmt.Println("==req.lastIndex==",req.lastIndex)///0  3
+	fmt.Println("==invocationChains==",invocationChains)//[null] [[{"name":"mycc"}]]
 	req.invocationChainMapping[req.lastIndex] = invocationChains
 }
 
 func (req *Request) addQueryMapping(queryType discovery.QueryType, key string) {
 	fmt.Println("====Request===addQueryMapping======")
-	fmt.Println("=====queryType====",queryType)
-	fmt.Println("=====key====",key)
-	fmt.Println("=====req.lastIndex====",req.lastIndex)
+	fmt.Println("=====queryType====",queryType)//2 3
+	fmt.Println("=====key====",key)// mychannel null
+	fmt.Println("=====req.lastIndex====",req.lastIndex)//0 3
 	req.queryMapping[queryType][key] = req.lastIndex
 	req.lastIndex++
-	fmt.Println("===req.lastIndex===",req.lastIndex)
+	fmt.Println("===req.lastIndex===",req.lastIndex)//1 2
 }
 
 // Send sends the request and returns the response, or error on failure
@@ -648,12 +650,12 @@ func validateStateInfoMessage(message *gossip.SignedGossipMessage) error {
 
 func validateInterests(interests ...*discovery.ChaincodeInterest) error {
 	fmt.Println("====validateInterests==")
-	fmt.Println("=======len(interests)=====",len(interests))
+	fmt.Println("=======len(interests)=====",len(interests)) //1
 	if len(interests) == 0 {
 		return errors.New("no chaincode interests given")
 	}
 	for _, interest := range interests {
-		fmt.Println("=======interest========",interest)
+		fmt.Println("=======interest========",interest) //chaincodes:<name:"mycc" >
 		if interest == nil {
 			return errors.New("chaincode interest is nil")
 		}
@@ -672,7 +674,7 @@ func (ic InvocationChain) String() string {
 	fmt.Println("====InvocationChain==String==")
 	s, _ := json.Marshal(ic)
 	a := string(s)
-	fmt.Println("====a==",a)
+	fmt.Println("====a==",a) //null
 	return a
 }
 
@@ -683,7 +685,7 @@ func (ic InvocationChain) ValidateInvocationChain() error {
 		return errors.New("invocation chain should not be empty")
 	}
 	for _, cc := range ic {
-		fmt.Println("=========cc===",cc)
+		fmt.Println("=========cc===",cc)//name:"mycc"
 		if cc.Name == "" {
 			return errors.New("chaincode name should not be empty")
 		}

@@ -97,7 +97,11 @@ func (cs *channelState) getGossipChannelByChainID(chainID common.ChainID) channe
 	}
 	cs.RLock()
 	defer cs.RUnlock()
-	return cs.channels[string(chainID)]
+	a := string(chainID)
+	fmt.Println("==========string(chainID)=====",string(chainID))
+	b := cs.channels[a]
+	fmt.Println("=======b",b)
+	return b
 }
 
 func (cs *channelState) joinChannel(joinMsg api.JoinChannelMessage, chainID common.ChainID) {

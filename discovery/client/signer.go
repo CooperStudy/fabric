@@ -38,9 +38,10 @@ func NewMemoizeSigner(signFunc Signer, maxEntries uint) *MemoizeSigner {
 // or nil and error on failure
 func (ms *MemoizeSigner) Sign(msg []byte) ([]byte, error) {
 	fmt.Println("====MemoizeSigner==Sign==")
+	fmt.Println("====msg====",msg)
 	sig, isInMemory := ms.lookup(msg)
 	fmt.Println("===sig===",sig)//[]
-	fmt.Println("===isInMemory===",isInMemory)
+	fmt.Println("===isInMemory===",isInMemory)//false
 	if isInMemory {
 		return sig, nil
 	}
@@ -58,23 +59,30 @@ func (ms *MemoizeSigner) lookup(msg []byte) ([]byte, bool) {
 	fmt.Println("====MemoizeSigner==lookup==")
 	ms.RLock()
 	defer ms.RUnlock()
-	fmt.Println("=========msg=",msg)
+	fmt.Println("=========msg=",msg)//=========msg= [10 39 10 3 1 2 3 18
 	a := msgDigest(msg)
-	fmt.Println("=========a=",a)
+	fmt.Println("=========a=",a)//a369a57fa4d2f3cd5a0636b58cac5f8054b14db5964b07136e3585e95cf8cce7
 	sig, exists := ms.memory[a]
-	fmt.Println("==========sig=",sig)
-	fmt.Println("==========exists=",exists)
+	fmt.Println("==========sig=",sig)//[]
+	fmt.Println("==========exists=",exists)//false
 
 	return sig, exists
 }
 
 func (ms *MemoizeSigner) memorize(msg, signature []byte) {
 	fmt.Println("====MemoizeSigner==memorize==")
+	fmt.Println("======msg",ms)
+	fmt.Println("========signature",signature)
+	fmt.Println("=======ms.maxEntries",ms.maxEntries)
 	if ms.maxEntries == 0 {
 		return
 	}
 	ms.RLock()
+
 	shouldShrink := len(ms.memory) >= (int)(ms.maxEntries)
+	fmt.Println("=========len(ms.memory)=====",len(ms.memory))
+	fmt.Println("=========(int)(ms.maxEntries)=====",(int)(ms.maxEntries))
+	fmt.Println("===========shouldShrink=========",shouldShrink)
 	ms.RUnlock()
 
 	if shouldShrink {
@@ -92,6 +100,8 @@ func (ms *MemoizeSigner) shrinkMemory() {
 	fmt.Println("====MemoizeSigner==shrinkMemory==")
 	ms.Lock()
 	defer ms.Unlock()
+	fmt.Println("===len(ms.memory)==",len(ms.memory))
+	fmt.Println("===(int)(ms.maxEntries)==",(int)(ms.maxEntries))
 	for len(ms.memory) > (int)(ms.maxEntries) {
 		ms.evictFromMemory()
 	}
@@ -101,6 +111,9 @@ func (ms *MemoizeSigner) shrinkMemory() {
 func (ms *MemoizeSigner) evictFromMemory() {
 	fmt.Println("====MemoizeSigner==evictFromMemory==")
 	for dig := range ms.memory {
+		fmt.Println("===========dig",dig)
+		fmt.Println("====ms.memory==",ms.memory)
+		fmt.Println("=====dig===",dig)
 		delete(ms.memory, dig)
 		return
 	}
@@ -109,9 +122,9 @@ func (ms *MemoizeSigner) evictFromMemory() {
 // msgDigest returns a digest of a given message
 func msgDigest(msg []byte) string {
 	fmt.Println("====msgDigest==")
-	fmt.Println("====msg====",msg)
-	fmt.Println("======util.ComputeSHA256(msg)=====",util.ComputeSHA256(msg))
+	fmt.Println("====msg====",msg)//====msg==== [10 39 10 ]
+	fmt.Println("======util.ComputeSHA256(msg)=====",util.ComputeSHA256(msg))//[163 105 165 127 164 210 243
 	a:= hex.EncodeToString(util.ComputeSHA256(msg))
-	fmt.Println("=============a===========",a)
+	fmt.Println("=============a===========",a)//a369a57fa4d2f3cd5a0636b58cac5f8054b14db5964b07136e3585e95cf8cce7
 	return a
 }

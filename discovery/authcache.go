@@ -68,12 +68,15 @@ func newAuthCache(s acSupport, conf authCacheConfig) *authCache {
 // service from the discovery service for a given channel
 func (ac *authCache) EligibleForService(channel string, data common.SignedData) error {
 	fmt.Println("=======authCache==EligibleForService==")
+	fmt.Println("=======!ac.conf.enabled================",!ac.conf.enabled)
 	if !ac.conf.enabled {
 		return ac.acSupport.EligibleForService(channel, data)
 	}
 	// Check whether we already have a cache for this channel
 	ac.RLock()
+	fmt.Println("==========channel=========",channel)
 	cache := ac.credentialCache[channel]
+	fmt.Println("========cache========",cache)
 	ac.RUnlock()
 	if cache == nil {
 		// Cache for given channel wasn't found, so create a new one
@@ -96,11 +99,13 @@ type accessCache struct {
 
 func (ac *authCache) newAccessCache(channel string) *accessCache {
 	fmt.Println("=======authCache==newAccessCache==")
-	return &accessCache{
+	c := &accessCache{
 		channel: channel,
 		ac:      ac,
 		entries: make(map[string]error),
 	}
+	fmt.Println("==================c",c)
+	return c
 }
 
 func (cache *accessCache) EligibleForService(data common.SignedData) error {

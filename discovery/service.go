@@ -113,10 +113,13 @@ func (s *service) Discover(ctx context.Context, request *discovery.SignedRequest
 
 func (s *service) processQuery(query *discovery.Query, request *discovery.SignedRequest, identity []byte, addr string) *discovery.QueryResult {
 	fmt.Println("===service===processQuery==")
+	fmt.Println("========query.Channel==========",query.Channel)
+    fmt.Println("===========!s.ChannelExists(query.Channel)=============",s.ChannelExists(query.Channel))
 	if query.Channel != "" && !s.ChannelExists(query.Channel) {
 		logger.Warning("got query for channel", query.Channel, "from", addr, "but it doesn't exist")
 		return accessDenied
 	}
+
 	if err := s.auth.EligibleForService(query.Channel, common.SignedData{
 		Data:      request.Payload,
 		Signature: request.Signature,
@@ -130,12 +133,18 @@ func (s *service) processQuery(query *discovery.Query, request *discovery.Signed
 
 func (s *service) dispatch(q *discovery.Query) *discovery.QueryResult {
 	fmt.Println("===service===dispatch==")
+	fmt.Println("==========q=======",q)
 	dispatchers := s.channelDispatchers
+	fmt.Println("=======dispatchers============",dispatchers)
 	// Ensure local queries are routed only to channel-less dispatchers
 	if q.Channel == "" {
 		dispatchers = s.localDispatchers
+		fmt.Println("=========s.localDispatchers=====",s.localDispatchers)
 	}
+	fmt.Println("========q.GetType()======",q.GetType())
 	dispatchQuery, exists := dispatchers[q.GetType()]
+	fmt.Println("=========dispatchQuery==================",dispatchQuery)
+	fmt.Println("================exists==============",exists)
 	if !exists {
 		return wrapError(errors.New("unknown or missing request type"))
 	}
@@ -193,6 +202,7 @@ func wrapPeerResponse(peersByOrg map[string]*discovery.Peers) *discovery.QueryRe
 
 func (s *service) channelMembershipResponse(q *discovery.Query) *discovery.QueryResult {
 	fmt.Println("==service===channelMembershipResponse==")
+
 	chanPeers, err := s.PeersAuthorizedByCriteria(common2.ChainID(q.Channel), q.GetPeerQuery().Filter)
 	if err != nil {
 		return wrapError(err)

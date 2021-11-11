@@ -108,6 +108,7 @@ func (ea *endorsementAnalyzer) PeersForEndorsement(chainID common.ChainID, inter
 func (ea *endorsementAnalyzer) PeersAuthorizedByCriteria(chainID common.ChainID, interest *discovery.ChaincodeInterest) (Members, error) {
 	fmt.Println("==endorsementAnalyzer===PeersAuthorizedByCriteria===")
 	peersOfChannel := ea.PeersOfChannel(chainID)
+	fmt.Println("==========endorsementAnalyzer===PeersAuthorizedByCriteria================")
 	if interest == nil || len(interest.Chaincodes) == 0 {
 		return peersOfChannel, nil
 	}

@@ -393,7 +393,7 @@ func TestClient(t *testing.T) {
 	connect := createConnector(t, clientTLSCert, int(port))
 	//
 	signer := func(msg []byte) ([]byte, error) {
-		fmt.Println("==signer===")
+		fmt.Println("=discovery client client_test==signer===")
 		return msg, nil
 	}
 

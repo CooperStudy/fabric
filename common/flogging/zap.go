@@ -110,8 +110,10 @@ func (f *FabricLogger) WithOptions(opts ...zap.Option) *FabricLogger {
 
 func formatArgs(args []interface{}) string {
 	fmt.Println("===formatArgs====")
-	fmt.Println("=========args=========",args)
+	fmt.Println("=========args=========",args)//[=======GetDefault=================defaultBCCSP 0xc000014b40]
+	//
 	s:= strings.TrimSuffix(fmt.Sprintln(args...), "\n")
 	fmt.Println("========s=========",s)//Created with config TLS: true, auth cache disabled
+	//========s========= =======GetDefault=================defaultBCCSP &{0x17db2d8 map[*bccsp.ECDSAP256KeyGenOpts:0xc0002dd6a0 *bccsp.ECDSAP384KeyGenOpts:0xc0002dd6b0 *bccsp.AES192KeyGenOpts:0xc000458f98 *bccsp.RSAKeyGenOpts:0xc000458fb8 *bccsp.RSA2048KeyGenOpts:0xc000458fd8 *bccsp.RSA4096KeyGenOpts:0xc000458ff8 *bccsp.ECDSAKeyGenOpts:0xc0002dd690 *bccsp.AESKeyGenOpts:0xc000458f78 *bccsp.AES256KeyGenOpts:0xc000458f88 *bccsp.AES128KeyGenOpts:0xc000458fa8 *bccsp.RSA1024KeyGenOpts:0xc000458fc8 *bccsp.RSA3072KeyGenOpts:0xc000458fe8] map[*sw.ecdsaPrivateKey:0x17db2d8 *sw.ecdsaPublicKey:0x17db2d8 *sw.aesPrivateKey:0xc0002e4460] map[*bccsp.ECDSAPrivateKeyImportOpts:0x17db2d8 *bccsp.ECDSAGoPublicKeyImportOpts:0x17db2d8 *bccsp.RSAGoPublicKeyImportOpts:0x17db2d8 *bccsp.X509PublicKeyImportOpts:0xc0002e4468 *bccsp.AES256ImportKeyOpts:0x17db2d8 *bccsp.HMACImportKeyOpts:0x17db2d8 *bccsp.ECDSAPKIXPublicKeyImportOpts:0x17db2d8] map[*sw.aesPrivateKey:0x17db2d8] map[*sw.aesPrivateKey:0x17db2d8] map[*sw.ecdsaPrivateKey:0x17db2d8 *sw.rsaPrivateKey:0x17db2d8] map[*sw.ecdsaPrivateKey:0x17db2d8 *sw.ecdsaPublicKey:0x17db2d8 *sw.rsaPrivateKey:0x17db2d8 *sw.rsaPublicKey:0x17db2d8] map[*bccsp.SHA384Opts:0xc0002e4438 *bccsp.SHA3_256Opts:0xc0002e4440 *bccsp.SHA3_384Opts:0xc0002e4448 *bccsp.SHAOpts:0xc0002e4428 *bccsp.SHA256Opts:0xc0002e4430]}
 	return s
 }

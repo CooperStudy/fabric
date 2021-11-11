@@ -189,7 +189,7 @@ func (csp *CSP) Hash(msg []byte, opts bccsp.HashOpts) (digest []byte, err error)
 
 	fmt.Println("=====msg=====",msg)//[48 130 2 58 48 130 1 225...]
 	fmt.Println("==bccsp.HashOpts==opt===",opts)
-	fmt.Printf("========bccsp.HashOpts==opts type:%T==============",opts)
+	fmt.Printf("========bccsp.HashOpts==opts type:%T==============\n",opts)
 	a := reflect.TypeOf(opts)//==bccsp.HashOpts==opt=== &{}
 	fmt.Println("======reflect.TypeOf(opts)==",a)//*bccsp.SHA256Opts
 	hasher, found := csp.Hashers[a]
