@@ -187,12 +187,23 @@ func (csp *CSP) Hash(msg []byte, opts bccsp.HashOpts) (digest []byte, err error)
 		return nil, errors.New("Invalid opts. It must not be nil.")
 	}
 
-	hasher, found := csp.Hashers[reflect.TypeOf(opts)]
+	fmt.Println("=====msg=====",msg)//[48 130 2 58 48 130 1 225...]
+	fmt.Println("==bccsp.HashOpts==opt===",opts)
+	fmt.Printf("========bccsp.HashOpts==opts type:%T==============",opts)
+	a := reflect.TypeOf(opts)//==bccsp.HashOpts==opt=== &{}
+	fmt.Println("======reflect.TypeOf(opts)==",a)//*bccsp.SHA256Opts
+	hasher, found := csp.Hashers[a]
+	fmt.Println("======hasher==========",hasher)//&{0x9d71a0}
+	fmt.Printf("======hasher Type:%T==========\n",hasher)//*sw.hasher
+	fmt.Println("======found==========",found)//true
+
 	if !found {
 		return nil, errors.Errorf("Unsupported 'HashOpt' provided [%v]", opts)
 	}
 
 	digest, err = hasher.Hash(msg, opts)
+	fmt.Println("==digest===",digest)
+	fmt.Println("==err===",err)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed hashing with opts [%v]", opts)
 	}

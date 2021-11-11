@@ -6,6 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 package main
 
 import (
+	"fmt"
 	"hash"
 
 	"github.com/hyperledger/fabric/bccsp"
@@ -44,6 +45,7 @@ func (csp *impl) GetKey(ski []byte) (k bccsp.Key, err error) {
 // Hash hashes messages msg using options opts.
 // If opts is nil, the default hash function will be used.
 func (csp *impl) Hash(msg []byte, opts bccsp.HashOpts) (hash []byte, err error) {
+	fmt.Println("===============impl==Hash==")
 	return nil, nil
 }
 

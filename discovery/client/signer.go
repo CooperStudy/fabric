@@ -58,7 +58,13 @@ func (ms *MemoizeSigner) lookup(msg []byte) ([]byte, bool) {
 	fmt.Println("====MemoizeSigner==lookup==")
 	ms.RLock()
 	defer ms.RUnlock()
-	sig, exists := ms.memory[msgDigest(msg)]
+	fmt.Println("=========msg=",msg)
+	a := msgDigest(msg)
+	fmt.Println("=========a=",a)
+	sig, exists := ms.memory[a]
+	fmt.Println("==========sig=",sig)
+	fmt.Println("==========exists=",exists)
+
 	return sig, exists
 }
 

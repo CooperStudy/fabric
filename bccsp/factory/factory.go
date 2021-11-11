@@ -16,6 +16,7 @@ limitations under the License.
 package factory
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/hyperledger/fabric/bccsp"
@@ -57,6 +58,7 @@ type BCCSPFactory interface {
 
 // GetDefault returns a non-ephemeral (long-term) BCCSP
 func GetDefault() bccsp.BCCSP {
+	fmt.Println("====fabric-factory-factory.go===")
 	logger.Info("=======GetDefault=================")
 	if defaultBCCSP == nil {
 		logger.Warning("Before using BCCSP, please call InitFactories(). Falling back to bootBCCSP.")
