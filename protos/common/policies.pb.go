@@ -201,7 +201,7 @@ type SignaturePolicy struct {
 }
 
 func (m *SignaturePolicy) Reset()         { *m = SignaturePolicy{} }
-func (m *SignaturePolicy) String() string { return proto.CompactTextString(m) }
+func (m *SignaturePolicy) String() string {  fmt.Println("11111 ");return proto.CompactTextString(m) }
 func (*SignaturePolicy) ProtoMessage()    {}
 func (*SignaturePolicy) Descriptor() ([]byte, []int) {
 	return fileDescriptor_policies_0e89ed70e7bf49a8, []int{2}

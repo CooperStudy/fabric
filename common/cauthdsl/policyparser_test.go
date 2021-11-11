@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package cauthdsl
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -18,6 +19,8 @@ import (
 
 func TestOutOf1(t *testing.T) {
 	p1, err := FromString("OutOf(1, 'A.member', 'B.member')")
+	fmt.Println("==p1",p1)
+	//==p1 rule:<n_out_of:<n:1 rules:<signed_by:0 > rules:<signed_by:1 > > > identities:<principal:"\n\001A" > identities:<principal:"\n\001B" >
 	assert.NoError(t, err)
 
 	principals := make([]*msp.MSPPrincipal, 0)
@@ -36,22 +39,26 @@ func TestOutOf1(t *testing.T) {
 		Identities: principals,
 	}
 
+	//rule:<n_out_of:<n:1 rules:<signed_by:0 > rules:<signed_by:1 > > > identities:<principal:"\n\001A" > identities:<principal:"\n\001B" >
+	fmt.Println("===========p2=======",p2)
 	assert.Equal(t, p1, p2)
 }
 
 func TestOutOf2(t *testing.T) {
-	p1, err := FromString("OutOf(2, 'A.member', 'B.member')")
+	p1, err := FromString("OutOf(2, 'B.member', 'A.member')")
+	fmt.Println("==p1",p1)
+	//rule:<n_out_of:<n:2 rules:<signed_by:0 > rules:<signed_by:1 > > > identities:<principal:"\n\001A" > identities:<principal:"\n\001B" >
 	assert.NoError(t, err)
 
 	principals := make([]*msp.MSPPrincipal, 0)
 
 	principals = append(principals, &msp.MSPPrincipal{
 		PrincipalClassification: msp.MSPPrincipal_ROLE,
-		Principal:               utils.MarshalOrPanic(&msp.MSPRole{Role: msp.MSPRole_MEMBER, MspIdentifier: "A"})})
+		Principal:               utils.MarshalOrPanic(&msp.MSPRole{Role: msp.MSPRole_MEMBER, MspIdentifier: "B"})})
 
 	principals = append(principals, &msp.MSPPrincipal{
 		PrincipalClassification: msp.MSPPrincipal_ROLE,
-		Principal:               utils.MarshalOrPanic(&msp.MSPRole{Role: msp.MSPRole_MEMBER, MspIdentifier: "B"})})
+		Principal:               utils.MarshalOrPanic(&msp.MSPRole{Role: msp.MSPRole_MEMBER, MspIdentifier: "A"})})
 
 	p2 := &common.SignaturePolicyEnvelope{
 		Version:    0,
@@ -64,6 +71,8 @@ func TestOutOf2(t *testing.T) {
 
 func TestAnd(t *testing.T) {
 	p1, err := FromString("AND('A.member', 'B.member')")
+	fmt.Println("==p1",p1)
+	//==p1 rule:<n_out_of:<n:2 rules:<signed_by:0 > rules:<signed_by:1 > > > identities:<principal:"\n\001A" > identities:<principal:"\n\001B" >
 	assert.NoError(t, err)
 
 	principals := make([]*msp.MSPPrincipal, 0)
@@ -87,6 +96,8 @@ func TestAnd(t *testing.T) {
 
 func TestAndClientPeerOrderer(t *testing.T) {
 	p1, err := FromString("AND('A.client', 'B.peer')")
+	fmt.Println("====p1====",p1)
+	//====p1==== rule:<n_out_of:<n:2 rules:<signed_by:0 > rules:<signed_by:1 > > > identities:<principal:"\n\001A\020\002" > identities:<principal:"\n\001B\020\003" >
 	assert.NoError(t, err)
 
 	principals := make([]*msp.MSPPrincipal, 0)
@@ -111,6 +122,8 @@ func TestAndClientPeerOrderer(t *testing.T) {
 
 func TestOr(t *testing.T) {
 	p1, err := FromString("OR('A.member', 'B.member')")
+	fmt.Println("==p1",p1)
+	//p1 rule:<n_out_of:<n:1 rules:<signed_by:0 > rules:<signed_by:1 > > > identities:<principal:"\n\001A" > identities:<principal:"\n\001B" >
 	assert.NoError(t, err)
 
 	principals := make([]*msp.MSPPrincipal, 0)
@@ -123,6 +136,7 @@ func TestOr(t *testing.T) {
 		PrincipalClassification: msp.MSPPrincipal_ROLE,
 		Principal:               utils.MarshalOrPanic(&msp.MSPRole{Role: msp.MSPRole_MEMBER, MspIdentifier: "B"})})
 
+	fmt.Println("===principals==",principals) //[principal:"\n\001A"  principal:"\n\001B" ]
 	p2 := &common.SignaturePolicyEnvelope{
 		Version:    0,
 		Rule:       Or(SignedBy(0), SignedBy(1)),
@@ -310,12 +324,16 @@ func TestSecondPassBoundaryCheck(t *testing.T) {
 	// Check lower boundary
 	// Prohibit t<0
 	p0, err0 := FromString("OutOf(-1, 'A.member', 'B.member')")
+	fmt.Println("=========p0",p0) //nil
+	fmt.Println("err",err0)
 	assert.Nil(t, p0)
 	assert.EqualError(t, err0, "Invalid t-out-of-n predicate, t -1, n 2")
 
 	// Permit t==0 : always satisfied policy
 	// There is no clear usecase of t=0, but somebody may already use it, so we don't treat as an error.
 	p1, err1 := FromString("OutOf(0, 'A.member', 'B.member')")
+	fmt.Println("===p1",p1)
+	//===p1 rule:<n_out_of:<rules:<signed_by:0 > rules:<signed_by:1 > > > identities:<principal:"\n\001A" > identities:<principal:"\n\001B" >
 	assert.NoError(t, err1)
 	principals := make([]*msp.MSPPrincipal, 0)
 	principals = append(principals, &msp.MSPPrincipal{
@@ -335,6 +353,9 @@ func TestSecondPassBoundaryCheck(t *testing.T) {
 	// Permit t==n+1 : never satisfied policy
 	// Usecase: To create immutable ledger key
 	p2, err2 := FromString("OutOf(3, 'A.member', 'B.member')")
+	fmt.Println("=====p2",p2)
+	//=====p2 rule:<n_out_of:<n:3 rules:<signed_by:0 > rules:<signed_by:1 > > > identities:<principal:"\n\001A" > identities:<principal:"\n\001B" >
+	fmt.Println("=====err2",err2)
 	assert.NoError(t, err2)
 	expected2 := &common.SignaturePolicyEnvelope{
 		Version:    0,
@@ -345,6 +366,14 @@ func TestSecondPassBoundaryCheck(t *testing.T) {
 
 	// Prohibit t>n + 1
 	p3, err3 := FromString("OutOf(4, 'A.member', 'B.member')")
+	fmt.Println("====p3===",p3)
+	fmt.Println("====err===",err3) //Invalid t-out-of-n predicate, t 4, n 2
 	assert.Nil(t, p3)
 	assert.EqualError(t, err3, "Invalid t-out-of-n predicate, t 4, n 2")
 }
+
+/*
+  有两种特殊的情况：
+   A B的时候可以有0
+   A B的时候可以有3
+ */

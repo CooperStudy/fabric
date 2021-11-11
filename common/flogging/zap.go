@@ -110,5 +110,7 @@ func (f *FabricLogger) WithOptions(opts ...zap.Option) *FabricLogger {
 
 func formatArgs(args []interface{}) string {
 	fmt.Println("===formatArgs====")
-	return strings.TrimSuffix(fmt.Sprintln(args...), "\n")
+	fmt.Println("=========args=========",args)
+	s:= strings.TrimSuffix(fmt.Sprintln(args...), "\n")
+	return s
 }

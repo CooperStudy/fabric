@@ -24,20 +24,33 @@ package common;
 
 
 // msp_principal.proto contains proto messages defining the generalized
+//msp_principal.proto 包含定义泛化的 proto 消息
 // MSP notion of identity called an MSPPrincipal.  It is used as part of
+//MSP 的身份概念称为 MSPPrincipal。 它被用作
 // the chain configuration, in particular as the identity parameters to
+//链配置，特别是作为身份参数
 // the configuration.proto file.  This does not represent the MSP
+//configuration.proto 文件 这并不代表 MSP
 // configuration for a chain, but is understood by MSPs
-
+//链的配置，但被 MSP 理解
 // MSPPrincipal aims to represent an MSP-centric set of identities.
+MSPPrincipal 旨在表示一组以 MSP 为中心的身份。
 // In particular, this structure allows for definition of
+//特别是，这个结构允许定义
 //  - a group of identities that are member of the same MSP
+// 属于同一 MSP 的一组身份
 //  - a group of identities that are member of the same organization unit
+//属于同一组织单位的一组身份
 //    in the same MSP
+//在同一个 MSP 中
 //  - a group of identities that are administering a specific MSP
+//一组管理特定 MSP 的身份
 //  - a specific identity
+//一个特定的身份
 // Expressing these groups is done given two fields of the fields below
+//给定以下字段的两个字段来表示这些组
 //  - Classification, that defines the type of classification of identities
+//分类，定义身份的分类类型
 //    in an MSP this principal would be defined on; Classification can take
 //    three values:
 //     (i)  ByMSPRole: that represents a classification of identities within
@@ -53,15 +66,29 @@ message MSPPrincipal {
         ROLE = 0;  // Represents the one of the dedicated MSP roles, the
         // one of a member of MSP network, and the one of an
         // administrator of an MSP network
+        //表示专用 MSP 角色之一，即
+                  // MSP 网络的成员之一，以及
+                  // MSP 网络的管理员
         ORGANIZATION_UNIT = 1; // Denotes a finer grained (affiliation-based)
         // groupping of entities, per MSP affiliation
         // E.g., this can well be represented by an MSP's
         // Organization unit
+        // 表示更细粒度的（基于隶属关系）
+                // 实体分组，每个 MSP 隶属关系
+                // 例如，这可以很好地由 MSP 表示
+                // 组织单位
+
+
         IDENTITY  = 2;    // Denotes a principal that consists of a single
         // identity
+        // 表示由单个主体组成的主体
+                // 身份
         ANONYMITY = 3; // Denotes a principal that can be used to enforce
         // an identity to be anonymous or nominal.
+        // 表示可用于强制执行的主体
+                // 匿名或名义的身份
         COMBINED = 4; // Denotes a combined principal
+        // 表示组合主体
     }
 
     // Classification describes the way that one should process

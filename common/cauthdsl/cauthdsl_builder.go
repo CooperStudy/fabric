@@ -205,12 +205,17 @@ func And(lhs, rhs *cb.SignaturePolicy) *cb.SignaturePolicy {
 // Or is a convenience method which utilizes NOutOf to produce Or equivalent behavior
 func Or(lhs, rhs *cb.SignaturePolicy) *cb.SignaturePolicy {
 	fmt.Println("==Or===")
+	fmt.Println("===========lhs",lhs)//signed_by:0
+	fmt.Println("===========rhs.Type",(*rhs).Type)//1
 	return NOutOf(1, []*cb.SignaturePolicy{lhs, rhs})
 }
 
 // NOutOf creates a policy which requires N out of the slice of policies to evaluate to true
 func NOutOf(n int32, policies []*cb.SignaturePolicy) *cb.SignaturePolicy {
 	fmt.Println("==NOutOf===")
+	fmt.Println("==============n=====",n)// 2
+	fmt.Println("=============policies []*cb.SignaturePolicy=====",policies) // [signed_by:0  signed_by:1 ]  [signed_by:2  signed_by:3 ]
+
 	return &cb.SignaturePolicy{
 		Type: &cb.SignaturePolicy_NOutOf_{
 			NOutOf: &cb.SignaturePolicy_NOutOf{

@@ -145,7 +145,9 @@ func (members Members) ByID() map[string]NetworkMember {
 	fmt.Println("=====Members===ByID===========")
 	res := make(map[string]NetworkMember, len(members))
 	for _, peer := range members {
-		res[string(peer.PKIid)] = peer
+		 a:= string(peer.PKIid)
+		res[a] = peer
+		fmt.Println("====res====")
 	}
 	return res
 }

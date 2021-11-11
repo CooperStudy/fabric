@@ -65,6 +65,7 @@ type endorsementAnalyzer struct {
 
 // NewEndorsementAnalyzer constructs an NewEndorsementAnalyzer out of the given support
 func NewEndorsementAnalyzer(gs gossipSupport, pf policyFetcher, pe principalEvaluator, mf chaincodeMetadataFetcher) *endorsementAnalyzer {
+	fmt.Println("===========NewEndorsementAnalyzer========")
 	return &endorsementAnalyzer{
 		gossipSupport:            gs,
 		policyFetcher:            pf,

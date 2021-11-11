@@ -328,35 +328,37 @@ func createDiscoveryService(sup *mockSupport) discovery.DiscoveryServer {
 	pf.On("PolicyByChaincode", "mycc").Return(&inquireablePolicy{
 		orgCombinations: orgCombinationsThatSatisfyPolicy,
 	})
+	//OR(AND('A.member', 'B.member'), 'C.member', AND('A.member', 'D.member'))
+	//{0 n_out_of:<n:1 rules:<n_out_of:<n:2 rules:<signed_by:0 > rules:<signed_by:1 > > > rules:<signed_by:4 > rules:<n_out_of:<n:2 rules:<signed_by:2 > rules:<signed_by:3 > > > >  [principal:"\n\001A"  principal:"\n\001B"  principal:"\n\001A"  principal:"\n\001D"  principal:"\n\001C" ] {} [] 0}
 
-	sigPol, _ = cauthdsl.FromString("AND('B.member', 'C.member')")
-	polBytes, _ = proto.Marshal(sigPol)
-	mdf.On("Metadata", "mycc2").Return(&chaincode.Metadata{
-		Policy:  polBytes,
-		Name:    "mycc2",
-		Version: "1.0",
-		Id:      []byte{1, 2, 3},
-		CollectionsConfig: buildCollectionConfig(map[string][]*msp.MSPPrincipal{
-			"col": {memberPrincipal("B"), memberPrincipal("C"), memberPrincipal("D")},
-		}),
-	})
+	//sigPol, _ = cauthdsl.FromString("AND('B.member', 'C.member')")
+	//polBytes, _ = proto.Marshal(sigPol)
+	//  mdf.On("Metadata", "mycc2").Return(&chaincode.Metadata{
+	//	Policy:  polBytes,
+	//	Name:    "mycc2",
+	//	Version: "1.0",
+	//	Id:      []byte{1, 2, 3},
+	//	CollectionsConfig: buildCollectionConfig(map[string][]*msp.MSPPrincipal{
+	//		"col": {memberPrincipal("B"), memberPrincipal("C"), memberPrincipal("D")},
+	//	}),
+	//})
 
-	pf.On("PolicyByChaincode", "mycc2").Return(&inquireablePolicy{
-		orgCombinations: orgCombinationsThatSatisfyPolicy2,
-	})
+	//pf.On("PolicyByChaincode", "mycc2").Return(&inquireablePolicy{
+	//	orgCombinations: orgCombinationsThatSatisfyPolicy2,
+	//})
 
-	sigPol, _ = cauthdsl.FromString("AND('A.member', 'B.member', 'C.member', 'D.member')")
-	polBytes, _ = proto.Marshal(sigPol)
-	mdf.On("Metadata", "mycc3").Return(&chaincode.Metadata{
-		Policy:  polBytes,
-		Name:    "mycc3",
-		Version: "1.0",
-		Id:      []byte{1, 2, 3},
-	})
+	//sigPol, _ = cauthdsl.FromString("AND('A.member', 'B.member', 'C.member', 'D.member')")
+	//polBytes, _ = proto.Marshal(sigPol)
+	//mdf.On("Metadata", "mycc3").Return(&chaincode.Metadata{
+	//	Policy:  polBytes,
+	//	Name:    "mycc3",
+	//	Version: "1.0",
+	//	Id:      []byte{1, 2, 3},
+	//})
 
-	pf.On("PolicyByChaincode", "mycc3").Return(&inquireablePolicy{
-		orgCombinations: [][]string{{"A", "B", "C", "D"}},
-	})
+	//pf.On("PolicyByChaincode", "mycc3").Return(&inquireablePolicy{
+	//	orgCombinations: [][]string{{"A", "B", "C", "D"}},
+	//})
 
 	sup.On("Config", "mychannel").Return(expectedConf)
 	sup.On("Peers").Return(membershipPeers)
