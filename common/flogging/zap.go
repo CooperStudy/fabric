@@ -112,5 +112,6 @@ func formatArgs(args []interface{}) string {
 	fmt.Println("===formatArgs====")
 	fmt.Println("=========args=========",args)
 	s:= strings.TrimSuffix(fmt.Sprintln(args...), "\n")
+	fmt.Println("========s=========",s)
 	return s
 }

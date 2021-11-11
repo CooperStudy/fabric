@@ -65,6 +65,7 @@ noverify = [
   branch = "master"
   name = "github.com/kr/pretty"
 
+
 [[constraint]]
   branch = "master"
   name = "github.com/miekg/pkcs11"
@@ -185,3 +186,7 @@ noverify = [
   [[prune.project]]
       name = "github.com/coreos/etcd"
       non-go = false
+
+[[constraint]]
+  name = "github.com/natefinch/lumberjack"
+  version = "2.1.0"

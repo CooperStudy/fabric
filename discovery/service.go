@@ -54,10 +54,15 @@ type Config struct {
 // String returns a string representation of this Config
 func (c Config) String() string {
 	fmt.Println("=======Config==String==")
+	a := ""
 	if c.AuthCacheEnabled {
-		return fmt.Sprintf("TLS: %t, authCacheMaxSize: %d, authCachePurgeRatio: %f", c.TLS, c.AuthCacheMaxSize, c.AuthCachePurgeRetentionRatio)
+		a= fmt.Sprintf("TLS: %t, authCacheMaxSize: %d, authCachePurgeRatio: %f", c.TLS, c.AuthCacheMaxSize, c.AuthCachePurgeRetentionRatio)
+	    fmt.Println("==c.AuthCacheEnabled======",a)
+		return a
 	}
-	return fmt.Sprintf("TLS: %t, auth cache disabled", c.TLS)
+	a =  fmt.Sprintf("TLS: %t, auth cache disabled", c.TLS)
+	fmt.Println("==a======",a)
+	return a
 }
 
 // peerMapping maps PKI-IDs to Peers
