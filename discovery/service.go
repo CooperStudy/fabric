@@ -54,6 +54,7 @@ type Config struct {
 // String returns a string representation of this Config
 func (c Config) String() string {
 	fmt.Println("=======Config==String==")
+	//[Created with config TLS: true, auth cache disabled]
 	a := ""
 	if c.AuthCacheEnabled {
 		a= fmt.Sprintf("TLS: %t, authCacheMaxSize: %d, authCachePurgeRatio: %f", c.TLS, c.AuthCacheMaxSize, c.AuthCachePurgeRetentionRatio)
@@ -61,7 +62,7 @@ func (c Config) String() string {
 		return a
 	}
 	a =  fmt.Sprintf("TLS: %t, auth cache disabled", c.TLS)
-	fmt.Println("==a======",a)
+	fmt.Println("==a======",a)//TLS: true, auth cache disabled
 	return a
 }
 

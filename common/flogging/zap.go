@@ -112,6 +112,6 @@ func formatArgs(args []interface{}) string {
 	fmt.Println("===formatArgs====")
 	fmt.Println("=========args=========",args)
 	s:= strings.TrimSuffix(fmt.Sprintln(args...), "\n")
-	fmt.Println("========s=========",s)
+	fmt.Println("========s=========",s)//Created with config TLS: true, auth cache disabled
 	return s
 }
