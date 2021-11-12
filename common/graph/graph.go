@@ -18,11 +18,15 @@ type Vertex struct {
 // NewVertex creates a new vertex with given id and data
 func NewVertex(id string, data interface{}) *Vertex {
 	fmt.Println("====NewVertex================")
-	return &Vertex{
+	fmt.Println("=========id",id)
+	fmt.Printf("=========data:%T\n",data)
+	fmt.Println("===============图=Vertex============")
+	a := Vertex{
 		Id:        id,
 		Data:      data,
 		neighbors: make(map[string]*Vertex),
 	}
+	return &a
 }
 
 // NeighborById returns a neighbor vertex with the given id,

@@ -384,8 +384,15 @@ func endorsersByGroup(criteria *peerMembershipCriteria) map[string]*discovery.Pe
 // Each such a combination is called a layout, because it maps
 // a group (alias for a principal) to a threshold of peers that need to endorse,
 // and that satisfy the corresponding principal.
+// computeLayouts 计算所有可能的principal组合
+// 可以用来满足背书策略，给定一个图
+// 将每个对等点映射到它满足的主体的可用对等点。
+// 每个这样的组合称为一个布局，因为它映射
+// 一组（principal的别名）到需要背书的阈值，
+// 并且满足相应的principal。
 func computeLayouts(principalsSets []policies.PrincipalSet, principalGroups principalGroupMapper, satGraph *principalPeerGraph) []*discovery.Layout {
 	fmt.Println("==========computeLayouts==============")
+	fmt.Println("====================非常重要===========")
 	var layouts []*discovery.Layout
 	// principalsSets is a collection of combinations of principals,
 	// such that each combination (given enough peers) satisfies the endorsement policy.

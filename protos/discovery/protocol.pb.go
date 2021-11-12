@@ -166,6 +166,7 @@ var xxx_messageInfo_Response proto.InternalMessageInfo
 func (m *Response) GetResults() []*QueryResult {
 	fmt.Println("==========Response===GetResults===========")
 	if m != nil {
+		fmt.Println("=======m.Results===========",m.Results)
 		return m.Results
 	}
 	return nil
@@ -535,6 +536,8 @@ func (m *QueryResult) GetResult() isQueryResult_Result {
 func (m *QueryResult) GetError() *Error {
 	fmt.Println("==========QueryResult===GetError===========")
 	if x, ok := m.GetResult().(*QueryResult_Error); ok {
+		fmt.Println("==========x",x)
+		fmt.Println("==========ok",ok)
 		return x.Error
 	}
 	return nil
@@ -543,6 +546,8 @@ func (m *QueryResult) GetError() *Error {
 func (m *QueryResult) GetConfigResult() *ConfigResult {
 	fmt.Println("==========QueryResult===GetConfigResult===========")
 	if x, ok := m.GetResult().(*QueryResult_ConfigResult); ok {
+		fmt.Println("==========x",x)
+		fmt.Println("==========ok",ok)
 		return x.ConfigResult
 	}
 	return nil
@@ -551,6 +556,8 @@ func (m *QueryResult) GetConfigResult() *ConfigResult {
 func (m *QueryResult) GetCcQueryRes() *ChaincodeQueryResult {
 	fmt.Println("==========QueryResult===GetCcQueryRes===========")
 	if x, ok := m.GetResult().(*QueryResult_CcQueryRes); ok {
+		fmt.Println("==========x",x)
+		fmt.Println("==========ok",ok)
 		return x.CcQueryRes
 	}
 	return nil
@@ -559,6 +566,8 @@ func (m *QueryResult) GetCcQueryRes() *ChaincodeQueryResult {
 func (m *QueryResult) GetMembers() *PeerMembershipResult {
 	fmt.Println("==========QueryResult===GetMembers===========")
 	if x, ok := m.GetResult().(*QueryResult_Members); ok {
+		fmt.Println("=================x",x)
+		fmt.Println("=================ok",ok)
 		return x.Members
 	}
 	return nil
@@ -744,6 +753,7 @@ var xxx_messageInfo_ConfigResult proto.InternalMessageInfo
 func (m *ConfigResult) GetMsps() map[string]*msp.FabricMSPConfig {
 	fmt.Println("==========ConfigResult===GetMsps===========")
 	if m != nil {
+		fmt.Println("======m.Msps======",m.Msps)
 		return m.Msps
 	}
 	return nil
@@ -752,6 +762,7 @@ func (m *ConfigResult) GetMsps() map[string]*msp.FabricMSPConfig {
 func (m *ConfigResult) GetOrderers() map[string]*Endpoints {
 	fmt.Println("==========ConfigResult===GetOrderers===========")
 	if m != nil {
+		fmt.Println("======m.Msps======",m.Msps)
 		return m.Orderers
 	}
 	return nil
@@ -795,6 +806,7 @@ var xxx_messageInfo_PeerMembershipQuery proto.InternalMessageInfo
 
 func (m *PeerMembershipQuery) GetFilter() *ChaincodeInterest {
 	if m != nil {
+		fmt.Println("======m.Filter======",m.Filter)
 		return m.Filter
 	}
 	return nil
@@ -835,6 +847,7 @@ var xxx_messageInfo_PeerMembershipResult proto.InternalMessageInfo
 func (m *PeerMembershipResult) GetPeersByOrg() map[string]*Peers {
 	fmt.Println("==========PeerMembershipResult===GetPeersByOrg===========")
 	if m != nil {
+		fmt.Println("======m.PeersByOrg======",m.PeersByOrg)
 		return m.PeersByOrg
 	}
 	return nil
@@ -878,6 +891,7 @@ var xxx_messageInfo_ChaincodeQuery proto.InternalMessageInfo
 func (m *ChaincodeQuery) GetInterests() []*ChaincodeInterest {
 	fmt.Println("==========ChaincodeQuery===GetInterests===========")
 	if m != nil {
+		fmt.Println("======m.Interests======",m.Interests)
 		return m.Interests
 	}
 	return nil
@@ -920,6 +934,7 @@ var xxx_messageInfo_ChaincodeInterest proto.InternalMessageInfo
 func (m *ChaincodeInterest) GetChaincodes() []*ChaincodeCall {
 	fmt.Println("==========ChaincodeInterest===GetChaincodes===========")
 	if m != nil {
+		fmt.Println("=====m.Chaincodes======",m.Chaincodes)
 		return m.Chaincodes
 	}
 	return nil
@@ -962,6 +977,7 @@ var xxx_messageInfo_ChaincodeCall proto.InternalMessageInfo
 func (m *ChaincodeCall) GetName() string {
 	fmt.Println("==========ChaincodeCall===GetName===========")
 	if m != nil {
+		fmt.Println("=====m.Name======",m.Name)
 		return m.Name
 	}
 	return ""
@@ -970,6 +986,7 @@ func (m *ChaincodeCall) GetName() string {
 func (m *ChaincodeCall) GetCollectionNames() []string {
 	fmt.Println("==========ChaincodeCall===GetCollectionNames===========")
 	if m != nil {
+		fmt.Println("====m.CollectionNames======",m.CollectionNames)
 		return m.CollectionNames
 	}
 	return nil
@@ -1011,6 +1028,7 @@ var xxx_messageInfo_ChaincodeQueryResult proto.InternalMessageInfo
 func (m *ChaincodeQueryResult) GetContent() []*EndorsementDescriptor {
 	fmt.Println("==========ChaincodeQueryResult===GetContent===========")
 	if m != nil {
+		fmt.Println("====m.Content======",m.Content)
 		return m.Content
 	}
 	return nil
@@ -1097,7 +1115,9 @@ func (m *EndorsementDescriptor) XXX_DiscardUnknown() {
 var xxx_messageInfo_EndorsementDescriptor proto.InternalMessageInfo
 
 func (m *EndorsementDescriptor) GetChaincode() string {
+	fmt.Println("====EndorsementDescriptor=====GetChaincode===")
 	if m != nil {
+		fmt.Println("====m.Chaincode======",m.Chaincode)
 		return m.Chaincode
 	}
 	return ""
@@ -1106,6 +1126,7 @@ func (m *EndorsementDescriptor) GetChaincode() string {
 func (m *EndorsementDescriptor) GetEndorsersByGroups() map[string]*Peers {
 	fmt.Println("==========EndorsementDescriptor===GetEndorsersByGroups===========")
 	if m != nil {
+		fmt.Println("====m.EndorsersByGroups=====",m.EndorsersByGroups)
 		return m.EndorsersByGroups
 	}
 	return nil
@@ -1114,6 +1135,7 @@ func (m *EndorsementDescriptor) GetEndorsersByGroups() map[string]*Peers {
 func (m *EndorsementDescriptor) GetLayouts() []*Layout {
 	fmt.Println("==========EndorsementDescriptor===GetLayouts===========")
 	if m != nil {
+		fmt.Println("====Layouts=====",m.Layouts)
 		return m.Layouts
 	}
 	return nil
@@ -1197,6 +1219,7 @@ var xxx_messageInfo_Peers proto.InternalMessageInfo
 func (m *Peers) GetPeers() []*Peer {
 	fmt.Println("==========Peers===GetPeers===========")
 	if m != nil {
+		fmt.Println("====m.Peers=====",m.Peers)
 		return m.Peers
 	}
 	return nil
@@ -1243,6 +1266,7 @@ var xxx_messageInfo_Peer proto.InternalMessageInfo
 func (m *Peer) GetStateInfo() *gossip.Envelope {
 	fmt.Println("==========Peer===GetStateInfo===========")
 	if m != nil {
+		fmt.Println("====m.StateInfo=====",m.StateInfo)
 		return m.StateInfo
 	}
 	return nil
@@ -1251,6 +1275,7 @@ func (m *Peer) GetStateInfo() *gossip.Envelope {
 func (m *Peer) GetMembershipInfo() *gossip.Envelope {
 	fmt.Println("==========Peer===GetMembershipInfo===========")
 	if m != nil {
+		fmt.Println("====m.MembershipInfo=====",m.MembershipInfo)
 		return m.MembershipInfo
 	}
 	return nil
@@ -1259,6 +1284,7 @@ func (m *Peer) GetMembershipInfo() *gossip.Envelope {
 func (m *Peer) GetIdentity() []byte {
 	fmt.Println("==========Peer===GetIdentity===========")
 	if m != nil {
+		fmt.Println("====m.Identity=====",m.Identity)
 		return m.Identity
 	}
 	return nil
@@ -1299,6 +1325,7 @@ var xxx_messageInfo_Error proto.InternalMessageInfo
 func (m *Error) GetContent() string {
 	fmt.Println("==========Error===GetContent===========")
 	if m != nil {
+		fmt.Println("====m.Content=====",m.Content)
 		return m.Content
 	}
 	return ""
@@ -1339,6 +1366,7 @@ var xxx_messageInfo_Endpoints proto.InternalMessageInfo
 func (m *Endpoints) GetEndpoint() []*Endpoint {
 	fmt.Println("==========Endpoints===GetEndpoint===========")
 	if m != nil {
+		fmt.Println("====m.Endpoint=====",m.Endpoint)
 		return m.Endpoint
 	}
 	return nil
@@ -1380,6 +1408,7 @@ var xxx_messageInfo_Endpoint proto.InternalMessageInfo
 func (m *Endpoint) GetHost() string {
 	fmt.Println("==========Endpoint===GetHost===========")
 	if m != nil {
+		fmt.Println("====m.Host====",m.Host)
 		return m.Host
 	}
 	return ""
@@ -1388,6 +1417,7 @@ func (m *Endpoint) GetHost() string {
 func (m *Endpoint) GetPort() uint32 {
 	fmt.Println("==========Endpoint===GetPort===========")
 	if m != nil {
+		fmt.Println("====m.Port====",m.Port)
 		return m.Port
 	}
 	return 0
@@ -1444,12 +1474,18 @@ type discoveryClient struct {
 }
 
 func NewDiscoveryClient(cc *grpc.ClientConn) DiscoveryClient {
+	fmt.Println("============NewDiscoveryClient================cc",cc)
 	return &discoveryClient{cc}
 }
 
 func (c *discoveryClient) Discover(ctx context.Context, in *SignedRequest, opts ...grpc.CallOption) (*Response, error) {
 	fmt.Println("==========discoveryClient===Discover===========")
 	out := new(Response)
+	fmt.Println("===ctx===",ctx)
+	fmt.Println("===/discovery.Discovery/Discover===")
+	fmt.Println("===in===",*in)
+	fmt.Println("===out===",*out)
+	fmt.Println("===opts===",opts)
 	err := c.cc.Invoke(ctx, "/discovery.Discovery/Discover", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -1464,10 +1500,14 @@ type DiscoveryServer interface {
 }
 
 func RegisterDiscoveryServer(s *grpc.Server, srv DiscoveryServer) {
+	fmt.Println("============RegisterDiscoveryServer=========")
+	fmt.Println("============_Discovery_serviceDesc=========",_Discovery_serviceDesc)
+
 	s.RegisterService(&_Discovery_serviceDesc, srv)
 }
 
 func _Discovery_Discover_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	fmt.Println("===========_Discovery_Discover_Handler========================")
 	in := new(SignedRequest)
 	if err := dec(in); err != nil {
 		return nil, err
