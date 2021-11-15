@@ -329,7 +329,6 @@ func TestQueryGeneratedBlock(t *testing.T) {
 }
 
 func addBlockForTesting(t *testing.T, chainid string) *common.Block {
-
 	ledger := peer.GetLedger(chainid)
 	defer ledger.Close()
 

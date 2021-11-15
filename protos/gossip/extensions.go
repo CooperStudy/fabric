@@ -139,6 +139,7 @@ func (m *GossipMessage) IsAliveMsg() bool {
 // IsDataMsg returns whether this GossipMessage is a data message
 func (m *GossipMessage) IsDataMsg() bool {
 	fmt.Println("==========GossipMessage==IsDataMsg====")
+	fmt.Println("====m.GetDataMsg()======",m.GetDataMsg())
 	return m.GetDataMsg() != nil
 }
 
@@ -227,12 +228,16 @@ func (m *GossipMessage) IsDataReq() bool {
 // IsPrivateDataMsg returns whether this message is related to private data
 func (m *GossipMessage) IsPrivateDataMsg() bool {
 	fmt.Println("==========GossipMessage==IsPrivateDataMsg====")
+	fmt.Println("============m.GetPrivateReq()============",m.GetPrivateReq())
+	fmt.Println("============m.GetPrivateRes()============",m.GetPrivateRes())
+	fmt.Println("============m.GetPrivateData()============",m.GetPrivateData())
 	return m.GetPrivateReq() != nil || m.GetPrivateRes() != nil || m.GetPrivateData() != nil
 }
 
 // IsAck returns whether this GossipMessage is an acknowledgement
 func (m *GossipMessage) IsAck() bool {
 	fmt.Println("==========GossipMessage==IsAck====")
+	fmt.Println("=========m.GetAck() != nil============",m.GetAck() != nil)
 	return m.GetAck() != nil
 }
 
@@ -271,16 +276,20 @@ type IdentifierExtractor func(*SignedGossipMessage) string
 func (m *GossipMessage) IsTagLegal() error {
 	fmt.Println("==========GossipMessage==IsTagLegal====")
 	if m.Tag == GossipMessage_UNDEFINED {
+		fmt.Println("========= m.Tag == GossipMessage_UNDEFINED ========")
 		return fmt.Errorf("Undefined tag")
 	}
 	if m.IsDataMsg() {
+		fmt.Println("=========m.IsDataMsg()========",m.IsDataMsg())
 		if m.Tag != GossipMessage_CHAN_AND_ORG {
+			fmt.Println("=========  m.Tag != GossipMessage_CHAN_AND_ORG  ========")
 			return fmt.Errorf("Tag should be %s", GossipMessage_Tag_name[int32(GossipMessage_CHAN_AND_ORG)])
 		}
 		return nil
 	}
 
 	if m.IsAliveMsg() || m.GetMemReq() != nil || m.GetMemRes() != nil {
+		fmt.Println("=========m.IsAliveMsg() || m.GetMemReq() != nil || m.GetMemRes() != nil ========")
 		if m.Tag != GossipMessage_EMPTY {
 			return fmt.Errorf("Tag should be %s", GossipMessage_Tag_name[int32(GossipMessage_EMPTY)])
 		}
@@ -288,6 +297,7 @@ func (m *GossipMessage) IsTagLegal() error {
 	}
 
 	if m.IsIdentityMsg() {
+		fmt.Println("========m.IsIdentityMsg=========")
 		if m.Tag != GossipMessage_ORG_ONLY {
 			return fmt.Errorf("Tag should be %s", GossipMessage_Tag_name[int32(GossipMessage_ORG_ONLY)])
 		}
@@ -295,6 +305,7 @@ func (m *GossipMessage) IsTagLegal() error {
 	}
 
 	if m.IsPullMsg() {
+		fmt.Println("====== m.IsPullMsg========")
 		switch m.GetPullMsgType() {
 		case PullMsgType_BLOCK_MSG:
 			if m.Tag != GossipMessage_CHAN_AND_ORG {
@@ -312,6 +323,7 @@ func (m *GossipMessage) IsTagLegal() error {
 	}
 
 	if m.IsStateInfoMsg() || m.IsStateInfoPullRequestMsg() || m.IsStateInfoSnapshot() || m.IsRemoteStateMessage() {
+		fmt.Println("====== m.IsStateInfoMsg() || m.IsStateInfoPullRequestMsg() || m.IsStateInfoSnapshot() || m.IsRemoteStateMessage() ========")
 		if m.Tag != GossipMessage_CHAN_OR_ORG {
 			return fmt.Errorf("Tag should be %s", GossipMessage_Tag_name[int32(GossipMessage_CHAN_OR_ORG)])
 		}
@@ -319,6 +331,7 @@ func (m *GossipMessage) IsTagLegal() error {
 	}
 
 	if m.IsLeadershipMsg() {
+		fmt.Println("====== m.IsLeadershipMsg ========")
 		if m.Tag != GossipMessage_CHAN_AND_ORG {
 			return fmt.Errorf("Tag should be %s", GossipMessage_Tag_name[int32(GossipMessage_CHAN_AND_ORG)])
 		}
@@ -397,11 +410,14 @@ func (m *SignedGossipMessage) Sign(signer Signer) (*Envelope, error) {
 
 	// Back it up, and restore it later
 	var secretEnvelope *SecretEnvelope
+	fmt.Println("======= m.Envelope==========", m.Envelope)
 	if m.Envelope != nil {
+		fmt.Println("=======secretEnvelope==========", secretEnvelope)
 		secretEnvelope = m.Envelope.SecretEnvelope
 	}
 	m.Envelope = nil
 	payload, err := proto.Marshal(m.GossipMessage)
+	fmt.Println("======payload=======",payload)
 	if err != nil {
 		return nil, err
 	}
@@ -409,12 +425,16 @@ func (m *SignedGossipMessage) Sign(signer Signer) (*Envelope, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("=====sig========",sig)
 
 	e := &Envelope{
 		Payload:        payload,
 		Signature:      sig,
 		SecretEnvelope: secretEnvelope,
 	}
+	fmt.Println("============Payload==============",payload)
+	fmt.Println("============Signature==============",sig)
+	fmt.Println("============SecretEnvelope==============",secretEnvelope)
 	m.Envelope = e
 	return e, nil
 }
@@ -423,6 +443,8 @@ func (m *SignedGossipMessage) Sign(signer Signer) (*Envelope, error) {
 func (m *GossipMessage) NoopSign() (*SignedGossipMessage, error) {
 	fmt.Println("==========GossipMessage==NoopSign====")
 	signer := func(msg []byte) ([]byte, error) {
+		fmt.Println("======msg=======",msg)
+		fmt.Println("======return nil nil==================")
 		return nil, nil
 	}
 	sMsg := &SignedGossipMessage{
@@ -497,10 +519,12 @@ func (e *Envelope) SignSecret(signer Signer, secret *Secret) error {
 	if err != nil {
 		return err
 	}
+	fmt.Println("======payload==============",payload)
 	sig, err := signer(payload)
 	if err != nil {
 		return err
 	}
+	fmt.Println("======sig==============",sig)
 	e.SecretEnvelope = &SecretEnvelope{
 		Payload:   payload,
 		Signature: sig,
@@ -554,39 +578,55 @@ func (m *SignedGossipMessage) String() string {
 	fmt.Println("==========SignedGossipMessage==String====")
 	env := "No envelope"
 	if m.Envelope != nil {
+		fmt.Println("========m.Envelope != nil========")
 		var secretEnv string
+		fmt.Println("=======m.SecretEnvelope ========",m.SecretEnvelope)
 		if m.SecretEnvelope != nil {
 			pl := len(m.SecretEnvelope.Payload)
 			sl := len(m.SecretEnvelope.Signature)
 			secretEnv = fmt.Sprintf(" Secret payload: %d bytes, Secret Signature: %d bytes", pl, sl)
+			fmt.Println("=================pl",pl)
+			fmt.Println("=================sl",sl)
+			fmt.Println("=================secretEnv",secretEnv)
 		}
 		env = fmt.Sprintf("%d bytes, Signature: %d bytes%s", len(m.Envelope.Payload), len(m.Envelope.Signature), secretEnv)
+		fmt.Println("============env===============",env)
 	}
 	gMsg := "No gossipMessage"
 	if m.GossipMessage != nil {
 		var isSimpleMsg bool
 		if m.GetStateResponse() != nil {
+			fmt.Println("=========m.GetStateResponse() != nil====================")
 			gMsg = fmt.Sprintf("StateResponse with %d items", len(m.GetStateResponse().Payloads))
 		} else if m.IsDataMsg() && m.GetDataMsg().Payload != nil {
 			gMsg = m.GetDataMsg().Payload.toString()
+			fmt.Println("========else if m.IsDataMsg() && m.GetDataMsg().Payload != nil===================")
 		} else if m.IsDataUpdate() {
+			fmt.Println("========m.IsDataUpdate()===================")
 			update := m.GetDataUpdate()
 			gMsg = fmt.Sprintf("DataUpdate: %s", update.toString())
 		} else if m.GetMemRes() != nil {
+			fmt.Println("========m.GetMemRes() != nil==================")
 			gMsg = m.GetMemRes().toString()
 		} else if m.IsStateInfoSnapshot() {
+			fmt.Println("========m.IsStateInfoSnapshot()==================")
 			gMsg = m.GetStateSnapshot().toString()
 		} else if m.GetPrivateRes() != nil {
+			fmt.Println("========m.GetPrivateRes() != nil=================")
 			gMsg = m.GetPrivateRes().ToString()
 		} else {
+			fmt.Println("========else=================")
 			gMsg = m.GossipMessage.String()
 			isSimpleMsg = true
 		}
 		if !isSimpleMsg {
 			desc := fmt.Sprintf("Channel: %s, nonce: %d, tag: %s", string(m.Channel), m.Nonce, GossipMessage_Tag_name[int32(m.Tag)])
 			gMsg = fmt.Sprintf("%s %s", desc, gMsg)
+			fmt.Println("===========desc========",desc)
 		}
 	}
+	fmt.Println("=========gMsg============",gMsg)
+	fmt.Println("=========env============",env)
 	return fmt.Sprintf("GossipMessage: %v, Envelope: %s", gMsg, env)
 }
 

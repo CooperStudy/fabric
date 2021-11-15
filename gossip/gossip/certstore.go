@@ -66,8 +66,11 @@ func newCertStore(puller pull.Mediator, idMapper identity.Mapper, selfIdentity a
 func (cs *certStore) handleMessage(msg proto.ReceivedMessage) {
 	fmt.Println("====certStore===handleMessage==")
 	if update := msg.GetGossipMessage().GetDataUpdate(); update != nil {
-		for _, env := range update.Data {
+		for k, env := range update.Data {
+			fmt.Println("=======k==========",k)
+			fmt.Println("=======env==========",env)
 			m, err := env.ToGossipMessage()
+			fmt.Println("===m======",m)
 			if err != nil {
 				cs.logger.Warningf("Data update contains an invalid message: %+v", errors.WithStack(err))
 				return
@@ -88,6 +91,7 @@ func (cs *certStore) handleMessage(msg proto.ReceivedMessage) {
 func (cs *certStore) validateIdentityMsg(msg *proto.SignedGossipMessage) error {
 	fmt.Println("====certStore===validateIdentityMsg==")
 	idMsg := msg.GetPeerIdentity()
+	fmt.Println("=======idMsg==========",idMsg)
 	if idMsg == nil {
 		return errors.Errorf("Identity empty: %+v", msg)
 	}
@@ -95,11 +99,16 @@ func (cs *certStore) validateIdentityMsg(msg *proto.SignedGossipMessage) error {
 	cert := idMsg.Cert
 	calculatedPKIID := cs.mcs.GetPKIidOfCert(api.PeerIdentityType(cert))
 	claimedPKIID := common.PKIidType(pkiID)
+	fmt.Println("=======pkiID==========",pkiID)
+	fmt.Println("=======cert==========",cert)
+	fmt.Println("=======calculatedPKIID==========",calculatedPKIID)
+	fmt.Println("=======claimedPKIID==========",claimedPKIID)
 	if !bytes.Equal(calculatedPKIID, claimedPKIID) {
 		return errors.Errorf("Calculated pkiID doesn't match identity: calculated: %v, claimedPKI-ID: %v", calculatedPKIID, claimedPKIID)
 	}
 
 	verifier := func(peerIdentity []byte, signature, message []byte) error {
+		fmt.Println("==========verifier=========")
 		return cs.mcs.Verify(api.PeerIdentityType(peerIdentity), signature, message)
 	}
 

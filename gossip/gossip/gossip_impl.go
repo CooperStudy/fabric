@@ -358,11 +358,14 @@ func (g *gossipServiceImpl) handleMessage(m proto.ReceivedMessage) {
 		return
 	}
 
+	fmt.Println("=======m===============",m)
 	if m == nil || m.GetGossipMessage() == nil {
 		return
 	}
 
 	msg := m.GetGossipMessage()
+	fmt.Println("=======msg======",msg)
+	fmt.Println("=======m.GetConnectionInfo======",m.GetConnectionInfo())
 
 	g.logger.Debug("Entering,", m.GetConnectionInfo(), "sent us", msg)
 	defer g.logger.Debug("Exiting")
@@ -456,6 +459,8 @@ func (g *gossipServiceImpl) sendGossipBatch(a []interface{}) {
 	fmt.Println("====gossipServiceImpl===sendGossipBatch=======")
 	msgs2Gossip := make([]*emittedGossipMessage, len(a))
 	for i, e := range a {
+		fmt.Println("======i",i)
+		fmt.Println("======e",e)
 		msgs2Gossip[i] = e.(*emittedGossipMessage)
 	}
 	g.gossipBatch(msgs2Gossip)
@@ -486,23 +491,29 @@ func (g *gossipServiceImpl) gossipBatch(msgs []*emittedGossipMessage) {
 	var leadershipMsgs []*emittedGossipMessage
 
 	isABlock := func(o interface{}) bool {
+		fmt.Println("====isABlock========")
 		return o.(*emittedGossipMessage).IsDataMsg()
 	}
 	isAStateInfoMsg := func(o interface{}) bool {
+		fmt.Println("====isAStateInfoMsg========")
 		return o.(*emittedGossipMessage).IsStateInfoMsg()
 	}
 	aliveMsgsWithNoEndpointAndInOurOrg := func(o interface{}) bool {
+		fmt.Println("====aliveMsgsWithNoEndpointAndInOurOrg========")
 		msg := o.(*emittedGossipMessage)
 		if !msg.IsAliveMsg() {
 			return false
 		}
 		member := msg.GetAliveMsg().Membership
+		fmt.Println("============member============")
 		return member.Endpoint == "" && g.isInMyorg(discovery.NetworkMember{PKIid: member.PkiId})
 	}
 	isOrgRestricted := func(o interface{}) bool {
+		fmt.Println("=======isOrgRestricted=========")
 		return aliveMsgsWithNoEndpointAndInOurOrg(o) || o.(*emittedGossipMessage).IsOrgRestricted()
 	}
 	isLeadershipMsg := func(o interface{}) bool {
+		fmt.Println("============isLeadershipMsg============")
 		return o.(*emittedGossipMessage).IsLeadershipMsg()
 	}
 
@@ -560,6 +571,7 @@ func (g *gossipServiceImpl) gossipBatch(msgs []*emittedGossipMessage) {
 func (g *gossipServiceImpl) sendAndFilterSecrets(msg *proto.SignedGossipMessage, peers ...*comm.RemotePeer) {
 	fmt.Println("====gossipServiceImpl===sendAndFilterSecrets=======")
 	for _, peer := range peers {
+		fmt.Println("===========peer=============",peer)
 		// Prevent forwarding alive messages of external organizations
 		// to peers that have no external endpoints
 		aliveMsgFromDiffOrg := msg.IsAliveMsg() && !g.isInMyorg(discovery.NetworkMember{PKIid: msg.GetAliveMsg().Membership.PkiId})
@@ -949,6 +961,7 @@ func (da *discoveryAdapter) toDie() bool {
 func (da *discoveryAdapter) Gossip(msg *proto.SignedGossipMessage) {
 	fmt.Println("====discoveryAdapter=====Gossip===")
 	if da.toDie() {
+		fmt.Println("=====da.toDie======")
 		return
 	}
 
@@ -1084,6 +1097,7 @@ func (sa *discoverySecurityAdapter) ValidateAliveMsg(m *proto.SignedGossipMessag
 func (sa *discoverySecurityAdapter) SignMessage(m *proto.GossipMessage, internalEndpoint string) *proto.Envelope {
 	fmt.Println("====discoverySecurityAdapter=====SignMessage===")
 	signer := func(msg []byte) ([]byte, error) {
+		fmt.Println("============signer===========")
 		return sa.mcs.Sign(msg)
 	}
 	if m.IsAliveMsg() && time.Now().Before(sa.includeIdentityPeriod) {
@@ -1237,6 +1251,7 @@ func (g *gossipServiceImpl) hasExternalEndpoint(PKIID common.PKIidType) bool {
 
 func (g *gossipServiceImpl) isInMyorg(member discovery.NetworkMember) bool {
 	fmt.Println("====gossipServiceImpl=====isInMyorg===")
+	fmt.Println("=====member.PKIid======",member.PKIid)
 	if member.PKIid == nil {
 		return false
 	}

@@ -43,6 +43,7 @@ func (advisor *mspSecurityAdvisor) OrgByPeerIdentity(peerIdentity api.PeerIdenti
 	fmt.Println("===mspSecurityAdvisor===OrgByPeerIdentity======")
 
 	// Validate arguments
+	fmt.Println("========len(peerIdentity)====================",len(peerIdentity))
 	if len(peerIdentity) == 0 {
 		saLogger.Error("Invalid Peer Identity. It must be different from nil.")
 

@@ -66,9 +66,13 @@ func (cs *connectionStore) getConnection(peer *RemotePeer) (*connection, error) 
 
 	pkiID := peer.PKIID
 	endpoint := peer.Endpoint
-
+	fmt.Println("========pkiID==============",pkiID)
+	fmt.Println("========endpoint==============",endpoint)
 	cs.Lock()
+
 	destinationLock, hasConnected := cs.destinationLocks[string(pkiID)]
+	fmt.Println("=======destinationLock=========",destinationLock)
+	fmt.Println("=======hasConnected=========",hasConnected)
 	if !hasConnected {
 		destinationLock = &sync.Mutex{}
 		cs.destinationLocks[string(pkiID)] = destinationLock
@@ -78,7 +82,10 @@ func (cs *connectionStore) getConnection(peer *RemotePeer) (*connection, error) 
 	destinationLock.Lock()
 
 	cs.RLock()
+
 	conn, exists := cs.pki2Conn[string(pkiID)]
+	fmt.Println("=========conn============",conn)
+	fmt.Println("=========exists============",conn)
 	if exists {
 		cs.RUnlock()
 		destinationLock.Unlock()
@@ -384,6 +391,8 @@ func (conn *connection) getStream() stream {
 	conn.Lock()
 	defer conn.Unlock()
 
+	fmt.Println("=====conn.clientStream=========",conn.clientStream)
+	fmt.Println("=====conn.serverStream=========",conn.serverStream)
 	if conn.clientStream != nil && conn.serverStream != nil {
 		e := errors.New("Both client and server stream are not nil, something went wrong")
 		conn.logger.Errorf("%+v", e)

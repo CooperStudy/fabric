@@ -111,9 +111,14 @@ func (f *FabricLogger) WithOptions(opts ...zap.Option) *FabricLogger {
 func formatArgs(args []interface{}) string {
 	fmt.Println("===formatArgs====")
 	fmt.Println("=========args=========",args)//[=======GetDefault=================defaultBCCSP 0xc000014b40]
-	//
+	//[Sending IDENTITY_MSG hello to peer1.org1.example.com:7051]
 	s:= strings.TrimSuffix(fmt.Sprintln(args...), "\n")
-	fmt.Println("========s=========",s)//Created with config TLS: true, auth cache disabled
+	fmt.Println("========s=========",s)//Sleeping 25s //Sending IDENTITY_MSG hello to peer1.org1.example.com:7051
+	// [Entering, Sending to peer1.org1.example.com:7051 , msg: GossipMessage: tag:EMPTY hello:<nonce:276265988097776331 msg_type:IDENTITY_MSG > , Envelope: 16 bytes, Signature: 0 bytes]
+	//Created with config TLS: true, auth cache disabled
 	//========s========= =======GetDefault=================defaultBCCSP &{0x17db2d8 map[*bccsp.ECDSAP256KeyGenOpts:0xc0002dd6a0 *bccsp.ECDSAP384KeyGenOpts:0xc0002dd6b0 *bccsp.AES192KeyGenOpts:0xc000458f98 *bccsp.RSAKeyGenOpts:0xc000458fb8 *bccsp.RSA2048KeyGenOpts:0xc000458fd8 *bccsp.RSA4096KeyGenOpts:0xc000458ff8 *bccsp.ECDSAKeyGenOpts:0xc0002dd690 *bccsp.AESKeyGenOpts:0xc000458f78 *bccsp.AES256KeyGenOpts:0xc000458f88 *bccsp.AES128KeyGenOpts:0xc000458fa8 *bccsp.RSA1024KeyGenOpts:0xc000458fc8 *bccsp.RSA3072KeyGenOpts:0xc000458fe8] map[*sw.ecdsaPrivateKey:0x17db2d8 *sw.ecdsaPublicKey:0x17db2d8 *sw.aesPrivateKey:0xc0002e4460] map[*bccsp.ECDSAPrivateKeyImportOpts:0x17db2d8 *bccsp.ECDSAGoPublicKeyImportOpts:0x17db2d8 *bccsp.RSAGoPublicKeyImportOpts:0x17db2d8 *bccsp.X509PublicKeyImportOpts:0xc0002e4468 *bccsp.AES256ImportKeyOpts:0x17db2d8 *bccsp.HMACImportKeyOpts:0x17db2d8 *bccsp.ECDSAPKIXPublicKeyImportOpts:0x17db2d8] map[*sw.aesPrivateKey:0x17db2d8] map[*sw.aesPrivateKey:0x17db2d8] map[*sw.ecdsaPrivateKey:0x17db2d8 *sw.rsaPrivateKey:0x17db2d8] map[*sw.ecdsaPrivateKey:0x17db2d8 *sw.ecdsaPublicKey:0x17db2d8 *sw.rsaPrivateKey:0x17db2d8 *sw.rsaPublicKey:0x17db2d8] map[*bccsp.SHA384Opts:0xc0002e4438 *bccsp.SHA3_256Opts:0xc0002e4440 *bccsp.SHA3_384Opts:0xc0002e4448 *bccsp.SHAOpts:0xc0002e4428 *bccsp.SHA256Opts:0xc0002e4430]}
+	/*
+	[Got message: GossipMessage: tag:EMPTY data_dig:<nonce:276265988097776331 digests:"\364\272 \026p\303\266\036\304e\330\337T8\t\353~sa\311\221k{\n\302\n\226\354%\213\3117" digests:"v\302\304I\323!#\263\301\370[\366I\345\323n\334\315\276\035\"\213\346\023\0178y`Ht\177\360" msg_type:IDENTITY_MSG > , Envelope: 84 bytes, Signature: 0 bytes]
+	*/
 	return s
 }

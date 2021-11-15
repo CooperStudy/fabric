@@ -26,7 +26,8 @@ import (
 
 func signECDSA(k *ecdsa.PrivateKey, digest []byte, opts bccsp.SignerOpts) ([]byte, error) {
 	fmt.Println("===signECDSA=====")
-	r, s, err := ecdsa.Sign(rand.Reader, k, digest)
+	a := rand.Reader
+	r, s, err := ecdsa.Sign(a, k, digest)
 	if err != nil {
 		return nil, err
 	}

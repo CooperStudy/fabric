@@ -96,11 +96,13 @@ func loadPrivateKey(file string) (*ecdsa.PrivateKey, error) {
 func signECDSA(k *ecdsa.PrivateKey, digest []byte) (signature []byte, err error) {
 	fmt.Println("===signECDSA======")
 	r, s, err := ecdsa.Sign(rand.Reader, k, digest)
+	fmt.Println("===============r,s=====")
 	if err != nil {
 		return nil, err
 	}
 
 	s, _, err = utils.ToLowS(&k.PublicKey, s)
+	fmt.Println("=================")
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +111,7 @@ func signECDSA(k *ecdsa.PrivateKey, digest []byte) (signature []byte, err error)
 }
 
 func marshalECDSASignature(r, s *big.Int) ([]byte, error) {
-	fmt.Println("===marshalECDSASignature======")
+	fmt.Println("=====marshalECDSASignature======")
 	return asn1.Marshal(ECDSASignature{r, s})
 }
 

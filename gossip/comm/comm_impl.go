@@ -65,7 +65,6 @@ func NewCommInstanceWithServer(port int, idMapper identity.Mapper, peerIdentity 
 
 	secureDialOpts api.PeerSecureDialOpts, sa api.SecurityAdvisor, dialOpts ...grpc.DialOption) (Comm, error) {
 
-
 	fmt.Println("=====NewCommInstanceWithServer=======")
 	var ll net.Listener
 	var s *grpc.Server
@@ -183,6 +182,7 @@ func (c *commImpl) createConnection(endpoint string, expectedPKIID common.PKIidT
 
 	ctx, cancel = context.WithTimeout(context.Background(), defConnTimeout)
 	defer cancel()
+	fmt.Println("===================cl.Ping(ctx, &proto.Empty{})==========")
 	if _, err = cl.Ping(ctx, &proto.Empty{}); err != nil {
 		cc.Close()
 		return nil, errors.WithStack(err)
@@ -234,13 +234,19 @@ func (c *commImpl) createConnection(endpoint string, expectedPKIID common.PKIidT
 
 func (c *commImpl) Send(msg *proto.SignedGossipMessage, peers ...*RemotePeer) {
 	fmt.Println("=====commImpl==Send=====")
+	fmt.Println("===========c.isStopping()=========", c.isStopping())
+	fmt.Println("===========len(peers)=========", len(peers))
 	if c.isStopping() || len(peers) == 0 {
 		return
 	}
 	c.logger.Debug("Entering, sending", msg, "to ", len(peers), "peers")
-
+	fmt.Println("Entering, sending", msg, "to ", len(peers), "peers")
 	for _, peer := range peers {
+		fmt.Println("=======peer==========",peer)
 		go func(peer *RemotePeer, msg *proto.SignedGossipMessage) {
+			fmt.Println("===peer===",peer)
+			fmt.Println("===msg===",msg)
+			fmt.Println("===nonBlockingSend===")
 			c.sendToEndpoint(peer, msg, nonBlockingSend)
 		}(peer, msg)
 	}

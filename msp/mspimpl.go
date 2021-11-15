@@ -110,14 +110,17 @@ func newBccspMsp(version MSPVersion) (MSP, error) {
 	theMsp.bccsp = bccsp
 	switch version {
 	case MSPv1_0:
+		fmt.Println("==MSPv1_0==")
 		theMsp.internalSetupFunc = theMsp.setupV1
 		theMsp.internalValidateIdentityOusFunc = theMsp.validateIdentityOUsV1
 		theMsp.internalSatisfiesPrincipalInternalFunc = theMsp.satisfiesPrincipalInternalPreV13
 	case MSPv1_1:
+		fmt.Println("==MSPv1_1==")
 		theMsp.internalSetupFunc = theMsp.setupV11
 		theMsp.internalValidateIdentityOusFunc = theMsp.validateIdentityOUsV11
 		theMsp.internalSatisfiesPrincipalInternalFunc = theMsp.satisfiesPrincipalInternalPreV13
 	case MSPv1_3:
+		fmt.Println("==MSPv1_3==")
 		theMsp.internalSetupFunc = theMsp.setupV11
 		theMsp.internalValidateIdentityOusFunc = theMsp.validateIdentityOUsV11
 		theMsp.internalSatisfiesPrincipalInternalFunc = theMsp.satisfiesPrincipalInternalV13

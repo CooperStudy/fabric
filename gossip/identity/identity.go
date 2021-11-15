@@ -272,7 +272,6 @@ func newStoredIdentity(pkiID common.PKIidType, identity api.PeerIdentityType, ex
 }
 
 func (si *storedIdentity) fetchIdentity() api.PeerIdentityType {
-	fmt.Println("====storedIdentity==fetchIdentity==")
 	atomic.StoreInt64(&si.lastAccessTime, time.Now().UnixNano())
 	return si.peerIdentity
 }

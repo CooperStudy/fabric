@@ -2735,6 +2735,7 @@ func (x *gossipGossipStreamClient) Recv() (*Envelope, error) {
 
 func (c *gossipClient) Ping(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Empty, error) {
 	out := new(Empty)
+	fmt.Println("===========gossipClient======Ping========================")
 	err := c.cc.Invoke(ctx, "/gossip.Gossip/Ping", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -2781,10 +2782,12 @@ func (x *gossipGossipStreamServer) Recv() (*Envelope, error) {
 }
 
 func _Gossip_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	fmt.Println("====================_Gossip_Ping_Handler===========================")
 	in := new(Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
+	fmt.Println("========interceptor=====",interceptor)
 	if interceptor == nil {
 		return srv.(GossipServer).Ping(ctx, in)
 	}
@@ -2793,6 +2796,7 @@ func _Gossip_Ping_Handler(srv interface{}, ctx context.Context, dec func(interfa
 		FullMethod: "/gossip.Gossip/Ping",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		fmt.Println("===============handler============")
 		return srv.(GossipServer).Ping(ctx, req.(*Empty))
 	}
 	return interceptor(ctx, in, info, handler)

@@ -89,9 +89,12 @@ func (n NetworkMember) String() string {
 // endpoint
 func (n NetworkMember) PreferredEndpoint() string {
 	fmt.Println("=======NetworkMember========PreferredEndpoint==")
+	fmt.Println("===n====",n)
+	fmt.Println("===n.InternalEndpoint====",n.InternalEndpoint)
 	if n.InternalEndpoint != "" {
 		return n.InternalEndpoint
 	}
+	fmt.Println("===n.Endpoint====",n.Endpoint)
 	return n.Endpoint
 }
 

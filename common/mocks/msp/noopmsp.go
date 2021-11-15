@@ -53,6 +53,7 @@ func (msp *noopmsp) GetSigningIdentity(identifier *m.IdentityIdentifier) (m.Sign
 }
 
 func (msp *noopmsp) GetDefaultSigningIdentity() (m.SigningIdentity, error) {
+
 	id, _ := newNoopSigningIdentity()
 	return id, nil
 }

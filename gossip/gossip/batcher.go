@@ -70,7 +70,6 @@ func (p *batchingEmitterImpl) periodicEmit() {
 }
 
 func (p *batchingEmitterImpl) emit() {
-	fmt.Println("====batchingEmitterImpl===emit==")
 	if p.toDie() {
 		return
 	}
@@ -79,9 +78,13 @@ func (p *batchingEmitterImpl) emit() {
 	}
 	msgs2beEmitted := make([]interface{}, len(p.buff))
 	for i, v := range p.buff {
+		fmt.Println("=====i",i)
+		fmt.Println("=====v",v)
 		msgs2beEmitted[i] = v.data
+		fmt.Println("==v.data===",v.data)
 	}
 
+	fmt.Println("====msgs2beEmitted======",msgs2beEmitted)
 	p.cb(msgs2beEmitted)
 	p.decrementCounters()
 }
@@ -89,19 +92,26 @@ func (p *batchingEmitterImpl) emit() {
 func (p *batchingEmitterImpl) decrementCounters() {
 	fmt.Println("====batchingEmitterImpl===decrementCounters==")
 	n := len(p.buff)
+	fmt.Println("========n=========",n)
 	for i := 0; i < n; i++ {
 		msg := p.buff[i]
 		msg.iterationsLeft--
+		fmt.Println("=====msg============",msg)
+		fmt.Println("=====msg.iterationsLeft============",msg.iterationsLeft)
+		fmt.Println("+=====p.buff====",p.buff)
 		if msg.iterationsLeft == 0 {
+			fmt.Println("=====msg.iterationsLeft=========",msg.iterationsLeft)
 			p.buff = append(p.buff[:i], p.buff[i+1:]...)
+			fmt.Println("===========p.buff============",p.buff)
 			n--
+			fmt.Println("======n=======",n)
 			i--
+			fmt.Println("======i=======",i)
 		}
 	}
 }
 
 func (p *batchingEmitterImpl) toDie() bool {
-	fmt.Println("====batchingEmitterImpl===toDie==")
 	return atomic.LoadInt32(&(p.stopFlag)) == int32(1)
 }
 
@@ -134,6 +144,7 @@ func (p *batchingEmitterImpl) Size() int {
 
 func (p *batchingEmitterImpl) Add(message interface{}) {
 	fmt.Println("====batchingEmitterImpl===Add==")
+	fmt.Println("===message=====",message)
 	if p.iterations == 0 {
 		return
 	}

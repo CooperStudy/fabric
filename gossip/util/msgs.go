@@ -72,8 +72,10 @@ func (m *MembershipStore) ToSlice() []*proto.SignedGossipMessage {
 	members := make([]*proto.SignedGossipMessage, len(m.m))
 	i := 0
 	for _, member := range m.m {
+		fmt.Println("=====member====",member)
 		members[i] = member
 		i++
 	}
+	fmt.Println("=====members========",members)
 	return members
 }

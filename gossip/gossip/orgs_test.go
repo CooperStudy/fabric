@@ -86,6 +86,7 @@ func (*configurableCryptoService) Sign(msg []byte) ([]byte, error) {
 // If the verification succeeded, Verify returns nil meaning no error occurred.
 // If peerCert is nil, then the signature is verified against this peer's verification key.
 func (*configurableCryptoService) Verify(peerIdentity api.PeerIdentityType, signature, message []byte) error {
+
 	equal := bytes.Equal(signature, message)
 	if !equal {
 		return fmt.Errorf("Wrong signature:%v, %v", signature, message)

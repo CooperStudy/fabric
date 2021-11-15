@@ -170,13 +170,12 @@ func (cps ComparablePrincipalSet) String() string {
 		buff.WriteString(cp.mspID)
 		buff.WriteString(".")
 		if cp.role != nil {
-			fmt.Println("=============cp.role != nil=================")
-			fmt.Println("========fmt.Sprintf(\"%v\", cp.role.Role)==========",fmt.Sprintf("%v", cp.role.Role))//MEMBER
+			fmt.Println("=============cp.role != nil=================",fmt.Sprintf("%v", cp.role.Role))
 			buff.WriteString(fmt.Sprintf("%v", cp.role.Role))
 		}
 		if cp.ou != nil {
 			fmt.Println("=============cp.ou != nil=================")
-			fmt.Println("==========fmt.Sprintf(\"%v\", cp.ou.OrganizationalUnitIdentifier)========",fmt.Sprintf("%v", cp.ou.OrganizationalUnitIdentifier))
+			fmt.Println("=============cp.role != nil=================",fmt.Sprintf("%v", cp.ou.OrganizationalUnitIdentifier))
 			buff.WriteString(fmt.Sprintf("%v", cp.ou.OrganizationalUnitIdentifier))
 		}
 		fmt.Println("================i",i)

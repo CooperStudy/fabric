@@ -188,6 +188,10 @@ func (csp *CSP) Hash(msg []byte, opts bccsp.HashOpts) (digest []byte, err error)
 	}
 
 	fmt.Println("=====msg=====",msg)//[48 130 2 58 48 130 1 225...]
+	/*
+	[24 1 42 80 10 63 10 27 112 101 101 114 48 46 111 114 103 49 46 101 120 97 109 112 108 101 46 99 111 109 58 55 48 53 49 26 32 118 194 196 73 211 33 35 179 193 248 91 246 73 229 211 110 220 205 190 29 34 139 230 19 15 56 121 96 72 116 127 240 18 13 8 206 188 172 175 159 155 230 219 22 16 139 1]
+
+	*/
 	fmt.Println("==bccsp.HashOpts==opt===",opts)
 	fmt.Printf("========bccsp.HashOpts==opts type:%T==============\n",opts)
 	a := reflect.TypeOf(opts)//==bccsp.HashOpts==opt=== &{}
@@ -250,12 +254,17 @@ func (csp *CSP) Sign(k bccsp.Key, digest []byte, opts bccsp.SignerOpts) (signatu
 	}
 
 	keyType := reflect.TypeOf(k)
+	fmt.Println("========keyType======",keyType)
 	signer, found := csp.Signers[keyType]
+	fmt.Printf("====signer type:%T===\n",signer)
+	fmt.Println("====found===\n",found)
 	if !found {
 		return nil, errors.Errorf("Unsupported 'SignKey' provided [%s]", keyType)
 	}
 
-	signature, err = signer.Sign(k, digest, opts)
+	signature, err = signer.Sign(k, digest, opts)//ECDSA
+	fmt.Println("=======signature=====",signature)
+	fmt.Println("==============err============",err)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed signing with opts [%v]", opts)
 	}

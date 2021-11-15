@@ -263,6 +263,11 @@ func (p *pullMediatorImpl) SelectPeers() []string {
 // in the digest message.
 func (p *pullMediatorImpl) Hello(dest string, nonce uint64) {
 	fmt.Println("====pullMediatorImpl==Hello===")
+	fmt.Println("==============nonce==========",nonce)
+	fmt.Println("==============p.config.MsgType==========",p.config.MsgType)
+	fmt.Println("=====================p",p)
+	fmt.Println("=========Channel============",p.config.Channel)
+	fmt.Println("=========Tag============",p.config.Tag)
 	helloMsg := &proto.GossipMessage{
 		Channel: p.config.Channel,
 		Tag:     p.config.Tag,
@@ -277,10 +282,13 @@ func (p *pullMediatorImpl) Hello(dest string, nonce uint64) {
 
 	p.logger.Debug("Sending", p.config.MsgType, "hello to", dest)
 	sMsg, err := helloMsg.NoopSign()
+	fmt.Println("=======sMsg===============",sMsg)
+	fmt.Println("=======err===============",err)
 	if err != nil {
 		p.logger.Errorf("Failed creating SignedGossipMessage: %+v", errors.WithStack(err))
 		return
 	}
+	fmt.Println("=========dest=========",dest)
 	p.Sndr.Send(sMsg, p.peersWithEndpoints(dest)...)
 }
 
@@ -367,7 +375,10 @@ func (p *pullMediatorImpl) peersWithEndpoints(endpoints ...string) []*comm.Remot
 	fmt.Println("====pullMediatorImpl==peersWithEndpoints===")
 	peers := []*comm.RemotePeer{}
 	for _, member := range p.MemSvc.GetMembership() {
+		fmt.Println("==========member============",member)
 		for _, endpoint := range endpoints {
+			fmt.Println("=========endpoint==========",endpoint)
+			fmt.Println("=========member.PreferredEndpoint()==========",member.PreferredEndpoint())
 			if member.PreferredEndpoint() == endpoint {
 				peers = append(peers, &comm.RemotePeer{Endpoint: member.PreferredEndpoint(), PKIID: member.PKIid})
 			}

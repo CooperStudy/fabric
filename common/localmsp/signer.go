@@ -64,6 +64,7 @@ func (s *mspSigner) NewSignatureHeader() (*cb.SignatureHeader, error) {
 func (s *mspSigner) Sign(message []byte) ([]byte, error) {
 	fmt.Println("=======mspSigner========Sign==============")
 	signer, err := mspmgmt.GetLocalMSP().GetDefaultSigningIdentity()
+	fmt.Println("====signer======",signer)
 	if err != nil {
 		return nil, fmt.Errorf("Failed getting MSP-based signer [%s]", err)
 	}

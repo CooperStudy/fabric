@@ -223,9 +223,12 @@ func RandomUInt64() uint64 {
 	fmt.Println("===RandomUInt64==")
 	b := make([]byte, 8)
 	_, err := io.ReadFull(cryptorand.Reader, b)
+	fmt.Println("===err=====",err)
 	if err == nil {
 		n := new(big.Int)
-		return n.SetBytes(b).Uint64()
+		b:= n.SetBytes(b).Uint64()
+		fmt.Println("===========RandomUInt64",b)
+		return b
 	}
 	rand.Seed(rand.Int63())
 	return uint64(rand.Int63())

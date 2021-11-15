@@ -156,6 +156,7 @@ func loadLocaMSP() msp.MSP {
 	fmt.Println("====loadLocaMSP==")
 	// determine the type of MSP (by default, we'll use bccspMSP)
 	mspType := viper.GetString("peer.localMspType")
+	fmt.Println("======================mspType=====================",mspType)
 	if mspType == "" {
 		mspType = msp.ProviderTypeToString(msp.FABRIC)
 	}
@@ -164,7 +165,10 @@ func loadLocaMSP() msp.MSP {
 		msp.ProviderTypeToString(msp.FABRIC): &msp.BCCSPNewOpts{NewBaseOpts: msp.NewBaseOpts{Version: msp.MSPv1_0}},
 		msp.ProviderTypeToString(msp.IDEMIX): &msp.IdemixNewOpts{NewBaseOpts: msp.NewBaseOpts{Version: msp.MSPv1_1}},
 	}
+	fmt.Println("===========mspOpts==============",mspOpts)
 	newOpts, found := mspOpts[mspType]
+	fmt.Println("============newOpts=======",newOpts)
+	fmt.Println("============found=======",found)
 	if !found {
 		mspLogger.Panicf("msp type " + mspType + " unknown")
 	}
@@ -175,11 +179,13 @@ func loadLocaMSP() msp.MSP {
 	}
 	switch mspType {
 	case msp.ProviderTypeToString(msp.FABRIC):
+		fmt.Println("===========msp.ProviderTypeToString(msp.FABRIC)===========")
 		mspInst, err = cache.New(mspInst)
 		if err != nil {
 			mspLogger.Fatalf("Failed to initialize local MSP, received err %+v", err)
 		}
 	case msp.ProviderTypeToString(msp.IDEMIX):
+		fmt.Println("===========msp.ProviderTypeToString(msp.IDEMIX)==========")
 		// Do nothing
 	default:
 		panic("msp type " + mspType + " unknown")
