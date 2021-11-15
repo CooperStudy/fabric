@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package testutil
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/golang/protobuf/proto"
@@ -58,6 +59,7 @@ func (bg *BlockGenerator) NextBlock(simulationResults [][]byte) *common.Block {
 
 // NextBlockWithTxid constructs next block in sequence that includes a number of transactions - one per simulationResults
 func (bg *BlockGenerator) NextBlockWithTxid(simulationResults [][]byte, txids []string) *common.Block {
+	fmt.Println("======BlockGenerator======NextBlockWithTxid===================================")
 	// Length of simulationResults should be same as the length of txids.
 	if len(simulationResults) != len(txids) {
 		return nil

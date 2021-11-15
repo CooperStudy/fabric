@@ -547,6 +547,7 @@ func (m *QueryResult) GetConfigResult() *ConfigResult {
 	fmt.Println("==========QueryResult===GetConfigResult===========")
 	if x, ok := m.GetResult().(*QueryResult_ConfigResult); ok {
 		fmt.Println("==========x",x)
+		//&{msps:<key:"A" value:<> > msps:<key:"B" value:<> > msps:<key:"C" value:<> > msps:<key:"D" value:<> > orderers:<key:"A" value:<> > orderers:<key:"B" value:<> > }
 		fmt.Println("==========ok",ok)
 		return x.ConfigResult
 	}
@@ -567,6 +568,7 @@ func (m *QueryResult) GetMembers() *PeerMembershipResult {
 	fmt.Println("==========QueryResult===GetMembers===========")
 	if x, ok := m.GetResult().(*QueryResult_Members); ok {
 		fmt.Println("=================x",x)
+		// &{peers_by_org:<key:"A" value:<peers:<state_info:<payload:"z\020\022\014\010\220\376\261\234\204\225\345\333\026\020\005*\000" > membership_info:<payload:"*\022\n\004\n\002p0\022\n\010\203\237\301\234\204\225\345\333\026" > identity:"\n\001A\022\002p0" > peers:<state_info:<payload:"z\020\022\014\010\273\352\262\234\204\225\345\333\026\020\005*\000" > membership_info:<payload:"*\024\n\004\n\002p1\022\014\010\370\305\303\234\204\225\345\333\026\020\001" > identity:"\n\001A\022\002p1" > > > peers_by_org:<key:"B" value:<peers:<state_info:<payload:"z\020\022\014\010\331\334\263\234\204\225\345\333\026\020\005*\000" > membership_info:<payload:"*\024\n\004\n\002p2\022\014\010\302\377\303\234\204\225\345\333\026\020\002" > identity:"\n\001B\022\002p2" > peers:<state_info:<payload:"z\020\022\014\010\232\224\264\234\204\225\345\333\026\020\005*\000" > membership_info:<payload:"*\024\n\004\n\002p3\022\014\010\367\257\304\234\204\225\345\333\026\020\003" > identity:"\n\001B\022\002p3" > > > peers_by_org:<key:"C" value:<peers:<state_info:<payload:"z\020\022\014\010\214\340\264\234\204\225\345\333\026\020\005*\000" > membership_info:<payload:"*\024\n\004\n\002p4\022\014\010\376\345\304\234\204\225\345\333\026\020\004" > identity:"\n\001C\022\002p4" > peers:<state_info:<payload:"z\020\022\014\010\204\223\265\234\204\225\345\333\026\020\005*\000" > membership_info:<payload:"*\024\n\004\n\002p5\022\014\010\342\226\305\234\204\225\345\333\026\020\005" > identity:"\n\001C\022\002p5" > > > peers_by_org:<key:"D" value:<peers:<state_info:<payload:"z\020\022\014\010\211\373\267\234\204\225\345\333\026\020\005*\000" > membership_info:<payload:"*\024\n\004\n\002p6\022\014\010\213\312\305\234\204\225\345\333\026\020\006" > identity:"\n\001D\022\002p6" > peers:<state_info:<payload:"z\020\022\014\010\356\240\271\234\204\225\345\333\026\020\005*\000" > membership_info:<payload:"*\024\n\004\n\002p7\022\014\010\224\222\306\234\204\225\345\333\026\020\007" > identity:"\n\001D\022\002p7" > > > }
 		fmt.Println("=================ok",ok)
 		return x.Members
 	}

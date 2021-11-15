@@ -96,7 +96,7 @@ var _ = Describe("DiscoveryService", func() {
 		sess, err := network.Discover(endorsers)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(sess, network.EventuallyTimeout).Should(gexec.Exit(1))
-		Expect(sess.Err).To(gbytes.Say(`failed constructing descriptor for chaincodes:<name:"mycc"`))
+		Expect(sess.Err).To(gbytes.Say(`1 22 333 failed constructing descriptor for chaincodes:<name:"mycc"`))
 
 		By("installing and instantiating chaincode on org1.peer0")
 		chaincode := nwo.Chaincode{
@@ -112,7 +112,7 @@ var _ = Describe("DiscoveryService", func() {
 		sess, err = network.Discover(endorsers)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(sess, network.EventuallyTimeout).Should(gexec.Exit(1))
-		Expect(sess.Err).To(gbytes.Say(`failed constructing descriptor for chaincodes:<name:"mycc"`))
+		Expect(sess.Err).To(gbytes.Say(`cccc failed constructing descriptor for chaincodes:<name:"mycc"`))
 
 		By("installing chaincode to enough organizations to satisfy the endorsement policy")
 		nwo.InstallChaincode(network, chaincode, org2Peer0)

@@ -34,11 +34,11 @@ func NewComparablePrincipal(principal *msp.MSPPrincipal) *ComparablePrincipal {
 	cp := &ComparablePrincipal{
 		principal: principal,
 	}
-	fmt.Println("===========principal.PrincipalClassification===============",principal.PrincipalClassification)
+	fmt.Println("===========principal.PrincipalClassification===============",principal.PrincipalClassification)//ROLE
 	switch principal.PrincipalClassification {
 	case msp.MSPPrincipal_ROLE:
 		fmt.Println("======msp.MSPPrincipal_ROLE==============")
-		fmt.Println("=====cp.ToRole=========",cp.ToRole())
+		fmt.Println("=====cp.ToRole=========",cp.ToRole())// &{0xc0000c4dc0 <nil> 0xc0000c5500 A}   &{0xc0000c4e40 <nil> 0xc0000c5780 B} &{0xc0000c4fc0 <nil> 0xc0000c5940 C} &{0xc0000c5400 <nil> 0xc0000c5a40 A} &{0xc0000c5480 <nil> 0xc0000c5b40 D}
 		return cp.ToRole()
 	case msp.MSPPrincipal_ORGANIZATION_UNIT:
 		fmt.Println("======msp.MSPPrincipal_ORGANIZATION_UNIT==============")
@@ -136,8 +136,8 @@ func (cp *ComparablePrincipal) ToRole() *ComparablePrincipal {
 	}
 	cp.mspID = mspRole.MspIdentifier
 	cp.role = mspRole
-	fmt.Println("=====cp.mspID====",cp.mspID)
-	fmt.Println("=====cp.role====",cp.role)
+	fmt.Println("=====cp.mspID====",cp.mspID)//=====cp.mspID==== A =====cp.mspID==== B
+	fmt.Println("=====cp.role====",cp.role)//=====cp.role==== msp_identifier:"A" =====cp.role==== msp_identifier:"B"
 	return cp
 }
 
@@ -152,29 +152,41 @@ func (cps ComparablePrincipalSet) ToPrincipalSet() policies.PrincipalSet {
 		fmt.Println("=====cp===",cp)
 		res = append(res, cp.principal)
 	}
-	fmt.Println("===========res",res)
+	fmt.Println("===========res",res)//[principal:"\n\001A"  principal:"\n\001B" ]
 	return res
 }
 
 // String returns a string representation of this ComparablePrincipalSet
 func (cps ComparablePrincipalSet) String() string {
-	fmt.Println("=========ComparablePrincipalSet====String======")
+	//fmt.Println("=========ComparablePrincipalSet====String======")
 	buff := bytes.Buffer{}
 	buff.WriteString("[")
+	//fmt.Println("============cps=============",cps)
 	for i, cp := range cps {
+		fmt.Println("============i,",i,"========cp",cp)
+		//============i, 0 ========cp &{0xc000215080 <nil> 0xc000215300 A}
+		//============i, 1 ========cp &{0xc000215100 <nil> 0xc000215380 B}
+		fmt.Println("======cp.mspID=======",cp.mspID) //A
 		buff.WriteString(cp.mspID)
 		buff.WriteString(".")
 		if cp.role != nil {
+			fmt.Println("=============cp.role != nil=================")
+			fmt.Println("========fmt.Sprintf(\"%v\", cp.role.Role)==========",fmt.Sprintf("%v", cp.role.Role))//MEMBER
 			buff.WriteString(fmt.Sprintf("%v", cp.role.Role))
 		}
 		if cp.ou != nil {
+			fmt.Println("=============cp.ou != nil=================")
+			fmt.Println("==========fmt.Sprintf(\"%v\", cp.ou.OrganizationalUnitIdentifier)========",fmt.Sprintf("%v", cp.ou.OrganizationalUnitIdentifier))
 			buff.WriteString(fmt.Sprintf("%v", cp.ou.OrganizationalUnitIdentifier))
 		}
+		fmt.Println("================i",i)
+		fmt.Println("========len(cps)-1========i",len(cps)-1)
 		if i < len(cps)-1 {
 			buff.WriteString(", ")
 		}
 	}
 	buff.WriteString("]")
+	fmt.Println("====================buff==============",buff.String())//[A.MEMBER, B.MEMBER] [C.MEMBER]  [A.MEMBER, D.MEMBER]
 	return buff.String()
 }
 
@@ -183,7 +195,7 @@ func NewComparablePrincipalSet(set policies.PrincipalSet) ComparablePrincipalSet
 	fmt.Println("========NewComparablePrincipalSet======")
 	var res ComparablePrincipalSet
 	for _, principal := range set {
-		fmt.Println("=======principal======",principal)
+		fmt.Println("=======principal======",principal)//principal:"\n\001A" principal:"\n\001B"  =======principal====== principal:"\n\001C"
 		cp := NewComparablePrincipal(principal)
 		if cp == nil {
 			return nil

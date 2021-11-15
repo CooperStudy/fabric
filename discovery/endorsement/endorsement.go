@@ -79,21 +79,32 @@ type peerPrincipalEvaluator func(member NetworkMember, principal *msp.MSPPrincip
 // PeersForEndorsement returns an EndorsementDescriptor for a given set of peers, channel, and chaincode
 func (ea *endorsementAnalyzer) PeersForEndorsement(chainID common.ChainID, interest *discovery.ChaincodeInterest) (*discovery.EndorsementDescriptor, error) {
 	fmt.Println("==endorsementAnalyzer===PeersForEndorsement===")
+	fmt.Println("=========chainID=======",chainID)//[109 121 99 104 97 110 110 101 108]
+	fmt.Println("=========interest=======",interest)//chaincodes:<name:"mycc" >
 	chanMembership, err := ea.PeersAuthorizedByCriteria(chainID, interest)
+	fmt.Println("===========chanMembership================",chanMembership) //[]
+	fmt.Println("===========err================",err)//nil
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
+
 	channelMembersById := chanMembership.ByID()
+	fmt.Println("=========channelMembersById=============",channelMembersById)//map[]
 	// Choose only the alive messages of those that have joined the channel
 	aliveMembership := ea.Peers().Intersect(chanMembership)
+	fmt.Println("===============aliveMembership=================",aliveMembership) //[]
 	membersById := aliveMembership.ByID()
+	fmt.Println("================membersById==============",membersById)//map[]
 	// Compute a mapping between the PKI-IDs of members to their identities
+	fmt.Println("=============ea.IdentityInfo()=========",ea.IdentityInfo())
+	fmt.Println("=============membersById=========",membersById)
 	identitiesOfMembers := computeIdentitiesOfMembers(ea.IdentityInfo(), membersById)
 	principalsSets, err := ea.computePrincipalSets(chainID, interest)
 	if err != nil {
 		logger.Warningf("Principal set computation failed: %v", err)
 		return nil, errors.WithStack(err)
 	}
+
 
 	return ea.computeEndorsementResponse(&context{
 		chaincode:           interest.Chaincodes[0].Name,
@@ -161,6 +172,11 @@ func (ea *endorsementAnalyzer) computeEndorsementResponse(ctx *context) (*discov
 		return nil, errors.New("cannot satisfy any principal combination")
 	}
 
+	fmt.Println("==========possibleLayouts===========", layouts)
+	fmt.Println("==========satGraph===========", satGraph)
+	fmt.Println("==========chanMemberById===========", ctx.channelMembersById)
+	fmt.Println("==========idOfMembers===========", ctx.identitiesOfMembers)
+
 	criteria := &peerMembershipCriteria{
 		possibleLayouts: layouts,
 		satGraph:        satGraph,
@@ -179,10 +195,11 @@ func (ea *endorsementAnalyzer) computePrincipalSets(chainID common.ChainID, inte
 	fmt.Println("==endorsementAnalyzer===computePrincipalSets===")
 	var inquireablePolicies []policies.InquireablePolicy
 	for _, chaincode := range interest.Chaincodes {
-		fmt.Println("===========chaincode=========",chaincode)
-		fmt.Println("==========string(chainID)=======",string(chainID))
-		fmt.Println("======chaincode.Name====",chaincode.Name)
+		fmt.Println("===========chaincode=========", chaincode)// name:"mycc"
+		fmt.Println("==========string(chainID)=======", string(chainID))//mychannel
+		fmt.Println("======chaincode.Name====", chaincode.Name) //mycc
 		pol := ea.PolicyByChaincode(string(chainID), chaincode.Name)
+		fmt.Println("======pol=======",pol)//&{[] [[A B] [C] [A D]]}
 		if pol == nil {
 			logger.Debug("Policy for chaincode '", chaincode, "'doesn't exist")
 			return nil, errors.New("policy not found")
@@ -190,11 +207,14 @@ func (ea *endorsementAnalyzer) computePrincipalSets(chainID common.ChainID, inte
 		inquireablePolicies = append(inquireablePolicies, pol)
 	}
 
+	fmt.Println("=========inquireablePolicies===========",inquireablePolicies)
 	var cpss []inquire.ComparablePrincipalSets
 
 	for _, policy := range inquireablePolicies {
+		fmt.Println("==========policy=======",policy)
 		var cmpsets inquire.ComparablePrincipalSets
 		for _, ps := range policy.SatisfiedBy() {
+			fmt.Println("===========")//&{[] [[A B] [C] [A D]]}
 			cps := inquire.NewComparablePrincipalSet(ps)
 			if cps == nil {
 				return nil, errors.New("failed creating a comparable principal set")
@@ -342,7 +362,7 @@ type peerMembershipCriteria struct {
 	possibleLayouts layouts
 }
 
-// endorsersByGroup computes a map from groups to peers.
+// endorsersByGroup computes a map from groups -> peers.
 // Each group included, is found in some layout, which means
 // that there is some principal combination that includes the corresponding
 // group.
@@ -352,22 +372,33 @@ type peerMembershipCriteria struct {
 func endorsersByGroup(criteria *peerMembershipCriteria) map[string]*discovery.Peers {
 	fmt.Println("==========endorsersByGroup==============")
 	satGraph := criteria.satGraph
+	fmt.Println("===========satGraph := criteria.satGraph============", satGraph)
 	idOfMembers := criteria.idOfMembers
+	fmt.Println("===========idOfMembers===========", idOfMembers)
 	chanMemberById := criteria.chanMemberById
+	fmt.Println("===========chanMemberById===========", chanMemberById)
 	includedGroups := criteria.possibleLayouts.groupsSet()
-
+	fmt.Println("===========includedGroups===========", includedGroups)
 	res := make(map[string]*discovery.Peers)
 	// Map endorsers to their corresponding groups.
 	// Iterate the principals, and put the peers into each group that corresponds with a principal vertex
 	for grp, principalVertex := range satGraph.principalVertices {
+		fmt.Println("=======grp=========", grp)
+		fmt.Println("=======principalVertex=========", principalVertex)
 		if _, exists := includedGroups[grp]; !exists {
 			// If the current group is not found in any layout, skip the corresponding principal
+			// 如果在任何layout中都没有找到当前group，则跳过相应的principal
 			continue
 		}
 		peerList := &discovery.Peers{}
 		res[grp] = peerList
 		for _, peerVertex := range principalVertex.Neighbors() {
+			fmt.Println("===========peerVertex=============", peerVertex)
 			member := peerVertex.Data.(NetworkMember)
+			fmt.Println("===============member===========", member)
+			fmt.Println("==========Identity=========", idOfMembers.identityByPKIID(member.PKIid))
+			fmt.Println("==========StateInfo=========", chanMemberById[string(member.PKIid)].Envelope)
+			fmt.Println("==========MembershipInfo=========", member.Envelope)
 			peerList.Peers = append(peerList.Peers, &discovery.Peer{
 				Identity:       idOfMembers.identityByPKIID(member.PKIid),
 				StateInfo:      chanMemberById[string(member.PKIid)].Envelope,
@@ -393,29 +424,60 @@ func endorsersByGroup(criteria *peerMembershipCriteria) map[string]*discovery.Pe
 func computeLayouts(principalsSets []policies.PrincipalSet, principalGroups principalGroupMapper, satGraph *principalPeerGraph) []*discovery.Layout {
 	fmt.Println("==========computeLayouts==============")
 	fmt.Println("====================非常重要===========")
+	fmt.Println("=========principalsSets===========", principalsSets)
+	//[[principal:"\n\001A"  principal:"\n\001B" ] [principal:"\n\001C" ] [principal:"\n\001A"  principal:"\n\001D" ]]
+	fmt.Println("=========principalGroups===================", principalGroups)
+	/*
+	========principalGroups=================== map[{0
+	B}:G0 {0
+	C}:G1 {0
+	D}:G2 {0
+	A}:G3]
+	 */
+	fmt.Println("=========satGraph==================", *satGraph)
+	//=========satGraph================== {[] map[G1:0xc00037cdb0 G2:0xc00037ce10 G3:0xc00037ce70 G0:0xc00037ced0]}
 	var layouts []*discovery.Layout
 	// principalsSets is a collection of combinations of principals,
 	// such that each combination (given enough peers) satisfies the endorsement policy.
 	for _, principalSet := range principalsSets {
+		fmt.Println("=======principalSet=======", principalSet)
+		//[principal:"\n\001A"  principal:"\n\001B" ]      // principal:"\n\001C"
 		layout := &discovery.Layout{
 			QuantitiesByGroup: make(map[string]uint32),
 		}
 		// Since principalsSet has repetitions, we first
 		// compute a mapping from the principal to repetitions in the set.
+		/*
+			// 由于 principalsSet 有重复，我们首先
+			// 计算从主体到集合中重复的映射。
+		*/
 		for principal, plurality := range principalSet.UniqueSet() {
+			fmt.Println("========principal===", principal)//principal:"\n\001A" principal:"\n\001B"    principal:"\n\001C"
+			fmt.Println("========plurality=======", plurality)//1 1  1
 			key := principalKey{
 				cls:       int32(principal.PrincipalClassification),
 				principal: string(principal.Principal),
 			}
 			// We map the principal to a group, which is an alias for the principal.
-			layout.QuantitiesByGroup[principalGroups.group(key)] = uint32(plurality)
+			// 我们将principal映射到一个group，这是principal的别名。
+			a := principalGroups.group(key)
+			fmt.Println("==========principalGroups.group(key)==========", a)//G3  G0   G1
+			fmt.Println("==========uint32(plurality)==========", uint32(plurality))//1 1
+			layout.QuantitiesByGroup[a] = uint32(plurality)
+			fmt.Println("=========layout.QuantitiesByGroup=======================", layout.QuantitiesByGroup)//map[G3:1 G0:1]  map[G1:1] map[G2:1 G3:1]
 		}
 		// Check that the layout can be satisfied with the current known peers
+		// 检查layout是否可以满足当前已知的peers
 		// This is done by iterating the current layout, and ensuring that
+		// 这是通过迭代当前layout来完成的，并确保
 		// each principal vertex is connected to at least <plurality> peer vertices.
-		if isLayoutSatisfied(layout.QuantitiesByGroup, satGraph) {
-			// If so, then add the layout to the layouts, since we have enough peers to satisfy the
-			// principal combination
+		//每个principal vertex至少连接到 <plurality> peer vertices
+
+		b := isLayoutSatisfied(layout.QuantitiesByGroup, satGraph)
+		fmt.Println("========isLayoutSatisfied(layout.QuantitiesByGroup, satGraph)========", b)
+		if b {
+			// If so, then add the layout to the layouts, since we have enough peers to satisfy the principal combination
+			//如果是，则将layout添加到layouts中，因为我们有足够的peers来满足principal combination
 			layouts = append(layouts, layout)
 		}
 	}
@@ -425,10 +487,20 @@ func computeLayouts(principalsSets []policies.PrincipalSet, principalGroups prin
 func isLayoutSatisfied(layout map[string]uint32, satGraph *principalPeerGraph) bool {
 	fmt.Println("==========isLayoutSatisfied==============")
 	for grp, plurality := range layout {
+		fmt.Println("=============grp===========", grp) //G3
+		fmt.Println("=============plurality===========", plurality)//1
 		// Do we have more than <plurality> peers connected to the principal?
+		a := satGraph.principalVertices[grp]
+		b := satGraph.principalVertices[grp].Neighbors()
+
+		fmt.Println("=============satGraph.principalVertices[grp]===============", a) //&{G3 principal:"\n\001A"  map[]} &{G3 principal:"\n\001A"  map[]} &{G1 principal:"\n\001C"  map[]}  &{G2 principal:"\n\001D"  map[]}
+		fmt.Println("=============satGraph.principalVertices[grp].Neighbors()===============", b)//[]
+		fmt.Println("=============satGraph.principalVertices[grp].Neighbors() len===============", len(satGraph.principalVertices[grp].Neighbors()))//0
 		if len(satGraph.principalVertices[grp].Neighbors()) < int(plurality) {
+			fmt.Println("==============================len(satGraph.principalVertices[grp].Neighbors()) < int(plurality)==========")
 			return false
 		}
+		fmt.Println("=============满足条件==================")
 	}
 	return true
 }
@@ -448,12 +520,19 @@ func principalsToPeersGraph(data principalAndPeerData, satisfiesPrincipal peerPr
 	// Create the peer vertices
 	peerVertices := make([]*graph.Vertex, len(data.members))
 	for i, member := range data.members {
+		fmt.Println("===========i",)
+		fmt.Println("===========member,member")
+		fmt.Println("============string(member.PKIid)==============",string(member.PKIid))
+		fmt.Println("============member=============",member)
 		peerVertices[i] = graph.NewVertex(string(member.PKIid), member)
-	}
 
+	}
+	fmt.Println("==============peerVertices=======",peerVertices)
 	// Create the principal vertices
 	principalVertices := make(map[string]*graph.Vertex)
 	for pKey, grp := range data.pGrps {
+		fmt.Println("======pKey==",pKey)
+		fmt.Println("======grp==",grp)
 		principalVertices[grp] = graph.NewVertex(grp, pKey.toPrincipal())
 	}
 
@@ -476,13 +555,18 @@ func principalsToPeersGraph(data principalAndPeerData, satisfiesPrincipal peerPr
 
 func mapPrincipalsToGroups(principalsSets []policies.PrincipalSet) principalGroupMapper {
 	fmt.Println("==========mapPrincipalsToGroups==============")
-	fmt.Println("============principalsSets========",principalsSets)
+	fmt.Println("============principalsSets========", principalsSets)
+	//[[principal:"\n\001A"  principal:"\n\001B" ] [principal:"\n\001C" ] [principal:"\n\001A"  principal:"\n\001D" ]]
 	groupMapper := make(principalGroupMapper)
 	totalPrincipals := make(map[principalKey]struct{})
 	for _, principalSet := range principalsSets {
-		fmt.Println("=====principalSet===",principalSet)
+		fmt.Println("=====principalSet===", principalSet)//[principal:"\n\001A"  principal:"\n\001B" ]
 		for _, principal := range principalSet {
-			fmt.Println("=====principal===",principal)
+			fmt.Println("=====principal===", principal)
+			/*
+			=====principal=== principal:"\n\001A"
+			=====principal=== principal:"\n\001B"
+			*/
 			totalPrincipals[principalKey{
 				principal: string(principal.Principal),
 				cls:       int32(principal.PrincipalClassification),
@@ -504,16 +588,29 @@ func (m memberIdentities) identityByPKIID(id common.PKIidType) api.PeerIdentityT
 
 func computeIdentitiesOfMembers(identitySet api.PeerIdentitySet, members map[string]NetworkMember) memberIdentities {
 	fmt.Println("=======computeIdentitiesOfMembers=============")
+	fmt.Println("=================identitySet===================",identitySet)//=================identitySet=================== [{7030 [10 1 65 18 2 112 48] [65]} {7031 [10 1 65 18 2 112 49] [65]} {7032 [10 1 66 18 2 112 50] [66]} {7033 [10 1 66 18 2 112 51] [66]} {7034 [10 1 67 18 2 112 52] [67]} {7035 [10 1 67 18 2 112 53] [67]} {7036 [10 1 68 18 2 112 54] [68]} {7037 [10 1 68 18 2 112 55] [68]} {7038 [10 1 65 18 2 112 56] [65]} {7039 [10 1 65 18 2 112 57] [65]} {703130 [10 1 66 18 3 112 49 48] [66]} {703131 [10 1 66 18 3 112 49 49] [66]} {703132 [10 1 67 18 3 112 49 50] [67]} {703133 [10 1 67 18 3 112 49 51] [67]} {703134 [10 1 68 18 3 112 49 52] [68]} {703135 [10 1 68 18 3 112 49 53] [68]}]
+	fmt.Println("=================members===================",members)//map[]
+
 	identitiesByPKIID := make(map[string]api.PeerIdentityType)
 	identitiesOfMembers := make(map[string]api.PeerIdentityType, len(members))
 	for _, identity := range identitySet {
+		fmt.Println("================identity================",identity) // {7030 [10 1 65 18 2 112 48] [65]}
+		fmt.Println("===============string(identity.PKIId)================",string(identity.PKIId))//p0
+		fmt.Println("===============identity.Identity================",identity.Identity)//[10 1 65 18 2 112 48]
 		identitiesByPKIID[string(identity.PKIId)] = identity.Identity
 	}
+	fmt.Println("===============identitiesByPKIID================",identitiesByPKIID)
+	//map[p8:[10 1 65 18 2 112 56] p12:[10 1 67 18 3 112 49 50] p0:[10 1 65 18 2 112 48] p9:[10 1 65 18 2 112 57] p6:[10 1 68 18 2 112 54] p7:[10 1 68 18 2 112 55] p13:[10 1 67 18 3 112 49 51] p14:[10 1 68 18 3 112 49 52] p3:[10 1 66 18 2 112 51] p2:[10 1 66 18 2 112 50] p4:[10 1 67 18 2 112 52] p5:[10 1 67 18 2 112 53] p10:[10 1 66 18 3 112 49 48] p11:[10 1 66 18 3 112 49 49] p15:[10 1 68 18 3 112 49 53] p1:[10 1 65 18 2 112 49]]
 	for _, member := range members {
+		fmt.Println("==========member===========",member)
 		if identity, exists := identitiesByPKIID[string(member.PKIid)]; exists {
+			fmt.Println("============identity==========================",identity)
+			fmt.Println("=========string(member.PKIid)========================",string(member.PKIid))
+
 			identitiesOfMembers[string(member.PKIid)] = identity
 		}
 	}
+	fmt.Println("==========identitiesOfMembers==============",identitiesOfMembers)
 	return identitiesOfMembers
 }
 
@@ -523,14 +620,42 @@ type principalGroupMapper map[principalKey]string
 func (mapper principalGroupMapper) group(principal principalKey) string {
 	fmt.Println("=======principalGroupMapper===group==========")
 	if grp, exists := mapper[principal]; exists {
-		fmt.Println("======grp======",grp)
-		fmt.Println("======exists======",exists)
+		fmt.Println("======grp======", grp) //G3  G0 G1
+		fmt.Println("======exists======", exists)//true true
 		return grp
 	}
 	grp := fmt.Sprintf("G%d", len(mapper))
-	fmt.Println("=====grp====",grp)
+	fmt.Println("=====grp====", grp)//G0 G1 G2 G3 G0
 	mapper[principal] = grp
-	fmt.Println("======mapper====",mapper)
+	fmt.Println("======mapper====", mapper)
+	/*
+	map[{0
+	B}:G0]
+
+	=====grp==== G1
+	======mapper==== map[{0
+	B}:G0 {0
+	C}:G1]
+	 */
+	/*
+	map[{0 B}:G0 {0 C}:G1] {0 D}:G2 {0 A}:G3
+
+
+	=======principalGroupMapper===group==========
+	=====grp==== G2
+	======mapper==== map[{0
+	B}:G0 {0
+	C}:G1 {0
+	D}:G2]
+
+
+	=====grp==== G3
+	======mapper==== map[{0
+	B}:G0 {0
+	C}:G1 {0
+	D}:G2 {0
+	A}:G3]
+	 */
 	return grp
 }
 
@@ -541,10 +666,10 @@ type principalKey struct {
 
 func (pk principalKey) toPrincipal() *msp.MSPPrincipal {
 	fmt.Println("=======principalKey===toPrincipal==========")
-	fmt.Println("=========pk.cls=======",pk.cls)
-	fmt.Println("========msp.MSPPrincipal_Classification(pk.cls)======",msp.MSPPrincipal_Classification(pk.cls))
+	fmt.Println("=========pk.cls=======", pk.cls)//0
+	fmt.Println("========msp.MSPPrincipal_Classification(pk.cls)======", msp.MSPPrincipal_Classification(pk.cls))//ROLE
 
-	fmt.Println("=========pk.principal======",pk.principal)
+	fmt.Println("=========pk.principal======", pk.principal)//C D A B
 	return &msp.MSPPrincipal{
 		PrincipalClassification: msp.MSPPrincipal_Classification(pk.cls),
 		Principal:               []byte(pk.principal),
@@ -587,7 +712,7 @@ func peersWithChaincode(metadata ...*chaincode.Metadata) func(member NetworkMemb
 					found = true
 				}
 			}
-			fmt.Println("====found===",found)
+			fmt.Println("====found===", found)
 			if !found {
 				return false
 			}
@@ -617,8 +742,8 @@ func popComparablePrincipalSets(sets []inquire.ComparablePrincipalSets) (inquire
 		return nil, nil, errors.New("no principal sets remained after filtering")
 	}
 	cps, cpss := sets[0], sets[1:]
-	fmt.Println("====sets",sets)
-	fmt.Println("=====cps",cps)
-	fmt.Println("=====cpss",cpss)
+	fmt.Println("====sets", sets)  //sets [[[A.MEMBER, B.MEMBER] [C.MEMBER] [A.MEMBER, D.MEMBER]]]
+	fmt.Println("=====cps", cps)//[[A.MEMBER, B.MEMBER] [C.MEMBER] [A.MEMBER, D.MEMBER]]
+	fmt.Println("=====cpss", cpss) //[]
 	return cps, cpss, nil
 }

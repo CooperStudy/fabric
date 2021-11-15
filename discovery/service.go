@@ -156,18 +156,28 @@ func (s *service) dispatch(q *discovery.Query) *discovery.QueryResult {
 
 func (s *service) chaincodeQuery(q *discovery.Query) *discovery.QueryResult {
 	fmt.Println("===service===chaincodeQuery==")
-	if err := validateCCQuery(q.GetCcQuery()); err != nil {
+	err := validateCCQuery(q.GetCcQuery())
+	fmt.Println("======err======",err)
+	if err != nil {
 		return wrapError(err)
 	}
 	var descriptors []*discovery.EndorsementDescriptor
-	for _, interest := range q.GetCcQuery().Interests {
+	c := q.GetCcQuery().Interests
+	fmt.Println("=============c=",c)
+	for _, interest := range c {
+		fmt.Println("======interest=======",interest)//chaincodes:<name:"mycc" >
+		fmt.Println("=====================q.Channel==============",q.Channel)//mychannel
+		fmt.Println("=====================common2.ChainID(q.Channel)==============",common2.ChainID(q.Channel))//[109 121 99 104 97 110 110 101 108]
 		desc, err := s.PeersForEndorsement(common2.ChainID(q.Channel), interest)
+		fmt.Println("===============desc================",desc)//nil
 		if err != nil {
-			logger.Errorf("Failed constructing descriptor for chaincode %s,: %v", interest, err)
+			logger.Errorf("dddc Failed constructing descriptor for chaincode %s,: %v", interest, err)
 			return wrapError(errors.Errorf("failed constructing descriptor for %v", interest))
 		}
 		descriptors = append(descriptors, desc)
 	}
+
+	fmt.Println("==============descriptors==================",descriptors)
 
 	return &discovery.QueryResult{
 		Result: &discovery.QueryResult_CcQueryRes{
@@ -180,6 +190,7 @@ func (s *service) chaincodeQuery(q *discovery.Query) *discovery.QueryResult {
 
 func (s *service) configQuery(q *discovery.Query) *discovery.QueryResult {
 	fmt.Println("===service===configQuery==")
+	fmt.Println("===q.Channel=====",q.Channel)
 	conf, err := s.Config(q.Channel)
 	if err != nil {
 		logger.Errorf("Failed fetching config for channel %s: %v", q.Channel, err)
@@ -216,19 +227,32 @@ func (s *service) channelMembershipResponse(q *discovery.Query) *discovery.Query
 	}
 	membersByOrgs := make(map[string]*discovery.Peers)
 	chanPeerByID := discovery2.Members(chanPeers).ByID()
+	fmt.Println("=====chanPeerByID======",chanPeerByID)
 	for org, ids2Peers := range s.computeMembership(q) {
+
+		fmt.Println("==========org========",org)
+		fmt.Println("==========ids2Peers========",ids2Peers)
+
 		membersByOrgs[org] = &discovery.Peers{}
 		for id, peer := range ids2Peers {
+			fmt.Println("================id",id)
+			fmt.Println("================peer",peer)
 			// Check if the peer is in the channel view
 			stateInfoMsg, exists := chanPeerByID[string(id)]
+			fmt.Println("=========stateInfoMsg========",stateInfoMsg)
+			fmt.Println("=========exists========",exists)
 			// If the peer isn't in the channel view, skip it and don't include it in the response
 			if !exists {
 				continue
 			}
 			peer.StateInfo = stateInfoMsg.Envelope
+			fmt.Println("===========peer.StateInfo===========",peer.StateInfo)
+			fmt.Println("=============org============",org)
+			fmt.Println("=============peer============",peer)
 			membersByOrgs[org].Peers = append(membersByOrgs[org].Peers, peer)
 		}
 	}
+	fmt.Println("=======membersByOrgs===============",membersByOrgs)
 	return wrapPeerResponse(membersByOrgs)
 }
 
@@ -322,13 +346,19 @@ func validateCCQuery(ccQuery *discovery.ChaincodeQuery) error {
 		return errors.New("chaincode query must have at least one chaincode interest")
 	}
 	for _, interest := range ccQuery.Interests {
+		fmt.Println("=========interest=======")
 		if interest == nil {
+			fmt.Println("====interest == nil==========")
 			return errors.New("chaincode interest is nil")
 		}
+
 		if len(interest.Chaincodes) == 0 {
+			fmt.Println("====len(interest.Chaincodes) == 0=========")
 			return errors.New("chaincode interest must contain at least one chaincode")
 		}
 		for _, cc := range interest.Chaincodes {
+			fmt.Println("====cc=========",cc)
+			fmt.Println("====cc.name=========",cc.Name)
 			if cc.Name == "" {
 				return errors.New("chaincode name in interest cannot be empty")
 			}

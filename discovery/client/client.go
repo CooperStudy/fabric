@@ -379,12 +379,16 @@ func (req *Request) computeResponse(r *discovery.Response) (response, error) {
 	for configType, channel2index := range req.queryMapping {
 		switch configType {
 		case discovery.ConfigQueryType:
+			fmt.Println("==========discovery.ConfigQueryType===================")
 			err = resp.mapConfig(channel2index, r)
 		case discovery.ChaincodeQueryType:
+			fmt.Println("==========discovery.ChaincodeQueryType==================")
 			err = resp.mapEndorsers(channel2index, r, req.invocationChainMapping)
 		case discovery.PeerMembershipQueryType:
+			fmt.Println("==========discovery.PeerMembershipQueryType:==================")
 			err = resp.mapPeerMembership(channel2index, r, discovery.PeerMembershipQueryType)
 		case discovery.LocalMembershipQueryType:
+			fmt.Println("==========discovery.LocalMembershipQueryType==================")
 			err = resp.mapPeerMembership(channel2index, r, discovery.LocalMembershipQueryType)
 		}
 		if err != nil {
@@ -449,7 +453,10 @@ func peersForChannel(membersRes *discovery.PeerMembershipResult, qt discovery.Qu
 	fmt.Println("====response==peersForChannel==")
 	var peers []*Peer
 	for org, peersOfCurrentOrg := range membersRes.PeersByOrg {
+		fmt.Println("=================org===========",org)
+		fmt.Println("=================peersOfCurrentOrg===========",peersOfCurrentOrg)
 		for _, peer := range peersOfCurrentOrg.Peers {
+			fmt.Println("============peer===================")
 			aliveMsg, err := peer.MembershipInfo.ToGossipMessage()
 			if err != nil {
 				return nil, errors.Wrap(err, "failed unmarshaling alive message")
@@ -480,6 +487,7 @@ func peersForChannel(membersRes *discovery.PeerMembershipResult, qt discovery.Qu
 
 func isStateInfoExpected(qt discovery.QueryType) bool {
 	fmt.Println("====isStateInfoExpected==")
+	fmt.Println("======================qt != discovery.LocalMembershipQueryType==================",qt != discovery.LocalMembershipQueryType)
 	return qt != discovery.LocalMembershipQueryType
 }
 
@@ -572,16 +580,19 @@ func (resp response) createEndorsementDescriptor(desc *discovery.EndorsementDesc
 }
 
 func endorser(peer *discovery.Peer, chaincode, channel string) (*Peer, error) {
-
 	fmt.Println("====endorser==")
+	fmt.Println("===========peer.MembershipInfo==========================",peer.MembershipInfo)
+	fmt.Println("===========peer.StateInfo==========================",peer.StateInfo)
 	if peer.MembershipInfo == nil || peer.StateInfo == nil {
 		return nil, errors.Errorf("received empty envelope(s) for endorsers for chaincode %s, channel %s", chaincode, channel)
 	}
 	aliveMsg, err := peer.MembershipInfo.ToGossipMessage()
+	fmt.Println("===========aliveMsg==========================",aliveMsg)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed unmarshaling gossip envelope to alive message")
 	}
 	stateInfMsg, err := peer.StateInfo.ToGossipMessage()
+	fmt.Println("===========stateInfMsg==========================",stateInfMsg)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed unmarshaling gossip envelope to state info message")
 	}
@@ -620,13 +631,16 @@ func NewClient(createConnection Dialer, s Signer, signerCacheSize uint) *Client 
 func validateAliveMessage(message *gossip.SignedGossipMessage) error {
 	fmt.Println("====validateAliveMessage==")
 	am := message.GetAliveMsg()
+	fmt.Println("======am===========",am)
 	if am == nil {
 		return errors.New("message isn't an alive message")
 	}
 	m := am.Membership
+	fmt.Println("======m===========",m)
 	if m == nil {
 		return errors.New("membership is empty")
 	}
+	fmt.Println("======am.Timestamp==========",am.Timestamp)
 	if am.Timestamp == nil {
 		return errors.New("timestamp is nil")
 	}
@@ -636,12 +650,15 @@ func validateAliveMessage(message *gossip.SignedGossipMessage) error {
 func validateStateInfoMessage(message *gossip.SignedGossipMessage) error {
 	fmt.Println("====validateStateInfoMessage==")
 	si := message.GetStateInfo()
+	fmt.Println("===========si===============",si)
 	if si == nil {
 		return errors.New("message isn't a stateInfo message")
 	}
+	fmt.Println("===========si.Timestamp===============",si.Timestamp)
 	if si.Timestamp == nil {
 		return errors.New("timestamp is nil")
 	}
+	fmt.Println("===========si.Properties ===============",si.Properties)
 	if si.Properties == nil {
 		return errors.New("properties is nil")
 	}

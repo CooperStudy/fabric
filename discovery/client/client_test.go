@@ -843,7 +843,10 @@ type policyFetcher struct {
 }
 
 func (pf *policyFetcher) PolicyByChaincode(channel string, cc string) policies.InquireablePolicy {
-	return pf.Called(cc).Get(0).(policies.InquireablePolicy)
+	fmt.Println("=policyFetcher========PolicyByChaincode=======")
+	b := pf.Called(cc).Get(0).(policies.InquireablePolicy)
+	fmt.Println("==============b",b)//&{[] [[A B] [C] [A D]]}
+	return b
 }
 
 type endorsementAnalyzer interface {
@@ -858,15 +861,20 @@ type inquireablePolicy struct {
 }
 
 func (ip *inquireablePolicy) appendPrincipal(orgName string) {
+	fmt.Println("===inquireablePolicy=====appendPrincipal=========orgName",orgName)//A
 	ip.principals = append(ip.principals, &msp.MSPPrincipal{
 		PrincipalClassification: msp.MSPPrincipal_ROLE,
 		Principal:               utils.MarshalOrPanic(&msp.MSPRole{Role: msp.MSPRole_MEMBER, MspIdentifier: orgName})})
+	fmt.Println("======ip.principals===========",ip.principals)// [principal:"\n\001A"  principal:"\n\001B" ] [principal:"\n\001C" ] [principal:"\n\001A"  principal:"\n\001D" ]
 }
 
 func (ip *inquireablePolicy) SatisfiedBy() []policies.PrincipalSet {
+	fmt.Println("=====inquireablePolicy=============SatisfiedBy===============")
 	var res []policies.PrincipalSet
 	for _, orgs := range ip.orgCombinations {
+		fmt.Println("=====orgs=======",orgs)
 		for _, org := range orgs {
+			fmt.Println("=====org",org)
 			ip.appendPrincipal(org)
 		}
 		res = append(res, ip.principals)
@@ -976,7 +984,11 @@ func (ms *mockSupport) PeersOfChannel(gossipcommon.ChainID) gdisc.Members {
 }
 
 func (ms *mockSupport) Peers() gdisc.Members {
-	return ms.Called().Get(0).(gdisc.Members)
+	fmt.Println("=======mockSupport======Peers============")
+	a := ms.Called().Get(0).(gdisc.Members)
+	fmt.Println("========a==================",a)
+	//[Endpoint: p0, InternalEndpoint: p0, PKI-ID: 7030, Metadata:  Endpoint: p1, InternalEndpoint: p1, PKI-ID: 7031, Metadata:  Endpoint: p2, InternalEndpoint: p2, PKI-ID: 7032, Metadata:  Endpoint: p3, InternalEndpoint: p3, PKI-ID: 7033, Metadata:  Endpoint: p4, InternalEndpoint: p4, PKI-ID: 7034, Metadata:  Endpoint: p5, InternalEndpoint: p5, PKI-ID: 7035, Metadata:  Endpoint: p6, InternalEndpoint: p6, PKI-ID: 7036, Metadata:  Endpoint: p7, InternalEndpoint: p7, PKI-ID: 7037, Metadata:  Endpoint: p8, InternalEndpoint: p8, PKI-ID: 7038, Metadata:  Endpoint: p9, InternalEndpoint: p9, PKI-ID: 7039, Metadata:  Endpoint: p10, InternalEndpoint: p10, PKI-ID: 703130, Metadata:  Endpoint: p11, InternalEndpoint: p11, PKI-ID: 703131, Metadata:  Endpoint: p12, InternalEndpoint: p12, PKI-ID: 703132, Metadata:  Endpoint: p13, InternalEndpoint: p13, PKI-ID: 703133, Metadata:  Endpoint: p14, InternalEndpoint: p14, PKI-ID: 703134, Metadata:  Endpoint: p15, InternalEndpoint: p15, PKI-ID: 703135, Metadata: ]
+	return a
 }
 
 func (ms *mockSupport) PeersForEndorsement(channel gossipcommon.ChainID, interest *discovery.ChaincodeInterest) (*discovery.EndorsementDescriptor, error) {

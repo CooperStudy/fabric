@@ -159,11 +159,17 @@ func (members Members) Intersect(otherMembers Members) Members {
 	fmt.Println("=====Members===Intersect===========")
 	var res Members
 	m := otherMembers.ByID()
+	fmt.Println("========m===========",m)
 	for _, member := range members {
+		fmt.Println("========member=====",member)
+		fmt.Println("========string(member.PKIid)=============",string(member.PKIid))
+		fmt.Println("========m[string(member.PKIid)]============",m[string(member.PKIid)])
 		if _, exists := m[string(member.PKIid)]; exists {
+			fmt.Println("=========exists========",exists)
 			res = append(res, member)
 		}
 	}
+	fmt.Println("=========res========",res)
 	return res
 }
 

@@ -25,12 +25,9 @@ func init() {
 type PKIidType []byte
 
 func (p PKIidType) String() string {
-	fmt.Println("=====PKIidType===String===========")
 	if p == nil {
 		return "<nil>"
 	}
-	fmt.Println("====p byte",p)
-	fmt.Println("========p hex=======",hex.EncodeToString(p))
 	return hex.EncodeToString(p)
 }
 

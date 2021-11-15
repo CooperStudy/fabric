@@ -21,8 +21,10 @@ func (cps ComparablePrincipalSets) ToPrincipalSets() policies.PrincipalSets {
 	fmt.Println("===ComparablePrincipalSets===ToPrincipalSets==")
 	var res policies.PrincipalSets
 	for _, cp := range cps {
+		fmt.Println("===cp====",cp) //[A.MEMBER, B.MEMBER] &{0xc000215080 <nil> 0xc000215300 A}  &{0xc000215100 <nil> 0xc000215380 B}
 		res = append(res, cp.ToPrincipalSet())
 	}
+	fmt.Println("====res=======",res)
 	return res
 }
 

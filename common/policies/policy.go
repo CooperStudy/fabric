@@ -84,15 +84,22 @@ func (ps PrincipalSet) ContainingOnly(f func(*msp.MSPPrincipal) bool) bool {
 }
 
 // UniqueSet returns a histogram that is induced by the PrincipalSet
+/*
+UniqueSet 返回由 PrincipalSet 诱导的直方图
+ */
 func (ps PrincipalSet) UniqueSet() map[*msp.MSPPrincipal]int {
 	fmt.Println("===PrincipalSet==UniqueSet===")
 	// Create a histogram that holds the MSPPrincipals and counts them
+	// 创建一个包含 MSPPrincipals 并对其进行计数的直方图
 	histogram := make(map[struct {
 		cls       int32
 		principal string
 	}]int)
 	// Now, populate the histogram
 	for _, principal := range ps {
+		fmt.Println("==principal=====",principal) //principal:"\n\001A"  principal:"\n\001B"
+		fmt.Println("=============cls: int32(principal.PrincipalClassification),=================",int32(principal.PrincipalClassification))// 0
+		fmt.Println("=============principal: string(principal.Principal),=================",string(principal.Principal))//A B
 		key := struct {
 			cls       int32
 			principal string
@@ -101,10 +108,27 @@ func (ps PrincipalSet) UniqueSet() map[*msp.MSPPrincipal]int {
 			principal: string(principal.Principal),
 		}
 		histogram[key]++
+		fmt.Println("=======histogram[key]=============",histogram)
+		/*
+		map[{0 A}:1] map[{0 B}:1] map[{0 C}:1]
+		 */
 	}
 	// Finally, convert to a histogram of MSPPrincipal pointers
 	res := make(map[*msp.MSPPrincipal]int)
 	for principal, count := range histogram {
+		fmt.Println("====principal======",principal) //{0 A}
+		fmt.Println("=========count============",count)//1
+		a := msp.MSPPrincipal{
+			PrincipalClassification: msp.MSPPrincipal_Classification(principal.cls),
+			Principal:               []byte(principal.principal),
+		}
+		fmt.Println("====res =======msp.MSPPrincipal=============",a,"==========count=============",count)
+		/*
+		{ROLE [10 1 65] {} [] 0}
+		count 1
+		{ROLE [10 1 66] {} [] 0}
+		1
+		 */
 		res[&msp.MSPPrincipal{
 			PrincipalClassification: msp.MSPPrincipal_Classification(principal.cls),
 			Principal:               []byte(principal.principal),

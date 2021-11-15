@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package discovery
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/golang/protobuf/proto"
@@ -40,6 +41,7 @@ func TestGetType(t *testing.T) {
 			PeerQuery: &PeerMembershipQuery{},
 		},
 	}
+	fmt.Println("q.GetType()",q.GetType())  //2
 	assert.Equal(t, PeerMembershipQueryType, q.GetType())
 	q = &Query{
 		Query: &Query_ConfigQuery{

@@ -34,6 +34,7 @@ type CurrentConfigBlockGetterFunc func(channel string) *common.Block
 
 // CurrentConfigBlockGetterFunc enables to fetch the last config block
 func (f CurrentConfigBlockGetterFunc) GetCurrConfigBlock(channel string) *common.Block {
+	fmt.Println("=========CurrentConfigBlockGetterFunc============GetCurrConfigBlock==================")
 	return f(channel)
 }
 
@@ -54,6 +55,7 @@ func NewDiscoverySupport(getLastConfigBlock CurrentConfigBlockGetter) *Discovery
 // Config returns the channel's configuration
 func (s *DiscoverySupport) Config(channel string) (*discovery.ConfigResult, error) {
 	fmt.Println("=======DiscoverySupport=Config==")
+	fmt.Println("=======Config returns the channel's configuration==")
 	block := s.GetCurrConfigBlock(channel)
 
 	if block == nil {

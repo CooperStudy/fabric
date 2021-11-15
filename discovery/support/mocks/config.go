@@ -2,6 +2,7 @@
 package mocks
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/hyperledger/fabric/discovery/support/config"
@@ -25,6 +26,7 @@ type ConfigBlockGetter struct {
 }
 
 func (fake *ConfigBlockGetter) GetCurrConfigBlock(channel string) *common.Block {
+	fmt.Println("=======ConfigBlockGetter======GetCurrConfigBlock============")
 	fake.getCurrConfigBlockMutex.Lock()
 	ret, specificReturn := fake.getCurrConfigBlockReturnsOnCall[len(fake.getCurrConfigBlockArgsForCall)]
 	fake.getCurrConfigBlockArgsForCall = append(fake.getCurrConfigBlockArgsForCall, struct {
