@@ -30,13 +30,13 @@ type hasher struct {
 func (c *hasher) Hash(msg []byte, opts bccsp.HashOpts) ([]byte, error) {
 	fmt.Println("===hasher==Hash==")
 	h := c.hash()
-	fmt.Println("===h",h)
-	fmt.Printf("===h type:%T==\n",h)//*sha256.digest
-	fmt.Println("===msg",msg)//[48 130 2 58 48 130
-	fmt.Println("===opts",opts)//=&{}
+	//fmt.Println("===h",h)
+	//fmt.Printf("===h type:%T==\n",h)//*sha256.digest
+	//fmt.Println("===msg",msg)//[48 130 2 58 48 130
+	//fmt.Println("===opts",opts)//=&{}
 	h.Write(msg)
 	b:= h.Sum(nil)
-	fmt.Println("=======h.Sum(nil)=====",b)
+	//fmt.Println("=======h.Sum(nil)=====",b)
 	return b,nil
 }
 

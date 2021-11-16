@@ -55,7 +55,7 @@ func newConnStore(connFactory connFactory, logger util.Logger) *connectionStore 
 }
 
 func (cs *connectionStore) getConnection(peer *RemotePeer) (*connection, error) {
-	fmt.Println("==connectionStore==getConnection==")
+	//fmt.Println("==connectionStore==getConnection==")
 	cs.RLock()
 	isClosing := cs.isClosing
 	cs.RUnlock()
@@ -66,13 +66,13 @@ func (cs *connectionStore) getConnection(peer *RemotePeer) (*connection, error) 
 
 	pkiID := peer.PKIID
 	endpoint := peer.Endpoint
-	fmt.Println("========pkiID==============",pkiID)
-	fmt.Println("========endpoint==============",endpoint)
+	//fmt.Println("========pkiID==============",pkiID)
+	//fmt.Println("========endpoint==============",endpoint)
 	cs.Lock()
 
 	destinationLock, hasConnected := cs.destinationLocks[string(pkiID)]
-	fmt.Println("=======destinationLock=========",destinationLock)
-	fmt.Println("=======hasConnected=========",hasConnected)
+	//fmt.Println("=======destinationLock=========",destinationLock)
+	//fmt.Println("=======hasConnected=========",hasConnected)
 	if !hasConnected {
 		destinationLock = &sync.Mutex{}
 		cs.destinationLocks[string(pkiID)] = destinationLock
@@ -84,8 +84,8 @@ func (cs *connectionStore) getConnection(peer *RemotePeer) (*connection, error) 
 	cs.RLock()
 
 	conn, exists := cs.pki2Conn[string(pkiID)]
-	fmt.Println("=========conn============",conn)
-	fmt.Println("=========exists============",conn)
+	//fmt.Println("=========conn============",conn)
+	//fmt.Println("=========exists============",conn)
 	if exists {
 		cs.RUnlock()
 		destinationLock.Unlock()
@@ -133,14 +133,14 @@ func (cs *connectionStore) getConnection(peer *RemotePeer) (*connection, error) 
 }
 
 func (cs *connectionStore) connNum() int {
-	fmt.Println("==connectionStore==connNum==")
+	//fmt.Println("==connectionStore==connNum==")
 	cs.RLock()
 	defer cs.RUnlock()
 	return len(cs.pki2Conn)
 }
 
 func (cs *connectionStore) closeConn(peer *RemotePeer) {
-	fmt.Println("==connectionStore==closeConn==")
+	//fmt.Println("==connectionStore==closeConn==")
 	cs.Lock()
 	defer cs.Unlock()
 
@@ -151,7 +151,7 @@ func (cs *connectionStore) closeConn(peer *RemotePeer) {
 }
 
 func (cs *connectionStore) shutdown() {
-	fmt.Println("==connectionStore==shutdown==")
+	//fmt.Println("==connectionStore==shutdown==")
 	cs.Lock()
 	cs.isClosing = true
 	pkiIds2conn := cs.pki2Conn
@@ -174,7 +174,7 @@ func (cs *connectionStore) shutdown() {
 }
 
 func (cs *connectionStore) onConnected(serverStream proto.Gossip_GossipStreamServer, connInfo *proto.ConnectionInfo) *connection {
-	fmt.Println("==connectionStore==onConnected==")
+	//fmt.Println("==connectionStore==onConnected==")
 	cs.Lock()
 	defer cs.Unlock()
 
@@ -186,7 +186,7 @@ func (cs *connectionStore) onConnected(serverStream proto.Gossip_GossipStreamSer
 }
 
 func (cs *connectionStore) registerConn(connInfo *proto.ConnectionInfo, serverStream proto.Gossip_GossipStreamServer) *connection {
-	fmt.Println("==connectionStore==registerConn==")
+	//fmt.Println("==connectionStore==registerConn==")
 	conn := newConnection(nil, nil, nil, serverStream)
 	conn.pkiID = connInfo.ID
 	conn.info = connInfo
@@ -196,7 +196,7 @@ func (cs *connectionStore) registerConn(connInfo *proto.ConnectionInfo, serverSt
 }
 
 func (cs *connectionStore) closeByPKIid(pkiID common.PKIidType) {
-	fmt.Println("==connectionStore==closeByPKIid==")
+	//fmt.Println("==connectionStore==closeByPKIid==")
 	cs.Lock()
 	defer cs.Unlock()
 	if conn, exists := cs.pki2Conn[string(pkiID)]; exists {
@@ -206,7 +206,7 @@ func (cs *connectionStore) closeByPKIid(pkiID common.PKIidType) {
 }
 
 func newConnection(cl proto.GossipClient, c *grpc.ClientConn, cs proto.Gossip_GossipStreamClient, ss proto.Gossip_GossipStreamServer) *connection {
-	fmt.Println("==newConnection=")
+	//fmt.Println("==newConnection=")
 	connection := &connection{
 		outBuff:      make(chan *msgSending, util.GetIntOrDefault("peer.gossip.sendBuffSize", defSendBuffSize)),
 		cl:           cl,
@@ -236,7 +236,7 @@ type connection struct {
 }
 
 func (conn *connection) close() {
-	fmt.Println("==connection==close==")
+	//fmt.Println("==connection==close==")
 	if conn.toDie() {
 		return
 	}
@@ -266,12 +266,12 @@ func (conn *connection) close() {
 }
 
 func (conn *connection) toDie() bool {
-	fmt.Println("==connection==toDie==")
+	//fmt.Println("==connection==toDie==")
 	return atomic.LoadInt32(&(conn.stopFlag)) == int32(1)
 }
 
 func (conn *connection) send(msg *proto.SignedGossipMessage, onErr func(error), shouldBlock blockingBehavior) {
-	fmt.Println("==connection==send==")
+	//fmt.Println("==connection==send==")
 	if conn.toDie() {
 		conn.logger.Debug("Aborting send() to ", conn.info.Endpoint, "because connection is closing")
 		return
@@ -295,7 +295,7 @@ func (conn *connection) send(msg *proto.SignedGossipMessage, onErr func(error), 
 }
 
 func (conn *connection) serviceConnection() error {
-	fmt.Println("==connection==serviceConnection==")
+	//fmt.Println("==connection==serviceConnection==")
 	errChan := make(chan error, 1)
 	msgChan := make(chan *proto.SignedGossipMessage, util.GetIntOrDefault("peer.gossip.recvBuffSize", defRecvBuffSize))
 	quit := make(chan struct{})
@@ -324,7 +324,7 @@ func (conn *connection) serviceConnection() error {
 }
 
 func (conn *connection) writeToStream() {
-	fmt.Println("==connection==writeToStream==")
+	//fmt.Println("==connection==writeToStream==")
 	for !conn.toDie() {
 		stream := conn.getStream()
 		if stream == nil {
@@ -347,7 +347,7 @@ func (conn *connection) writeToStream() {
 }
 
 func (conn *connection) drainOutputBuffer() {
-	fmt.Println("==connection==drainOutputBuffer==")
+	//fmt.Println("==connection==drainOutputBuffer==")
 	// Drain the output buffer
 	for len(conn.outBuff) > 0 {
 		<-conn.outBuff
@@ -355,7 +355,7 @@ func (conn *connection) drainOutputBuffer() {
 }
 
 func (conn *connection) readFromStream(errChan chan error, quit chan struct{}, msgChan chan *proto.SignedGossipMessage) {
-	fmt.Println("==connection==readFromStream==")
+	//fmt.Println("==connection==readFromStream==")
 	for !conn.toDie() {
 		stream := conn.getStream()
 		if stream == nil {
@@ -387,12 +387,12 @@ func (conn *connection) readFromStream(errChan chan error, quit chan struct{}, m
 }
 
 func (conn *connection) getStream() stream {
-	fmt.Println("==connection==getStream==")
+	//fmt.Println("==connection==getStream==")
 	conn.Lock()
 	defer conn.Unlock()
 
-	fmt.Println("=====conn.clientStream=========",conn.clientStream)
-	fmt.Println("=====conn.serverStream=========",conn.serverStream)
+	//fmt.Println("=====conn.clientStream=========",conn.clientStream)
+	//fmt.Println("=====conn.serverStream=========",conn.serverStream)
 	if conn.clientStream != nil && conn.serverStream != nil {
 		e := errors.New("Both client and server stream are not nil, something went wrong")
 		conn.logger.Errorf("%+v", e)

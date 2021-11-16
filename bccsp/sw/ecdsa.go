@@ -25,7 +25,7 @@ import (
 )
 
 func signECDSA(k *ecdsa.PrivateKey, digest []byte, opts bccsp.SignerOpts) ([]byte, error) {
-	fmt.Println("===signECDSA=====")
+	//fmt.Println("===signECDSA=====")
 	a := rand.Reader
 	r, s, err := ecdsa.Sign(a, k, digest)
 	if err != nil {
@@ -62,14 +62,14 @@ func verifyECDSA(k *ecdsa.PublicKey, signature, digest []byte, opts bccsp.Signer
 type ecdsaSigner struct{}
 
 func (s *ecdsaSigner) Sign(k bccsp.Key, digest []byte, opts bccsp.SignerOpts) ([]byte, error) {
-	fmt.Println("===ecdsaSigner==Sign===")
+	//fmt.Println("===ecdsaSigner==Sign===")
 	return signECDSA(k.(*ecdsaPrivateKey).privKey, digest, opts)
 }
 
 type ecdsaPrivateKeyVerifier struct{}
 
 func (v *ecdsaPrivateKeyVerifier) Verify(k bccsp.Key, signature, digest []byte, opts bccsp.SignerOpts) (bool, error) {
-	fmt.Println("===ecdsaPrivateKeyVerifier==Verify===")
+	//fmt.Println("===ecdsaPrivateKeyVerifier==Verify===")
 	return verifyECDSA(&(k.(*ecdsaPrivateKey).privKey.PublicKey), signature, digest, opts)
 }
 

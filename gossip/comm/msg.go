@@ -43,20 +43,20 @@ func (m *ReceivedMessageImpl) Respond(msg *proto.GossipMessage) {
 
 // GetGossipMessage returns the inner GossipMessage
 func (m *ReceivedMessageImpl) GetGossipMessage() *proto.SignedGossipMessage {
-	fmt.Println("==ReceivedMessageImpl==GetGossipMessage==")
+	//fmt.Println("==ReceivedMessageImpl==GetGossipMessage==")
 	return m.SignedGossipMessage
 }
 
 // GetConnectionInfo returns information about the remote peer
 // that send the message
 func (m *ReceivedMessageImpl) GetConnectionInfo() *proto.ConnectionInfo {
-	fmt.Println("==ReceivedMessageImpl==GetConnectionInfo==")
+	//fmt.Println("==ReceivedMessageImpl==GetConnectionInfo==")
 	return m.connInfo
 }
 
 // Ack returns to the sender an acknowledgement for the message
 func (m *ReceivedMessageImpl) Ack(err error) {
-	fmt.Println("==ReceivedMessageImpl==Ack==")
+//	fmt.Println("==ReceivedMessageImpl==Ack==")
 	ackMsg := &proto.GossipMessage{
 
 		Nonce: m.GetGossipMessage().Nonce,

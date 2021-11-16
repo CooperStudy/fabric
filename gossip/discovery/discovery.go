@@ -80,7 +80,7 @@ type NetworkMember struct {
 
 // String returns a string representation of the NetworkMember
 func (n NetworkMember) String() string {
-	fmt.Println("=====NetworkMember========String====")
+	//fmt.Println("=====NetworkMember========String====")
 	return fmt.Sprintf("Endpoint: %s, InternalEndpoint: %s, PKI-ID: %s, Metadata: %x", n.Endpoint, n.InternalEndpoint, n.PKIid, n.Metadata)
 }
 
@@ -89,12 +89,13 @@ func (n NetworkMember) String() string {
 // endpoint
 func (n NetworkMember) PreferredEndpoint() string {
 	fmt.Println("=======NetworkMember========PreferredEndpoint==")
-	fmt.Println("===n====",n)
-	fmt.Println("===n.InternalEndpoint====",n.InternalEndpoint)
+	//fmt.Println("===n====
+	//Endpoint: peer1.org1.example.com:7051, InternalEndpoint: , PKI-ID: 500f76e570c22e91343ac9c28db55d6948faa44da710db6fa7971641d4ea285b, Metadata:
+	//fmt.Println("===n.InternalEndpoint====",n.InternalEndpoint)//peer1.org1.example.com:7051
 	if n.InternalEndpoint != "" {
 		return n.InternalEndpoint
 	}
-	fmt.Println("===n.Endpoint====",n.Endpoint)
+	//fmt.Println("===n.Endpoint====",n.Endpoint)
 	return n.Endpoint
 }
 

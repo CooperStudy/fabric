@@ -74,9 +74,9 @@ func (m *ChannelDeMultiplexer) DeMultiplex(msg interface{}) {
 		return
 	}
 	for _, ch := range m.channels {
-		fmt.Println("==========ch",ch)
+		//fmt.Println("==========ch",ch)
 		if ch.pred(msg) {
-			fmt.Println("==========msg======",msg)
+			//fmt.Println("==========msg======",msg)
 			ch.ch <- msg
 		}
 	}

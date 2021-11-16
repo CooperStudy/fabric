@@ -92,21 +92,21 @@ func (p *batchingEmitterImpl) emit() {
 func (p *batchingEmitterImpl) decrementCounters() {
 	fmt.Println("====batchingEmitterImpl===decrementCounters==")
 	n := len(p.buff)
-	fmt.Println("========n=========",n)
+	//fmt.Println("========n=========",n)
 	for i := 0; i < n; i++ {
 		msg := p.buff[i]
 		msg.iterationsLeft--
-		fmt.Println("=====msg============",msg)
-		fmt.Println("=====msg.iterationsLeft============",msg.iterationsLeft)
-		fmt.Println("+=====p.buff====",p.buff)
+		//fmt.Println("=====msg============",msg)
+		//fmt.Println("=====msg.iterationsLeft============",msg.iterationsLeft)
+		//fmt.Println("+=====p.buff====",p.buff)
 		if msg.iterationsLeft == 0 {
-			fmt.Println("=====msg.iterationsLeft=========",msg.iterationsLeft)
+			//fmt.Println("=====msg.iterationsLeft=========",msg.iterationsLeft)
 			p.buff = append(p.buff[:i], p.buff[i+1:]...)
-			fmt.Println("===========p.buff============",p.buff)
+			//fmt.Println("===========p.buff============",p.buff)
 			n--
-			fmt.Println("======n=======",n)
+			//fmt.Println("======n=======",n)
 			i--
-			fmt.Println("======i=======",i)
+			//fmt.Println("======i=======",i)
 		}
 	}
 }
@@ -131,20 +131,20 @@ type batchedMessage struct {
 }
 
 func (p *batchingEmitterImpl) Stop() {
-	fmt.Println("====batchingEmitterImpl===Stop==")
+	//fmt.Println("====batchingEmitterImpl===Stop==")
 	atomic.StoreInt32(&(p.stopFlag), int32(1))
 }
 
 func (p *batchingEmitterImpl) Size() int {
-	fmt.Println("====batchingEmitterImpl===Size==")
+	//fmt.Println("====batchingEmitterImpl===Size==")
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	return len(p.buff)
 }
 
 func (p *batchingEmitterImpl) Add(message interface{}) {
-	fmt.Println("====batchingEmitterImpl===Add==")
-	fmt.Println("===message=====",message)
+	//fmt.Println("====batchingEmitterImpl===Add==")
+	//fmt.Println("===message=====",message)
 	if p.iterations == 0 {
 		return
 	}

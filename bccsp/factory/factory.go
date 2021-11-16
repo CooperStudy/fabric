@@ -59,7 +59,7 @@ type BCCSPFactory interface {
 // GetDefault returns a non-ephemeral (long-term) BCCSP
 func GetDefault() bccsp.BCCSP {
 	fmt.Println("====fabric-factory-factory.go===")
-	logger.Info("=======GetDefault=================defaultBCCSP",defaultBCCSP)//0xc000114b90
+	//logger.Info("=======GetDefault=================defaultBCCSP",defaultBCCSP)//0xc000114b90
 	if defaultBCCSP == nil {
 		logger.Warning("Before using BCCSP, please call InitFactories(). Falling back to bootBCCSP.")
 		bootBCCSPInitOnce.Do(func() {
@@ -72,7 +72,7 @@ func GetDefault() bccsp.BCCSP {
 		})
 		return bootBCCSP
 	}
-	fmt.Printf("=====defaultBCCSP type:%T===\n",defaultBCCSP)
+	//fmt.Printf("=====defaultBCCSP type:%T===\n",defaultBCCSP)
 	//*bccsp.SHA256Opts
 	//========s========= =======GetDefault=================defaultBCCSP &{0x17da2d8 map[*bccsp.AES192KeyGenOpts:0xc00003cf98 *bccsp.RSAKeyGenOpts:0xc00003cfb8 *bccsp.RSA2048KeyGenOpts:0xc00003cfd8 *bccsp.RSA3072KeyGenOpts:0xc00003cfe8 *bccsp.RSA4096KeyGenOpts:0xc00003cff8 *bccsp.ECDSAP384KeyGenOpts:0xc0003476d0 *bccsp.AESKeyGenOpts:0xc00003cf78 *bccsp.AES256KeyGenOpts:0xc00003cf88 *bccsp.RSA1024KeyGenOpts:0xc00003cfc8 *bccsp.ECDSAKeyGenOpts:0xc0003476b0 *bccsp.ECDSAP256KeyGenOpts:0xc0003476c0 *bccsp.AES128KeyGenOpts:0xc00003cfa8] map[*sw.ecdsaPrivateKey:0x17da2d8 *sw.ecdsaPublicKey:0x17da2d8 *sw.aesPrivateKey:0xc00000e510] map[*bccsp.AES256ImportKeyOpts:0x17da2d8 *bccsp.HMACImportKeyOpts:0x17da2d8 *bccsp.ECDSAPKIXPublicKeyImportOpts:0x17da2d8 *bccsp.ECDSAPrivateKeyImportOpts:0x17da2d8 *bccsp.ECDSAGoPublicKeyImportOpts:0x17da2d8 *bccsp.RSAGoPublicKeyImportOpts:0x17da2d8 *bccsp.X509PublicKeyImportOpts:0xc00000e518] map[*sw.aesPrivateKey:0x17da2d8] map[*sw.aesPrivateKey:0x17da2d8] map[*sw.ecdsaPrivateKey:0x17da2d8 *sw.rsaPrivateKey:0x17da2d8] map[*sw.ecdsaPrivateKey:0x17da2d8 *sw.ecdsaPublicKey:0x17da2d8 *sw.rsaPrivateKey:0x17da2d8 *sw.rsaPublicKey:0x17da2d8] map[*bccsp.SHA3_384Opts:0xc00000e4f8 *bccsp.SHAOpts:0xc00000e4d8 *bccsp.SHA256Opts:0xc00000e4e0 *bccsp.SHA384Opts:0xc00000e4e8 *bccsp.SHA3_256Opts:0xc00000e4f0]}
 	return defaultBCCSP

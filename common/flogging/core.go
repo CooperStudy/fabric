@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package flogging
 
 import (
-	"fmt"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -53,7 +52,7 @@ type Core struct {
 }
 
 func (c *Core) With(fields []zapcore.Field) zapcore.Core {
-	fmt.Println("==Core====With=========")
+//	fmt.Println("==Core====With=========")
 	clones := map[Encoding]zapcore.Encoder{}
 	for name, enc := range c.Encoders {
 		clone := enc.Clone()
@@ -71,7 +70,7 @@ func (c *Core) With(fields []zapcore.Field) zapcore.Core {
 }
 
 func (c *Core) Check(e zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
-	fmt.Println("==Core====Check=========")
+	//fmt.Println("==Core====Check=========")
 	if c.Enabled(e.Level) && c.Levels.Level(e.LoggerName).Enabled(e.Level) {
 		return ce.AddCore(e, c)
 	}
@@ -79,7 +78,7 @@ func (c *Core) Check(e zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.Checked
 }
 
 func (c *Core) Write(e zapcore.Entry, fields []zapcore.Field) error {
-	fmt.Println("==Core====Write=========")
+	//fmt.Println("==Core====Write=========")
 	encoding := c.Selector.Encoding()
 	enc := c.Encoders[encoding]
 
@@ -101,12 +100,12 @@ func (c *Core) Write(e zapcore.Entry, fields []zapcore.Field) error {
 }
 
 func (c *Core) Sync() error {
-	fmt.Println("==Core====Sync=========")
+	//fmt.Println("==Core====Sync=========")
 	return c.Output.Sync()
 }
 
 func addFields(enc zapcore.ObjectEncoder, fields []zapcore.Field) {
-	fmt.Println("==addFields============")
+	//fmt.Println("==addFields============")
 	for i := range fields {
 		fields[i].AddTo(enc)
 	}

@@ -1483,11 +1483,11 @@ func NewDiscoveryClient(cc *grpc.ClientConn) DiscoveryClient {
 func (c *discoveryClient) Discover(ctx context.Context, in *SignedRequest, opts ...grpc.CallOption) (*Response, error) {
 	fmt.Println("==========discoveryClient===Discover===========")
 	out := new(Response)
-	fmt.Println("===ctx===",ctx)
-	fmt.Println("===/discovery.Discovery/Discover===")
-	fmt.Println("===in===",*in)
-	fmt.Println("===out===",*out)
-	fmt.Println("===opts===",opts)
+	//fmt.Println("===ctx===",ctx)
+	//fmt.Println("===/discovery.Discovery/Discover===")
+	//fmt.Println("===in===",*in)
+	//fmt.Println("===out===",*out)
+	//fmt.Println("===opts===",opts)
 	err := c.cc.Invoke(ctx, "/discovery.Discovery/Discover", in, out, opts...)
 	if err != nil {
 		return nil, err

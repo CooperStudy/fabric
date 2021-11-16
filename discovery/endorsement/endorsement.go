@@ -712,7 +712,7 @@ func peersWithChaincode(metadata ...*chaincode.Metadata) func(member NetworkMemb
 					found = true
 				}
 			}
-			fmt.Println("====found===", found)
+			//fmt.Println("====found===", found)
 			if !found {
 				return false
 			}
