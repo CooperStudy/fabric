@@ -57,7 +57,7 @@ type Logging struct {
 // New creates a new logging system and initializes it with the provided
 // configuration.
 func New(c Config) (*Logging, error) {
-	fmt.Println("======New=========")
+	//fmt.Println("======New=========")
 	encoderConfig := zap.NewProductionEncoderConfig()
 	encoderConfig.NameKey = "name"
 
@@ -78,7 +78,7 @@ func New(c Config) (*Logging, error) {
 
 // Apply applies the provided configuration to the logging system.
 func (s *Logging) Apply(c Config) error {
-	fmt.Println("====Logging==Apply=========")
+	//fmt.Println("====Logging==Apply=========")
 	err := s.SetFormat(c.Format)
 	if err != nil {
 		return err
@@ -118,7 +118,7 @@ func (s *Logging) Apply(c Config) error {
 //
 // An error is returned if the log format specification cannot be parsed.
 func (s *Logging) SetFormat(format string) error {
-	fmt.Println("====Logging==SetFormat=========")
+	//fmt.Println("====Logging==SetFormat=========")
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	if format == "" {
@@ -144,7 +144,7 @@ func (s *Logging) SetFormat(format string) error {
 // Writers, with the exception of an *os.File, need to be safe for concurrent
 // use by multiple go routines.
 func (s *Logging) SetWriter(w io.Writer) {
-	fmt.Println("====Logging==SetWriter=========")
+	//fmt.Println("====Logging==SetWriter=========")
 	var sw zapcore.WriteSyncer
 	switch t := w.(type) {
 	case *os.File:
@@ -164,7 +164,7 @@ func (s *Logging) SetWriter(w io.Writer) {
 // of SetWriter or the Writer field of Config. The Core uses this when encoding
 // log records.
 func (s *Logging) Write(b []byte) (int, error) {
-	fmt.Println("====Logging==Write=========")
+	//fmt.Println("====Logging==Write=========")
 	s.mutex.RLock()
 	w := s.writer
 	s.mutex.RUnlock()
@@ -175,7 +175,7 @@ func (s *Logging) Write(b []byte) (int, error) {
 // Sync satisfies the zapcore.WriteSyncer interface. It is used by the Core to
 // flush log records before terminating the process.
 func (s *Logging) Sync() error {
-	fmt.Println("====Logging==Sync=========")
+	//fmt.Println("====Logging==Sync=========")
 	s.mutex.RLock()
 	w := s.writer
 	s.mutex.RUnlock()
@@ -186,7 +186,7 @@ func (s *Logging) Sync() error {
 // Encoding satisfies the Encoding interface. It determines whether the JSON or
 // CONSOLE encoder should be used by the Core when log records are written.
 func (s *Logging) Encoding() Encoding {
-	fmt.Println("====Logging==Encoding=========")
+	//fmt.Println("====Logging==Encoding=========")
 	s.mutex.RLock()
 	e := s.encoding
 	s.mutex.RUnlock()
@@ -196,7 +196,7 @@ func (s *Logging) Encoding() Encoding {
 // ZapLogger instantiates a new zap.Logger with the specified name. The name is
 // used to determine which log levels are enabled.
 func (s *Logging) ZapLogger(name string) *zap.Logger {
-	fmt.Println("====Logging==ZapLogger=========")
+	//fmt.Println("====Logging==ZapLogger=========")
 	if !isValidLoggerName(name) {
 		panic(fmt.Sprintf("invalid logger name: %s", name))
 	}
@@ -225,7 +225,7 @@ func (s *Logging) ZapLogger(name string) *zap.Logger {
 // Logger instantiates a new FabricLogger with the specified name. The name is
 // used to determine which log levels are enabled.
 func (s *Logging) Logger(name string) *FabricLogger {
-	fmt.Println("====Logging==Logger=========")
+	//fmt.Println("====Logging==Logger=========")
 	zl := s.ZapLogger(name)
 	return NewFabricLogger(zl)
 }

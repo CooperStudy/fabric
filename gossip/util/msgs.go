@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package util
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/hyperledger/fabric/gossip/common"
@@ -23,14 +22,14 @@ type MembershipStore struct {
 
 // NewMembershipStore creates new membership store instance
 func NewMembershipStore() *MembershipStore {
-	fmt.Println("===NewMembershipStore==")
+	//fmt.Println("===NewMembershipStore==")
 	return &MembershipStore{m: make(map[string]*proto.SignedGossipMessage)}
 }
 
 // MsgByID returns a message stored by a certain ID, or nil
 // if such an ID isn't found
 func (m *MembershipStore) MsgByID(pkiID common.PKIidType) *proto.SignedGossipMessage {
-	fmt.Println("===MembershipStore==MsgByID==")
+	//fmt.Println("===MembershipStore==MsgByID==")
 	m.RLock()
 	defer m.RUnlock()
 	if msg, exists := m.m[string(pkiID)]; exists {
@@ -41,7 +40,7 @@ func (m *MembershipStore) MsgByID(pkiID common.PKIidType) *proto.SignedGossipMes
 
 // Size of the membership store
 func (m *MembershipStore) Size() int {
-	fmt.Println("===MembershipStore==Size==")
+	//fmt.Println("===MembershipStore==Size==")
 	m.RLock()
 	defer m.RUnlock()
 	return len(m.m)
@@ -49,7 +48,7 @@ func (m *MembershipStore) Size() int {
 
 // Put associates msg with the given pkiID
 func (m *MembershipStore) Put(pkiID common.PKIidType, msg *proto.SignedGossipMessage) {
-	fmt.Println("===MembershipStore==Put==")
+	//fmt.Println("===MembershipStore==Put==")
 	m.Lock()
 	defer m.Unlock()
 	m.m[string(pkiID)] = msg
@@ -57,7 +56,7 @@ func (m *MembershipStore) Put(pkiID common.PKIidType, msg *proto.SignedGossipMes
 
 // Remove removes a message with a given pkiID
 func (m *MembershipStore) Remove(pkiID common.PKIidType) {
-	fmt.Println("===MembershipStore==Remove==")
+	//fmt.Println("===MembershipStore==Remove==")
 	m.Lock()
 	defer m.Unlock()
 	delete(m.m, string(pkiID))

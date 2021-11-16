@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package comm
 
 import (
-	"fmt"
 	"sync"
 
 	proto "github.com/hyperledger/fabric/protos/gossip"
@@ -25,13 +24,13 @@ type ReceivedMessageImpl struct {
 // GetSourceEnvelope Returns the Envelope the ReceivedMessage was
 // constructed with
 func (m *ReceivedMessageImpl) GetSourceEnvelope() *proto.Envelope {
-	fmt.Println("==ReceivedMessageImpl==GetSourceEnvelope==")
+	//fmt.Println("==ReceivedMessageImpl==GetSourceEnvelope==")
 	return m.Envelope
 }
 
 // Respond sends a msg to the source that sent the ReceivedMessageImpl
 func (m *ReceivedMessageImpl) Respond(msg *proto.GossipMessage) {
-	fmt.Println("==ReceivedMessageImpl==Respond==")
+	//fmt.Println("==ReceivedMessageImpl==Respond==")
 	sMsg, err := msg.NoopSign()
 	if err != nil {
 		err = errors.WithStack(err)

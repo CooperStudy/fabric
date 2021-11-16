@@ -1250,7 +1250,7 @@ func (g *gossipServiceImpl) hasExternalEndpoint(PKIID common.PKIidType) bool {
 }
 
 func (g *gossipServiceImpl) isInMyorg(member discovery.NetworkMember) bool {
-	fmt.Println("====gossipServiceImpl=====isInMyorg===")
+	//fmt.Println("====gossipServiceImpl=====isInMyorg===")
 	//fmt.Println("=====member.PKIid======",member.PKIid)
 	if member.PKIid == nil {
 		return false

@@ -192,7 +192,7 @@ func (s *MSPMessageCryptoService) VerifyBlock(chainID common.ChainID, seqNum uin
 // Sign signs msg with this peer's signing key and outputs
 // the signature if no error occurred.
 func (s *MSPMessageCryptoService) Sign(msg []byte) ([]byte, error) {
-	fmt.Println("======MSPMessageCryptoService====Sign=======")
+	//fmt.Println("======MSPMessageCryptoService====Sign=======")
 	return s.localSigner.Sign(msg)
 }
 

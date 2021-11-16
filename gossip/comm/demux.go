@@ -37,7 +37,7 @@ type channel struct {
 }
 
 func (m *ChannelDeMultiplexer) isClosed() bool {
-	fmt.Println("==ChannelDeMultiplexer==isClosed==")
+	//fmt.Println("==ChannelDeMultiplexer==isClosed==")
 	return m.closed
 }
 
@@ -56,7 +56,7 @@ func (m *ChannelDeMultiplexer) Close() {
 
 // AddChannel registers a channel with a certain predicate
 func (m *ChannelDeMultiplexer) AddChannel(predicate common.MessageAcceptor) chan interface{} {
-	fmt.Println("==ChannelDeMultiplexer==AddChannel==")
+	//fmt.Println("==ChannelDeMultiplexer==AddChannel==")
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	ch := &channel{ch: make(chan interface{}, 10), pred: predicate}

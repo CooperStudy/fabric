@@ -101,7 +101,7 @@ type bccspmsp struct {
 // generate identities and signing identities backed by
 // certificates and keypairs
 func newBccspMsp(version MSPVersion) (MSP, error) {
-	fmt.Println("==newBccspMsp==")
+	//fmt.Println("==newBccspMsp==")
 	mspLogger.Debugf("Creating BCCSP-based MSP instance")
 
 	bccsp := factory.GetDefault()
@@ -110,17 +110,17 @@ func newBccspMsp(version MSPVersion) (MSP, error) {
 	theMsp.bccsp = bccsp
 	switch version {
 	case MSPv1_0:
-		fmt.Println("==MSPv1_0==")
+		//fmt.Println("==MSPv1_0==")
 		theMsp.internalSetupFunc = theMsp.setupV1
 		theMsp.internalValidateIdentityOusFunc = theMsp.validateIdentityOUsV1
 		theMsp.internalSatisfiesPrincipalInternalFunc = theMsp.satisfiesPrincipalInternalPreV13
 	case MSPv1_1:
-		fmt.Println("==MSPv1_1==")
+		//fmt.Println("==MSPv1_1==")
 		theMsp.internalSetupFunc = theMsp.setupV11
 		theMsp.internalValidateIdentityOusFunc = theMsp.validateIdentityOUsV11
 		theMsp.internalSatisfiesPrincipalInternalFunc = theMsp.satisfiesPrincipalInternalPreV13
 	case MSPv1_3:
-		fmt.Println("==MSPv1_3==")
+		//fmt.Println("==MSPv1_3==")
 		theMsp.internalSetupFunc = theMsp.setupV11
 		theMsp.internalValidateIdentityOusFunc = theMsp.validateIdentityOUsV11
 		theMsp.internalSatisfiesPrincipalInternalFunc = theMsp.satisfiesPrincipalInternalV13
@@ -132,7 +132,7 @@ func newBccspMsp(version MSPVersion) (MSP, error) {
 }
 
 func (msp *bccspmsp) getCertFromPem(idBytes []byte) (*x509.Certificate, error) {
-	fmt.Println("==getCertFromPem==")
+	//fmt.Println("==getCertFromPem==")
 	if idBytes == nil {
 		return nil, errors.New("getCertFromPem error: nil idBytes")
 	}
@@ -154,7 +154,7 @@ func (msp *bccspmsp) getCertFromPem(idBytes []byte) (*x509.Certificate, error) {
 }
 
 func (msp *bccspmsp) getIdentityFromConf(idBytes []byte) (Identity, bccsp.Key, error) {
-	fmt.Println("===bccspmsp==getIdentityFromConf==")
+	//fmt.Println("===bccspmsp==getIdentityFromConf==")
 	// get a cert
 	cert, err := msp.getCertFromPem(idBytes)
 	if err != nil {
@@ -173,7 +173,7 @@ func (msp *bccspmsp) getIdentityFromConf(idBytes []byte) (Identity, bccsp.Key, e
 }
 
 func (msp *bccspmsp) getSigningIdentityFromConf(sidInfo *m.SigningIdentityInfo) (SigningIdentity, error) {
-	fmt.Println("===bccspmsp==getSigningIdentityFromConf==")
+	//fmt.Println("===bccspmsp==getSigningIdentityFromConf==")
 	if sidInfo == nil {
 		return nil, errors.New("getIdentityFromBytes error: nil sidInfo")
 	}
@@ -213,7 +213,7 @@ func (msp *bccspmsp) getSigningIdentityFromConf(sidInfo *m.SigningIdentityInfo) 
 // for this MSP, given an MSPConfig ref; it
 // returns nil in case of success or an error otherwise
 func (msp *bccspmsp) Setup(conf1 *m.MSPConfig) error {
-	fmt.Println("===bccspmsp==Setup==")
+	//fmt.Println("===bccspmsp==Setup==")
 	if conf1 == nil {
 		return errors.New("Setup error: nil conf reference")
 	}
@@ -235,25 +235,25 @@ func (msp *bccspmsp) Setup(conf1 *m.MSPConfig) error {
 
 // GetVersion returns the version of this MSP
 func (msp *bccspmsp) GetVersion() MSPVersion {
-	fmt.Println("===bccspmsp==GetVersion==")
+	//fmt.Println("===bccspmsp==GetVersion==")
 	return msp.version
 }
 
 // GetType returns the type for this MSP
 func (msp *bccspmsp) GetType() ProviderType {
-	fmt.Println("===bccspmsp==GetType==")
+	//fmt.Println("===bccspmsp==GetType==")
 	return FABRIC
 }
 
 // GetIdentifier returns the MSP identifier for this instance
 func (msp *bccspmsp) GetIdentifier() (string, error) {
-	fmt.Println("===bccspmsp==GetIdentifier==")
+	//fmt.Println("===bccspmsp==GetIdentifier==")
 	return msp.name, nil
 }
 
 // GetTLSRootCerts returns the root certificates for this MSP
 func (msp *bccspmsp) GetTLSRootCerts() [][]byte {
-	fmt.Println("===bccspmsp==GetTLSRootCerts==")
+	//fmt.Println("===bccspmsp==GetTLSRootCerts==")
 	return msp.tlsRootCerts
 }
 
@@ -399,7 +399,7 @@ func (msp *bccspmsp) deserializeIdentityInternal(serializedIdentity []byte) (Ide
 
 // SatisfiesPrincipal returns null if the identity matches the principal or an error otherwise
 func (msp *bccspmsp) SatisfiesPrincipal(id Identity, principal *m.MSPPrincipal) error {
-	fmt.Println("===bccspmsp==SatisfiesPrincipal==")
+	//fmt.Println("===bccspmsp==SatisfiesPrincipal==")
 	principals, err := collectPrincipals(principal, msp.GetVersion())
 	if err != nil {
 		return err
@@ -415,7 +415,7 @@ func (msp *bccspmsp) SatisfiesPrincipal(id Identity, principal *m.MSPPrincipal) 
 
 // collectPrincipals collects principals from combined principals into a single MSPPrincipal slice.
 func collectPrincipals(principal *m.MSPPrincipal, mspVersion MSPVersion) ([]*m.MSPPrincipal, error) {
-	fmt.Println("===collectPrincipals==")
+	//fmt.Println("===collectPrincipals==")
 	switch principal.PrincipalClassification {
 	case m.MSPPrincipal_COMBINED:
 		// Combined principals are not supported in MSP v1.0 or v1.1

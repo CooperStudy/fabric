@@ -62,9 +62,9 @@ func (s *mspSigner) NewSignatureHeader() (*cb.SignatureHeader, error) {
 
 // Sign a message which should embed a signature header created by NewSignatureHeader
 func (s *mspSigner) Sign(message []byte) ([]byte, error) {
-	fmt.Println("=======mspSigner========Sign==============")
+	//fmt.Println("=======mspSigner========Sign==============")
 	signer, err := mspmgmt.GetLocalMSP().GetDefaultSigningIdentity()
-	fmt.Println("====signer======",signer)
+	//fmt.Println("====signer======",signer)
 	if err != nil {
 		return nil, fmt.Errorf("Failed getting MSP-based signer [%s]", err)
 	}

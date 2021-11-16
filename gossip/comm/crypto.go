@@ -14,7 +14,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
-	"fmt"
 	"math/big"
 
 	"github.com/hyperledger/fabric/common/util"
@@ -25,7 +24,7 @@ import (
 // GenerateCertificatesOrPanic generates a a random pair of public and private keys
 // and return TLS certificate
 func GenerateCertificatesOrPanic() tls.Certificate {
-	fmt.Println("==GenerateCertificatesOrPanic==")
+	//fmt.Println("==GenerateCertificatesOrPanic==")
 	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		panic(err)
@@ -60,7 +59,7 @@ func GenerateCertificatesOrPanic() tls.Certificate {
 }
 
 func certHashFromRawCert(rawCert []byte) []byte {
-	fmt.Println("==certHashFromRawCert==")
+	//fmt.Println("==certHashFromRawCert==")
 	if len(rawCert) == 0 {
 		return nil
 	}
@@ -69,7 +68,7 @@ func certHashFromRawCert(rawCert []byte) []byte {
 
 // ExtractCertificateHash extracts the hash of the certificate from the stream
 func extractCertificateHashFromContext(ctx context.Context) []byte {
-	fmt.Println("==extractCertificateHashFromContext==")
+	//fmt.Println("==extractCertificateHashFromContext==")
 	pr, extracted := peer.FromContext(ctx)
 	if !extracted {
 		return nil
