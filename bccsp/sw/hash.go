@@ -28,7 +28,7 @@ type hasher struct {
 }
 
 func (c *hasher) Hash(msg []byte, opts bccsp.HashOpts) ([]byte, error) {
-	fmt.Println("===hasher==Hash==")
+	//fmt.Println("===hasher==Hash==")
 	h := c.hash()
 	//fmt.Println("===h",h)
 	//fmt.Printf("===h type:%T==\n",h)//*sha256.digest

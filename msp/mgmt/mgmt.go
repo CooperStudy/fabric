@@ -139,7 +139,7 @@ func XXXSetMSPManager(chainID string, manager msp.MSPManager) {
 
 // GetLocalMSP returns the local msp (and creates it if it doesn't exist)
 func GetLocalMSP() msp.MSP {
-	fmt.Println("====GetLocalMSP==")
+	//fmt.Println("====GetLocalMSP==")
 	m.Lock()
 	defer m.Unlock()
 

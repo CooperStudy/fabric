@@ -91,7 +91,7 @@ func (p *batchingEmitterImpl) emit() {
 }
 
 func (p *batchingEmitterImpl) decrementCounters() {
-	fmt.Println("====batchingEmitterImpl===decrementCounters==")
+	//fmt.Println("====batchingEmitterImpl===decrementCounters==")
 	n := len(p.buff)
 	//fmt.Println("========n=========",n)
 	for i := 0; i < n; i++ {

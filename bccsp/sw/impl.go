@@ -181,8 +181,8 @@ func (csp *CSP) GetKey(ski []byte) (k bccsp.Key, err error) {
 
 // Hash hashes messages msg using options opts.
 func (csp *CSP) Hash(msg []byte, opts bccsp.HashOpts) (digest []byte, err error) {
-	fmt.Println("==CSP=Hash===")
-	// Validate arguments
+	//fmt.Println("==CSP=Hash===")
+	//// Validate arguments
 	if opts == nil {
 		return nil, errors.New("Invalid opts. It must not be nil.")
 	}

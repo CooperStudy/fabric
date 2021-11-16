@@ -88,7 +88,7 @@ func (n NetworkMember) String() string {
 // while preferring internal endpoint over the standard
 // endpoint
 func (n NetworkMember) PreferredEndpoint() string {
-	fmt.Println("=======NetworkMember========PreferredEndpoint==")
+//	fmt.Println("=======NetworkMember========PreferredEndpoint==")
 	//fmt.Println("===n====
 	//Endpoint: peer1.org1.example.com:7051, InternalEndpoint: , PKI-ID: 500f76e570c22e91343ac9c28db55d6948faa44da710db6fa7971641d4ea285b, Metadata:
 	//fmt.Println("===n.InternalEndpoint====",n.InternalEndpoint)//peer1.org1.example.com:7051

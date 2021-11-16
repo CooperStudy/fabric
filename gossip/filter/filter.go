@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package filter
 
 import (
-	"fmt"
 	"math/rand"
 
 	"github.com/hyperledger/fabric/gossip/comm"
@@ -32,7 +31,7 @@ var SelectAllPolicy = func(discovery.NetworkMember) bool {
 
 // CombineRoutingFilters returns the logical AND of given routing filters
 func CombineRoutingFilters(filters ...RoutingFilter) RoutingFilter {
-	fmt.Println("====CombineRoutingFilters=")
+	//fmt.Println("====CombineRoutingFilters=")
 	return func(member discovery.NetworkMember) bool {
 		for _, filter := range filters {
 			if !filter(member) {

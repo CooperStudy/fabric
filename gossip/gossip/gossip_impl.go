@@ -353,7 +353,7 @@ func (g *gossipServiceImpl) acceptMessages(incMsgs <-chan proto.ReceivedMessage)
 }
 
 func (g *gossipServiceImpl) handleMessage(m proto.ReceivedMessage) {
-	fmt.Println("====gossipServiceImpl===handleMessage=======")
+	//fmt.Println("====gossipServiceImpl===handleMessage=======")
 	if g.toDie() {
 		return
 	}
@@ -429,7 +429,7 @@ func (g *gossipServiceImpl) handleMessage(m proto.ReceivedMessage) {
 }
 
 func (g *gossipServiceImpl) forwardDiscoveryMsg(msg proto.ReceivedMessage) {
-	fmt.Println("====gossipServiceImpl===forwardDiscoveryMsg=======")
+	//fmt.Println("====gossipServiceImpl===forwardDiscoveryMsg=======")
 	defer func() { // can be closed while shutting down
 		recover()
 	}()
@@ -440,7 +440,7 @@ func (g *gossipServiceImpl) forwardDiscoveryMsg(msg proto.ReceivedMessage) {
 // validateMsg checks the signature of the message if exists,
 // and also checks that the tag matches the message type
 func (g *gossipServiceImpl) validateMsg(msg proto.ReceivedMessage) bool {
-	fmt.Println("====gossipServiceImpl===validateMsg=======")
+	//fmt.Println("====gossipServiceImpl===validateMsg=======")
 	if err := msg.GetGossipMessage().IsTagLegal(); err != nil {
 		g.logger.Warningf("Tag of %v isn't legal: %v", msg.GetGossipMessage(), errors.WithStack(err))
 		return false
@@ -456,11 +456,11 @@ func (g *gossipServiceImpl) validateMsg(msg proto.ReceivedMessage) bool {
 }
 
 func (g *gossipServiceImpl) sendGossipBatch(a []interface{}) {
-	fmt.Println("====gossipServiceImpl===sendGossipBatch=======")
+	//fmt.Println("====gossipServiceImpl===sendGossipBatch=======")
 	msgs2Gossip := make([]*emittedGossipMessage, len(a))
 	for i, e := range a {
-		fmt.Println("======i",i)
-		fmt.Println("======e",e)
+		//fmt.Println("======i",i)
+		//fmt.Println("======e",e)
 		msgs2Gossip[i] = e.(*emittedGossipMessage)
 	}
 	g.gossipBatch(msgs2Gossip)
@@ -589,7 +589,7 @@ func (g *gossipServiceImpl) sendAndFilterSecrets(msg *proto.SignedGossipMessage,
 
 // gossipInChan gossips a given GossipMessage slice according to a channel's routing policy.
 func (g *gossipServiceImpl) gossipInChan(messages []*emittedGossipMessage, chanRoutingFactory channelRoutingFilterFactory) {
-	fmt.Println("====gossipServiceImpl===gossipInChan=======")
+	//fmt.Println("====gossipServiceImpl===gossipInChan=======")
 	if len(messages) == 0 {
 		return
 	}
@@ -1097,7 +1097,7 @@ func (sa *discoverySecurityAdapter) ValidateAliveMsg(m *proto.SignedGossipMessag
 func (sa *discoverySecurityAdapter) SignMessage(m *proto.GossipMessage, internalEndpoint string) *proto.Envelope {
 	//fmt.Println("====discoverySecurityAdapter=====SignMessage===")
 	signer := func(msg []byte) ([]byte, error) {
-		fmt.Println("============signer===========")
+		//fmt.Println("============signer===========")
 		return sa.mcs.Sign(msg)
 	}
 	if m.IsAliveMsg() && time.Now().Before(sa.includeIdentityPeriod) {

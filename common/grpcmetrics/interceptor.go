@@ -92,7 +92,7 @@ type serverStream struct {
 }
 
 func (ss *serverStream) SendMsg(msg interface{}) error {
-	fmt.Println("===serverStream===SendMsg===")
+//	fmt.Println("===serverStream===SendMsg===")
 	ss.messagesSent.Add(1)
 	return ss.ServerStream.SendMsg(msg)
 }

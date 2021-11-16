@@ -93,17 +93,17 @@ func (f *FabricLogger) Sync() error                     { return f.s.Sync() }
 func (f *FabricLogger) Zap() *zap.Logger                { return f.s.Desugar() }
 
 func (f *FabricLogger) IsEnabledFor(level zapcore.Level) bool {
-	fmt.Println("===FabricLogger====IsEnabledFor=====")
+	//fmt.Println("===FabricLogger====IsEnabledFor=====")
 	return f.s.Desugar().Core().Enabled(level)
 }
 
 func (f *FabricLogger) With(args ...interface{}) *FabricLogger {
-	fmt.Println("===FabricLogger====With=====")
+	//fmt.Println("===FabricLogger====With=====")
 	return &FabricLogger{s: f.s.With(args...)}
 }
 
 func (f *FabricLogger) WithOptions(opts ...zap.Option) *FabricLogger {
-	fmt.Println("===FabricLogger====WithOptions=====")
+//	fmt.Println("===FabricLogger====WithOptions=====")
 	l := f.s.Desugar().WithOptions(opts...)
 	return &FabricLogger{s: l.Sugar()}
 }

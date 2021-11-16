@@ -405,7 +405,7 @@ type AuthInfo struct {
 // Returns an Envelope on success,
 // panics on failure.
 func (m *SignedGossipMessage) Sign(signer Signer) (*Envelope, error) {
-	fmt.Println("==========SignedGossipMessage==Sign====")
+	//fmt.Println("==========SignedGossipMessage==Sign====")
 	// If we have a secretEnvelope, don't override it.
 
 	// Back it up, and restore it later
@@ -537,7 +537,7 @@ func (e *Envelope) SignSecret(signer Signer, secret *Secret) error {
 // in the secret envelope, or an empty string
 // if a failure occurs.
 func (s *SecretEnvelope) InternalEndpoint() string {
-	fmt.Println("==========SecretEnvelope==InternalEndpoint====")
+	//fmt.Println("==========SecretEnvelope==InternalEndpoint====")
 	secret := &Secret{}
 	if err := proto.Unmarshal(s.Payload, secret); err != nil {
 		return ""

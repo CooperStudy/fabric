@@ -50,7 +50,7 @@ func NewDeserializersManager() DeserializersManager {
 type mspDeserializersManager struct{}
 
 func (m *mspDeserializersManager) Deserialize(raw []byte) (*mspproto.SerializedIdentity, error) {
-	fmt.Println("=====mspDeserializersManager===Deserialize==")
+	//fmt.Println("=====mspDeserializersManager===Deserialize==")
 	sId := &mspproto.SerializedIdentity{}
 	err := proto.Unmarshal(raw, sId)
 	if err != nil {
@@ -60,13 +60,13 @@ func (m *mspDeserializersManager) Deserialize(raw []byte) (*mspproto.SerializedI
 }
 
 func (m *mspDeserializersManager) GetLocalMSPIdentifier() string {
-	fmt.Println("=====mspDeserializersManager===GetLocalMSPIdentifier==")
+	//fmt.Println("=====mspDeserializersManager===GetLocalMSPIdentifier==")
 	id, _ := GetLocalMSP().GetIdentifier()
 	return id
 }
 
 func (m *mspDeserializersManager) GetLocalDeserializer() msp.IdentityDeserializer {
-	fmt.Println("=====mspDeserializersManager===GetLocalDeserializer==")
+	//fmt.Println("=====mspDeserializersManager===GetLocalDeserializer==")
 	return GetLocalMSP()
 }
 

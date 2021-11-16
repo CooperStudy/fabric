@@ -155,7 +155,7 @@ func (is *identityMapperImpl) Put(pkiID common.PKIidType, identity api.PeerIdent
 // get returns the identity of a given pkiID, or error if such an identity
 // isn't found
 func (is *identityMapperImpl) Get(pkiID common.PKIidType) (api.PeerIdentityType, error) {
-	fmt.Println("====identityMapperImpl==Get==")
+	//fmt.Println("====identityMapperImpl==Get==")
 	is.RLock()
 	defer is.RUnlock()
 	storedIdentity, exists := is.pkiID2Cert[string(pkiID)]

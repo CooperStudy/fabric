@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package msgstore
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -268,7 +267,7 @@ func (s *messageStoreImpl) expirationRoutine() {
 }
 
 func (s *messageStoreImpl) Stop() {
-	fmt.Println("====messageStoreImpl===Stop====")
+	//fmt.Println("====messageStoreImpl===Stop====")
 	stopFunc := func() {
 		close(s.doneCh)
 	}
@@ -276,6 +275,6 @@ func (s *messageStoreImpl) Stop() {
 }
 
 func (s *messageStoreImpl) expirationCheckInterval() time.Duration {
-	fmt.Println("====messageStoreImpl===expirationCheckInterval====")
+//	fmt.Println("====messageStoreImpl===expirationCheckInterval====")
 	return s.msgTTL / 100
 }

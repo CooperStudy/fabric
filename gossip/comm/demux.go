@@ -44,7 +44,7 @@ func (m *ChannelDeMultiplexer) isClosed() bool {
 // Close closes this channel, which makes all channels registered before
 // to close as well.
 func (m *ChannelDeMultiplexer) Close() {
-	fmt.Println("==ChannelDeMultiplexer==Close==")
+	//fmt.Println("==ChannelDeMultiplexer==Close==")
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	m.closed = true
@@ -67,7 +67,7 @@ func (m *ChannelDeMultiplexer) AddChannel(predicate common.MessageAcceptor) chan
 // DeMultiplex broadcasts the message to all channels that were returned
 // by AddChannel calls and that hold the respected predicates.
 func (m *ChannelDeMultiplexer) DeMultiplex(msg interface{}) {
-	fmt.Println("==ChannelDeMultiplexer==DeMultiplex==")
+	//fmt.Println("==ChannelDeMultiplexer==DeMultiplex==")
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 	if m.isClosed() {

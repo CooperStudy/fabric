@@ -66,7 +66,7 @@ func (m *MembershipStore) Remove(pkiID common.PKIidType) {
 // ToSlice returns a slice backed by the elements
 // of the MembershipStore
 func (m *MembershipStore) ToSlice() []*proto.SignedGossipMessage {
-	fmt.Println("===MembershipStore==ToSlice==")
+	//fmt.Println("===MembershipStore==ToSlice==")
 	m.RLock()
 	defer m.RUnlock()
 	members := make([]*proto.SignedGossipMessage, len(m.m))

@@ -253,7 +253,7 @@ func (c *commImpl) Send(msg *proto.SignedGossipMessage, peers ...*RemotePeer) {
 }
 
 func (c *commImpl) sendToEndpoint(peer *RemotePeer, msg *proto.SignedGossipMessage, shouldBlock blockingBehavior) {
-	fmt.Println("=====commImpl==sendToEndpoint=====")
+	//fmt.Println("=====commImpl==sendToEndpoint=====")
 	if c.isStopping() {
 		return
 	}

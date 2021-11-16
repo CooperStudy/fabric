@@ -9,7 +9,6 @@ package common
 import (
 	"bytes"
 	"encoding/hex"
-	"fmt"
 )
 
 func init() {
@@ -35,7 +34,7 @@ func (p PKIidType) String() string {
 // provides a predicate to identify whenever current id
 // equals to another one.
 func (id PKIidType) IsNotSameFilter(that PKIidType) bool {
-	fmt.Println("=====PKIidType===IsNotSameFilter===========")
+	//fmt.Println("=====PKIidType===IsNotSameFilter===========")
 	return !bytes.Equal(id, that)
 }
 
