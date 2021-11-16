@@ -259,14 +259,14 @@ func (msp *bccspmsp) GetTLSRootCerts() [][]byte {
 
 // GetTLSIntermediateCerts returns the intermediate root certificates for this MSP
 func (msp *bccspmsp) GetTLSIntermediateCerts() [][]byte {
-	fmt.Println("===bccspmsp==GetTLSIntermediateCerts==")
+	//fmt.Println("===bccspmsp==GetTLSIntermediateCerts==")
 	return msp.tlsIntermediateCerts
 }
 
 // GetDefaultSigningIdentity returns the
 // default signing identity for this MSP (if any)
 func (msp *bccspmsp) GetDefaultSigningIdentity() (SigningIdentity, error) {
-	fmt.Println("===bccspmsp==GetDefaultSigningIdentity==")
+	//fmt.Println("===bccspmsp==GetDefaultSigningIdentity==")
 	mspLogger.Debugf("Obtaining default signing identity")
 
 	if msp.signer == nil {
@@ -279,7 +279,7 @@ func (msp *bccspmsp) GetDefaultSigningIdentity() (SigningIdentity, error) {
 // GetSigningIdentity returns a specific signing
 // identity identified by the supplied identifier
 func (msp *bccspmsp) GetSigningIdentity(identifier *IdentityIdentifier) (SigningIdentity, error) {
-	fmt.Println("===bccspmsp==GetSigningIdentity==")
+	//fmt.Println("===bccspmsp==GetSigningIdentity==")
 	// TODO
 	return nil, errors.Errorf("no signing identity for %#v", identifier)
 }
@@ -290,7 +290,7 @@ func (msp *bccspmsp) GetSigningIdentity(identifier *IdentityIdentifier) (Signing
 // nil in case the identity is valid or an
 // error otherwise
 func (msp *bccspmsp) Validate(id Identity) error {
-	fmt.Println("===bccspmsp==Validate==")
+	//fmt.Println("===bccspmsp==Validate==")
 	mspLogger.Debugf("MSP %s validating identity", msp.name)
 
 	switch id := id.(type) {
@@ -309,7 +309,7 @@ func (msp *bccspmsp) Validate(id Identity) error {
 // This function does not check the certifiers identifier.
 // Appropriate validation needs to be enforced before.
 func (msp *bccspmsp) hasOURole(id Identity, mspRole m.MSPRole_MSPRoleType) error {
-	fmt.Println("===bccspmsp==hasOURole==")
+	//fmt.Println("===bccspmsp==hasOURole==")
 	// Check NodeOUs
 	if !msp.ouEnforcement {
 		return errors.New("NodeOUs not activated. Cannot tell apart identities.")
@@ -329,7 +329,7 @@ func (msp *bccspmsp) hasOURole(id Identity, mspRole m.MSPRole_MSPRoleType) error
 }
 
 func (msp *bccspmsp) hasOURoleInternal(id *identity, mspRole m.MSPRole_MSPRoleType) error {
-	fmt.Println("===bccspmsp==hasOURoleInternal==")
+	//fmt.Println("===bccspmsp==hasOURoleInternal==")
 	var nodeOUValue string
 	switch mspRole {
 	case m.MSPRole_CLIENT:
@@ -352,7 +352,7 @@ func (msp *bccspmsp) hasOURoleInternal(id *identity, mspRole m.MSPRole_MSPRoleTy
 // DeserializeIdentity returns an Identity given the byte-level
 // representation of a SerializedIdentity struct
 func (msp *bccspmsp) DeserializeIdentity(serializedID []byte) (Identity, error) {
-	fmt.Println("===bccspmsp==DeserializeIdentity==")
+//	fmt.Println("===bccspmsp==DeserializeIdentity==")
 	mspLogger.Debug("Obtaining identity")
 
 	// We first deserialize to a SerializedIdentity to get the MSP ID
@@ -371,7 +371,7 @@ func (msp *bccspmsp) DeserializeIdentity(serializedID []byte) (Identity, error) 
 
 // deserializeIdentityInternal returns an identity given its byte-level representation
 func (msp *bccspmsp) deserializeIdentityInternal(serializedIdentity []byte) (Identity, error) {
-	fmt.Println("===bccspmsp==deserializeIdentityInternal==")
+	//fmt.Println("===bccspmsp==deserializeIdentityInternal==")
 	// This MSP will always deserialize certs this way
 	bl, _ := pem.Decode(serializedIdentity)
 	if bl == nil {

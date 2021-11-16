@@ -61,7 +61,7 @@ func NewGRPCServer(address string, serverConfig ServerConfig) (*GRPCServer, erro
 // an existing net.Listener instance using default keepalive
 func NewGRPCServerFromListener(listener net.Listener, serverConfig ServerConfig) (*GRPCServer, error) {
 	fmt.Println("=====NewGRPCServerFromListener==")
-	fmt.Println("==addr",listener.Addr().String())//127.0.0.1:36689
+	//fmt.Println("==addr",listener.Addr().String())//127.0.0.1:36689
 	grpcServer := &GRPCServer{
 		address:  listener.Addr().String(),
 		listener: listener,
@@ -74,11 +74,11 @@ func NewGRPCServerFromListener(listener net.Listener, serverConfig ServerConfig)
 	//check SecOpts
 	var secureConfig SecureOptions
 
-	fmt.Println("==================serverConfig.SecOpts================",serverConfig.SecOpts)
+	//fmt.Println("==================serverConfig.SecOpts================",serverConfig.SecOpts)
 	if serverConfig.SecOpts != nil {
 		secureConfig = *serverConfig.SecOpts
 	}
-	fmt.Println("========secureConfig.UseTLS======",secureConfig.UseTLS)//true
+	//fmt.Println("========secureConfig.UseTLS======",secureConfig.UseTLS)//true
 	if secureConfig.UseTLS {
 		//both key and cert are required
 		if secureConfig.Key != nil && secureConfig.Certificate != nil {
@@ -87,11 +87,11 @@ func NewGRPCServerFromListener(listener net.Listener, serverConfig ServerConfig)
 			if err != nil {
 				return nil, err
 			}
-			fmt.Println("==cert====",cert)//==cert==== {[[48 130 2
+			//fmt.Println("==cert====",cert)//==cert==== {[[48 130 2
 			grpcServer.serverCertificate.Store(cert)
 
 			//set up our TLS config
-			fmt.Println("===============len(secureConfig.CipherSuites)===========",len(secureConfig.CipherSuites))//0
+			//fmt.Println("===============len(secureConfig.CipherSuites)===========",len(secureConfig.CipherSuites))//0
 			if len(secureConfig.CipherSuites) == 0 {
 				secureConfig.CipherSuites = DefaultTLSCipherSuites
 			}
@@ -169,45 +169,45 @@ func NewGRPCServerFromListener(listener net.Listener, serverConfig ServerConfig)
 
 // SetServerCertificate assigns the current TLS certificate to be the peer's server certificate
 func (gServer *GRPCServer) SetServerCertificate(cert tls.Certificate) {
-	fmt.Println("=====GRPCServer==SetServerCertificate==")
+	//fmt.Println("=====GRPCServer==SetServerCertificate==")
 	gServer.serverCertificate.Store(cert)
 }
 
 // Address returns the listen address for this GRPCServer instance
 func (gServer *GRPCServer) Address() string {
-	fmt.Println("=====GRPCServer==Address==")
+	//fmt.Println("=====GRPCServer==Address==")
 	return gServer.address
 }
 
 // Listener returns the net.Listener for the GRPCServer instance
 func (gServer *GRPCServer) Listener() net.Listener {
-	fmt.Println("=====GRPCServer==Listener==")
+	//fmt.Println("=====GRPCServer==Listener==")
 	return gServer.listener
 }
 
 // Server returns the grpc.Server for the GRPCServer instance
 func (gServer *GRPCServer) Server() *grpc.Server {
-	fmt.Println("=====GRPCServer==Server==")
+	//fmt.Println("=====GRPCServer==Server==")
 	return gServer.server
 }
 
 // ServerCertificate returns the tls.Certificate used by the grpc.Server
 func (gServer *GRPCServer) ServerCertificate() tls.Certificate {
-	fmt.Println("=====GRPCServer==ServerCertificate==")
+	//fmt.Println("=====GRPCServer==ServerCertificate==")
 	return gServer.serverCertificate.Load().(tls.Certificate)
 }
 
 // TLSEnabled is a flag indicating whether or not TLS is enabled for the
 // GRPCServer instance
 func (gServer *GRPCServer) TLSEnabled() bool {
-	fmt.Println("=====GRPCServer==TLSEnabled==")
+	//fmt.Println("=====GRPCServer==TLSEnabled==")
 	return gServer.tlsConfig != nil
 }
 
 // MutualTLSRequired is a flag indicating whether or not client certificates
 // are required for this GRPCServer instance
 func (gServer *GRPCServer) MutualTLSRequired() bool {
-	fmt.Println("=====GRPCServer==MutualTLSRequired==")
+	//fmt.Println("=====GRPCServer==MutualTLSRequired==")
 	return gServer.tlsConfig != nil &&
 		gServer.tlsConfig.ClientAuth ==
 			tls.RequireAndVerifyClientCert
@@ -215,7 +215,7 @@ func (gServer *GRPCServer) MutualTLSRequired() bool {
 
 // Start starts the underlying grpc.Server
 func (gServer *GRPCServer) Start() error {
-	fmt.Println("=====GRPCServer==Start==")
+	//fmt.Println("=====GRPCServer==Start==")
 	return gServer.server.Serve(gServer.listener)
 }
 
@@ -228,7 +228,7 @@ func (gServer *GRPCServer) Stop() {
 // AppendClientRootCAs appends PEM-encoded X509 certificate authorities to
 // the list of authorities used to verify client certificates
 func (gServer *GRPCServer) AppendClientRootCAs(clientRoots [][]byte) error {
-	fmt.Println("=====GRPCServer==AppendClientRootCAs==")
+	//fmt.Println("=====GRPCServer==AppendClientRootCAs==")
 	gServer.lock.Lock()
 	defer gServer.lock.Unlock()
 	for _, clientRoot := range clientRoots {
@@ -242,7 +242,7 @@ func (gServer *GRPCServer) AppendClientRootCAs(clientRoots [][]byte) error {
 
 // internal function to add a PEM-encoded clientRootCA
 func (gServer *GRPCServer) appendClientRootCA(clientRoot []byte) error {
-	fmt.Println("=====GRPCServer==appendClientRootCA==")
+	//fmt.Println("=====GRPCServer==appendClientRootCA==")
 	errMsg := "Failed to append client root certificate(s): %s"
 	//convert to x509
 	certs, subjects, err := pemToX509Certs(clientRoot)
@@ -266,7 +266,7 @@ func (gServer *GRPCServer) appendClientRootCA(clientRoot []byte) error {
 // RemoveClientRootCAs removes PEM-encoded X509 certificate authorities from
 // the list of authorities used to verify client certificates
 func (gServer *GRPCServer) RemoveClientRootCAs(clientRoots [][]byte) error {
-	fmt.Println("=====GRPCServer==RemoveClientRootCAs==")
+	//fmt.Println("=====GRPCServer==RemoveClientRootCAs==")
 	gServer.lock.Lock()
 	defer gServer.lock.Unlock()
 	//remove from internal map
@@ -290,7 +290,7 @@ func (gServer *GRPCServer) RemoveClientRootCAs(clientRoots [][]byte) error {
 
 // internal function to remove a PEM-encoded clientRootCA
 func (gServer *GRPCServer) removeClientRootCA(clientRoot []byte) error {
-	fmt.Println("=====GRPCServer==removeClientRootCA==")
+	//fmt.Println("=====GRPCServer==removeClientRootCA==")
 	errMsg := "Failed to remove client root certificate(s): %s"
 	//convert to x509
 	certs, subjects, err := pemToX509Certs(clientRoot)
@@ -315,7 +315,7 @@ func (gServer *GRPCServer) removeClientRootCA(clientRoot []byte) error {
 // SetClientRootCAs sets the list of authorities used to verify client
 // certificates based on a list of PEM-encoded X509 certificate authorities
 func (gServer *GRPCServer) SetClientRootCAs(clientRoots [][]byte) error {
-	fmt.Println("=====GRPCServer==SetClientRootCAs==")
+	//fmt.Println("=====GRPCServer==SetClientRootCAs==")
 	gServer.lock.Lock()
 	defer gServer.lock.Unlock()
 

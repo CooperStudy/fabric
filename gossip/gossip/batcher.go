@@ -60,7 +60,7 @@ func newBatchingEmitter(iterations, burstSize int, latency time.Duration, cb emi
 }
 
 func (p *batchingEmitterImpl) periodicEmit() {
-	fmt.Println("====batchingEmitterImpl===periodicEmit==")
+	//fmt.Println("====batchingEmitterImpl===periodicEmit==")
 	for !p.toDie() {
 		time.Sleep(p.delay)
 		p.lock.Lock()
@@ -78,13 +78,14 @@ func (p *batchingEmitterImpl) emit() {
 	}
 	msgs2beEmitted := make([]interface{}, len(p.buff))
 	for i, v := range p.buff {
-		fmt.Println("=====i",i)
-		fmt.Println("=====v",v)
+		//fmt.Println("=====i",i)
+		//fmt.Println("=====v",v)
 		msgs2beEmitted[i] = v.data
-		fmt.Println("==v.data===",v.data)
+		//fmt.Println("==v.data===",v.data)
+		//GossipMessage: tag:EMPTY alive_msg:<membership:<endpoint:"peer0.org1.example.com:7051" pki_id:"o$\242\205\020\032\336\250\3065\r\354\274\242\3071\360yx\243*\\\250v\303\362\314\247\265\263\340\220" > timestamp:<inc_num:1637029473266694744 seq_num:11 > > , Envelope: 83 bytes, Signature: 71 bytes Secret payload: 29 bytes, Secret Signature: 70 bytes
 	}
 
-	fmt.Println("====msgs2beEmitted======",msgs2beEmitted)
+	//fmt.Println("====msgs2beEmitted======",msgs2beEmitted)
 	p.cb(msgs2beEmitted)
 	p.decrementCounters()
 }

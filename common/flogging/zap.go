@@ -109,7 +109,7 @@ func (f *FabricLogger) WithOptions(opts ...zap.Option) *FabricLogger {
 }
 
 func formatArgs(args []interface{}) string {
-	fmt.Println("===formatArgs====")
+	//fmt.Println("===formatArgs====")
 	//fmt.Println("=========args=========",args)//[=======GetDefault=================defaultBCCSP 0xc000014b40]
 	//[Sending IDENTITY_MSG hello to peer1.org1.example.com:7051]
 	s:= strings.TrimSuffix(fmt.Sprintln(args...), "\n")

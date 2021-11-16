@@ -20,7 +20,7 @@ import (
 
 // NewGossipMessageComparator creates a MessageReplacingPolicy given a maximum number of blocks to hold
 func NewGossipMessageComparator(dataBlockStorageSize int) common.MessageReplacingPolicy {
-	fmt.Println("==========NewGossipMessageComparator==========")
+	//fmt.Println("==========NewGossipMessageComparator==========")
 	return (&msgComparator{dataBlockStorageSize: dataBlockStorageSize}).getMsgReplacingPolicy()
 }
 
@@ -29,14 +29,14 @@ type msgComparator struct {
 }
 
 func (mc *msgComparator) getMsgReplacingPolicy() common.MessageReplacingPolicy {
-	fmt.Println("==========msgComparator===getMsgReplacingPolicy=======")
+//	fmt.Println("==========msgComparator===getMsgReplacingPolicy=======")
 	return func(this interface{}, that interface{}) common.InvalidationResult {
 		return mc.invalidationPolicy(this, that)
 	}
 }
 
 func (mc *msgComparator) invalidationPolicy(this interface{}, that interface{}) common.InvalidationResult {
-	fmt.Println("==========msgComparator===invalidationPolicy=======")
+	//fmt.Println("==========msgComparator===invalidationPolicy=======")
 	thisMsg := this.(*SignedGossipMessage)
 	thatMsg := that.(*SignedGossipMessage)
 
@@ -171,7 +171,7 @@ func (m *GossipMessage) IsPullMsg() bool {
 
 // IsRemoteStateMessage returns whether this GossipMessage is related to state synchronization
 func (m *GossipMessage) IsRemoteStateMessage() bool {
-	fmt.Println("==========GossipMessage==IsRemoteStateMessage====")
+	//fmt.Println("==========GossipMessage==IsRemoteStateMessage====")
 	return m.GetStateRequest() != nil || m.GetStateResponse() != nil
 }
 
@@ -202,32 +202,32 @@ func (m *GossipMessage) GetPullMsgType() PullMsgType {
 // IsChannelRestricted returns whether this GossipMessage should be routed
 // only in its channel
 func (m *GossipMessage) IsChannelRestricted() bool {
-	fmt.Println("==========GossipMessage==IsChannelRestricted====")
+	//fmt.Println("==========GossipMessage==IsChannelRestricted====")
 	return m.Tag == GossipMessage_CHAN_AND_ORG || m.Tag == GossipMessage_CHAN_ONLY || m.Tag == GossipMessage_CHAN_OR_ORG
 }
 
 // IsOrgRestricted returns whether this GossipMessage should be routed only
 // inside the organization
 func (m *GossipMessage) IsOrgRestricted() bool {
-	fmt.Println("==========GossipMessage==IsOrgRestricted====")
+	//fmt.Println("==========GossipMessage==IsOrgRestricted====")
 	return m.Tag == GossipMessage_CHAN_AND_ORG || m.Tag == GossipMessage_ORG_ONLY
 }
 
 // IsIdentityMsg returns whether this GossipMessage is an identity message
 func (m *GossipMessage) IsIdentityMsg() bool {
-	fmt.Println("==========GossipMessage==IsIdentityMsg====")
+	//fmt.Println("==========GossipMessage==IsIdentityMsg====")
 	return m.GetPeerIdentity() != nil
 }
 
 // IsDataReq returns whether this GossipMessage is a data request message
 func (m *GossipMessage) IsDataReq() bool {
-	fmt.Println("==========GossipMessage==IsDataReq====")
+	//fmt.Println("==========GossipMessage==IsDataReq====")
 	return m.GetDataReq() != nil
 }
 
 // IsPrivateDataMsg returns whether this message is related to private data
 func (m *GossipMessage) IsPrivateDataMsg() bool {
-	fmt.Println("==========GossipMessage==IsPrivateDataMsg====")
+	//fmt.Println("==========GossipMessage==IsPrivateDataMsg====")
 	//fmt.Println("============m.GetPrivateReq()============",m.GetPrivateReq())
 	//fmt.Println("============m.GetPrivateRes()============",m.GetPrivateRes())
 	//fmt.Println("============m.GetPrivateData()============",m.GetPrivateData())
@@ -236,32 +236,32 @@ func (m *GossipMessage) IsPrivateDataMsg() bool {
 
 // IsAck returns whether this GossipMessage is an acknowledgement
 func (m *GossipMessage) IsAck() bool {
-	fmt.Println("==========GossipMessage==IsAck====")
+	//fmt.Println("==========GossipMessage==IsAck====")
 //	fmt.Println("=========m.GetAck() != nil============",m.GetAck() != nil)
 	return m.GetAck() != nil
 }
 
 // IsDataUpdate returns whether this GossipMessage is a data update message
 func (m *GossipMessage) IsDataUpdate() bool {
-	fmt.Println("==========GossipMessage==IsDataUpdate====")
+	//fmt.Println("==========GossipMessage==IsDataUpdate====")
 	return m.GetDataUpdate() != nil
 }
 
 // IsHelloMsg returns whether this GossipMessage is a hello message
 func (m *GossipMessage) IsHelloMsg() bool {
-	fmt.Println("==========GossipMessage==IsHelloMsg====")
+	//fmt.Println("==========GossipMessage==IsHelloMsg====")
 	return m.GetHello() != nil
 }
 
 // IsDigestMsg returns whether this GossipMessage is a digest message
 func (m *GossipMessage) IsDigestMsg() bool {
-	fmt.Println("==========GossipMessage==IsDigestMsg====")
+	//fmt.Println("==========GossipMessage==IsDigestMsg====")
 	return m.GetDataDig() != nil
 }
 
 // IsLeadershipMsg returns whether this GossipMessage is a leadership (leader election) message
 func (m *GossipMessage) IsLeadershipMsg() bool {
-	fmt.Println("==========GossipMessage==IsLeadershipMsg====")
+	//fmt.Println("==========GossipMessage==IsLeadershipMsg====")
 	return m.GetLeadershipMsg() != nil
 }
 
@@ -274,22 +274,22 @@ type IdentifierExtractor func(*SignedGossipMessage) string
 // IsTagLegal checks the GossipMessage tags and inner type
 // and returns an error if the tag doesn't match the type.
 func (m *GossipMessage) IsTagLegal() error {
-	fmt.Println("==========GossipMessage==IsTagLegal====")
+	//fmt.Println("==========GossipMessage==IsTagLegal====")
 	if m.Tag == GossipMessage_UNDEFINED {
-		fmt.Println("========= m.Tag == GossipMessage_UNDEFINED ========")
+		//fmt.Println("========= m.Tag == GossipMessage_UNDEFINED ========")
 		return fmt.Errorf("Undefined tag")
 	}
 	if m.IsDataMsg() {
-		fmt.Println("=========m.IsDataMsg()========",m.IsDataMsg())
+	//	fmt.Println("=========m.IsDataMsg()========",m.IsDataMsg())
 		if m.Tag != GossipMessage_CHAN_AND_ORG {
-			fmt.Println("=========  m.Tag != GossipMessage_CHAN_AND_ORG  ========")
+		//	fmt.Println("=========  m.Tag != GossipMessage_CHAN_AND_ORG  ========")
 			return fmt.Errorf("Tag should be %s", GossipMessage_Tag_name[int32(GossipMessage_CHAN_AND_ORG)])
 		}
 		return nil
 	}
 
 	if m.IsAliveMsg() || m.GetMemReq() != nil || m.GetMemRes() != nil {
-		fmt.Println("=========m.IsAliveMsg() || m.GetMemReq() != nil || m.GetMemRes() != nil ========")
+		//fmt.Println("=========m.IsAliveMsg() || m.GetMemReq() != nil || m.GetMemRes() != nil ========")
 		if m.Tag != GossipMessage_EMPTY {
 			return fmt.Errorf("Tag should be %s", GossipMessage_Tag_name[int32(GossipMessage_EMPTY)])
 		}
@@ -297,7 +297,7 @@ func (m *GossipMessage) IsTagLegal() error {
 	}
 
 	if m.IsIdentityMsg() {
-		fmt.Println("========m.IsIdentityMsg=========")
+		//fmt.Println("========m.IsIdentityMsg=========")
 		if m.Tag != GossipMessage_ORG_ONLY {
 			return fmt.Errorf("Tag should be %s", GossipMessage_Tag_name[int32(GossipMessage_ORG_ONLY)])
 		}
@@ -305,7 +305,7 @@ func (m *GossipMessage) IsTagLegal() error {
 	}
 
 	if m.IsPullMsg() {
-		fmt.Println("====== m.IsPullMsg========")
+		//fmt.Println("====== m.IsPullMsg========")
 		switch m.GetPullMsgType() {
 		case PullMsgType_BLOCK_MSG:
 			if m.Tag != GossipMessage_CHAN_AND_ORG {
@@ -323,7 +323,7 @@ func (m *GossipMessage) IsTagLegal() error {
 	}
 
 	if m.IsStateInfoMsg() || m.IsStateInfoPullRequestMsg() || m.IsStateInfoSnapshot() || m.IsRemoteStateMessage() {
-		fmt.Println("====== m.IsStateInfoMsg() || m.IsStateInfoPullRequestMsg() || m.IsStateInfoSnapshot() || m.IsRemoteStateMessage() ========")
+		//fmt.Println("====== m.IsStateInfoMsg() || m.IsStateInfoPullRequestMsg() || m.IsStateInfoSnapshot() || m.IsRemoteStateMessage() ========")
 		if m.Tag != GossipMessage_CHAN_OR_ORG {
 			return fmt.Errorf("Tag should be %s", GossipMessage_Tag_name[int32(GossipMessage_CHAN_OR_ORG)])
 		}
@@ -441,9 +441,9 @@ func (m *SignedGossipMessage) Sign(signer Signer) (*Envelope, error) {
 
 // NoopSign creates a SignedGossipMessage with a nil signature
 func (m *GossipMessage) NoopSign() (*SignedGossipMessage, error) {
-	fmt.Println("==========GossipMessage==NoopSign====")
+	//fmt.Println("==========GossipMessage==NoopSign====")
 	signer := func(msg []byte) ([]byte, error) {
-		fmt.Println("========NoopSign======signer=========")
+		//fmt.Println("========NoopSign======signer=========")
 		//fmt.Println("======msg=======",msg)
 		//fmt.Println("======return nil nil==================")
 		return nil, nil
@@ -458,7 +458,7 @@ func (m *GossipMessage) NoopSign() (*SignedGossipMessage, error) {
 // Verify verifies a signed GossipMessage with a given Verifier.
 // Returns nil on success, error on failure.
 func (m *SignedGossipMessage) Verify(peerIdentity []byte, verify Verifier) error {
-	fmt.Println("==========SignedGossipMessage==Verify====")
+	//fmt.Println("==========SignedGossipMessage==Verify====")
 	if m.Envelope == nil {
 		return errors.New("Missing envelope")
 	}
@@ -489,7 +489,7 @@ func (m *SignedGossipMessage) Verify(peerIdentity []byte, verify Verifier) error
 // IsSigned returns whether the message
 // has a signature in the envelope.
 func (m *SignedGossipMessage) IsSigned() bool {
-	fmt.Println("==========SignedGossipMessage==IsSigned====")
+	//fmt.Println("==========SignedGossipMessage==IsSigned====")
 	return m.Envelope != nil && m.Envelope.Payload != nil && m.Envelope.Signature != nil
 }
 

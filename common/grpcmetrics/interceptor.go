@@ -98,7 +98,7 @@ func (ss *serverStream) SendMsg(msg interface{}) error {
 }
 
 func (ss *serverStream) RecvMsg(msg interface{}) error {
-	fmt.Println("===serverStream===RecvMsg===")
+	//fmt.Println("===serverStream===RecvMsg===")
 	err := ss.ServerStream.RecvMsg(msg)
 	if err == nil {
 		ss.messagesReceived.Add(1)
