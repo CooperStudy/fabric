@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package blockcutter
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/hyperledger/fabric/common/channelconfig"
@@ -44,6 +45,7 @@ type receiver struct {
 // NewReceiverImpl creates a Receiver implementation based on the given configtxorderer manager
 func NewReceiverImpl(channelID string, sharedConfigFetcher OrdererConfigFetcher, metrics *Metrics) Receiver {
 	logger.Info("===========NewReceiverImpl=======================")
+	fmt.Println("========channelID=====",channelID)
 	return &receiver{
 		sharedConfigFetcher: sharedConfigFetcher,
 		Metrics:             metrics,

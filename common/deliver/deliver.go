@@ -156,6 +156,7 @@ func (h *Handler) Handle(ctx context.Context, srv *Server) error {
 	for {
 		logger.Debugf("Attempting to read seek info message from %s", addr)
 		envelope, err := srv.Recv()
+		fmt.Println("======srv.Recv=envelope===========")
 		if err == io.EOF {
 			logger.Debugf("Received EOF from %s, hangup", addr)
 			return nil
@@ -166,6 +167,7 @@ func (h *Handler) Handle(ctx context.Context, srv *Server) error {
 		}
 
 		status, err := h.deliverBlocks(ctx, srv, envelope)
+		fmt.Println("======h.deliverBlocks==========")
 		if err != nil {
 			return err
 		}
@@ -194,6 +196,7 @@ func isFiltered(srv *Server) bool {
 func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.Envelope) (status cb.Status, err error) {
 	fmt.Println("==Handler==deliverBlocks==")
 	addr := util.ExtractRemoteAddress(ctx)
+	fmt.Println("=======addr============",addr)
 	payload, err := utils.UnmarshalPayload(envelope.Payload)
 	if err != nil {
 		logger.Warningf("Received an envelope from %s with no payload: %s", addr, err)
@@ -217,6 +220,7 @@ func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.E
 		return cb.Status_BAD_REQUEST, nil
 	}
 
+	fmt.Println("======chdr.ChannelId=============",chdr.ChannelId)
 	chain := h.ChainManager.GetChain(chdr.ChannelId)
 	if chain == nil {
 		// Note, we log this at DEBUG because SDKs will poll waiting for channels to be created

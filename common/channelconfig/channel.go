@@ -96,12 +96,16 @@ func NewChannelConfig(channelGroup *cb.ConfigGroup) (*ChannelConfig, error) {
 
 	var err error
 	for groupName, group := range channelGroup.Groups {
+		fmt.Println("======groupName===========",groupName)
 		switch groupName {
 		case ApplicationGroupKey:
+			fmt.Println("======ApplicationGroupKey===========")
 			cc.appConfig, err = NewApplicationConfig(group, mspConfigHandler)
 		case OrdererGroupKey:
+			fmt.Println("======OrdererGroupKey===========")
 			cc.ordererConfig, err = NewOrdererConfig(group, mspConfigHandler)
 		case ConsortiumsGroupKey:
+			fmt.Println("======ConsortiumsGroupKey===========")
 			cc.consortiumsConfig, err = NewConsortiumsConfig(group, mspConfigHandler)
 		default:
 			return nil, fmt.Errorf("Disallowed channel group: %s", group)

@@ -279,15 +279,15 @@ type policyLogger struct {
 func (pl *policyLogger) Evaluate(signatureSet []*cb.SignedData) error {
 	fmt.Println("===policyLogger==Evaluate===")
 	if logger.IsEnabledFor(zapcore.DebugLevel) {
-		logger.Debugf("== Evaluating %T Policy %s ==", pl.policy, pl.policyName)
+		logger.Info("== Evaluating %T Policy %s ==", pl.policy, pl.policyName)
 		defer logger.Debugf("== Done Evaluating %T Policy %s", pl.policy, pl.policyName)
 	}
 
 	err := pl.policy.Evaluate(signatureSet)
 	if err != nil {
-		logger.Debugf("Signature set did not satisfy policy %s", pl.policyName)
+		logger.Info("Signature set did not satisfy policy %s", pl.policyName)
 	} else {
-		logger.Debugf("Signature set satisfies policy %s", pl.policyName)
+		logger.Info("Signature set satisfies policy %s", pl.policyName)
 	}
 	return err
 }
@@ -295,6 +295,7 @@ func (pl *policyLogger) Evaluate(signatureSet []*cb.SignedData) error {
 // GetPolicy returns a policy and true if it was the policy requested, or false if it is the default reject policy
 func (pm *ManagerImpl) GetPolicy(id string) (Policy, bool) {
 	fmt.Println("===ManagerImpl==GetPolicy===")
+	fmt.Println("=======id======",id)
 	if id == "" {
 		logger.Errorf("Returning dummy reject all policy because no policy ID supplied")
 		return rejectPolicy(id), false
@@ -312,11 +313,14 @@ func (pm *ManagerImpl) GetPolicy(id string) (Policy, bool) {
 		relpath = id
 	}
 
+	fmt.Println("=========relpath=========",relpath)
 	policy, ok := pm.policies[relpath]
 	if !ok {
 		logger.Debugf("Returning dummy reject all policy because %s could not be found in %s/%s", id, pm.path, relpath)
 		return rejectPolicy(relpath), false
 	}
+
+	fmt.Println("==========policyName================",PathSeparator + pm.path + PathSeparator + relpath)
 
 	return &policyLogger{
 		policy:     policy,

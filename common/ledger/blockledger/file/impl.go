@@ -71,8 +71,10 @@ func (fl *FileLedger) Iterator(startPosition *ab.SeekPosition) (blockledger.Iter
 	var startingBlockNumber uint64
 	switch start := startPosition.Type.(type) {
 	case *ab.SeekPosition_Oldest:
+		fmt.Println("===========*ab.SeekPosition_Oldest===========")
 		startingBlockNumber = 0
 	case *ab.SeekPosition_Newest:
+		fmt.Println("===========*ab.SeekPosition_Newest===========")
 		info, err := fl.blockStore.GetBlockchainInfo()
 		if err != nil {
 			logger.Panic(err)
@@ -80,12 +82,14 @@ func (fl *FileLedger) Iterator(startPosition *ab.SeekPosition) (blockledger.Iter
 		newestBlockNumber := info.Height - 1
 		startingBlockNumber = newestBlockNumber
 	case *ab.SeekPosition_Specified:
+		fmt.Println("===========*ab.SeekPosition_Specified===========")
 		startingBlockNumber = start.Specified.Number
 		height := fl.Height()
 		if startingBlockNumber > height {
 			return &blockledger.NotFoundErrorIterator{}, 0
 		}
 	default:
+		fmt.Println("===========default===========")
 		return &blockledger.NotFoundErrorIterator{}, 0
 	}
 

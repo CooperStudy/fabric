@@ -139,7 +139,10 @@ type deliverMsgTracer struct {
 func (dmt *deliverMsgTracer) Recv() (*cb.Envelope, error) {
 	fmt.Println("==deliverMsgTracer==trace==")
 	msg, err := dmt.Receiver.Recv()
-	if traceDir := dmt.debug.DeliverTraceDir; traceDir != "" {
+	fmt.Println("====msg=========",msg)
+	 traceDir := dmt.debug.DeliverTraceDir
+	 fmt.Println("=======traceDir=========",traceDir)
+	 if traceDir != "" {
 		dmt.trace(traceDir, msg, err)
 	}
 	return msg, err

@@ -62,5 +62,6 @@ func (b *Buffer) DecodeRawBytes(alloc bool) ([]byte, error) {
 // GetBytesConsumed returns the offset of the current position in the underlying []byte
 func (b *Buffer) GetBytesConsumed() int {
 	fmt.Println("===Buffer=GetBytesConsumed====")
+	fmt.Println("=====b.position=======",b.position)
 	return b.position
 }

@@ -240,6 +240,8 @@ func (dt *DefaultTemplator) NewChannelConfig(envConfigUpdate *cb.Envelope) (chan
 		return nil, fmt.Errorf("Failing initial channel config creation because of config update unmarshaling error: %s", err)
 	}
 
+	fmt.Println("=========configUpdate.ChannelId==========",configUpdate.ChannelId)
+	fmt.Println("=========channelHeader.ChannelId==========",channelHeader.ChannelId)
 	if configUpdate.ChannelId != channelHeader.ChannelId {
 		return nil, fmt.Errorf("Failing initial channel config creation: mismatched channel IDs: '%s' != '%s'", configUpdate.ChannelId, channelHeader.ChannelId)
 	}

@@ -371,6 +371,7 @@ func (fake *Signer) AnonymousReturnsOnCall(i int, result1 bool) {
 }
 
 func (fake *Signer) Verify(msg []byte, sig []byte) error {
+
 	var msgCopy []byte
 	if msg != nil {
 		msgCopy = make([]byte, len(msg))

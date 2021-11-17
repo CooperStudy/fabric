@@ -203,6 +203,7 @@ func (vi *ValidatorImpl) Validate(configEnv *cb.ConfigEnvelope) error {
 // ChainID retrieves the chain ID associated with this manager
 func (vi *ValidatorImpl) ChainID() string {
 	fmt.Println("==ValidatorImpl==ChainID===")
+	fmt.Println("==vi.channelID===",vi.channelID)//byfn-sys-channel mychannel
 	return vi.channelID
 
 }
@@ -210,6 +211,7 @@ func (vi *ValidatorImpl) ChainID() string {
 // Sequence returns the sequence number of the config
 func (vi *ValidatorImpl) Sequence() uint64 {
 	fmt.Println("==ValidatorImpl==Sequence===")
+	fmt.Println("==vi.sequence===",vi.sequence)
 	return vi.sequence
 }
 

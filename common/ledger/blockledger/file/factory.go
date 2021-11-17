@@ -40,7 +40,9 @@ func (flf *fileLedgerFactory) GetOrCreate(chainID string) (blockledger.ReadWrite
 	key := chainID
 	// check cache
 	ledger, ok := flf.ledgers[key]
+	fmt.Println("==========ok=======",ok)
 	if ok {
+		fmt.Println("======if ledge exist,return ledger========")
 		return ledger, nil
 	}
 	// open fresh
@@ -49,6 +51,7 @@ func (flf *fileLedgerFactory) GetOrCreate(chainID string) (blockledger.ReadWrite
 		return nil, err
 	}
 	ledger = NewFileLedger(blockStore)
+	fmt.Println("=====flf.ledgers[key] = ledger==============",key)
 	flf.ledgers[key] = ledger
 	return ledger, nil
 }
@@ -57,6 +60,7 @@ func (flf *fileLedgerFactory) GetOrCreate(chainID string) (blockledger.ReadWrite
 func (flf *fileLedgerFactory) ChainIDs() []string {
 	fmt.Println("=========fileLedgerFactory=======ChainIDs=======")
 	chainIDs, err := flf.blkstorageProvider.List()
+	fmt.Println("=====chainIDs========",chainIDs)
 	if err != nil {
 		logger.Panic(err)
 	}

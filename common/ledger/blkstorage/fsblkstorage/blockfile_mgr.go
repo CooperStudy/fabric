@@ -92,6 +92,7 @@ func newBlockfileMgr(id string, conf *Conf, indexConfig *blkstorage.IndexConfig,
 	logger.Debugf("newBlockfileMgr() initializing file-based block storage for ledger: %s ", id)
 	//Determine the root directory for the blockfile storage, if it does not exist create it
 	rootDir := conf.getLedgerBlockDir(id)
+	fmt.Println("========rootDir=========",rootDir)//var/hyperledger/production/orderer/chains/mychannel
 	_, err := util.CreateDirIfMissing(rootDir)
 	if err != nil {
 		panic(fmt.Sprintf("Error creating block storage root dir [%s]: %s", rootDir, err))
@@ -138,6 +139,7 @@ func newBlockfileMgr(id string, conf *Conf, indexConfig *blkstorage.IndexConfig,
 		panic(fmt.Sprintf("error in block index: %s", err))
 	}
 
+	fmt.Println("======mgr.index==========",mgr.index)// &{map[BlockNum:true] 0xc000123bc0}
 	// Update the manager with the checkpoint info and the file writer
 	mgr.cpInfo = cpInfo
 	mgr.currentFileWriter = currentFileWriter
@@ -151,9 +153,11 @@ func newBlockfileMgr(id string, conf *Conf, indexConfig *blkstorage.IndexConfig,
 		CurrentBlockHash:  nil,
 		PreviousBlockHash: nil}
 
+	fmt.Println("======!cpInfo.isChainEmpty========",!cpInfo.isChainEmpty) //false
 	if !cpInfo.isChainEmpty {
 		//If start up is a restart of an existing storage, sync the index from block storage and update BlockchainInfo for external API's
 		mgr.syncIndex()
+		fmt.Println("========cpInfo.lastBlockNumber=========",cpInfo.lastBlockNumber)
 		lastBlockHeader, err := mgr.retrieveBlockHeaderByNumber(cpInfo.lastBlockNumber)
 		if err != nil {
 			panic(fmt.Sprintf("Could not retrieve header of the last block form file: %s", err))
@@ -212,7 +216,9 @@ func syncCPInfoFromFS(rootDir string, cpInfo *checkpointInfo) {
 
 func deriveBlockfilePath(rootDir string, suffixNum int) string {
 	fmt.Println("===deriveBlockfilePath==")
-	return rootDir + "/" + blockfilePrefix + fmt.Sprintf("%06d", suffixNum)
+	a:= rootDir + "/" + blockfilePrefix + fmt.Sprintf("%06d", suffixNum)
+	fmt.Println("==============deriveBlockfilePath=========",a)
+	return a
 }
 
 func (mgr *blockfileMgr) close() {

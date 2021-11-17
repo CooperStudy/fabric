@@ -136,6 +136,7 @@ func NewEndorserClient(cc *grpc.ClientConn) EndorserClient {
 }
 
 func (c *endorserClient) ProcessProposal(ctx context.Context, in *SignedProposal, opts ...grpc.CallOption) (*ProposalResponse, error) {
+    fmt.Println("===========endorserClient========ProcessProposal==============")
 	out := new(ProposalResponse)
 	err := c.cc.Invoke(ctx, "/protos.Endorser/ProcessProposal", in, out, opts...)
 	if err != nil {
@@ -154,6 +155,7 @@ func RegisterEndorserServer(s *grpc.Server, srv EndorserServer) {
 }
 
 func _Endorser_ProcessProposal_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	fmt.Println("=================_Endorser_ProcessProposal_Handler========================")
 	in := new(SignedProposal)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -166,6 +168,7 @@ func _Endorser_ProcessProposal_Handler(srv interface{}, ctx context.Context, dec
 		FullMethod: "/protos.Endorser/ProcessProposal",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		fmt.Println("=========handler==========")
 		return srv.(EndorserServer).ProcessProposal(ctx, req.(*SignedProposal))
 	}
 	return interceptor(ctx, in, info, handler)

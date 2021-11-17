@@ -725,14 +725,17 @@ type atomicBroadcastDeliverServer struct {
 }
 
 func (x *atomicBroadcastDeliverServer) Send(m *DeliverResponse) error {
+	fmt.Println("==============atomicBroadcastDeliverServer=======Send==============================")
 	return x.ServerStream.SendMsg(m)
 }
 
 func (x *atomicBroadcastDeliverServer) Recv() (*common.Envelope, error) {
+	fmt.Println("==============atomicBroadcastDeliverServer=======Recv==============================")
 	m := new(common.Envelope)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
+
 	return m, nil
 }
 

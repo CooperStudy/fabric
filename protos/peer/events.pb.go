@@ -511,6 +511,7 @@ func NewDeliverClient(cc *grpc.ClientConn) DeliverClient {
 }
 
 func (c *deliverClient) Deliver(ctx context.Context, opts ...grpc.CallOption) (Deliver_DeliverClient, error) {
+	fmt.Println("===========deliverClient======Deliver======================")
 	stream, err := c.cc.NewStream(ctx, &_Deliver_serviceDesc.Streams[0], "/protos.Deliver/Deliver", opts...)
 	if err != nil {
 		return nil, err
@@ -542,6 +543,7 @@ func (x *deliverDeliverClient) Recv() (*DeliverResponse, error) {
 }
 
 func (c *deliverClient) DeliverFiltered(ctx context.Context, opts ...grpc.CallOption) (Deliver_DeliverFilteredClient, error) {
+	fmt.Println("=======deliverClient=======DeliverFiltered====================")
 	stream, err := c.cc.NewStream(ctx, &_Deliver_serviceDesc.Streams[1], "/protos.Deliver/DeliverFiltered", opts...)
 	if err != nil {
 		return nil, err
@@ -585,10 +587,12 @@ type DeliverServer interface {
 }
 
 func RegisterDeliverServer(s *grpc.Server, srv DeliverServer) {
+    fmt.Println("=========RegisterDeliverServer==========")
 	s.RegisterService(&_Deliver_serviceDesc, srv)
 }
 
 func _Deliver_Deliver_Handler(srv interface{}, stream grpc.ServerStream) error {
+	fmt.Println("================_Deliver_Deliver_Handler========================")
 	return srv.(DeliverServer).Deliver(&deliverDeliverServer{stream})
 }
 

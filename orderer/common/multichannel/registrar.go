@@ -145,7 +145,9 @@ func (r *Registrar) Initialize(consenters map[string]consensus.Consenter) {
 	fmt.Println("==Registrar==Initialize==")
 	r.consenters = consenters
 	existingChains := r.ledgerFactory.ChainIDs()
+	fmt.Println("=========existingChains===========",existingChains)
 	for _, chainID := range existingChains {
+		fmt.Println("====chainID====",chainID)
 		rl, err := r.ledgerFactory.GetOrCreate(chainID)
 		if err != nil {
 			logger.Panicf("Ledger factory reported chainID %s but could not retrieve it: %s", chainID, err)
@@ -245,6 +247,7 @@ func (r *Registrar) GetChain(chainID string) *ChainSupport {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
+	fmt.Println("==========r.chains[chainID]===============",r.chains[chainID])
 	return r.chains[chainID]
 }
 
@@ -276,7 +279,9 @@ func (r *Registrar) newLedgerResources(configTx *cb.Envelope) *ledgerResources {
 
 	checkResourcesOrPanic(bundle)
 
+	fmt.Println("=================chdr.ChannelId=====",chdr.ChannelId)
 	ledger, err := r.ledgerFactory.GetOrCreate(chdr.ChannelId)
+	fmt.Println("=================ledger=====",ledger)
 	if err != nil {
 		logger.Panicf("Error getting ledger for %s", chdr.ChannelId)
 	}
@@ -308,6 +313,7 @@ func (r *Registrar) newChain(configtx *cb.Envelope) {
 
 	logger.Infof("Created and starting new chain %s", chainID)
 
+	fmt.Println("===========string(chainID)==========",string(chainID))//mychannel
 	newChains[string(chainID)] = cs
 	cs.start()
 

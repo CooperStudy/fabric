@@ -25,20 +25,27 @@ func deduplicate(sds []IdentityAndSignature) []IdentityAndSignature {
 	ids := make(map[string]struct{})
 	result := make([]IdentityAndSignature, 0, len(sds))
 	for i, sd := range sds {
+		fmt.Println("=========i",i)
+		fmt.Println("=========sd",sd)
 		identity, err := sd.Identity()
+		fmt.Println("=======identity========",identity)
 		if err != nil {
 			cauthdslLogger.Errorf("Principal deserialization failure (%s) for identity %d", err, i)
 			continue
 		}
 		key := identity.GetIdentifier().Mspid + identity.GetIdentifier().Id
 
+		fmt.Println("=======================",identity.GetIdentifier().Mspid)
+		fmt.Println("=======================",identity.GetIdentifier().Id)
 		if _, ok := ids[key]; ok {
-			cauthdslLogger.Warningf("De-duplicating identity [%s] at index %d in signature set", key, i)
+			fmt.Println("--------ok",ok)
+			fmt.Printf("De-duplicating identity [%s] at index %d in signature set\n", key, i)
 		} else {
 			result = append(result, sd)
 			ids[key] = struct{}{}
 		}
 	}
+	fmt.Println("========result======",result)
 	return result
 }
 
