@@ -1288,6 +1288,7 @@ func (h *Handler) setChaincodeProposal(signedProp *pb.SignedProposal, prop *pb.P
 
 func (h *Handler) getCollectionStore(channelID string) privdata.CollectionStore {
 	fmt.Println("===Handler==getCollectionStore==")
+	fmt.Println("=========channelID=======",channelID)
 	csStoreSupport := &peer.CollectionSupport{
 		PeerLedger: h.LedgerGetter.GetLedger(channelID),
 	}

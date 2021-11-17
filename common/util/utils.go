@@ -196,6 +196,7 @@ func GetTestOrgID() string {
 //"upgrades" from user and relationship with "fabric" upgrade. For
 //now keep it simple and use the fabric's version stamp
 func GetSysCCVersion() string {
+	fmt.Println("========GetSysCCVersion======")
 	return metadata.Version
 }
 

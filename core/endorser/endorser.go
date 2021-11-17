@@ -205,7 +205,7 @@ func (e *Endorser) SanitizeUserCDS(userCDS *pb.ChaincodeDeploymentSpec) (*pb.Cha
 // SimulateProposal simulates the proposal by calling the chaincode
 func (e *Endorser) SimulateProposal(txParams *ccprovider.TransactionParams, cid *pb.ChaincodeID) (ccprovider.ChaincodeDefinition, *pb.Response, []byte, *pb.ChaincodeEvent, error) {
 	fmt.Println("==Endorser==SimulateProposal==")
-	endorserLogger.Debugf("[%s][%s] Entry chaincode: %s", txParams.ChannelID, shorttxid(txParams.TxID), cid)
+	fmt.Printf("[%s][%s] Entry chaincode: %s\n", txParams.ChannelID, shorttxid(txParams.TxID), cid)
 	defer endorserLogger.Debugf("[%s][%s] Exit", txParams.ChannelID, shorttxid(txParams.TxID))
 	// we do expect the payload to be a ChaincodeInvocationSpec
 	// if we are supporting other payloads in future, this be glaringly point
@@ -523,8 +523,10 @@ func acquireTxSimulator(chainID string, ccid *pb.ChaincodeID) bool {
 	// These don't need the simulator and its read lock results in deadlocks.
 	switch ccid.Name {
 	case "qscc", "cscc":
+		fmt.Println("=====\"qscc\", \"cscc\"=======")
 		return false
 	default:
+		fmt.Println("=====\"qscc\", \"cscc\"  else=======")
 		return true
 	}
 }

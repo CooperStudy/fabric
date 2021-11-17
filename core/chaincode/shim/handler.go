@@ -830,6 +830,7 @@ func (handler *Handler) handleCreated(msg *pb.ChaincodeMessage, errc chan error)
 func (handler *Handler) handleMessage(msg *pb.ChaincodeMessage, errc chan error) error {
 	fmt.Println("=====Handler========handleMessage===========")
 	if msg.Type == pb.ChaincodeMessage_KEEPALIVE {
+		fmt.Println("======msg.Type == pb.ChaincodeMessage_KEEPALIVE ========================")
 		chaincodeLogger.Debug("Sending KEEPALIVE response")
 		handler.serialSendAsync(msg, nil) // ignore errors, maybe next KEEPALIVE will work
 		return nil

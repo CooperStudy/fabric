@@ -266,12 +266,16 @@ func panicWithDefinitionError(factory string) {
 func (r *registry) Lookup(handlerType HandlerType) interface{} {
 	fmt.Println("===registry==Lookup==")
 	if handlerType == Auth {
+		fmt.Println("=======handlerType == Auth====")
 		return r.filters
 	} else if handlerType == Decoration {
+		fmt.Println("=======handlerType == Decoration====")
 		return r.decorators
 	} else if handlerType == Endorsement {
+		fmt.Println("=======handlerType == Endorsement====")
 		return r.endorsers
 	} else if handlerType == Validation {
+		fmt.Println("=======handlerType == Validation====")
 		return r.validators
 	}
 

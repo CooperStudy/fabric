@@ -22,6 +22,7 @@ func ExtractRemoteAddress(ctx context.Context) string {
 	}
 	if address := p.Addr; address != nil {
 		remoteAddress = address.String()
+		fmt.Println("=====remoteAddress================",remoteAddress)
 	}
 	return remoteAddress
 }

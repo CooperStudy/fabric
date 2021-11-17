@@ -155,10 +155,12 @@ func (ki *x509PublicKeyImportOptsKeyImporter) KeyImport(raw interface{}, opts bc
 
 	switch pk.(type) {
 	case *ecdsa.PublicKey:
+		fmt.Println("======*ecdsa.PublicKey===========")
 		return ki.bccsp.KeyImporters[reflect.TypeOf(&bccsp.ECDSAGoPublicKeyImportOpts{})].KeyImport(
 			pk,
 			&bccsp.ECDSAGoPublicKeyImportOpts{Temporary: opts.Ephemeral()})
 	case *rsa.PublicKey:
+		fmt.Println("=========*rsa.PublicKey============")
 		return ki.bccsp.KeyImporters[reflect.TypeOf(&bccsp.RSAGoPublicKeyImportOpts{})].KeyImport(
 			pk,
 			&bccsp.RSAGoPublicKeyImportOpts{Temporary: opts.Ephemeral()})

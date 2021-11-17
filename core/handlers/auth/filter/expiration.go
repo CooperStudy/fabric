@@ -51,6 +51,7 @@ func validateProposal(signedProp *peer.SignedProposal) error {
 		return errors.Wrap(err, "failed parsing signature header")
 	}
 	expirationTime := crypto.ExpiresAt(sh.Creator)
+	fmt.Println("====================判断证书是否过期===================")
 	if !expirationTime.IsZero() && time.Now().After(expirationTime) {
 		return errors.New("identity expired")
 	}
@@ -63,5 +64,6 @@ func (f *expirationCheckFilter) ProcessProposal(ctx context.Context, signedProp 
 	if err := validateProposal(signedProp); err != nil {
 		return nil, err
 	}
+	fmt.Printf("================f.next:%T===================\n",f.next)
 	return f.next.ProcessProposal(ctx, signedProp)
 }

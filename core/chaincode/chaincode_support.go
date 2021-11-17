@@ -244,7 +244,12 @@ func (cs *ChaincodeSupport) ExecuteLegacyInit(txParams *ccprovider.TransactionPa
 // Execute invokes chaincode and returns the original response.
 func (cs *ChaincodeSupport) Execute(txParams *ccprovider.TransactionParams, cccid *ccprovider.CCContext, input *pb.ChaincodeInput) (*pb.Response, *pb.ChaincodeEvent, error) {
 	fmt.Println("====ChaincodeSupport===Execute=")
+	fmt.Println("=====txParams========",txParams)
+	fmt.Println("=====cccid========",cccid)
+	fmt.Println("=====input========",input)
 	resp, err := cs.Invoke(txParams, cccid, input)
+	fmt.Println("=======resp=====",resp)
+	fmt.Println("=======err=====",err)
 	return processChaincodeExecutionResult(txParams.TxID, cccid.Name, resp, err)
 }
 

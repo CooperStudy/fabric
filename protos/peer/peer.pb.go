@@ -156,6 +156,7 @@ func RegisterEndorserServer(s *grpc.Server, srv EndorserServer) {
 
 func _Endorser_ProcessProposal_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	fmt.Println("=================_Endorser_ProcessProposal_Handler========================")
+	fmt.Printf("==========srv:%T=======\n",srv)
 	in := new(SignedProposal)
 	if err := dec(in); err != nil {
 		return nil, err

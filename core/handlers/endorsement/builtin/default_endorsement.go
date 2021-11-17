@@ -21,6 +21,7 @@ type DefaultEndorsementFactory struct {
 
 // New returns an endorsement plugin that behaves as the default endorsement system chaincode
 func (*DefaultEndorsementFactory) New() Plugin {
+	fmt.Println("========DefaultEndorsementFactory=======New==============")
 	return &DefaultEndorsement{}
 }
 

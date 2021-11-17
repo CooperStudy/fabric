@@ -92,7 +92,9 @@ func newBlockfileMgr(id string, conf *Conf, indexConfig *blkstorage.IndexConfig,
 	logger.Debugf("newBlockfileMgr() initializing file-based block storage for ledger: %s ", id)
 	//Determine the root directory for the blockfile storage, if it does not exist create it
 	rootDir := conf.getLedgerBlockDir(id)
-	fmt.Println("========rootDir=========",rootDir)//var/hyperledger/production/orderer/chains/mychannel
+	fmt.Println("========rootDir=========",rootDir)
+	// /var/hyperledger/production/orderer/chains/mychannel
+	// /var/hyperledger/production/ledgersData/chains/chains/mychannel
 	_, err := util.CreateDirIfMissing(rootDir)
 	if err != nil {
 		panic(fmt.Sprintf("Error creating block storage root dir [%s]: %s", rootDir, err))

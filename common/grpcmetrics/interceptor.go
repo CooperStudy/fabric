@@ -77,13 +77,13 @@ func StreamServerInterceptor(sm *StreamMetrics) grpc.StreamServerInterceptor {
 
 func serviceMethod(fullMethod string) (service, method string) {
 	fmt.Println("===serviceMethod======")
-	fmt.Println("============fullMethod===========",fullMethod)
+	//fmt.Println("============fullMethod===========",fullMethod)//protos.Endorser/ProcessProposal
 	normalizedMethod := strings.Replace(fullMethod, ".", "_", -1)
 	parts := strings.SplitN(normalizedMethod, "/", -1)
 	if len(parts) != 3 {
 		return "unknown", "unknown"
 	}
-	fmt.Println("==========parts[1], parts[2]====================",parts[1], parts[2])
+	fmt.Println("==========parts[1], parts[2]====================",parts[1], parts[2])//protos_Endorser ProcessProposal
 	return parts[1], parts[2]
 }
 

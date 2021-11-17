@@ -196,6 +196,7 @@ func (g *gossipServiceImpl) JoinChan(joinMsg api.JoinChannelMessage, chainID com
 	g.chanState.joinChannel(joinMsg, chainID)
 
 	g.logger.Info("Joining gossip network of channel", string(chainID), "with", len(joinMsg.Members()), "organizations")
+	//Joining gossip network of channel mychannel with 1 organizations
 	for _, org := range joinMsg.Members() {
 		g.learnAnchorPeers(string(chainID), org, joinMsg.AnchorPeersOf(org))
 	}
