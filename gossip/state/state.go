@@ -164,7 +164,7 @@ func NewGossipStateProvider(chainID string, services *ServicesMediator, ledger l
 	}, false)
 
 	remoteStateMsgFilter := func(message interface{}) bool {
-		fmt.Println("========remoteStateMsgFilter=========",remoteStateMsgFilter)
+		fmt.Println("========remoteStateMsgFilter=========")
 		receivedMsg := message.(proto.ReceivedMessage)
 		msg := receivedMsg.GetGossipMessage()
 		if !(msg.IsRemoteStateMessage() || msg.GetPrivateData() != nil) {

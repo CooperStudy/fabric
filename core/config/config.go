@@ -48,7 +48,7 @@ func TranslatePath(base, p string) string {
 
 	a:= filepath.Join(base, p)
 	fmt.Println("==============a===",a)
-	fmt.Println("==================a",a)
+	return a
 }
 
 //----------------------------------------------------------------------------------
