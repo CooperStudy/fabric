@@ -150,13 +150,16 @@ type EndorserServer interface {
 	ProcessProposal(context.Context, *SignedProposal) (*ProposalResponse, error)
 }
 
+/*
+// RegisterService 向 gRPC 服务器注册一个服务及其实现。 它是从 IDL 生成的代码中调用的。 这必须在调用 Serve 之前调用。
+ */
 func RegisterEndorserServer(s *grpc.Server, srv EndorserServer) {
 	s.RegisterService(&_Endorser_serviceDesc, srv)
 }
 
 func _Endorser_ProcessProposal_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	fmt.Println("=================_Endorser_ProcessProposal_Handler========================")
-	fmt.Printf("==========srv:%T=======\n",srv)
+	fmt.Printf("==========srv:%T=======\n",srv)//==========srv:*filter.filter=======
 	in := new(SignedProposal)
 	if err := dec(in); err != nil {
 		return nil, err

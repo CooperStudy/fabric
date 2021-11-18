@@ -35,7 +35,10 @@ func (f *expirationCheckFilter) Init(next peer.EndorserServer) {
 }
 
 func validateProposal(signedProp *peer.SignedProposal) error {
-	fmt.Println("==validateProposal===")
+	fmt.Println("== validateProposal(signedProp *peer.SignedProposal) error ===")
+	fmt.Println("========signedProp.Signature==============",signedProp.Signature)
+	fmt.Println("========signedProp.ProposalBytes==============",signedProp.ProposalBytes)
+
 	prop, err := utils.GetProposal(signedProp.ProposalBytes)
 	if err != nil {
 		return errors.Wrap(err, "failed parsing proposal")
@@ -64,6 +67,6 @@ func (f *expirationCheckFilter) ProcessProposal(ctx context.Context, signedProp 
 	if err := validateProposal(signedProp); err != nil {
 		return nil, err
 	}
-	fmt.Printf("================f.next:%T===================\n",f.next)
+	fmt.Printf("================f.next:%T===================\n",f.next)//*endorser.Endorser
 	return f.next.ProcessProposal(ctx, signedProp)
 }

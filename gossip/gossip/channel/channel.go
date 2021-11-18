@@ -1087,6 +1087,7 @@ func (mt *membershipTracker) createSetOfPeers(peersToMakeSet []discovery.Network
 	setPeers := make(map[string]struct{})
 	for _, prevPeer := range peersToMakeSet {
 		fmt.Println("===========prevPeer==========",prevPeer)
+		//Endpoint: peer1.org1.example.com:7051, InternalEndpoint: peer1.org1.example.com:7051, PKI-ID: 500f76e570c22e91343ac9c28db55d6948faa44da710db6fa7971641d4ea285b, Metadata:
 		prevPeerID := string(prevPeer.PKIid)
 		setPeers[prevPeerID] = struct{}{}
 	}

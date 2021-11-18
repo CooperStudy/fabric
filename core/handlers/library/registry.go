@@ -269,6 +269,9 @@ func (r *registry) Lookup(handlerType HandlerType) interface{} {
 		fmt.Println("=======handlerType == Auth====")
 		return r.filters
 	} else if handlerType == Decoration {
+		/*
+		安装链码走这里
+		 */
 		fmt.Println("=======handlerType == Decoration====")
 		return r.decorators
 	} else if handlerType == Endorsement {

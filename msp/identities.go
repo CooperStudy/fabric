@@ -170,6 +170,7 @@ func (id *identity) Verify(msg []byte, sig []byte) error {
 		mspIdentityLogger.Debugf("Verify: sig = %s", hex.Dump(sig))
 	}
 
+	//                                   pk this is the public key of this instance sig digest
 	valid, err := id.msp.bccsp.Verify(id.pk, sig, digest, nil)
 	if err != nil {
 		return errors.WithMessage(err, "could not determine the validity of the signature")

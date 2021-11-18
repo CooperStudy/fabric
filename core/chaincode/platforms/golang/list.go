@@ -27,6 +27,7 @@ import (
 
 //runProgram non-nil Env, timeout (typically secs or millisecs), program name and args
 func runProgram(env Env, timeout time.Duration, pgm string, args ...string) ([]byte, error) {
+	fmt.Println("=====runProgram==========")
 	if env == nil {
 		return nil, fmt.Errorf("<%s, %v>: nil env provided", pgm, args)
 	}
@@ -58,6 +59,7 @@ func runProgram(env Env, timeout time.Duration, pgm string, args ...string) ([]b
 
 // Logic inspired by: https://dave.cheney.net/2014/09/14/go-list-your-swiss-army-knife
 func list(env Env, template, pkg string) ([]string, error) {
+	fmt.Println("=====list==========")
 	if env == nil {
 		env = getEnv()
 	}
@@ -71,9 +73,11 @@ func list(env Env, template, pkg string) ([]string, error) {
 }
 
 func listDeps(env Env, pkg string) ([]string, error) {
+	fmt.Println("=====listDeps==========")
 	return list(env, "{{ join .Deps \"\\n\"}}", pkg)
 }
 
 func listImports(env Env, pkg string) ([]string, error) {
+	fmt.Println("=====listImports==========")
 	return list(env, "{{ join .Imports \"\\n\"}}", pkg)
 }

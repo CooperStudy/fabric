@@ -272,6 +272,7 @@ func (csp *CSP) Sign(k bccsp.Key, digest []byte, opts bccsp.SignerOpts) (signatu
 }
 
 // Verify verifies signature against key k and digest
+//id.msp.bccsp.Verify( id.pk,        sig,      digest,                          nil)
 func (csp *CSP) Verify(k bccsp.Key, signature, digest []byte, opts bccsp.SignerOpts) (valid bool, err error) {
 	//fmt.Println("==CSP=Verify===")
 	// Validate arguments

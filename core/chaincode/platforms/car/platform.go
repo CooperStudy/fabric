@@ -26,6 +26,7 @@ type Platform struct {
 
 // Name returns the name of this platform
 func (carPlatform *Platform) Name() string {
+	fmt.Println("==========Platform=========Name======================")
 	return pb.ChaincodeSpec_CAR.String()
 }
 
@@ -33,21 +34,24 @@ func (carPlatform *Platform) Name() string {
 // the platform interface.  This chaincode type currently doesn't
 // require anything specific so we just implicitly approve any spec
 func (carPlatform *Platform) ValidatePath(path string) error {
+	fmt.Println("==========Platform=========ValidatePath======================")
 	return nil
 }
 
 func (carPlatform *Platform) ValidateCodePackage(codePackage []byte) error {
+	fmt.Println("==========Platform=========ValidateCodePackage======================")
 	// CAR platform will validate the code package within chaintool
 	return nil
 }
 
 func (carPlatform *Platform) GetDeploymentPayload(path string) ([]byte, error) {
-
+	fmt.Println("==========Platform=========GetDeploymentPayload======================")
+	fmt.Println("======path=====",path)
 	return ioutil.ReadFile(path)
 }
 
 func (carPlatform *Platform) GenerateDockerfile() (string, error) {
-
+	fmt.Println("==========Platform=========GenerateDockerfile======================")
 	var buf []string
 
 	//let the executable's name be chaincode ID's name
@@ -60,7 +64,7 @@ func (carPlatform *Platform) GenerateDockerfile() (string, error) {
 }
 
 func (carPlatform *Platform) GenerateDockerBuild(path string, code []byte, tw *tar.Writer) error {
-
+	fmt.Println("==========Platform=========GenerateDockerBuild======================")
 	// Bundle the .car file into a tar stream so it may be transferred to the builder container
 	codepackage, output := io.Pipe()
 	go func() {
@@ -87,5 +91,6 @@ func (carPlatform *Platform) GenerateDockerBuild(path string, code []byte, tw *t
 
 //GetMetadataProvider fetches metadata provider given deployment spec
 func (carPlatform *Platform) GetMetadataProvider(code []byte) platforms.MetadataProvider {
+	fmt.Println("==========Platform=========GetMetadataProvider======================")
 	return &MetadataProvider{}
 }

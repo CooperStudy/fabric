@@ -137,6 +137,7 @@ func (cs *ChaincodeSupport) LaunchInit(ccci *ccprovider.ChaincodeContainerInfo) 
 func (cs *ChaincodeSupport) Launch(chainID, chaincodeName, chaincodeVersion string, qe ledger.QueryExecutor) (*Handler, error) {
 	fmt.Println("====ChaincodeSupport==Launch====")
 	cname := chaincodeName + ":" + chaincodeVersion
+	fmt.Println("========cname===========",cname)
 	if h := cs.HandlerRegistry.Handler(cname); h != nil {
 		return h, nil
 	}
@@ -245,9 +246,15 @@ func (cs *ChaincodeSupport) ExecuteLegacyInit(txParams *ccprovider.TransactionPa
 func (cs *ChaincodeSupport) Execute(txParams *ccprovider.TransactionParams, cccid *ccprovider.CCContext, input *pb.ChaincodeInput) (*pb.Response, *pb.ChaincodeEvent, error) {
 	fmt.Println("====ChaincodeSupport===Execute=")
 	fmt.Println("=====txParams========",txParams)
-	fmt.Println("=====cccid========",cccid)
-	fmt.Println("=====input========",input)
-	resp, err := cs.Invoke(txParams, cccid, input)
+	/*
+	&{49fc589652cc88ba05d6955b3b6ccea12a8bb88c8270807c2dcce6299cd2b002
+	proposal_bytes:"\n\263\007\n[\010\003\032\013\010\267\346\327\214\006\020\306\345\317n*@49fc589652cc88ba05d6955b3b6ccea12a8bb88c8270807c2dcce6299cd2b002:\010\022\006\022\004lscc\022\323\006\n\266\006\n\007Org1MSP\022\252\006-----BEGIN CERTIFICATE-----\nMIICKjCCAdGgAwIBAgIRALv8NdhtIyJGHk1DO+cZfC8wCgYIKoZIzj0EAwIwczEL\nMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG\ncmFuY2lzY28xGTAXBgNVBAoTEG9yZzEuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh\nLm9yZzEuZXhhbXBsZS5jb20wHhcNMjExMTE1MDkyNzAwWhcNMzExMTEzMDkyNzAw\nWjBsMQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMN\nU2FuIEZyYW5jaXNjbzEPMA0GA1UECxMGY2xpZW50MR8wHQYDVQQDDBZBZG1pbkBv\ncmcxLmV4YW1wbGUuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE/CCjMHcx\nvfqLB3z5Vk2reOaI1PRaaYorpw/Mp7ClnyESh2zNQZs5pgHJ9YvOcldEmBphsFpx\nwNMZzLszVl+rH6NNMEswDgYDVR0PAQH/BAQDAgeAMAwGA1UdEwEB/wQCMAAwKwYD\nVR0jBCQwIoAgK2A1hrR6qxl2EB98w7Jf2ym/5tg1vgaeXeJ3fLbWL2QwCgYIKoZI\nzj0EAwIDRwAwRAIgad6tAd+oYmiTPBB2jSLMTXsULylfGyDEIal7QWgaf0gCIDCL\njrYGhOqn1dbt/YRLCvDeOdexUJFj/0rFnJ9tWKrl\n-----END CERTIFICATE-----\n\022\030]\315\311\230\003L\365\010\034U\373a\334\tA\255\216\310\316\030\222\333\240\277\022(\n&\n$\010\001\022\006\022\004lscc\032\030\n\026getinstalledchaincodes" signature:"0D\002 ~\\\236-M\013q\373\243\017wp\202i>.Q\r-!\250n\342\261\000\311hS\334V\2713\002 \026\036\317\301\231\331\307\345\t\362B\325\226\256\241kF\237\202\342\250\\\256L\326\031E\261w\025\3407"  header:"\n[\010\003\032\013\010\267\346\327\214\006\020\306\345\317n*@49fc589652cc88ba05d6955b3b6ccea12a8bb88c8270807c2dcce6299cd2b002:\010\022\006\022\004lscc\022\323\006\n\266\006\n\007Org1MSP\022\252\006
+	-----BEGIN CERTIFICATE-----\nMIICKjCCAdGgAwIBAgIRALv8NdhtIyJGHk1DO+cZfC8wCgYIKoZIzj0EAwIwczEL\nMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG\ncmFuY2lzY28xGTAXBgNVBAoTEG9yZzEuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh\nLm9yZzEuZXhhbXBsZS5jb20wHhcNMjExMTE1MDkyNzAwWhcNMzExMTEzMDkyNzAw\nWjBsMQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMN\nU2FuIEZyYW5jaXNjbzEPMA0GA1UECxMGY2xpZW50MR8wHQYDVQQDDBZBZG1pbkBv\ncmcxLmV4YW1wbGUuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE/CCjMHcx\nvfqLB3z5Vk2reOaI1PRaaYorpw/Mp7ClnyESh2zNQZs5pgHJ9YvOcldEmBphsFpx\nwNMZzLszVl+rH6NNMEswDgYDVR0PAQH/BAQDAgeAMAwGA1UdEwEB/wQCMAAwKwYD\nVR0jBCQwIoAgK2A1hrR6qxl2EB98w7Jf2ym/5tg1vgaeXeJ3fLbWL2QwCgYIKoZI\nzj0EAwIDRwAwRAIgad6tAd+oYmiTPBB2jSLMTXsULylfGyDEIal7QWgaf0gCIDCL\njrYGhOqn1dbt/YRLCvDeOdexUJFj/0rFnJ9tWKrl\n-----END CERTIFICATE-----\n\022\030]\315\311\230\003L\365\010\034U\373a\334\tA\255\216\310\316\030\222\333\240\277" payload:"\n&\n$\010\001\022\006\022\004lscc\032\030\n\026getinstalledchaincodes"  <nil> <nil> <nil> false map[]}
+
+	*/
+	fmt.Println("=====cccid========",cccid)//&{lscc 1.4.0}
+	fmt.Println("=====input========",input)//args:"getinstalledchaincodes"
+	resp, err := cs.Invoke(txParams, cccid, input)//
 	fmt.Println("=======resp=====",resp)
 	fmt.Println("=======err=====",err)
 	return processChaincodeExecutionResult(txParams.TxID, cccid.Name, resp, err)

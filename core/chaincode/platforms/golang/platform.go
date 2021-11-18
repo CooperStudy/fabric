@@ -34,6 +34,7 @@ type Platform struct {
 
 // Returns whether the given file or directory exists or not
 func pathExists(path string) (bool, error) {
+	fmt.Println("====pathExists=======")
 	_, err := os.Stat(path)
 	if err == nil {
 		return true, nil
@@ -45,6 +46,7 @@ func pathExists(path string) (bool, error) {
 }
 
 func decodeUrl(path string) (string, error) {
+	fmt.Println("====decodeUrl=======")
 	var urlLocation string
 	if strings.HasPrefix(path, "http://") {
 		urlLocation = path[7:]
@@ -66,6 +68,7 @@ func decodeUrl(path string) (string, error) {
 }
 
 func getGopath() (string, error) {
+	fmt.Println("====getGopath=======")
 	env, err := getGoEnv()
 	if err != nil {
 		return "", err
@@ -79,6 +82,7 @@ func getGopath() (string, error) {
 }
 
 func filter(vs []string, f func(string) bool) []string {
+	fmt.Println("====filter=======")
 	vsf := make([]string, 0)
 	for _, v := range vs {
 		if f(v) {
@@ -90,11 +94,13 @@ func filter(vs []string, f func(string) bool) []string {
 
 // Name returns the name of this platform
 func (goPlatform *Platform) Name() string {
+	fmt.Println("====Platform====Name===")
 	return pb.ChaincodeSpec_GOLANG.String()
 }
 
 // ValidateSpec validates Go chaincodes
 func (goPlatform *Platform) ValidatePath(rawPath string) error {
+	fmt.Println("====Platform====ValidatePath===")
 	path, err := url.Parse(rawPath)
 	if err != nil || path == nil {
 		return fmt.Errorf("invalid path: %s", err)
@@ -121,7 +127,7 @@ func (goPlatform *Platform) ValidatePath(rawPath string) error {
 }
 
 func (goPlatform *Platform) ValidateCodePackage(code []byte) error {
-
+	fmt.Println("====Platform====ValidateCodePackage===")
 	if len(code) == 0 {
 		// Nothing to validate if no CodePackage was included
 		return nil
@@ -182,7 +188,7 @@ func (goPlatform *Platform) ValidateCodePackage(code []byte) error {
 // For anything that needs to be vendored, we simply update its path specification.
 // Everything else, we pass through untouched.
 func vendorDependencies(pkg string, files Sources) {
-
+	fmt.Println("=====vendorDependencies===")
 	exclusions := make([]string, 0)
 	elements := strings.Split(pkg, "/")
 
@@ -246,7 +252,7 @@ func vendorDependencies(pkg string, files Sources) {
 
 // Generates a deployment payload for GOLANG as a series of src/$pkg entries in .tar.gz format
 func (goPlatform *Platform) GetDeploymentPayload(path string) ([]byte, error) {
-
+	fmt.Println("=====Platform  GetDeploymentPayloadrm===")
 	var err error
 
 	// --------------------------------------------------------------------------------------
@@ -477,7 +483,7 @@ func (goPlatform *Platform) GetDeploymentPayload(path string) ([]byte, error) {
 }
 
 func (goPlatform *Platform) GenerateDockerfile() (string, error) {
-
+	fmt.Println("=====Platform  GenerateDockerfile===")
 	var buf []string
 
 	buf = append(buf, "FROM "+cutil.GetDockerfileFromConfig("chaincode.golang.runtime"))
@@ -499,6 +505,7 @@ func getLDFlagsOpts() string {
 }
 
 func (goPlatform *Platform) GenerateDockerBuild(path string, code []byte, tw *tar.Writer) error {
+	fmt.Println("=====Platform  GenerateDockerBuild===")
 	pkgname, err := decodeUrl(path)
 	if err != nil {
 		return fmt.Errorf("could not decode url: %s", err)
@@ -523,5 +530,6 @@ func (goPlatform *Platform) GenerateDockerBuild(path string, code []byte, tw *ta
 
 //GetMetadataProvider fetches metadata provider given deployment spec
 func (goPlatform *Platform) GetMetadataProvider(code []byte) platforms.MetadataProvider {
+	fmt.Println("=====Platform  GetMetadataProvider===")
 	return &ccmetadata.TargzMetadataProvider{Code: code}
 }

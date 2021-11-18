@@ -82,8 +82,11 @@ func (cs *channelState) getGossipChannelByMAC(receivedMAC []byte, pkiID common.P
 	cs.RLock()
 	defer cs.RUnlock()
 	for chanName, gc := range cs.channels {
-		fmt.Println("======chanName=====",chanName)
+		fmt.Println("======chanName=====",chanName)//mychannel
 		fmt.Println("======gc=====",gc)
+		/*
+		&{0xc002b5efa0 {{0 0} 0 0 0 0} 0 0xc000399e90 [111 36 162 133 16 26 222 168 198 53 13 236 188 162 199 49 240 121 120 163 42 92 168 118 195 242 204 167 181 179 224 144] [79 114 103 49 77 83 80] 0xc002b50540 0xc002789940 [[79 114 103 49 77 83 80]] 0xc00259ef10 0xc002b54500 0xc002b63a10 0xc002b54680 [109 121 99 104 97 110 110 101 108] 0xc000228a20 0xc000304c40 0xc002b5d0e0 0xc002b5d180 0xc002b5f060 1 1637216990210960351 0 0xc002b5f8e0}
+		*/
 		mac := channel.GenerateMAC(pkiID, common.ChainID(chanName))
 		if bytes.Equal(mac, receivedMAC) {
 			return gc
@@ -137,17 +140,20 @@ type gossipAdapterImpl struct {
 func (ga *gossipAdapterImpl) GetConf() channel.Config {
 	fmt.Println("====gossipAdapterImpl===GetConf==")
 	a  := channel.Config{
-		ID:                          ga.conf.ID,
-		MaxBlockCountToStore:        ga.conf.MaxBlockCountToStore,
-		PublishStateInfoInterval:    ga.conf.PublishStateInfoInterval,
-		PullInterval:                ga.conf.PullInterval,
-		PullPeerNum:                 ga.conf.PullPeerNum,
-		RequestStateInfoInterval:    ga.conf.RequestStateInfoInterval,
+		ID:                          ga.conf.ID, //peer0.org1.example.com:7051
+		MaxBlockCountToStore:        ga.conf.MaxBlockCountToStore,// 4s
+		PublishStateInfoInterval:    ga.conf.PublishStateInfoInterval,//100
+		PullInterval:                ga.conf.PullInterval,//3
+		PullPeerNum:                 ga.conf.PullPeerNum,//4s
+		RequestStateInfoInterval:    ga.conf.RequestStateInfoInterval,//4s
 		BlockExpirationInterval:     ga.conf.PullInterval * 100,
 		StateInfoCacheSweepInterval: ga.conf.PullInterval * 5,
 		TimeForMembershipTracker:    ga.conf.TimeForMembershipTracker,
 	}
 	fmt.Println("============channel.Config=====================",a)
+	/*
+	{peer0.org1.example.com:7051 4s 100 3 4s 4s 6m40s 20s 5s}
+	 */
 	return a
 }
 

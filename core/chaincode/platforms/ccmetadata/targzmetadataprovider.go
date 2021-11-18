@@ -9,6 +9,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"fmt"
 	"io"
 	"strings"
 
@@ -29,6 +30,7 @@ type TargzMetadataProvider struct {
 }
 
 func (tgzProv *TargzMetadataProvider) getCode() ([]byte, error) {
+	fmt.Println("==========TargzMetadataProvider=========getCode======================")
 	if tgzProv.Code == nil {
 		return nil, errors.New("nil code package")
 	}
@@ -38,6 +40,7 @@ func (tgzProv *TargzMetadataProvider) getCode() ([]byte, error) {
 
 // GetMetadataAsTarEntries extracts metata data from ChaincodeDeploymentSpec
 func (tgzProv *TargzMetadataProvider) GetMetadataAsTarEntries() ([]byte, error) {
+	fmt.Println("==========TargzMetadataProvider=========GetMetadataAsTarEntries======================")
 	code, err := tgzProv.getCode()
 	if err != nil {
 		return nil, err

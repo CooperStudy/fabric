@@ -17,6 +17,7 @@ limitations under the License.
 package golang
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,6 +27,7 @@ import (
 type Env map[string]string
 
 func getEnv() Env {
+	fmt.Println("======getEnv=========")
 	env := make(Env)
 	for _, entry := range os.Environ() {
 		tokens := strings.SplitN(entry, "=", 2)
@@ -38,6 +40,7 @@ func getEnv() Env {
 }
 
 func getGoEnv() (Env, error) {
+	fmt.Println("======getGoEnv=========")
 	env := getEnv()
 
 	goenvbytes, err := runProgram(env, 10*time.Second, "go", "env")
@@ -59,6 +62,7 @@ func getGoEnv() (Env, error) {
 }
 
 func flattenEnv(env Env) []string {
+	fmt.Println("======flattenEnv=========")
 	result := make([]string, 0)
 	for k, v := range env {
 		result = append(result, k+"="+v)
@@ -70,6 +74,7 @@ func flattenEnv(env Env) []string {
 type Paths map[string]bool
 
 func splitEnvPaths(value string) Paths {
+	fmt.Println("======splitEnvPaths=========")
 	_paths := filepath.SplitList(value)
 	paths := make(Paths)
 	for _, path := range _paths {
@@ -79,11 +84,13 @@ func splitEnvPaths(value string) Paths {
 }
 
 func flattenEnvPaths(paths Paths) string {
-
+	fmt.Println("======flattenEnvPaths=========")
 	_paths := make([]string, 0)
 	for path := range paths {
 		_paths = append(_paths, path)
 	}
 
-	return strings.Join(_paths, string(os.PathListSeparator))
+	a:= strings.Join(_paths, string(os.PathListSeparator))
+	fmt.Println("===================a====================",a)
+	return a
 }

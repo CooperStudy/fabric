@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package chaincode
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -29,16 +30,19 @@ type LaunchState struct {
 }
 
 func NewLaunchState() *LaunchState {
+	fmt.Println("=====NewLaunchState=============")
 	return &LaunchState{
 		done: make(chan struct{}),
 	}
 }
 
 func (l *LaunchState) Done() <-chan struct{} {
+	fmt.Println("=====Done=============")
 	return l.done
 }
 
 func (l *LaunchState) Err() error {
+	fmt.Println("=====LaunchState===Err==========")
 	l.mutex.Lock()
 	err := l.err
 	l.mutex.Unlock()
@@ -46,6 +50,7 @@ func (l *LaunchState) Err() error {
 }
 
 func (l *LaunchState) Notify(err error) {
+	fmt.Println("=====LaunchState===Notify==========")
 	l.mutex.Lock()
 	if !l.notified {
 		l.notified = true
@@ -57,6 +62,7 @@ func (l *LaunchState) Notify(err error) {
 
 // NewHandlerRegistry constructs a HandlerRegistry.
 func NewHandlerRegistry(allowUnsolicitedRegistration bool) *HandlerRegistry {
+	fmt.Println("=====NewHandlerRegistry=============")
 	return &HandlerRegistry{
 		handlers:                     map[string]*Handler{},
 		launching:                    map[string]*LaunchState{},
@@ -69,6 +75,7 @@ func NewHandlerRegistry(allowUnsolicitedRegistration bool) *HandlerRegistry {
 // completed and whether or not it failed. The bool indicates whether or not
 // the chaincode has already been started.
 func (r *HandlerRegistry) Launching(cname string) (*LaunchState, bool) {
+	fmt.Println("=====HandlerRegistry===Launching==========")
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
@@ -93,6 +100,7 @@ func (r *HandlerRegistry) Launching(cname string) (*LaunchState, bool) {
 // Ready indicates that the chaincode registration has completed and the
 // READY response has been sent to the chaincode.
 func (r *HandlerRegistry) Ready(cname string) {
+	fmt.Println("=====HandlerRegistry===Ready==========")
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
@@ -104,6 +112,7 @@ func (r *HandlerRegistry) Ready(cname string) {
 
 // Failed indicates that registration of a launched chaincode has failed.
 func (r *HandlerRegistry) Failed(cname string, err error) {
+	fmt.Println("=====HandlerRegistry===Failed==========")
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
@@ -115,7 +124,9 @@ func (r *HandlerRegistry) Failed(cname string, err error) {
 
 // Handler retrieves the handler for a chaincode instance.
 func (r *HandlerRegistry) Handler(cname string) *Handler {
+	fmt.Println("=====HandlerRegistry====Handler=============")
 	r.mutex.Lock()
+	fmt.Println("========cname=======",cname)
 	h := r.handlers[cname]
 	r.mutex.Unlock()
 	return h
@@ -126,12 +137,13 @@ func (r *HandlerRegistry) Handler(cname string) *Handler {
 // chaincode. An error will also be returned if the chaincode has not already
 // been "launched", and unsolicited registration is not allowed.
 func (r *HandlerRegistry) Register(h *Handler) error {
+	fmt.Println("=====HandlerRegistry===Register==========")
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 	key := h.chaincodeID.Name
 
 	if r.handlers[key] != nil {
-		chaincodeLogger.Debugf("duplicate registered handler(key:%s) return error", key)
+		chaincodeLogger.Infof("duplicate registered handler(key:%s) return error", key)
 		return errors.Errorf("duplicate chaincodeID: %s", h.chaincodeID.Name)
 	}
 
@@ -143,7 +155,7 @@ func (r *HandlerRegistry) Register(h *Handler) error {
 
 	r.handlers[key] = h
 
-	chaincodeLogger.Debugf("registered handler complete for chaincode %s", key)
+	chaincodeLogger.Infof("registered handler complete for chaincode %s", key)
 	return nil
 }
 
@@ -151,6 +163,7 @@ func (r *HandlerRegistry) Register(h *Handler) error {
 // As part of the cleanup, it closes the handler so it can cleanup any state.
 // If the registry does not contain the provided handler, an error is returned.
 func (r *HandlerRegistry) Deregister(cname string) error {
+	fmt.Println("=====HandlerRegistry===Deregister==========")
 	chaincodeLogger.Debugf("deregister handler: %s", cname)
 
 	r.mutex.Lock()

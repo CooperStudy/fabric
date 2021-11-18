@@ -153,8 +153,10 @@ func ValidateProposalMessage(signedProp *pb.SignedProposal) (*pb.Proposal, *comm
 // given a creator, a message and a signature,
 // this function returns nil if the creator
 // is a valid cert and the signature is valid
-func checkSignatureFromCreator(creatorBytes []byte, sig []byte, msg []byte, ChainID string) error {
+//   checkSignatureFromCreator(shdr.Creator,        signedProp.Signature, signedProp.ProposalBytes, chdr.ChannelId)
+func checkSignatureFromCreator(creatorBytes []byte, sig []byte,            msg []byte,              ChainID string) error {
 	fmt.Println("==checkSignatureFromCreator=====")
+
 	putilsLogger.Debugf("begin")
 
 	// check for nil argument
@@ -173,7 +175,7 @@ func checkSignatureFromCreator(creatorBytes []byte, sig []byte, msg []byte, Chai
 		return errors.WithMessage(err, "MSP error")
 	}
 
-	putilsLogger.Debugf("creator is %s", creator.GetIdentifier())
+	putilsLogger.Infof("creator is %s", creator.GetIdentifier())
 
 	// ensure that creator is a valid certificate
 	err = creator.Validate()

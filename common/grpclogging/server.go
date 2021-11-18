@@ -101,6 +101,17 @@ func UnaryServerInterceptor(logger *zap.Logger, opts ...Option) grpc.UnaryServer
 		}
 
 		if ce := logger.Check(o.Level(ctx, info.FullMethod), "unary call completed"); ce != nil {
+			/*
+			unary call completed
+			{"grpc.start_time": "2021-11-18T06:31:19.239Z",
+			"grpc.service": "protos.Endorser",
+			"grpc.method": "ProcessProposal",
+			"grpc.request_deadline": "2021-11-18T06:34:19.232Z",
+			"grpc.peer_address": "172.19.0.1:37296",
+			"grpc.code": "OK",
+			"grpc.call_duration": "1.786148ms"}
+
+			*/
 			ce.Write(
 				Error(err),
 				zap.Stringer("grpc.code", grpc.Code(err)),

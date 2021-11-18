@@ -29,6 +29,7 @@ var includeFileTypes = map[string]bool{
 var logger = flogging.MustGetLogger("chaincode.platform.golang")
 
 func getCodeFromFS(path string) (codegopath string, err error) {
+	fmt.Println("=====getCodeFromFS==========")
 	logger.Debugf("getCodeFromFS %s", path)
 	gopath, err := getGopath()
 	if err != nil {
@@ -54,6 +55,7 @@ type CodeDescriptor struct {
 //NOTE: for dev mode, user builds and runs chaincode manually. The name provided
 //by the user is equivalent to the path.
 func getCode(path string) (*CodeDescriptor, error) {
+	fmt.Println("=====getCode==========")
 	if path == "" {
 		return nil, errors.New("Cannot collect files from empty chaincode path")
 	}
@@ -82,14 +84,17 @@ func (s Sources) Len() int {
 }
 
 func (s Sources) Swap(i, j int) {
+	fmt.Println("=====Sources==Swap========")
 	s[i], s[j] = s[j], s[i]
 }
 
 func (s Sources) Less(i, j int) bool {
+	fmt.Println("=====Sources==Less========")
 	return strings.Compare(s[i].Name, s[j].Name) < 0
 }
 
 func findSource(gopath, pkg string) (SourceMap, error) {
+	fmt.Println("====findSource=======")
 	sources := make(SourceMap)
 	tld := filepath.Join(gopath, "src", pkg)
 	walkFn := func(path string, info os.FileInfo, err error) error {
@@ -142,5 +147,8 @@ func findSource(gopath, pkg string) (SourceMap, error) {
 
 // isMetadataDir checks to see if the current path is in the META-INF directory at the root of the chaincode directory
 func isMetadataDir(path, tld string) bool {
-	return strings.HasPrefix(path, filepath.Join(tld, "META-INF"))
+	fmt.Println("====isMetadataDir=======")
+	a:= strings.HasPrefix(path, filepath.Join(tld, "META-INF"))
+	fmt.Println("==============a",a)
+	return a
 }

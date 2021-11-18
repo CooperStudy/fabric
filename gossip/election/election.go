@@ -507,7 +507,7 @@ func getMembershipSampleInterval() time.Duration {
 func getLeaderAliveThreshold() time.Duration {
 	fmt.Println("====getLeaderAliveThreshold=")
 	a := util.GetDurationOrDefault("peer.gossip.election.leaderAliveThreshold", time.Second*10)
-	fmt.Println("==========peer.gossip.election.leaderAliveThreshold=================",a)
+	fmt.Println("==========peer.gossip.election.leaderAliveThreshold=================",a)//10s
 	return a
 }
 

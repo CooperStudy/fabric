@@ -130,6 +130,7 @@ func NewEndorserServer(privDist privateDataDistributor, s Support, pr *platforms
 func (e *Endorser) callChaincode(txParams *ccprovider.TransactionParams, version string, input *pb.ChaincodeInput, cid *pb.ChaincodeID) (*pb.Response, *pb.ChaincodeEvent, error) {
 	fmt.Println("==Endorser==callChaincode==")
 	endorserLogger.Infof("[%s][%s] Entry chaincode: %s", txParams.ChannelID, shorttxid(txParams.TxID), cid)
+	//Entry chaincode: name:"lscc"
 	defer func(start time.Time) {
 		logger := endorserLogger.WithOptions(zap.AddCallerSkip(1))
 		elapsedMilliseconds := time.Since(start).Round(time.Millisecond) / time.Millisecond
@@ -408,8 +409,8 @@ func (e *Endorser) preProcess(signedProp *pb.SignedProposal) (*validateResult, e
 func (e *Endorser) ProcessProposal(ctx context.Context, signedProp *pb.SignedProposal) (*pb.ProposalResponse, error) {
 	fmt.Println("==Endorser==ProcessProposal==")
 	addr := util.ExtractRemoteAddress(ctx)
-	endorserLogger.Debug("Entering: request from", addr)
-	defer endorserLogger.Debug("Exit: request from", addr)
+	endorserLogger.Infof("Entering: request from", addr)
+	defer endorserLogger.Info("Exit: request from", addr)
 
 	// 0 -- check and validate
 	vr, err := e.preProcess(signedProp)

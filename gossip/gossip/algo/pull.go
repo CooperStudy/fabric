@@ -129,7 +129,7 @@ func NewPullEngineWithFilter(participant PullAdapter, sleepTime time.Duration, d
 
 	go func() {
 		for !engine.toDie() {
-			fmt.Println("======sleepTime========",sleepTime)
+			fmt.Println("======sleepTime========",sleepTime)//4s
 			time.Sleep(sleepTime)
 			if engine.toDie() {
 				return
