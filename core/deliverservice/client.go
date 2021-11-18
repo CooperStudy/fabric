@@ -188,7 +188,7 @@ func (bc *broadcastClient) connect() error {
 	if err == nil {
 		return nil
 	}
-	logger.Infof("Failed running post-connection procedures:", err)
+	fmt.Println("Failed running post-connection procedures:", err)
 	//Failed running post-connection procedures: closing
 	// If we reached here, lets make sure connection is closed
 	// and nullified before we return

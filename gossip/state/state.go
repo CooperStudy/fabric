@@ -155,7 +155,7 @@ var logger = util.GetLogger(util.StateLogger, "")
 // NewGossipStateProvider creates state provider with coordinator instance
 // to orchestrate arrival of private rwsets and blocks before committing them into the ledger.
 func NewGossipStateProvider(chainID string, services *ServicesMediator, ledger ledgerResources) GossipStateProvider {
-    fmt.Println("===========NewGossipStateProvider=====================",NewGossipStateProvider)
+    fmt.Println("===========NewGossipStateProvider=====================")
 	gossipChan, _ := services.Accept(func(message interface{}) bool {
 		fmt.Println("===NewGossipStateProvider==")
 		// Get only data messages

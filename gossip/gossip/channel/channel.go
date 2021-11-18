@@ -248,7 +248,7 @@ func NewGossipChannel(pkiID common.PKIidType, org api.OrgIdentityType, mcs api.M
 		fmt.Println("=========org========",org)
 		fmt.Println("=========!isOrgInChan(org)========",!isOrgInChan(org))
 		if !isOrgInChan(org) {
-			gc.logger.Infof("peer", peerIdentity, "'s organization(", string(org), ") isn't in the channel", string(chainID))
+			fmt.Println("peer", peerIdentity, "'s organization(", string(org), ") isn't in the channel", string(chainID))
 			return false
 		}
 		if err := gc.mcs.VerifyByChannel(chainID, peerIdentity, msg.Signature, msg.Payload); err != nil {
@@ -555,7 +555,7 @@ func (gc *gossipChannel) ConfigureChannel(joinMsg api.JoinChannelMessage) {
 	fmt.Println("================ gc.joinMsg.SequenceNumber============================", gc.joinMsg.SequenceNumber())
 	fmt.Println("================ joinMsg.SequenceNumber()===========================", joinMsg.SequenceNumber())
 	if gc.joinMsg.SequenceNumber() > (joinMsg.SequenceNumber()) {
-		gc.logger.Infof("Already have a more updated JoinChannel message(", gc.joinMsg.SequenceNumber(), ") than", joinMsg.SequenceNumber())
+		gc.logger.Info("Already have a more updated JoinChannel message(", gc.joinMsg.SequenceNumber(), ") than", joinMsg.SequenceNumber())
 		return
 	}
 

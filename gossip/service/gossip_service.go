@@ -353,7 +353,7 @@ func (g *gossipServiceImpl) updateAnchors(config Config) {
 	}
 
 	// Initialize new state provider for given committer
-	logger.Infof("Creating state provider for chainID", config.ChainID())
+	logger.Info("Creating state provider for chainID", config.ChainID())
 	g.JoinChan(jcm, gossipCommon.ChainID(config.ChainID()))
 }
 
@@ -362,7 +362,7 @@ func (g *gossipServiceImpl) updateEndpoints(chainID string, endpoints []string) 
 	if ds, ok := g.deliveryService[chainID]; ok {
 		fmt.Println("=====================ds",ds)
 		fmt.Println("=====================chain id",chainID)
-		logger.Infof("Updating endpoints for chainID", chainID)
+		logger.Info("Updating endpoints for chainID", chainID)
 		if err := ds.UpdateEndpoints(chainID, endpoints); err != nil {
 			// The only reason to fail is because of absence of block provider
 			// for given channel id, hence printing a warning will be enough
