@@ -1054,9 +1054,10 @@ func endpoints(members discovery.Members) [][]string {
 
 //checkIfPeersChanged checks which peers are offline and which are online for channel
 func (mt *membershipTracker) checkIfPeersChanged(prevPeers discovery.Members, currPeers discovery.Members,
-	fmt.Println("====membershipTracker===checkIfPeersChanged==")
 	prevSetPeers map[string]struct{}, currSetPeers map[string]struct{}) {
 
+
+	fmt.Println("====membershipTracker===checkIfPeersChanged==")
 	var currView [][]string
 
 	wereInPrev := endpoints(prevPeers.Filter(func(member discovery.NetworkMember) bool {
