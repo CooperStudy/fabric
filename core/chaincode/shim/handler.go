@@ -800,6 +800,9 @@ func (handler *Handler) handleReady(msg *pb.ChaincodeMessage, errc chan error) e
 		return nil
 
 	case pb.ChaincodeMessage_TRANSACTION:
+		/*
+		1.安装链码
+		 */
 		fmt.Println("=======pb.ChaincodeMessage_TRANSACTION=========")
 		chaincodeLogger.Infof("[%s] Received %s, invoking transaction on chaincode(state:%s)", shorttxid(msg.Txid), msg.Type, handler.state)
 		// Call the chaincode's Run function to invoke transaction
@@ -839,7 +842,7 @@ func (handler *Handler) handleMessage(msg *pb.ChaincodeMessage, errc chan error)
 		handler.serialSendAsync(msg, nil) // ignore errors, maybe next KEEPALIVE will work
 		return nil
 	}
-	chaincodeLogger.Debugf("[%s] Handling ChaincodeMessage of type: %s(state:%s)", shorttxid(msg.Txid), msg.Type, handler.state)
+	chaincodeLogger.Infof("[%s] Handling ChaincodeMessage of type: %s(state:%s)", shorttxid(msg.Txid), msg.Type, handler.state)
 
 	var err error
 

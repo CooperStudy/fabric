@@ -254,6 +254,7 @@ func (cs *ChaincodeSupport) Execute(txParams *ccprovider.TransactionParams, ccci
 	*/
 	fmt.Println("=====cccid========",cccid)//&{lscc 1.4.0}
 	fmt.Println("=====input========",input)//args:"getinstalledchaincodes"
+	fmt.Println("=====input.Decorations========",input.Decorations)//args:"getinstalledchaincodes"
 	resp, err := cs.Invoke(txParams, cccid, input)//
 	fmt.Println("=======resp=====",resp)
 	fmt.Println("=======err=====",err)

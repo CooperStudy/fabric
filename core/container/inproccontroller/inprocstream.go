@@ -52,7 +52,7 @@ func (s *inProcStream) Send(msg *pb.ChaincodeMessage) (err error) {
 			return
 		}
 	}()
-	fmt.Println("=============s.send <- msg==================")
+	fmt.Println("=============s.send <- msg==================",msg)
 	s.send <- msg
 	return
 }
