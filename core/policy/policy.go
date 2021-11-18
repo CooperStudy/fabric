@@ -109,6 +109,7 @@ func (p *policyChecker) CheckPolicy(channelID, policyName string, signedProp *pb
 // passed policy on the local MSP.
 func (p *policyChecker) CheckPolicyNoChannel(policyName string, signedProp *pb.SignedProposal) error {
 	fmt.Println("===policyChecker==CheckPolicyNoChannel==")
+	fmt.Println("=========policyName======",policyName)
 	if policyName == "" {
 		return errors.New("Invalid policy name during channelless check policy. Name must be different from nil.")
 	}
@@ -139,11 +140,13 @@ func (p *policyChecker) CheckPolicyNoChannel(policyName string, signedProp *pb.S
 	}
 
 	// Load MSPPrincipal for policy
+	fmt.Println("==============policyName==========",policyName)
 	principal, err := p.principalGetter.Get(policyName)
 	if err != nil {
 		return fmt.Errorf("Failed getting local MSP principal during channelless check policy with policy [%s]: [%s]", policyName, err)
 	}
 
+	fmt.Println("=========principal======================",principal)
 	// Verify that proposal's creator satisfies the principal
 	err = id.SatisfiesPrincipal(principal)
 	if err != nil {

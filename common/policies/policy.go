@@ -296,6 +296,9 @@ func (pl *policyLogger) Evaluate(signatureSet []*cb.SignedData) error {
 func (pm *ManagerImpl) GetPolicy(id string) (Policy, bool) {
 	fmt.Println("===ManagerImpl==GetPolicy===")
 	fmt.Println("=======id======",id)
+	//Writers
+	//Readers
+	//Admins
 	if id == "" {
 		logger.Errorf("Returning dummy reject all policy because no policy ID supplied")
 		return rejectPolicy(id), false
@@ -314,14 +317,32 @@ func (pm *ManagerImpl) GetPolicy(id string) (Policy, bool) {
 	}
 
 	fmt.Println("=========relpath=========",relpath)
+	//Readers
+	//Writers
+	//Admins
 	policy, ok := pm.policies[relpath]
+	// /Channel/Application/Org1MSP/Readers
+	//
 	if !ok {
 		logger.Debugf("Returning dummy reject all policy because %s could not be found in %s/%s", id, pm.path, relpath)
 		return rejectPolicy(relpath), false
 	}
 
 	fmt.Println("==========policyName================",PathSeparator + pm.path + PathSeparator + relpath)
+    // /Channel/Application/Org1MSP/Readers
+    // /Channel/Application/Org1MSP/Writers
+    // /Channel/Orderer/OrdererOrg/Admins
 
+    // /Channel/Orderer/OrdererOrg/Writers
+    // /Channel/Orderer/OrdererOrg/Readers
+    // /Channel/Orderer/OrdererOrg/Admins
+
+    //  /Channel/Application/Admins
+    //  /Channel/Orderer/Admins
+    //  /Channel/Application/Readers
+    //  /Channel/Orderer/Readers
+    //  /Channel/Application/Writers
+    //  /Channel/Orderer/Writers
 	return &policyLogger{
 		policy:     policy,
 		policyName: PathSeparator + pm.path + PathSeparator + relpath,

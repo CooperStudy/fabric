@@ -199,6 +199,7 @@ func (is *identityMapperImpl) GetPKIidOfCert(identity api.PeerIdentityType) comm
 func (is *identityMapperImpl) SuspectPeers(isSuspected api.PeerSuspector) {
 	fmt.Println("====identityMapperImpl==SuspectPeers==")
 	for _, identity := range is.validateIdentities(isSuspected) {
+		fmt.Println("============identity=======",identity)
 		identity.cancelExpirationTimer()
 		is.delete(identity.pkiID, identity.peerIdentity)
 	}

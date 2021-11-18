@@ -141,7 +141,9 @@ func newBlockfileMgr(id string, conf *Conf, indexConfig *blkstorage.IndexConfig,
 		panic(fmt.Sprintf("error in block index: %s", err))
 	}
 
-	fmt.Println("======mgr.index==========",mgr.index)// &{map[BlockNum:true] 0xc000123bc0}
+	fmt.Println("======mgr.index==========",mgr.index)
+	// &{map[BlockNum:true] 0xc000123bc0}
+	// &{map[BlockTxID:true TxValidationCode:true BlockHash:true BlockNum:true TxID:true BlockNumTranNum:true] 0xc00061e2c0}
 	// Update the manager with the checkpoint info and the file writer
 	mgr.cpInfo = cpInfo
 	mgr.currentFileWriter = currentFileWriter
@@ -220,6 +222,8 @@ func deriveBlockfilePath(rootDir string, suffixNum int) string {
 	fmt.Println("===deriveBlockfilePath==")
 	a:= rootDir + "/" + blockfilePrefix + fmt.Sprintf("%06d", suffixNum)
 	fmt.Println("==============deriveBlockfilePath=========",a)
+	// /var/hyperledger/production/ledgersData/chains/chains/mychannel/blockfile_000000
+	//
 	return a
 }
 

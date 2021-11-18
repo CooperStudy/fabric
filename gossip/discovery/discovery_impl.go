@@ -976,11 +976,12 @@ func (d *gossipDiscoveryImpl) UpdateEndpoint(endpoint string) {
 }
 
 func (d *gossipDiscoveryImpl) Self() NetworkMember {
+	//fmt.Println("--------gossipDiscoveryImpl-----Self--------------")
 	var env *proto.Envelope
 	msg, _ := d.aliveMsgAndInternalEndpoint()
 	sMsg, err := msg.NoopSign()
 	if err != nil {
-		d.logger.Warning("Failed creating SignedGossipMessage:", err)
+		d.logger.Infof("ailed creating SignedGossipMessage:", err)
 	} else {
 		env = sMsg.Envelope
 	}

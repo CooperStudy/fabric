@@ -683,7 +683,6 @@ func ComputeProposalBinding(proposal *peer.Proposal) ([]byte, error) {
 
 func computeProposalBindingInternal(nonce, creator []byte, epoch uint64) ([]byte, error) {
 
-
 	fmt.Println("===========computeProposalBindingInternal========")
 	epochBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(epochBytes, epoch)

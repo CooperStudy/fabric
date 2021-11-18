@@ -463,18 +463,21 @@ func (le *leaderElectionSvcImpl) Stop() {
 // the period of time to wait until election algorithm will start
 func SetStartupGracePeriod(t time.Duration) {
 	viper.Set("peer.gossip.election.startupGracePeriod", t)
+	fmt.Println("==========peer.gossip.election.startupGracePeriod===============",t)
 }
 
 // SetMembershipSampleInterval setups/initializes the frequency the
 // membership view should be checked
 func SetMembershipSampleInterval(t time.Duration) {
 	viper.Set("peer.gossip.election.membershipSampleInterval", t)
+	fmt.Println("==========peer.gossip.election.membershipSampleInterval===============",t)
 }
 
 // SetLeaderAliveThreshold configures leader election alive threshold
 func SetLeaderAliveThreshold(t time.Duration) {
 	fmt.Println("====SetLeaderAliveThreshold=")
 	viper.Set("peer.gossip.election.leaderAliveThreshold", t)
+	fmt.Println("==========peer.gossip.election.leaderAliveThreshold================",t)
 }
 
 // SetLeaderElectionDuration configures expected leadership election duration,
@@ -482,35 +485,49 @@ func SetLeaderAliveThreshold(t time.Duration) {
 func SetLeaderElectionDuration(t time.Duration) {
 	fmt.Println("====SetLeaderElectionDuration=")
 	viper.Set("peer.gossip.election.leaderElectionDuration", t)
+	fmt.Println("==========peer.gossip.election.leaderElectionDuration================",t)
+
+
 }
 
 func getStartupGracePeriod() time.Duration {
 	fmt.Println("====getStartupGracePeriod=")
-	return util.GetDurationOrDefault("peer.gossip.election.startupGracePeriod", time.Second*15)
+	a := util.GetDurationOrDefault("peer.gossip.election.startupGracePeriod", time.Second*15)
+	fmt.Println("==========peer.gossip.election.startupGracePeriod================",a)
+	return a
 }
 
 func getMembershipSampleInterval() time.Duration {
 	fmt.Println("====getMembershipSampleInterval=")
-	return util.GetDurationOrDefault("peer.gossip.election.membershipSampleInterval", time.Second)
+	a := util.GetDurationOrDefault("peer.gossip.election.membershipSampleInterval", time.Second)
+	fmt.Println("==========peer.gossip.election.membershipSampleInterval=================",a)
+	return a
 }
 
 func getLeaderAliveThreshold() time.Duration {
 	fmt.Println("====getLeaderAliveThreshold=")
-	return util.GetDurationOrDefault("peer.gossip.election.leaderAliveThreshold", time.Second*10)
+	a := util.GetDurationOrDefault("peer.gossip.election.leaderAliveThreshold", time.Second*10)
+	fmt.Println("==========peer.gossip.election.leaderAliveThreshold=================",a)
+	return a
 }
 
 func getLeadershipDeclarationInterval() time.Duration {
 	fmt.Println("====getLeadershipDeclarationInterval=")
-	return time.Duration(getLeaderAliveThreshold() / 2)
+	a:= time.Duration(getLeaderAliveThreshold() / 2)
+	fmt.Println("==========getLeadershipDeclarationInterval=================",a)
+	return a
 }
 
 func getLeaderElectionDuration() time.Duration {
 	fmt.Println("====getLeaderElectionDuration=")
-	return util.GetDurationOrDefault("peer.gossip.election.leaderElectionDuration", time.Second*5)
+	a:= util.GetDurationOrDefault("peer.gossip.election.leaderElectionDuration", time.Second*5)
+	fmt.Println("================peer.gossip.election.leaderElectionDuration================",a)
+	return a
 }
 
 // GetMsgExpirationTimeout return leadership message expiration timeout
 func GetMsgExpirationTimeout() time.Duration {
 	fmt.Println("====GetMsgExpirationTimeout=")
-	return getLeaderAliveThreshold() * 10
+	a := getLeaderAliveThreshold() * 10
+	fmt.Println("==========a=============",a)
 }

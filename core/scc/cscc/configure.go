@@ -122,6 +122,12 @@ func (e *PeerConfiger) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	fmt.Println("===PeerConfiger==Invoke======")
 	args := stub.GetArgs()
 
+	for k,v := range args{
+		fmt.Println("=====k",k)
+		fmt.Println("=====v",v)
+		fmt.Println("=====v",string(v))
+	}
+
 	if len(args) < 1 {
 		return shim.Error(fmt.Sprintf("Incorrect number of arguments, %d", len(args)))
 	}
@@ -132,7 +138,7 @@ func (e *PeerConfiger) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return shim.Error(fmt.Sprintf("Incorrect number of arguments, %d", len(args)))
 	}
 
-	cnflogger.Debugf("Invoke function: %s", fname)
+	cnflogger.Infof("Invoke function: %s", fname)
 
 	// Handle ACL:
 	// 1. get the signed proposal
@@ -151,6 +157,7 @@ func (e *PeerConfiger) InvokeNoShim(args [][]byte, sp *pb.SignedProposal) pb.Res
 
 	switch fname {
 	case JoinChain:
+		fmt.Println("=============JoinChain======================")
 		if args[1] == nil {
 			return shim.Error("Cannot join the channel <nil> configuration block provided")
 		}
@@ -173,6 +180,7 @@ func (e *PeerConfiger) InvokeNoShim(args [][]byte, sp *pb.SignedProposal) pb.Res
 
 		// 2. check local MSP Admins policy
 		// TODO: move to ACLProvider once it will support chainless ACLs
+		fmt.Println("==========mgmt.Admins================",mgmt.Admins)
 		if err = e.policyChecker.CheckPolicyNoChannel(mgmt.Admins, sp); err != nil {
 			return shim.Error(fmt.Sprintf("access denied for [%s][%s]: [%s]", fname, cid, err))
 		}
@@ -188,6 +196,7 @@ func (e *PeerConfiger) InvokeNoShim(args [][]byte, sp *pb.SignedProposal) pb.Res
 
 		return joinChain(cid, block, e.ccp, e.sccp)
 	case GetConfigBlock:
+		fmt.Println("=============GetConfigBlock======================")
 		// 2. check policy
 		if err = e.aclProvider.CheckACL(resources.Cscc_GetConfigBlock, string(args[1]), sp); err != nil {
 			return shim.Error(fmt.Sprintf("access denied for [%s][%s]: %s", fname, args[1], err))

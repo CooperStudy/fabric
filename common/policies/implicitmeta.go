@@ -51,7 +51,7 @@ func newImplicitMetaPolicy(data []byte, managers map[string]*ManagerImpl) (*impl
 		fmt.Println("===============cb.ImplicitMetaPolicy_ALL:threshold = ===========================",threshold)
 	case cb.ImplicitMetaPolicy_MAJORITY:
 		threshold = len(subPolicies)/2 + 1
-		fmt.Println("============len(subPolicies)==========",len(subPolicies))
+		fmt.Println("============len(subPolicies)==========",len(subPolicies))//1
 		fmt.Println("===============cb.ImplicitMetaPolicy_MAJORITY:threshold = ===========================",threshold)
 	}
 

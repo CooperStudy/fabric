@@ -213,7 +213,7 @@ func (b *blocksProviderImpl) UpdateOrderingEndpoints(endpoints []string) {
 		return
 	}
 	// We have got new set of endpoints, updating client
-	logger.Debug("Updating endpoint, to %s", endpoints)
+	logger.Infof("Updating endpoint, to %s", endpoints)
 	b.client.UpdateEndpoints(endpoints)
 	logger.Debug("Disconnecting so endpoints update will take effect")
 	// We need to disconnect the client to make it reconnect back
@@ -227,6 +227,8 @@ func (b *blocksProviderImpl) isEndpointsUpdated(endpoints []string) bool {
 	}
 	// Check that endpoints was actually updated
 	for _, endpoint := range endpoints {
+		fmt.Println("=====endpoint=========")
+		fmt.Println("=========b.client.GetEndpoints==========",b.client.GetEndpoints())
 		if !util.Contains(endpoint, b.client.GetEndpoints()) {
 			// Found new endpoint
 			return true

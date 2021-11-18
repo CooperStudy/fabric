@@ -240,6 +240,8 @@ func (g *gossipServiceImpl) learnAnchorPeers(channel string, orgOfAnchorPeers ap
 	}
 	g.logger.Info("Learning about the configured anchor peers of", string(orgOfAnchorPeers), "for channel", channel, ":", anchorPeers)
 	for _, ap := range anchorPeers {
+		fmt.Println("[===============ap================",ap)
+
 		if ap.Host == "" {
 			g.logger.Warning("Got empty hostname, skipping connecting to anchor peer", ap)
 			continue
@@ -249,7 +251,10 @@ func (g *gossipServiceImpl) learnAnchorPeers(channel string, orgOfAnchorPeers ap
 			continue
 		}
 		endpoint := fmt.Sprintf("%s:%d", ap.Host, ap.Port)
+		fmt.Println("=============endpoint===========",endpoint)
 		// Skip connecting to self
+		fmt.Println("=================g.selfNetworkMember().Endpoint ==============",g.selfNetworkMember().Endpoint )
+		fmt.Println("----------------------g.selfNetworkMember().InternalEndpoint-------------------------",g.selfNetworkMember().InternalEndpoint)
 		if g.selfNetworkMember().Endpoint == endpoint || g.selfNetworkMember().InternalEndpoint == endpoint {
 			g.logger.Info("Anchor peer with same endpoint, skipping connecting to myself")
 			continue
@@ -261,16 +266,18 @@ func (g *gossipServiceImpl) learnAnchorPeers(channel string, orgOfAnchorPeers ap
 			continue
 		}
 		identifier := func() (*discovery.PeerIdentification, error) {
+			fmt.Println("========identifier==========")
+			fmt.Println("========endpoint==========",endpoint)
 			remotePeerIdentity, err := g.comm.Handshake(&comm.RemotePeer{Endpoint: endpoint})
 			if err != nil {
 				err = errors.WithStack(err)
-				g.logger.Warningf("Deep probe of %s failed: %+v", endpoint, err)
+				g.logger.Infof("Deep probe of %s failed: %+v", endpoint, err)
 				return nil, err
 			}
 			isAnchorPeerInMyOrg := bytes.Equal(g.selfOrg, g.secAdvisor.OrgByPeerIdentity(remotePeerIdentity))
 			if bytes.Equal(orgOfAnchorPeers, g.selfOrg) && !isAnchorPeerInMyOrg {
 				err := errors.Errorf("Anchor peer %s isn't in our org, but is claimed to be", endpoint)
-				g.logger.Warningf("%+v", err)
+				g.logger.Infof("%+v", err)
 				return nil, err
 			}
 			pkiID := g.mcs.GetPKIidOfCert(remotePeerIdentity)

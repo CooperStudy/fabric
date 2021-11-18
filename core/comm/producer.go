@@ -98,7 +98,9 @@ func (cp *connProducer) UpdateEndpoints(endpoints []string) {
 	defer cp.Unlock()
 
 	newDisabled := make(map[string]time.Time)
+	fmt.Println("========endpoints==========",endpoints)
 	for i := range endpoints {
+		fmt.Println("==============i",i)
 		if startTime, ok := cp.disabledEndpoints[endpoints[i]]; ok {
 			newDisabled[endpoints[i]] = startTime
 		}

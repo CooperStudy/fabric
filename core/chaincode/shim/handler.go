@@ -773,6 +773,7 @@ func (handler *Handler) handleReady(msg *pb.ChaincodeMessage, errc chan error) e
 	fmt.Println("=====Handler========handleReady===========")
 	switch msg.Type {
 	case pb.ChaincodeMessage_RESPONSE:
+		fmt.Println("========pb.ChaincodeMessage_RESPONSE===============")
 		if err := handler.sendChannel(msg); err != nil {
 			chaincodeLogger.Errorf("[%s] error sending %s (state:%s): %s", shorttxid(msg.Txid), msg.Type, handler.state, err)
 			return err
@@ -781,23 +782,26 @@ func (handler *Handler) handleReady(msg *pb.ChaincodeMessage, errc chan error) e
 		return nil
 
 	case pb.ChaincodeMessage_ERROR:
+		fmt.Println("========pb.ChaincodeMessage_ERROR===============")
 		if err := handler.sendChannel(msg); err != nil {
 			chaincodeLogger.Errorf("[%s] error sending %s (state:%s): %s", shorttxid(msg.Txid), msg.Type, handler.state, err)
 		}
 
-		chaincodeLogger.Debugf("[%s] Error Received %s, communicated (state:%s)", shorttxid(msg.Txid), msg.Type, handler.state)
+		chaincodeLogger.Infof("[%s] Error Received %s, communicated (state:%s)", shorttxid(msg.Txid), msg.Type, handler.state)
 
 		//we don't return error on ERROR
 		return nil
 
 	case pb.ChaincodeMessage_INIT:
-		chaincodeLogger.Debugf("[%s] Received %s, initializing chaincode", shorttxid(msg.Txid), msg.Type)
+		fmt.Println("========pb.ChaincodeMessage_INIT=========")
+		chaincodeLogger.Infof("[%s] Received %s, initializing chaincode", shorttxid(msg.Txid), msg.Type)
 		// Call the chaincode's Run function to initialize
 		handler.handleInit(msg, errc)
 		return nil
 
 	case pb.ChaincodeMessage_TRANSACTION:
-		chaincodeLogger.Debugf("[%s] Received %s, invoking transaction on chaincode(state:%s)", shorttxid(msg.Txid), msg.Type, handler.state)
+		fmt.Println("=======pb.ChaincodeMessage_TRANSACTION=========")
+		chaincodeLogger.Infof("[%s] Received %s, invoking transaction on chaincode(state:%s)", shorttxid(msg.Txid), msg.Type, handler.state)
 		// Call the chaincode's Run function to invoke transaction
 		handler.handleTransaction(msg, errc)
 		return nil
@@ -841,10 +845,13 @@ func (handler *Handler) handleMessage(msg *pb.ChaincodeMessage, errc chan error)
 
 	switch handler.state {
 	case ready:
+		fmt.Println("========ready============")
 		err = handler.handleReady(msg, errc)
 	case established:
+		fmt.Println("========established============")
 		err = handler.handleEstablished(msg, errc)
 	case created:
+		fmt.Println("========created============")
 		err = handler.handleCreated(msg, errc)
 	default:
 		err = errors.Errorf("[%s] Chaincode handler cannot handle message (%s) with payload size (%d) while in state: %s", msg.Txid, msg.Type, len(msg.Payload), handler.state)

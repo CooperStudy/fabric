@@ -60,7 +60,7 @@ type blockIndex struct {
 func newBlockIndex(indexConfig *blkstorage.IndexConfig, db *leveldbhelper.DBHandle) (*blockIndex, error) {
 	fmt.Println("====newBlockIndex=====")
 	indexItems := indexConfig.AttrsToIndex
-	logger.Debugf("newBlockIndex() - indexItems:[%s]", indexItems)
+	logger.Infof("newBlockIndex() - indexItems:[%s]", indexItems)
 	indexItemsMap := make(map[blkstorage.IndexableAttr]bool)
 	for _, indexItem := range indexItems {
 		indexItemsMap[indexItem] = true

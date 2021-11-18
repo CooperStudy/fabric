@@ -49,13 +49,18 @@ func (p *Provider) GetDBHandle(dbName string) *DBHandle {
 	p.mux.Lock()
 	defer p.mux.Unlock()
 	fmt.Println("======dbName====",dbName)
+	//mychannel
+	//mychannel/0
 	dbHandle := p.dbHandles[dbName]
 	if dbHandle == nil {
-		fmt.Println("===========dbHandle not exist======",dbHandle)
+		fmt.Println("===========dbHandle not exist======",dbHandle)//
+
 		dbHandle = &DBHandle{dbName, p.db}
 		p.dbHandles[dbName] = dbHandle
 	}
 	fmt.Println("===========dbHandle exist======",dbHandle)
+	//&{mychannel 0xc0005bee40}
+	//&{mychannel/0 0xc000049480}
 	return dbHandle
 }
 

@@ -25,6 +25,7 @@ func NewTxValidationFlags(size int) TxValidationFlags {
 // and the supplied value
 func NewTxValidationFlagsSetValue(size int, value peer.TxValidationCode) TxValidationFlags {
 	fmt.Println("==NewTxValidationFlagsSetValue====")
+	fmt.Println("==size====",size,"=========value====",value)
 	return newTxValidationFlagsSetValue(size, value)
 }
 

@@ -524,7 +524,7 @@ func GetCurrConfigBlock(cid string) *common.Block {
 func updateTrustedRoots(cm channelconfig.Resources) {
 	fmt.Println("===updateTrustedRoots===")
 	// this is triggered on per channel basis so first update the roots for the channel
-	peerLogger.Debugf("Updating trusted root authorities for channel %s", cm.ConfigtxValidator().ChainID())
+	peerLogger.Infof("Updating trusted root authorities for channel %s", cm.ConfigtxValidator().ChainID())
 	var serverConfig comm.ServerConfig
 	var err error
 	// only run is TLS is enabled

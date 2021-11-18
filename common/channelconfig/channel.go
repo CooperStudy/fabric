@@ -161,7 +161,9 @@ func (cc *ChannelConfig) BlockDataHashingStructureWidth() uint32 {
 // OrdererAddresses returns the list of valid orderer addresses to connect to to invoke Broadcast/Deliver
 func (cc *ChannelConfig) OrdererAddresses() []string {
 	fmt.Println("=====ChannelConfig=====OrdererAddresses===")
-	return cc.protos.OrdererAddresses.Addresses
+	a:= cc.protos.OrdererAddresses.Addresses
+	fmt.Println("=============OrdererAddresses================",a)
+	return a
 }
 
 // ConsortiumName returns the name of the consortium this channel was created under

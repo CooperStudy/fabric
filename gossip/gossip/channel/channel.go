@@ -177,7 +177,6 @@ func (mf *membershipFilter) GetMembership() []discovery.NetworkMember {
 
 // NewGossipChannel creates a new GossipChannel
 func NewGossipChannel(pkiID common.PKIidType, org api.OrgIdentityType, mcs api.MessageCryptoService,
-
 	chainID common.ChainID, adapter Adapter, joinMsg api.JoinChannelMessage) GossipChannel {
 	fmt.Println("====NewGossipChannel==")
 	gc := &gossipChannel{
@@ -246,12 +245,14 @@ func NewGossipChannel(pkiID common.PKIidType, org api.OrgIdentityType, mcs api.M
 		}
 
 		org := gc.GetOrgOfPeer(si.PkiId)
+		fmt.Println("=========org========",org)
+		fmt.Println("=========!isOrgInChan(org)========",!isOrgInChan(org))
 		if !isOrgInChan(org) {
-			gc.logger.Warning("peer", peerIdentity, "'s organization(", string(org), ") isn't in the channel", string(chainID))
+			gc.logger.Infof("peer", peerIdentity, "'s organization(", string(org), ") isn't in the channel", string(chainID))
 			return false
 		}
 		if err := gc.mcs.VerifyByChannel(chainID, peerIdentity, msg.Signature, msg.Payload); err != nil {
-			gc.logger.Warningf("Peer %v isn't eligible for channel %s : %+v", peerIdentity, string(chainID), errors.WithStack(err))
+			gc.logger.Infof("Peer %v isn't eligible for channel %s : %+v", peerIdentity, string(chainID), errors.WithStack(err))
 			return false
 		}
 		return true
@@ -407,6 +408,7 @@ func (gc *gossipChannel) publishStateInfo() {
 
 func (gc *gossipChannel) createBlockPuller() pull.Mediator {
 	fmt.Println("====gossipChannel==createBlockPuller===")
+	fmt.Println("====== proto.PullMsgType_BLOCK_MSG======")
 	conf := pull.Config{
 		MsgType:           proto.PullMsgType_BLOCK_MSG,
 		Channel:           []byte(gc.chainID),
@@ -418,7 +420,7 @@ func (gc *gossipChannel) createBlockPuller() pull.Mediator {
 	seqNumFromMsg := func(msg *proto.SignedGossipMessage) string {
 		dataMsg := msg.GetDataMsg()
 		if dataMsg == nil || dataMsg.Payload == nil {
-			gc.logger.Warning("Non-data block or with no payload")
+			gc.logger.Infof("Non-data block or with no payload")
 			return ""
 		}
 		return fmt.Sprintf("%d", dataMsg.Payload.SeqNum)
@@ -440,10 +442,13 @@ func (gc *gossipChannel) createBlockPuller() pull.Mediator {
 		digestMsg.Digests = nil
 		for i := range digests {
 			seqNum, err := strconv.ParseUint(string(digests[i]), 10, 64)
+			fmt.Println("===========seqNum====================",seqNum)
 			if err != nil {
 				gc.logger.Warningf("Can't parse digest %s : %+v", digests[i], errors.WithStack(err))
 				continue
 			}
+			fmt.Println("=============seqNum=========================",seqNum)
+			fmt.Println("=============height=========================",height)
 			if seqNum >= height {
 				digestMsg.Digests = append(digestMsg.Digests, digests[i])
 			}
@@ -539,7 +544,7 @@ func (gc *gossipChannel) ConfigureChannel(joinMsg api.JoinChannelMessage) {
 	defer gc.Unlock()
 
 	if len(joinMsg.Members()) == 0 {
-		gc.logger.Warning("Received join channel message with empty set of members")
+		gc.logger.Infof("Received join channel message with empty set of members")
 		return
 	}
 
@@ -547,8 +552,10 @@ func (gc *gossipChannel) ConfigureChannel(joinMsg api.JoinChannelMessage) {
 		gc.joinMsg = joinMsg
 	}
 
+	fmt.Println("================ gc.joinMsg.SequenceNumber============================", gc.joinMsg.SequenceNumber())
+	fmt.Println("================ joinMsg.SequenceNumber()===========================", joinMsg.SequenceNumber())
 	if gc.joinMsg.SequenceNumber() > (joinMsg.SequenceNumber()) {
-		gc.logger.Warning("Already have a more updated JoinChannel message(", gc.joinMsg.SequenceNumber(), ") than", joinMsg.SequenceNumber())
+		gc.logger.Infof("Already have a more updated JoinChannel message(", gc.joinMsg.SequenceNumber(), ") than", joinMsg.SequenceNumber())
 		return
 	}
 
@@ -968,8 +975,10 @@ type stateInfoCache struct {
 func (cache *stateInfoCache) validate(orgs []api.OrgIdentityType) {
 	fmt.Println("====stateInfoCache==validate==")
 	for _, m := range cache.Get() {
+		fmt.Println("=====================m============",m)
 		msg := m.(*proto.SignedGossipMessage)
 		if !cache.verify(msg, orgs...) {
+			fmt.Println("=====!cache.verify(msg, orgs...)============")
 			cache.delete(msg)
 		}
 	}
@@ -1075,6 +1084,7 @@ func (mt *membershipTracker) createSetOfPeers(peersToMakeSet []discovery.Network
 	fmt.Println("====membershipTracker===createSetOfPeers==")
 	setPeers := make(map[string]struct{})
 	for _, prevPeer := range peersToMakeSet {
+		fmt.Println("===========prevPeer==========",prevPeer)
 		prevPeerID := string(prevPeer.PKIid)
 		setPeers[prevPeerID] = struct{}{}
 	}

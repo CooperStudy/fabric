@@ -125,6 +125,7 @@ func (jcm *joinChannelMessage) Members() []api.OrgIdentityType {
 // AnchorPeersOf returns the anchor peers of the given organization
 func (jcm *joinChannelMessage) AnchorPeersOf(org api.OrgIdentityType) []api.AnchorPeer {
 	fmt.Println("===joinChannelMessage==AnchorPeersOf==")
+	fmt.Println("========string(org)=====",string(org))
 	return jcm.members2AnchorPeers[string(org)]
 }
 
@@ -340,7 +341,7 @@ func (g *gossipServiceImpl) updateAnchors(config Config) {
 	}
 	jcm := &joinChannelMessage{seqNum: config.Sequence(), members2AnchorPeers: map[string][]api.AnchorPeer{}}
 	for _, appOrg := range config.Organizations() {
-		logger.Debug(appOrg.MSPID(), "anchor peers:", appOrg.AnchorPeers())
+		logger.Infof(appOrg.MSPID(), "anchor peers:", appOrg.AnchorPeers())
 		jcm.members2AnchorPeers[appOrg.MSPID()] = []api.AnchorPeer{}
 		for _, ap := range appOrg.AnchorPeers() {
 			anchorPeer := api.AnchorPeer{
@@ -352,14 +353,16 @@ func (g *gossipServiceImpl) updateAnchors(config Config) {
 	}
 
 	// Initialize new state provider for given committer
-	logger.Debug("Creating state provider for chainID", config.ChainID())
+	logger.Infof("Creating state provider for chainID", config.ChainID())
 	g.JoinChan(jcm, gossipCommon.ChainID(config.ChainID()))
 }
 
 func (g *gossipServiceImpl) updateEndpoints(chainID string, endpoints []string) {
 	fmt.Println("===gossipServiceImpl==updateEndpoints==")
 	if ds, ok := g.deliveryService[chainID]; ok {
-		logger.Debugf("Updating endpoints for chainID", chainID)
+		fmt.Println("=====================ds",ds)
+		fmt.Println("=====================chain id",chainID)
+		logger.Infof("Updating endpoints for chainID", chainID)
 		if err := ds.UpdateEndpoints(chainID, endpoints); err != nil {
 			// The only reason to fail is because of absence of block provider
 			// for given channel id, hence printing a warning will be enough

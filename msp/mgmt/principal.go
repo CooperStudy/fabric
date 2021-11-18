@@ -52,6 +52,7 @@ func (m *localMSPPrincipalGetter) Get(role string) (*msp.MSPPrincipal, error) {
 
 	switch role {
 	case Admins:
+		fmt.Println("=============Admins======================",Admins)
 		principalBytes, err := proto.Marshal(&msp.MSPRole{Role: msp.MSPRole_ADMIN, MspIdentifier: mspid})
 		if err != nil {
 			return nil, errors.Wrap(err, "marshalling failed")
@@ -61,6 +62,7 @@ func (m *localMSPPrincipalGetter) Get(role string) (*msp.MSPPrincipal, error) {
 			PrincipalClassification: msp.MSPPrincipal_ROLE,
 			Principal:               principalBytes}, nil
 	case Members:
+		fmt.Println("=============Members======================",Members)
 		principalBytes, err := proto.Marshal(&msp.MSPRole{Role: msp.MSPRole_MEMBER, MspIdentifier: mspid})
 		if err != nil {
 			return nil, errors.Wrap(err, "marshalling failed")

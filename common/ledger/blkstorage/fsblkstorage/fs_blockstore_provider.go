@@ -48,7 +48,7 @@ func (p *FsBlockstoreProvider) CreateBlockStore(ledgerid string) (blkstorage.Blo
 // This method should be invoked only once for a particular ledgerid
 func (p *FsBlockstoreProvider) OpenBlockStore(ledgerid string) (blkstorage.BlockStore, error) {
 	fmt.Println("=====FsBlockstoreProvider===OpenBlockStore======")
-	fmt.Println("=========ledgerid========",ledgerid)
+	fmt.Println("=========ledgerid========",ledgerid)//mychannel
 	fmt.Println("============== p.leveldbProvider.GetDBHandle(ledgerid)===========================")
 	indexStoreHandle := p.leveldbProvider.GetDBHandle(ledgerid)
 	return newFsBlockStore(ledgerid, p.conf, p.indexConfig, indexStoreHandle), nil

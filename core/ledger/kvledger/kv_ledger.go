@@ -360,6 +360,7 @@ func (l *kvLedger) CommitWithPvtData(pvtdataAndBlock *ledger.BlockAndPvtData) er
 		elapsedCommitBlockStorage/time.Millisecond,
 		elapsedCommitState/time.Millisecond,
 	)
+	// [mychannel] Committed block [0] with 1 transaction(s) in 14ms (state_validation=1ms block_commit=6ms state_commit=5ms)
 	l.updateBlockStats(blockNo,
 		elapsedBlockProcessing,
 		elapsedCommitBlockStorage,

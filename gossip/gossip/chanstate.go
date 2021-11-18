@@ -111,8 +111,14 @@ func (cs *channelState) joinChannel(joinMsg api.JoinChannelMessage, chainID comm
 	}
 	cs.Lock()
 	defer cs.Unlock()
-	if gc, exists := cs.channels[string(chainID)]; !exists {
+	 gc, exists := cs.channels[string(chainID)]
+	fmt.Println("========string(chainID)===============",string(chainID))
+	fmt.Println("=======exists========",exists)
+	if !exists {
+		fmt.Println("=========gc==========",gc)
+		fmt.Println("=========gc==========",gc)
 		pkiID := cs.g.comm.GetPKIid()
+		fmt.Println("========pkiID======",pkiID)
 		ga := &gossipAdapterImpl{gossipServiceImpl: cs.g, Discovery: cs.g.disc}
 		gc := channel.NewGossipChannel(pkiID, cs.g.selfOrg, cs.g.mcs, chainID, ga, joinMsg)
 		cs.channels[string(chainID)] = gc
@@ -128,7 +134,7 @@ type gossipAdapterImpl struct {
 
 func (ga *gossipAdapterImpl) GetConf() channel.Config {
 	fmt.Println("====gossipAdapterImpl===GetConf==")
-	return channel.Config{
+	a  := channel.Config{
 		ID:                          ga.conf.ID,
 		MaxBlockCountToStore:        ga.conf.MaxBlockCountToStore,
 		PublishStateInfoInterval:    ga.conf.PublishStateInfoInterval,
@@ -139,6 +145,8 @@ func (ga *gossipAdapterImpl) GetConf() channel.Config {
 		StateInfoCacheSweepInterval: ga.conf.PullInterval * 5,
 		TimeForMembershipTracker:    ga.conf.TimeForMembershipTracker,
 	}
+	fmt.Println("============channel.Config=====================",a)
+	return a
 }
 
 func (ga *gossipAdapterImpl) Sign(msg *proto.GossipMessage) (*proto.SignedGossipMessage, error) {

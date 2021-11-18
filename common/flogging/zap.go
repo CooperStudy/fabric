@@ -20,7 +20,7 @@ import (
 // the provided logger name. The logger that is returned will be named the same
 // as the logger.
 func NewZapLogger(core zapcore.Core, options ...zap.Option) *zap.Logger {
-	fmt.Println("===NewZapLogger=========")
+	//fmt.Println("===NewZapLogger=========")
 	return zap.New(
 		core,
 		append([]zap.Option{
@@ -32,7 +32,7 @@ func NewZapLogger(core zapcore.Core, options ...zap.Option) *zap.Logger {
 
 // NewGRPCLogger creates a grpc.Logger that delegates to a zap.Logger.
 func NewGRPCLogger(l *zap.Logger) *zapgrpc.Logger {
-	fmt.Println("===NewGRPCLogger=========")
+	//fmt.Println("===NewGRPCLogger=========")
 	l = l.WithOptions(
 		zap.AddCaller(),
 		zap.AddCallerSkip(3),
@@ -42,7 +42,7 @@ func NewGRPCLogger(l *zap.Logger) *zapgrpc.Logger {
 
 // NewFabricLogger creates a logger that delegates to the zap.SugaredLogger.
 func NewFabricLogger(l *zap.Logger, options ...zap.Option) *FabricLogger {
-	fmt.Println("===NewFabricLogger=========")
+	//fmt.Println("===NewFabricLogger=========")
 	return &FabricLogger{
 		s: l.WithOptions(append(options, zap.AddCallerSkip(1))...).Sugar(),
 	}

@@ -116,6 +116,7 @@ func (d *deliverServiceImpl) UpdateEndpoints(chainID string, endpoints []string)
 	// Use chainID to obtain blocks provider and pass endpoints
 	// for update
 	if bp, ok := d.blockProviders[chainID]; ok {
+		fmt.Println("=========bp",bp)
 		// We have found specified channel so we can safely update it
 		bp.UpdateOrderingEndpoints(endpoints)
 		return nil

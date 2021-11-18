@@ -799,9 +799,9 @@ func (s *GossipStateProviderImpl) commitBlock(block *common.Block, pvtData util.
 
 	// Update ledger height
 	s.mediator.UpdateLedgerHeight(block.Header.Number+1, common2.ChainID(s.chainID))
-	logger.Debugf("[%s] Committed block [%d] with %d transaction(s)",
+	logger.Infof("[%s] Committed block [%d] with %d transaction(s)",
 		s.chainID, block.Header.Number, len(block.Data.Data))
-
+// [mychannel] Committed block [0] with 1 transaction(s) in 14ms (state_validation=1ms block_commit=6ms state_commit=5ms)
 	return nil
 }
 

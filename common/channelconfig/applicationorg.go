@@ -65,7 +65,9 @@ func NewApplicationOrgConfig(id string, orgGroup *cb.ConfigGroup, mspConfig *MSP
 // AnchorPeers returns the list of anchor peers of this Organization
 func (aog *ApplicationOrgConfig) AnchorPeers() []*pb.AnchorPeer {
 	fmt.Println("=ApplicationOrgConfig==AnchorPeers========")
-	return aog.protos.AnchorPeers.AnchorPeers
+	a := aog.protos.AnchorPeers.AnchorPeers
+	fmt.Println("===================aog.protos.AnchorPeers.AnchorPeers====================",a)
+	return a
 }
 
 func (aoc *ApplicationOrgConfig) Validate() error {
