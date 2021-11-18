@@ -183,6 +183,10 @@ func deploySysCC(chainID string, ccprov ccprovider.ChaincodeProvider, syscc Self
 	}
 
 	sysccLogger.Infof("system chaincode %s/%s(%s) deployed", syscc.Name(), chainID, syscc.Path())
+	//system chaincode lscc/mychannel(github.com/hyperledger/fabric/core/scc/lscc) deployed
+	//system chaincode cscc/mychannel(github.com/hyperledger/fabric/core/scc/cscc) deployed
+	//system chaincode qscc/mychannel(github.com/hyperledger/fabric/core/scc/qscc) deployed
+	//system chaincode (+lifecycle,github.com/hyperledger/fabric/core/chaincode/lifecycle) disabled
 
 	return err
 }

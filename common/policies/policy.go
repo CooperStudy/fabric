@@ -279,15 +279,17 @@ type policyLogger struct {
 func (pl *policyLogger) Evaluate(signatureSet []*cb.SignedData) error {
 	fmt.Println("===policyLogger==Evaluate===")
 	if logger.IsEnabledFor(zapcore.DebugLevel) {
-		logger.Info("== Evaluating %T Policy %s ==", pl.policy, pl.policyName)
-		defer logger.Debugf("== Done Evaluating %T Policy %s", pl.policy, pl.policyName)
+		logger.Infof("== Evaluating %T Policy %s ==", pl.policy, pl.policyName)// /Channel/Application/Readers
+		defer logger.Infof("== Done Evaluating %T Policy %s", pl.policy, pl.policyName)
 	}
 
 	err := pl.policy.Evaluate(signatureSet)
 	if err != nil {
-		logger.Info("Signature set did not satisfy policy %s", pl.policyName)
+		logger.Infof("Signature set did not satisfy policy %s", pl.policyName)
 	} else {
-		logger.Info("Signature set satisfies policy %s", pl.policyName)
+		//Signature set satisfies policy %s /Channel/Application/Org1MSP/Readers
+		//Signature set satisfies policy %s /Channel/Application/Readers
+		logger.Infof("Signature set satisfies policy %s", pl.policyName)
 	}
 	return err
 }

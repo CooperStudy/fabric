@@ -74,6 +74,7 @@ func (imp *implicitMetaPolicy) Evaluate(signatureSet []*cb.SignedData) error {
 	logger.Info("This is an implicit meta policy, it will trigger other policy evaluations, whose failures may be benign")
 	remaining := imp.threshold
 
+	fmt.Println("=============remaining==========",remaining)
 	defer func() {
 		if remaining != 0 {
 			// This log message may be large and expensive to construct, so worth checking the log level
@@ -101,8 +102,9 @@ func (imp *implicitMetaPolicy) Evaluate(signatureSet []*cb.SignedData) error {
 		if policy.Evaluate(signatureSet) == nil {
 			fmt.Println("==========policy.Evaluate(signatureSet) == nil=======")
 			remaining--
-			fmt.Println("===========remaining===========",remaining)
+			fmt.Println("===========remaining===========",remaining)//0
 			if remaining == 0 {
+				//============ remaining == 0 （1）权限检测ok=====
 				fmt.Println("============ remaining == 0 （1）权限检测ok==============")
 				return nil
 			}

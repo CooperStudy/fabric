@@ -1054,9 +1054,9 @@ func endpoints(members discovery.Members) [][]string {
 
 //checkIfPeersChanged checks which peers are offline and which are online for channel
 func (mt *membershipTracker) checkIfPeersChanged(prevPeers discovery.Members, currPeers discovery.Members,
-
-	prevSetPeers map[string]struct{}, currSetPeers map[string]struct{}) {
 	fmt.Println("====membershipTracker===checkIfPeersChanged==")
+	prevSetPeers map[string]struct{}, currSetPeers map[string]struct{}) {
+
 	var currView [][]string
 
 	wereInPrev := endpoints(prevPeers.Filter(func(member discovery.NetworkMember) bool {
@@ -1072,6 +1072,7 @@ func (mt *membershipTracker) checkIfPeersChanged(prevPeers discovery.Members, cu
 	if !reflect.DeepEqual(wereInPrev, newInCurr) {
 		if len(wereInPrev) == 0 {
 			mt.report("Membership view has changed. peers went online: ", newInCurr, ", current view: ", currView)
+			//Membership view has changed. peers went online:  [[peer1.org1.example.com:7051]] , current view:  [[peer1.org1.example.com:7051]]
 		} else if len(newInCurr) == 0 {
 			mt.report("Membership view has changed. peers went offline: ", wereInPrev, ", current view: ", currView)
 		} else {

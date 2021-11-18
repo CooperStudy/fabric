@@ -155,9 +155,8 @@ var logger = util.GetLogger(util.StateLogger, "")
 // NewGossipStateProvider creates state provider with coordinator instance
 // to orchestrate arrival of private rwsets and blocks before committing them into the ledger.
 func NewGossipStateProvider(chainID string, services *ServicesMediator, ledger ledgerResources) GossipStateProvider {
-
+    fmt.Println("===========NewGossipStateProvider=====================",NewGossipStateProvider)
 	gossipChan, _ := services.Accept(func(message interface{}) bool {
-
 		fmt.Println("===NewGossipStateProvider==")
 		// Get only data messages
 		return message.(*proto.GossipMessage).IsDataMsg() &&
@@ -165,6 +164,7 @@ func NewGossipStateProvider(chainID string, services *ServicesMediator, ledger l
 	}, false)
 
 	remoteStateMsgFilter := func(message interface{}) bool {
+		fmt.Println("========remoteStateMsgFilter=========",remoteStateMsgFilter)
 		receivedMsg := message.(proto.ReceivedMessage)
 		msg := receivedMsg.GetGossipMessage()
 		if !(msg.IsRemoteStateMessage() || msg.GetPrivateData() != nil) {
@@ -232,6 +232,7 @@ func NewGossipStateProvider(chainID string, services *ServicesMediator, ledger l
 	logger.Infof("Updating metadata information, "+
 		"current ledger sequence is at = %d, next expected block is = %d", height-1, s.payloads.Next())
 	logger.Debug("Updating gossip ledger height to", height)
+	//Updating metadata information, current ledger sequence is at = 0, next expected block is = 1
 	services.UpdateLedgerHeight(height, common2.ChainID(s.chainID))
 
 	s.done.Add(4)

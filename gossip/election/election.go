@@ -397,7 +397,7 @@ func (le *leaderElectionSvcImpl) IsLeader() bool {
 
 func (le *leaderElectionSvcImpl) beLeader() {
 	fmt.Println("====leaderElectionSvcImpl==beLeader==")
-	le.logger.Info(le.id, ": Becoming a leader")
+	le.logger.Info(le.id, ": Becoming a leader")//6f24a285101adea8c6350decbca2c731f07978a32a5ca876c3f2cca7b5b3e090
 	atomic.StoreInt32(&le.isLeader, int32(1))
 	le.callback(true)
 }

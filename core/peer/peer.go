@@ -574,6 +574,7 @@ func buildTrustedRootsForChain(cm channelconfig.Resources) {
 	ordOrgMSPs := make(map[string]struct{})
 
 	if ac, ok := cm.ApplicationConfig(); ok {
+		fmt.Println("==========ac",ac)
 		//loop through app orgs and build map of MSPIDs
 		for _, appOrg := range ac.Organizations() {
 			appOrgMSPs[appOrg.MSPID()] = struct{}{}
@@ -581,6 +582,7 @@ func buildTrustedRootsForChain(cm channelconfig.Resources) {
 	}
 
 	if ac, ok := cm.OrdererConfig(); ok {
+		fmt.Println("======ac",ac)
 		//loop through orderer orgs and build map of MSPIDs
 		for _, ordOrg := range ac.Organizations() {
 			ordOrgMSPs[ordOrg.MSPID()] = struct{}{}
@@ -600,24 +602,24 @@ func buildTrustedRootsForChain(cm channelconfig.Resources) {
 				for _, root := range v.GetTLSRootCerts() {
 					// check to see of this is an app org MSP
 					if _, ok := appOrgMSPs[k]; ok {
-						peerLogger.Debugf("adding app root CAs for MSP [%s]", k)
+						peerLogger.Infof("adding app root CAs for MSP [%s]", k)
 						appRootCAs = append(appRootCAs, root)
 					}
 					// check to see of this is an orderer org MSP
 					if _, ok := ordOrgMSPs[k]; ok {
-						peerLogger.Debugf("adding orderer root CAs for MSP [%s]", k)
+						peerLogger.Infof("adding orderer root CAs for MSP [%s]", k)
 						ordererRootCAs = append(ordererRootCAs, root)
 					}
 				}
 				for _, intermediate := range v.GetTLSIntermediateCerts() {
 					// check to see of this is an app org MSP
 					if _, ok := appOrgMSPs[k]; ok {
-						peerLogger.Debugf("adding app root CAs for MSP [%s]", k)
+						peerLogger.Infof("adding app root CAs for MSP [%s]", k)
 						appRootCAs = append(appRootCAs, intermediate)
 					}
 					// check to see of this is an orderer org MSP
 					if _, ok := ordOrgMSPs[k]; ok {
-						peerLogger.Debugf("adding orderer root CAs for MSP [%s]", k)
+						peerLogger.Infof("adding orderer root CAs for MSP [%s]", k)
 						ordererRootCAs = append(ordererRootCAs, intermediate)
 					}
 				}

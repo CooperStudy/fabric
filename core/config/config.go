@@ -42,10 +42,13 @@ func AddConfigPath(v *viper.Viper, p string) {
 func TranslatePath(base, p string) string {
 	fmt.Println("==TranslatePath=====")
 	if filepath.IsAbs(p) {
+		fmt.Println("===========p",p)
 		return p
 	}
 
-	return filepath.Join(base, p)
+	a:= filepath.Join(base, p)
+	fmt.Println("==============a===",a)
+	fmt.Println("==================a",a)
 }
 
 //----------------------------------------------------------------------------------

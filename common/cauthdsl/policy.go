@@ -110,8 +110,11 @@ func (p *policy) Evaluate(signatureSet []*cb.SignedData) error {
 	}
 	idAndS := make([]IdentityAndSignature, len(signatureSet))
 	for i, sd := range signatureSet {
-		fmt.Println("===========i",i)
+		fmt.Println("===========i",i)//0
 		fmt.Println("===========sd",sd)
+		/*
+		&{[24 5 122 94 18 20 8 245 155 142 143 243 167 144 220 22 16 159 195 178 150 243 167 144 220 22 26 32 80 15 118 229 112 194 46 145 52 58 201 194 141 181 93 105 72 250 164 77 167 16 219 111 167 151 22 65 212 234 40 91 34 32 4 59 188 47 229 180 124 126 24 37 33 69 136 3 20 79 26 33 87 166 41 252 227 244 219 36 52 236 147 79 42 38 42 2 8 1] [10 7 79 114 103 49 77 83 80 18 166 6 45 45 45 45 45 66 69 71 73 78 32 67 69 82 84 73 70 73 67 65 8]
+		 */
 		idAndS[i] = &deserializeAndVerify{
 			signedData:   sd,
 			deserializer: p.deserializer,

@@ -188,7 +188,8 @@ func (bc *broadcastClient) connect() error {
 	if err == nil {
 		return nil
 	}
-	logger.Warning("Failed running post-connection procedures:", err)
+	logger.Infof("Failed running post-connection procedures:", err)
+	//Failed running post-connection procedures: closing
 	// If we reached here, lets make sure connection is closed
 	// and nullified before we return
 	bc.Disconnect(false)
@@ -197,8 +198,8 @@ func (bc *broadcastClient) connect() error {
 
 func (bc *broadcastClient) afterConnect(conn *grpc.ClientConn, abc orderer.AtomicBroadcast_DeliverClient, cf context.CancelFunc, endpoint string) error {
 	fmt.Println("==broadcastClient==afterConnect===")
-	logger.Debug("Entering")
-	defer logger.Debug("Exiting")
+	logger.Infof("Entering")
+	defer logger.Infof("Exiting")
 	bc.mutex.Lock()
 	bc.endpoint = endpoint
 	bc.conn = &connection{ClientConn: conn, cancel: cf}
