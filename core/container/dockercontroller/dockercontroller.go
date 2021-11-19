@@ -129,21 +129,32 @@ func getDockerHostConfig() *docker.HostConfig {
 		return hostConfig
 	}
 
-	dockerKey := func(key string) string { return "vm.docker.hostConfig." + key }
-	getInt64 := func(key string) int64 { return int64(viper.GetInt(dockerKey(key))) }
+	dockerKey := func(key string) string {
+		a := "vm.docker.hostConfig." + key
+		fmt.Println("====dockerKey=========",a)
+		return a
+	}
+
+	getInt64 := func(key string) int64 {
+		a:= int64(viper.GetInt(dockerKey(key)))
+		fmt.Println("===========a",a)
+		return a
+	}
 
 	var logConfig docker.LogConfig
 	err := viper.UnmarshalKey(dockerKey("LogConfig"), &logConfig)
+	fmt.Println("====logConfig===",logConfig)
 	if err != nil {
 		dockerLogger.Warningf("load docker HostConfig.LogConfig failed, error: %s", err.Error())
 	}
 	networkMode := viper.GetString(dockerKey("NetworkMode"))
+	fmt.Println("====networkMode===",networkMode)
 	if networkMode == "" {
 		networkMode = "host"
 	}
 	dockerLogger.Debugf("docker container hostconfig NetworkMode: %s", networkMode)
 
-	return &docker.HostConfig{
+	a:= &docker.HostConfig{
 		CapAdd:  viper.GetStringSlice(dockerKey("CapAdd")),
 		CapDrop: viper.GetStringSlice(dockerKey("CapDrop")),
 
@@ -171,6 +182,8 @@ func getDockerHostConfig() *docker.HostConfig {
 		CPUPeriod:        getInt64("CpuPeriod"),
 		BlkioWeight:      getInt64("BlkioWeight"),
 	}
+	fmt.Println("===========a==============",a)
+	return a
 }
 
 func (vm *DockerVM) createContainer(client dockerClient, imageID, containerID string, args, env []string, attachStdout bool) error {
@@ -232,6 +245,8 @@ func (vm *DockerVM) deployImage(client dockerClient, ccid ccintf.CCID, reader io
 func (vm *DockerVM) Start(ccid ccintf.CCID, args, env []string, filesToUpload map[string][]byte, builder container.Builder) error {
 	fmt.Println("==DockerVM=Start==")
 	imageName, err := vm.GetVMNameForDocker(ccid)
+	fmt.Println("========ccid",ccid)
+	fmt.Println("=====imageName=====",imageName)
 	if err != nil {
 		return err
 	}
@@ -448,8 +463,11 @@ func (vm *DockerVM) GetVMNameForDocker(ccid ccintf.CCID) (string, error) {
 	fmt.Println("==DockerVM==GetVMNameForDocker==")
 	name := vm.preFormatImageName(ccid)
 	hash := hex.EncodeToString(util.ComputeSHA256([]byte(name)))
+	fmt.Println("=====hash=====",hash)
 	saniName := vmRegExp.ReplaceAllString(name, "-")
+	fmt.Println("====saniName======",saniName)
 	imageName := strings.ToLower(fmt.Sprintf("%s-%s", saniName, hash))
+	fmt.Println("=====imageName=======",imageName)
 
 	// Check that name complies with Docker's repository naming rules
 	if !imageRegExp.MatchString(imageName) {

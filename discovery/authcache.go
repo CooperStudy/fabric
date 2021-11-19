@@ -68,15 +68,18 @@ func newAuthCache(s acSupport, conf authCacheConfig) *authCache {
 // service from the discovery service for a given channel
 func (ac *authCache) EligibleForService(channel string, data common.SignedData) error {
 	fmt.Println("=======authCache==EligibleForService==")
-	fmt.Println("=======!ac.conf.enabled================",!ac.conf.enabled)//true
+	//fmt.Println("=======!ac.conf.enabled================",!ac.conf.enabled)//true
 	if !ac.conf.enabled {
 		return ac.acSupport.EligibleForService(channel, data)
 	}
 	// Check whether we already have a cache for this channel
 	ac.RLock()
-	fmt.Println("==========channel=========",channel)
+	//fmt.Println("==========channel=========",channel)//mychannel
 	cache := ac.credentialCache[channel]
-	fmt.Println("========cache========",cache)
+	//fmt.Println("========cache========",cache)
+	/*
+	&{{{0 0} 0 0 0 0} mychannel 0xc000335180 1 map[cd210851145934f0311641bb6f8f6286ea2a7069207a43a0642422ce96e40a19:<nil> bdaae382031c205c9de37d8dc86c83fa75bb9f8d4604072069d7cc1266601cc1:<nil> 4b5454557963d4f6e3fd6e0366946ab9d47c5c1c502d7b6a0cbe42a04656bb8e:<nil> 46a2f9184fa776a505f28b5c46305d4c0dd7d61274be9acdffc2be917c4d0d31:<nil> f8e9104492ab640b6218f45b215e8176cdc251d47292820257ab730ac4e053c8:<nil> af3e5f0e6e39fdcd9aa892daf52ea7f14a0b30942d1d8e31d22bd7c8b5365708:<nil> 7e555d6c26b399b4a00b3d8837c50d731deb3858a3415fba131e11c0e422439b:<nil> 63bf3671f8c4e0f2ffe0e07d88d91c83c170691ab9501a4fa32483cc5f79e677:<nil> 689b6e2b3b9dc6f8d0820994df2e5f9cf9677385bd554f7f1018ee8d1a2a390e:<nil>]}
+	 */
 	ac.RUnlock()
 	if cache == nil {
 		// Cache for given channel wasn't found, so create a new one

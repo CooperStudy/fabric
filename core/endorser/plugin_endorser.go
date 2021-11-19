@@ -49,6 +49,7 @@ type MapBasedPluginMapper map[string]endorsement.PluginFactory
 // PluginFactoryByName returns a plugin factory for the given plugin name, or nil if not found
 func (m MapBasedPluginMapper) PluginFactoryByName(name PluginName) endorsement.PluginFactory {
 	fmt.Println("==MapBasedPluginMapper==PluginFactoryByName==")
+	fmt.Println("=======PluginName=====",string(name))
 	return m[string(name)]
 }
 
@@ -132,6 +133,7 @@ func (pbc *pluginsByChannel) initPlugin(plugin endorsement.Plugin, channel strin
 	fmt.Println("==pluginsByChannel==initPlugin==")
 	var dependencies []endorsement.Dependency
 	var err error
+	fmt.Println("==========channel==========",channel)
 	// If this is a channel endorsement, add the channel state as a dependency
 	if channel != "" {
 		query, err := pbc.pe.NewQueryCreator(channel)
@@ -166,13 +168,14 @@ type PluginEndorser struct {
 // EndorseWithPlugin endorses the response with a plugin
 func (pe *PluginEndorser) EndorseWithPlugin(ctx Context) (*pb.ProposalResponse, error) {
 	fmt.Println("==PluginEndorser==EndorseWithPlugin==")
-	endorserLogger.Debug("Entering endorsement for", ctx)
+	endorserLogger.Info("Entering endorsement for", ctx)
 
 	if ctx.Response == nil {
 		return nil, errors.New("response is nil")
 	}
 
 	if ctx.Response.Status >= shim.ERRORTHRESHOLD {
+		fmt.Println("=========ctx.Response.Status >= shim.ERRORTHRESHOLD========================")
 		return &pb.ProposalResponse{Response: ctx.Response}, nil
 	}
 

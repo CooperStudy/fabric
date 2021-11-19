@@ -295,6 +295,7 @@ func (handler *Handler) handleTransaction(msg *pb.ChaincodeMessage, errc chan er
 
 		// Send COMPLETED message to chaincode support and change state
 		chaincodeLogger.Infof("[%s] Transaction completed. Sending %s", shorttxid(msg.Txid), pb.ChaincodeMessage_COMPLETED)
+		//[2b2c74e6] Transaction completed. Sending COMPLETED
 		nextStateMsg = &pb.ChaincodeMessage{Type: pb.ChaincodeMessage_COMPLETED, Payload: resBytes, Txid: msg.Txid, ChaincodeEvent: stub.chaincodeEvent, ChannelId: stub.ChannelId}
 	}()
 }
@@ -803,11 +804,13 @@ func (handler *Handler) handleReady(msg *pb.ChaincodeMessage, errc chan error) e
 		return nil
 
 	case pb.ChaincodeMessage_TRANSACTION:
+		fmt.Println("=======pb.ChaincodeMessage_TRANSACTION=========")
 		/*
 		1.安装链码
 		 */
 		fmt.Println("=======pb.ChaincodeMessage_TRANSACTION=========")
 		chaincodeLogger.Infof("[%s] Received %s, invoking transaction on chaincode(state:%s)", shorttxid(msg.Txid), msg.Type, handler.state)
+		//[87407c4b] Received TRANSACTION, invoking transaction on chaincode(state:ready)
 		// Call the chaincode's Run function to invoke transaction
 		handler.handleTransaction(msg, errc)
 		return nil
@@ -846,7 +849,7 @@ func (handler *Handler) handleMessage(msg *pb.ChaincodeMessage, errc chan error)
 		return nil
 	}
 	chaincodeLogger.Infof("[%s] Handling ChaincodeMessage of type: %s(state:%s)", shorttxid(msg.Txid), msg.Type, handler.state)
-
+     // Handling ChaincodeMessage of type: TRANSACTION(state:ready)
 	var err error
 
 	switch handler.state {

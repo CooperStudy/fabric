@@ -82,9 +82,9 @@ func (vmc *VMController) lockContainer(id string) {
 		vmLogger.Debugf("refcount %d (%s)", refLck.refCount, id)
 	}
 	vmc.Unlock()
-	vmLogger.Debugf("waiting for container(%s) lock", id)
+	vmLogger.Infof("waiting for container(%s) lock", id)
 	refLck.lock.Lock()
-	vmLogger.Debugf("got container (%s) lock", id)
+	vmLogger.Infof("got container (%s) lock", id)
 }
 
 func (vmc *VMController) unlockContainer(id string) {
@@ -183,6 +183,7 @@ func (si StopContainerReq) GetCCID() ccintf.CCID {
 
 func (vmc *VMController) Process(vmtype string, req VMCReq) error {
 	fmt.Println("==VMController==Process==")
+	fmt.Println("==vmtype==",vmtype)
 	v := vmc.newVM(vmtype)
 	ccid := req.GetCCID()
 	id := ccid.GetName()

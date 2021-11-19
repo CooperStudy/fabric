@@ -175,15 +175,18 @@ type Handler struct {
 func (h *Handler) handleMessage(msg *pb.ChaincodeMessage) error {
 	fmt.Println("====Handler==handleMessage==")
 	chaincodeLogger.Infof("[%s] Fabric side handling ChaincodeMessage of type: %s in state %s", shorttxid(msg.Txid), msg.Type, h.state)
-
+//[] Fabric side handling ChaincodeMessage of type: REGISTER in state created
 	if msg.Type == pb.ChaincodeMessage_KEEPALIVE {
+		fmt.Println("====================msg.Type == pb.ChaincodeMessage_KEEPALIVE=================")
 		return nil
 	}
 
 	switch h.state {
 	case Created:
+		fmt.Println("===================Created=================")
 		return h.handleMessageCreatedState(msg)
 	case Ready:
+		fmt.Println("===================Ready=================")
 		return h.handleMessageReadyState(msg)
 	default:
 		return errors.Errorf("handle message: invalid state %s for transaction %s", h.state, msg.Txid)
@@ -205,10 +208,12 @@ func (h *Handler) handleMessageReadyState(msg *pb.ChaincodeMessage) error {
 	fmt.Println("====Handler==handleMessageReadyState==")
 	switch msg.Type {
 	case pb.ChaincodeMessage_COMPLETED, pb.ChaincodeMessage_ERROR:
+		//安装链码经过这里
 		fmt.Println("====pb.ChaincodeMessage_COMPLETED, pb.ChaincodeMessage_ERROR==")
 		h.Notify(msg)
 
 	case pb.ChaincodeMessage_PUT_STATE:
+
 		fmt.Println("====pb.ChaincodeMessage_PUT_STATE==")
 		go h.HandleTransaction(msg, h.HandlePutState)
 	case pb.ChaincodeMessage_DEL_STATE:
@@ -219,6 +224,7 @@ func (h *Handler) handleMessageReadyState(msg *pb.ChaincodeMessage) error {
 		go h.HandleTransaction(msg, h.HandleInvokeChaincode)
 
 	case pb.ChaincodeMessage_GET_STATE:
+		//初始化链码的时候
 		fmt.Println("====pb.ChaincodeMessage_GET_STATE==")
 		go h.HandleTransaction(msg, h.HandleGetState)
 	case pb.ChaincodeMessage_GET_STATE_BY_RANGE:

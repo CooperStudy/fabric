@@ -65,7 +65,9 @@ func (f *FilesystemIO) ReadFile(filename string) ([]byte, error) {
 // ReadDir reads a directory from the filesystem
 func (f *FilesystemIO) ReadDir(dirname string) ([]os.FileInfo, error) {
 	fmt.Println("======FilesystemIO======ReadDir=============")
-	return ioutil.ReadDir(dirname)
+	a, err := ioutil.ReadDir(dirname)
+	fmt.Println("=============dirname",dirname)
+	return a,err
 }
 
 // Store holds the information needed for persisting a chaincode install package

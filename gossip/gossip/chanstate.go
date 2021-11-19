@@ -103,9 +103,12 @@ func (cs *channelState) getGossipChannelByChainID(chainID common.ChainID) channe
 	cs.RLock()
 	defer cs.RUnlock()
 	a := string(chainID)
-	fmt.Println("==========string(chainID)=====",string(chainID))//mychannel
+	//fmt.Println("==========string(chainID)=====",string(chainID))//mychannel
 	b := cs.channels[a]
-	fmt.Println("=======b",b)
+	//fmt.Println("=======b",b)
+	/*
+	&{0xc002446320 {{0 0} 0 0 0 0} 0 0xc0002869c0 [111 36 162 133 16 26 222 168 198 53 13 236 188 162 199 49 240 121 120 163 42 92 168 118 195 242 204 167 181 179 224 144] [79 114 103 49 77 83 80] 0xc00262e600 0xc00024b520 [[79 114 103 49 77 83 80]] 0xc0005a0d00 0xc002480400 0xc0021f8ff0 0xc002480580 [109 121 99 104 97 110 110 101 108] 0xc0002b0bd0 0xc002260860 0xc00246ee60 0xc00246ef00 0xc0024463e0 1 1637298370970474877 0 0xc00032f5e0}
+	*/
 	return b
 }
 

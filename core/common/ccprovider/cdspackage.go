@@ -300,6 +300,7 @@ func (ccpack *CDSPackage) PutChaincodeToFS() error {
 	//return error if chaincode exists
 	path := fmt.Sprintf("%s/%s.%s", chaincodeInstallPath, ccname, ccversion)
 	fmt.Println("===========path=============",path)
+	// /var/hyperledger/production/chaincodes/acb.0
 	if _, err := os.Stat(path); err == nil {
 		return fmt.Errorf("chaincode %s exists", path)
 	}

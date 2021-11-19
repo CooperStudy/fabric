@@ -73,6 +73,7 @@ func Envelope(policy *cb.SignaturePolicy, identities [][]byte) *cb.SignaturePoli
 // SignedBy creates a SignaturePolicy requiring a given signer's signature
 func SignedBy(index int32) *cb.SignaturePolicy {
 	fmt.Println("==SignedBy===")
+	fmt.Println("===index",index)
 	return &cb.SignaturePolicy{
 		Type: &cb.SignaturePolicy_SignedBy{
 			SignedBy: index,
@@ -193,6 +194,9 @@ func SignedByAnyPeer(ids []string) *cb.SignaturePolicyEnvelope {
 // listed in the supplied string array
 func SignedByAnyAdmin(ids []string) *cb.SignaturePolicyEnvelope {
 	fmt.Println("==SignedByAnyAdmin===")
+	/*
+	初始化链码的时候，需要Admin权限
+	 */
 	return signedByAnyOfGivenRole(msp.MSPRole_ADMIN, ids)
 }
 
@@ -213,9 +217,10 @@ func Or(lhs, rhs *cb.SignaturePolicy) *cb.SignaturePolicy {
 // NOutOf creates a policy which requires N out of the slice of policies to evaluate to true
 func NOutOf(n int32, policies []*cb.SignaturePolicy) *cb.SignaturePolicy {
 	fmt.Println("==NOutOf===")
-	fmt.Println("==============n=====",n)// 2
+	fmt.Println("==============n=====",n)
+	//1
 	fmt.Println("=============policies []*cb.SignaturePolicy=====",policies) // [signed_by:0  signed_by:1 ]  [signed_by:2  signed_by:3 ]
-
+	//[signed_by:0 ]
 	return &cb.SignaturePolicy{
 		Type: &cb.SignaturePolicy_NOutOf_{
 			NOutOf: &cb.SignaturePolicy_NOutOf{

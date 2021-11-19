@@ -21,6 +21,7 @@ func newQueryExecutor(txmgr *LockBasedTxMgr, txid string) *lockBasedQueryExecuto
 	fmt.Println("==newQueryExecutor==")
 	helper := newQueryHelper(txmgr, nil)
 	logger.Infof("constructing new query executor txid = [%s]", txid)
+	// constructing new query executor txid = [24fe3b28-cf46-41dc-8c03-b0e72c04fb1a]
 	return &lockBasedQueryExecutor{helper, txid}
 }
 

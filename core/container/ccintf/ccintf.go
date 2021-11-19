@@ -43,7 +43,9 @@ type CCID struct {
 func (ccid *CCID) GetName() string {
 	fmt.Println("==CCID====GetName=")
 	if ccid.Version != "" {
-		return fmt.Sprintf("%s-%s", ccid.Name, ccid.Version)
+		a:= fmt.Sprintf("%s-%s", ccid.Name, ccid.Version)
+		fmt.Println("============a",a)
+		return a
 	}
 	return ccid.Name
 }

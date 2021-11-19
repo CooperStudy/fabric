@@ -409,7 +409,7 @@ func (e *Endorser) preProcess(signedProp *pb.SignedProposal) (*validateResult, e
 func (e *Endorser) ProcessProposal(ctx context.Context, signedProp *pb.SignedProposal) (*pb.ProposalResponse, error) {
 	fmt.Println("==Endorser==ProcessProposal==")
 	addr := util.ExtractRemoteAddress(ctx)
-	endorserLogger.Infof("Entering: request from", addr)
+	endorserLogger.Info("Entering: request from", addr)//172.19.0.1:57646
 	defer endorserLogger.Info("Exit: request from", addr)
 
 	// 0 -- check and validate

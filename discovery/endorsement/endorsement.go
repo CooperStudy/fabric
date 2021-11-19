@@ -118,9 +118,12 @@ func (ea *endorsementAnalyzer) PeersForEndorsement(chainID common.ChainID, inter
 
 func (ea *endorsementAnalyzer) PeersAuthorizedByCriteria(chainID common.ChainID, interest *discovery.ChaincodeInterest) (Members, error) {
 	fmt.Println("==endorsementAnalyzer===PeersAuthorizedByCriteria===")
-	fmt.Println("=====chainID====", chainID)
+	//fmt.Println("=====chainID====", chainID)
 	peersOfChannel := ea.PeersOfChannel(chainID)
 	fmt.Println("======peersOfChannel====", peersOfChannel)
+	/*
+	 [Endpoint: peer1.org1.example.com:7051, InternalEndpoint: peer1.org1.example.com:7051, PKI-ID: 500f76e570c22e91343ac9c28db55d6948faa44da710db6fa7971641d4ea285b, Metadata:  Endpoint: , InternalEndpoint: , PKI-ID: 6f24a285101adea8c6350decbca2c731f07978a32a5ca876c3f2cca7b5b3e090, Metadata: ]
+	*/
 	if interest == nil || len(interest.Chaincodes) == 0 {
 		return peersOfChannel, nil
 	}

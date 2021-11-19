@@ -791,7 +791,10 @@ func (g *gossipServiceImpl) SelfMembershipInfo() discovery.NetworkMember {
 func (g *gossipServiceImpl) SelfChannelInfo(chain common.ChainID) *proto.SignedGossipMessage {
 	fmt.Println("====gossipServiceImpl===SelfChannelInfo=======")
 	ch := g.chanState.getGossipChannelByChainID(chain)
-	fmt.Println("===========ch",ch)
+	//fmt.Println("===========ch",ch)
+	/*
+	GossipMessage: tag:CHAN_OR_ORG state_info:<timestamp:<inc_num:1637298370970474877 seq_num:1637298370988757222 > pki_id:"o$\242\205\020\032\336\250\3065\r\354\274\242\3071\360yx\243*\\\250v\303\362\314\247\265\263\340\220" channel_MAC:"\037\255\332h\003\255)\252\027>\367 \260\354\030\350f\023\235\252\3379\274\206\247\355\340\230\202>\226\270" properties:<ledger_height:1 > > , Envelope: 98 bytes, Signature: 71 bytes
+	*/
 	if ch == nil {
 		return nil
 	}

@@ -127,6 +127,7 @@ func (r *HandlerRegistry) Handler(cname string) *Handler {
 	fmt.Println("=====HandlerRegistry====Handler=============")
 	r.mutex.Lock()
 	fmt.Println("========cname=======",cname)
+	//========cname======= acb:0
 	h := r.handlers[cname]
 	r.mutex.Unlock()
 	return h
@@ -156,6 +157,7 @@ func (r *HandlerRegistry) Register(h *Handler) error {
 	r.handlers[key] = h
 
 	chaincodeLogger.Infof("registered handler complete for chaincode %s", key)
+	//registered handler complete for chaincode acb:0
 	return nil
 }
 

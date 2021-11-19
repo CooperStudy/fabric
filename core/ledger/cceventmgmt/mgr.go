@@ -113,10 +113,16 @@ func (m *Mgr) ChaincodeDeployDone(chainid string) {
 func (m *Mgr) HandleChaincodeInstall(chaincodeDefinition *ChaincodeDefinition, dbArtifacts []byte) error {
 	fmt.Println("====Mgr====HandleChaincodeInstall=================")
 	logger.Infof("HandleChaincodeInstall() - chaincodeDefinition=%#v", chaincodeDefinition)
+	/*
+	HandleChaincodeInstall() - chaincodeDefinition=&cceventmgmt.ChaincodeDefinition{Name:"acb", Hash:[]uint8{0x38, 0x6d, 0x86, 0x13, 0x9f, 0x29, 0x73, 0x2c, 0x45, 0xed, 0xf8, 0x98, 0xf7, 0x31, 0xc7, 0x74, 0xb, 0xf2, 0xbf, 0x2d, 0x50, 0x5, 0x2d, 0x6e, 0xac, 0x22, 0x19, 0xf2, 0x57, 0xf1, 0xa3, 0x90}, Version:"0", CollectionConfigs:(*common.CollectionConfigPackage)(nil)}
+	*/
 	// Write lock prevents concurrent deploy operations
 	m.rwlock.Lock()
 	for chainid := range m.ccLifecycleListeners {
 		logger.Infof("Channel [%s]: Handling chaincode install event for chaincode [%s]", chainid, chaincodeDefinition)
+		/*
+		Channel [mychannel]: Handling chaincode install event for chaincode [Name=acb, Version=0, Hash=[]byte{0x38, 0x6d, 0x86, 0x13, 0x9f, 0x29, 0x73, 0x2c, 0x45, 0xed, 0xf8, 0x98, 0xf7, 0x31, 0xc7, 0x74, 0xb, 0xf2, 0xbf, 0x2d, 0x50, 0x5, 0x2d, 0x6e, 0xac, 0x22, 0x19, 0xf2, 0x57, 0xf1, 0xa3, 0x90}]
+		*/
 		var deployedCCInfo *ledger.DeployedChaincodeInfo
 		var err error
 		if deployedCCInfo, err = m.infoProvider.GetDeployedChaincodeInfo(chainid, chaincodeDefinition); err != nil {
@@ -134,7 +140,7 @@ func (m *Mgr) HandleChaincodeInstall(chaincodeDefinition *ChaincodeDefinition, d
 			logger.Warningf("Channel [%s]: Error while invoking a listener for handling chaincode install event: %s", chainid, err)
 			return err
 		}
-		logger.Debugf("Channel [%s]: Handled chaincode install event for chaincode [%s]", chainid, chaincodeDefinition)
+		logger.Infof("Channel [%s]: Handled chaincode install event for chaincode [%s]", chainid, chaincodeDefinition)
 	}
 	return nil
 }

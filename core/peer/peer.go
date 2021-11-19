@@ -488,8 +488,8 @@ func GetChannelConfig(cid string) channelconfig.Resources {
 	fmt.Println("=========fabric core peer peer.go======GetChannelConfig=============")
 	chains.RLock()
 	defer chains.RUnlock()
-	fmt.Println("=========cid",cid)
-	fmt.Println("======chains.list=======",chains.list)
+	//fmt.Println("=========cid",cid) mychannel
+	//fmt.Println("======chains.list=======",chains.list) //map[mychannel:0xc002483dc0]
 	if c, ok := chains.list[cid]; ok {
 		return c.cs
 	}

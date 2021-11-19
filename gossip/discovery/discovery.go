@@ -149,12 +149,12 @@ func (members Members) ByID() map[string]NetworkMember {
 	fmt.Println("=====Members===ByID===========")
 	res := make(map[string]NetworkMember, len(members))
 	for _, peer := range members {
-		fmt.Println("====peer",peer)
+		//fmt.Println("====peer",peer)
 		 a:= string(peer.PKIid)
-		 fmt.Println("====peer.PKIid=======",peer.PKIid)
+		 //fmt.Println("====peer.PKIid=======",peer.PKIid)
 		res[a] = peer
 	}
-	fmt.Println("=====res====",res)
+	//fmt.Println("=====res====",res)
 	return res
 }
 
@@ -163,17 +163,17 @@ func (members Members) Intersect(otherMembers Members) Members {
 	fmt.Println("=====Members===Intersect===========")
 	var res Members
 	m := otherMembers.ByID()
-	fmt.Println("========m===========",m)
+	//fmt.Println("========m===========",m)
 	for _, member := range members {
-		fmt.Println("========member=====",member)
-		fmt.Println("========string(member.PKIid)=============",string(member.PKIid))
-		fmt.Println("========m[string(member.PKIid)]============",m[string(member.PKIid)])
+		//fmt.Println("========member=====",member)
+		//fmt.Println("========string(member.PKIid)=============",string(member.PKIid))
+		//fmt.Println("========m[string(member.PKIid)]============",m[string(member.PKIid)])
 		if _, exists := m[string(member.PKIid)]; exists {
-			fmt.Println("=========exists========",exists)
+			//fmt.Println("=========exists========",exists)
 			res = append(res, member)
 		}
 	}
-	fmt.Println("=========res========",res)
+	//fmt.Println("=========res========",res)
 	return res
 }
 
