@@ -654,8 +654,6 @@ func CheckTxID(txid string, nonce, creator []byte) error {
 
 // ComputeProposalBinding computes the binding of a proposal
 func ComputeProposalBinding(proposal *peer.Proposal) ([]byte, error) {
-
-
 	fmt.Println("===========ComputeProposalBinding========")
 	if proposal == nil {
 		return nil, errors.New("proposal is nil")

@@ -174,7 +174,7 @@ type Handler struct {
 // handleMessage is called by ProcessStream to dispatch messages.
 func (h *Handler) handleMessage(msg *pb.ChaincodeMessage) error {
 	fmt.Println("====Handler==handleMessage==")
-	chaincodeLogger.Debugf("[%s] Fabric side handling ChaincodeMessage of type: %s in state %s", shorttxid(msg.Txid), msg.Type, h.state)
+	chaincodeLogger.Infof("[%s] Fabric side handling ChaincodeMessage of type: %s in state %s", shorttxid(msg.Txid), msg.Type, h.state)
 
 	if msg.Type == pb.ChaincodeMessage_KEEPALIVE {
 		return nil
@@ -205,31 +205,43 @@ func (h *Handler) handleMessageReadyState(msg *pb.ChaincodeMessage) error {
 	fmt.Println("====Handler==handleMessageReadyState==")
 	switch msg.Type {
 	case pb.ChaincodeMessage_COMPLETED, pb.ChaincodeMessage_ERROR:
+		fmt.Println("====pb.ChaincodeMessage_COMPLETED, pb.ChaincodeMessage_ERROR==")
 		h.Notify(msg)
 
 	case pb.ChaincodeMessage_PUT_STATE:
+		fmt.Println("====pb.ChaincodeMessage_PUT_STATE==")
 		go h.HandleTransaction(msg, h.HandlePutState)
 	case pb.ChaincodeMessage_DEL_STATE:
+		fmt.Println("====pb.ChaincodeMessage_DEL_STATE==")
 		go h.HandleTransaction(msg, h.HandleDelState)
 	case pb.ChaincodeMessage_INVOKE_CHAINCODE:
+		fmt.Println("====pb.ChaincodeMessage_INVOKE_CHAINCODE==")
 		go h.HandleTransaction(msg, h.HandleInvokeChaincode)
 
 	case pb.ChaincodeMessage_GET_STATE:
+		fmt.Println("====pb.ChaincodeMessage_GET_STATE==")
 		go h.HandleTransaction(msg, h.HandleGetState)
 	case pb.ChaincodeMessage_GET_STATE_BY_RANGE:
+		fmt.Println("====pb.ChaincodeMessage_GET_STATE_BY_RANGE==")
 		go h.HandleTransaction(msg, h.HandleGetStateByRange)
 	case pb.ChaincodeMessage_GET_QUERY_RESULT:
+		fmt.Println("====pb.ChaincodeMessage_GET_QUERY_RESULT==")
 		go h.HandleTransaction(msg, h.HandleGetQueryResult)
 	case pb.ChaincodeMessage_GET_HISTORY_FOR_KEY:
+		fmt.Println("====pb.ChaincodeMessage_GET_HISTORY_FOR_KEY==")
 		go h.HandleTransaction(msg, h.HandleGetHistoryForKey)
 	case pb.ChaincodeMessage_QUERY_STATE_NEXT:
+		fmt.Println("====pb.ChaincodeMessage_QUERY_STATE_NEXT==")
 		go h.HandleTransaction(msg, h.HandleQueryStateNext)
 	case pb.ChaincodeMessage_QUERY_STATE_CLOSE:
+		fmt.Println("====pb.ChaincodeMessage_QUERY_STATE_CLOSE==")
 		go h.HandleTransaction(msg, h.HandleQueryStateClose)
 
 	case pb.ChaincodeMessage_GET_STATE_METADATA:
+		fmt.Println("====pb.ChaincodeMessage_GET_STATE_METADATA==")
 		go h.HandleTransaction(msg, h.HandleGetStateMetadata)
 	case pb.ChaincodeMessage_PUT_STATE_METADATA:
+		fmt.Println("====pb.ChaincodeMessage_PUT_STATE_METADATA==")
 		go h.HandleTransaction(msg, h.HandlePutStateMetadata)
 	default:
 		return fmt.Errorf("[%s] Fabric side handler cannot handle message (%s) while in ready state", msg.Txid, msg.Type)
@@ -423,6 +435,7 @@ func (h *Handler) ProcessStream(stream ccintf.ChaincodeStream) error {
 	msgAvail := make(chan *recvMsg, 1)
 
 	receiveMessage := func() {
+		fmt.Println("==========receiveMessage==================")
 		in, err := h.chatStream.Recv()
 		msgAvail <- &recvMsg{in, err}
 	}
@@ -434,7 +447,7 @@ func (h *Handler) ProcessStream(stream ccintf.ChaincodeStream) error {
 			switch {
 			// Defer the deregistering of the this handler.
 			case rmsg.err == io.EOF:
-				chaincodeLogger.Debugf("received EOF, ending chaincode support stream: %s", rmsg.err)
+				chaincodeLogger.Infof("received EOF, ending chaincode support stream: %s", rmsg.err)
 				return rmsg.err
 			case rmsg.err != nil:
 				err := errors.Wrap(rmsg.err, "receive failed")

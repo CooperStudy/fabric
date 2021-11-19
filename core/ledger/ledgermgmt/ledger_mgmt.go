@@ -201,9 +201,7 @@ type chaincodeInfoProviderImpl struct {
 }
 
 // GetDeployedChaincodeInfo implements function in the interface cceventmgmt.ChaincodeInfoProvider
-func (p *chaincodeInfoProviderImpl) GetDeployedChaincodeInfo(chainid string,
-
-	chaincodeDefinition *cceventmgmt.ChaincodeDefinition) (*ledger.DeployedChaincodeInfo, error) {
+func (p *chaincodeInfoProviderImpl) GetDeployedChaincodeInfo(chainid string, chaincodeDefinition *cceventmgmt.ChaincodeDefinition) (*ledger.DeployedChaincodeInfo, error) {
 
 	fmt.Println("=====chaincodeInfoProviderImpl==GetDeployedChaincodeInfo==")
 	lock.Lock()

@@ -20,7 +20,7 @@ type lockBasedQueryExecutor struct {
 func newQueryExecutor(txmgr *LockBasedTxMgr, txid string) *lockBasedQueryExecutor {
 	fmt.Println("==newQueryExecutor==")
 	helper := newQueryHelper(txmgr, nil)
-	logger.Debugf("constructing new query executor txid = [%s]", txid)
+	logger.Infof("constructing new query executor txid = [%s]", txid)
 	return &lockBasedQueryExecutor{helper, txid}
 }
 

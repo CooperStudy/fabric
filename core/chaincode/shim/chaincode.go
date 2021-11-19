@@ -410,8 +410,7 @@ func (stub *ChaincodeStub) init(handler *Handler, channelId string, txid string,
 	stub.validationParameterMetakey = pb.MetaDataKeys_VALIDATION_PARAMETER.String()
 
 	// TODO: sanity check: verify that every call to init with a nil
-	// signedProposal is a legitimate one, meaning it is an internal call
-	// to system chaincodes.
+	// signedProposal is a legitimate one, meaning it is an internal call to system chaincodes.
 	if signedProposal != nil {
 		var err error
 

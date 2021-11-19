@@ -131,7 +131,9 @@ const (
 // BuildCollectionKVSKey constructs the collection config key for a given chaincode name
 func BuildCollectionKVSKey(ccname string) string {
 	fmt.Println("==BuildCollectionKVSKey==")
-	return ccname + collectionSeparator + collectionSuffix
+	a:= ccname + collectionSeparator + collectionSuffix
+	fmt.Println("==============a",a)
+	return a
 }
 
 // IsCollectionConfigKey detects if a key is a collection key

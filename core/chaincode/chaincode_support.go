@@ -256,7 +256,7 @@ func (cs *ChaincodeSupport) Execute(txParams *ccprovider.TransactionParams, ccci
 	fmt.Println("=====input========",input)//args:"getinstalledchaincodes"
 	fmt.Println("=====input.Decorations========",input.Decorations)//args:"getinstalledchaincodes"
 	resp, err := cs.Invoke(txParams, cccid, input)//
-	fmt.Println("=======resp=====",resp)
+	fmt.Println("=======resp=====",resp)//type:COMPLETED payload:"\010\310\001\032\002OK" txid:"0e3c9725098f1cd17bfeefbe4a69be61fe44af6962d9c7981fd01a7f209b40c9"
 	fmt.Println("=======err=====",err)
 	return processChaincodeExecutionResult(txParams.TxID, cccid.Name, resp, err)
 }

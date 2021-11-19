@@ -33,7 +33,7 @@ type PeerChaincodeStream interface {
 
 func (handler *Handler) triggerNextState(msg *pb.ChaincodeMessage, errc chan error) {
 	fmt.Println("=====Handler===triggerNextState===================")
-	chaincodeLogger.Debugf("[%s] send state message %s", shorttxid(msg.Txid), msg.Type)
+	chaincodeLogger.Infof("[%s] send state message %s", shorttxid(msg.Txid), msg.Type)
 	handler.serialSendAsync(msg, errc)
 }
 
@@ -209,7 +209,10 @@ func (handler *Handler) handleInit(msg *pb.ChaincodeMessage, errc chan error) {
 		}
 		// Get the function and args from Payload
 		input := &pb.ChaincodeInput{}
+
 		unmarshalErr := proto.Unmarshal(msg.Payload, input)
+
+		fmt.Println("=======================input===================",input)
 		if nextStateMsg = errFunc(unmarshalErr, nil, nil, "[%s] Incorrect payload format. Sending %s", shorttxid(msg.Txid), pb.ChaincodeMessage_ERROR.String()); nextStateMsg != nil {
 			return
 		}
@@ -291,7 +294,7 @@ func (handler *Handler) handleTransaction(msg *pb.ChaincodeMessage, errc chan er
 		}
 
 		// Send COMPLETED message to chaincode support and change state
-		chaincodeLogger.Debugf("[%s] Transaction completed. Sending %s", shorttxid(msg.Txid), pb.ChaincodeMessage_COMPLETED)
+		chaincodeLogger.Infof("[%s] Transaction completed. Sending %s", shorttxid(msg.Txid), pb.ChaincodeMessage_COMPLETED)
 		nextStateMsg = &pb.ChaincodeMessage{Type: pb.ChaincodeMessage_COMPLETED, Payload: resBytes, Txid: msg.Txid, ChaincodeEvent: stub.chaincodeEvent, ChannelId: stub.ChannelId}
 	}()
 }

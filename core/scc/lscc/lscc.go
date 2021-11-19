@@ -569,6 +569,7 @@ func isValidStatedbArtifactsTar(statedbArtifactsTar []byte) error {
 // executeInstall implements the "install" Invoke transaction
 func (lscc *LifeCycleSysCC) executeInstall(stub shim.ChaincodeStubInterface, ccbytes []byte) error {
 	fmt.Println("===LifeCycleSysCC==executeInstall==")
+	fmt.Println("===========ccbytes====================",ccbytes)
 	ccpack, err := ccprovider.GetCCPackage(ccbytes)
 	if err != nil {
 		return err
@@ -823,6 +824,7 @@ func (lscc *LifeCycleSysCC) Invoke(stub shim.ChaincodeStubInterface) pb.Response
 	}
 
 	function := string(args[0])
+	fmt.Println("===========function=================",function)
 
 	// Handle ACL:
 	// 1. get the signed proposal
@@ -833,6 +835,7 @@ func (lscc *LifeCycleSysCC) Invoke(stub shim.ChaincodeStubInterface) pb.Response
 
 	switch function {
 	case INSTALL:
+		fmt.Println("==========INSTALL===================")
 		if len(args) < 2 {
 			return shim.Error(InvalidArgsLenErr(len(args)).Error())
 		}
@@ -843,13 +846,13 @@ func (lscc *LifeCycleSysCC) Invoke(stub shim.ChaincodeStubInterface) pb.Response
 		}
 
 		depSpec := args[1]
-
 		err := lscc.executeInstall(stub, depSpec)
 		if err != nil {
 			return shim.Error(err.Error())
 		}
 		return shim.Success([]byte("OK"))
 	case DEPLOY, UPGRADE:
+		fmt.Println("==========DEPLOY, UPGRADE==================")
 		// we expect a minimum of 3 arguments, the function
 		// name, the chain name and deployment spec
 		if len(args) < 3 {
@@ -931,6 +934,7 @@ func (lscc *LifeCycleSysCC) Invoke(stub shim.ChaincodeStubInterface) pb.Response
 		}
 		return shim.Success(cdbytes)
 	case CCEXISTS, CHAINCODEEXISTS, GETDEPSPEC, GETDEPLOYMENTSPEC, GETCCDATA, GETCHAINCODEDATA:
+		fmt.Println("==========CCEXISTS, CHAINCODEEXISTS, GETDEPSPEC, GETDEPLOYMENTSPEC, GETCCDATA, GETCHAINCODEDATA==================")
 		if len(args) != 3 {
 			return shim.Error(InvalidArgsLenErr(len(args)).Error())
 		}
@@ -960,14 +964,17 @@ func (lscc *LifeCycleSysCC) Invoke(stub shim.ChaincodeStubInterface) pb.Response
 
 		switch function {
 		case CCEXISTS, CHAINCODEEXISTS:
+			fmt.Println("==========CCEXISTS, CHAINCODEEXISTS==================")
 			cd, err := lscc.getChaincodeData(ccname, cdbytes)
 			if err != nil {
 				return shim.Error(err.Error())
 			}
 			return shim.Success([]byte(cd.Name))
 		case GETCCDATA, GETCHAINCODEDATA:
+			fmt.Println("==========GETCCDATA, GETCHAINCODEDATA==================")
 			return shim.Success(cdbytes)
 		case GETDEPSPEC, GETDEPLOYMENTSPEC:
+			fmt.Println("==========GETDEPSPEC, GETDEPLOYMENTSPEC==================")
 			_, depspecbytes, err := lscc.getCCCode(ccname, cdbytes)
 			if err != nil {
 				return shim.Error(err.Error())

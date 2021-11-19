@@ -64,6 +64,7 @@ func (s *inProcStream) Recv() (*pb.ChaincodeMessage, error) {
 	if !ok {
 		return nil, errors.New("channel is closed")
 	}
+	fmt.Println("====msg=========",msg)
 	return msg, nil
 }
 

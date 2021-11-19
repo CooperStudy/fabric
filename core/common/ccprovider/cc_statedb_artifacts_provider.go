@@ -31,6 +31,11 @@ type TarFileEntry struct {
 // ExtractStatedbArtifactsAsTarbytes extracts the statedb artifacts from the code package tar and create a statedb artifact tar.
 // The state db artifacts are expected to contain state db specific artifacts such as index specification in the case of couchdb.
 // This function is intented to be used during chaincode instantiate/upgrade so that statedb artifacts can be created.
+/*
+// ExtractStatedbArtifactsAsTarbytes 从代码包tar中提取stateb artifact并创建一个statedb artifact tar。
+// state db artifacts 应该包含 state db 特定的 artifacts，例如在 couchdb 的情况下的索引规范。
+// 此函数旨在在链代码实例化/升级期间使用，以便可以创建 statementb 工件。
+ */
 func ExtractStatedbArtifactsForChaincode(ccname, ccversion string, pr *platforms.Registry) (installed bool, statedbArtifactsTar []byte, err error) {
 	fmt.Println("==ExtractStatedbArtifactsForChaincode===")
 	ccpackage, err := GetChaincodeFromFS(ccname, ccversion)
@@ -49,6 +54,9 @@ func ExtractStatedbArtifactsForChaincode(ccname, ccversion string, pr *platforms
 // ExtractStatedbArtifactsFromCCPackage extracts the statedb artifacts from the code package tar and create a statedb artifact tar.
 // The state db artifacts are expected to contain state db specific artifacts such as index specification in the case of couchdb.
 // This function is called during chaincode instantiate/upgrade (from above), and from install, so that statedb artifacts can be created.
+// ExtractStatedbArtifactsFromCCPackage 从代码包tar中提取stateb artifact，并创建一个statedb artifact tar。
+// state db artifacts 应该包含 state db 特定的 artifacts，例如在 couchdb 的情况下的索引规范。
+// 在链码实例化/升级（从上面）和安装期间调用此函数，以便可以创建 statementb 工件。
 func ExtractStatedbArtifactsFromCCPackage(ccpackage CCPackage, pr *platforms.Registry) (statedbArtifactsTar []byte, err error) {
 	fmt.Println("==ExtractStatedbArtifactsFromCCPackage===")
 	cds := ccpackage.GetDepSpec()

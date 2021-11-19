@@ -112,11 +112,11 @@ func (m *Mgr) ChaincodeDeployDone(chainid string) {
 // HandleChaincodeInstall is expected to get invoked during installation of a chaincode package
 func (m *Mgr) HandleChaincodeInstall(chaincodeDefinition *ChaincodeDefinition, dbArtifacts []byte) error {
 	fmt.Println("====Mgr====HandleChaincodeInstall=================")
-	logger.Debugf("HandleChaincodeInstall() - chaincodeDefinition=%#v", chaincodeDefinition)
+	logger.Infof("HandleChaincodeInstall() - chaincodeDefinition=%#v", chaincodeDefinition)
 	// Write lock prevents concurrent deploy operations
 	m.rwlock.Lock()
 	for chainid := range m.ccLifecycleListeners {
-		logger.Debugf("Channel [%s]: Handling chaincode install event for chaincode [%s]", chainid, chaincodeDefinition)
+		logger.Infof("Channel [%s]: Handling chaincode install event for chaincode [%s]", chainid, chaincodeDefinition)
 		var deployedCCInfo *ledger.DeployedChaincodeInfo
 		var err error
 		if deployedCCInfo, err = m.infoProvider.GetDeployedChaincodeInfo(chainid, chaincodeDefinition); err != nil {
@@ -144,7 +144,9 @@ func (m *Mgr) ChaincodeInstallDone(succeeded bool) {
 	fmt.Println("====Mgr====ChaincodeInstallDone=================")
 	// release the lock acquired in function `HandleChaincodeInstall`
 	defer m.rwlock.Unlock()
+	fmt.Println("==============m.callbackStatus.installPending  len============",len(m.callbackStatus.installPending))
 	for chainid := range m.callbackStatus.installPending {
+		fmt.Println("======chainid=====",chainid)
 		m.invokeDoneOnHandlers(chainid, succeeded)
 		m.callbackStatus.unsetInstallPending(chainid)
 	}
@@ -165,6 +167,7 @@ func (m *Mgr) invokeDoneOnHandlers(chainid string, succeeded bool) {
 	fmt.Println("====Mgr====invokeDoneOnHandlers=================")
 	listeners := m.ccLifecycleListeners[chainid]
 	for _, listener := range listeners {
+		fmt.Println("===listener====",listener)
 		listener.ChaincodeDeployDone(succeeded)
 	}
 }

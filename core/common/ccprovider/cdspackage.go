@@ -116,8 +116,7 @@ func (ccpack *CDSPackage) GetPackageObject() proto.Message {
 // GetChaincodeData gets the ChaincodeData
 func (ccpack *CDSPackage) GetChaincodeData() *ChaincodeData {
 	fmt.Println("==CDSPackage==GetChaincodeData==")
-	//this has to be after creating a package and initializing it
-	//If those steps fail, GetChaincodeData() should never be called
+	//this has to be after creating a package and initializing it  If those steps fail, GetChaincodeData() should never be called
 	if ccpack.depSpec == nil || ccpack.datab == nil || ccpack.id == nil {
 		panic("GetChaincodeData called on uninitialized package")
 	}
@@ -300,6 +299,7 @@ func (ccpack *CDSPackage) PutChaincodeToFS() error {
 
 	//return error if chaincode exists
 	path := fmt.Sprintf("%s/%s.%s", chaincodeInstallPath, ccname, ccversion)
+	fmt.Println("===========path=============",path)
 	if _, err := os.Stat(path); err == nil {
 		return fmt.Errorf("chaincode %s exists", path)
 	}

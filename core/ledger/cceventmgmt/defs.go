@@ -23,7 +23,9 @@ type ChaincodeDefinition struct {
 
 func (cdef *ChaincodeDefinition) String() string {
 	fmt.Println("=========ChaincodeDefinition====String=================")
-	return fmt.Sprintf("Name=%s, Version=%s, Hash=%#v", cdef.Name, cdef.Version, cdef.Hash)
+	a:= fmt.Sprintf("Name=%s, Version=%s, Hash=%#v", cdef.Name, cdef.Version, cdef.Hash)
+	fmt.Println("===================a",a)
+	return a
 }
 
 // ChaincodeLifecycleEventListener interface enables ledger components (mainly, intended for statedb)

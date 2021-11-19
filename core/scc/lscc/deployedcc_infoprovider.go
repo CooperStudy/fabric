@@ -63,6 +63,8 @@ func (p *DeployedCCInfoProvider) UpdatedChaincodes(stateUpdates map[string][]*kv
 // ChaincodeInfo implements function in interface ledger.DeployedChaincodeInfoProvider
 func (p *DeployedCCInfoProvider) ChaincodeInfo(chaincodeName string, qe ledger.SimpleQueryExecutor) (*ledger.DeployedChaincodeInfo, error) {
 	fmt.Println("===DeployedCCInfoProvider===ChaincodeInfo==")
+	fmt.Println("==========lsccNamespace=====",lsccNamespace)
+	fmt.Println("==========chaincodeName=====",chaincodeName)
 	chaincodeDataBytes, err := qe.GetState(lsccNamespace, chaincodeName)
 	if err != nil || chaincodeDataBytes == nil {
 		return nil, err
