@@ -638,13 +638,7 @@ func (lscc *LifeCycleSysCC) executeInstall(stub shim.ChaincodeStubInterface, ccb
 
 // executeDeployOrUpgrade routes the code path either to executeDeploy or executeUpgrade
 // depending on its function argument
-func (lscc *LifeCycleSysCC) executeDeployOrUpgrade(
-	stub shim.ChaincodeStubInterface,
-	chainname string,
-	cds *pb.ChaincodeDeploymentSpec,
-	policy, escc, vscc, collectionConfigBytes []byte,
-	function string,
-) (*ccprovider.ChaincodeData, error) {
+func (lscc *LifeCycleSysCC) executeDeployOrUpgrade(stub shim.ChaincodeStubInterface, chainname string, cds *pb.ChaincodeDeploymentSpec, policy, escc, vscc, collectionConfigBytes []byte, function string, ) (*ccprovider.ChaincodeData, error) {
 	fmt.Println("===LifeCycleSysCC==executeDeployOrUpgrade==")
 	chaincodeName := cds.ChaincodeSpec.ChaincodeId.Name
 	chaincodeVersion := cds.ChaincodeSpec.ChaincodeId.Version
@@ -831,6 +825,7 @@ func (lscc *LifeCycleSysCC) Invoke(stub shim.ChaincodeStubInterface) pb.Response
 
 	function := string(args[0])
 	fmt.Println("===========function=================",function)
+	//deploy
     //===========function=================
 	// Handle ACL:
 	// 1. get the signed proposal

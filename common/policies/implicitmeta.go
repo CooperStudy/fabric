@@ -92,7 +92,7 @@ func (imp *implicitMetaPolicy) Evaluate(signatureSet []*cb.SignedData) error {
 				}
 				b.WriteString("]")
 				logger.Debugf(b.String())
-				fmt.Println("=================b.String()=======================",b.String())
+				//fmt.Println("=================b.String()=======================",b.String())
 			}
 		}
 	}()

@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package pull
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -66,7 +65,7 @@ type EgressDigestFilter func(helloMsg proto.ReceivedMessage) func(digestItem str
 
 // byContext converts this EgressDigFilter to an algo.DigestFilter
 func (df EgressDigestFilter) byContext() algo.DigestFilter {
-	fmt.Println("====EgressDigestFilter===byContext====")
+	//fmt.Println("====EgressDigestFilter===byContext====")
 	return func(context interface{}) func(digestItem string) bool {
 		return func(digestItem string) bool {
 			return df(context.(proto.ReceivedMessage))(digestItem)
@@ -122,7 +121,7 @@ type pullMediatorImpl struct {
 
 // NewPullMediator returns a new Mediator
 func NewPullMediator(config Config, adapter *PullAdapter) Mediator {
-	fmt.Println("====NewPullMediator===")
+	//fmt.Println("====NewPullMediator===")
 	egressDigFilter := adapter.EgressDigFilter
 
 	acceptAllFilter := func(_ proto.ReceivedMessage) func(string) bool {

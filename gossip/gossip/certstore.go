@@ -30,7 +30,7 @@ type certStore struct {
 }
 
 func newCertStore(puller pull.Mediator, idMapper identity.Mapper, selfIdentity api.PeerIdentityType, mcs api.MessageCryptoService) *certStore {
-	fmt.Println("====newCertStore=====")
+	//fmt.Println("====newCertStore=====")
 	selfPKIID := idMapper.GetPKIidOfCert(selfIdentity)
 	logger := util.GetLogger(util.GossipLogger, hex.EncodeToString(selfPKIID))
 
@@ -121,7 +121,7 @@ func (cs *certStore) validateIdentityMsg(msg *proto.SignedGossipMessage) error {
 }
 
 func (cs *certStore) createIdentityMessage() (*proto.SignedGossipMessage, error) {
-	fmt.Println("====certStore===createIdentityMessage==")
+	//fmt.Println("====certStore===createIdentityMessage==")
 	pi := &proto.PeerIdentity{
 		Cert:     cs.selfIdentity,
 		Metadata: nil,
@@ -146,12 +146,12 @@ func (cs *certStore) createIdentityMessage() (*proto.SignedGossipMessage, error)
 }
 
 func (cs *certStore) suspectPeers(isSuspected api.PeerSuspector) {
-	fmt.Println("====certStore===suspectPeers==")
+	//fmt.Println("====certStore===suspectPeers==")
 	cs.idMapper.SuspectPeers(isSuspected)
 }
 
 func (cs *certStore) stop() {
-	fmt.Println("====certStore===stop==")
+	//fmt.Println("====certStore===stop==")
 	cs.pull.Stop()
 	cs.idMapper.Stop()
 }

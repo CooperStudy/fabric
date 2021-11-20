@@ -182,7 +182,7 @@ func (c *commImpl) createConnection(endpoint string, expectedPKIID common.PKIidT
 
 	ctx, cancel = context.WithTimeout(context.Background(), defConnTimeout)
 	defer cancel()
-	fmt.Println("===================cl.Ping(ctx, &proto.Empty{})==========")
+	//fmt.Println("===================cl.Ping(ctx, &proto.Empty{})==========")
 	if _, err = cl.Ping(ctx, &proto.Empty{}); err != nil {
 		cc.Close()
 		return nil, errors.WithStack(err)
@@ -387,7 +387,7 @@ func (c *commImpl) Accept(acceptor common.MessageAcceptor) <-chan proto.Received
 }
 
 func (c *commImpl) PresumedDead() <-chan common.PKIidType {
-	fmt.Println("=====commImpl==PresumedDead=====")
+	//fmt.Println("=====commImpl==PresumedDead=====")
 	return c.deadEndpoints
 }
 

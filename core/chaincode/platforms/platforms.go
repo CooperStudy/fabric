@@ -145,8 +145,9 @@ func (r *Registry) GenerateDockerfile(ccType, name, version string) (string, err
 	// Finalize it
 	// ----------------------------------------------------------------------------------------------------
 	contents := strings.Join(buf, "\n")
-	logger.Debugf("\n%s", contents)
+	logger.Infof("\n%s", contents)
 
+	fmt.Println("=======contents=============",contents)
 	return contents, nil
 }
 
@@ -176,6 +177,13 @@ func (r *Registry) StreamDockerBuild(ccType, path string, codePackage []byte, in
 	// Now give the platform an opportunity to contribute its own context to the build
 	// ----------------------------------------------------------------------------------------------------
 	err = platform.GenerateDockerBuild(path, codePackage, tw)
+	/*
+	2021-11-19 08:59:47.986 UTC [chaincode.platform] func1 -> ERRO 751 Failed to generate platform-specific docker build: Error returned from build: 1 "can't load package: package github.com/hyperledger/fabric-samples/chaincode/chaincode_example02/go: cannot find package "github.com/hyperledger/fabric-samples/chaincode/chaincode_example02/go" in any of:
+		/opt/go/src/github.com/hyperledger/fabric-samples/chaincode/chaincode_example02/go (from $GOROOT)
+		/chaincode/input/src/github.com/hyperledger/fabric-samples/chaincode/chaincode_example02/go (from $GOPATH)
+		/opt/gopath/src/github.com/hyperledger/fabric-samples/chaincode/chaincode_example02/go
+
+	*/
 	if err != nil {
 		return fmt.Errorf("Failed to generate platform-specific docker build: %s", err)
 	}
@@ -190,6 +198,9 @@ func (r *Registry) GenerateDockerBuild(ccType, path, name, version string, codeP
 	// ----------------------------------------------------------------------------------------------------
 	// Generate the Dockerfile specific to our context
 	// ----------------------------------------------------------------------------------------------------
+	fmt.Println("=======ccType=======",ccType)
+	fmt.Println("=======name=======",name)
+	fmt.Println("=======version=======",version)
 	dockerFile, err := r.GenerateDockerfile(ccType, name, version)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to generate a Dockerfile: %s", err)

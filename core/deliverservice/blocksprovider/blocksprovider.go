@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package blocksprovider
 
 import (
-	"fmt"
 	"math"
 	"sync/atomic"
 	"time"
@@ -107,7 +106,7 @@ var logger = flogging.MustGetLogger("blocksProvider")
 
 // NewBlocksProvider constructor function to create blocks deliverer instance
 func NewBlocksProvider(chainID string, client streamClient, gossip GossipServiceAdapter, mcs api.MessageCryptoService) BlocksProvider {
-	fmt.Println("==NewBlocksProvider==")
+	//fmt.Println("==NewBlocksProvider==")
 	return &blocksProviderImpl{
 		chainID:              chainID,
 		client:               client,
@@ -120,7 +119,7 @@ func NewBlocksProvider(chainID string, client streamClient, gossip GossipService
 // DeliverBlocks used to pull out blocks from the ordering service to
 // distributed them across peers
 func (b *blocksProviderImpl) DeliverBlocks() {
-	fmt.Println("==blocksProviderImpl==DeliverBlocks==")
+	//fmt.Println("==blocksProviderImpl==DeliverBlocks==")
 	errorStatusCounter := 0
 	statusCounter := 0
 	defer b.client.Close()
@@ -200,14 +199,14 @@ func (b *blocksProviderImpl) DeliverBlocks() {
 
 // Stop stops blocks delivery provider
 func (b *blocksProviderImpl) Stop() {
-	fmt.Println("==blocksProviderImpl==Stop==")
+	//fmt.Println("==blocksProviderImpl==Stop==")
 	atomic.StoreInt32(&b.done, 1)
 	b.client.Close()
 }
 
 // UpdateOrderingEndpoints update endpoints of ordering service
 func (b *blocksProviderImpl) UpdateOrderingEndpoints(endpoints []string) {
-	fmt.Println("==blocksProviderImpl==UpdateOrderingEndpoints==")
+	//fmt.Println("==blocksProviderImpl==UpdateOrderingEndpoints==")
 	if !b.isEndpointsUpdated(endpoints) {
 		// No new endpoints for ordering service were provided
 		return
@@ -221,14 +220,14 @@ func (b *blocksProviderImpl) UpdateOrderingEndpoints(endpoints []string) {
 	b.client.Disconnect(false)
 }
 func (b *blocksProviderImpl) isEndpointsUpdated(endpoints []string) bool {
-	fmt.Println("==blocksProviderImpl==isEndpointsUpdated==")
+	//fmt.Println("==blocksProviderImpl==isEndpointsUpdated==")
 	if len(endpoints) != len(b.client.GetEndpoints()) {
 		return true
 	}
 	// Check that endpoints was actually updated
 	for _, endpoint := range endpoints {
-		fmt.Println("=====endpoint=========")
-		fmt.Println("=========b.client.GetEndpoints==========",b.client.GetEndpoints())
+		//fmt.Println("=====endpoint=========")
+		//fmt.Println("=========b.client.GetEndpoints==========",b.client.GetEndpoints())
 		if !util.Contains(endpoint, b.client.GetEndpoints()) {
 			// Found new endpoint
 			return true
@@ -240,12 +239,12 @@ func (b *blocksProviderImpl) isEndpointsUpdated(endpoints []string) bool {
 
 // Check whenever provider is stopped
 func (b *blocksProviderImpl) isDone() bool {
-	fmt.Println("==blocksProviderImpl==isDone==")
+	//fmt.Println("==blocksProviderImpl==isDone==")
 	return atomic.LoadInt32(&b.done) == 1
 }
 
 func createGossipMsg(chainID string, payload *gossip_proto.Payload) *gossip_proto.GossipMessage {
-	fmt.Println("==createGossipMsg==")
+	//fmt.Println("==createGossipMsg==")
 	gossipMsg := &gossip_proto.GossipMessage{
 		Nonce:   0,
 		Tag:     gossip_proto.GossipMessage_CHAN_AND_ORG,
@@ -260,7 +259,7 @@ func createGossipMsg(chainID string, payload *gossip_proto.Payload) *gossip_prot
 }
 
 func createPayload(seqNum uint64, marshaledBlock []byte) *gossip_proto.Payload {
-	fmt.Println("==createPayload==")
+	//fmt.Println("==createPayload==")
 	return &gossip_proto.Payload{
 		Data:   marshaledBlock,
 		SeqNum: seqNum,

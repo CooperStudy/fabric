@@ -207,6 +207,7 @@ func (e *Endorser) SanitizeUserCDS(userCDS *pb.ChaincodeDeploymentSpec) (*pb.Cha
 func (e *Endorser) SimulateProposal(txParams *ccprovider.TransactionParams, cid *pb.ChaincodeID) (ccprovider.ChaincodeDefinition, *pb.Response, []byte, *pb.ChaincodeEvent, error) {
 	fmt.Println("==Endorser==SimulateProposal==")
 	fmt.Printf("[%s][%s] Entry chaincode: %s\n", txParams.ChannelID, shorttxid(txParams.TxID), cid)
+	//[mychannel][44516eb9] Entry chaincode: name:"lscc"
 	defer endorserLogger.Debugf("[%s][%s] Exit", txParams.ChannelID, shorttxid(txParams.TxID))
 	// we do expect the payload to be a ChaincodeInvocationSpec
 	// if we are supporting other payloads in future, this be glaringly point
@@ -218,8 +219,9 @@ func (e *Endorser) SimulateProposal(txParams *ccprovider.TransactionParams, cid 
 
 	var cdLedger ccprovider.ChaincodeDefinition
 	var version string
-
-	if !e.s.IsSysCC(cid.Name) {
+    b := !e.s.IsSysCC(cid.Name)
+    fmt.Println("============b",b)
+	if b {
 		cdLedger, err = e.s.GetChaincodeDefinition(cid.Name, txParams.TXSimulator)
 		if err != nil {
 			return nil, nil, nil, nil, errors.WithMessage(err, fmt.Sprintf("make sure the chaincode %s has been successfully instantiated and try again", cid.Name))
@@ -407,7 +409,7 @@ func (e *Endorser) preProcess(signedProp *pb.SignedProposal) (*validateResult, e
 
 // ProcessProposal process the Proposal
 func (e *Endorser) ProcessProposal(ctx context.Context, signedProp *pb.SignedProposal) (*pb.ProposalResponse, error) {
-	fmt.Println("==Endorser==ProcessProposal==")
+	fmt.Println("====Endorser==ProcessProposal==")
 	addr := util.ExtractRemoteAddress(ctx)
 	endorserLogger.Info("Entering: request from", addr)//172.19.0.1:57646
 	defer endorserLogger.Info("Exit: request from", addr)
@@ -507,7 +509,7 @@ func (e *Endorser) ProcessProposal(ctx context.Context, signedProp *pb.SignedPro
 	// contains the "return value" from the
 	// chaincode invocation
 	pResp.Response = res
-
+	fmt.Println("====Endorser==ProcessProposal=end==")
 	return pResp, nil
 }
 

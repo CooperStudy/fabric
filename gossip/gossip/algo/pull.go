@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package algo
 
 import (
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -109,7 +108,7 @@ type PullEngine struct {
 // NewPullEngineWithFilter creates an instance of a PullEngine with a certain sleep time
 // between pull initiations, and uses the given filters when sending digests and responses
 func NewPullEngineWithFilter(participant PullAdapter, sleepTime time.Duration, df DigestFilter) *PullEngine {
-	fmt.Println("====NewPullEngineWithFilter=")
+	//fmt.Println("====NewPullEngineWithFilter=")
 	engine := &PullEngine{
 		PullAdapter:        participant,
 		stopFlag:           int32(0),

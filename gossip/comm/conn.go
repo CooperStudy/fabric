@@ -44,7 +44,7 @@ type connectionStore struct {
 }
 
 func newConnStore(connFactory connFactory, logger util.Logger) *connectionStore {
-	fmt.Println("==newConnStore==")
+	//fmt.Println("==newConnStore==")
 	return &connectionStore{
 		connFactory:      connFactory,
 		isClosing:        false,

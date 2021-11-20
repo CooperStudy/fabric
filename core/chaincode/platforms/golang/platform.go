@@ -491,6 +491,8 @@ func (goPlatform *Platform) GenerateDockerfile() (string, error) {
 
 	dockerFileContents := strings.Join(buf, "\n")
 
+	fmt.Println("==========dockerFileContents================",dockerFileContents)
+	//building chaincode with ldflagsOpt: '-ldflags "-linkmode external -extldflags '-static'"'
 	return dockerFileContents, nil
 }
 
@@ -505,7 +507,8 @@ func getLDFlagsOpts() string {
 }
 
 func (goPlatform *Platform) GenerateDockerBuild(path string, code []byte, tw *tar.Writer) error {
-	fmt.Println("=====Platform  GenerateDockerBuild===")
+	fmt.Println("=====Platform==GenerateDockerBuild===")
+	fmt.Println("=============path===============",path)
 	pkgname, err := decodeUrl(path)
 	if err != nil {
 		return fmt.Errorf("could not decode url: %s", err)
@@ -521,6 +524,8 @@ func (goPlatform *Platform) GenerateDockerBuild(path string, code []byte, tw *ta
 		InputStream:  codepackage,
 		OutputStream: binpackage,
 	})
+	a := fmt.Sprintf("GOPATH=/chaincode/input:$GOPATH go build  %s -o /chaincode/output/chaincode %s", ldflagsOpt, pkgname)
+	fmt.Println("=================cmd====",a)
 	if err != nil {
 		return err
 	}

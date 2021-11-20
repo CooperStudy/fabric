@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package comm
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/hyperledger/fabric/gossip/common"
@@ -24,7 +23,7 @@ type ChannelDeMultiplexer struct {
 
 // NewChannelDemultiplexer creates a new ChannelDeMultiplexer
 func NewChannelDemultiplexer() *ChannelDeMultiplexer {
-	fmt.Println("==NewChannelDemultiplexer==")
+	//fmt.Println("==NewChannelDemultiplexer==")
 	return &ChannelDeMultiplexer{
 		channels: make([]*channel, 0),
 		lock:     &sync.RWMutex{},

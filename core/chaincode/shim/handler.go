@@ -807,6 +807,7 @@ func (handler *Handler) handleReady(msg *pb.ChaincodeMessage, errc chan error) e
 		fmt.Println("=======pb.ChaincodeMessage_TRANSACTION=========")
 		/*
 		1.安装链码
+		2.chushihualianma
 		 */
 		fmt.Println("=======pb.ChaincodeMessage_TRANSACTION=========")
 		chaincodeLogger.Infof("[%s] Received %s, invoking transaction on chaincode(state:%s)", shorttxid(msg.Txid), msg.Type, handler.state)

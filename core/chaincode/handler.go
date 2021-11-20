@@ -1254,7 +1254,7 @@ func (h *Handler) HandleInvokeChaincode(msg *pb.ChaincodeMessage, txContext *Tra
 
 	return &pb.ChaincodeMessage{Type: pb.ChaincodeMessage_RESPONSE, Payload: res, Txid: msg.Txid, ChannelId: msg.ChannelId}, nil
 }
-
+//                           h.Execute(txParams,                    cccid,                      ccMsg (ccMsg.payload包含背书策略）                      c       s.ExecuteTimeout)
 func (h *Handler) Execute(txParams *ccprovider.TransactionParams, cccid *ccprovider.CCContext, msg *pb.ChaincodeMessage, timeout time.Duration) (*pb.ChaincodeMessage, error) {
 	fmt.Println("===Handler==Execute==")
 	chaincodeLogger.Debugf("Entry")

@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package comm
 
 import (
-	"fmt"
 	"github.com/hyperledger/fabric/gossip/common"
 	"github.com/hyperledger/fabric/gossip/util"
 	proto "github.com/hyperledger/fabric/protos/gossip"
@@ -29,7 +28,7 @@ func newAckSendOperation(snd sendFunc, waitForAck waitFunc) *ackSendOperation {
 }
 
 func (aso *ackSendOperation) send(msg *proto.SignedGossipMessage, minAckNum int, peers ...*RemotePeer) []SendResult {
-	fmt.Println("======ackSendOperation=======send==============")
+	//fmt.Println("======ackSendOperation=======send==============")
 	successAcks := 0
 	results := []SendResult{}
 
@@ -64,7 +63,7 @@ func (aso *ackSendOperation) send(msg *proto.SignedGossipMessage, minAckNum int,
 }
 
 func interceptAcks(nextHandler handler, remotePeerID common.PKIidType, pubSub *util.PubSub) func(*proto.SignedGossipMessage) {
-	fmt.Println("=====interceptAcks==============")
+	//fmt.Println("=====interceptAcks==============")
 	return func(m *proto.SignedGossipMessage) {
 		if m.IsAck() {
 			topic := topicForAck(m.Nonce, remotePeerID)

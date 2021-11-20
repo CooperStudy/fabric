@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package integration
 
 import (
-	"fmt"
 	"net"
 	"strconv"
 	"time"
@@ -24,7 +23,7 @@ import (
 // This file is used to bootstrap a gossip instance and/or leader election service instance
 
 func newConfig(selfEndpoint string, externalEndpoint string, certs *common.TLSCertificates, bootPeers ...string) (*gossip.Config, error) {
-	fmt.Println("====newConfig==")
+	//fmt.Println("====newConfig==")
 	_, p, err := net.SplitHostPort(selfEndpoint)
 
 	if err != nil {
@@ -66,7 +65,7 @@ func NewGossipComponent(peerIdentity []byte, endpoint string, s *grpc.Server,
 	secAdv api.SecurityAdvisor, cryptSvc api.MessageCryptoService,
 	secureDialOpts api.PeerSecureDialOpts, certs *common.TLSCertificates, bootPeers ...string) (gossip.Gossip, error) {
 
-	fmt.Println("======NewGossipComponent=====")
+	//fmt.Println("======NewGossipComponent=====")
 	externalEndpoint := viper.GetString("peer.gossip.externalEndpoint")
 
 	conf, err := newConfig(endpoint, externalEndpoint, certs, bootPeers...)

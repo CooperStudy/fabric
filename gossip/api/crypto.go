@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package api
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/hyperledger/fabric/gossip/common"
@@ -74,7 +73,7 @@ type PeerIdentitySet []PeerIdentityInfo
 
 // ByOrg sorts the PeerIdentitySet by organizations of its peers
 func (pis PeerIdentitySet) ByOrg() map[string]PeerIdentitySet {
-	fmt.Println("======PeerIdentitySet=======ByOrg==============")
+	//fmt.Println("======PeerIdentitySet=======ByOrg==============")
 	m := make(map[string]PeerIdentitySet)
 	for _, id := range pis {
 		//fmt.Println("=======id",id)
@@ -91,14 +90,14 @@ func (pis PeerIdentitySet) ByOrg() map[string]PeerIdentitySet {
 
 // ByOrg sorts the PeerIdentitySet by PKI-IDs of its peers
 func (pis PeerIdentitySet) ByID() map[string]PeerIdentityInfo {
-	fmt.Println("======PeerIdentitySet=======ByID==============")
+	//fmt.Println("======PeerIdentitySet=======ByID==============")
 	m := make(map[string]PeerIdentityInfo)
 	for _, id := range pis {
-		fmt.Println("==id===",id)//{7030 [10 1 65 18 2 112 48] [65]}  //{7031 [10 1 65 18 2 112 49] [65]}
-		fmt.Println("===string(id.PKIId)======",string(id.PKIId))//p0 p1  p2  p3 p4  ...  p15
+		//fmt.Println("==id===",id)//{7030 [10 1 65 18 2 112 48] [65]}  //{7031 [10 1 65 18 2 112 49] [65]}
+		//fmt.Println("===string(id.PKIId)======",string(id.PKIId))//p0 p1  p2  p3 p4  ...  p15
 		m[string(id.PKIId)] = id
 	}
-	fmt.Println("======PeerIdentitySet==================",m)
+	//fmt.Println("======PeerIdentitySet==================",m)
 	// map[p6:{7036 [10 1 68 18 2 112 54] [68]} p11:{703131 [10 1 66 18 3 112 49 49] [66]} p15:{703135 [10 1 68 18 3 112 49 53] [68]} p8:{7038 [10 1 65 18 2 112 56] [65]} p9:{7039 [10 1 65 18 2 112 57] [65]} p1:{7031 [10 1 65 18 2 112 49] [65]} p2:{7032 [10 1 66 18 2 112 50] [66]} p4:{7034 [10 1 67 18 2 112 52] [67]} p5:{7035 [10 1 67 18 2 112 53] [67]} p7:{7037 [10 1 68 18 2 112 55] [68]} p3:{7033 [10 1 66 18 2 112 51] [66]} p0:{7030 [10 1 65 18 2 112 48] [65]} p10:{703130 [10 1 66 18 3 112 49 48] [66]} p12:{703132 [10 1 67 18 3 112 49 50] [67]} p13:{703133 [10 1 67 18 3 112 49 51] [67]} p14:{703134 [10 1 68 18 3 112 49 52] [68]}]
 	return m
 }

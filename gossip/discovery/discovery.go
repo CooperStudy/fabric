@@ -146,7 +146,7 @@ type Members []NetworkMember
 // ByID returns a mapping from the PKI-IDs (in string form)
 // to NetworkMember
 func (members Members) ByID() map[string]NetworkMember {
-	fmt.Println("=====Members===ByID===========")
+	//fmt.Println("=====Members===ByID===========")
 	res := make(map[string]NetworkMember, len(members))
 	for _, peer := range members {
 		//fmt.Println("====peer",peer)
@@ -160,7 +160,7 @@ func (members Members) ByID() map[string]NetworkMember {
 
 // Intersect returns the intersection of 2 Members
 func (members Members) Intersect(otherMembers Members) Members {
-	fmt.Println("=====Members===Intersect===========")
+	//fmt.Println("=====Members===Intersect===========")
 	var res Members
 	m := otherMembers.ByID()
 	//fmt.Println("========m===========",m)
@@ -179,7 +179,7 @@ func (members Members) Intersect(otherMembers Members) Members {
 
 // Filter returns only members that satisfy the given filter
 func (members Members) Filter(filter func(member NetworkMember) bool) Members {
-	fmt.Println("=====Members===Filter===========")
+	//fmt.Println("=====Members===Filter===========")
 	var res Members
 	for _, member := range members {
 		if filter(member) {
@@ -191,7 +191,7 @@ func (members Members) Filter(filter func(member NetworkMember) bool) Members {
 
 // Map invokes the given function to every NetworkMember among the Members
 func (members Members) Map(f func(member NetworkMember) NetworkMember) Members {
-	fmt.Println("=====Members===Map===========")
+	//fmt.Println("=====Members===Map===========")
 	var res Members
 	for _, m := range members {
 		res = append(res, f(m))
@@ -201,6 +201,6 @@ func (members Members) Map(f func(member NetworkMember) NetworkMember) Members {
 
 // HaveExternalEndpoints selects network members that have external endpoints
 func HasExternalEndpoint(member NetworkMember) bool {
-	fmt.Println("====HasExternalEndpoint==========")
+	//fmt.Println("====HasExternalEndpoint==========")
 	return member.Endpoint != ""
 }

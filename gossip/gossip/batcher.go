@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package gossip
 
 import (
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -37,7 +36,7 @@ type batchingEmitter interface {
 // latency: the maximum delay that each message can be stored without being forwarded
 // cb: a callback that is called in order for the forwarding to take place
 func newBatchingEmitter(iterations, burstSize int, latency time.Duration, cb emitBatchCallback) batchingEmitter {
-	fmt.Println("====newBatchingEmitter===")
+	//fmt.Println("====newBatchingEmitter===")
 	if iterations < 0 {
 		panic(errors.Errorf("Got a negative iterations number"))
 	}

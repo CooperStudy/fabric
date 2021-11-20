@@ -309,7 +309,7 @@ func (s *service) computeMembership(_ *discovery.Query) map[string]peerMapping {
 		for _, id := range peerIdentities {
 			//fmt.Println("==================id",id)
 			// Check peer exists in alive membership view
-			a := string(id.PKIId)
+			//a := string(id.PKIId)
 			//fmt.Println("===========id.PKIId===========",a)
 			aliveInfo, exists := peerAliveInfo[string(id.PKIId)]
 
