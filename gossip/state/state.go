@@ -155,9 +155,9 @@ var logger = util.GetLogger(util.StateLogger, "")
 // NewGossipStateProvider creates state provider with coordinator instance
 // to orchestrate arrival of private rwsets and blocks before committing them into the ledger.
 func NewGossipStateProvider(chainID string, services *ServicesMediator, ledger ledgerResources) GossipStateProvider {
-    fmt.Println("===========NewGossipStateProvider=====================")
+    //fmt.Println("===========NewGossipStateProvider=====================")
 	gossipChan, _ := services.Accept(func(message interface{}) bool {
-		fmt.Println("===NewGossipStateProvider==")
+		//fmt.Println("===NewGossipStateProvider==")
 		// Get only data messages
 		return message.(*proto.GossipMessage).IsDataMsg() &&
 			bytes.Equal(message.(*proto.GossipMessage).Channel, []byte(chainID))
@@ -621,7 +621,7 @@ func (s *GossipStateProviderImpl) antiEntropy() {
 // maxAvailableLedgerHeight iterates over all available peers and checks advertised meta state to
 // find maximum available ledger height across peers
 func (s *GossipStateProviderImpl) maxAvailableLedgerHeight() uint64 {
-	fmt.Println("===GossipStateProviderImpl==maxAvailableLedgerHeight==")
+	//fmt.Println("===GossipStateProviderImpl==maxAvailableLedgerHeight==")
 	max := uint64(0)
 	for _, p := range s.mediator.PeersOfChannel(common2.ChainID(s.chainID)) {
 		if p.Properties == nil {

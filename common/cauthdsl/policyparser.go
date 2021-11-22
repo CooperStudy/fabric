@@ -404,7 +404,7 @@ func FromString(policy string) (*common.SignaturePolicyEnvelope, error) {
 
 	res, err = exp.Evaluate(parameters)
 
-	fmt.Println("============res=========",res)
+	fmt.Println("============res=========",res)//
 	//n_out_of:<n:1 rules:<n_out_of:<n:2 rules:<signed_by:0 > rules:<signed_by:1 > > > rules:<signed_by:4 > rules:<n_out_of:<n:2 rules:<signed_by:2 > rules:<signed_by:3 > > > >
 	if err != nil {
 		// attempt to produce a meaningful error

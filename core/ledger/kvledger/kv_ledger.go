@@ -226,7 +226,7 @@ func (l *kvLedger) GetTransactionByID(txID string) (*peer.ProcessedTransaction, 
 
 // GetBlockchainInfo returns basic info about blockchain
 func (l *kvLedger) GetBlockchainInfo() (*common.BlockchainInfo, error) {
-	fmt.Println("===kvLedger===GetBlockchainInfo==")
+	//fmt.Println("===kvLedger===GetBlockchainInfo==")
 	bcInfo, err := l.blockStore.GetBlockchainInfo()
 	l.blockAPIsRWLock.RLock()
 	defer l.blockAPIsRWLock.RUnlock()

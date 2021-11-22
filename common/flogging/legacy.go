@@ -26,7 +26,7 @@ import (
 
 // SetFormat sets the logging format.
 func SetFormat(formatSpec string) logging.Formatter {
-	fmt.Println("==SetFormat============")
+	//fmt.Println("==SetFormat============")
 	if formatSpec == "" {
 		formatSpec = defaultFormat
 	}
@@ -36,7 +36,7 @@ func SetFormat(formatSpec string) logging.Formatter {
 // InitBackend sets up the logging backend based on
 // the provided logging formatter and I/O writer.
 func InitBackend(formatter logging.Formatter, output io.Writer) {
-	fmt.Println("==InitBackend============")
+	//fmt.Println("==InitBackend============")
 	backend := logging.NewLogBackend(output, "", 0)
 	backendFormatter := logging.NewBackendFormatter(backend, formatter)
 	logging.SetBackend(backendFormatter).SetLevel(logging.INFO, "")
@@ -44,7 +44,7 @@ func InitBackend(formatter logging.Formatter, output io.Writer) {
 
 // DefaultLevel returns the fallback value for loggers to use if parsing fails.
 func DefaultLevel() string {
-	fmt.Println("==DefaultLevel============")
+	//fmt.Println("==DefaultLevel============")
 	return strings.ToUpper(Global.DefaultLevel().String())
 }
 
@@ -53,7 +53,7 @@ func DefaultLevel() string {
 // own logging specification. The logging specification has the following form:
 //		[<logger>[,<logger>...]=]<level>[:[<logger>[,<logger>...]=]<logger>...]
 func InitFromSpec(spec string) string {
-	fmt.Println("==InitFromSpec============")
+	//fmt.Println("==InitFromSpec============")
 	err := Global.ActivateSpec(spec)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to activate logging spec: %s", err)

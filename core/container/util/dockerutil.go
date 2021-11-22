@@ -23,7 +23,8 @@ func NewDockerClient() (client *docker.Client, err error) {
 	endpoint := viper.GetString("vm.endpoint")//unix//
 	tlsenabled := viper.GetBool("vm.docker.tls.enabled")
 	fmt.Println("===========endpoint============",endpoint)
-	fmt.Println("===========tlsenabled============",tlsenabled)
+	//unix:///host/var/run/docker.sock
+	fmt.Println("===========tlsenabled============",tlsenabled)//false
 	if tlsenabled {
 		cert := config.GetPath("vm.docker.tls.cert.file")
 		key := config.GetPath("vm.docker.tls.key.file")

@@ -110,7 +110,7 @@ func (lc *LedgerCommitter) GetPvtDataAndBlockByNum(seqNum uint64) (*ledger.Block
 
 // LedgerHeight returns recently committed block sequence number
 func (lc *LedgerCommitter) LedgerHeight() (uint64, error) {
-	fmt.Println("==LedgerCommitter=LedgerHeight===")
+	//fmt.Println("==LedgerCommitter=LedgerHeight===")
 	var info *common.BlockchainInfo
 	var err error
 	if info, err = lc.GetBlockchainInfo(); err != nil {

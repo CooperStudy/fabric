@@ -771,7 +771,7 @@ func (g *gossipServiceImpl) Peers() []discovery.NetworkMember {
 // PeersOfChannel returns the NetworkMembers considered alive
 // and also subscribed to the channel given
 func (g *gossipServiceImpl) PeersOfChannel(channel common.ChainID) []discovery.NetworkMember {
-	fmt.Println("====gossipServiceImpl===PeersOfChannel=======")
+	//fmt.Println("====gossipServiceImpl===PeersOfChannel=======")
 	gc := g.chanState.getGossipChannelByChainID(channel)
 	if gc == nil {
 		g.logger.Debug("No such channel", channel)

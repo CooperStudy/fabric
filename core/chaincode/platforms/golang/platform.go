@@ -483,7 +483,7 @@ func (goPlatform *Platform) GetDeploymentPayload(path string) ([]byte, error) {
 }
 
 func (goPlatform *Platform) GenerateDockerfile() (string, error) {
-	fmt.Println("=====Platform  GenerateDockerfile===")
+	fmt.Println("=====Platform==GenerateDockerfile===")
 	var buf []string
 
 	buf = append(buf, "FROM "+cutil.GetDockerfileFromConfig("chaincode.golang.runtime"))
@@ -492,7 +492,30 @@ func (goPlatform *Platform) GenerateDockerfile() (string, error) {
 	dockerFileContents := strings.Join(buf, "\n")
 
 	fmt.Println("==========dockerFileContents================",dockerFileContents)
+	//==========dockerFileContents================ FROM hyperledger/fabric-baseos:amd64-0.4.14
+	//ADD binpackage.tar /usr/local/bin
 	//building chaincode with ldflagsOpt: '-ldflags "-linkmode external -extldflags '-static'"'
+
+
+	/*
+	FROM hyperledger/fabric-baseos:amd64-0.4.14
+	ADD binpackage.tar /usr/local/bin
+	LABEL org.hyperledger.fabric.chaincode.id.name="acb" \
+	      org.hyperledger.fabric.chaincode.id.version="0" \
+	      org.hyperledger.fabric.chaincode.type="GOLANG" \
+	      org.hyperledger.fabric.version="1.4.0" \
+	      org.hyperledger.fabric.base.version="0.4.14"
+	ENV CORE_CHAINCODE_BUILDLEVEL=1.4.0
+	=======contents============= FROM hyperledger/fabric-baseos:amd64-0.4.14
+	ADD binpackage.tar /usr/local/bin
+	LABEL org.hyperledger.fabric.chaincode.id.name="acb" \
+	      org.hyperledger.fabric.chaincode.id.version="0" \
+	      org.hyperledger.fabric.chaincode.type="GOLANG" \
+	      org.hyperledger.fabric.version="1.4.0" \
+	      org.hyperledger.fabric.base.version="0.4.14"
+	ENV CORE_CHAINCODE_BUILDLEVEL=1.4.0
+
+	*/
 	return dockerFileContents, nil
 }
 
@@ -509,6 +532,7 @@ func getLDFlagsOpts() string {
 func (goPlatform *Platform) GenerateDockerBuild(path string, code []byte, tw *tar.Writer) error {
 	fmt.Println("=====Platform==GenerateDockerBuild===")
 	fmt.Println("=============path===============",path)
+	//github.com/hyperledger/fabric-samples/chaincode/chaincode_example02/go
 	pkgname, err := decodeUrl(path)
 	if err != nil {
 		return fmt.Errorf("could not decode url: %s", err)
@@ -517,6 +541,9 @@ func (goPlatform *Platform) GenerateDockerBuild(path string, code []byte, tw *ta
 	ldflagsOpt := getLDFlagsOpts()
 	logger.Infof("building chaincode with ldflagsOpt: '%s'", ldflagsOpt)
 
+	/*
+	building chaincode with ldflagsOpt: '-ldflags "-linkmode external -extldflags '-static'"'
+	 */
 	codepackage := bytes.NewReader(code)
 	binpackage := bytes.NewBuffer(nil)
 	err = util.DockerBuild(util.DockerBuildOptions{
@@ -526,6 +553,7 @@ func (goPlatform *Platform) GenerateDockerBuild(path string, code []byte, tw *ta
 	})
 	a := fmt.Sprintf("GOPATH=/chaincode/input:$GOPATH go build  %s -o /chaincode/output/chaincode %s", ldflagsOpt, pkgname)
 	fmt.Println("=================cmd====",a)
+	//GOPATH=/chaincode/input:$GOPATH go build  -ldflags "-linkmode external -extldflags '-static'" -o /chaincode/output/chaincode github.com/hyperledger/fabric-samples/chaincode/chaincode_example02/go
 	if err != nil {
 		return err
 	}

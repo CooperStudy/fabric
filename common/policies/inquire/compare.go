@@ -34,7 +34,8 @@ func NewComparablePrincipal(principal *msp.MSPPrincipal) *ComparablePrincipal {
 	cp := &ComparablePrincipal{
 		principal: principal,
 	}
-	fmt.Println("===========principal.PrincipalClassification===============",principal.PrincipalClassification)//ROLE
+	fmt.Println("===========principal.PrincipalClassification===============",principal.PrincipalClassification)
+	//ROLE
 	switch principal.PrincipalClassification {
 	case msp.MSPPrincipal_ROLE:
 		fmt.Println("======msp.MSPPrincipal_ROLE==============")
@@ -136,7 +137,11 @@ func (cp *ComparablePrincipal) ToRole() *ComparablePrincipal {
 	}
 	cp.mspID = mspRole.MspIdentifier
 	cp.role = mspRole
-	fmt.Println("=====cp.mspID====",cp.mspID)//=====cp.mspID==== A =====cp.mspID==== B
+	fmt.Println("=====cp.mspID====",cp.mspID)
+	//=====cp.mspID==== Org1MSP
+	//msp_identifier:"Org1MSP" role:PEER
+
+	//=====cp.mspID==== A =====cp.mspID==== B
 	fmt.Println("=====cp.role====",cp.role)//=====cp.role==== msp_identifier:"A" =====cp.role==== msp_identifier:"B"
 	return cp
 }
@@ -152,7 +157,11 @@ func (cps ComparablePrincipalSet) ToPrincipalSet() policies.PrincipalSet {
 		fmt.Println("=====cp===",cp)
 		res = append(res, cp.principal)
 	}
-	fmt.Println("===========res",res)//[principal:"\n\001A"  principal:"\n\001B" ]
+	fmt.Println("===========res",res)
+	//[principal:"\n\001A"  principal:"\n\001B" ]
+
+	//[principal:"\n\007Org1MSP\020\003" ]
+	//
 	return res
 }
 
@@ -194,7 +203,10 @@ func NewComparablePrincipalSet(set policies.PrincipalSet) ComparablePrincipalSet
 	fmt.Println("========NewComparablePrincipalSet======")
 	var res ComparablePrincipalSet
 	for _, principal := range set {
-		fmt.Println("=======principal======",principal)//principal:"\n\001A" principal:"\n\001B"  =======principal====== principal:"\n\001C"
+		fmt.Println("=======principal======",principal)
+		//principal:"\n\001A" principal:"\n\001B"
+		//=======principal====== principal:"\n\001C"
+		//principal:"\n\007Org1MSP\020\003"
 		cp := NewComparablePrincipal(principal)
 		if cp == nil {
 			return nil

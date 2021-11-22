@@ -146,8 +146,12 @@ func (p *policyChecker) CheckPolicyNoChannel(policyName string, signedProp *pb.S
 		return fmt.Errorf("Failed getting local MSP principal during channelless check policy with policy [%s]: [%s]", policyName, err)
 	}
 
-	fmt.Println("=========principal======================",principal)//principal:"\n\007Org1MSP\020\001"
+	fmt.Println("=========principal======================",principal)
+	//principal:"\n\007Org1MSP\020\001"
 	// Verify that proposal's creator satisfies the principal
+
+
+	//principal:"\n\007Org1MSP\020\003"
 	err = id.SatisfiesPrincipal(principal)
 	if err != nil {
 		return fmt.Errorf("Failed verifying that proposal's creator satisfies local MSP principal during channelless check policy with policy [%s]: [%s]", policyName, err)

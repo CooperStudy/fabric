@@ -213,7 +213,7 @@ func (h *Handler) handleMessageReadyState(msg *pb.ChaincodeMessage) error {
 		h.Notify(msg)
 
 	case pb.ChaincodeMessage_PUT_STATE:
-
+		//add data
 		fmt.Println("====pb.ChaincodeMessage_PUT_STATE==")
 		go h.HandleTransaction(msg, h.HandlePutState)
 	case pb.ChaincodeMessage_DEL_STATE:

@@ -142,6 +142,7 @@ type DockerBuildOptions struct {
 //                      after successful execution of Cmd.
 //-------------------------------------------------------------------------------------------
 func DockerBuild(opts DockerBuildOptions) error {
+	fmt.Println("[=========DockerBuild============")
 	client, err := cutil.NewDockerClient()
 	if err != nil {
 		return fmt.Errorf("Error creating docker client: %s", err)
@@ -153,7 +154,7 @@ func DockerBuild(opts DockerBuildOptions) error {
 		}
 	}
 
-	logger.Debugf("Attempting build with image %s", opts.Image)
+	logger.Infof("Attempting build with image %s", opts.Image)
 
 	//-----------------------------------------------------------------------------------
 	// Ensure the image exists locally, or pull it from a registry if it doesn't

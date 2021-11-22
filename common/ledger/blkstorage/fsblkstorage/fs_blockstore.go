@@ -47,7 +47,7 @@ func (store *fsBlockStore) AddBlock(block *common.Block) error {
 
 // GetBlockchainInfo returns the current info about blockchain
 func (store *fsBlockStore) GetBlockchainInfo() (*common.BlockchainInfo, error) {
-	fmt.Println("=====fsBlockStore=GetBlockchainInfo==============")
+	//fmt.Println("=====fsBlockStore=GetBlockchainInfo==============")
 	return store.fileMgr.getBlockchainInfo(), nil
 }
 

@@ -115,6 +115,7 @@ func (v *TreeVertex) selectDescendants(indices []int) []*TreeVertex {
 	r := make([]*TreeVertex, len(indices))
 	i := 0
 	for _, index := range indices {
+		fmt.Println("========index",index)
 		r[i] = v.Descendants[index]
 		i++
 	}

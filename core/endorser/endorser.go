@@ -515,6 +515,23 @@ func (e *Endorser) ProcessProposal(ctx context.Context, signedProp *pb.SignedPro
 
 // determine whether or not a transaction simulator should be
 // obtained for a proposal.
+/*
+配置系统链码(CSCC)
+CSCC：Configuration System Chaincode，负责处理 Peer 端的 Channel 配置。
+
+生命周期系统链码(LSCC)
+LSCC：Lifecycle System Chaincode，负责对用户链码的生命周期进行管理。
+
+查询系统链码(QSCC)
+QSCC：Query System Chaincode，提供账本查询 API。如获取区块和交易等信息。
+
+背书管理系统链码(ESCC)
+ESCC：Endorsement System Chaincode，负责背书(签名)过程, 并可以支持对背书策略进行管理
+对提交的交易提案的模拟运行结果进行签名,，之后创建响应消息返回给客户端
+
+验证系统链码(VSCC)
+VSCC：Validation System Chaincode，处理交易的验证，包括检查背书策略以及多版本并发控制
+ */
 func acquireTxSimulator(chainID string, ccid *pb.ChaincodeID) bool {
 	fmt.Println("==acquireTxSimulator==")
 	if chainID == "" {
@@ -529,6 +546,9 @@ func acquireTxSimulator(chainID string, ccid *pb.ChaincodeID) bool {
 		fmt.Println("=====\"qscc\", \"cscc\"=======")
 		return false
 	default:
+		/*
+		1.初始化链码的时候
+		 */
 		fmt.Println("=====\"qscc\", \"cscc\"  else=======")
 		return true
 	}

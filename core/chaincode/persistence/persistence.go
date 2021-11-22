@@ -66,7 +66,7 @@ func (f *FilesystemIO) ReadFile(filename string) ([]byte, error) {
 func (f *FilesystemIO) ReadDir(dirname string) ([]os.FileInfo, error) {
 	fmt.Println("======FilesystemIO======ReadDir=============")
 	a, err := ioutil.ReadDir(dirname)
-	fmt.Println("=============dirname",dirname)
+	fmt.Println("=============dirname",dirname)///var/hyperledger/production/chaincodes
 	return a,err
 }
 
@@ -118,9 +118,11 @@ func (s *Store) Save(name, version string, ccInstallPkg []byte) ([]byte, error) 
 // Load loads a persisted chaincode install package bytes with the given hash
 // and also returns the name and version
 func (s *Store) Load(hash []byte) (ccInstallPkg []byte, name, version string, err error) {
-	fmt.Println("======Store======Load=============")
+	fmt.Println("====func (s *Store) Load(hash []byte) (ccInstallPkg []byte, name, version string, err error)===")
 	hashString := hex.EncodeToString(hash)
+	fmt.Println("=====hashString=========")
 	ccInstallPkgPath := filepath.Join(s.Path, hashString+".bin")
+	fmt.Println("=======ccInstallPkgPath=====",ccInstallPkgPath)
 	ccInstallPkg, err = s.ReadWriter.ReadFile(ccInstallPkgPath)
 	if err != nil {
 		err = errors.Wrapf(err, "error reading chaincode install package at %s", ccInstallPkgPath)
@@ -128,6 +130,7 @@ func (s *Store) Load(hash []byte) (ccInstallPkg []byte, name, version string, er
 	}
 
 	metadataPath := filepath.Join(s.Path, hashString+".json")
+	fmt.Println("===============metadataPath===========",metadataPath)
 	name, version, err = s.LoadMetadata(metadataPath)
 	if err != nil {
 		return nil, "", "", err

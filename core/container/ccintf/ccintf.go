@@ -44,7 +44,7 @@ func (ccid *CCID) GetName() string {
 	fmt.Println("==CCID====GetName=")
 	if ccid.Version != "" {
 		a:= fmt.Sprintf("%s-%s", ccid.Name, ccid.Version)
-		fmt.Println("============a",a)
+		fmt.Println("===========================a",a)//acb-0
 		return a
 	}
 	return ccid.Name

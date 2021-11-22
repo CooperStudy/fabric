@@ -131,7 +131,7 @@ func getDockerHostConfig() *docker.HostConfig {
 
 	dockerKey := func(key string) string {
 		a := "vm.docker.hostConfig." + key
-		fmt.Println("====dockerKey=========",a)
+		fmt.Println("====dockerKey=========",a)//vm.docker.hostConfig.LogConfig
 		return a
 	}
 
@@ -144,11 +144,13 @@ func getDockerHostConfig() *docker.HostConfig {
 	var logConfig docker.LogConfig
 	err := viper.UnmarshalKey(dockerKey("LogConfig"), &logConfig)
 	fmt.Println("====logConfig===",logConfig)
+	//{json-file map[max-file:5 max-size:50m]}
 	if err != nil {
 		dockerLogger.Warningf("load docker HostConfig.LogConfig failed, error: %s", err.Error())
 	}
 	networkMode := viper.GetString(dockerKey("NetworkMode"))
 	fmt.Println("====networkMode===",networkMode)
+	//net_byfn
 	if networkMode == "" {
 		networkMode = "host"
 	}
@@ -183,6 +185,25 @@ func getDockerHostConfig() *docker.HostConfig {
 		BlkioWeight:      getInt64("BlkioWeight"),
 	}
 	fmt.Println("===========a==============",a)
+	/*
+	====dockerKey========= vm.docker.hostConfig.LogConfig
+	====logConfig=== {json-file map[max-file:5 max-size:50m]}
+	====dockerKey========= vm.docker.hostConfig.NetworkMode
+	====networkMode=== net_byfn
+	====dockerKey========= vm.docker.hostConfig.CapAdd
+	====dockerKey========= vm.docker.hostConfig.CapDrop
+	====dockerKey========= vm.docker.hostConfig.Dns
+	====dockerKey========= vm.docker.hostConfig.DnsSearch
+	====dockerKey========= vm.docker.hostConfig.ExtraHosts
+	====dockerKey========= vm.docker.hostConfig.IpcMode
+	====dockerKey========= vm.docker.hostConfig.PidMode
+	====dockerKey========= vm.docker.hostConfig.UTSMode
+	====dockerKey========= vm.docker.hostConfig.ReadonlyRootfs
+	====dockerKey========= vm.docker.hostConfig.SecurityOpt
+	====dockerKey========= vm.docker.hostConfig.CgroupParent
+	====dockerKey========= vm.docker.hostConfig.Memory
+
+	*/
 	return a
 }
 
@@ -210,6 +231,8 @@ func (vm *DockerVM) createContainer(client dockerClient, imageID, containerID st
 
 func (vm *DockerVM) deployImage(client dockerClient, ccid ccintf.CCID, reader io.Reader) error {
 	fmt.Println("==DockerVM=deployImage==")
+	/*
+	 */
 	id, err := vm.GetVMNameForDocker(ccid)
 	if err != nil {
 		return err
@@ -237,7 +260,7 @@ func (vm *DockerVM) deployImage(client dockerClient, ccid ccintf.CCID, reader io
 		return err
 	}
 
-	dockerLogger.Debugf("Created image: %s", id)
+	dockerLogger.Infof("Created image: %s", id)
 	return nil
 }
 
@@ -246,7 +269,9 @@ func (vm *DockerVM) Start(ccid ccintf.CCID, args, env []string, filesToUpload ma
 	fmt.Println("==DockerVM=Start==")
 	imageName, err := vm.GetVMNameForDocker(ccid)
 	fmt.Println("========ccid",ccid)
+	//{acb 0}
 	fmt.Println("=====imageName=====",imageName)
+	//dev-peer0.org1.example.com-acb-0-f63fb0c65ab6ac412c7a180d1dc49db516c04c88486360ea39069602b9a9ba81
 	if err != nil {
 		return err
 	}
@@ -459,16 +484,24 @@ func (vm *DockerVM) GetVMName(ccid ccintf.CCID) string {
 // environment (such as a development environment). It computes the hash for the
 // supplied image name and then appends it to the lowercase image name to ensure
 // uniqueness.
+// GetVMNameForDocker 根据peer information格式化 docker镜像。 这是
+// 需要在单个主机、多节点中保持图像（存储库）名称唯一
+// 环境（如开发环境）。 它计算哈希值
+// 提供的镜像名称，然后将其附加到小写的镜像名称以确保
+// 唯一性。
 func (vm *DockerVM) GetVMNameForDocker(ccid ccintf.CCID) (string, error) {
 	fmt.Println("==DockerVM==GetVMNameForDocker==")
 	name := vm.preFormatImageName(ccid)
+	fmt.Println("=======name======",name)
 	hash := hex.EncodeToString(util.ComputeSHA256([]byte(name)))
 	fmt.Println("=====hash=====",hash)
+	//f63fb0c65ab6ac412c7a180d1dc49db516c04c88486360ea39069602b9a9ba81
 	saniName := vmRegExp.ReplaceAllString(name, "-")
 	fmt.Println("====saniName======",saniName)
+	//dev-peer0.org1.example.com-acb-0
 	imageName := strings.ToLower(fmt.Sprintf("%s-%s", saniName, hash))
 	fmt.Println("=====imageName=======",imageName)
-
+//dev-peer0.org1.example.com-acb-0-f63fb0c65ab6ac412c7a180d1dc49db516c04c88486360ea39069602b9a9ba81
 	// Check that name complies with Docker's repository naming rules
 	if !imageRegExp.MatchString(imageName) {
 		dockerLogger.Errorf("Error constructing Docker VM Name. '%s' breaks Docker's repository naming rules", name)

@@ -113,7 +113,7 @@ func (m *MultiFormatter) Format(w io.Writer, entry zapcore.Entry, fields []zapco
 
 // SetFormatters replaces the delegate formatters.
 func (m *MultiFormatter) SetFormatters(formatters []Formatter) {
-	fmt.Println("====MultiFormatter==SetFormatters==")
+	//fmt.Println("====MultiFormatter==SetFormatters==")
 	m.mutex.Lock()
 	m.formatters = formatters
 	m.mutex.Unlock()

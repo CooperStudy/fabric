@@ -161,7 +161,7 @@ type membershipFilter struct {
 
 // GetMembership returns the known alive peers and their information
 func (mf *membershipFilter) GetMembership() []discovery.NetworkMember {
-	fmt.Println("====membershipFilter===GetMembership==")
+	//fmt.Println("====membershipFilter===GetMembership==")
 	if mf.hasLeftChannel() {
 		return nil
 	}
@@ -571,7 +571,6 @@ func (gc *gossipChannel) ConfigureChannel(joinMsg api.JoinChannelMessage) {
 func (gc *gossipChannel) HandleMessage(msg proto.ReceivedMessage) {
 	//fmt.Println("====gossipChannel==HandleMessage===")
 	if !gc.verifyMsg(msg) {
-
 		gc.logger.Warning("Failed verifying message:", msg.GetGossipMessage().GossipMessage)
 		return
 	}

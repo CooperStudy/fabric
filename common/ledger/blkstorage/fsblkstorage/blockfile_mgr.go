@@ -447,7 +447,7 @@ func (mgr *blockfileMgr) syncIndex() error {
 }
 
 func (mgr *blockfileMgr) getBlockchainInfo() *common.BlockchainInfo {
-	fmt.Println("===blockfileMgr==getBlockchainInfo==")
+	//fmt.Println("===blockfileMgr==getBlockchainInfo==")
 	return mgr.bcInfo.Load().(*common.BlockchainInfo)
 }
 

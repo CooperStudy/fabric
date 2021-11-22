@@ -212,7 +212,7 @@ func WriteStreamToPackage(is io.Reader, localpath string, packagepath string, tw
 }
 
 func WriteBytesToPackage(name string, payload []byte, tw *tar.Writer) error {
-	fmt.Println("==WriteBytesToPackage==")
+	fmt.Println("====WriteBytesToPackage====")
 	//Make headers identical by using zero time
 	var zeroTime time.Time
 	tw.WriteHeader(&tar.Header{Name: name, Size: int64(len(payload)), ModTime: zeroTime, AccessTime: zeroTime, ChangeTime: zeroTime})

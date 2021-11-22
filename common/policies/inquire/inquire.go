@@ -63,6 +63,7 @@ func principalsOfTree(tree *graph.Tree, principals policies.PrincipalSet) polici
 		pol := v.Data.(*common.SignaturePolicy)
 		switch principalIndex := pol.Type.(type) {
 		case *common.SignaturePolicy_SignedBy:
+			fmt.Println("==============*common.SignaturePolicy_SignedBy===============")
 			if len(principals) <= int(principalIndex.SignedBy) {
 				logger.Warning("Failed computing principalsOfTree, index out of bounds")
 				return nil
@@ -70,8 +71,9 @@ func principalsOfTree(tree *graph.Tree, principals policies.PrincipalSet) polici
 			principal := principals[principalIndex.SignedBy]
 			principalSet = append(principalSet, principal)
 		default:
+			fmt.Println("=========default===================")
 			// Leaf vertex is not of type SignedBy
-			logger.Warning("Leaf vertex", v.Id, "is of type", pol.GetType())
+			logger.Infof("Leaf vertex", v.Id, "is of type", pol.GetType())
 			return nil
 		}
 	}

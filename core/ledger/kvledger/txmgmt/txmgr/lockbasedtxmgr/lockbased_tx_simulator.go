@@ -29,7 +29,7 @@ func newLockBasedTxSimulator(txmgr *LockBasedTxMgr, txid string) (*lockBasedTxSi
 	fmt.Println("==newLockBasedTxSimulator==")
 	rwsetBuilder := rwsetutil.NewRWSetBuilder()
 	helper := newQueryHelper(txmgr, rwsetBuilder)
-	logger.Debugf("constructing new tx simulator txid = [%s]", txid)
+	logger.Infof("constructing new tx simulator txid = [%s]", txid)
 	return &lockBasedTxSimulator{lockBasedQueryExecutor{helper, txid}, rwsetBuilder, false, false, false, false}, nil
 }
 

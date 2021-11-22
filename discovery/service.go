@@ -180,7 +180,10 @@ func (s *service) chaincodeQuery(q *discovery.Query) *discovery.QueryResult {
 		//fmt.Println("=====================q.Channel==============",q.Channel)//mychannel
 		//fmt.Println("=====================common2.ChainID(q.Channel)==============",common2.ChainID(q.Channel))//[109 121 99 104 97 110 110 101 108]
 		desc, err := s.PeersForEndorsement(common2.ChainID(q.Channel), interest)
-		fmt.Println("===============desc================",desc)//nil
+		fmt.Println("===============desc================",desc)
+		/*
+
+		 */
 		if err != nil {
 			logger.Errorf("dddc Failed constructing descriptor for chaincode %s,: %v", interest, err)
 			return wrapError(errors.Errorf("failed constructing descriptor for %v", interest))

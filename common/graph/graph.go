@@ -48,7 +48,10 @@ func (v *Vertex) Neighbors() []*Vertex {
 		fmt.Println("==========v",v)
 		res = append(res, u)
 	}
-	fmt.Println("=====res",res)//[]
+	fmt.Println("=====res",res)
+	/*
+	 [0xc002411950 0xc0024118f0]g1MSP\020\003"  map[Pv�p�.�4:�
+	*/
 	return res
 }
 

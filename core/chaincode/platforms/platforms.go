@@ -198,9 +198,9 @@ func (r *Registry) GenerateDockerBuild(ccType, path, name, version string, codeP
 	// ----------------------------------------------------------------------------------------------------
 	// Generate the Dockerfile specific to our context
 	// ----------------------------------------------------------------------------------------------------
-	fmt.Println("=======ccType=======",ccType)
-	fmt.Println("=======name=======",name)
-	fmt.Println("=======version=======",version)
+	fmt.Println("=======ccType=======",ccType)	     //GOLANG
+	fmt.Println("=======name=======",name)		     //acb
+	fmt.Println("=======version=======",version)     // 0
 	dockerFile, err := r.GenerateDockerfile(ccType, name, version)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to generate a Dockerfile: %s", err)
