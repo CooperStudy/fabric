@@ -213,7 +213,7 @@ func (vi *ValidatorImpl) ChainID() string {
 // Sequence returns the sequence number of the config
 func (vi *ValidatorImpl) Sequence() uint64 {
 	fmt.Println("==ValidatorImpl==Sequence===")
-	fmt.Println("==vi.sequence===",vi.sequence)//1
+	fmt.Println("==vi.sequence===",vi.sequence)//1 3
 	return vi.sequence
 }
 

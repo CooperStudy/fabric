@@ -630,6 +630,8 @@ type atomicBroadcastBroadcastClient struct {
 }
 
 func (x *atomicBroadcastBroadcastClient) Send(m *common.Envelope) error {
+	fmt.Println("================================func (x *atomicBroadcastBroadcastClient) Send(m *common.Envelope) error=========================================")
+	fmt.Println("=======grpc===func (cs *clientStream) SendMsg(m interface{}) (err error)==========")
 	return x.ClientStream.SendMsg(m)
 }
 

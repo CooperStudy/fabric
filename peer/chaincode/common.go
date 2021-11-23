@@ -297,13 +297,17 @@ func checkChaincodeCmdParams(cmd *cobra.Command) error {
 }
 
 func validatePeerConnectionParameters(cmdName string) error {
-	fmt.Println("=============validatePeerConnectionParameters==================")
+	fmt.Println("============func validatePeerConnectionParameters(cmdName string) error {==================")
+	fmt.Println("==========connectionProfile====================",connectionProfile)
 	if connectionProfile != common.UndefinedParamValue {
+		fmt.Println("=============connectionProfile != common.UndefinedParamValue ========================")
 		networkConfig, err := common.GetConfig(connectionProfile)
 		if err != nil {
 			return err
 		}
+		fmt.Println("=======================networkConfig.Channels[channelID].Peers========================",networkConfig.Channels[channelID].Peers)
 		if len(networkConfig.Channels[channelID].Peers) != 0 {
+			fmt.Println("==============if len(networkConfig.Channels[channelID].Peers) != 0 ==============")
 			peerAddresses = []string{}
 			tlsRootCertFiles = []string{}
 			for peer, peerChannelConfig := range networkConfig.Channels[channelID].Peers {
@@ -312,7 +316,9 @@ func validatePeerConnectionParameters(cmdName string) error {
 					if !ok {
 						return errors.Errorf("peer '%s' is defined in the channel config but doesn't have associated peer config", peer)
 					}
+					fmt.Println("===================== peerConfig.URL============", peerConfig.URL)
 					peerAddresses = append(peerAddresses, peerConfig.URL)
+					fmt.Println("=======================tlsRootCertFiles==========",peerConfig.TLSCACerts.Path)
 					tlsRootCertFiles = append(tlsRootCertFiles, peerConfig.TLSCACerts.Path)
 				}
 			}
@@ -350,47 +356,65 @@ type ChaincodeCmdFactory struct {
 
 // InitCmdFactory init the ChaincodeCmdFactory with default clients
 func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) (*ChaincodeCmdFactory, error) {
-	fmt.Println("=============InitCmdFactory==================")
+	fmt.Println("============1.func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) (*ChaincodeCmdFactory, error)================")
 	var err error
 	var endorserClients []pb.EndorserClient
 	var deliverClients []api.PeerDeliverClient
+	fmt.Println("============2.func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) (*ChaincodeCmdFactory, error)================")
+	fmt.Println("===========InitCmdFactory=======isEndorserRequired======================",isEndorserRequired)
 	if isEndorserRequired {
+		fmt.Println("============3.func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) (*ChaincodeCmdFactory, error)================")
 		if err = validatePeerConnectionParameters(cmdName); err != nil {
 			return nil, errors.WithMessage(err, "error validating peer connection parameters")
 		}
+		fmt.Println("============4.func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) (*ChaincodeCmdFactory, error)================")
+		fmt.Println("===========peerAddresses===========",peerAddresses)
 		for i, address := range peerAddresses {
+			fmt.Println("==============================i",i)
+			fmt.Println("==============================address",address)
 			var tlsRootCertFile string
+			fmt.Println("==============================tlsRootCertFiles",tlsRootCertFiles)
 			if tlsRootCertFiles != nil {
 				tlsRootCertFile = tlsRootCertFiles[i]
+				fmt.Println("==============================tlsRootCertFile",tlsRootCertFile)
 			}
 			endorserClient, err := common.GetEndorserClientFnc(address, tlsRootCertFile)
+			fmt.Println("==================endorserClient========================",endorserClient)
 			if err != nil {
 				return nil, errors.WithMessage(err, fmt.Sprintf("error getting endorser client for %s", cmdName))
 			}
 			endorserClients = append(endorserClients, endorserClient)
+			fmt.Println("==================endorserClients========================",endorserClients)
 			deliverClient, err := common.GetPeerDeliverClientFnc(address, tlsRootCertFile)
+			fmt.Println("==================deliverClient========================",deliverClient)
 			if err != nil {
 				return nil, errors.WithMessage(err, fmt.Sprintf("error getting deliver client for %s", cmdName))
 			}
 			deliverClients = append(deliverClients, deliverClient)
+			fmt.Println("==================deliverClients========================",deliverClients)
 		}
 		if len(endorserClients) == 0 {
 			return nil, errors.New("no endorser clients retrieved - this might indicate a bug")
 		}
 	}
+	fmt.Println("============5.func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) (*ChaincodeCmdFactory, error)================")
 	certificate, err := common.GetCertificateFnc()
 	if err != nil {
 		return nil, errors.WithMessage(err, "error getting client cerificate")
 	}
 
+	fmt.Println("============6.func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) (*ChaincodeCmdFactory, error)================")
 	signer, err := common.GetDefaultSignerFnc()
 	if err != nil {
 		return nil, errors.WithMessage(err, "error getting default signer")
 	}
-
+	fmt.Println("============7.func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) (*ChaincodeCmdFactory, error)================")
 	var broadcastClient common.BroadcastClient
+
 	if isOrdererRequired {
+		fmt.Println("===========if isOrdererRequired ============================")
 		if len(common.OrderingEndpoint) == 0 {
+			fmt.Println("========== len(common.OrderingEndpoint) == 0 ============================")
 			if len(endorserClients) == 0 {
 				return nil, errors.New("orderer is required, but no ordering endpoint or endorser client supplied")
 			}
@@ -407,13 +431,14 @@ func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) 
 			// override viper env
 			viper.Set("orderer.address", orderingEndpoints[0])
 		}
-
+		fmt.Println("===============broadcastClient, err = common.GetBroadcastClientFnc()====================")
 		broadcastClient, err = common.GetBroadcastClientFnc()
 
 		if err != nil {
 			return nil, errors.WithMessage(err, "error getting broadcast client")
 		}
 	}
+	fmt.Println("============8.func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) (*ChaincodeCmdFactory, error)================")
 	return &ChaincodeCmdFactory{
 		EndorserClients: endorserClients,
 		DeliverClients:  deliverClients,
@@ -476,8 +501,12 @@ func ChaincodeInvokeOrQuery(
 		return nil, errors.WithMessage(err, fmt.Sprintf("error creating signed proposal for %s", funcName))
 	}
 	var responses []*pb.ProposalResponse
-	for _, endorser := range endorserClients {
+	for k, endorser := range endorserClients {
+		fmt.Println("================k======================",k)
+		fmt.Println("================endorser======================",endorser)
+		fmt.Println("====================signedProp==============================",signedProp)
 		proposalResp, err := endorser.ProcessProposal(context.Background(), signedProp)
+		fmt.Println("===============proposalResp============================",proposalResp)
 		if err != nil {
 			return nil, errors.WithMessage(err, fmt.Sprintf("error endorsing %s", funcName))
 		}
@@ -493,18 +522,24 @@ func ChaincodeInvokeOrQuery(
 	proposalResp := responses[0]
 
 	if invoke {
+		fmt.Println("==============if invoke {==================")
 		if proposalResp != nil {
 			if proposalResp.Response.Status >= shim.ERRORTHRESHOLD {
+				fmt.Println("==================proposalResp.Response.Status >= shim.ERRORTHRESHOLD ===============================")
 				return proposalResp, nil
 			}
 			// assemble a signed transaction (it's an Envelope message)
 			env, err := putils.CreateSignedTx(prop, signer, responses...)
+			fmt.Println("======================env, err := putils.CreateSignedTx(prop, signer, responses...)==============================")
 			if err != nil {
 				return proposalResp, errors.WithMessage(err, "could not assemble transaction")
 			}
 			var dg *deliverGroup
 			var ctx context.Context
+			fmt.Println("======================waitForEvent==============================",waitForEvent)
 			if waitForEvent {
+				fmt.Println("======================waitForEvent==============================")
+
 				var cancelFunc context.CancelFunc
 				ctx, cancelFunc = context.WithTimeout(context.Background(), waitForEventTimeout)
 				defer cancelFunc()
@@ -518,7 +553,10 @@ func ChaincodeInvokeOrQuery(
 			}
 
 			// send the envelope for ordering
-			if err = bc.Send(env); err != nil {
+			fmt.Println("===================1.err = bc.Send(env)=============================")
+			 err = bc.Send(env)
+			 fmt.Println("===================2.err = bc.Send(env)=============================")
+			if err != nil {
 				return proposalResp, errors.WithMessage(err, fmt.Sprintf("error sending transaction for %s", funcName))
 			}
 
