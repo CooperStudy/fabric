@@ -636,6 +636,7 @@ func (x *atomicBroadcastBroadcastClient) Send(m *common.Envelope) error {
 }
 
 func (x *atomicBroadcastBroadcastClient) Recv() (*BroadcastResponse, error) {
+	fmt.Println("========================= func (x *atomicBroadcastBroadcastClient) Recv() (*BroadcastResponse, error) ===========================================")
 	m := new(BroadcastResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err

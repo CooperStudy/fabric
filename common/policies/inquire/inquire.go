@@ -73,7 +73,7 @@ func principalsOfTree(tree *graph.Tree, principals policies.PrincipalSet) polici
 		default:
 			fmt.Println("=========default===================")
 			// Leaf vertex is not of type SignedBy
-			logger.Infof("Leaf vertex", v.Id, "is of type", pol.GetType())
+			logger.Info("Leaf vertex", v.Id, "is of type", pol.GetType())
 			return nil
 		}
 	}

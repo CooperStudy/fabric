@@ -298,9 +298,12 @@ func (pl *policyLogger) Evaluate(signatureSet []*cb.SignedData) error {
 func (pm *ManagerImpl) GetPolicy(id string) (Policy, bool) {
 	fmt.Println("===ManagerImpl==GetPolicy===")
 	fmt.Println("=======id======",id)
+	//ChannelCreationPolicy
+
 	//Writers
 	//Readers
 	//Admins
+	//
 	if id == "" {
 		logger.Errorf("Returning dummy reject all policy because no policy ID supplied")
 		return rejectPolicy(id), false
@@ -319,6 +322,8 @@ func (pm *ManagerImpl) GetPolicy(id string) (Policy, bool) {
 	}
 
 	fmt.Println("=========relpath=========",relpath)
+	//ChannelCreationPolicy
+
 	//Readers
 	//Writers
 	//Admins
@@ -345,6 +350,8 @@ func (pm *ManagerImpl) GetPolicy(id string) (Policy, bool) {
     //  /Channel/Orderer/Readers
     //  /Channel/Application/Writers
     //  /Channel/Orderer/Writers
+
+    ///Channel/Application/ChannelCreationPolicy
 	return &policyLogger{
 		policy:     policy,
 		policyName: PathSeparator + pm.path + PathSeparator + relpath,
