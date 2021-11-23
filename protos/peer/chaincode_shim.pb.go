@@ -1042,12 +1042,19 @@ type chaincodeSupportRegisterClient struct {
 }
 
 func (x *chaincodeSupportRegisterClient) Send(m *ChaincodeMessage) error {
+	fmt.Println("===============func (x *chaincodeSupportRegisterClient) Send(m *ChaincodeMessage) error ===============")
+	fmt.Println("============ChaincodeMessage==========",m)
+	fmt.Println("===============grpc x.ClientStream.SendMsg(m)==============")
 	return x.ClientStream.SendMsg(m)
 }
 
 func (x *chaincodeSupportRegisterClient) Recv() (*ChaincodeMessage, error) {
+	fmt.Println("========================func (x *chaincodeSupportRegisterClient) Recv() (*ChaincodeMessage, error) {=======================================")
 	m := new(ChaincodeMessage)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
+	fmt.Println("===============grpc x.ClientStream.RecvMsg(m)==============")
+	 err := x.ClientStream.RecvMsg(m)
+	 fmt.Println("====================m",m)
+	 if err != nil {
 		return nil, err
 	}
 	return m, nil

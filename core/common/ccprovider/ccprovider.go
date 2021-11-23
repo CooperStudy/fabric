@@ -102,6 +102,7 @@ func isPrintable(name string) bool {
 func GetChaincodePackageFromPath(ccname string, ccversion string, ccInstallPath string) ([]byte, error) {
 	fmt.Println("==GetChaincodePackageFromPath=")
 	path := fmt.Sprintf("%s/%s.%s", ccInstallPath, ccname, ccversion)
+	fmt.Println("==========GetChaincodePackageFromPath:path======================",path)
 	var ccbytes []byte
 	var err error
 	if ccbytes, err = ioutil.ReadFile(path); err != nil {
@@ -265,7 +266,7 @@ func GetChaincodeData(ccname string, ccversion string) (*ChaincodeData, error) {
 }
 
 func CheckInstantiationPolicy(name, version string, cdLedger *ChaincodeData) error {
-	fmt.Println("==CheckInstantiationPolicy=")
+	fmt.Println("=====CheckInstantiationPolicy====")
 	ccdata, err := GetChaincodeData(name, version)
 	if err != nil {
 		return err

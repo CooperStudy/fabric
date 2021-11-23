@@ -57,6 +57,7 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 }
 
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
+	fmt.Println("================func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response =========================")
 	fmt.Println("ex02 Invoke")
 	function, args := stub.GetFunctionAndParameters()
 	if function == "invoke" {

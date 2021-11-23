@@ -320,11 +320,13 @@ func (ccpack *SignedCDSPackage) InitFromFS(ccname string, ccversion string) ([]b
 
 //InitFromPath returns the chaincode and its package from the file system
 func (ccpack *SignedCDSPackage) InitFromPath(ccname string, ccversion string, path string) ([]byte, *pb.ChaincodeDeploymentSpec, error) {
-	fmt.Println("==SignedCDSPackage==InitFromPath==")
+	fmt.Println("==func (ccpack *SignedCDSPackage) InitFromPath(ccname string, ccversion string, path string) ([]byte, *pb.ChaincodeDeploymentSpec, error) {==")
 	//incase ccpack is reused
 	ccpack.reset()
 
+	fmt.Println("=============1.buf, err := GetChaincodePackageFromPath(ccname, ccversion, path)=====")
 	buf, err := GetChaincodePackageFromPath(ccname, ccversion, path)
+	fmt.Println("=============2.buf, err := GetChaincodePackageFromPath(ccname, ccversion, path)=====")
 	if err != nil {
 		return nil, nil, err
 	}

@@ -186,6 +186,7 @@ func (lscc *LifeCycleSysCC) ChaincodeContainerInfo(chaincodeName string, qe ledg
 
 func (lscc *LifeCycleSysCC) ChaincodeDefinition(chaincodeName string, qe ledger.QueryExecutor) (ccprovider.ChaincodeDefinition, error) {
 	fmt.Println("===LifeCycleSysCC==ChaincodeDefinition=")
+	fmt.Println("=============chaincodeName===========",chaincodeName)
 	chaincodeDataBytes, err := qe.GetState("lscc", chaincodeName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not retrieve state for chaincode %s", chaincodeName)
@@ -196,6 +197,7 @@ func (lscc *LifeCycleSysCC) ChaincodeDefinition(chaincodeName string, qe ledger.
 	}
 
 	chaincodeData := &ccprovider.ChaincodeData{}
+	fmt.Println("=============chaincodeData============",chaincodeData)
 	err = proto.Unmarshal(chaincodeDataBytes, chaincodeData)
 	if err != nil {
 		return nil, errors.Wrapf(err, "chaincode %s has bad definition", chaincodeName)

@@ -119,6 +119,7 @@ func (s *MockSupport) IsJavaCC(buf []byte) (bool, error) {
 }
 
 func (s *MockSupport) CheckInstantiationPolicy(name, version string, cd ccprovider.ChaincodeDefinition) error {
+
 	return s.CheckInstantiationPolicyError
 }
 

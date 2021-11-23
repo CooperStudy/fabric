@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package chaincode
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -36,17 +37,21 @@ type RuntimeLauncher struct {
 }
 
 func (r *RuntimeLauncher) Launch(ccci *ccprovider.ChaincodeContainerInfo) error {
+	fmt.Println("============================1.func (r *RuntimeLauncher) Launch(ccci *ccprovider.ChaincodeContainerInfo) error==================================")
 	var startFailCh chan error
 	var timeoutCh <-chan time.Time
 
 	startTime := time.Now()
 	cname := ccci.Name + ":" + ccci.Version
 	launchState, started := r.Registry.Launching(cname)
+	fmt.Println("=========started============",started)
 	if !started {
 		startFailCh = make(chan error, 1)
 		timeoutCh = time.NewTimer(r.StartupTimeout).C
 
+		fmt.Printf("=========1.codePackage, err := r.getCodePackage(%v)=========",ccci)
 		codePackage, err := r.getCodePackage(ccci)
+		fmt.Printf("=========2.codePackage, err := r.getCodePackage(%v)=========",ccci)
 		if err != nil {
 			return err
 		}

@@ -81,6 +81,7 @@ func (handler *Handler) serialSend(msg *pb.ChaincodeMessage) error {
 //nil channel
 func (handler *Handler) serialSendAsync(msg *pb.ChaincodeMessage, errc chan error) {
 	fmt.Println("=====Handler========serialSendAsync===========")
+	fmt.Println("========msg======",msg)
 	go func() {
 		err := handler.serialSend(msg)
 		if errc != nil {
@@ -105,6 +106,7 @@ func (handler *Handler) createChannel(channelID, txid string) (chan pb.Chaincode
 		return nil, errors.Errorf("[%s] cannot create response channel", shorttxid(txid))
 	}
 	txCtxID := handler.getTxCtxId(channelID, txid)
+	fmt.Println("=====txCtxID=========",txCtxID)
 	if handler.responseChannel[txCtxID] != nil {
 		return nil, errors.Errorf("[%s] channel exists", shorttxid(txCtxID))
 	}
@@ -121,13 +123,14 @@ func (handler *Handler) sendChannel(msg *pb.ChaincodeMessage) error {
 		return errors.Errorf("[%s] Cannot send message response channel", shorttxid(msg.Txid))
 	}
 	txCtxID := handler.getTxCtxId(msg.ChannelId, msg.Txid)
+	fmt.Println("=========txCtxID=======",txCtxID)
 	if handler.responseChannel[txCtxID] == nil {
 		return errors.Errorf("[%s] sendChannel does not exist", shorttxid(msg.Txid))
 	}
 
-	chaincodeLogger.Debugf("[%s] before send", shorttxid(msg.Txid))
+	chaincodeLogger.Infof("[%s] before send", shorttxid(msg.Txid))
 	handler.responseChannel[txCtxID] <- *msg
-	chaincodeLogger.Debugf("[%s] after send", shorttxid(msg.Txid))
+	chaincodeLogger.Infof("[%s] after send", shorttxid(msg.Txid))
 
 	return nil
 }
@@ -274,6 +277,7 @@ func (handler *Handler) handleTransaction(msg *pb.ChaincodeMessage, errc chan er
 		// Get the function and args from Payload
 		input := &pb.ChaincodeInput{}
 		unmarshalErr := proto.Unmarshal(msg.Payload, input)
+		fmt.Println("=============input=============",input)
 		if nextStateMsg = errFunc(unmarshalErr, nil, "[%s] Incorrect payload format. Sending %s", shorttxid(msg.Txid), pb.ChaincodeMessage_ERROR.String()); nextStateMsg != nil {
 			return
 		}
@@ -324,8 +328,11 @@ func (handler *Handler) handleGetState(collection string, key string, channelId 
 	payloadBytes, _ := proto.Marshal(&pb.GetState{Collection: collection, Key: key})
 
 	msg := &pb.ChaincodeMessage{Type: pb.ChaincodeMessage_GET_STATE, Payload: payloadBytes, Txid: txid, ChannelId: channelId}
-	chaincodeLogger.Debugf("[%s] Sending %s", shorttxid(msg.Txid), pb.ChaincodeMessage_GET_STATE)
+	chaincodeLogger.Infof("[%s] Sending %s", shorttxid(msg.Txid), pb.ChaincodeMessage_GET_STATE)
 
+	fmt.Println("=====================mgs",msg)
+	fmt.Println("=====================channelId",channelId)
+	fmt.Println("=====================txid",txid)
 	responseMsg, err := handler.callPeerWithChaincodeMsg(msg, channelId, txid)
 	if err != nil {
 		return nil, errors.WithMessage(err, fmt.Sprintf("[%s] error sending GET_STATE", shorttxid(txid)))
@@ -774,7 +781,7 @@ func (handler *Handler) handleInvokeChaincode(chaincodeName string, args [][]byt
 
 //handle ready state
 func (handler *Handler) handleReady(msg *pb.ChaincodeMessage, errc chan error) error {
-	fmt.Println("=====Handler========handleReady===========")
+	fmt.Println("====func (handler *Handler) handleReady(msg *pb.ChaincodeMessage, errc chan error) error===========")
 	switch msg.Type {
 	case pb.ChaincodeMessage_RESPONSE:
 		fmt.Println("========pb.ChaincodeMessage_RESPONSE===============")
@@ -842,10 +849,10 @@ func (handler *Handler) handleCreated(msg *pb.ChaincodeMessage, errc chan error)
 
 // handleMessage message handles loop for shim side of chaincode/peer stream.
 func (handler *Handler) handleMessage(msg *pb.ChaincodeMessage, errc chan error) error {
-	fmt.Println("=====Handler========handleMessage===========")
+	fmt.Println("=====path:fabric/core/chaincode/shim==func (handler *Handler) handleMessage(msg *pb.ChaincodeMessage, errc chan error) error===========")
 	if msg.Type == pb.ChaincodeMessage_KEEPALIVE {
 		fmt.Println("======msg.Type == pb.ChaincodeMessage_KEEPALIVE ========================")
-		chaincodeLogger.Debug("Sending KEEPALIVE response")
+		chaincodeLogger.Infof("Sending KEEPALIVE response")
 		handler.serialSendAsync(msg, nil) // ignore errors, maybe next KEEPALIVE will work
 		return nil
 	}
@@ -855,6 +862,7 @@ func (handler *Handler) handleMessage(msg *pb.ChaincodeMessage, errc chan error)
 
 	switch handler.state {
 	case ready:
+		//invoke chaincode
 		fmt.Println("========ready============")
 		err = handler.handleReady(msg, errc)
 	case established:

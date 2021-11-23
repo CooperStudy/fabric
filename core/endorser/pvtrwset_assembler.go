@@ -52,8 +52,13 @@ func (as *rwSetAssembler) AssemblePvtRWSet(privData *rwset.TxPvtReadWriteSet, tx
 	}
 
 	for _, pvtRwset := range privData.NsPvtRwset {
+		fmt.Println("===========pvtRwset========",pvtRwset)
 		namespace := pvtRwset.Namespace
-		if _, found := txPvtRwSetWithConfig.CollectionConfigs[namespace]; !found {
+		_, found := txPvtRwSetWithConfig.CollectionConfigs[namespace]
+		fmt.Println("=========found======",found)
+		if !found {
+			fmt.Println("=========!found======",!found)
+			fmt.Println("======namespace=",namespace)
 			cb, err := txsim.GetState("lscc", privdata.BuildCollectionKVSKey(namespace))
 			if err != nil {
 				return nil, errors.WithMessage(err, fmt.Sprintf("error while retrieving collection config for chaincode %#v", namespace))
@@ -64,6 +69,7 @@ func (as *rwSetAssembler) AssemblePvtRWSet(privData *rwset.TxPvtReadWriteSet, tx
 
 			colCP := &common.CollectionConfigPackage{}
 			err = proto.Unmarshal(cb, colCP)
+			fmt.Println("=====colCP==========",colCP)
 			if err != nil {
 				return nil, errors.Wrapf(err, "invalid configuration for collection criteria %#v", namespace)
 			}
@@ -71,7 +77,9 @@ func (as *rwSetAssembler) AssemblePvtRWSet(privData *rwset.TxPvtReadWriteSet, tx
 			txPvtRwSetWithConfig.CollectionConfigs[namespace] = colCP
 		}
 	}
+	fmt.Println("====================1.as.trimCollectionConfigs(txPvtRwSetWithConfig)====================")
 	as.trimCollectionConfigs(txPvtRwSetWithConfig)
+	fmt.Println("====================2.as.trimCollectionConfigs(txPvtRwSetWithConfig)====================")
 	return txPvtRwSetWithConfig, nil
 }
 

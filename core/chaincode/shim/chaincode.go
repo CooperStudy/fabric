@@ -365,19 +365,23 @@ func chatWithPeer(chaincodename string, stream PeerChaincodeStream, cc Chaincode
 		case rmsg := <-msgAvail:
 			switch {
 			case rmsg.err == io.EOF:
+				fmt.Println("===========case rmsg.err == io.EOF================")
 				err = errors.Wrapf(rmsg.err, "received EOF, ending chaincode stream")
-				chaincodeLogger.Debugf("%+v", err)
+				chaincodeLogger.Infof("%+v", err)
 				return err
 			case rmsg.err != nil:
+				fmt.Println("===========case rmsg.err != nil===============")
 				err := errors.Wrap(rmsg.err, "receive failed")
 				chaincodeLogger.Errorf("Received error from server, ending chaincode stream: %+v", err)
 				return err
 			case rmsg.msg == nil:
+				fmt.Println("===========case rmsg.msg == nil===============")
 				err := errors.New("received nil message, ending chaincode stream")
-				chaincodeLogger.Debugf("%+v", err)
+				chaincodeLogger.Infof("%+v", err)
 				return err
 			default:
-				chaincodeLogger.Debugf("[%s]Received message %s from peer", shorttxid(rmsg.msg.Txid), rmsg.msg.Type)
+				fmt.Println("===========default===============")
+				chaincodeLogger.Infof("[%s]Received message %s from peer", shorttxid(rmsg.msg.Txid), rmsg.msg.Type)
 				err := handler.handleMessage(rmsg.msg, errc)
 				if err != nil {
 					err = errors.WithMessage(err, "error handling message")
@@ -388,6 +392,7 @@ func chatWithPeer(chaincodename string, stream PeerChaincodeStream, cc Chaincode
 			}
 
 		case sendErr := <-errc:
+			fmt.Println("===========case sendErr := <-errc:===============")
 			if sendErr != nil {
 				err := errors.Wrap(sendErr, "error sending")
 				return err
@@ -408,6 +413,7 @@ func (stub *ChaincodeStub) init(handler *Handler, channelId string, txid string,
 	stub.signedProposal = signedProposal
 	stub.decorations = input.Decorations
 	stub.validationParameterMetakey = pb.MetaDataKeys_VALIDATION_PARAMETER.String()
+
 
 	// TODO: sanity check: verify that every call to init with a nil
 	// signedProposal is a legitimate one, meaning it is an internal call to system chaincodes.

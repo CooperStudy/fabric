@@ -94,6 +94,6 @@ func (ac *Authenticator) authenticate(msg *pb.ChaincodeMessage, stream grpc.Serv
 		return fmt.Errorf(errMsg)
 	}
 
-	logger.Debug("Chaincode", ccName, "'s authentication is authorized")
+	logger.Info("Chaincode", ccName, "'s authentication is authorized")
 	return nil
 }
