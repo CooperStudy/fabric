@@ -53,9 +53,9 @@ func (c *ContainerRuntime) Start(ccci *ccprovider.ChaincodeContainerInfo, codePa
 		return err
 	}
 
-	chaincodeLogger.Debugf("start container: %s", cname)
-	chaincodeLogger.Debugf("start container with args: %s", strings.Join(lc.Args, " "))
-	chaincodeLogger.Debugf("start container with env:\n\t%s", strings.Join(lc.Envs, "\n\t"))
+	chaincodeLogger.Infof("start container: %s", cname)
+	chaincodeLogger.Infof("start container with args: %s", strings.Join(lc.Args, " "))
+	chaincodeLogger.Infof("start container with env:\n\t%s", strings.Join(lc.Envs, "\n\t"))
 
 	scr := container.StartContainerReq{
 		Builder: &container.PlatformBuilder{
@@ -139,10 +139,14 @@ func (c *ContainerRuntime) LaunchConfig(cname string, ccType string) (*LaunchCon
 	// language specific arguments
 	switch ccType {
 	case pb.ChaincodeSpec_GOLANG.String(), pb.ChaincodeSpec_CAR.String():
+		fmt.Println("=================case pb.ChaincodeSpec_GOLANG.String(), pb.ChaincodeSpec_CAR.String()===============================")
 		lc.Args = []string{"chaincode", fmt.Sprintf("-peer.address=%s", c.PeerAddress)}
 	case pb.ChaincodeSpec_JAVA.String():
+		fmt.Println("==================case pb.ChaincodeSpec_GOLANG.String(), pb.ChaincodeSpec_CAR.String()====")
+
 		lc.Args = []string{"/root/chaincode-java/start", "--peerAddress", c.PeerAddress}
 	case pb.ChaincodeSpec_NODE.String():
+		fmt.Println("=================case pb.ChaincodeSpec_NODE.String():====")
 		lc.Args = []string{"/bin/sh", "-c", fmt.Sprintf("cd /usr/local/src; npm start -- --peer.address %s", c.PeerAddress)}
 	default:
 		return nil, errors.Errorf("unknown chaincodeType: %s", ccType)
@@ -150,6 +154,7 @@ func (c *ContainerRuntime) LaunchConfig(cname string, ccType string) (*LaunchCon
 
 	// Pass TLS options to chaincode
 	if c.CertGenerator != nil {
+		fmt.Println("================if c.CertGenerator != nil===============")
 		certKeyPair, err := c.CertGenerator.Generate(cname)
 		if err != nil {
 			return nil, errors.WithMessage(err, fmt.Sprintf("failed to generate TLS certificates for %s", cname))
@@ -167,7 +172,7 @@ func (c *ContainerRuntime) LaunchConfig(cname string, ccType string) (*LaunchCon
 		lc.Envs = append(lc.Envs, "CORE_PEER_TLS_ENABLED=false")
 	}
 
-	chaincodeLogger.Debugf("launchConfig: %s", lc.String())
+	chaincodeLogger.Infof("launchConfig: %s", lc.String())
 
 	return &lc, nil
 }

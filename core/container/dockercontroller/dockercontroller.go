@@ -208,7 +208,7 @@ func getDockerHostConfig() *docker.HostConfig {
 }
 
 func (vm *DockerVM) createContainer(client dockerClient, imageID, containerID string, args, env []string, attachStdout bool) error {
-	fmt.Println("==DockerVM=createContainer==")
+	fmt.Println("====DockerVM=createContainer===")
 	logger := dockerLogger.With("imageID", imageID, "containerID", containerID)
 	logger.Debugw("create container")
 	_, err := client.CreateContainer(docker.CreateContainerOptions{
