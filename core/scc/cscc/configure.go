@@ -96,6 +96,7 @@ func (e *PeerConfiger) Init(stub shim.ChaincodeStubInterface) pb.Response {
 // UpdateConfigBlock; otherwise it is the chain id
 // TODO: Improve the scc interface to avoid marshal/unmarshal args
 func (e *PeerConfiger) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
+	cnflogger.Info("========================func (e *PeerConfiger) Invoke(stub shim.ChaincodeStubInterface) pb.Response===================================")
 	args := stub.GetArgs()
 
 	if len(args) < 1 {
@@ -121,6 +122,7 @@ func (e *PeerConfiger) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 }
 
 func (e *PeerConfiger) InvokeNoShim(args [][]byte, sp *pb.SignedProposal) pb.Response {
+	cnflogger.Info("===============func (e *PeerConfiger) InvokeNoShim(args [][]byte, sp *pb.SignedProposal) pb.Response===============================")
 	var err error
 	fname := string(args[0])
 
@@ -233,6 +235,7 @@ func validateConfigBlock(block *common.Block) error {
 // Since it is the first block, it is the genesis block containing configuration
 // for this chain, so we want to update the Chain object with this info
 func joinChain(chainID string, block *common.Block, ccp ccprovider.ChaincodeProvider, sccp sysccprovider.SystemChaincodeProvider) pb.Response {
+	cnflogger.Info("============func joinChain(chainID string, block *common.Block, ccp ccprovider.ChaincodeProvider, sccp sysccprovider.SystemChaincodeProvider) pb.Response========================")
 	if err := peer.CreateChainFromBlock(block, ccp, sccp); err != nil {
 		return shim.Error(err.Error())
 	}

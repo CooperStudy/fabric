@@ -169,6 +169,7 @@ func (cs *ChaincodeSupport) Stop(ccci *ccprovider.ChaincodeContainerInfo) error 
 
 // HandleChaincodeStream implements ccintf.HandleChaincodeStream for all vms to call with appropriate stream
 func (cs *ChaincodeSupport) HandleChaincodeStream(stream ccintf.ChaincodeStream) error {
+	chaincodeLogger.Info("=================func (cs *ChaincodeSupport) HandleChaincodeStream(stream ccintf.ChaincodeStream) error========================")
 	handler := &Handler{
 		Invoker:                    cs,
 		DefinitionGetter:           cs.Lifecycle,

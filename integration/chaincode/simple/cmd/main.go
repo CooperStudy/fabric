@@ -15,6 +15,8 @@ import (
 )
 
 func main() {
+	fmt.Println("=========fabric/integration/chaincode/sample/cmd/main.go func main()=========================")
+
 	err := shim.Start(&simple.SimpleChaincode{})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Exiting Simple chaincode: %s", err)

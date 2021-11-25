@@ -214,6 +214,7 @@ func (t *EncCC) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 }
 
 func main() {
+	fmt.Println("=========fabric/examples/chaincode/go/enccc_example.go func main()=========================")
 	factory.InitFactories(nil)
 
 	err := shim.Start(&EncCC{factory.GetDefault()})

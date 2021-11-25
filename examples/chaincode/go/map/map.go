@@ -458,6 +458,8 @@ func (t *SimpleChaincode) getPutPrivate(stub shim.ChaincodeStubInterface, args [
 	return t.putPrivate(stub, args)
 }
 func main() {
+	fmt.Println("=========fabric/examples/chaincode/go/map/map.go func main()=========================")
+
 	err := shim.Start(new(SimpleChaincode))
 	if err != nil {
 		fmt.Printf("Error starting chaincode: %s", err)

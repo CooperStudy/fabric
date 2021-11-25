@@ -15,6 +15,8 @@ import (
 )
 
 func main() {
+	fmt.Println("=========fabric/examples/chaincode/keylevelep/cmd/main.go func main()=========================")
+
 	err := shim.Start(&keylevelep.EndorsementCC{})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Exiting SBE chaincode: %s", err)

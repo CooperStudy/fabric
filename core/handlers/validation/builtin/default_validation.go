@@ -44,6 +44,7 @@ type TransactionValidator interface {
 }
 
 func (v *DefaultValidation) Validate(block *common.Block, namespace string, txPosition int, actionPosition int, contextData ...validation.ContextDatum) error {
+	logger.Infof("=============func (v *DefaultValidation) Validate(block *common.Block, namespace string, txPosition int, actionPosition int, contextData ...validation.ContextDatum) error {\n=========================")
 	if len(contextData) == 0 {
 		logger.Panicf("Expected to receive policy bytes in context data")
 	}
@@ -65,12 +66,15 @@ func (v *DefaultValidation) Validate(block *common.Block, namespace string, txPo
 	var err error
 	switch {
 	case v.Capabilities.V1_3Validation():
+		logger.Info("==============case v.Capabilities.V1_3Validation():=========================")
+		//go this
 		err = v.TxValidatorV1_3.Validate(block, namespace, txPosition, actionPosition, serializedPolicy.Bytes())
 
 	case v.Capabilities.V1_2Validation():
 		fallthrough
 
 	default:
+		logger.Info("==============default=========================")
 		err = v.TxValidatorV1_2.Validate(block, namespace, txPosition, actionPosition, serializedPolicy.Bytes())
 	}
 

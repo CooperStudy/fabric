@@ -28,6 +28,7 @@ type ChannelState struct {
 
 // FetchState fetches state
 func (cs *ChannelState) FetchState() (endorsement.State, error) {
+	endorserLogger.Info("===============func (cs *ChannelState) FetchState() (endorsement.State, error) {=================")
 	qe, err := cs.NewQueryExecutor()
 	if err != nil {
 		return nil, err

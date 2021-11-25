@@ -15,6 +15,8 @@ import (
 )
 
 func main() {
+	fmt.Println("=========fabric/integration/chaincode/marbles_private/cmd/main.go func main()=========================")
+
 	err := shim.Start(&marbles_private.MarblesPrivateChaincode{})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Exiting Simple chaincode: %s", err)

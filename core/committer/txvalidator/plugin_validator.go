@@ -90,6 +90,7 @@ func NewPluginValidator(pm PluginMapper, qec QueryExecutorCreator, deserializer 
 }
 
 func (pv *PluginValidator) ValidateWithPlugin(ctx *Context) error {
+	logger.Info("============func (pv *PluginValidator) ValidateWithPlugin(ctx *Context) error================================")
 	plugin, err := pv.getOrCreatePlugin(ctx)
 	if err != nil {
 		return &validation.ExecutionFailureError{
@@ -180,12 +181,28 @@ type PolicyEvaluator struct {
 
 // Evaluate takes a set of SignedData and evaluates whether this set of signatures satisfies the policy
 func (id *PolicyEvaluator) Evaluate(policyBytes []byte, signatureSet []*common.SignedData) error {
+	logger.Info("=================func (id *PolicyEvaluator) Evaluate(policyBytes []byte, signatureSet []*common.SignedData) error {=============================")
+	//go here
 	pp := cauthdsl.NewPolicyProvider(id.IdentityDeserializer)
+	logger.Info("===============policyBytes===============",policyBytes)
+	//[18 12 18 10 8 2 18 2 8 0 18 2 8 1 26 13 18 11 10 7 79 114 103 49 77 83 80 16 3 26 13 18 11 10 7 79 114 103 50 77 83 80 16 3]
+	//18 12 18 \n  8 2 Org1MSP 16 3 26 Org2MSP 16 3
+
+	//================policy, _, err := pp.NewPolicy([18 12 18 10 8 2 18 2 8 0 18 2 8 1 26 13 18 11 10 7 79 114 103 49 77 83 80 16 3 26 13 18 11 10 7 79 114 103 50 77 83 80 16 3])============================
+	logger.Infof("================policy, _, err := pp.NewPolicy(%v)============================",policyBytes)
 	policy, _, err := pp.NewPolicy(policyBytes)
+	logger.Infof("================policy:%v===========================",policy)
+	logger.Info("================err===========================",err)
 	if err != nil {
 		return err
 	}
-	return policy.Evaluate(signatureSet)
+
+
+	logger.Infof("================policy.Evaluate(%v)============================",signatureSet)
+	err = policy.Evaluate(signatureSet)
+
+	logger.Info("===============d err===============",err)
+	return err
 }
 
 // DeserializeIdentity unmarshals the given identity to msp.Identity
@@ -214,6 +231,9 @@ type StateFetcherImpl struct {
 }
 
 func (sf *StateFetcherImpl) FetchState() (State, error) {
+	//invoke: go here
+	logger.Info("======func (sf *StateFetcherImpl) FetchState() (State, error) {============")
+
 	qe, err := sf.NewQueryExecutor()
 	if err != nil {
 		return nil, err

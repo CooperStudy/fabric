@@ -121,6 +121,8 @@ var nodeStartCmd = &cobra.Command{
 }
 
 func serve(args []string) error {
+	logger.Info("==========func serve(args []string) error =========================")
+	logger.Info("==========这个是invoke的开始 =========================")
 	// currently the peer only works with the standard MSP
 	// because in certain scenarios the MSP has to make sure
 	// that from a single credential you only have a single 'identity'.
@@ -613,16 +615,8 @@ func computeChaincodeEndpoint(peerHostname string) (ccEndpoint string, err error
 //NOTE - when we implement JOIN we will no longer pass the chainID as param
 //The chaincode support will come up without registering system chaincodes
 //which will be registered only during join phase.
-func registerChaincodeSupport(
-	grpcServer *comm.GRPCServer,
-	ccEndpoint string,
-	ca tlsgen.CA,
-	packageProvider *persistence.PackageProvider,
-	aclProvider aclmgmt.ACLProvider,
-	pr *platforms.Registry,
-	lifecycleSCC *lifecycle.SCC,
-	ops *operations.System,
-) (*chaincode.ChaincodeSupport, ccprovider.ChaincodeProvider, *scc.Provider) {
+func registerChaincodeSupport(grpcServer *comm.GRPCServer, ccEndpoint string, ca tlsgen.CA, packageProvider *persistence.PackageProvider, aclProvider aclmgmt.ACLProvider, pr *platforms.Registry, lifecycleSCC *lifecycle.SCC, ops *operations.System) (*chaincode.ChaincodeSupport, ccprovider.ChaincodeProvider, *scc.Provider) {
+	logger.Info("===========func registerChaincodeSupport(grpcServer *comm.GRPCServer, ccEndpoint string, ca tlsgen.CA, packageProvider *persistence.PackageProvider, aclProvider aclmgmt.ACLProvider, pr *platforms.Registry, lifecycleSCC *lifecycle.SCC, ops *operations.System) (*chaincode.ChaincodeSupport, ccprovider.ChaincodeProvider, *scc.Provider) ========================")
 	//get user mode
 	userRunsCC := chaincode.IsDevMode()
 	tlsEnabled := viper.GetBool("peer.tls.enabled")

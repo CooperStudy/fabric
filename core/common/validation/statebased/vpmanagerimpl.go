@@ -62,6 +62,7 @@ func newTxDependency() *txDependency {
 // have been inserted. The function returns as soon as
 // d.depInserted has been closed by signalDepInserted
 func (d *txDependency) waitForDepInserted() {
+	logger.Info("==============func (d *txDependency) waitForDepInserted()==================")
 	<-d.depInserted
 }
 
@@ -77,7 +78,10 @@ func (d *txDependency) signalDepInserted() {
 // for namespace `ns` - possibly waiting for the corresponding call
 // to signalValidationResult to finish first.
 func (d *txDependency) waitForAndRetrieveValidationResult(ns string) error {
+	logger.Info("========================func (d *txDependency) waitForAndRetrieveValidationResult(ns string) error=========================")
+
 	d.mutex.Lock()
+
 	defer d.mutex.Unlock()
 
 	err, ok := d.validationResultMap[ns]
@@ -158,6 +162,7 @@ func (c *validationContext) addDependency(kid *ledgerKeyID, txnum uint64, dep *t
 }
 
 func (c *validationContext) dependenciesForTxnum(kid *ledgerKeyID, txnum uint64) []*txDependency {
+	logger.Info("==========================func (c *validationContext) dependenciesForTxnum(kid *ledgerKeyID, txnum uint64) =========================")
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 
@@ -195,6 +200,8 @@ func (c *validationContext) getOrCreateDependencyByTxnum(txnum uint64) *txDepend
 }
 
 func (c *validationContext) waitForValidationResults(kid *ledgerKeyID, blockNum uint64, txnum uint64) error {
+	logger.Info("=====func (c *validationContext) waitForValidationResults(kid *ledgerKeyID, blockNum uint64, txnum uint64) error============")
+
 	// in the code below we see whether any transaction in this block
 	// that precedes txnum introduces a dependency. We do so by
 	// extracting from the map all txDependency instances for txnum
@@ -217,6 +224,7 @@ func (c *validationContext) waitForValidationResults(kid *ledgerKeyID, blockNum 
 	// produce the result.
 
 	for _, dep := range c.dependenciesForTxnum(kid, txnum) {
+		logger.Info("============dep====================",dep)
 		if valErr := dep.waitForAndRetrieveValidationResult(kid.cc); valErr == nil {
 			return &ValidationParameterUpdatedError{
 				CC:     kid.cc,
@@ -282,6 +290,7 @@ func (m *KeyLevelValidationParameterManagerImpl) ExtractValidationParameterDepen
 // GetValidationParameterForKey implements the method of
 // the same name of the KeyLevelValidationParameterManager interface
 func (m *KeyLevelValidationParameterManagerImpl) GetValidationParameterForKey(cc, coll, key string, blockNum, txNum uint64) ([]byte, error) {
+	logger.Info("======1.func (m *KeyLevelValidationParameterManagerImpl) GetValidationParameterForKey(cc, coll, key string, blockNum, txNum uint64) ([]byte, error) {\n============")
 	vCtx := m.validationCtx.forBlock(blockNum)
 
 	// wait until all txes before us have introduced dependencies
@@ -289,6 +298,7 @@ func (m *KeyLevelValidationParameterManagerImpl) GetValidationParameterForKey(cc
 		txdep := vCtx.getOrCreateDependencyByTxnum(uint64(i))
 		txdep.waitForDepInserted()
 	}
+	logger.Info("======2.func (m *KeyLevelValidationParameterManagerImpl) GetValidationParameterForKey(cc, coll, key string, blockNum, txNum uint64) ([]byte, error) {\n============")
 
 	// wait until the validation results for all dependencies in the cc namespace are available
 	// bail, if the validation parameter has been updated in the meantime
@@ -298,19 +308,28 @@ func (m *KeyLevelValidationParameterManagerImpl) GetValidationParameterForKey(cc
 		return nil, err
 	}
 
+	logger.Info("======3.func (m *KeyLevelValidationParameterManagerImpl) GetValidationParameterForKey(cc, coll, key string, blockNum, txNum uint64) ([]byte, error) {\n============")
+
 	// if we're here, it means that it is safe to retrieve validation
 	// parameters for the requested key from the ledger
 
+	logger.Info("============state, err := m.StateFetcher.FetchState()=================")
 	state, err := m.StateFetcher.FetchState()
+
 	if err != nil {
 		err = errors.WithMessage(err, "could not retrieve ledger")
 		logger.Errorf(err.Error())
 		return nil, err
 	}
+	logger.Info("======4.func (m *KeyLevelValidationParameterManagerImpl) GetValidationParameterForKey(cc, coll, key string, blockNum, txNum uint64) ([]byte, error) {\n============")
+
 	defer state.Done()
 
 	var mdMap map[string][]byte
 	if coll == "" {
+		//invoke: go here
+		logger.Info("======5.func (m *KeyLevelValidationParameterManagerImpl) GetValidationParameterForKey(cc, coll, key string, blockNum, txNum uint64) ([]byte, error) {\n============")
+
 		mdMap, err = state.GetStateMetadata(cc, key)
 		if err != nil {
 			err = errors.WithMessage(err, fmt.Sprintf("could not retrieve metadata for %s:%s", cc, key))
@@ -318,6 +337,8 @@ func (m *KeyLevelValidationParameterManagerImpl) GetValidationParameterForKey(cc
 			return nil, err
 		}
 	} else {
+		logger.Info("======6.func (m *KeyLevelValidationParameterManagerImpl) GetValidationParameterForKey(cc, coll, key string, blockNum, txNum uint64) ([]byte, error) {\n============")
+
 		mdMap, err = state.GetPrivateDataMetadataByHash(cc, coll, []byte(key))
 		if err != nil {
 			err = errors.WithMessage(err, fmt.Sprintf("could not retrieve metadata for %s:%s:%x", cc, coll, []byte(key)))
@@ -325,6 +346,7 @@ func (m *KeyLevelValidationParameterManagerImpl) GetValidationParameterForKey(cc
 			return nil, err
 		}
 	}
+	logger.Info("======7.func (m *KeyLevelValidationParameterManagerImpl) GetValidationParameterForKey(cc, coll, key string, blockNum, txNum uint64) ([]byte, error) {\n============")
 
 	return mdMap[pb.MetaDataKeys_VALIDATION_PARAMETER.String()], nil
 }

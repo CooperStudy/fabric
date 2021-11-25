@@ -117,6 +117,8 @@ func (t *SleeperChaincode) query(stub shim.ChaincodeStubInterface, args []string
 }
 
 func main() {
+	fmt.Println("=========fabric/examples/chaincode/go/sleeper/sleeper.go func main()=========================")
+
 	err := shim.Start(new(SleeperChaincode))
 	if err != nil {
 		fmt.Printf("Error starting Sleeper chaincode: %s", err)

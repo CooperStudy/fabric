@@ -143,6 +143,7 @@ func (c *coordinator) StorePvtData(txID string, privData *transientstore2.TxPvtR
 
 // StoreBlock stores block with private data into the ledger
 func (c *coordinator) StoreBlock(block *common.Block, privateDataSets util.PvtDataCollections) error {
+	logger.Info("==============func (c *coordinator) StoreBlock(block *common.Block, privateDataSets util.PvtDataCollections) error=============")
 	if block.Data == nil {
 		return errors.New("Block data is empty")
 	}

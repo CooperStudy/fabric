@@ -65,6 +65,7 @@ func (p *PassthruChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response
 }
 
 func main() {
+	fmt.Println("=========fabric/examples/chaincode/go/passthru/passthru.go func main()=========================")
 	err := shim.Start(new(PassthruChaincode))
 	if err != nil {
 		fmt.Printf("Error starting Passthru chaincode: %s", err)

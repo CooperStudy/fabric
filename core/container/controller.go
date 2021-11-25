@@ -147,6 +147,7 @@ func (b *PlatformBuilder) Build() (io.Reader, error) {
 }
 
 func (si StartContainerReq) Do(v VM) error {
+	vmLogger.Info("===========================func (si StartContainerReq) Do(v VM) error========================")
 	return v.Start(si.CCID, si.Args, si.Env, si.FilesToUpload, si.Builder)
 }
 
@@ -173,6 +174,7 @@ func (si StopContainerReq) GetCCID() ccintf.CCID {
 }
 
 func (vmc *VMController) Process(vmtype string, req VMCReq) error {
+	vmLogger.Info("==============func (vmc *VMController) Process(vmtype string, req VMCReq) error==============================")
 	v := vmc.newVM(vmtype)
 	ccid := req.GetCCID()
 	id := ccid.GetName()

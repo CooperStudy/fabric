@@ -17,8 +17,9 @@ type lockBasedQueryExecutor struct {
 }
 
 func newQueryExecutor(txmgr *LockBasedTxMgr, txid string) *lockBasedQueryExecutor {
+	logger.Info("=============func newQueryExecutor(txmgr *LockBasedTxMgr, txid string) *lockBasedQueryExecutor {===========")
 	helper := newQueryHelper(txmgr, nil)
-	logger.Debugf("constructing new query executor txid = [%s]", txid)
+	logger.Infof("constructing new query executor txid = [%s]", txid)// [1f0cf68f-b32e-4e3e-8453-9a30865c6e8e]
 	return &lockBasedQueryExecutor{helper, txid}
 }
 

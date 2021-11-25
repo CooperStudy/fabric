@@ -442,6 +442,7 @@ func (msp *bccspmsp) postSetupV1(conf *m.FabricMSPConfig) error {
 }
 
 func (msp *bccspmsp) setupV11(conf *m.FabricMSPConfig) error {
+	mspLogger.Info("============func (msp *bccspmsp) setupV11(conf *m.FabricMSPConfig) error===========================")
 	err := msp.preSetupV1(conf)
 	if err != nil {
 		return err
@@ -461,6 +462,9 @@ func (msp *bccspmsp) setupV11(conf *m.FabricMSPConfig) error {
 }
 
 func (msp *bccspmsp) postSetupV11(conf *m.FabricMSPConfig) error {
+
+	mspLogger.Info("=========func (msp *bccspmsp) postSetupV11(conf *m.FabricMSPConfig) error==========================")
+
 	// Check for OU enforcement
 	if !msp.ouEnforcement {
 		// No enforcement required. Call post setup as per V1

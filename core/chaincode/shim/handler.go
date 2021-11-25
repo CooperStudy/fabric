@@ -236,6 +236,7 @@ func (handler *Handler) handleInit(msg *pb.ChaincodeMessage, errc chan error) {
 
 // handleTransaction Handles request to execute a transaction.
 func (handler *Handler) handleTransaction(msg *pb.ChaincodeMessage, errc chan error) {
+	chaincodeLogger.Info("================================func (handler *Handler) handleTransaction(msg *pb.ChaincodeMessage, errc chan error)============================================")
 	// The defer followed by triggering a go routine dance is needed to ensure that the previous state transition
 	// is completed before the next one is triggered. The previous state transition is deemed complete only when
 	// the beforeInit function is exited. Interesting bug fix!!
@@ -744,8 +745,10 @@ func (handler *Handler) handleInvokeChaincode(chaincodeName string, args [][]byt
 
 //handle ready state
 func (handler *Handler) handleReady(msg *pb.ChaincodeMessage, errc chan error) error {
+	chaincodeLogger.Info("=============func (handler *Handler) handleReady(msg *pb.ChaincodeMessage, errc chan error) error======================")
 	switch msg.Type {
 	case pb.ChaincodeMessage_RESPONSE:
+		chaincodeLogger.Info("============case pb.ChaincodeMessage_RESPONSE:=======================")
 		if err := handler.sendChannel(msg); err != nil {
 			chaincodeLogger.Errorf("[%s] error sending %s (state:%s): %s", shorttxid(msg.Txid), msg.Type, handler.state, err)
 			return err
@@ -754,6 +757,7 @@ func (handler *Handler) handleReady(msg *pb.ChaincodeMessage, errc chan error) e
 		return nil
 
 	case pb.ChaincodeMessage_ERROR:
+		chaincodeLogger.Info("============case pb.ChaincodeMessage_ERROR:=======================")
 		if err := handler.sendChannel(msg); err != nil {
 			chaincodeLogger.Errorf("[%s] error sending %s (state:%s): %s", shorttxid(msg.Txid), msg.Type, handler.state, err)
 		}
@@ -764,12 +768,14 @@ func (handler *Handler) handleReady(msg *pb.ChaincodeMessage, errc chan error) e
 		return nil
 
 	case pb.ChaincodeMessage_INIT:
+		chaincodeLogger.Info("============case pb.ChaincodeMessage_INIT:=====================")
 		chaincodeLogger.Debugf("[%s] Received %s, initializing chaincode", shorttxid(msg.Txid), msg.Type)
 		// Call the chaincode's Run function to initialize
 		handler.handleInit(msg, errc)
 		return nil
 
 	case pb.ChaincodeMessage_TRANSACTION:
+		chaincodeLogger.Info("==============case pb.ChaincodeMessage_TRANSACTION:=======================")
 		chaincodeLogger.Debugf("[%s] Received %s, invoking transaction on chaincode(state:%s)", shorttxid(msg.Txid), msg.Type, handler.state)
 		// Call the chaincode's Run function to invoke transaction
 		handler.handleTransaction(msg, errc)
@@ -799,17 +805,19 @@ func (handler *Handler) handleCreated(msg *pb.ChaincodeMessage, errc chan error)
 
 // handleMessage message handles loop for shim side of chaincode/peer stream.
 func (handler *Handler) handleMessage(msg *pb.ChaincodeMessage, errc chan error) error {
+	chaincodeLogger.Info("==============================func (handler *Handler) handleMessage(msg *pb.ChaincodeMessage, errc chan error) error===========================================")
 	if msg.Type == pb.ChaincodeMessage_KEEPALIVE {
 		chaincodeLogger.Debug("Sending KEEPALIVE response")
 		handler.serialSendAsync(msg, nil) // ignore errors, maybe next KEEPALIVE will work
 		return nil
 	}
-	chaincodeLogger.Debugf("[%s] Handling ChaincodeMessage of type: %s(state:%s)", shorttxid(msg.Txid), msg.Type, handler.state)
+	chaincodeLogger.Info("[%s] Handling ChaincodeMessage of type: %s(state:%s)", shorttxid(msg.Txid), msg.Type, handler.state)
 
 	var err error
 
 	switch handler.state {
 	case ready:
+		chaincodeLogger.Info("==============case ready:=============================")
 		err = handler.handleReady(msg, errc)
 	case established:
 		err = handler.handleEstablished(msg, errc)

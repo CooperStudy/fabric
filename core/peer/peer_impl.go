@@ -47,7 +47,7 @@ type peerImpl struct {
 }
 
 // Default provides in implementation of the Peer interface that provides
-// access to the package level state.
+// access to the package level state.d
 var Default Operations = &peerImpl{
 	createChainFromBlock: CreateChainFromBlock,
 	getChannelConfig:     GetChannelConfig,

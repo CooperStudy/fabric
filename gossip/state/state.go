@@ -154,7 +154,7 @@ var logger = util.GetLogger(util.StateLogger, "")
 // NewGossipStateProvider creates state provider with coordinator instance
 // to orchestrate arrival of private rwsets and blocks before committing them into the ledger.
 func NewGossipStateProvider(chainID string, services *ServicesMediator, ledger ledgerResources) GossipStateProvider {
-
+    logger.Info("====================================func NewGossipStateProvider(chainID string, services *ServicesMediator, ledger ledgerResources) GossipStateProvider {===============================================================")
 	gossipChan, _ := services.Accept(func(message interface{}) bool {
 		// Get only data messages
 		return message.(*proto.GossipMessage).IsDataMsg() &&
@@ -525,6 +525,7 @@ func (s *GossipStateProviderImpl) queueNewMessage(msg *proto.GossipMessage) {
 }
 
 func (s *GossipStateProviderImpl) deliverPayloads() {
+	logger.Info("====================func (s *GossipStateProviderImpl) deliverPayloads()==================================")
 	defer s.done.Done()
 
 	for {
@@ -766,7 +767,7 @@ func (s *GossipStateProviderImpl) addPayload(payload *proto.Payload, blockingMod
 }
 
 func (s *GossipStateProviderImpl) commitBlock(block *common.Block, pvtData util.PvtDataCollections) error {
-
+	logger.Info("================================func (s *GossipStateProviderImpl) commitBlock(block *common.Block, pvtData util.PvtDataCollections) error================================================================")
 	// Commit block with available private transactions
 	if err := s.ledger.StoreBlock(block, pvtData); err != nil {
 		logger.Errorf("Got error while committing(%+v)", errors.WithStack(err))
@@ -775,7 +776,7 @@ func (s *GossipStateProviderImpl) commitBlock(block *common.Block, pvtData util.
 
 	// Update ledger height
 	s.mediator.UpdateLedgerHeight(block.Header.Number+1, common2.ChainID(s.chainID))
-	logger.Debugf("[%s] Committed block [%d] with %d transaction(s)",
+	logger.Infof("[%s] Committed block [%d] with %d transaction(s)",
 		s.chainID, block.Header.Number, len(block.Data.Data))
 
 	return nil

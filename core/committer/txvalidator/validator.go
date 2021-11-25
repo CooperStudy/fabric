@@ -131,6 +131,8 @@ func (v *TxValidator) chainExists(chain string) bool {
 //    guaranteed to be alone in the block. If/when this assumption
 //    is violated, this code must be changed.
 func (v *TxValidator) Validate(block *common.Block) error {
+	logger.Info("========================func (v *TxValidator) Validate(block *common.Block) error==========")
+
 	var err error
 	var errPos int
 
@@ -164,7 +166,7 @@ func (v *TxValidator) Validate(block *common.Block) error {
 		}
 	}()
 
-	logger.Debugf("expecting %d block validation responses", len(block.Data.Data))
+	logger.Infof("expecting %d block validation responses", len(block.Data.Data))
 
 	// now we read responses in the order in which they come back
 	for i := 0; i < len(block.Data.Data); i++ {
@@ -174,7 +176,7 @@ func (v *TxValidator) Validate(block *common.Block) error {
 			// if there is an error, we buffer its value, wait for
 			// all workers to complete validation and then return
 			// the error from the first tx in this block that returned an error
-			logger.Debugf("got terminal error %s for idx %d", res.err, res.tIdx)
+			logger.Infof("got terminal error %s for idx %d", res.err, res.tIdx)
 
 			if err == nil || res.tIdx < errPos {
 				err = res.err
@@ -183,7 +185,7 @@ func (v *TxValidator) Validate(block *common.Block) error {
 		} else {
 			// if there was no error, we set the txsfltr and we set the
 			// txsChaincodeNames and txsUpgradedChaincodes maps
-			logger.Debugf("got result for idx %d, code %d", res.tIdx, res.validationCode)
+			logger.Infof("got result for idx %d, code %d", res.tIdx, res.validationCode)
 
 			txsfltr.SetFlag(res.tIdx, res.validationCode)
 
@@ -265,6 +267,7 @@ func markTXIdDuplicates(txids []string, txsfltr ledgerUtil.TxValidationFlags) {
 }
 
 func (v *TxValidator) validateTx(req *blockValidationRequest, results chan<- *blockValidationResult) {
+    logger.Info("========================func (v *TxValidator) validateTx(req *blockValidationRequest, results chan<- *blockValidationResult)==========")
 	block := req.block
 	d := req.d
 	tIdx := req.tIdx
@@ -290,8 +293,8 @@ func (v *TxValidator) validateTx(req *blockValidationRequest, results chan<- *bl
 		// chain binding proposal to endorsements to tx holds. We do
 		// NOT check the validity of endorsements, though. That's a
 		// job for VSCC below
-		logger.Debugf("[%s] validateTx starts for block %p env %p txn %d", v.ChainID, block, env, tIdx)
-		defer logger.Debugf("[%s] validateTx completes for block %p env %p txn %d", v.ChainID, block, env, tIdx)
+		logger.Infof("[%s] validateTx starts for block %p env %p txn %d", v.ChainID, block, env, tIdx)
+		defer logger.Infof("[%s] validateTx completes for block %p env %p txn %d", v.ChainID, block, env, tIdx)
 		var payload *common.Payload
 		var err error
 		var txResult peer.TxValidationCode
@@ -341,7 +344,7 @@ func (v *TxValidator) validateTx(req *blockValidationRequest, results chan<- *bl
 			}
 
 			// Validate tx with vscc and policy
-			logger.Debug("Validating transaction vscc tx validate")
+			logger.Info("Validating transaction vscc tx validate")
 			err, cde := v.Vscc.VSCCValidateTx(tIdx, payload, d, block)
 			if err != nil {
 				logger.Errorf("VSCCValidateTx for transaction txId = %s returned error: %s", txID, err)

@@ -45,6 +45,7 @@ type ContainerRuntime struct {
 
 // Start launches chaincode in a runtime environment.
 func (c *ContainerRuntime) Start(ccci *ccprovider.ChaincodeContainerInfo, codePackage []byte) error {
+	chaincodeLogger.Info("====================func (c *ContainerRuntime) Start(ccci *ccprovider.ChaincodeContainerInfo, codePackage []byte) error======================================================")
 	cname := ccci.Name + ":" + ccci.Version
 
 	lc, err := c.LaunchConfig(cname, ccci.Type)
@@ -83,6 +84,8 @@ func (c *ContainerRuntime) Start(ccci *ccprovider.ChaincodeContainerInfo, codePa
 
 // Stop terminates chaincode and its container runtime environment.
 func (c *ContainerRuntime) Stop(ccci *ccprovider.ChaincodeContainerInfo) error {
+	chaincodeLogger.Info("====================func (c *ContainerRuntime) Stop(ccci *ccprovider.ChaincodeContainerInfo) error {\n======================================================")
+
 	scr := container.StopContainerReq{
 		CCID: ccintf.CCID{
 			Name:    ccci.Name,

@@ -85,6 +85,7 @@ func (t *EventSender) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 }
 
 func main() {
+	fmt.Println("=========fabric/examples/chaincode/go/eventsender/eventsender.go func main()=========================")
 	err := shim.Start(new(EventSender))
 	if err != nil {
 		fmt.Printf("Error starting EventSender chaincode: %s", err)

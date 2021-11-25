@@ -76,6 +76,7 @@ func (id *identity) ExpiresAt() time.Time {
 
 // SatisfiesPrincipal returns null if this instance matches the supplied principal or an error otherwise
 func (id *identity) SatisfiesPrincipal(principal *msp.MSPPrincipal) error {
+	mspLogger.Info("================func (id *identity) SatisfiesPrincipal(principal *msp.MSPPrincipal) error {====================================")
 	return id.msp.SatisfiesPrincipal(id, principal)
 }
 

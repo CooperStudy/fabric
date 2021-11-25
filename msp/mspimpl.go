@@ -101,7 +101,7 @@ type bccspmsp struct {
 // generate identities and signing identities backed by
 // certificates and keypairs
 func newBccspMsp(version MSPVersion) (MSP, error) {
-	mspLogger.Debugf("Creating BCCSP-based MSP instance")
+	mspLogger.Info("Creating BCCSP-based MSP instance")
 
 	bccsp := factory.GetDefault()
 	theMsp := &bccspmsp{}
@@ -109,14 +109,17 @@ func newBccspMsp(version MSPVersion) (MSP, error) {
 	theMsp.bccsp = bccsp
 	switch version {
 	case MSPv1_0:
+		mspLogger.Info("========MSPv1_0=========")
 		theMsp.internalSetupFunc = theMsp.setupV1
 		theMsp.internalValidateIdentityOusFunc = theMsp.validateIdentityOUsV1
 		theMsp.internalSatisfiesPrincipalInternalFunc = theMsp.satisfiesPrincipalInternalPreV13
 	case MSPv1_1:
+		mspLogger.Info("========MSPv1_1=========")
 		theMsp.internalSetupFunc = theMsp.setupV11
 		theMsp.internalValidateIdentityOusFunc = theMsp.validateIdentityOUsV11
 		theMsp.internalSatisfiesPrincipalInternalFunc = theMsp.satisfiesPrincipalInternalPreV13
 	case MSPv1_3:
+		mspLogger.Info("========MSPv1_3=========")
 		theMsp.internalSetupFunc = theMsp.setupV11
 		theMsp.internalValidateIdentityOusFunc = theMsp.validateIdentityOUsV11
 		theMsp.internalSatisfiesPrincipalInternalFunc = theMsp.satisfiesPrincipalInternalV13
@@ -275,7 +278,8 @@ func (msp *bccspmsp) GetSigningIdentity(identifier *IdentityIdentifier) (Signing
 // nil in case the identity is valid or an
 // error otherwise
 func (msp *bccspmsp) Validate(id Identity) error {
-	mspLogger.Debugf("MSP %s validating identity", msp.name)
+	mspLogger.Infof("======================func (msp *bccspmsp) Validate(id Identity) error============")
+	mspLogger.Infof("MSP %s validating identity", msp.name)
 
 	switch id := id.(type) {
 	// If this identity is of this specific type,
@@ -379,12 +383,20 @@ func (msp *bccspmsp) deserializeIdentityInternal(serializedIdentity []byte) (Ide
 
 // SatisfiesPrincipal returns null if the identity matches the principal or an error otherwise
 func (msp *bccspmsp) SatisfiesPrincipal(id Identity, principal *m.MSPPrincipal) error {
+	mspLogger.Info("=====================func (msp *bccspmsp) SatisfiesPrincipal(id Identity, principal *m.MSPPrincipal) error ==========================================")
 	principals, err := collectPrincipals(principal, msp.GetVersion())
+
+	mspLogger.Info("============33==err======",err)
+	mspLogger.Info("==============principals======",principals)
+
 	if err != nil {
 		return err
 	}
 	for _, principal := range principals {
+		mspLogger.Info("==============principal======",principal)
+		mspLogger.Info("==============err = msp.internalSatisfiesPrincipalInternalFunc(id, principal)======")
 		err = msp.internalSatisfiesPrincipalInternalFunc(id, principal)
+		mspLogger.Info("============22==err======",err)
 		if err != nil {
 			return err
 		}
@@ -394,8 +406,11 @@ func (msp *bccspmsp) SatisfiesPrincipal(id Identity, principal *m.MSPPrincipal) 
 
 // collectPrincipals collects principals from combined principals into a single MSPPrincipal slice.
 func collectPrincipals(principal *m.MSPPrincipal, mspVersion MSPVersion) ([]*m.MSPPrincipal, error) {
+	mspLogger.Info("====================func collectPrincipals(principal *m.MSPPrincipal, mspVersion MSPVersion) ([]*m.MSPPrincipal, error)=========================")
 	switch principal.PrincipalClassification {
 	case m.MSPPrincipal_COMBINED:
+		mspLogger.Info("====================case m.MSPPrincipal_COMBINED========================")
+
 		// Combined principals are not supported in MSP v1.0 or v1.1
 		if mspVersion <= MSPv1_1 {
 			return nil, errors.Errorf("invalid principal type %d", int32(principal.PrincipalClassification))
@@ -413,16 +428,21 @@ func collectPrincipals(principal *m.MSPPrincipal, mspVersion MSPVersion) ([]*m.M
 		// Recursively call msp.collectPrincipals for all combined principals.
 		// There is no limit for the levels of nesting for the combined principals.
 		var principalsSlice []*m.MSPPrincipal
-		for _, cp := range principals.Principals {
+		for k, cp := range principals.Principals {
+			mspLogger.Info("====================k========================",k)
+			mspLogger.Info("====================cp========================",cp)
+			mspLogger.Info("================internalSlice, err := collectPrincipals(cp, mspVersion)===================")
 			internalSlice, err := collectPrincipals(cp, mspVersion)
 			if err != nil {
 				return nil, err
 			}
 			principalsSlice = append(principalsSlice, internalSlice...)
 		}
+		mspLogger.Info("====================principalsSlice========================",principalsSlice)
 		// All the combined principals have been collected into principalsSlice
 		return principalsSlice, nil
 	default:
+		mspLogger.Info("==================default=======================")
 		return []*m.MSPPrincipal{principal}, nil
 	}
 }
@@ -431,10 +451,14 @@ func collectPrincipals(principal *m.MSPPrincipal, mspVersion MSPVersion) ([]*m.M
 // The function returns an error if one occurred.
 // The function implements the behavior of an MSP up to and including v1.1.
 func (msp *bccspmsp) satisfiesPrincipalInternalPreV13(id Identity, principal *m.MSPPrincipal) error {
+	mspLogger.Info("======func (msp *bccspmsp) satisfiesPrincipalInternalPreV13(id Identity, principal *m.MSPPrincipal) error=======")
+
 	switch principal.PrincipalClassification {
 	// in this case, we have to check whether the
 	// identity has a role in the msp - member or admin
 	case m.MSPPrincipal_ROLE:
+		mspLogger.Info("===case m.MSPPrincipal_ROLE=========")
+
 		// Principal contains the msp role
 		mspRole := &m.MSPRole{}
 		err := proto.Unmarshal(principal.Principal, mspRole)
@@ -451,11 +475,13 @@ func (msp *bccspmsp) satisfiesPrincipalInternalPreV13(id Identity, principal *m.
 		// now we validate the different msp roles
 		switch mspRole.Role {
 		case m.MSPRole_MEMBER:
+			mspLogger.Info("===case m.MSPRole_MEMBER:========")
 			// in the case of member, we simply check
 			// whether this identity is valid for the MSP
 			mspLogger.Debugf("Checking if identity satisfies MEMBER role for %s", msp.name)
 			return msp.Validate(id)
 		case m.MSPRole_ADMIN:
+			mspLogger.Info("===case m.MSPRole_ADMIN:========")
 			mspLogger.Debugf("Checking if identity satisfies ADMIN role for %s", msp.name)
 			// in the case of admin, we check that the
 			// id is exactly one of our admins
@@ -469,9 +495,11 @@ func (msp *bccspmsp) satisfiesPrincipalInternalPreV13(id Identity, principal *m.
 			}
 			return errors.New("This identity is not an admin")
 		case m.MSPRole_CLIENT:
+			mspLogger.Info("===ccase m.MSPRole_CLIENT:========")
 			fallthrough
 		case m.MSPRole_PEER:
-			mspLogger.Debugf("Checking if identity satisfies role [%s] for %s", m.MSPRole_MSPRoleType_name[int32(mspRole.Role)], msp.name)
+			mspLogger.Info("===case m.MSPRole_PEER:========")
+			mspLogger.Infof("Checking if identity satisfies role [%s] for %s", m.MSPRole_MSPRoleType_name[int32(mspRole.Role)], msp.name)
 			if err := msp.Validate(id); err != nil {
 				return errors.Wrapf(err, "The identity is not valid under this MSP [%s]", msp.name)
 			}
@@ -484,6 +512,7 @@ func (msp *bccspmsp) satisfiesPrincipalInternalPreV13(id Identity, principal *m.
 			return errors.Errorf("invalid MSP role type %d", int32(mspRole.Role))
 		}
 	case m.MSPPrincipal_IDENTITY:
+		mspLogger.Info("===case m.MSPPrincipal_IDENTITY:========")
 		// in this case we have to deserialize the principal's identity
 		// and compare it byte-by-byte with our cert
 		principalId, err := msp.DeserializeIdentity(principal.Principal)
@@ -497,6 +526,7 @@ func (msp *bccspmsp) satisfiesPrincipalInternalPreV13(id Identity, principal *m.
 
 		return errors.New("The identities do not match")
 	case m.MSPPrincipal_ORGANIZATION_UNIT:
+		mspLogger.Info("===case m.MSPPrincipal_ORGANIZATION_UNIT:========")
 		// Principal contains the OrganizationUnit
 		OU := &m.OrganizationUnit{}
 		err := proto.Unmarshal(principal.Principal, OU)
@@ -537,10 +567,14 @@ func (msp *bccspmsp) satisfiesPrincipalInternalPreV13(id Identity, principal *m.
 // The function implements the additional behavior expected of an MSP starting from v1.3.
 // For pre-v1.3 functionality, the function calls the satisfiesPrincipalInternalPreV13.
 func (msp *bccspmsp) satisfiesPrincipalInternalV13(id Identity, principal *m.MSPPrincipal) error {
+	mspLogger.Info("========================func (msp *bccspmsp) satisfiesPrincipalInternalV13(id Identity, principal *m.MSPPrincipal) error==========================================")
 	switch principal.PrincipalClassification {
 	case m.MSPPrincipal_COMBINED:
+		mspLogger.Info("=======================case m.MSPPrincipal_COMBINED:==========")
+
 		return errors.New("SatisfiesPrincipalInternal shall not be called with a CombinedPrincipal")
 	case m.MSPPrincipal_ANONYMITY:
+		mspLogger.Info("=======================case m.MSPPrincipal_ANONYMITY:==========")
 		anon := &m.MSPIdentityAnonymity{}
 		err := proto.Unmarshal(principal.Principal, anon)
 		if err != nil {
@@ -548,14 +582,18 @@ func (msp *bccspmsp) satisfiesPrincipalInternalV13(id Identity, principal *m.MSP
 		}
 		switch anon.AnonymityType {
 		case m.MSPIdentityAnonymity_ANONYMOUS:
+			mspLogger.Info("======================case m.MSPIdentityAnonymity_ANONYMOUS:=========")
 			return errors.New("Principal is anonymous, but X.509 MSP does not support anonymous identities")
 		case m.MSPIdentityAnonymity_NOMINAL:
+			mspLogger.Info("======================case m.MSPIdentityAnonymity_NOMINAL:=========")
 			return nil
 		default:
 			return errors.Errorf("Unknown principal anonymity type: %d", anon.AnonymityType)
 		}
 
 	default:
+		mspLogger.Info("======================default=========")
+
 		// Use the pre-v1.3 function to check other principal types
 		return msp.satisfiesPrincipalInternalPreV13(id, principal)
 	}

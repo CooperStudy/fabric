@@ -118,6 +118,7 @@ func (vm *InprocVM) getInstance(ipctemplate *inprocContainer, instName string, a
 }
 
 func (ipc *inprocContainer) launchInProc(id string, args []string, env []string) error {
+	inprocLogger.Info("====================func (ipc *inprocContainer) launchInProc(id string, args []string, env []string) error ===================================================")
 	if ipc.ChaincodeSupport == nil {
 		inprocLogger.Panicf("Chaincode support is nil, most likely you forgot to set it immediately after calling inproccontroller.NewRegsitry()")
 	}
@@ -176,6 +177,7 @@ func (ipc *inprocContainer) launchInProc(id string, args []string, env []string)
 
 //Start starts a previously registered system codechain
 func (vm *InprocVM) Start(ccid ccintf.CCID, args []string, env []string, filesToUpload map[string][]byte, builder container.Builder) error {
+	inprocLogger.Info("===================================func (vm *InprocVM) Start(ccid ccintf.CCID, args []string, env []string, filesToUpload map[string][]byte, builder container.Builder) error ==============================================")
 	path := ccid.GetName()
 
 	ipctemplate := vm.registry.typeRegistry[path]

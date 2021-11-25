@@ -129,6 +129,7 @@ func userChaincodeStreamGetter(name string) (PeerChaincodeStream, error) {
 
 // chaincodes.
 func Start(cc Chaincode) error {
+	chaincodeLogger.Info("==================func Start(cc Chaincode) error=============")
 	// If Start() is called, we assume this is a standalone chaincode and set
 	// up formatted logging.
 	SetupChaincodeLogging()
@@ -272,6 +273,7 @@ func initFromSpec(spec string, defaultLevel logging.Level) {
 // StartInProc is an entry point for system chaincodes bootstrap. It is not an
 // API for chaincodes.
 func StartInProc(env []string, args []string, cc Chaincode, recv <-chan *pb.ChaincodeMessage, send chan<- *pb.ChaincodeMessage) error {
+	chaincodeLogger.Info("================func StartInProc(env []string, args []string, cc Chaincode, recv <-chan *pb.ChaincodeMessage, send chan<- *pb.ChaincodeMessage) error==============================")
 	chaincodeLogger.Debugf("in proc %v", args)
 
 	var chaincodename string
@@ -319,6 +321,7 @@ func newPeerClientConnection() (*grpc.ClientConn, error) {
 }
 
 func chatWithPeer(chaincodename string, stream PeerChaincodeStream, cc Chaincode) error {
+	chaincodeLogger.Info("====================func chatWithPeer(chaincodename string, stream PeerChaincodeStream, cc Chaincode) error ===================")
 	// Create the shim handler responsible for all control logic
 	handler := newChaincodeHandler(stream, cc)
 	defer stream.CloseSend()
@@ -367,7 +370,8 @@ func chatWithPeer(chaincodename string, stream PeerChaincodeStream, cc Chaincode
 				chaincodeLogger.Debugf("%+v", err)
 				return err
 			default:
-				chaincodeLogger.Debugf("[%s]Received message %s from peer", shorttxid(rmsg.msg.Txid), rmsg.msg.Type)
+				chaincodeLogger.Info("=====================default===================")
+				chaincodeLogger.Infof("[%s]Received message %s from peer", shorttxid(rmsg.msg.Txid), rmsg.msg.Type)
 				err := handler.handleMessage(rmsg.msg, errc)
 				if err != nil {
 					err = errors.WithMessage(err, "error handling message")

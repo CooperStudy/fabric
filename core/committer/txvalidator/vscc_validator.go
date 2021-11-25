@@ -47,8 +47,9 @@ func newVSCCValidator(chainID string, support Support, sccp sysccprovider.System
 
 // VSCCValidateTx executes vscc validation for transaction
 func (v *VsccValidatorImpl) VSCCValidateTx(seq int, payload *common.Payload, envBytes []byte, block *common.Block) (error, peer.TxValidationCode) {
+	logger.Info("======================func (v *VsccValidatorImpl) VSCCValidateTx(seq int, payload *common.Payload, envBytes []byte, block *common.Block) (error, peer.TxValidationCode)===================================")
 	chainID := v.chainID
-	logger.Debugf("[%s] VSCCValidateTx starts for bytes %p", chainID, envBytes)
+	logger.Infof("[%s] VSCCValidateTx starts for bytes %p", chainID, envBytes)
 
 	// get header extensions so we have the chaincode ID
 	hdrExt, err := utils.GetChaincodeHeaderExtension(payload.Header)
@@ -205,6 +206,7 @@ func (v *VsccValidatorImpl) VSCCValidateTx(seq int, payload *common.Payload, env
 				Policy:    policy,
 				VSCCName:  vscc.ChaincodeName,
 			}
+			logger.Info("====1. if err = v.VSCCValidateTxForCC(ctx); err != nil===")
 			if err = v.VSCCValidateTxForCC(ctx); err != nil {
 				switch err.(type) {
 				case *commonerrors.VSCCEndorsementPolicyError:
@@ -246,6 +248,7 @@ func (v *VsccValidatorImpl) VSCCValidateTx(seq int, payload *common.Payload, env
 			Policy:    policy,
 			VSCCName:  vscc.ChaincodeName,
 		}
+		logger.Info("=========================2 if err = v.VSCCValidateTxForCC(ctx); err != nil =================")
 		if err = v.VSCCValidateTxForCC(ctx); err != nil {
 			switch err.(type) {
 			case *commonerrors.VSCCEndorsementPolicyError:
@@ -260,7 +263,8 @@ func (v *VsccValidatorImpl) VSCCValidateTx(seq int, payload *common.Payload, env
 }
 
 func (v *VsccValidatorImpl) VSCCValidateTxForCC(ctx *Context) error {
-	logger.Debug("Validating", ctx, "with plugin")
+	logger.Info("============func (v *VsccValidatorImpl) VSCCValidateTxForCC(ctx *Context) error=======")
+	logger.Info("Validating", ctx, "with plugin")
 	err := v.pluginValidator.ValidateWithPlugin(ctx)
 	if err == nil {
 		return nil

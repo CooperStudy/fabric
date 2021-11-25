@@ -107,6 +107,7 @@ type marble struct {
 // Main
 // ===================================================================================
 func main() {
+	fmt.Println("=========fabric/examples/chaincode/go/marbles_chaincode.go func main()=========================")
 	err := shim.Start(new(SimpleChaincode))
 	if err != nil {
 		fmt.Printf("Error starting Simple chaincode: %s", err)

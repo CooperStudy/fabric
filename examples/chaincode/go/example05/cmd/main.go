@@ -14,6 +14,7 @@ import (
 )
 
 func main() {
+	fmt.Println("=========fabric/examples/chaincode/go/example05/cmd/main.go func main()=========================")
 	err := shim.Start(new(example05.SimpleChaincode))
 	if err != nil {
 		fmt.Printf("Error starting Simple chaincode: %s", err)

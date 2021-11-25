@@ -218,6 +218,7 @@ type DataStoreSupport struct {
 
 // InitializeChannel allocates the state provider and should be invoked once per channel per execution
 func (g *gossipServiceImpl) InitializeChannel(chainID string, endpoints []string, support Support) {
+	logger.Info("==========func (g *gossipServiceImpl) InitializeChannel(chainID string, endpoints []string, support Support)====")
 	g.lock.Lock()
 	defer g.lock.Unlock()
 	// Initialize new state provider for given committer

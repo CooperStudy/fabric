@@ -334,13 +334,8 @@ func (vscc *Validator) validateRWSetAndCollection(
 	return nil
 }
 
-func (vscc *Validator) ValidateLSCCInvocation(
-	chid string,
-	env *common.Envelope,
-	cap *pb.ChaincodeActionPayload,
-	payl *common.Payload,
-	ac channelconfig.ApplicationCapabilities,
-) commonerrors.TxValidationError {
+func (vscc *Validator) ValidateLSCCInvocation(chid string, env *common.Envelope, cap *pb.ChaincodeActionPayload, payl *common.Payload, ac channelconfig.ApplicationCapabilities) commonerrors.TxValidationError {
+	logger.Info("====================func (vscc *Validator) ValidateLSCCInvocation(chid string, env *common.Envelope, cap *pb.ChaincodeActionPayload, payl *common.Payload, ac channelconfig.ApplicationCapabilities) commonerrors.TxValidationError {\n================================================")
 	cpp, err := utils.GetChaincodeProposalPayload(cap.ChaincodeProposalPayload)
 	if err != nil {
 		logger.Errorf("VSCC error: GetChaincodeProposalPayload failed, err %s", err)

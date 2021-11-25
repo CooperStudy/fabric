@@ -157,6 +157,7 @@ func (msp *bccspmsp) validateIdentityOUsV1(id *identity) error {
 }
 
 func (msp *bccspmsp) validateIdentityOUsV11(id *identity) error {
+	mspLogger.Info("=========func (msp *bccspmsp) validateIdentityOUsV11(id *identity) error=========================")
 	// Run the same checks as per V1
 	err := msp.validateIdentityOUsV1(id)
 	if err != nil {
