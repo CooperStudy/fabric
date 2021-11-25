@@ -53,10 +53,13 @@ func (d *deserializeAndVerify) Identity() (Identity, error) {
 }
 
 func (d *deserializeAndVerify) Verify() error {
+	cauthdslLogger.Info("================func (d *deserializeAndVerify) Verify() error=================")
 	if d.deserializedIdentity == nil {
 		cauthdslLogger.Panicf("programming error, Identity must be called prior to Verify")
 	}
-	return d.deserializedIdentity.Verify(d.signedData.Data, d.signedData.Signature)
+	err := d.deserializedIdentity.Verify(d.signedData.Data, d.signedData.Signature)
+	cauthdslLogger.Infof("================err:%v :=d.deserializedIdentity.Verify(d.signedData.Data:%v, d.signedData.Signature:%v)=================",err,d.signedData.Data,d.signedData.Signature)
+	return err
 }
 
 type provider struct {
@@ -179,15 +182,17 @@ func (p *policy) Evaluate(signatureSet []*cb.SignedData) error {
 	cauthdslLogger.Info("==============ok := p.evaluator(deduplicate(idAndS), make([]bool, len(signatureSet)))=============================")
 
 	de := deduplicate(idAndS)
-	cauthdslLogger.Info("==============%v := deduplicate(%v)============================",de,idAndS)
+	//                                                              de:[0xc003193320 0xc003193350] idAndS:[0xc003193320 0xc003193350]
+	cauthdslLogger.Infof("==============%v := deduplicate(%v)============================",de,idAndS)
 
+	//
 	ok := p.evaluator(de, make([]bool, len(signatureSet)))
 	/*
 	====================compiledPolicy return   case *cb.SignaturePolicy_NOutOf_ ===func(signedData []IdentityAndSignature, used []bool) bool============================
 
 	*/
 
-	cauthdslLogger.Info("==============ok============================",ok)
+	cauthdslLogger.Info("==============ok============================",ok)//true
 	if !ok {
 		return errors.New("signature set did not satisfy policy")
 	}

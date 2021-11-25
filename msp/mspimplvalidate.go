@@ -19,6 +19,9 @@ import (
 )
 
 func (msp *bccspmsp) validateIdentity(id *identity) error {
+	mspLogger.Info("=================func (msp *bccspmsp) validateIdentity(id *identity) error=======================")
+
+	mspLogger.Info("=================getCertificationChainForBCCSPIdentity=======================")
 	validationChain, err := msp.getCertificationChainForBCCSPIdentity(id)
 	if err != nil {
 		return errors.WithMessage(err, "could not obtain certification chain")
@@ -205,16 +208,21 @@ func (msp *bccspmsp) validateIdentityOUsV11(id *identity) error {
 }
 
 func (msp *bccspmsp) getValidityOptsForCert(cert *x509.Certificate) x509.VerifyOptions {
+	 mspLogger.Info("===========func (msp *bccspmsp) getValidityOptsForCert(cert *x509.Certificate) x509.VerifyOptions================")
+
 	// First copy the opts to override the CurrentTime field
 	// in order to make the certificate passing the expiration test
 	// independently from the real local current time.
 	// This is a temporary workaround for FAB-3678
 
 	var tempOpts x509.VerifyOptions
+	mspLogger.Info("============tempOpts.Roots=================",msp.opts.Roots)
 	tempOpts.Roots = msp.opts.Roots
+	mspLogger.Info("===========tempOpts.DNSName=================",msp.opts.DNSName)
 	tempOpts.DNSName = msp.opts.DNSName
-	tempOpts.Intermediates = msp.opts.Intermediates
+	mspLogger.Info("===========tempOpts.KeyUsages=================",msp.opts.KeyUsages)
 	tempOpts.KeyUsages = msp.opts.KeyUsages
+	mspLogger.Info("===========tempOpts.CurrentTime================",cert.NotBefore.Add(time.Second))
 	tempOpts.CurrentTime = cert.NotBefore.Add(time.Second)
 
 	return tempOpts

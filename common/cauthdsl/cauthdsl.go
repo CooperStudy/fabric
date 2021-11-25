@@ -65,8 +65,11 @@ func compile(policy *cb.SignaturePolicy, identities []*mb.MSPPrincipal, deserial
 		for i, policy := range t.NOutOf.Rules {
 			cauthdslLogger.Info("==============i:===================",i)//0
 			cauthdslLogger.Info("==============policy===================",policy)// signed_by:0
+
 			cauthdslLogger.Infof("=====2   compiledPolicy, err := compile(%v, %v, %v)==================",policy,identities,deserializer)// signed_by:0
-			compiledPolicy, err := compile(policy, identities, deserializer)
+			                       //compile(signed_by:0 , [principal:"\n\007Org1MSP\020\003"  principal:"\n\007Org2MSP\020\003" ], &{{0xc002839a80 0xc0021d9d10}})==================
+			                       //compile(signed_by:1 , [principal:"\n\007Org1MSP\020\003"  principal:"\n\007Org2MSP\020\003" ], &{{0xc002839a80 0xc0021d9d10}})==================
+			compiledPolicy, err := compile(policy,                      identities,                                                               deserializer)
 			//=====compiledPolicy==================
 			cauthdslLogger.Infof("=====compiledPolicy:%T==================",compiledPolicy)
 			//=====compiledPolicy:func([]cauthdsl.IdentityAndSignature, []bool) bool==================
@@ -81,8 +84,7 @@ func compile(policy *cb.SignaturePolicy, identities []*mb.MSPPrincipal, deserial
 			cauthdslLogger.Info("====================compiledPolicy return   case *cb.SignaturePolicy_NOutOf_ ===func(signedData []IdentityAndSignature, used []bool) bool============================")
 			grepKey := time.Now().UnixNano()
 			cauthdslLogger.Infof("%p gate %d evaluation starts", signedData, grepKey)
-			//
-			//0xc0039755a0 gate 1637736265597327441 evaluation starts
+			//0xc0030eb340 gate 1637817852967382121 evaluation starts
 			verified := int32(0)
 			cauthdslLogger.Info("====================verified============================",verified)//0
 
@@ -90,14 +92,25 @@ func compile(policy *cb.SignaturePolicy, identities []*mb.MSPPrincipal, deserial
 			for k, policy := range policies {
 				cauthdslLogger.Info("====================k============================",k)//0 1
 				cauthdslLogger.Info("====================policies============================",policies)
-				// [0xa9ab40 0xa9ab40] [0xa9ab40 0xa9ab40]
+				//[0xa9b200 0xa9b200]
+
 
 
 				copy(_used, used)
-				cauthdslLogger.Info("====================_used============================",_used)//true
+				//设置 _used为【false false】
+				cauthdslLogger.Info("====================_used============================",_used)//[false false]
 				cauthdslLogger.Info("====================a:= policy(signedData, _used) ============================")
-				//
+				cauthdslLogger.Infof("==========policy(signedData:%v, _used:%v)===========",signedData,_used)
+				/*
+
+				 */
 				a:= policy(signedData, _used)
+				//改变之后会修改used的值，如果成功会改成ture used[i]=true
+				cauthdslLogger.Infof("==============used: used[0]:%v,used[1]:%v; _used: _used[0]:%v,_used[1]:%v====",used[0],used[1],_used[0],_used[1])
+				cauthdslLogger.Infof("==========k:%v a%v:= policy(signedData:%v, _used:%v)========================",k,a,signedData,_used)
+				/*
+				====================compiledPolicy return   case *cb.SignaturePolicy_SignedBy: ===func(signedData []IdentityAndSignature, used []bool) bool=============================
+				*/
 				cauthdslLogger.Info("===================a ============================",a)//false
 
 				//true
@@ -141,17 +154,17 @@ func compile(policy *cb.SignaturePolicy, identities []*mb.MSPPrincipal, deserial
 		signedByID := identities[t.SignedBy]
 		cauthdslLogger.Info("============signedByID===================",signedByID)
 		//principal:"\n\007Org1MSP\020\003" = identities[0]
-		//principal:"\n\007Org1MSP\020\003" = identities[1]
+		//principal:"\n\007Org2MSP\020\003" = identities[1]
 		return func(signedData []IdentityAndSignature, used []bool) bool {
 			cauthdslLogger.Info("====================compiledPolicy return   case *cb.SignaturePolicy_SignedBy: ===func(signedData []IdentityAndSignature, used []bool) bool============================")
-			cauthdslLogger.Infof("%p signed by %d principal evaluation starts (used %v)", signedData, t.SignedBy, used)
-			//0xc0039755a0 signed by 0 principal evaluation starts (used [false])
-			// 0xc0039755a0 signed by 1 principal evaluation starts (used [true])
+			cauthdslLogger.Infof("%p    signed by %d principal evaluation starts (used %v)", signedData, t.SignedBy, used)
+			//                      0xc0030eb340 signed by 0 principal evaluation starts (used [false false])
+
 			for i, sd := range signedData {
 				cauthdslLogger.Info("================i=============",i)//0
 				cauthdslLogger.Info("================sd=============",sd)
-				//&{0xc0042d99a0 0xc0029fc900 0xc00404b660}
-				//&{0xc0042d99a0 0xc0029fc900 0xc00404b8e0}
+				//&{0xc0030bb4f0 0xc002a12600 0xc0030b82e0}
+
 				cauthdslLogger.Infof("================used[%v]:%v=============",i,used[i])//used[0]:false
 				//================used[0]:true=============
 				//================used[0]:true=============
@@ -167,17 +180,20 @@ func compile(policy *cb.SignaturePolicy, identities []*mb.MSPPrincipal, deserial
 				}
 				identity, err := sd.Identity()
 				cauthdslLogger.Info("=============identity, err := sd.Identity()=============")
-				cauthdslLogger.Info("===============identity=============",identity)// &{0xc0022ba960 0xc00367a4e0}
+				cauthdslLogger.Info("===============identity=============",identity)
+				// &{0xc003193860 0xc0024f6d50}
 				cauthdslLogger.Info("==============1 =err=============",err)// nil
 				if err != nil {
 					cauthdslLogger.Errorf("Principal deserialization failure (%s) for identity %d", err, i)
 					continue
 				}
-				cauthdslLogger.Info("===============identity=============",identity)// &{0xc0022ba960 0xc00367a4e0}
-				cauthdslLogger.Info("============err = identity.SatisfiesPrincipal(signedByID)============")
+				cauthdslLogger.Info("===============identity=============",identity)
+				// &{0xc003193860 0xc0024f6d50}
+				cauthdslLogger.Infof("============err = identity.SatisfiesPrincipal(signedByID:%v)============",signedByID)
 				err = identity.SatisfiesPrincipal(signedByID)
 				cauthdslLogger.Info("===========2 err============",err)
 				//nil
+
 
 				//the identity is a member of a different MSP (expected Org1MSP, got Org2MSP)
 
@@ -195,8 +211,8 @@ func compile(policy *cb.SignaturePolicy, identities []*mb.MSPPrincipal, deserial
 				}
 				cauthdslLogger.Infof("%p principal evaluation succeeds for identity %d", signedData, i)
 				used[i] = true
-				cauthdslLogger.Infof("======used[%v] = true=========",i)
-				//======tused[0] = true=========
+				cauthdslLogger.Infof("=====注意这里修改user的值：=used[%v] = true=========",i)
+				//======used[0] = true=========
 				return true
 			}
 			cauthdslLogger.Infof("%p principal evaluation fails", signedData)//0xc0039755a0

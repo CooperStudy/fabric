@@ -192,13 +192,17 @@ func (id *PolicyEvaluator) Evaluate(policyBytes []byte, signatureSet []*common.S
 	logger.Infof("================policy, _, err := pp.NewPolicy(%v)============================",policyBytes)
 	policy, _, err := pp.NewPolicy(policyBytes)
 	logger.Infof("================policy:%v===========================",policy)
-	logger.Info("================err===========================",err)
+	/*
+	================policy:&{0xa9a3a0 0xc002a12600}===========================
+	*/
+	logger.Info("================err===========================",err)//nil
 	if err != nil {
 		return err
 	}
 
 
 	logger.Infof("================policy.Evaluate(%v)============================",signatureSet)
+	//================policy.Evaluate([0xc0030bb4f0 0xc0030bb540])============================
 	err = policy.Evaluate(signatureSet)
 
 	logger.Info("===============d err===============",err)

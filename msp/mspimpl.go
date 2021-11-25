@@ -101,7 +101,7 @@ type bccspmsp struct {
 // generate identities and signing identities backed by
 // certificates and keypairs
 func newBccspMsp(version MSPVersion) (MSP, error) {
-	mspLogger.Info("Creating BCCSP-based MSP instance")
+	mspLogger.Info("============func newBccspMsp(version MSPVersion) (MSP, error)===============================")
 
 	bccsp := factory.GetDefault()
 	theMsp := &bccspmsp{}
@@ -279,6 +279,7 @@ func (msp *bccspmsp) GetSigningIdentity(identifier *IdentityIdentifier) (Signing
 // error otherwise
 func (msp *bccspmsp) Validate(id Identity) error {
 	mspLogger.Infof("======================func (msp *bccspmsp) Validate(id Identity) error============")
+	                        //MSP Org1MSP validating identity
 	mspLogger.Infof("MSP %s validating identity", msp.name)
 
 	switch id := id.(type) {
@@ -286,8 +287,10 @@ func (msp *bccspmsp) Validate(id Identity) error {
 	// this is how I can validate it given the
 	// root of trust this MSP has
 	case *identity:
+		mspLogger.Infof("=========ase *identity============")
 		return msp.validateIdentity(id)
 	default:
+		mspLogger.Info("========default============")
 		return errors.New("identity type not recognized")
 	}
 }
@@ -384,17 +387,22 @@ func (msp *bccspmsp) deserializeIdentityInternal(serializedIdentity []byte) (Ide
 // SatisfiesPrincipal returns null if the identity matches the principal or an error otherwise
 func (msp *bccspmsp) SatisfiesPrincipal(id Identity, principal *m.MSPPrincipal) error {
 	mspLogger.Info("=====================func (msp *bccspmsp) SatisfiesPrincipal(id Identity, principal *m.MSPPrincipal) error ==========================================")
+	mspLogger.Infof("==========collectPrincipals(principal:%v, msp.GetVersion():%v)=====",principal,msp.GetVersion())//nil
 	principals, err := collectPrincipals(principal, msp.GetVersion())
 
-	mspLogger.Info("============33==err======",err)
-	mspLogger.Info("==============principals======",principals)
+	mspLogger.Info("============33==err======",err)//nil
+	mspLogger.Info("==============principals======",principals)//[principal:"\n\007Org1MSP\020\003" ]
+	/*
+	[principal:"\n\007Org1MSP\020\003" ]
+
+	*/
 
 	if err != nil {
 		return err
 	}
 	for _, principal := range principals {
-		mspLogger.Info("==============principal======",principal)
-		mspLogger.Info("==============err = msp.internalSatisfiesPrincipalInternalFunc(id, principal)======")
+		mspLogger.Info("==============principal======",principal)//principal:"\n\007Org1MSP\020\003"
+		mspLogger.Infof("==============err = msp.internalSatisfiesPrincipalInternalFunc(id:%v, principal:%v)======",id,principal)
 		err = msp.internalSatisfiesPrincipalInternalFunc(id, principal)
 		mspLogger.Info("============22==err======",err)
 		if err != nil {
@@ -443,6 +451,7 @@ func collectPrincipals(principal *m.MSPPrincipal, mspVersion MSPVersion) ([]*m.M
 		return principalsSlice, nil
 	default:
 		mspLogger.Info("==================default=======================")
+		//invoke:gp here
 		return []*m.MSPPrincipal{principal}, nil
 	}
 }
@@ -457,6 +466,7 @@ func (msp *bccspmsp) satisfiesPrincipalInternalPreV13(id Identity, principal *m.
 	// in this case, we have to check whether the
 	// identity has a role in the msp - member or admin
 	case m.MSPPrincipal_ROLE:
+		//invoke:go here
 		mspLogger.Info("===case m.MSPPrincipal_ROLE=========")
 
 		// Principal contains the msp role
@@ -498,13 +508,20 @@ func (msp *bccspmsp) satisfiesPrincipalInternalPreV13(id Identity, principal *m.
 			mspLogger.Info("===ccase m.MSPRole_CLIENT:========")
 			fallthrough
 		case m.MSPRole_PEER:
+			//peer go here
 			mspLogger.Info("===case m.MSPRole_PEER:========")
+			//Checking if identity satisfies role [PEER] for Org1MSP
 			mspLogger.Infof("Checking if identity satisfies role [%s] for %s", m.MSPRole_MSPRoleType_name[int32(mspRole.Role)], msp.name)
-			if err := msp.Validate(id); err != nil {
+			err := msp.Validate(id)
+			mspLogger.Infof("============err:%v := msp.Validate(id:%v)================",err,id)
+
+			if err != nil {
 				return errors.Wrapf(err, "The identity is not valid under this MSP [%s]", msp.name)
 			}
 
-			if err := msp.hasOURole(id, mspRole.Role); err != nil {
+			 err := msp.hasOURole(id, mspRole.Role)
+			 mspLogger.Infof("============= err:% := msp.hasOURole(id:%v, mspRole.Role:%v)====================",err,id,mspRole.Role)
+			 if err != nil {
 				return errors.Wrapf(err, "The identity is not a [%s] under this MSP [%s]", m.MSPRole_MSPRoleType_name[int32(mspRole.Role)], msp.name)
 			}
 			return nil
@@ -592,6 +609,7 @@ func (msp *bccspmsp) satisfiesPrincipalInternalV13(id Identity, principal *m.MSP
 		}
 
 	default:
+		//invoke: go here
 		mspLogger.Info("======================default=========")
 
 		// Use the pre-v1.3 function to check other principal types
@@ -616,6 +634,7 @@ func (msp *bccspmsp) getCertificationChain(id Identity) ([]*x509.Certificate, er
 
 // getCertificationChainForBCCSPIdentity returns the certification chain of the passed bccsp identity within this msp
 func (msp *bccspmsp) getCertificationChainForBCCSPIdentity(id *identity) ([]*x509.Certificate, error) {
+	mspLogger.Info("========================func (msp *bccspmsp) getCertificationChainForBCCSPIdentity(id *identity) ([]*x509.Certificate, error)==================================")
 	if id == nil {
 		return nil, errors.New("Invalid bccsp identity. Must be different from nil.")
 	}
@@ -626,20 +645,26 @@ func (msp *bccspmsp) getCertificationChainForBCCSPIdentity(id *identity) ([]*x50
 	}
 
 	// CAs cannot be directly used as identities..
+	mspLogger.Info("=============id.cert.IsCA=================",id.cert.IsCA)
 	if id.cert.IsCA {
 		return nil, errors.New("An X509 certificate with Basic Constraint: " +
 			"Certificate Authority equals true cannot be used as an identity")
 	}
 
-	return msp.getValidationChain(id.cert, false)
+	a,err := msp.getValidationChain(id.cert, false)
+	mspLogger.Infof("===========%v,%v := msp.getValidationChain(%v, false)======================",a,err,id.cert)
+	return a,err
 }
 
 func (msp *bccspmsp) getUniqueValidationChain(cert *x509.Certificate, opts x509.VerifyOptions) ([]*x509.Certificate, error) {
+	mspLogger.Info("================func (msp *bccspmsp) getUniqueValidationChain(cert *x509.Certificate, opts x509.VerifyOptions) ([]*x509.Certificate, error) ============================================")
 	// ask golang to validate the cert for us based on the options that we've built at setup time
 	if msp.opts == nil {
 		return nil, errors.New("the supplied identity has no verify options")
 	}
+
 	validationChains, err := cert.Verify(opts)
+	mspLogger.Infof("========%v, %v := cert.Verify(%v)====================",validationChains,err,opts)
 	if err != nil {
 		return nil, errors.WithMessage(err, "the supplied identity is not valid")
 	}
@@ -655,7 +680,15 @@ func (msp *bccspmsp) getUniqueValidationChain(cert *x509.Certificate, opts x509.
 }
 
 func (msp *bccspmsp) getValidationChain(cert *x509.Certificate, isIntermediateChain bool) ([]*x509.Certificate, error) {
-	validationChain, err := msp.getUniqueValidationChain(cert, msp.getValidityOptsForCert(cert))
+	mspLogger.Info("=============================func (msp *bccspmsp) getValidationChain(cert *x509.Certificate, isIntermediateChain bool) ([]*x509.Certificate, error)=====================================================")
+
+
+	mspLogger.Infof("==========msp.getValidityOptsForCert(cert:%v)===================",cert)
+	d := msp.getValidityOptsForCert(cert)
+
+	validationChain, err := msp.getUniqueValidationChain(cert,d)
+	mspLogger.Infof("=========validationChain:%v, err:%v := msp.getUniqueValidationChain(cert:%v,d:%v)===================",validationChain,err,cert,d)
+
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed getting validation chain")
 	}
@@ -671,6 +704,9 @@ func (msp *bccspmsp) getValidationChain(cert *x509.Certificate, isIntermediateCh
 	if isIntermediateChain {
 		parentPosition = 0
 	}
+	mspLogger.Info("==========parentPosition==========",parentPosition)
+	mspLogger.Info("=========msp.certificationTreeInternalNodesMap========",msp.certificationTreeInternalNodesMap)
+	mspLogger.Infof("========msp.certificationTreeInternalNodesMap[string(validationChain[parentPosition:%v].Raw:%v):%v]:%v=======",parentPosition,validationChain[parentPosition].Raw,string(validationChain[parentPosition].Raw),msp.certificationTreeInternalNodesMap[string(validationChain[parentPosition].Raw)])
 	if msp.certificationTreeInternalNodesMap[string(validationChain[parentPosition].Raw)] {
 		return nil, errors.Errorf("invalid validation chain. Parent certificate should be a leaf of the certification tree [%v]", cert.Raw)
 	}
