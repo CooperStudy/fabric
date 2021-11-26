@@ -776,6 +776,7 @@ func (s *GossipStateProviderImpl) commitBlock(block *common.Block, pvtData util.
 
 	// Update ledger height
 	s.mediator.UpdateLedgerHeight(block.Header.Number+1, common2.ChainID(s.chainID))
+	//[mychannel] Committed block [4] with 1 transaction(s)
 	logger.Infof("[%s] Committed block [%d] with %d transaction(s)",
 		s.chainID, block.Header.Number, len(block.Data.Data))
 

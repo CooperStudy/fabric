@@ -120,6 +120,7 @@ type ChannelCmdFactory struct {
 
 // InitCmdFactory init the ChannelCmdFactory with clients to endorser and orderer according to params
 func InitCmdFactory(isEndorserRequired, isPeerDeliverRequired, isOrdererRequired bool) (*ChannelCmdFactory, error) {
+	logger.Infof("================================func InitCmdFactory(isEndorserRequired, isPeerDeliverRequired, isOrdererRequired bool) (*ChannelCmdFactory, error)====================================================")
 	if isPeerDeliverRequired && isOrdererRequired {
 		// this is likely a bug during development caused by adding a new cmd
 		return nil, errors.New("ERROR - only a single deliver source is currently supported")
@@ -129,6 +130,7 @@ func InitCmdFactory(isEndorserRequired, isPeerDeliverRequired, isOrdererRequired
 	cf := &ChannelCmdFactory{}
 
 	cf.Signer, err = common.GetDefaultSignerFnc()
+	logger.Info("==1",err)
 	if err != nil {
 		return nil, errors.WithMessage(err, "error getting default signer")
 	}
@@ -143,6 +145,7 @@ func InitCmdFactory(isEndorserRequired, isPeerDeliverRequired, isOrdererRequired
 		// connection using the values of "peer.address" and
 		// "peer.tls.rootcert.file"
 		cf.EndorserClient, err = common.GetEndorserClientFnc(common.UndefinedParamValue, common.UndefinedParamValue)
+		logger.Info("==2",err)
 		if err != nil {
 			return nil, errors.WithMessage(err, "error getting endorser client for channel")
 		}
@@ -151,6 +154,7 @@ func InitCmdFactory(isEndorserRequired, isPeerDeliverRequired, isOrdererRequired
 	// for fetching blocks from a peer
 	if isPeerDeliverRequired {
 		cf.DeliverClient, err = common.NewDeliverClientForPeer(channelID)
+		logger.Info("==3",err)
 		if err != nil {
 			return nil, errors.WithMessage(err, "error getting deliver client for channel")
 		}
@@ -162,10 +166,12 @@ func InitCmdFactory(isEndorserRequired, isPeerDeliverRequired, isOrdererRequired
 			return nil, errors.Errorf("ordering service endpoint %s is not valid or missing", common.OrderingEndpoint)
 		}
 		cf.DeliverClient, err = common.NewDeliverClientForOrderer(channelID)
+		logger.Info("==4",err)
 		if err != nil {
 			return nil, err
 		}
 	}
+	logger.Info("==5",err)
 	logger.Infof("Endorser and orderer connections initialized")
 	return cf, nil
 }

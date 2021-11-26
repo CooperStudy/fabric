@@ -68,7 +68,7 @@ func (imp *implicitMetaPolicy) Evaluate(signatureSet []*cb.SignedData) error {
 	logger.Info("==================func (imp *implicitMetaPolicy) Evaluate(signatureSet []*cb.SignedData) error==============================")
 	logger.Debugf("This is an implicit meta policy, it will trigger other policy evaluations, whose failures may be benign")
 	remaining := imp.threshold
-	logger.Info("==================remaining := imp.threshold==============================",remaining)
+	logger.Info("==================remaining := imp.threshold==============================",remaining)//1
 
 	defer func() {
 		if remaining != 0 {
@@ -88,9 +88,10 @@ func (imp *implicitMetaPolicy) Evaluate(signatureSet []*cb.SignedData) error {
 		}
 	}()
 
-	logger.Info("==================imp.subPolicies==============================",imp.subPolicies)
+	logger.Info("==================imp.subPolicies==============================",imp.subPolicies)// [0xc002a10820 0xc002a10840]
 	for _, policy := range imp.subPolicies {
 		logger.Info("=================a:= policy.Evaluate(signatureSet)=============================",policy)
+		// &{0xc0027cff40 /Channel/Application/Org2MSP/Readers}
 		a:= policy.Evaluate(signatureSet)
 		logger.Info("================a:= policy.Evaluate(signatureSet)============================",a)
 		if a == nil {

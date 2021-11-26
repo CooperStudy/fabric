@@ -36,6 +36,7 @@ func (p *policyChecker) checkCCEPIfCondition(cc string, blockNum, txNum uint64, 
 	logger.Info("=============func (p *policyChecker) checkCCEPIfCondition(cc string, blockNum, txNum uint64, condition bool) commonerrors.TxValidationError=====================")
 
 	logger.Info("======condition=======", condition) //false
+	//true
 	if condition {
 		return nil
 	}
@@ -296,12 +297,14 @@ func (klv *KeyLevelValidator) Validate(         cc string,        blockNum,     
 		for k, pubWrite := range nsRWSet.KvRwSet.Writes {
 			logger.Infof("========k:%v,pubWrite:%v=============", k, pubWrite)
 			//k:0,pubWrite:key:"a" value:"90" =============
+			//========k:1,pubWrite:key:"b" value:"210" =============
 
 			err := policyChecker.checkSBAndCCEP(cc, "", pubWrite.Key, blockNum, txNum)
 			if err != nil {
 				return err
 			}
 
+			//<nil>=policyChecker.checkSBAndCCEP(mycc, "", b, 4, 0)
 			logger.Infof("================%v=policyChecker.checkSBAndCCEP(%v, \"\", %v, %v, %v)===========================================",err,cc,pubWrite.Key,blockNum,txNum)
 		}
 		// public metadata writes
@@ -348,6 +351,7 @@ func (klv *KeyLevelValidator) Validate(         cc string,        blockNum,     
 	}
 
 	// we make sure that we check at least the CCEP to honour FAB-9473
+	//============<nil> := policyChecker.checkCCEPIfNoEPChecked(mycc, 4, 0)==========================
 	a := policyChecker.checkCCEPIfNoEPChecked(cc, blockNum, txNum)
 	logger.Infof("============%v := policyChecker.checkCCEPIfNoEPChecked(%v, %v, %v)==========================",a,cc,blockNum,txNum)
 	return a

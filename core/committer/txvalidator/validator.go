@@ -185,6 +185,10 @@ func (v *TxValidator) Validate(block *common.Block) error {
 		} else {
 			// if there was no error, we set the txsfltr and we set the
 			// txsChaincodeNames and txsUpgradedChaincodes maps
+
+
+			//invoke: go here
+			//got result for idx 0, code 0
 			logger.Infof("got result for idx %d, code %d", res.tIdx, res.validationCode)
 
 			txsfltr.SetFlag(res.tIdx, res.validationCode)
@@ -231,6 +235,7 @@ func (v *TxValidator) Validate(block *common.Block) error {
 	block.Metadata.Metadata[common.BlockMetadataIndex_TRANSACTIONS_FILTER] = txsfltr
 
 	elapsedValidation := time.Since(startValidation) / time.Millisecond // duration in ms
+	//[mychannel] Validated block [4] in 8ms
 	logger.Infof("[%s] Validated block [%d] in %dms", v.ChainID, block.Header.Number, elapsedValidation)
 
 	return nil
@@ -294,6 +299,7 @@ func (v *TxValidator) validateTx(req *blockValidationRequest, results chan<- *bl
 		// NOT check the validity of endorsements, though. That's a
 		// job for VSCC below
 		logger.Infof("[%s] validateTx starts for block %p env %p txn %d", v.ChainID, block, env, tIdx)
+		//[mychannel] validateTx completes for block 0xc00311c5c0 env 0xc0030ba5f0 txn 0
 		defer logger.Infof("[%s] validateTx completes for block %p env %p txn %d", v.ChainID, block, env, tIdx)
 		var payload *common.Payload
 		var err error

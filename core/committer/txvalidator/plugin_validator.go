@@ -203,9 +203,11 @@ func (id *PolicyEvaluator) Evaluate(policyBytes []byte, signatureSet []*common.S
 
 	logger.Infof("================policy.Evaluate(%v)============================",signatureSet)
 	//================policy.Evaluate([0xc0030bb4f0 0xc0030bb540])============================
+	logger.Info("=============签名验证开始================")
 	err = policy.Evaluate(signatureSet)
+	logger.Info("=============签名验证结束================")
 
-	logger.Info("===============d err===============",err)
+	logger.Info("===============d err===============",err)//nil
 	return err
 }
 

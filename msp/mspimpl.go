@@ -519,7 +519,7 @@ func (msp *bccspmsp) satisfiesPrincipalInternalPreV13(id Identity, principal *m.
 				return errors.Wrapf(err, "The identity is not valid under this MSP [%s]", msp.name)
 			}
 
-			 err := msp.hasOURole(id, mspRole.Role)
+			 err = msp.hasOURole(id, mspRole.Role)
 			 mspLogger.Infof("============= err:% := msp.hasOURole(id:%v, mspRole.Role:%v)====================",err,id,mspRole.Role)
 			 if err != nil {
 				return errors.Wrapf(err, "The identity is not a [%s] under this MSP [%s]", m.MSPRole_MSPRoleType_name[int32(mspRole.Role)], msp.name)

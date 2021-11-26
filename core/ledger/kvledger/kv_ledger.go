@@ -295,6 +295,7 @@ func (l *kvLedger) NewHistoryQueryExecutor() (ledger.HistoryQueryExecutor, error
 
 // CommitWithPvtData commits the block and the corresponding pvt data in an atomic operation
 func (l *kvLedger) CommitWithPvtData(pvtdataAndBlock *ledger.BlockAndPvtData) error {
+	logger.Info("=====================func (l *kvLedger) CommitWithPvtData(pvtdataAndBlock *ledger.BlockAndPvtData) error=================================================")
 	var err error
 	block := pvtdataAndBlock.Block
 	blockNo := pvtdataAndBlock.Block.Header.Number
@@ -333,8 +334,8 @@ func (l *kvLedger) CommitWithPvtData(pvtdataAndBlock *ledger.BlockAndPvtData) er
 	}
 
 	elapsedCommitWithPvtData := time.Since(startBlockProcessing)
-
-	logger.Infof("[%s] Committed block [%d] with %d transaction(s) in %dms (state_validation=%dms block_commit=%dms state_commit=%dms)",
+	               //[mychannel] Committed block [4]  with 1  transaction(s) in 4ms  (state_validation=0ms  block_commit=3ms  state_commit=0ms)
+	logger.Infof("[%s]   Committed block [%d] with %d transaction(s) in %dms (state_validation=%dms block_commit=%dms state_commit=%dms)",
 		l.ledgerID, block.Header.Number, len(block.Data.Data),
 		elapsedCommitWithPvtData/time.Millisecond,
 		elapsedBlockProcessing/time.Millisecond,

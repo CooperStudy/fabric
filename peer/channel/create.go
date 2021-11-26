@@ -172,17 +172,21 @@ func sendCreateChainTransaction(cf *ChannelCmdFactory) error {
 }
 
 func executeCreate(cf *ChannelCmdFactory) error {
+	logger.Info("====func executeCreate(cf *ChannelCmdFactory) error===")
 	err := sendCreateChainTransaction(cf)
+	logger.Info("========1 err",err)//EOF
 	if err != nil {
 		return err
 	}
 
 	block, err := getGenesisBlock(cf)
+	logger.Info("========2 err",err)
 	if err != nil {
 		return err
 	}
 
 	b, err := proto.Marshal(block)
+	logger.Info("========3 err",err)
 	if err != nil {
 		return err
 	}
@@ -192,6 +196,7 @@ func executeCreate(cf *ChannelCmdFactory) error {
 		file = outputBlock
 	}
 	err = ioutil.WriteFile(file, b, 0644)
+	logger.Info("========4 err",err)
 	if err != nil {
 		return err
 	}
@@ -225,7 +230,10 @@ func getGenesisBlock(cf *ChannelCmdFactory) (*cb.Block, error) {
 }
 
 func create(cmd *cobra.Command, args []string, cf *ChannelCmdFactory) error {
+	logger.Info("================func create(cmd *cobra.Command, args []string, cf *ChannelCmdFactory) error=======================")
 	// the global chainID filled by the "-c" command
+	logger.Info("===============channelID=======================", channelID)
+	logger.Info("===============common.UndefinedParamValue=======================",common.UndefinedParamValue)
 	if channelID == common.UndefinedParamValue {
 		return errors.New("must supply channel ID")
 	}
@@ -236,6 +244,8 @@ func create(cmd *cobra.Command, args []string, cf *ChannelCmdFactory) error {
 	var err error
 	if cf == nil {
 		cf, err = InitCmdFactory(EndorserNotRequired, PeerDeliverNotRequired, OrdererRequired)
+		logger.Info("===========cf=======================",cf)
+
 		if err != nil {
 			return err
 		}

@@ -372,7 +372,7 @@ func validateEndorserTransaction(data []byte, hdr *common.Header) error {
 
 // ValidateTransaction checks that the transaction envelope is properly formed
 func ValidateTransaction(e *common.Envelope, c channelconfig.ApplicationCapabilities) (*common.Payload, pb.TxValidationCode) {
-	putilsLogger.Debugf("ValidateTransactionEnvelope starts for envelope %p", e)
+	putilsLogger.Info("===================func ValidateTransaction(e *common.Envelope, c channelconfig.ApplicationCapabilities) (*common.Payload, pb.TxValidationCode)=============================")
 
 	// check for nil argument
 	if e == nil {
