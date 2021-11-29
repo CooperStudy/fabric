@@ -237,6 +237,7 @@ func CheckLogLevel(level string) error {
 
 func configFromEnv(prefix string) (address, override string, clientConfig comm.ClientConfig, err error) {
 	fmt.Println("====configFromEnv==")
+
 	address = viper.GetString(prefix + ".address")
 	override = viper.GetString(prefix + ".tls.serverhostoverride")
 	clientConfig = comm.ClientConfig{}
