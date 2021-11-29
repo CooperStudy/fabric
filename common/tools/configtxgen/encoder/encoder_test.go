@@ -111,7 +111,7 @@ func TestMakeChannelCreationTransactionWithSigner(t *testing.T) {
 	msptesttools.LoadDevMsp()
 	signer := localmsp.NewSigner()
 
-	cct, err := MakeChannelCreationTransaction(channelID, signer, configtxgentest.Load(genesisconfig.SampleSingleMSPChannelProfile))
+	cct, err := MakeChannelCreationTransaction(channelID, signer, configtxgentest.Load(genesisconfig.SampleSingleMSPChannelProfile),"","")
 	assert.NoError(t, err, "Making chain creation tx")
 
 	assert.NotEmpty(t, cct.Signature, "Should have signature")
@@ -131,7 +131,7 @@ func TestMakeChannelCreationTransactionWithSigner(t *testing.T) {
 
 func TestMakeChannelCreationTransactionNoSigner(t *testing.T) {
 	channelID := "foo"
-	cct, err := MakeChannelCreationTransaction(channelID, nil, configtxgentest.Load(genesisconfig.SampleSingleMSPChannelProfile))
+	cct, err := MakeChannelCreationTransaction(channelID, nil, configtxgentest.Load(genesisconfig.SampleSingleMSPChannelProfile),"","")
 	assert.NoError(t, err, "Making chain creation tx")
 
 	assert.Empty(t, cct.Signature, "Should have empty signature")

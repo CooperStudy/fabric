@@ -82,6 +82,8 @@ func UpdateConfig(n *Network, orderer *Orderer, channel string, current, updated
 		&common.ConfigUpdateEnvelope{ConfigUpdate: utils.MarshalOrPanic(configUpdate)},
 		0, // message version
 		0, // epoch
+		"",
+		"",
 	)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(signedEnvelope).NotTo(BeNil())
@@ -133,6 +135,8 @@ func UpdateOrdererConfig(n *Network, orderer *Orderer, channel string, current, 
 		&common.ConfigUpdateEnvelope{ConfigUpdate: utils.MarshalOrPanic(configUpdate)},
 		0, // message version
 		0, // epoch
+		"",
+		"",
 	)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(signedEnvelope).NotTo(BeNil())

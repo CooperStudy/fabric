@@ -802,7 +802,7 @@ func createDeliverEnvelope(channelID string, certificate tls.Certificate) *pcomm
 
 	env, err := putils.CreateSignedEnvelopeWithTLSBinding(
 		pcommon.HeaderType_DELIVER_SEEK_INFO, channelID, localmsp.NewSigner(),
-		seekInfo, int32(0), uint64(0), tlsCertHash)
+		seekInfo, int32(0), uint64(0), tlsCertHash,"","")
 	if err != nil {
 		logger.Errorf("Error signing envelope: %s", err)
 		return nil

@@ -54,7 +54,7 @@ func status() (err error) {
 
 	localSigner := crypto.NewSignatureHeaderCreator(signer)
 	wrapEnv := func(msg proto.Message) *common2.Envelope {
-		env, err := utils.CreateSignedEnvelope(common2.HeaderType_PEER_ADMIN_OPERATION, "", localSigner, msg, 0, 0)
+		env, err := utils.CreateSignedEnvelope(common2.HeaderType_PEER_ADMIN_OPERATION, "", localSigner, msg, 0, 0,"","")
 		if err != nil {
 			logger.Panicf("Failed signing: %v", err)
 		}

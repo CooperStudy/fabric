@@ -73,7 +73,7 @@ func createCmd(cf *ChannelCmdFactory) *cobra.Command {
 
 func createChannelFromDefaults(cf *ChannelCmdFactory) (*cb.Envelope, error) {
 	fmt.Println("=====createChannelFromDefaults============")
-	chCrtEnv, err := encoder.MakeChannelCreationTransaction(channelID, localsigner.NewSigner(), genesisconfig.Load(genesisconfig.SampleSingleMSPChannelProfile))
+	chCrtEnv, err := encoder.MakeChannelCreationTransaction(channelID, localsigner.NewSigner(), genesisconfig.Load(genesisconfig.SampleSingleMSPChannelProfile),"","")
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +144,7 @@ func sanityCheckAndSignConfigTx(envConfigUpdate *cb.Envelope) (*cb.Envelope, err
 
 	configUpdateEnv.Signatures = append(configUpdateEnv.Signatures, configSig)
 
-	return utils.CreateSignedEnvelope(cb.HeaderType_CONFIG_UPDATE, channelID, signer, configUpdateEnv, 0, 0)
+	return utils.CreateSignedEnvelope(cb.HeaderType_CONFIG_UPDATE, channelID, signer, configUpdateEnv, 0, 0,"","")
 }
 
 func sendCreateChainTransaction(cf *ChannelCmdFactory) error {

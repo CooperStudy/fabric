@@ -415,6 +415,8 @@ func (p *BlockPuller) seekLastEnvelope() (*common.Envelope, error) {
 		int32(0),
 		uint64(0),
 		util.ComputeSHA256(p.TLSCert),
+		"",
+		"",
 	)
 }
 
@@ -428,6 +430,8 @@ func (p *BlockPuller) seekNextEnvelope(startSeq uint64) (*common.Envelope, error
 		int32(0),
 		uint64(0),
 		util.ComputeSHA256(p.TLSCert),
+		"",
+		"",
 	)
 }
 

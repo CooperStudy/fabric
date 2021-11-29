@@ -92,7 +92,7 @@ func (r *eventsClient) seekHelper(start *orderer.SeekPosition, stop *orderer.See
 		Start:    start,
 		Stop:     stop,
 		Behavior: orderer.SeekInfo_BLOCK_UNTIL_READY,
-	}, 0, 0, r.tlsCertHash)
+	}, 0, 0, r.tlsCertHash,"","")
 	if err != nil {
 		panic(err)
 	}

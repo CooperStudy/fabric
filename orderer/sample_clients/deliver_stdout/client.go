@@ -43,7 +43,7 @@ func (r *deliverClient) seekHelper(start *ab.SeekPosition, stop *ab.SeekPosition
 		Start:    start,
 		Stop:     stop,
 		Behavior: ab.SeekInfo_BLOCK_UNTIL_READY,
-	}, 0, 0)
+	}, 0, 0,"","")
 	if err != nil {
 		panic(err)
 	}

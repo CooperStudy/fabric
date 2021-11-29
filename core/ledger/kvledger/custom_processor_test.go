@@ -96,7 +96,7 @@ func TestCustomProcessor(t *testing.T) {
 
 func createCustomTx(t *testing.T, txType common.HeaderType, chainid, key, val string) *common.Envelope {
 	kvWrite := &kvrwset.KVWrite{Key: key, Value: []byte(val)}
-	txEnv, err := utils.CreateSignedEnvelope(txType, chainid, nil, kvWrite, 0, 0)
+	txEnv, err := utils.CreateSignedEnvelope(txType, chainid, nil, kvWrite, 0, 0,"","")
 	assert.NoError(t, err)
 	return txEnv
 }

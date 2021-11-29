@@ -142,6 +142,8 @@ func seekHelper(channelID string, position *ab.SeekPosition, tlsCertHash []byte)
 		int32(0),
 		uint64(0),
 		tlsCertHash,
+		"",
+		"",
 	)
 	if err != nil {
 		logger.Errorf("Error signing envelope:  %s", err)

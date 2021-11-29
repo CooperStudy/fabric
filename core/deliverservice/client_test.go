@@ -579,7 +579,7 @@ func TestProductionUsage(t *testing.T) {
 	onConnect := func(bd blocksprovider.BlocksDeliverer) error {
 		env, err := utils.CreateSignedEnvelope(common.HeaderType_CONFIG_UPDATE,
 			"TEST",
-			&signerMock{}, newTestSeekInfo(), 0, 0)
+			&signerMock{}, newTestSeekInfo(), 0, 0,"","")
 		assert.NoError(t, err)
 		return bd.Send(env)
 	}

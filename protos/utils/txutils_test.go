@@ -290,7 +290,7 @@ func TestCreateSignedEnvelope(t *testing.T) {
 	msg := &cb.ConfigEnvelope{}
 
 	env, err := utils.CreateSignedEnvelope(cb.HeaderType_CONFIG, channelID,
-		goodSigner, msg, int32(1), uint64(1))
+		goodSigner, msg, int32(1), uint64(1),"","")
 	assert.NoError(t, err, "Unexpected error creating signed envelope")
 	assert.NotNil(t, env, "Envelope should not be nil")
 	// mock sign returns the bytes to be signed
@@ -304,7 +304,7 @@ func TestCreateSignedEnvelope(t *testing.T) {
 	assert.Equal(t, msg, data, "Payload data does not match expected value")
 
 	_, err = utils.CreateSignedEnvelope(cb.HeaderType_CONFIG, channelID,
-		badSigner, &cb.ConfigEnvelope{}, int32(1), uint64(1))
+		badSigner, &cb.ConfigEnvelope{}, int32(1), uint64(1),"","")
 	assert.Error(t, err, "Expected sign error")
 }
 
@@ -314,7 +314,7 @@ func TestCreateSignedEnvelopeNilSigner(t *testing.T) {
 	msg := &cb.ConfigEnvelope{}
 
 	env, err := utils.CreateSignedEnvelope(cb.HeaderType_CONFIG, channelID,
-		nil, msg, int32(1), uint64(1))
+		nil, msg, int32(1), uint64(1),"","")
 	assert.NoError(t, err, "Unexpected error creating signed envelope")
 	assert.NotNil(t, env, "Envelope should not be nil")
 	assert.Empty(t, env.Signature, "Signature should have been empty")

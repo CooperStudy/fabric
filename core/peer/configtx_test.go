@@ -166,7 +166,7 @@ func (h *testHelper) sampleChannelConfig(sequence uint64, enableV11Capability bo
 }
 
 func (h *testHelper) constructConfigTx(t *testing.T, txType common.HeaderType, chainid string, config *common.Config) *common.Envelope {
-	env, err := utils.CreateSignedEnvelope(txType, chainid, nil, &common.ConfigEnvelope{Config: config}, 0, 0)
+	env, err := utils.CreateSignedEnvelope(txType, chainid, nil, &common.ConfigEnvelope{Config: config}, 0, 0,"","")
 	assert.NoError(t, err)
 	return env
 }
@@ -176,7 +176,7 @@ func (h *testHelper) constructGenesisTx(t *testing.T, chainid string, chanConf *
 		Config:     chanConf,
 		LastUpdate: h.constructLastUpdateField(chainid),
 	}
-	txEnvelope, err := utils.CreateSignedEnvelope(common.HeaderType_CONFIG, chainid, nil, configEnvelop, 0, 0)
+	txEnvelope, err := utils.CreateSignedEnvelope(common.HeaderType_CONFIG, chainid, nil, configEnvelop, 0, 0,"","")
 	assert.NoError(t, err)
 	return txEnvelope
 }
@@ -189,7 +189,7 @@ func (h *testHelper) constructLastUpdateField(chainid string) *common.Envelope {
 	configUpdate := utils.MarshalOrPanic(&common.ConfigUpdate{
 		ChannelId: chainid,
 	})
-	envelopeForLastUpdateField, _ := utils.CreateSignedEnvelope(common.HeaderType_CONFIG_UPDATE, chainid, nil, &common.ConfigUpdateEnvelope{ConfigUpdate: configUpdate}, 0, 0)
+	envelopeForLastUpdateField, _ := utils.CreateSignedEnvelope(common.HeaderType_CONFIG_UPDATE, chainid, nil, &common.ConfigUpdateEnvelope{ConfigUpdate: configUpdate}, 0, 0,"","")
 	return envelopeForLastUpdateField
 }
 

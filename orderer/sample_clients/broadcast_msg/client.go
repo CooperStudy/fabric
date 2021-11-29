@@ -33,7 +33,7 @@ func newBroadcastClient(client ab.AtomicBroadcast_BroadcastClient, channelID str
 }
 
 func (s *broadcastClient) broadcast(transaction []byte) error {
-	env, err := utils.CreateSignedEnvelope(cb.HeaderType_MESSAGE, s.channelID, s.signer, &cb.ConfigValue{Value: transaction}, 0, 0)
+	env, err := utils.CreateSignedEnvelope(cb.HeaderType_MESSAGE, s.channelID, s.signer, &cb.ConfigValue{Value: transaction}, 0, 0,"","")
 	if err != nil {
 		panic(err)
 	}

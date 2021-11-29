@@ -184,7 +184,7 @@ func TestNewChain(t *testing.T) {
 	manager.Initialize(consenters)
 	orglessChannelConf := configtxgentest.Load(genesisconfig.SampleSingleMSPChannelProfile)
 	orglessChannelConf.Application.Organizations = nil
-	envConfigUpdate, err := encoder.MakeChannelCreationTransaction(newChainID, mockCrypto(), orglessChannelConf)
+	envConfigUpdate, err := encoder.MakeChannelCreationTransaction(newChainID, mockCrypto(), orglessChannelConf,"","")
 	assert.NoError(t, err, "Constructing chain creation tx")
 
 	res, err := manager.NewChannelConfig(envConfigUpdate)
@@ -194,7 +194,7 @@ func TestNewChain(t *testing.T) {
 	assert.NoError(t, err, "Proposing initial update")
 	assert.Equal(t, expectedLastConfigSeq, configEnv.GetConfig().Sequence, "Sequence of config envelope for new channel should always be set to %d", expectedLastConfigSeq)
 
-	ingressTx, err := utils.CreateSignedEnvelope(cb.HeaderType_CONFIG, newChainID, mockCrypto(), configEnv, msgVersion, epoch)
+	ingressTx, err := utils.CreateSignedEnvelope(cb.HeaderType_CONFIG, newChainID, mockCrypto(), configEnv, msgVersion, epoch,"","")
 	assert.NoError(t, err, "Creating ingresstx")
 
 	wrapped := wrapConfigTx(ingressTx)

@@ -62,7 +62,7 @@ func TestPolicyBase(t *testing.T) {
 	err := pprov.CheckACL("pol", sProp)
 	assert.NoError(t, err)
 
-	env, err := utils.CreateSignedEnvelope(common.HeaderType_CONFIG, "myc", localmsp.NewSigner(), &common.ConfigEnvelope{}, 0, 0)
+	env, err := utils.CreateSignedEnvelope(common.HeaderType_CONFIG, "myc", localmsp.NewSigner(), &common.ConfigEnvelope{}, 0, 0,"","")
 	assert.NoError(t, err)
 	err = pprov.CheckACL("pol", env)
 	assert.NoError(t, err)

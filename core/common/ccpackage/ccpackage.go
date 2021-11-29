@@ -111,7 +111,7 @@ func createSignedCCDepSpec(cdsbytes []byte, instpolicybytes []byte, endorsements
 	//use defaults (this is definitely ok for install package)
 	msgVersion := int32(0)
 	epoch := uint64(0)
-	chdr := utils.MakeChannelHeader(common.HeaderType_CHAINCODE_PACKAGE, msgVersion, "", epoch)
+	chdr := utils.MakeChannelHeader(common.HeaderType_CHAINCODE_PACKAGE, msgVersion, "", epoch,"","")
 
 	// create the payload
 	payl := &common.Payload{Header: &common.Header{ChannelHeader: utils.MarshalOrPanic(chdr)}, Data: cipbytes}
