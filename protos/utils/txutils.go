@@ -64,17 +64,17 @@ func GetEnvelopeFromBlock(data []byte) (*common.Envelope, error) {
 
 // CreateSignedEnvelope creates a signed envelope of the desired type, with
 // marshaled dataMsg and signs it
-func CreateSignedEnvelope(txType common.HeaderType, channelID string, signer crypto.LocalSigner, dataMsg proto.Message, msgVersion int32, epoch uint64) (*common.Envelope, error) {
+func CreateSignedEnvelope(txType common.HeaderType, channelID string, signer crypto.LocalSigner, dataMsg proto.Message, msgVersion int32, epoch uint64,orgName,orgPki string) (*common.Envelope, error) {
 	fmt.Println("===========CreateSignedEnvelope========")
-	return CreateSignedEnvelopeWithTLSBinding(txType, channelID, signer, dataMsg, msgVersion, epoch, nil)
+	return CreateSignedEnvelopeWithTLSBinding(txType, channelID, signer, dataMsg, msgVersion, epoch, nil,orgName,orgPki)
 }
 
 // CreateSignedEnvelopeWithTLSBinding creates a signed envelope of the desired
 // type, with marshaled dataMsg and signs it. It also includes a TLS cert hash
 // into the channel header
-func CreateSignedEnvelopeWithTLSBinding(txType common.HeaderType, channelID string, signer crypto.LocalSigner, dataMsg proto.Message, msgVersion int32, epoch uint64, tlsCertHash []byte) (*common.Envelope, error) {
+func CreateSignedEnvelopeWithTLSBinding(txType common.HeaderType, channelID string, signer crypto.LocalSigner, dataMsg proto.Message, msgVersion int32, epoch uint64, tlsCertHash []byte,orgName,orgPki string) (*common.Envelope, error) {
 	fmt.Println("===========CreateSignedEnvelopeWithTLSBinding========")
-	payloadChannelHeader := MakeChannelHeader(txType, msgVersion, channelID, epoch)
+	payloadChannelHeader := MakeChannelHeader(txType, msgVersion, channelID, epoch,orgName,orgPki)
 	payloadChannelHeader.TlsCertHash = tlsCertHash
 	var err error
 	payloadSignatureHeader := &common.SignatureHeader{}

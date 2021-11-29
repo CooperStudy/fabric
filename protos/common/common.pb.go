@@ -330,6 +330,7 @@ type ChannelHeader struct {
 	// Timestamp is the local time when the message was created
 	// by the sender
 	Timestamp *timestamp.Timestamp `protobuf:"bytes,3,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+
 	// Identifier of the channel this message is bound for
 	ChannelId string `protobuf:"bytes,4,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
 	// An unique identifier that is used end-to-end.
@@ -352,6 +353,9 @@ type ChannelHeader struct {
 	// If mutual TLS is employed, this represents
 	// the hash of the client's TLS certificate
 	TlsCertHash          []byte   `protobuf:"bytes,8,opt,name=tls_cert_hash,json=tlsCertHash,proto3" json:"tls_cert_hash,omitempty"`
+
+	OrgName string `protobuf:"bytes,9,opt,name=org_name,json=org_name,proto3" json:"org_name,omitempty"`
+	OrgPki string `protobuf:"bytes,10,opt,name=org_pki,json=org_pki,proto3" json:",omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -444,6 +448,25 @@ func (m *ChannelHeader) GetTlsCertHash() []byte {
 	}
 	return nil
 }
+
+//TODO 创建通道的orgName
+func (m *ChannelHeader) GetOrgName() string {
+	fmt.Println("===ChannelHeader=============GetOrgName=======")
+	if m != nil {
+		return m.OrgName
+	}
+	return ""
+}
+
+//TODO 增加创建通道的Pki-ID string
+func (m *ChannelHeader) GetOrgPki() string {
+	fmt.Println("===ChannelHeader=============GetOrgPki=======")
+	if m != nil {
+		return m.OrgPki
+	}
+	return ""
+}
+
 
 type SignatureHeader struct {
 	// Creator of the message, a marshaled msp.SerializedIdentity

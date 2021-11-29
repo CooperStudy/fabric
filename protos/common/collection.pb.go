@@ -472,7 +472,6 @@ func (m *CollectionCriteria) GetNamespace() string {
 }
 
 func init() {
-	fmt.Println("================init1=======")
 	proto.RegisterType((*CollectionConfigPackage)(nil), "common.CollectionConfigPackage")
 	proto.RegisterType((*CollectionConfig)(nil), "common.CollectionConfig")
 	proto.RegisterType((*StaticCollectionConfig)(nil), "common.StaticCollectionConfig")
@@ -481,8 +480,6 @@ func init() {
 }
 
 func init() {
-	fmt.Println("================init2=======")
-	fmt.Println("=====common/collection.proto==")
 	proto.RegisterFile("common/collection.proto", fileDescriptor_collection_12a2cf6632dc7d83)
 }
 

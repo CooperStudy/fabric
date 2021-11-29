@@ -39,7 +39,7 @@ var RejectAllPolicy *cb.SignaturePolicyEnvelope
 var MarshaledRejectAllPolicy []byte
 
 func init() {
-	fmt.Println("==init===")
+	fmt.Println("==cauthdsl_builder.go init===")
 	var err error
 
 	AcceptAllPolicy = Envelope(NOutOf(0, []*cb.SignaturePolicy{}), [][]byte{})

@@ -187,7 +187,7 @@ func ExtractPayload(envelope *cb.Envelope) (*cb.Payload, error) {
 }
 
 // MakeChannelHeader creates a ChannelHeader.
-func MakeChannelHeader(headerType cb.HeaderType, version int32, chainID string, epoch uint64) *cb.ChannelHeader {
+func MakeChannelHeader(headerType cb.HeaderType, version int32, chainID string, epoch uint64,orgName string,orgPki string) *cb.ChannelHeader {
 	fmt.Println("===========MakeChannelHeader========")
 	return &cb.ChannelHeader{
 		Type:    int32(headerType),
@@ -198,6 +198,8 @@ func MakeChannelHeader(headerType cb.HeaderType, version int32, chainID string, 
 		},
 		ChannelId: chainID,
 		Epoch:     epoch,
+		OrgName: orgName,
+		OrgPki: orgPki,
 	}
 }
 

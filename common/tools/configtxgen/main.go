@@ -46,11 +46,12 @@ func doOutputBlock(config *genesisconfig.Profile, channelID string, outputBlock 
 	return nil
 }
 
-func doOutputChannelCreateTx(conf *genesisconfig.Profile, channelID string, outputChannelCreateTx string) error {
-	logger.Info("=========doOutputChannelCreateTx=========")
-	logger.Info("Generating new channel configtx")
+func doOutputChannelCreateTx(conf *genesisconfig.Profile, channelID, outputChannelCreateTx,orgName,orgPki string) error {
+	logger.Info("=========func doOutputChannelCreateTx(conf *genesisconfig.Profile, channelID string, outputChannelCreateTx string) error=========")
 
-	configtx, err := encoder.MakeChannelCreationTransaction(channelID, nil, conf)
+	logger.Info("======orgName==",orgName)
+	logger.Info("======orgPki==",orgPki)
+	configtx, err := encoder.MakeChannelCreationTransaction(channelID, nil, conf,orgName,orgPki)
 	if err != nil {
 		return err
 	}
@@ -211,10 +212,15 @@ func doPrintOrg(t *genesisconfig.TopLevel, printOrg string) error {
 
 func main() {
 	logger.Info("=========main=========")
-	var outputBlock, outputChannelCreateTx, profile, configPath, channelID, inspectBlock, inspectChannelCreateTx, outputAnchorPeersUpdate, asOrg, printOrg string
+	var outputBlock, outputChannelCreateTx, profile, configPath, channelID, inspectBlock, inspectChannelCreateTx, outputAnchorPeersUpdate, asOrg, printOrg ,orgName,orgPki string
 
 	flag.StringVar(&outputBlock, "outputBlock", "", "The path to write the genesis block to (if set)")
 	flag.StringVar(&channelID, "channelID", "", "The channel ID to use in the configtx")
+
+	//TODO cooper add
+	flag.StringVar(&orgName, "orgName", "", "The org name to create in the configtx")
+	flag.StringVar(&orgPki, "orgPki", "", "The org pki to create in the configtx")
+
 	flag.StringVar(&outputChannelCreateTx, "outputCreateChannelTx", "", "The path to write a channel creation configtx to (if set)")
 	flag.StringVar(&profile, "profile", genesisconfig.SampleInsecureSoloProfile, "The profile from configtx.yaml to use for generation.")
 	flag.StringVar(&configPath, "configPath", "", "The path containing the configuration to use (if set)")
@@ -231,6 +237,10 @@ func main() {
 	if channelID == "" && (outputBlock != "" || outputChannelCreateTx != "" || outputAnchorPeersUpdate != "") {
 		channelID = genesisconfig.TestChainID
 		logger.Warningf("Omitting the channel ID for configtxgen for output operations is deprecated.  Explicitly passing the channel ID will be required in the future, defaulting to '%s'.", channelID)
+	}
+
+	if orgName== "" || orgPki == ""{
+		logger.Warn("==orgName,orgPki字段都为空，请注意后续可能出现问题，这个两个字段后续可能会用到===")
 	}
 
 	// show version
@@ -282,7 +292,7 @@ func main() {
 	}
 
 	if outputChannelCreateTx != "" {
-		if err := doOutputChannelCreateTx(profileConfig, channelID, outputChannelCreateTx); err != nil {
+		if err := doOutputChannelCreateTx(profileConfig, channelID, outputChannelCreateTx,orgName,orgPki); err != nil {
 			logger.Fatalf("Error on outputChannelCreateTx: %s", err)
 		}
 	}

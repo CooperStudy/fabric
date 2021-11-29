@@ -48,7 +48,7 @@ func NewFactoryImpl(channelGroup *cb.ConfigGroup) Factory {
 // Block constructs and returns a genesis block for a given channel ID.
 func (f *factory) Block(channelID string) (*cb.Block, error) {
 	fmt.Println("====factory=======Block=================")
-	payloadChannelHeader := utils.MakeChannelHeader(cb.HeaderType_CONFIG, msgVersion, channelID, epoch)
+	payloadChannelHeader := utils.MakeChannelHeader(cb.HeaderType_CONFIG, msgVersion, channelID, epoch,"","")
 	payloadSignatureHeader := utils.MakeSignatureHeader(nil, utils.CreateNonceOrPanic())
 	utils.SetTxID(payloadChannelHeader, payloadSignatureHeader)
 	payloadHeader := utils.MakePayloadHeader(payloadChannelHeader, payloadSignatureHeader)

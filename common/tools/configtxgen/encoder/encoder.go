@@ -72,10 +72,12 @@ func addPolicy(cg *cb.ConfigGroup, policy policies.ConfigPolicy, modPolicy strin
 }
 
 func addPolicies(cg *cb.ConfigGroup, policyMap map[string]*genesisconfig.Policy, modPolicy string) error {
-	fmt.Println("===addPolicies=")
+	logger.Info("===func addPolicies(cg *cb.ConfigGroup, policyMap map[string]*genesisconfig.Policy, modPolicy string) error=")
+	logger.Info("===========modPolicy========",modPolicy)
 	for policyName, policy := range policyMap {
 		switch policy.Type {
 		case ImplicitMetaPolicyType:
+			logger.Info("=========case ImplicitMetaPolicyType==============")
 			imp, err := policies.ImplicitMetaFromString(policy.Rule)
 			if err != nil {
 				return errors.Wrapf(err, "invalid implicit meta policy rule '%s'", policy.Rule)
@@ -88,6 +90,7 @@ func addPolicies(cg *cb.ConfigGroup, policyMap map[string]*genesisconfig.Policy,
 				},
 			}
 		case SignaturePolicyType:
+			logger.Info("=========case SignaturePolicyType==============")
 			sp, err := cauthdsl.FromString(policy.Rule)
 			if err != nil {
 				return errors.Wrapf(err, "invalid signature policy rule '%s'", policy.Rule)
@@ -273,10 +276,19 @@ func NewOrdererOrgGroup(conf *genesisconfig.Organization) (*cb.ConfigGroup, erro
 // NewApplicationGroup returns the application component of the channel configuration.  It defines the organizations which are involved
 // in application logic like chaincodes, and how these members may interact with the orderer.  It sets the mod_policy of all elements to "Admins".
 func NewApplicationGroup(conf *genesisconfig.Application) (*cb.ConfigGroup, error) {
-	fmt.Println("===NewApplicationGroup=")
+	logger.Info("===func NewApplicationGroup(conf *genesisconfig.Application) (*cb.ConfigGroup, error)===")
 	applicationGroup := cb.NewConfigGroup()
+
+	logger.Info("===========len(conf.Policies)==============",len(conf.Policies))
+	logger.Info("===========conf.Policies==============",conf.Policies)
+	for k,v := range conf.Policies{
+		logger.Info("=========k",k)
+		logger.Info("====policy type=====",v.Type)
+		logger.Info("====policy Rule=====",v.Rule)
+	}
+
 	if len(conf.Policies) == 0 {
-		logger.Warningf("Default policy emission is deprecated, please include policy specifications for the application group in configtx.yaml")
+		logger.Info("Default policy emission is deprecated, please include policy specifications for the application group in configtx.yaml")
 		addImplicitMetaPolicyDefaults(applicationGroup)
 	} else {
 		if err := addPolicies(applicationGroup, conf.Policies, channelconfig.AdminsPolicyKey); err != nil {
@@ -284,16 +296,21 @@ func NewApplicationGroup(conf *genesisconfig.Application) (*cb.ConfigGroup, erro
 		}
 	}
 
+	logger.Info("====len(conf.ACLs)==",len(conf.ACLs))
+
 	if len(conf.ACLs) > 0 {
 		addValue(applicationGroup, channelconfig.ACLValues(conf.ACLs), channelconfig.AdminsPolicyKey)
 	}
 
+	logger.Info("====len(conf.Capabilities)==",len(conf.Capabilities))
 	if len(conf.Capabilities) > 0 {
 		addValue(applicationGroup, channelconfig.CapabilitiesValue(conf.Capabilities), channelconfig.AdminsPolicyKey)
 	}
 
 	for _, org := range conf.Organizations {
+		logger.Info("=========org========",org)
 		var err error
+		logger.Info("=====org.Name===",org.Name)
 		applicationGroup.Groups[org.Name], err = NewApplicationOrgGroup(org)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create application org")
@@ -307,7 +324,12 @@ func NewApplicationGroup(conf *genesisconfig.Application) (*cb.ConfigGroup, erro
 // NewApplicationOrgGroup returns an application org component of the channel configuration.  It defines the crypto material for the organization
 // (its MSP) as well as its anchor peers for use by the gossip network.  It sets the mod_policy of all elements to "Admins".
 func NewApplicationOrgGroup(conf *genesisconfig.Organization) (*cb.ConfigGroup, error) {
-	fmt.Println("===NewApplicationOrgGroup=")
+	fmt.Println("===func NewApplicationOrgGroup(conf *genesisconfig.Organization) (*cb.ConfigGroup, error)==")
+	logger.Info("=====mspConfig, err := msp.GetVerifyingMspConfig(conf.MSPDir, conf.ID, conf.MSPType)========")
+	logger.Info("=====conf.MSPDir=====",conf.MSPDir)
+	logger.Info("=====conf.ID=====",conf.ID)
+	logger.Info("=====conf.MSPType=====",conf.MSPType)
+	logger.Info("=====msp.GetVerifyingMspConfig=====")
 	mspConfig, err := msp.GetVerifyingMspConfig(conf.MSPDir, conf.ID, conf.MSPType)
 	if err != nil {
 		return nil, errors.Wrapf(err, "1 - Error loading MSP configuration for org %s", conf.Name)
@@ -326,6 +348,8 @@ func NewApplicationOrgGroup(conf *genesisconfig.Organization) (*cb.ConfigGroup, 
 
 	var anchorProtos []*pb.AnchorPeer
 	for _, anchorPeer := range conf.AnchorPeers {
+		logger.Info("=====anchorPeer.Host====",anchorPeer.Host)
+		logger.Info("=====anchorPeer.Port====",anchorPeer.Port)
 		anchorProtos = append(anchorProtos, &pb.AnchorPeer{
 			Host: anchorPeer.Host,
 			Port: int32(anchorPeer.Port),
@@ -383,7 +407,7 @@ func NewConsortiumGroup(conf *genesisconfig.Consortium) (*cb.ConfigGroup, error)
 // NewChannelCreateConfigUpdate generates a ConfigUpdate which can be sent to the orderer to create a new channel.  Optionally, the channel group of the
 // ordering system channel may be passed in, and the resulting ConfigUpdate will extract the appropriate versions from this file.
 func NewChannelCreateConfigUpdate(channelID string, conf *genesisconfig.Profile) (*cb.ConfigUpdate, error) {
-	fmt.Println("===NewChannelCreateConfigUpdate=")
+	fmt.Println("=====func NewChannelCreateConfigUpdate(channelID string, conf *genesisconfig.Profile) (*cb.ConfigUpdate, error) =")
 	if conf.Application == nil {
 		return nil, errors.New("cannot define a new channel with no Application section")
 	}
@@ -430,8 +454,8 @@ func NewChannelCreateConfigUpdate(channelID string, conf *genesisconfig.Profile)
 }
 
 // MakeChannelCreationTransaction is a handy utility function for creating transactions for channel creation
-func MakeChannelCreationTransaction(channelID string, signer crypto.LocalSigner, conf *genesisconfig.Profile) (*cb.Envelope, error) {
-	fmt.Println("===MakeChannelCreationTransaction=")
+func MakeChannelCreationTransaction(channelID string, signer crypto.LocalSigner, conf *genesisconfig.Profile,orgName,orgPki string) (*cb.Envelope, error) {
+	fmt.Println("======func MakeChannelCreationTransaction(channelID string, signer crypto.LocalSigner, conf *genesisconfig.Profile) (*cb.Envelope, error)==========")
 	newChannelConfigUpdate, err := NewChannelCreateConfigUpdate(channelID, conf)
 	if err != nil {
 		return nil, errors.Wrap(err, "config update generation failure")
@@ -458,7 +482,7 @@ func MakeChannelCreationTransaction(channelID string, signer crypto.LocalSigner,
 
 	}
 
-	return utils.CreateSignedEnvelope(cb.HeaderType_CONFIG_UPDATE, channelID, signer, newConfigUpdateEnv, msgVersion, epoch)
+	return utils.CreateSignedEnvelope(cb.HeaderType_CONFIG_UPDATE, channelID, signer, newConfigUpdateEnv, msgVersion, epoch,orgName,orgPki)
 }
 
 // Bootstrapper is a wrapper around NewChannelConfigGroup which can produce genesis blocks

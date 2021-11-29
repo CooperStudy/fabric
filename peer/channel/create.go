@@ -234,7 +234,7 @@ func getGenesisBlock(cf *ChannelCmdFactory) (*cb.Block, error) {
 }
 
 func create(cmd *cobra.Command, args []string, cf *ChannelCmdFactory) error {
-	fmt.Println("=====create============")
+	logger.Info("====func create(cmd *cobra.Command, args []string, cf *ChannelCmdFactory) error======")
 	// the global chainID filled by the "-c" command
 	if channelID == common.UndefinedParamValue {
 		return errors.New("must supply channel ID")
