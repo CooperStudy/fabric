@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -121,24 +120,35 @@ type ChannelCmdFactory struct {
 
 // InitCmdFactory init the ChannelCmdFactory with clients to endorser and orderer according to params
 func InitCmdFactory(isEndorserRequired, isPeerDeliverRequired, isOrdererRequired bool) (*ChannelCmdFactory, error) {
-	fmt.Println("========InitCmdFactory==========")
+	logger.Info("========InitCmdFactory==========")
+	logger.Info("========isPeerDeliverRequired && isOrdererRequired=========", isPeerDeliverRequired && isOrdererRequired)//false
 	if isPeerDeliverRequired && isOrdererRequired {
 		// this is likely a bug during development caused by adding a new cmd
 		return nil, errors.New("ERROR - only a single deliver source is currently supported")
 	}
+	/*
+	========isPeerDeliverRequired========= false
+	========isOrdererRequired========= false
+	 */
 
 	var err error
 	cf := &ChannelCmdFactory{}
 
 	cf.Signer, err = common.GetDefaultSignerFnc()
+	logger.Info("=============cf.Signer, err=============================",cf.Signer, err)
+	/*
+	&{{0xc0002933c0 0xc000237b80 0xc00016c220 0xc0000e07e0} 0xc00039dd40} <nil>
+	*/
 	if err != nil {
 		return nil, errors.WithMessage(err, "error getting default signer")
 	}
 
 	cf.BroadcastFactory = func() (common.BroadcastClient, error) {
+		logger.Info("========cf.BroadcastFactory = func() (common.BroadcastClient, error)=========")
 		return common.GetBroadcastClientFnc()
 	}
 
+	logger.Info("========isEndorserRequired=========", isEndorserRequired) //true
 	// for join and list, we need the endorser as well
 	if isEndorserRequired {
 		// creating an EndorserClient with these empty parameters will create a
@@ -150,6 +160,7 @@ func InitCmdFactory(isEndorserRequired, isPeerDeliverRequired, isOrdererRequired
 		}
 	}
 
+	logger.Info("========isPeerDeliverRequired=========", isPeerDeliverRequired)
 	// for fetching blocks from a peer
 	if isPeerDeliverRequired {
 		cf.DeliverClient, err = common.NewDeliverClientForPeer(channelID)
@@ -157,6 +168,8 @@ func InitCmdFactory(isEndorserRequired, isPeerDeliverRequired, isOrdererRequired
 			return nil, errors.WithMessage(err, "error getting deliver client for channel")
 		}
 	}
+
+	logger.Info("========isOrdererRequired=========", isOrdererRequired)//false
 
 	// for create and fetch, we need the orderer as well
 	if isOrdererRequired {

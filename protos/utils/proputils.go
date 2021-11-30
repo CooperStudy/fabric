@@ -302,7 +302,18 @@ func CreateChaincodeProposalWithTxIDAndTransient(typ common.HeaderType, chainID 
 // CreateChaincodeProposalWithTxIDNonceAndTransient creates a proposal from
 // given input
 func CreateChaincodeProposalWithTxIDNonceAndTransient(txid string, typ common.HeaderType, chainID string, cis *peer.ChaincodeInvocationSpec, nonce, creator []byte, transientMap map[string][]byte) (*peer.Proposal, string, error) {
-	fmt.Println("===========CreateChaincodeProposalWithTxIDNonceAndTransient========")
+	fmt.Println("==func CreateChaincodeProposalWithTxIDNonceAndTransient(txid string, typ common.HeaderType, chainID string, cis *peer.ChaincodeInvocationSpec, nonce, creator []byte, transientMap map[string][]byte) (*peer.Proposal, string, error) {==")
+	//fmt.Println("==创建提案Proposal：join block===")
+	//fmt.Println("==txid",txid)
+	//fmt.Println("==HeaderType",typ)
+	//fmt.Println("==chainID",chainID)//""
+	//chaincodeId: name:"cscc"
+	//fmt.Println("==cis：ChaincodeInvocationSpec",cis.ChaincodeSpec.Type,cis.ChaincodeSpec.ChaincodeId,cis.ChaincodeSpec.Input.Args,cis.ChaincodeSpec.Input.Decorations,cis.ChaincodeSpec.Timeout)
+	//fmt.Println("=======nonce:",nonce)//[33 129 51 71 105 32 251 100 212 211 113 233 206 122 124 140 223 248 66 139 25 11 74 9]
+	//fmt.Println("=======creator:",creator)
+	//fmt.Println("=======transientMap:",transientMap)//map[]
+
+
 	ccHdrExt := &peer.ChaincodeHeaderExtension{ChaincodeId: cis.ChaincodeSpec.ChaincodeId}
 	ccHdrExtBytes, err := proto.Marshal(ccHdrExt)
 	if err != nil {

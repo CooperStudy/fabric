@@ -512,9 +512,9 @@ func getLeaderAliveThreshold() time.Duration {
 }
 
 func getLeadershipDeclarationInterval() time.Duration {
-	fmt.Println("====getLeadershipDeclarationInterval=")
+	//fmt.Println("====getLeadershipDeclarationInterval=")
 	a:= time.Duration(getLeaderAliveThreshold() / 2)
-	fmt.Println("==========getLeadershipDeclarationInterval=================",a)
+	//fmt.Println("==========getLeadershipDeclarationInterval=================",a)
 	return a
 }
 

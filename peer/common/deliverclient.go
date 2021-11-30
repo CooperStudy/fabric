@@ -189,7 +189,7 @@ type peerDeliverService struct {
 
 // NewDeliverClientForPeer creates a new DeliverClient from a PeerClient
 func NewDeliverClientForPeer(channelID string) (*DeliverClient, error) {
-	fmt.Println("===NewDeliverClientForPeer==")
+	logger.Info("===func NewDeliverClientForPeer(channelID string) (*DeliverClient, error)==")
 	var tlsCertHash []byte
 	pc, err := NewPeerClientFromEnv()
 	if err != nil {

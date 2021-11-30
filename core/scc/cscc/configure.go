@@ -138,7 +138,7 @@ func (e *PeerConfiger) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return shim.Error(fmt.Sprintf("Incorrect number of arguments, %d", len(args)))
 	}
 
-	cnflogger.Infof("Invoke function: %s", fname)
+	cnflogger.Infof("Invoke function: %s", fname)//
 
 	// Handle ACL:
 	// 1. get the signed proposal
