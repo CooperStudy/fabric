@@ -60,6 +60,7 @@ func getChaincodeDeploymentSpec(spec *pb.ChaincodeSpec, crtPkg bool) (*pb.Chainc
 		}
 
 		codePackageBytes, err = container.GetChaincodePackageBytes(platformRegistry, spec)
+		logger.Info("=========codePackageBytes=============",codePackageBytes)
 		if err != nil {
 			err = errors.WithMessage(err, "error getting chaincode package bytes")
 			return nil, err
@@ -174,7 +175,8 @@ type collectionConfigJson struct {
 // from the supplied file; the supplied file must contain a
 // json-formatted array of collectionConfigJson elements
 func getCollectionConfigFromFile(ccFile string) ([]byte, error) {
-	fmt.Println("=============getCollectionConfigFromFile==================")
+	logger.Info("============func getCollectionConfigFromFile(ccFile string) ([]byte, error)=================")
+	logger.Info("===========ccFile=========",ccFile)
 	fileBytes, err := ioutil.ReadFile(ccFile)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not read file '%s'", ccFile)
@@ -187,16 +189,28 @@ func getCollectionConfigFromFile(ccFile string) ([]byte, error) {
 // from the supplied byte array; the byte array must contain a
 // json-formatted array of collectionConfigJson elements
 func getCollectionConfigFromBytes(cconfBytes []byte) ([]byte, error) {
-	fmt.Println("=============getCollectionConfigFromBytes==================")
+	logger.Info("====func getCollectionConfigFromBytes(cconfBytes []byte) ([]byte, error)======")
 	cconf := &[]collectionConfigJson{}
 	err := json.Unmarshal(cconfBytes, cconf)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not parse the collection configuration")
 	}
+	logger.Info("===============cconf := &[]collectionConfigJson{}==================")
+	for k,v := range *cconf{
+		logger.Info("==========k",k)
+		logger.Info("====name",v.Name)
+		logger.Info("====BlockToLive",v.BlockToLive)
+		logger.Info("====MaxPeerCount",v.MaxPeerCount)
+		logger.Info("====MemberOnlyRead",v.MemberOnlyRead)
+		logger.Info("====Policy",v.Policy)
+		logger.Info("====RequiredCount",v.RequiredCount)
+	}
 
 	ccarray := make([]*pcommon.CollectionConfig, 0, len(*cconf))
 	for _, cconfitem := range *cconf {
+		logger.Info("=====cconfitem====",cconfitem)
 		p, err := cauthdsl.FromString(cconfitem.Policy)
+		logger.Infof("========%v, %v := cauthdsl.FromString(%v)===================",p,err,cconfitem.Policy)
 		if err != nil {
 			return nil, errors.WithMessage(err, fmt.Sprintf("invalid policy %s", cconfitem.Policy))
 		}
@@ -224,6 +238,7 @@ func getCollectionConfigFromBytes(cconfBytes []byte) ([]byte, error) {
 	}
 
 	ccp := &pcommon.CollectionConfigPackage{Config: ccarray}
+	logger.Info("===========ccp := &pcommon.CollectionConfigPackage{Config: ccarray}===============")
 	return proto.Marshal(ccp)
 }
 
@@ -264,6 +279,7 @@ func checkChaincodeCmdParams(cmd *cobra.Command) error {
 
 		if collectionsConfigFile != common.UndefinedParamValue {
 			var err error
+			logger.Info("=======collectionsConfigFile=====",collectionsConfigFile)
 			collectionConfigBytes, err = getCollectionConfigFromFile(collectionsConfigFile)
 			if err != nil {
 				return errors.WithMessage(err, fmt.Sprintf("invalid collection configuration in file %s", collectionsConfigFile))

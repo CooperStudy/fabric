@@ -313,6 +313,15 @@ func CreateChaincodeProposalWithTxIDNonceAndTransient(txid string, typ common.He
 	//fmt.Println("=======creator:",creator)
 	//fmt.Println("=======transientMap:",transientMap)//map[]
 
+	fmt.Println("==创建提案Proposal：instantiated===")
+	fmt.Println("==txid",txid)
+	fmt.Println("==HeaderType",typ)
+	fmt.Println("==chainID",chainID)//""
+	//chaincodeId: name:"cscc"
+	fmt.Println("==cis：ChaincodeInvocationSpec",cis.ChaincodeSpec.Type,cis.ChaincodeSpec.ChaincodeId,cis.ChaincodeSpec.Input.Args,cis.ChaincodeSpec.Input.Decorations,cis.ChaincodeSpec.Timeout)
+	fmt.Println("=======nonce:",nonce)//[33 129 51 71 105 32 251 100 212 211 113 233 206 122 124 140 223 248 66 139 25 11 74 9]
+	fmt.Println("=======creator:",creator)
+	fmt.Println("=======transientMap:",transientMap)//map[]
 
 	ccHdrExt := &peer.ChaincodeHeaderExtension{ChaincodeId: cis.ChaincodeSpec.ChaincodeId}
 	ccHdrExtBytes, err := proto.Marshal(ccHdrExt)
@@ -565,6 +574,7 @@ func CreateDeployProposalFromCDS(
 	vscc []byte,
 	collectionConfig []byte) (*peer.Proposal, string, error) {
 	fmt.Println("===========CreateDeployProposalFromCDS========")
+	fmt.Println("===========collectionConfig========",collectionConfig)
 	if collectionConfig == nil {
 		return createProposalFromCDS(chainID, cds, creator, "deploy", policy, escc, vscc)
 	}
@@ -591,8 +601,7 @@ func CreateUpgradeProposalFromCDS(
 // createProposalFromCDS returns a deploy or upgrade proposal given a
 // serialized identity and a ChaincodeDeploymentSpec
 func createProposalFromCDS(chainID string, msg proto.Message, creator []byte, propType string, args ...[]byte) (*peer.Proposal, string, error) {
-
-	fmt.Println("===========createProposalFromCDS========")
+	fmt.Println("===========func createProposalFromCDS(chainID string, msg proto.Message, creator []byte, propType string, args ...[]byte) (*peer.Proposal, string, error)========")
 	// in the new mode, cds will be nil, "deploy" and "upgrade" are instantiates.
 	var ccinp *peer.ChaincodeInput
 	var b []byte
@@ -605,17 +614,22 @@ func createProposalFromCDS(chainID string, msg proto.Message, creator []byte, pr
 	}
 	switch propType {
 	case "deploy":
+		fmt.Println("==========case \"deploy\":==========")
 		fallthrough
 	case "upgrade":
+		fmt.Println("=========case \"upgrade\":=========")
 		cds, ok := msg.(*peer.ChaincodeDeploymentSpec)
 		if !ok || cds == nil {
 			return nil, "", errors.New("invalid message for creating lifecycle chaincode proposal")
 		}
-		Args := [][]byte{[]byte(propType), []byte(chainID), b}
-		Args = append(Args, args...)
 
+		Args := [][]byte{[]byte(propType), []byte(chainID), b}
+		fmt.Println("======Args========",Args)
+		Args = append(Args, args...)
+		fmt.Println("======Args========",Args)
 		ccinp = &peer.ChaincodeInput{Args: Args}
 	case "install":
+		fmt.Println("======case \"install\":========")
 		ccinp = &peer.ChaincodeInput{Args: [][]byte{[]byte(propType), b}}
 	}
 

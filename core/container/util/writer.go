@@ -166,7 +166,7 @@ func WriteJavaProjectToPackage(tw *tar.Writer, srcPath string) error {
 //WriteFileToPackage writes a file to the tarball
 func WriteFileToPackage(localpath string, packagepath string, tw *tar.Writer) error {
 	vmLogger.Info("===func WriteFileToPackage(localpath string, packagepath string, tw *tar.Writer) error==")
-	vmLogger.Debug("Writing file to tarball:", packagepath)
+	vmLogger.Info("Writing file to tarball:", packagepath)
 	fd, err := os.Open(localpath)
 	if err != nil {
 		return fmt.Errorf("%s: %s", localpath, err)
@@ -180,12 +180,15 @@ func WriteFileToPackage(localpath string, packagepath string, tw *tar.Writer) er
 
 //WriteStreamToPackage writes bytes (from a file reader) to the tarball
 func WriteStreamToPackage(is io.Reader, localpath string, packagepath string, tw *tar.Writer) error {
-	fmt.Println("==WriteStreamToPackage==")
+	vmLogger.Info("==func WriteStreamToPackage(is io.Reader, localpath string, packagepath string, tw *tar.Writer) error==")
+
 	info, err := os.Stat(localpath)
+	vmLogger.Infof("=====%v, %v := os.Stat(%v)====",info,err,localpath)
 	if err != nil {
 		return fmt.Errorf("%s: %s", localpath, err)
 	}
 	header, err := tar.FileInfoHeader(info, localpath)
+	vmLogger.Infof("=====%v, %v := tar.FileInfoHeader(%v, %v)====",header,err,info,localpath)
 	if err != nil {
 		return fmt.Errorf("Error getting FileInfoHeader: %s", err)
 	}
@@ -212,10 +215,12 @@ func WriteStreamToPackage(is io.Reader, localpath string, packagepath string, tw
 }
 
 func WriteBytesToPackage(name string, payload []byte, tw *tar.Writer) error {
-	fmt.Println("====WriteBytesToPackage====")
+	vmLogger.Info("====func WriteBytesToPackage(name string, payload []byte, tw *tar.Writer) error====")
 	//Make headers identical by using zero time
 	var zeroTime time.Time
-	tw.WriteHeader(&tar.Header{Name: name, Size: int64(len(payload)), ModTime: zeroTime, AccessTime: zeroTime, ChangeTime: zeroTime})
+	a := &tar.Header{Name: name, Size: int64(len(payload)), ModTime: zeroTime, AccessTime: zeroTime, ChangeTime: zeroTime}
+	vmLogger.Infof("============&tar.Header{Name: %v, Size:%v), ModTime: %v, AccessTime: %v, ChangeTime: %v}===",name,int64(len(payload)),zeroTime,zeroTime,zeroTime)
+	tw.WriteHeader(a)
 	tw.Write(payload)
 
 	return nil

@@ -119,7 +119,7 @@ func CreateSignedEnvelopeWithTLSBinding(txType common.HeaderType, channelID stri
 // collected enough endorsements for a proposal to create a transaction and
 // submit it to peers for ordering
 func CreateSignedTx(proposal *peer.Proposal, signer msp.SigningIdentity, resps ...*peer.ProposalResponse) (*common.Envelope, error) {
-	fmt.Println("===========CreateSignedTx========")
+	fmt.Println("===========func CreateSignedTx(proposal *peer.Proposal, signer msp.SigningIdentity, resps ...*peer.ProposalResponse) (*common.Envelope, error)========")
 	if len(resps) == 0 {
 		return nil, errors.New("at least one proposal response is required")
 	}

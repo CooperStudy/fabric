@@ -79,7 +79,9 @@ func instantiate(cmd *cobra.Command, cf *ChaincodeCmdFactory) (*protcommon.Envel
 	err = proto.Unmarshal(creator,cc)
 	logger.Infof("===========instantiate获取创建者.Name:%v==========",cc.Mspid)//Org1MSP
 
+
 	prop, _, err := utils.CreateDeployProposalFromCDS(channelID, cds, creator, policyMarshalled, []byte(escc), []byte(vscc), collectionConfigBytes)
+	logger.Infof("====%v, _, %v := utils.CreateDeployProposalFromCDS(%v,%v,%v,%v, []byte(escc), []byte(vscc),%v)==",prop,err,channelID,cds,creator,policyMarshalled,collectionConfigBytes)
 	if err != nil {
 		return nil, fmt.Errorf("error creating proposal  %s: %s", chainFuncName, err)
 	}
@@ -91,6 +93,8 @@ func instantiate(cmd *cobra.Command, cf *ChaincodeCmdFactory) (*protcommon.Envel
 	}
 
 	// instantiate is currently only supported for one peer
+
+	logger.Info("======instantiate 发送签名signedProp=========",signedProp)
 	proposalResponse, err := cf.EndorserClients[0].ProcessProposal(context.Background(), signedProp)
 	if err != nil {
 		return nil, fmt.Errorf("error endorsing %s: %s", chainFuncName, err)
