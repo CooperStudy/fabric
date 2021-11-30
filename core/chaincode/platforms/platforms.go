@@ -100,8 +100,11 @@ func (r *Registry) GetMetadataProvider(ccType string, codePackage []byte) (Metad
 }
 
 func (r *Registry) GetDeploymentPayload(ccType, path string) ([]byte, error) {
-	fmt.Println("=====Registry====GetDeploymentPayload=====")
+	logger.Info("=====func (r *Registry) GetDeploymentPayload(ccType, path string) ([]byte, error)=====")
+	logger.Info("====ccType=====",ccType)
 	platform, ok := r.Platforms[ccType]
+	logger.Info("======platform==========",platform)
+	logger.Info("======ok==========",ok)
 	if !ok {
 		return nil, fmt.Errorf("Unknown chaincodeType: %s", ccType)
 	}

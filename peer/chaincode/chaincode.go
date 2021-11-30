@@ -145,7 +145,6 @@ func resetFlags() {
 }
 
 func attachFlags(cmd *cobra.Command, names []string) {
-	fmt.Println("=============attachFlags==================")
 	cmdFlags := cmd.Flags()
 	for _, name := range names {
 		if flag := flags.Lookup(name); flag != nil {

@@ -10,6 +10,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/protos/msp"
 
 	protcommon "github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric/protos/peer"
@@ -56,12 +58,14 @@ func instantiateCmd(cf *ChaincodeCmdFactory) *cobra.Command {
 
 //instantiate the command via Endorser
 func instantiate(cmd *cobra.Command, cf *ChaincodeCmdFactory) (*protcommon.Envelope, error) {
-	fmt.Println("========instantiate================")
+	logger.Info("======func instantiate(cmd *cobra.Command, cf *ChaincodeCmdFactory) (*protcommon.Envelope, error)======")
+	logger.Info("======1.getChaincodeSpec(cmd)======")
 	spec, err := getChaincodeSpec(cmd)
 	if err != nil {
 		return nil, err
 	}
 
+	logger.Info("======2. getChaincodeDeploymentSpec(spec, false)======")
 	cds, err := getChaincodeDeploymentSpec(spec, false)
 	if err != nil {
 		return nil, fmt.Errorf("error getting chaincode code %s: %s", chaincodeName, err)
@@ -71,6 +75,9 @@ func instantiate(cmd *cobra.Command, cf *ChaincodeCmdFactory) (*protcommon.Envel
 	if err != nil {
 		return nil, fmt.Errorf("error serializing identity for %s: %s", cf.Signer.GetIdentifier(), err)
 	}
+	cc := &msp.SerializedIdentity{}
+	err = proto.Unmarshal(creator,cc)
+	logger.Infof("===========instantiate获取创建者.Name:%v==========",cc.Mspid)//Org1MSP
 
 	prop, _, err := utils.CreateDeployProposalFromCDS(channelID, cds, creator, policyMarshalled, []byte(escc), []byte(vscc), collectionConfigBytes)
 	if err != nil {
@@ -106,21 +113,27 @@ func instantiate(cmd *cobra.Command, cf *ChaincodeCmdFactory) (*protcommon.Envel
 // (hash) is printed to STDOUT for use by subsequent chaincode-related CLI
 // commands.
 func chaincodeDeploy(cmd *cobra.Command, args []string, cf *ChaincodeCmdFactory) error {
-	fmt.Println("========chaincodeDeploy================")
+	logger.Info("=======func chaincodeDeploy(cmd *cobra.Command, args []string, cf *ChaincodeCmdFactory) error===============")
+
 	if channelID == "" {
 		return errors.New("The required parameter 'channelID' is empty. Rerun the command with -C flag")
 	}
+	logger.Info("=======1.chaincode initiate start===============")
 	// Parsing of the command line is done so silence cmd usage
 	cmd.SilenceUsage = true
 
 	var err error
+	logger.Infof("=======cf:%v=======",cf)
 	if cf == nil {
+		logger.Infof("=======cmd.Name:%v=======",cmd.Name())
 		cf, err = InitCmdFactory(cmd.Name(), true, true)
 		if err != nil {
 			return err
 		}
 	}
 	defer cf.BroadcastClient.Close()
+
+	logger.Info("=======2.chaincode initiate start===============")
 	env, err := instantiate(cmd, cf)
 	if err != nil {
 		return err
@@ -130,5 +143,6 @@ func chaincodeDeploy(cmd *cobra.Command, args []string, cf *ChaincodeCmdFactory)
 		err = cf.BroadcastClient.Send(env)
 	}
 
+	logger.Info("=======chaincode initiate end===============")
 	return err
 }

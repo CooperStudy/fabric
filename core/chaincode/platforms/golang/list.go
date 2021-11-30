@@ -26,14 +26,32 @@ import (
 )
 
 //runProgram non-nil Env, timeout (typically secs or millisecs), program name and args
-func runProgram(env Env, timeout time.Duration, pgm string, args ...string) ([]byte, error) {
-	fmt.Println("=====runProgram==========")
+/*
+lst, err := runProgram(env,         60*time.Second,       "go",      "list", "-f", template, pkg)
+go  list :packages or modules
+
+go list cnet/ctcp pkgtool
+can't load package: package cnet/ctcp: cannot find package "cnet/ctcp" in any of:
+        /usr/local/go/src/cnet/ctcp (from $GOROOT)
+        /home/cooper/go/src/cnet/ctcp (from $GOPATH)
+can't load package: package pkgtool: cannot find package "pkgtool" in any of:
+        /usr/local/go/src/pkgtool (from $GOROOT)
+        /home/cooper/go/src/pkgtool (from $GOPATH)
+
+
+ */
+func runProgram(        env Env,    timeout time.Duration, pgm string, args ...string) ([]byte, error) {
+	logger.Info("=====func runProgram(env Env, timeout time.Duration, pgm string, args ...string) ([]byte, error) ==========")
 	if env == nil {
 		return nil, fmt.Errorf("<%s, %v>: nil env provided", pgm, args)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
+	logger.Info("===env",env)
+	logger.Info("===pgm",pgm)
+	logger.Info("===args",args)
+	logger.Info("===============cmd := exec.CommandContext(ctx, pgm, args...)====================")
 	cmd := exec.CommandContext(ctx, pgm, args...)
 	cmd.Env = flattenEnv(env)
 	stdErr := &bytes.Buffer{}
@@ -59,17 +77,21 @@ func runProgram(env Env, timeout time.Duration, pgm string, args ...string) ([]b
 
 // Logic inspired by: https://dave.cheney.net/2014/09/14/go-list-your-swiss-army-knife
 func list(env Env, template, pkg string) ([]string, error) {
-	fmt.Println("=====list==========")
+	logger.Info("===func list(env Env, template, pkg string) ([]string, error)====")
 	if env == nil {
 		env = getEnv()
 	}
 
+
 	lst, err := runProgram(env, 60*time.Second, "go", "list", "-f", template, pkg)
+	logger.Infof("=======lst:%v, err := runProgram(%v, 60*time.Second, \"go\", \"list\", \"-f\", %v, %v)===========",lst,env,template,pkg)
 	if err != nil {
 		return nil, err
 	}
 
-	return strings.Split(strings.Trim(string(lst), "\n"), "\n"), nil
+	s:=  strings.Split(strings.Trim(string(lst), "\n"), "\n")
+	logger.Info("====================s",s)
+	return s,nil
 }
 
 func listDeps(env Env, pkg string) ([]string, error) {
@@ -78,6 +100,6 @@ func listDeps(env Env, pkg string) ([]string, error) {
 }
 
 func listImports(env Env, pkg string) ([]string, error) {
-	fmt.Println("=====listImports==========")
+	logger.Info("=====func listImports(env Env, pkg string) ([]string, error)=======")
 	return list(env, "{{ join .Imports \"\\n\"}}", pkg)
 }

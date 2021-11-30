@@ -55,7 +55,7 @@ type CodeDescriptor struct {
 //NOTE: for dev mode, user builds and runs chaincode manually. The name provided
 //by the user is equivalent to the path.
 func getCode(path string) (*CodeDescriptor, error) {
-	fmt.Println("=====getCode==========")
+	logger.Info("=====func getCode(path string) (*CodeDescriptor, error)==========")
 	if path == "" {
 		return nil, errors.New("Cannot collect files from empty chaincode path")
 	}
@@ -63,6 +63,7 @@ func getCode(path string) (*CodeDescriptor, error) {
 	// code root will point to the directory where the code exists
 	var gopath string
 	gopath, err := getCodeFromFS(path)
+	logger.Info("=========gopath=========",gopath)
 	if err != nil {
 		return nil, fmt.Errorf("Error getting code %s", err)
 	}
@@ -94,14 +95,18 @@ func (s Sources) Less(i, j int) bool {
 }
 
 func findSource(gopath, pkg string) (SourceMap, error) {
-	fmt.Println("====findSource=======")
+	logger.Info("====func findSource(gopath, pkg string) (SourceMap, error)======")
 	sources := make(SourceMap)
 	tld := filepath.Join(gopath, "src", pkg)
+	logger.Infof("========%v := filepath.Join(%v, \"src\", %v)=============",tld,gopath,pkg)
 	walkFn := func(path string, info os.FileInfo, err error) error {
 
+		logger.Info("===========walkFn := func(path string, info os.FileInfo, err error) error===================")
 		if err != nil {
 			return err
 		}
+
+		logger.Info("========info.IsDir()============",info.IsDir())
 
 		if info.IsDir() {
 
@@ -118,7 +123,7 @@ func findSource(gopath, pkg string) (SourceMap, error) {
 			}
 
 			// Do not import any other directories into chaincode code package
-			logger.Debugf("skipping dir: %s", path)
+			logger.Info("skipping dir: %s", path)
 			return filepath.SkipDir
 		}
 
@@ -147,7 +152,7 @@ func findSource(gopath, pkg string) (SourceMap, error) {
 
 // isMetadataDir checks to see if the current path is in the META-INF directory at the root of the chaincode directory
 func isMetadataDir(path, tld string) bool {
-	fmt.Println("====isMetadataDir=======")
+	logger.Info("====func isMetadataDir(path, tld string) bool=====")
 	a:= strings.HasPrefix(path, filepath.Join(tld, "META-INF"))
 	fmt.Println("==============a",a)
 	return a

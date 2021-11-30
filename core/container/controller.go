@@ -195,11 +195,13 @@ func (vmc *VMController) Process(vmtype string, req VMCReq) error {
 
 // GetChaincodePackageBytes creates bytes for docker container generation using the supplied chaincode specification
 func GetChaincodePackageBytes(pr *platforms.Registry, spec *pb.ChaincodeSpec) ([]byte, error) {
-	fmt.Println("==GetChaincodePackageBytes==")
+	vmLogger.Info("==func GetChaincodePackageBytes(pr *platforms.Registry, spec *pb.ChaincodeSpec) ==")
 	if spec == nil || spec.ChaincodeId == nil {
 		return nil, fmt.Errorf("invalid chaincode spec")
 	}
 
+	vmLogger.Info("==spec.CCType()==",spec.CCType())
+	vmLogger.Info("==spec.Path()==",spec.Path())
 	return pr.GetDeploymentPayload(spec.CCType(), spec.Path())
 }
 

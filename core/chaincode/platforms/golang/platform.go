@@ -252,13 +252,18 @@ func vendorDependencies(pkg string, files Sources) {
 
 // Generates a deployment payload for GOLANG as a series of src/$pkg entries in .tar.gz format
 func (goPlatform *Platform) GetDeploymentPayload(path string) ([]byte, error) {
-	fmt.Println("=====Platform  GetDeploymentPayloadrm===")
+	logger.Info("=====goPlatform *Platform===func (goPlatform *Platform) GetDeploymentPayload(path string) ([]byte, error)=====")
 	var err error
 
 	// --------------------------------------------------------------------------------------
 	// retrieve a CodeDescriptor from either HTTP or the filesystem
 	// --------------------------------------------------------------------------------------
+	logger.Info("========path=======",path)
 	code, err := getCode(path)
+
+	/*
+	 &CodeDescriptor{Gopath: gopath, Pkg: path, Cleanup: nil}
+	 */
 	if err != nil {
 		return nil, err
 	}
@@ -274,14 +279,18 @@ func (goPlatform *Platform) GetDeploymentPayload(path string) ([]byte, error) {
 		return nil, err
 	}
 	gopaths := splitEnvPaths(env["GOPATH"])
+	logger.Info("=====gopaths======",gopaths)
 	goroots := splitEnvPaths(env["GOROOT"])
+	logger.Info("=====goroots======",goroots)
 	gopaths[code.Gopath] = true
+
 	env["GOPATH"] = flattenEnvPaths(gopaths)
 
 	// --------------------------------------------------------------------------------------
 	// Retrieve the list of first-order imports referenced by the chaincode
 	// --------------------------------------------------------------------------------------
 	imports, err := listImports(env, code.Pkg)
+	logger.Infof("============%v, err := listImports(%v, %v)=====================",imports,env,code.Pkg)
 	if err != nil {
 		return nil, fmt.Errorf("Error obtaining imports: %s", err)
 	}
@@ -300,6 +309,7 @@ func (goPlatform *Platform) GetDeploymentPayload(path string) ([]byte, error) {
 	}
 
 	imports = filter(imports, func(pkg string) bool {
+		logger.Info("===========imports = filter(imports, func(pkg string) bool=================")
 		// Drop if provided by CCENV
 		if _, ok := provided[pkg]; ok == true {
 			logger.Debugf("Discarding provided package %s", pkg)
@@ -323,7 +333,7 @@ func (goPlatform *Platform) GetDeploymentPayload(path string) ([]byte, error) {
 		}
 
 		// Else, we keep it
-		logger.Debugf("Accepting import: %s", pkg)
+		logger.Info("Accepting import: %s", pkg)
 		return true
 	})
 
@@ -371,8 +381,7 @@ func (goPlatform *Platform) GetDeploymentPayload(path string) ([]byte, error) {
 	// from the filtered list
 	// --------------------------------------------------------------------------------------
 	for dep := range deps {
-
-		logger.Debugf("processing dep: %s", dep)
+		logger.Info("processing dep: %s", dep)
 
 		// Each dependency should either be in our GOPATH or GOROOT.  We are not interested in packaging
 		// any of the system packages.  However, the official way (go-list) to make this determination
@@ -380,6 +389,7 @@ func (goPlatform *Platform) GetDeploymentPayload(path string) ([]byte, error) {
 		// cannot be found must be system packages and silently skip them
 		for gopath := range gopaths {
 			fqp := filepath.Join(gopath, "src", dep)
+			logger.Infof("========%v := filepath.Join(%v, \"src\", %v)==============",fqp,gopath,dep)
 			exists, err := pathExists(fqp)
 
 			logger.Debugf("checking: %s exists: %v", fqp, exists)
@@ -388,6 +398,7 @@ func (goPlatform *Platform) GetDeploymentPayload(path string) ([]byte, error) {
 
 				// We only get here when we found it, so go ahead and load its code
 				files, err := findSource(gopath, dep)
+				logger.Infof("========%v, %v := findSource(%v, %v)====================",files,err,gopath,dep)
 				if err != nil {
 					return nil, err
 				}
@@ -400,7 +411,7 @@ func (goPlatform *Platform) GetDeploymentPayload(path string) ([]byte, error) {
 		}
 	}
 
-	logger.Debugf("done")
+	logger.Info("done")
 
 	// --------------------------------------------------------------------------------------
 	// Reprocess into a list for easier handling going forward
@@ -435,9 +446,11 @@ func (goPlatform *Platform) GetDeploymentPayload(path string) ([]byte, error) {
 		// If the file is metadata rather than golang code, remove the leading go code path, for example:
 		// original file.Name:  src/github.com/hyperledger/fabric/examples/chaincode/go/marbles02/META-INF/statedb/couchdb/indexes/indexOwner.json
 		// updated file.Name:   META-INF/statedb/couchdb/indexes/indexOwner.json
+		logger.Info("========file.IsMetadata=======",file.IsMetadata)
 		if file.IsMetadata {
 
 			file.Name, err = filepath.Rel(filepath.Join("src", code.Pkg), file.Name)
+			logger.Infof("===%v, %v = filepath.Rel(%v, %v), %v)===",file.Name,filepath.Join("src", code.Pkg),file.Name)
 			if err != nil {
 				return nil, fmt.Errorf("This error was caused by bad packaging of the metadata.  The file [%s] is marked as MetaFile, however not located under META-INF   Error:[%s]", file.Name, err)
 			}
@@ -445,6 +458,7 @@ func (goPlatform *Platform) GetDeploymentPayload(path string) ([]byte, error) {
 			// Split the tar location (file.Name) into a tar package directory and filename
 			_, filename := filepath.Split(file.Name)
 
+			logger.Info("========filename======",filename)
 			// Hidden files are not supported as metadata, therefore ignore them.
 			// User often doesn't know that hidden files are there, and may not be able to delete them, therefore warn user rather than error out.
 			if strings.HasPrefix(filename, ".") {
@@ -452,6 +466,7 @@ func (goPlatform *Platform) GetDeploymentPayload(path string) ([]byte, error) {
 				continue
 			}
 
+			logger.Info("===========file.Path========",file.Path)
 			fileBytes, err := ioutil.ReadFile(file.Path)
 			if err != nil {
 				return nil, err
@@ -460,12 +475,15 @@ func (goPlatform *Platform) GetDeploymentPayload(path string) ([]byte, error) {
 			// Validate metadata file for inclusion in tar
 			// Validation is based on the passed filename with path
 			err = ccmetadata.ValidateMetadataFile(file.Name, fileBytes)
+			logger.Infof("========%v = ccmetadata.ValidateMetadataFile(%v,%v)=============",err,file.Name,fileBytes)
 			if err != nil {
 				return nil, err
 			}
 		}
 
+
 		err = cutil.WriteFileToPackage(file.Path, file.Name, tw)
+		logger.Infof("======%v = cutil.WriteFileToPackage(%v, %v, %v)=================",err,file.Path,file.Name,tw)
 		if err != nil {
 			return nil, fmt.Errorf("Error writing %s to tar: %s", file.Name, err)
 		}
@@ -479,6 +497,7 @@ func (goPlatform *Platform) GetDeploymentPayload(path string) ([]byte, error) {
 		return nil, errors.Wrapf(err, "failed to create tar for chaincode")
 	}
 
+	logger.Info("===payload.Bytes()======",payload.Bytes())
 	return payload.Bytes(), nil
 }
 

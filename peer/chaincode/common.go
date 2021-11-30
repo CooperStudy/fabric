@@ -49,8 +49,10 @@ func checkSpec(spec *pb.ChaincodeSpec) error {
 
 // getChaincodeDeploymentSpec get chaincode deployment spec given the chaincode spec
 func getChaincodeDeploymentSpec(spec *pb.ChaincodeSpec, crtPkg bool) (*pb.ChaincodeDeploymentSpec, error) {
-	fmt.Println("=============getChaincodeDeploymentSpec==================")
+	logger.Info("=========func getChaincodeDeploymentSpec(spec *pb.ChaincodeSpec, crtPkg bool) (*pb.ChaincodeDeploymentSpec, error)=========")
 	var codePackageBytes []byte
+	logger.Info("======chaincode.IsDevMode() ===========",chaincode.IsDevMode())
+	logger.Info("======crtPkg ===========",crtPkg)
 	if chaincode.IsDevMode() == false && crtPkg {
 		var err error
 		if err = checkSpec(spec); err != nil {
@@ -69,7 +71,7 @@ func getChaincodeDeploymentSpec(spec *pb.ChaincodeSpec, crtPkg bool) (*pb.Chainc
 
 // getChaincodeSpec get chaincode spec from the cli cmd pramameters
 func getChaincodeSpec(cmd *cobra.Command) (*pb.ChaincodeSpec, error) {
-	fmt.Println("=============getChaincodeSpec==================")
+	logger.Info("============func getChaincodeSpec(cmd *cobra.Command) (*pb.ChaincodeSpec, error)============")
 	spec := &pb.ChaincodeSpec{}
 	if err := checkChaincodeCmdParams(cmd); err != nil {
 		// unset usage silence because it's a command line usage error
@@ -79,7 +81,10 @@ func getChaincodeSpec(cmd *cobra.Command) (*pb.ChaincodeSpec, error) {
 
 	// Build the spec
 	input := &pb.ChaincodeInput{}
-	if err := json.Unmarshal([]byte(chaincodeCtorJSON), &input); err != nil {
+	logger.Info("============chaincodeCtorJSON============",chaincodeCtorJSON)
+	err := json.Unmarshal([]byte(chaincodeCtorJSON), &input)
+	logger.Info("============input============",input)
+	if err != nil {
 		return spec, errors.Wrap(err, "chaincode argument error")
 	}
 
@@ -223,7 +228,7 @@ func getCollectionConfigFromBytes(cconfBytes []byte) ([]byte, error) {
 }
 
 func checkChaincodeCmdParams(cmd *cobra.Command) error {
-	fmt.Println("=============checkChaincodeCmdParams==================")
+	logger.Info("==========func checkChaincodeCmdParams(cmd *cobra.Command) error=================")
 	// we need chaincode name for everything, including deploy
 	if chaincodeName == common.UndefinedParamValue {
 		return errors.Errorf("must supply value for %s name parameter", chainFuncName)
@@ -297,7 +302,7 @@ func checkChaincodeCmdParams(cmd *cobra.Command) error {
 }
 
 func validatePeerConnectionParameters(cmdName string) error {
-	fmt.Println("============func validatePeerConnectionParameters(cmdName string) error {==================")
+	fmt.Println("============func validatePeerConnectionParameters(cmdName string) error ==================")
 	fmt.Println("==========connectionProfile====================",connectionProfile)//""
 	if connectionProfile != common.UndefinedParamValue {
 		fmt.Println("=============connectionProfile != common.UndefinedParamValue ========================")
@@ -356,31 +361,36 @@ type ChaincodeCmdFactory struct {
 
 // InitCmdFactory init the ChaincodeCmdFactory with default clients
 func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) (*ChaincodeCmdFactory, error) {
-	fmt.Println("============1.func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) (*ChaincodeCmdFactory, error)================")
+	logger.Info("====func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) (*ChaincodeCmdFactory, error)====")
 	var err error
 	var endorserClients []pb.EndorserClient
 	var deliverClients []api.PeerDeliverClient
-	fmt.Println("============2.func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) (*ChaincodeCmdFactory, error)================")
-	fmt.Println("===========InitCmdFactory=======isEndorserRequired======================",isEndorserRequired)//true
+	logger.Info("====isEndorserRequired====",isEndorserRequired)//true
+	logger.Info("====isOrdererRequired====",isOrdererRequired)//true
 	if isEndorserRequired {
-		fmt.Println("============3.func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) (*ChaincodeCmdFactory, error)================")
-		if err = validatePeerConnectionParameters(cmdName); err != nil {
+		logger.Infof("====validatePeerConnectionParameters(%v)====",cmdName)
+		 err = validatePeerConnectionParameters(cmdName)
+
+		if err != nil {
 			return nil, errors.WithMessage(err, "error validating peer connection parameters")
 		}
-		fmt.Println("============4.func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) (*ChaincodeCmdFactory, error)================")
-		fmt.Println("===========peerAddresses===========",peerAddresses)
+		logger.Infof("====peerAddresses:%v====",peerAddresses)
 		/*
+		1.initiate
+		peerAddresses []
+
+		2.invoke
 		 [peer0.org1.example.com:7051 peer0.org2.example.com:7051]
 		*/
 		for i, address := range peerAddresses {
-			fmt.Println("==============================i",i)
+			logger.Info("====i",i)
 			//0
 			//1
-			fmt.Println("==============================address",address)
+			logger.Info("====address",address)
 			//peer0.org1.example.com:7051
 			//peer0.org2.example.com:7051
 			var tlsRootCertFile string
-			fmt.Println("==============================tlsRootCertFiles",tlsRootCertFiles)
+			fmt.Println("====tlsRootCertFiles",tlsRootCertFiles)
 			/*
 			[/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
 			 /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt]
@@ -408,29 +418,28 @@ func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) 
 			deliverClients = append(deliverClients, deliverClient)
 			fmt.Println("==================deliverClients========================",deliverClients)//[0xc00013c690 0xc000267ad0]
 		}
+
+		logger.Infof("====len(endorserClients):%v====",len(endorserClients))
 		if len(endorserClients) == 0 {
 			return nil, errors.New("no endorser clients retrieved - this might indicate a bug")
 		}
 	}
-	fmt.Println("============5.func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) (*ChaincodeCmdFactory, error)================")
 	certificate, err := common.GetCertificateFnc()
 	if err != nil {
 		return nil, errors.WithMessage(err, "error getting client cerificate")
 	}
 
-	fmt.Println("============6.func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) (*ChaincodeCmdFactory, error)================")
 	signer, err := common.GetDefaultSignerFnc()
 	if err != nil {
 		return nil, errors.WithMessage(err, "error getting default signer")
 	}
-	fmt.Println("============7.func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) (*ChaincodeCmdFactory, error)================")
 	var broadcastClient common.BroadcastClient
 
 	if isOrdererRequired {
 		//isOrdererRequired true
-		fmt.Println("===========if isOrdererRequired ============================")
+		logger.Infof("====len(common.OrderingEndpoint):%v====",len(common.OrderingEndpoint))//true
+		logger.Infof("====common.OrderingEndpoint:%v====",common.OrderingEndpoint)//true
 		if len(common.OrderingEndpoint) == 0 {
-			fmt.Println("========== len(common.OrderingEndpoint) == 0 ============================")
 			if len(endorserClients) == 0 {
 				return nil, errors.New("orderer is required, but no ordering endpoint or endorser client supplied")
 			}
@@ -447,14 +456,12 @@ func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) 
 			// override viper env
 			viper.Set("orderer.address", orderingEndpoints[0])
 		}
-		fmt.Println("===============broadcastClient, err = common.GetBroadcastClientFnc()====================")
 		broadcastClient, err = common.GetBroadcastClientFnc()
 
 		if err != nil {
 			return nil, errors.WithMessage(err, "error getting broadcast client")
 		}
 	}
-	fmt.Println("============8.func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) (*ChaincodeCmdFactory, error)================")
 	return &ChaincodeCmdFactory{
 		EndorserClients: endorserClients,
 		DeliverClients:  deliverClients,

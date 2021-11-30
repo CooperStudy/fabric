@@ -92,7 +92,7 @@ const DevModeUserRunsChaincode string = "dev"
 // IsDevMode returns true if the peer was configured with development-mode
 // enabled.
 func IsDevMode() bool {
-	fmt.Println("====IsDevMode==")
+	chaincodeLogger.Info("===func IsDevMode() bool==")
 	mode := viper.GetString("chaincode.mode")
 
 	return mode == DevModeUserRunsChaincode

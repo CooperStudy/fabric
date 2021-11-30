@@ -27,7 +27,7 @@ import (
 type Env map[string]string
 
 func getEnv() Env {
-	fmt.Println("======getEnv=========")
+	logger.Info("======func getEnv() Env========")
 	env := make(Env)
 	for _, entry := range os.Environ() {
 		tokens := strings.SplitN(entry, "=", 2)
@@ -40,7 +40,7 @@ func getEnv() Env {
 }
 
 func getGoEnv() (Env, error) {
-	fmt.Println("======getGoEnv=========")
+	logger.Info("=====func getGoEnv() (Env, error)======")
 	env := getEnv()
 
 	goenvbytes, err := runProgram(env, 10*time.Second, "go", "env")
@@ -84,13 +84,14 @@ func splitEnvPaths(value string) Paths {
 }
 
 func flattenEnvPaths(paths Paths) string {
-	fmt.Println("======flattenEnvPaths=========")
+	logger.Info("=====func flattenEnvPaths(paths Paths) string========")
 	_paths := make([]string, 0)
 	for path := range paths {
 		_paths = append(_paths, path)
 	}
 
+	logger.Info("=====_paths",_paths)
 	a:= strings.Join(_paths, string(os.PathListSeparator))
-	fmt.Println("===================a====================",a)
+	fmt.Println("===path=================",a)
 	return a
 }
