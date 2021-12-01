@@ -29,3 +29,8 @@ func Test1(t *testing.T) {
 	creator, _ :=signer.Serialize()
 	fmt.Printf("===a:%v\n",creator)
 }
+
+func Test2(t *testing.T){
+ a:=[]byte{18,8,18,6,8,1,18,2 ,8 ,0 ,26, 13, 18 ,11 ,10, 7 ,79, 114, 103 ,49, 77, 83 ,80 ,16, 3}
+ fmt.Println(string(a))
+}

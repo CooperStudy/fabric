@@ -497,7 +497,8 @@ func (cd *ChaincodeData) Validation() (string, []byte) {
 // Endorsement returns how to endorse proposals for this chaincode.
 // The string returns is the name of the endorsement method (usually 'escc').
 func (cd *ChaincodeData) Endorsement() string {
-	fmt.Println("==ChaincodeData=Endorsement==")
+	ccproviderLogger.Info("==ChaincodeData=Endorsement==")
+	ccproviderLogger.Infof("==cd.Escc:%v==",cd.Escc)
 	return cd.Escc
 }
 

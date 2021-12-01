@@ -51,14 +51,15 @@ func checkSpec(spec *pb.ChaincodeSpec) error {
 func getChaincodeDeploymentSpec(spec *pb.ChaincodeSpec, crtPkg bool) (*pb.ChaincodeDeploymentSpec, error) {
 	logger.Info("=========func getChaincodeDeploymentSpec(spec *pb.ChaincodeSpec, crtPkg bool) (*pb.ChaincodeDeploymentSpec, error)=========")
 	var codePackageBytes []byte
-	logger.Info("======chaincode.IsDevMode() ===========",chaincode.IsDevMode())
-	logger.Info("======crtPkg ===========",crtPkg)
+	logger.Info("======chaincode.IsDevMode() ===========",chaincode.IsDevMode())//false
+	logger.Info("======crtPkg ===========",crtPkg)//false
 	if chaincode.IsDevMode() == false && crtPkg {
 		var err error
 		if err = checkSpec(spec); err != nil {
 			return nil, err
 		}
 
+		//开始有策略信息
 		codePackageBytes, err = container.GetChaincodePackageBytes(platformRegistry, spec)
 		logger.Info("=========codePackageBytes=============",codePackageBytes)
 		if err != nil {
@@ -74,7 +75,18 @@ func getChaincodeDeploymentSpec(spec *pb.ChaincodeSpec, crtPkg bool) (*pb.Chainc
 func getChaincodeSpec(cmd *cobra.Command) (*pb.ChaincodeSpec, error) {
 	logger.Info("============func getChaincodeSpec(cmd *cobra.Command) (*pb.ChaincodeSpec, error)============")
 	spec := &pb.ChaincodeSpec{}
-	if err := checkChaincodeCmdParams(cmd); err != nil {
+	logger.Info("============ checkChaincodeCmdParams(cmd)======================")
+
+	//policy
+	logger.Infof("========policy:%v====================================",policy)
+	/*
+	1.query
+	policy ""
+	 */
+
+
+	err := checkChaincodeCmdParams(cmd)
+	if err != nil {
 		// unset usage silence because it's a command line usage error
 		cmd.SilenceUsage = false
 		return spec, err
@@ -83,8 +95,21 @@ func getChaincodeSpec(cmd *cobra.Command) (*pb.ChaincodeSpec, error) {
 	// Build the spec
 	input := &pb.ChaincodeInput{}
 	logger.Info("============chaincodeCtorJSON============",chaincodeCtorJSON)
-	err := json.Unmarshal([]byte(chaincodeCtorJSON), &input)
+	/*
+	1.instantiate
+	{"Args":["init","a","100","b","200"]}
+
+	2.query
+	{"Args":["query","a"]}
+	*/
+	err = json.Unmarshal([]byte(chaincodeCtorJSON), &input)
 	logger.Info("============input============",input)
+	/*
+	1.instantiate
+	args:"init" args:"a" args:"100" args:"b" args:"200"
+	2.query
+	args:"query" args:"a"
+	*/
 	if err != nil {
 		return spec, errors.Wrap(err, "chaincode argument error")
 	}
@@ -125,7 +150,8 @@ func chaincodeInvokeOrQuery(cmd *cobra.Command, invoke bool, cf *ChaincodeCmdFac
 	}
 
 	if invoke {
-		logger.Debugf("ESCC invoke result: %v", proposalResp)
+		logger.Info("===================invoke===========================")
+		logger.Infof("ESCC invoke result: %v", proposalResp)
 		pRespPayload, err := putils.GetProposalResponsePayload(proposalResp.Payload)
 		if err != nil {
 			return errors.WithMessage(err, "error while unmarshaling proposal response payload")
@@ -139,6 +165,7 @@ func chaincodeInvokeOrQuery(cmd *cobra.Command, invoke bool, cf *ChaincodeCmdFac
 		}
 		logger.Infof("Chaincode invoke successful. result: %v", ca.Response)
 	} else {
+		logger.Info("===================else===========================")
 		if proposalResp == nil {
 			return errors.New("error during query: received nil proposal response")
 		}
@@ -149,15 +176,16 @@ func chaincodeInvokeOrQuery(cmd *cobra.Command, invoke bool, cf *ChaincodeCmdFac
 		if chaincodeQueryRaw && chaincodeQueryHex {
 			return fmt.Errorf("options --raw (-r) and --hex (-x) are not compatible")
 		}
+
 		if chaincodeQueryRaw {
-			fmt.Println(proposalResp.Response.Payload)
+			logger.Info("===",proposalResp.Response.Payload)
 			return nil
 		}
 		if chaincodeQueryHex {
-			fmt.Printf("%x\n", proposalResp.Response.Payload)
+			logger.Infof("%x\n", proposalResp.Response.Payload)
 			return nil
 		}
-		fmt.Println(string(proposalResp.Response.Payload))
+		logger.Infof("=========查询结果:%v========",string(proposalResp.Response.Payload))
 	}
 	return nil
 }
@@ -270,6 +298,7 @@ func checkChaincodeCmdParams(cmd *cobra.Command) error {
 		}
 
 		if policy != common.UndefinedParamValue {
+			logger.Info("=====func checkChaincodeCmdParams==p, err := cauthdsl.FromString(policy)===")
 			p, err := cauthdsl.FromString(policy)
 			if err != nil {
 				return errors.Errorf("invalid policy %s", policy)
@@ -318,17 +347,17 @@ func checkChaincodeCmdParams(cmd *cobra.Command) error {
 }
 
 func validatePeerConnectionParameters(cmdName string) error {
-	fmt.Println("============func validatePeerConnectionParameters(cmdName string) error ==================")
-	fmt.Println("==========connectionProfile====================",connectionProfile)//""
+	logger.Info("============func validatePeerConnectionParameters(cmdName string) error ==================")
+	logger.Info("==========connectionProfile====================",connectionProfile)//""
 	if connectionProfile != common.UndefinedParamValue {
-		fmt.Println("=============connectionProfile != common.UndefinedParamValue ========================")
+		logger.Info("=============connectionProfile != common.UndefinedParamValue ========================")
 		networkConfig, err := common.GetConfig(connectionProfile)
 		if err != nil {
 			return err
 		}
-		fmt.Println("=======================networkConfig.Channels[channelID].Peers========================",networkConfig.Channels[channelID].Peers)
+		logger.Info("=======================networkConfig.Channels[channelID].Peers========================",networkConfig.Channels[channelID].Peers)
 		if len(networkConfig.Channels[channelID].Peers) != 0 {
-			fmt.Println("==============if len(networkConfig.Channels[channelID].Peers) != 0 ==============")
+			logger.Info("==============if len(networkConfig.Channels[channelID].Peers) != 0 ==============")
 			peerAddresses = []string{}
 			tlsRootCertFiles = []string{}
 			for peer, peerChannelConfig := range networkConfig.Channels[channelID].Peers {
@@ -337,9 +366,9 @@ func validatePeerConnectionParameters(cmdName string) error {
 					if !ok {
 						return errors.Errorf("peer '%s' is defined in the channel config but doesn't have associated peer config", peer)
 					}
-					fmt.Println("===================== peerConfig.URL============", peerConfig.URL)
+					logger.Info("===================== peerConfig.URL============", peerConfig.URL)
 					peerAddresses = append(peerAddresses, peerConfig.URL)
-					fmt.Println("=======================tlsRootCertFiles==========",peerConfig.TLSCACerts.Path)
+					logger.Info("=======================tlsRootCertFiles==========",peerConfig.TLSCACerts.Path)
 					tlsRootCertFiles = append(tlsRootCertFiles, peerConfig.TLSCACerts.Path)
 				}
 			}

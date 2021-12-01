@@ -9,6 +9,8 @@ package filter
 import (
 	"context"
 	"fmt"
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/protos/msp"
 	"time"
 
 	"github.com/hyperledger/fabric/common/crypto"
@@ -17,6 +19,8 @@ import (
 	"github.com/hyperledger/fabric/protos/utils"
 	"github.com/pkg/errors"
 )
+
+var CreatorName string
 
 // NewExpirationCheckFilter creates a new Filter that checks identity expiration
 func NewExpirationCheckFilter() auth.Filter {
@@ -46,6 +50,7 @@ func validateProposal(signedProp *peer.SignedProposal) error {
 	 */
 
 	prop, err := utils.GetProposal(signedProp.ProposalBytes)
+
 	if err != nil {
 		return errors.Wrap(err, "failed parsing proposal")
 	}
@@ -60,6 +65,12 @@ func validateProposal(signedProp *peer.SignedProposal) error {
 		return errors.Wrap(err, "failed parsing signature header")
 	}
 	expirationTime := crypto.ExpiresAt(sh.Creator)
+
+	cc := &msp.SerializedIdentity{}
+	err = proto.Unmarshal(sh.Creator,cc)
+	fmt.Printf("===========instantiate获取创建者.Name:%v==========\n",cc.Mspid)//Org1MSP
+	CreatorName = cc.Mspid
+
 	fmt.Println("====================判断证书是否过期===================")
 	if !expirationTime.IsZero() && time.Now().After(expirationTime) {
 		return errors.New("identity expired")

@@ -242,7 +242,7 @@ func GetChaincodeProposalPayload(bytes []byte) (*peer.ChaincodeProposalPayload, 
 	err := proto.Unmarshal(bytes, cpp)
 	return cpp, errors.Wrap(err, "error unmarshaling ChaincodeProposalPayload")
 }
-
+var CreatorName string
 // GetSignatureHeader Get SignatureHeader from bytes
 func GetSignatureHeader(bytes []byte) (*common.SignatureHeader, error) {
 	fmt.Println("===========GetSignatureHeader========")

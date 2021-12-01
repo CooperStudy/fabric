@@ -39,7 +39,7 @@ type SupportImpl struct {
 }
 
 func (s *SupportImpl) NewQueryCreator(channel string) (QueryCreator, error) {
-	fmt.Println("==SupportImpl==NewQueryCreator==")
+	endorserLogger.Info("==SupportImpl==NewQueryCreator==")
 	lgr := s.Peer.GetLedger(channel)
 	if lgr == nil {
 		return nil, errors.Errorf("channel %s doesn't exist", channel)
@@ -48,7 +48,7 @@ func (s *SupportImpl) NewQueryCreator(channel string) (QueryCreator, error) {
 }
 
 func (s *SupportImpl) SigningIdentityForRequest(*pb.SignedProposal) (SigningIdentity, error) {
-	fmt.Println("==SupportImpl==SigningIdentityForRequest==")
+	endorserLogger.Info("==SupportImpl==SigningIdentityForRequest=======")
 	return s.SignerSupport, nil
 }
 

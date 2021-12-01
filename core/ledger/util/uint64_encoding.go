@@ -8,7 +8,6 @@ package util
 
 import (
 	"encoding/binary"
-	"fmt"
 	"math"
 
 	"github.com/golang/protobuf/proto"
@@ -20,7 +19,7 @@ import (
 // In the byte order comparison this encoding ensures that EncodeReverseOrderVarUint64(A) > EncodeReverseOrderVarUint64(B),
 // If B > A
 func EncodeReverseOrderVarUint64(number uint64) []byte {
-	fmt.Println("==EncodeReverseOrderVarUint64==")
+	//fmt.Println("==EncodeReverseOrderVarUint64==")
 	bytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(bytes, math.MaxUint64-number)
 	numFFBytes := 0
@@ -40,7 +39,7 @@ func EncodeReverseOrderVarUint64(number uint64) []byte {
 // DecodeReverseOrderVarUint64 decodes the number from the bytes obtained from function 'EncodeReverseOrderVarUint64'.
 // Also, returns the number of bytes that are consumed in the process
 func DecodeReverseOrderVarUint64(bytes []byte) (uint64, int) {
-	fmt.Println("==DecodeReverseOrderVarUint64==")
+	//fmt.Println("==DecodeReverseOrderVarUint64==")
 	s, _ := proto.DecodeVarint(bytes)
 	numFFBytes := int(s)
 	decodedBytes := make([]byte, 8)

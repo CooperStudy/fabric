@@ -88,7 +88,7 @@ func (mgr *mspMgmtMgr) Setup(msps []msp.MSP) error {
 // GetManagerForChain returns the msp manager for the supplied
 // chain; if no such manager exists, one is created
 func GetManagerForChain(chainID string) msp.MSPManager {
-	fmt.Println("====GetManagerForChain==")
+	mspLogger.Info("====func GetManagerForChain(chainID string) msp.MSPManager==")
 	m.Lock()
 	defer m.Unlock()
 
@@ -106,7 +106,7 @@ func GetManagerForChain(chainID string) msp.MSPManager {
 		if !(reflect.TypeOf(mspMgr).Elem().Name() == "mspManagerImpl" || reflect.TypeOf(mspMgr).Elem().Name() == "mspMgmtMgr") {
 			panic("Found unexpected MSPManager type.")
 		}
-		mspLogger.Debugf("Returning existing manager for channel '%s'", chainID)
+		mspLogger.Info("Returning existing manager for channel '%s'", chainID)
 	}
 	return mspMgr
 }

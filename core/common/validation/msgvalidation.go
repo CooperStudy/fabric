@@ -216,6 +216,7 @@ func validateSignatureHeader(sHdr *common.SignatureHeader) error {
 
 	return nil
 }
+var CreatorName string
 
 // checks for a valid ChannelHeader
 func validateChannelHeader(cHdr *common.ChannelHeader) error {
@@ -266,6 +267,11 @@ func validateCommonHeader(hdr *common.Header) (*common.ChannelHeader, *common.Si
 	if err != nil {
 		return nil, nil, err
 	}
+
+	cc := &msp.SerializedIdentity{}
+	err = proto.Unmarshal(shdr.Creator,cc)
+	putilsLogger.Infof("============获取创建者.Name:%v==========",cc.Mspid)//Org1MSP
+	utils.CreatorName = cc.Mspid
 
 	err = validateChannelHeader(chdr)
 	if err != nil {

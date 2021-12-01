@@ -81,7 +81,7 @@ func (p *peerImpl) GetCurrConfigBlock(cid string) *common.Block  {
 	return p.getCurrConfigBlock(cid)
 }
 func (p *peerImpl) GetLedger(cid string) ledger.PeerLedger       {
-	fmt.Println("===peerImpl===GetLedger==")
+	logger.Info("===peerImpl===GetLedger==")
 	return p.getLedger(cid)
 }
 func (p *peerImpl) GetMSPIDs(cid string) []string                {

@@ -95,3 +95,10 @@ func Test6(t *testing.T) {
 	result, err := expression.Evaluate( nil )
 	fmt.Println("result",result,"err",err)
 }
+
+func Test7(t *testing.T) {
+	policy := []byte{18,8,18 ,6, 8 ,1 ,18, 2, 8, 0, 26, 19 ,18 ,17, 10 ,13 ,109, 97, 115, 116, 101, 114, 79 ,114, 103, 49, 77 ,83, 80 ,16 ,3}
+
+
+	fmt.Println(string(policy))
+}

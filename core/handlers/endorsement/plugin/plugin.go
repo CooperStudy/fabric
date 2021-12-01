@@ -41,7 +41,7 @@ type DefaultEndorsement struct {
 // The payload that was given as input (could be modified within this function)
 // Or error on failure
 func (e *DefaultEndorsement) Endorse(prpBytes []byte, sp *peer.SignedProposal) (*peer.Endorsement, []byte, error) {
-	fmt.Println("=====DefaultEndorsement====Endorse========")
+	fmt.Println("=====DefaultEndorsement====Endorse==========")
 	signer, err := e.SigningIdentityForRequest(sp)
 	if err != nil {
 		return nil, nil, errors.New(fmt.Sprintf("failed fetching signing identity: %v", err))
@@ -63,7 +63,7 @@ func (e *DefaultEndorsement) Endorse(prpBytes []byte, sp *peer.SignedProposal) (
 
 // Init injects dependencies into the instance of the Plugin
 func (e *DefaultEndorsement) Init(dependencies ...Dependency) error {
-	fmt.Println("=====DefaultEndorsement====Init========")
+	fmt.Println("=====DefaultEndorsement====Init=====")
 	for _, dep := range dependencies {
 		sIDFetcher, isSigningIdentityFetcher := dep.(SigningIdentityFetcher)
 		if !isSigningIdentityFetcher {

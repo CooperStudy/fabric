@@ -16,6 +16,7 @@ limitations under the License.
 
 package cauthdsl
 
+import "C"
 import (
 	"fmt"
 	"reflect"
@@ -31,6 +32,8 @@ import (
 
 // Gate values
 const (
+	GateAndM = "AndM"
+
 	GateAnd   = "And"
 	GateOr    = "Or"
 	GateOutOf = "OutOf"
@@ -42,13 +45,13 @@ const (
 	RoleMember = "member"
 	RoleClient = "client"
 	RolePeer   = "peer"
+	Master     = "master"
 	// RoleOrderer = "orderer" TODO
 )
 
 var (
 	regex = regexp.MustCompile(
-		fmt.Sprintf("^([[:alnum:].-]+)([.])(%s|%s|%s|%s)$",
-			RoleAdmin, RoleMember, RoleClient, RolePeer),
+		fmt.Sprintf("^([[:alnum:].-]+)([.])(%s|%s|%s|%s)$",RoleAdmin, RoleMember, RoleClient, RolePeer),
 	)
 	regexErr = regexp.MustCompile("^No parameter '([^']+)' found[.]$")
 )
@@ -106,10 +109,57 @@ func outof(args ...interface{}) (interface{}, error) {
 
 func and(args ...interface{}) (interface{}, error) {
 	/*
-	==policy== OR(AND('A.member', 'B.member'), 'C.member', AND('A.member', 'D.member'))
-	 */
+		==policy== OR(AND('A.member', 'B.member'), 'C.member', AND('A.member', 'D.member'))
+	*/
 	fmt.Println("==========and:args======",args)
 
+
+	/*
+		==policy== OR(AND('A.member', 'B.member'), 'C.member', AND('A.member', 'D.member'))
+		==========FromString=========
+		==========and:args====== [A.member B.member]
+		==========outof:args========= [2 A.member B.member]
+		==========and:args====== [A.member D.member]
+		==========outof:args========= [2 A.member D.member]
+
+		==========or=========
+		==========outof:args========= [1 outof(2, 'A.member', 'B.member') C.member outof(2, 'A.member', 'D.member')]
+	*/
+	args = append([]interface{}{len(args)}, args...)
+	return outof(args...)
+}
+
+func andM(args ...interface{}) (interface{}, error) {
+	/*
+	==policy== OR(AND('A.member', 'B.member'), 'C.member', AND('A.member', 'D.member'))
+	 */
+	cauthdslLogger.Info("===func andM(args ...interface{}) (interface{}, error)===")
+	cauthdslLogger.Info("===andM:args===",args)	//[Org1MSP.peer]
+
+	var b = Master
+	for i, x := range args {
+		switch v:=x.(type) {
+		case bool:
+			fmt.Printf("Param #%d is a bool\n", i)
+		case float64:
+			fmt.Printf("Param #%d is a float64\n", i)
+		case int, int64:
+			fmt.Printf("Param #%d is a int\n", i)
+		case nil:
+			fmt.Printf("Param #%d is a nil\n", i)
+		case string:
+			fmt.Printf("Param #%d is a string\n", i)
+			b += v
+		default:
+			fmt.Printf("Param #%d is unknown\n", i)
+		}
+	}
+
+	 d :=interface{}(b)
+     var c []interface{}
+	 c= append([]interface{}{1}, d)
+
+	 cauthdslLogger.Info("===========c===============",c)//[1 masterOrg1MSP.peer]
 
 	/*
 	==policy== OR(AND('A.member', 'B.member'), 'C.member', AND('A.member', 'D.member'))
@@ -122,8 +172,58 @@ func and(args ...interface{}) (interface{}, error) {
 	==========or=========
 	==========outof:args========= [1 outof(2, 'A.member', 'B.member') C.member outof(2, 'A.member', 'D.member')]
 	 */
-	args = append([]interface{}{len(args)}, args...)
-	return outof(args...)
+	//args = append([]interface{}{len(args)}, args...)
+	return outofM(c...)
+}
+func outofM(args ...interface{}) (interface{}, error) {
+	cauthdslLogger.Info("==========outofM:args=========",args)//[1 masterOrg1MSP.peer]
+
+	toret := "outof("
+	if len(args) < 2 {
+		return nil, fmt.Errorf("Expected at least two arguments to NOutOf. Given %d", len(args))
+	}
+
+	arg0 := args[0]
+	cauthdslLogger.Info("=====arg0=====",arg0)//1
+	// govaluate treats all numbers as float64 only. But and/or may pass int/string. Allowing int/string for flexibility of caller
+	if n, ok := arg0.(float64); ok {
+		cauthdslLogger.Info("==float64==")
+		toret += strconv.Itoa(int(n))
+	} else if n, ok := arg0.(int); ok {
+		cauthdslLogger.Info("==int==")//int
+		toret += strconv.Itoa(n)
+		//
+	} else if n, ok := arg0.(string); ok {
+		cauthdslLogger.Info("==string==")
+		toret += n
+	} else {
+		cauthdslLogger.Info("==else==")
+		return nil, fmt.Errorf("Unexpected type %s", reflect.TypeOf(arg0))
+	}
+
+	cauthdslLogger.Info("=======middle ==regexp======",regex)
+	//^([[:alnum:].-]+)([.])(admin|member|client|peer)$
+	for _, arg := range args[1:] {
+		cauthdslLogger.Info("====arg",arg)//masterOrg1MSP.peer
+
+		toret += ", "
+		switch t := arg.(type) {
+		case string:
+			fmt.Println("====arg string=t=",t)
+			if regex.MatchString(t) {
+				toret += "'" + t + "'"
+				cauthdslLogger.Info("===toret1======",toret)//outof(1, 'masterOrg1MSP.peer'
+			} else {
+				toret += t
+				cauthdslLogger.Info("===toret2======",toret)
+			}
+		default:
+			return nil, fmt.Errorf("Unexpected type %s", reflect.TypeOf(arg))
+		}
+	}
+	s := toret + ")"
+	cauthdslLogger.Info("=====s==",s)//outof(2, 'A.member', 'B.member')  outof(2, 'A.member', 'D.member') outof(1, outof(2, 'A.member', 'B.member'), 'C.member', outof(2, 'A.member', 'D.member'))
+	return s, nil
 }
 
 func or(args ...interface{}) (interface{}, error) {
@@ -170,8 +270,8 @@ func firstPass(args ...interface{}) (interface{}, error) {
 }
 
 func secondPass(args ...interface{}) (interface{}, error) {
-	fmt.Println("==========secondPass=====args====",args) //[0xc00000c3a0 2 A.member B.member]
-	fmt.Printf("=============args[0]:%T===\n",args[0])//*cauthdsl.context===
+	cauthdslLogger.Info("==========secondPass=====args====",args) //[0xc00000c3a0 2 A.member B.member]
+	cauthdslLogger.Infof("=============args[0]:%T===\n",args[0])//*cauthdsl.context===
 	//[0xc0002f2340 1 n_out_of:<n:2 rules:<signed_by:0 > rules:<signed_by:1 > >  C.member n_out_of:<n:2 rules:<signed_by:2 > rules:<signed_by:3 > > ]
 	//========args[0]:*cauthdsl.context===
 	//outof(ID, 1, outof(ID, 2, 'A.member', 'B.member'), 'C.member', outof(ID, 2, 'A.member', 'D.member'))
@@ -181,7 +281,7 @@ func secondPass(args ...interface{}) (interface{}, error) {
 	}
 
 	/* get the first argument, we expect it to be the context */
-	fmt.Printf("=======v:%T=======\n",args[0])//=============v:*cauthdsl.context===
+	cauthdslLogger.Info("=======v:%T=======\n",args[0])//=============v:*cauthdsl.context===
 	var ctx *context
 	switch v := args[0].(type) {
 	case *context:
@@ -219,6 +319,7 @@ func secondPass(args ...interface{}) (interface{}, error) {
 	/* handle the rest of the arguments */
 	for _, principal := range args[2:] {
 		fmt.Println("===========principal==========",principal) //A.member B.member
+		//masterOrg1MSP.peer
 		switch t := principal.(type) {
 		/* if it's a string, we expect it to be formed as
 		   <MSP_ID> . <ROLE>, where MSP_ID is the MSP identifier
@@ -227,7 +328,7 @@ func secondPass(args ...interface{}) (interface{}, error) {
 			/* split the string */
 
 			subm := regex.FindAllStringSubmatch(t, -1)
-			fmt.Println("=======t===========",t,"==subm==",subm)//[[A.member A . member]]  [[B.member B . member]]
+			cauthdslLogger.Info("=======t===========",t,"==subm==",subm)//[[A.member A . member]]  [[B.member B . member]]
 			if subm == nil || len(subm) != 1 || len(subm[0]) != 4 {
 				return nil, fmt.Errorf("Error parsing principal %s", t)
 			}
@@ -314,28 +415,162 @@ func newContext() *context {
 //	- ROLE takes the value of any of the RoleXXX constants representing
 //    the required role
 func FromString(policy string) (*common.SignaturePolicyEnvelope, error) {
-	fmt.Println("==policy==",policy)//OR(AND('A.member', 'B.member'), 'C.member', AND('A.member', 'D.member'))
-	fmt.Println("==========FromString=========")
+	cauthdslLogger.Info("==policy==",policy)//OR(AND('A.member', 'B.member'), 'C.member', AND('A.member', 'D.member'))
+	//ANDM('Org1MSP.peer')
+	cauthdslLogger.Info("========func FromString(policy string) (*common.SignaturePolicyEnvelope, error)=========")
 	// first we translate the and/or business into outof gates
 	intermediate, err := govaluate.NewEvaluableExpressionWithFunctions(
 		policy, map[string]govaluate.ExpressionFunction{
+			GateAndM:                   andM,
+			strings.ToLower(GateAndM):  andM,
+			strings.ToUpper(GateAndM):  andM,
+
 			GateAnd:                    and,
 			strings.ToLower(GateAnd):   and,
 			strings.ToUpper(GateAnd):   and,
+
 			GateOr:                     or,
 			strings.ToLower(GateOr):    or,
 			strings.ToUpper(GateOr):    or,
+
 			GateOutOf:                  outof,
 			strings.ToLower(GateOutOf): outof,
 			strings.ToUpper(GateOutOf): outof,
 		},
 	)
+	cauthdslLogger.Info("==========err==========",err)
 	if err != nil {
 		return nil, err
 	}
 
 	intermediateRes, err := intermediate.Evaluate(map[string]interface{}{})
-	fmt.Println("===============intermediateRes==================",intermediateRes)
+	cauthdslLogger.Info("===============intermediateRes==================",intermediateRes)//nil
+	cauthdslLogger.Info("===============err==================",err)//nil
+	//outof(1, outof(2, 'A.member', 'B.member'), 'C.member', outof(2, 'A.member', 'D.member'))
+	if err != nil {
+		// attempt to produce a meaningful error
+		if regexErr.MatchString(err.Error()) {
+			sm := regexErr.FindStringSubmatch(err.Error())
+			if len(sm) == 2 {
+				return nil, fmt.Errorf("unrecognized token '%s' in policy string", sm[1])
+			}
+		}
+
+		return nil, err
+	}
+	resStr, ok := intermediateRes.(string)
+	cauthdslLogger.Info("====ok==========",ok)
+	//outof(1, outof(2, 'A.member', 'B.member'), 'C.member', outof(2, 'A.member', 'D.member'))
+	if !ok {
+		return nil, fmt.Errorf("invalid policy string '%s'", policy)
+	}
+
+	// we still need two passes. The first pass just adds an extra
+	// argument ID to each of the outof calls. This is
+	// required because govaluate has no means of giving context
+	// to user-implemented functions other than via arguments.
+	// We need this argument because we need a global place where
+	// we put the identities that the policy requires
+	/*
+	// 我们仍然需要两次通过。 第一遍只是增加了一个额外的
+	// 每个 outof 调用的参数 ID。 这是
+	// 必需，因为 govaluate 无法提供上下文
+	// 到用户实现的函数，而不是通过参数。
+	// 我们需要这个参数是因为我们需要一个全局的地方
+	// 我们放置策略需要的身份
+	 */
+	exp, err := govaluate.NewEvaluableExpressionWithFunctions(resStr, map[string]govaluate.ExpressionFunction{"outof": firstPass})
+	cauthdslLogger.Info("===========exp==========",exp)//outof(ID, 1, outof(ID, 2, 'A.member', 'B.member'), 'C.member', outof(ID, 2, 'A.member', 'D.member'))
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := exp.Evaluate(map[string]interface{}{})
+	if err != nil {
+		// attempt to produce a meaningful error
+		if regexErr.MatchString(err.Error()) {
+			sm := regexErr.FindStringSubmatch(err.Error())
+			if len(sm) == 2 {
+				return nil, fmt.Errorf("unrecognized token '%s' in policy string", sm[1])
+			}
+		}
+
+		return nil, err
+	}
+	resStr, ok = res.(string)
+	if !ok {
+		return nil, fmt.Errorf("invalid policy string '%s'", policy)
+	}
+
+	ctx := newContext()
+	parameters := make(map[string]interface{}, 1)
+	parameters["ID"] = ctx
+
+	cauthdslLogger.Info("=====resStr==",resStr)//outof(ID, 1, outof(ID, 2, 'A.member', 'B.member'), 'C.member', outof(ID, 2, 'A.member', 'D.member'))
+	exp, err = govaluate.NewEvaluableExpressionWithFunctions(resStr, map[string]govaluate.ExpressionFunction{"outof": secondPass})
+
+	if err != nil {
+		return nil, err
+	}
+
+	res, err = exp.Evaluate(parameters)
+
+	cauthdslLogger.Info("============res=========",res)//
+	//n_out_of:<n:1 rules:<n_out_of:<n:2 rules:<signed_by:0 > rules:<signed_by:1 > > > rules:<signed_by:4 > rules:<n_out_of:<n:2 rules:<signed_by:2 > rules:<signed_by:3 > > > >
+	if err != nil {
+		// attempt to produce a meaningful error
+		if regexErr.MatchString(err.Error()) {
+			sm := regexErr.FindStringSubmatch(err.Error())
+			if len(sm) == 2 {
+				return nil, fmt.Errorf("unrecognized token '%s' in policy string", sm[1])
+			}
+		}
+
+		return nil, err
+	}
+	rule, ok := res.(*common.SignaturePolicy)
+	if !ok {
+		return nil, fmt.Errorf("invalid policy string '%s'", policy)
+	}
+
+
+	cauthdslLogger.Info("=============rule==================",rule)//n_out_of:<n:1 rules:<signed_by:0 > >
+
+	p := &common.SignaturePolicyEnvelope{
+		Identities: ctx.principals,
+		Version:    0,
+		Rule:       rule,
+	}
+
+	/*
+	n_out_of:<n:1 rules:<n_out_of:<n:2 rules:<signed_by:0 > rules:<signed_by:1 > > > rules:<signed_by:4 > rules:<n_out_of:<n:2 rules:<signed_by:2 > rules:<signed_by:3 > > > >
+	*/
+	cauthdslLogger.Info("=======================p========",*p)
+	//{0 n_out_of:<n:1 rules:<signed_by:0 > >  [principal:"\n\rmasterOrg1MSP\020\003" ]
+	//{0 n_out_of:<n:1 rules:<n_out_of:<n:2 rules:<signed_by:0 > rules:<signed_by:1 > > > rules:<signed_by:4 > rules:<n_out_of:<n:2 rules:<signed_by:2 > rules:<signed_by:3 > > > >  [principal:"\n\001A"  principal:"\n\001B"  principal:"\n\001A"  principal:"\n\001D"  principal:"\n\001C" ] {} [] 0}
+
+	return p, nil
+}
+func FromStringM(policy string) (*common.SignaturePolicyEnvelope, error) {
+	cauthdslLogger.Info("==policy==",policy)//OR(AND('A.member', 'B.member'), 'C.member', AND('A.member', 'D.member'))
+	//ANDM('Org1MSP.peer')
+	cauthdslLogger.Info("========func FromString(policy string) (*common.SignaturePolicyEnvelope, error)=========")
+	// first we translate the and/or business into outof gates
+	intermediate, err := govaluate.NewEvaluableExpressionWithFunctions(
+		policy, map[string]govaluate.ExpressionFunction{
+			GateAndM:                   andM,
+			strings.ToLower(GateAndM):  andM,
+			strings.ToUpper(GateAndM):  andM,
+		},
+	)
+	cauthdslLogger.Info("==========err==========",err)
+	if err != nil {
+		return nil, err
+	}
+
+	intermediateRes, err := intermediate.Evaluate(map[string]interface{}{})
+	cauthdslLogger.Info("===============intermediateRes==================",intermediateRes)//nil
+	cauthdslLogger.Info("===============err==================",err)//nil
 	//outof(1, outof(2, 'A.member', 'B.member'), 'C.member', outof(2, 'A.member', 'D.member'))
 	if err != nil {
 		// attempt to produce a meaningful error
@@ -369,7 +604,7 @@ func FromString(policy string) (*common.SignaturePolicyEnvelope, error) {
 	// 我们放置策略需要的身份
 	 */
 	exp, err := govaluate.NewEvaluableExpressionWithFunctions(resStr, map[string]govaluate.ExpressionFunction{"outof": firstPass})
-	fmt.Println("===========exp==========",exp)//outof(ID, 1, outof(ID, 2, 'A.member', 'B.member'), 'C.member', outof(ID, 2, 'A.member', 'D.member'))
+	cauthdslLogger.Info("===========exp==========",exp)//outof(ID, 1, outof(ID, 2, 'A.member', 'B.member'), 'C.member', outof(ID, 2, 'A.member', 'D.member'))
 	if err != nil {
 		return nil, err
 	}
@@ -395,7 +630,7 @@ func FromString(policy string) (*common.SignaturePolicyEnvelope, error) {
 	parameters := make(map[string]interface{}, 1)
 	parameters["ID"] = ctx
 
-	fmt.Println("=====resStr==",resStr)//outof(ID, 1, outof(ID, 2, 'A.member', 'B.member'), 'C.member', outof(ID, 2, 'A.member', 'D.member'))
+	cauthdslLogger.Info("=====resStr==",resStr)//outof(ID, 1, outof(ID, 2, 'A.member', 'B.member'), 'C.member', outof(ID, 2, 'A.member', 'D.member'))
 	exp, err = govaluate.NewEvaluableExpressionWithFunctions(resStr, map[string]govaluate.ExpressionFunction{"outof": secondPass})
 
 	if err != nil {
@@ -404,7 +639,7 @@ func FromString(policy string) (*common.SignaturePolicyEnvelope, error) {
 
 	res, err = exp.Evaluate(parameters)
 
-	fmt.Println("============res=========",res)//
+	cauthdslLogger.Info("============res=========",res)//
 	//n_out_of:<n:1 rules:<n_out_of:<n:2 rules:<signed_by:0 > rules:<signed_by:1 > > > rules:<signed_by:4 > rules:<n_out_of:<n:2 rules:<signed_by:2 > rules:<signed_by:3 > > > >
 	if err != nil {
 		// attempt to produce a meaningful error
@@ -423,7 +658,7 @@ func FromString(policy string) (*common.SignaturePolicyEnvelope, error) {
 	}
 
 
-	fmt.Println("=============rule==================",rule)
+	cauthdslLogger.Info("=============rule==================",rule)
 
 	p := &common.SignaturePolicyEnvelope{
 		Identities: ctx.principals,
@@ -434,7 +669,7 @@ func FromString(policy string) (*common.SignaturePolicyEnvelope, error) {
 	/*
 	n_out_of:<n:1 rules:<n_out_of:<n:2 rules:<signed_by:0 > rules:<signed_by:1 > > > rules:<signed_by:4 > rules:<n_out_of:<n:2 rules:<signed_by:2 > rules:<signed_by:3 > > > >
 	*/
-	fmt.Println("=======================p========",*p)
+	cauthdslLogger.Info("=======================p========",*p)
 	//{0 n_out_of:<n:1 rules:<n_out_of:<n:2 rules:<signed_by:0 > rules:<signed_by:1 > > > rules:<signed_by:4 > rules:<n_out_of:<n:2 rules:<signed_by:2 > rules:<signed_by:3 > > > >  [principal:"\n\001A"  principal:"\n\001B"  principal:"\n\001A"  principal:"\n\001D"  principal:"\n\001C" ] {} [] 0}
 
 	return p, nil

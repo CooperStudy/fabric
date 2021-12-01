@@ -298,7 +298,7 @@ func (l *kvLedger) NewTxSimulator(txid string) (ledger.TxSimulator, error) {
 // A client can obtain more than one 'QueryExecutor's for parallel execution.
 // Any synchronization should be performed at the implementation level if required
 func (l *kvLedger) NewQueryExecutor() (ledger.QueryExecutor, error) {
-	fmt.Println("===kvLedger===NewQueryExecutor==")
+	logger.Info("===kvLedger===NewQueryExecutor==")
 	return l.txtmgmt.NewQueryExecutor(util.GenerateUUID())
 }
 

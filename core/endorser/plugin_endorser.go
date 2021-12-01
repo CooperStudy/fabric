@@ -48,8 +48,8 @@ type MapBasedPluginMapper map[string]endorsement.PluginFactory
 
 // PluginFactoryByName returns a plugin factory for the given plugin name, or nil if not found
 func (m MapBasedPluginMapper) PluginFactoryByName(name PluginName) endorsement.PluginFactory {
-	fmt.Println("==MapBasedPluginMapper==PluginFactoryByName==")
-	fmt.Println("=======PluginName=====",string(name))
+	endorserLogger.Info("==MapBasedPluginMapper==PluginFactoryByName==")
+	fmt.Println("=======PluginName=====",string(name))//escc
 	return m[string(name)]
 }
 
@@ -130,12 +130,13 @@ func (pbc *pluginsByChannel) createPluginIfAbsent(channel string) (endorsement.P
 }
 
 func (pbc *pluginsByChannel) initPlugin(plugin endorsement.Plugin, channel string) (endorsement.Plugin, error) {
-	fmt.Println("==pluginsByChannel==initPlugin==")
+	endorserLogger.Info("==pluginsByChannel==initPlugin==")
 	var dependencies []endorsement.Dependency
 	var err error
-	fmt.Println("==========channel==========",channel)
+	fmt.Println("==========channel==========",channel)//mychannel
 	// If this is a channel endorsement, add the channel state as a dependency
 	if channel != "" {
+		//获取到mychannel的账本查询器
 		query, err := pbc.pe.NewQueryCreator(channel)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed obtaining channel state")
@@ -167,9 +168,12 @@ type PluginEndorser struct {
 
 // EndorseWithPlugin endorses the response with a plugin
 func (pe *PluginEndorser) EndorseWithPlugin(ctx Context) (*pb.ProposalResponse, error) {
-	fmt.Println("==PluginEndorser==EndorseWithPlugin==")
+	endorserLogger.Info("==func (pe *PluginEndorser) EndorseWithPlugin(ctx Context) (*pb.ProposalResponse, error) ==")
 	endorserLogger.Info("Entering endorsement for", ctx)
 
+	/*
+	 Entering endorsement for {plugin: escc, channel: mychannel, tx: d2e9b1ce7a52b90c8757440d7533bc98bb37181850568b035711623719c31080, chaincode: lscc}
+	*/
 	if ctx.Response == nil {
 		return nil, errors.New("response is nil")
 	}
@@ -178,8 +182,9 @@ func (pe *PluginEndorser) EndorseWithPlugin(ctx Context) (*pb.ProposalResponse, 
 		fmt.Println("=========ctx.Response.Status >= shim.ERRORTHRESHOLD========================")
 		return &pb.ProposalResponse{Response: ctx.Response}, nil
 	}
-
-	plugin, err := pe.getOrCreatePlugin(PluginName(ctx.PluginName), ctx.Channel)
+	a := PluginName(ctx.PluginName)
+	endorserLogger.Infof("================PluginName:%v=====",a)
+	plugin, err := pe.getOrCreatePlugin(a, ctx.Channel)
 	if err != nil {
 		endorserLogger.Warning("Endorsement with plugin for", ctx, " failed:", err)
 		return nil, errors.Errorf("plugin with name %s could not be used: %v", ctx.PluginName, err)
@@ -209,7 +214,7 @@ func (pe *PluginEndorser) EndorseWithPlugin(ctx Context) (*pb.ProposalResponse, 
 
 // getAndStorePlugin returns a plugin instance for the given plugin name and channel
 func (pe *PluginEndorser) getOrCreatePlugin(plugin PluginName, channel string) (endorsement.Plugin, error) {
-	fmt.Println("==PluginEndorser==getOrCreatePlugin==")
+	endorserLogger.Info("==PluginEndorser==getOrCreatePlugin==")
 	pluginFactory := pe.PluginFactoryByName(plugin)
 	if pluginFactory == nil {
 		return nil, errors.Errorf("plugin with name %s wasn't found", plugin)
@@ -236,7 +241,7 @@ func (pe *PluginEndorser) getOrCreatePluginChannelMapping(plugin PluginName, pf 
 }
 
 func proposalResponsePayloadFromContext(ctx Context) ([]byte, error) {
-	fmt.Println("==proposalResponsePayloadFromContext==")
+	endorserLogger.Info("==proposalResponsePayloadFromContext==")
 	hdr, err := putils.GetHeader(ctx.Proposal.Header)
 	if err != nil {
 		endorserLogger.Warning("Failed parsing header", err)
