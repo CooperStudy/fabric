@@ -7,14 +7,15 @@ SPDX-License-Identifier: Apache-2.0
 package utils
 
 import (
-	"fmt"
 	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/flogging"
 	cb "github.com/hyperledger/fabric/protos/common"
 	"github.com/pkg/errors"
 )
 
 // GetChainIDFromBlockBytes returns chain ID given byte array which represents
 // the block
+var logger = flogging.MustGetLogger("protos.utils")
 func GetChainIDFromBlockBytes(bytes []byte) (string, error) {
 	logger.Info("===========GetChainIDFromBlockBytes========")
 	block, err := GetBlockFromBlockBytes(bytes)

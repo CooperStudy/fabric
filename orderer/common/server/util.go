@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package server
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"

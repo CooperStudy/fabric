@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package msgprocessor
 
 import (
-	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/common/channelconfig"
 	cb "github.com/hyperledger/fabric/protos/common"

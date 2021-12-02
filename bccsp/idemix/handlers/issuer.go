@@ -20,12 +20,12 @@ type issuerSecretKey struct {
 }
 
 func NewIssuerSecretKey(sk IssuerSecretKey, exportable bool) *issuerSecretKey {
-	logger.Info("=====NewIssuerSecretKey=================")
+	//logger.Info("=====NewIssuerSecretKey=================")
 	return &issuerSecretKey{sk: sk, exportable: exportable}
 }
 
 func (k *issuerSecretKey) Bytes() ([]byte, error) {
-	logger.Info("====issuerSecretKey=Bytes=================")
+	//logger.Info("====issuerSecretKey=Bytes=================")
 	if k.exportable {
 		return k.sk.Bytes()
 	}
@@ -34,7 +34,7 @@ func (k *issuerSecretKey) Bytes() ([]byte, error) {
 }
 
 func (k *issuerSecretKey) SKI() []byte {
-	logger.Info("====issuerSecretKey=SKI=================")
+	//logger.Info("====issuerSecretKey=SKI=================")
 	pk, err := k.PublicKey()
 	if err != nil {
 		return nil
@@ -44,17 +44,17 @@ func (k *issuerSecretKey) SKI() []byte {
 }
 
 func (*issuerSecretKey) Symmetric() bool {
-	logger.Info("====issuerSecretKey=Symmetric=================")
+	//logger.Info("====issuerSecretKey=Symmetric=================")
 	return false
 }
 
 func (*issuerSecretKey) Private() bool {
-	logger.Info("====issuerSecretKey=Private=================")
+	//logger.Info("====issuerSecretKey=Private=================")
 	return true
 }
 
 func (k *issuerSecretKey) PublicKey() (bccsp.Key, error) {
-	logger.Info("====issuerSecretKey=PublicKey=================")
+	//logger.Info("====issuerSecretKey=PublicKey=================")
 	return &issuerPublicKey{k.sk.Public()}, nil
 }
 
@@ -65,32 +65,32 @@ type issuerPublicKey struct {
 }
 
 func NewIssuerPublicKey(pk IssuerPublicKey) *issuerPublicKey {
-	logger.Info("====NewIssuerPublicKey=================")
+	//logger.Info("====NewIssuerPublicKey=================")
 	return &issuerPublicKey{pk}
 }
 
 func (k *issuerPublicKey) Bytes() ([]byte, error) {
-	logger.Info("====issuerPublicKey====Bytes=============")
+	//logger.Info("====issuerPublicKey====Bytes=============")
 	return k.pk.Bytes()
 }
 
 func (k *issuerPublicKey) SKI() []byte {
-	logger.Info("====issuerPublicKey====SKI=============")
+	//logger.Info("====issuerPublicKey====SKI=============")
 	return k.pk.Hash()
 }
 
 func (*issuerPublicKey) Symmetric() bool {
-	logger.Info("====issuerPublicKey====Symmetric=============")
+	//logger.Info("====issuerPublicKey====Symmetric=============")
 	return false
 }
 
 func (*issuerPublicKey) Private() bool {
-	logger.Info("====issuerPublicKey====Private=============")
+	//logger.Info("====issuerPublicKey====Private=============")
 	return false
 }
 
 func (k *issuerPublicKey) PublicKey() (bccsp.Key, error) {
-	logger.Info("====issuerPublicKey====PublicKey=============")
+	//logger.Info("====issuerPublicKey====PublicKey=============")
 	return k, nil
 }
 
@@ -104,7 +104,7 @@ type IssuerKeyGen struct {
 }
 
 func (g *IssuerKeyGen) KeyGen(opts bccsp.KeyGenOpts) (k bccsp.Key, err error) {
-	logger.Info("====IssuerKeyGen====KeyGen=============")
+	//logger.Info("====IssuerKeyGen====KeyGen=============")
 	o, ok := opts.(*bccsp.IdemixIssuerKeyGenOpts)
 	if !ok {
 		return nil, errors.New("invalid options, expected *bccsp.IdemixIssuerKeyGenOpts")
@@ -126,7 +126,7 @@ type IssuerPublicKeyImporter struct {
 }
 
 func (i *IssuerPublicKeyImporter) KeyImport(raw interface{}, opts bccsp.KeyImportOpts) (k bccsp.Key, err error) {
-	logger.Info("====IssuerPublicKeyImporter====KeyImport=============")
+	//logger.Info("====IssuerPublicKeyImporter====KeyImport=============")
 	der, ok := raw.([]byte)
 	if !ok {
 		return nil, errors.New("invalid raw, expected byte array")

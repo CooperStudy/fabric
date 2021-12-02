@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package lscc
 
 import (
-	"fmt"
 	"github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/hyperledger/fabric/core/common/ccprovider"
 	"github.com/hyperledger/fabric/core/peer"

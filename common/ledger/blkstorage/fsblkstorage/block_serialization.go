@@ -17,7 +17,6 @@ limitations under the License.
 package fsblkstorage
 
 import (
-	"fmt"
 	"github.com/golang/protobuf/proto"
 	ledgerutil "github.com/hyperledger/fabric/common/ledger/util"
 	"github.com/hyperledger/fabric/protos/common"

@@ -17,12 +17,12 @@ limitations under the License.
 package protolator
 
 import (
-	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"reflect"
 
 	"github.com/golang/protobuf/proto"
 )
-
+var  logger = flogging.MustGetLogger("common.tools.protolator")
 func dynamicFrom(dynamicMsg func(underlying proto.Message) (proto.Message, error), value interface{}, destType reflect.Type) (reflect.Value, error) {
 	logger.Info("====dynamicFrom========")
 	tree := value.(map[string]interface{}) // Safe, already checked
@@ -96,7 +96,7 @@ func (dmff dynamicMapFieldFactory) Handles(msg proto.Message, fieldName string, 
 }
 
 func (dmff dynamicMapFieldFactory) NewProtoField(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) (protoField, error) {
-	logger.Info("====dynamicMapFieldFactory====NewProtoField====")
+
 	dynamicProto := msg.(DynamicMapFieldProto) // Type checked by Handles
 
 	return &mapField{

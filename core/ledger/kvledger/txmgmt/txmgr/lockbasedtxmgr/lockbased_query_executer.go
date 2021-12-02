@@ -6,7 +6,6 @@ SPDX-License-Identifier: Apache-2.0
 package lockbasedtxmgr
 
 import (
-	"fmt"
 	commonledger "github.com/hyperledger/fabric/common/ledger"
 	"github.com/hyperledger/fabric/core/ledger"
 )
@@ -20,14 +19,14 @@ type lockBasedQueryExecutor struct {
 func newQueryExecutor(txmgr *LockBasedTxMgr, txid string) *lockBasedQueryExecutor {
 	logger.Info("==newQueryExecutor==")
 	helper := newQueryHelper(txmgr, nil)
-	lockbasedtxmgrLogger.Infof("constructing new query executor txid = [%s]", txid)
+	logger.Infof("constructing new query executor txid = [%s]", txid)
 	// constructing new query executor txid = [24fe3b28-cf46-41dc-8c03-b0e72c04fb1a]
 	return &lockBasedQueryExecutor{helper, txid}
 }
 
 // GetState implements method in interface `ledger.QueryExecutor`
 func (q *lockBasedQueryExecutor) GetState(ns string, key string) (val []byte, err error) {
-	lockbasedtxmgrLogger.Info("==lockBasedQueryExecutor==GetState==")
+	logger.Info("==lockBasedQueryExecutor==GetState==")
 	val, _, err = q.helper.getState(ns, key)
 	return
 }
@@ -114,6 +113,6 @@ func (q *lockBasedQueryExecutor) ExecuteQueryOnPrivateData(namespace, collection
 // Done implements method in interface `ledger.QueryExecutor`
 func (q *lockBasedQueryExecutor) Done() {
 	logger.Info("==lockBasedQueryExecutor==Done==")
-	lockbasedtxmgrLogger.Infof("Done with transaction simulation / query execution [%s]", q.txid)
+	logger.Infof("Done with transaction simulation / query execution [%s]", q.txid)
 	q.helper.done()
 }

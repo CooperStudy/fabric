@@ -120,8 +120,8 @@ type ChannelCmdFactory struct {
 
 // InitCmdFactory init the ChannelCmdFactory with clients to endorser and orderer according to params
 func InitCmdFactory(isEndorserRequired, isPeerDeliverRequired, isOrdererRequired bool) (*ChannelCmdFactory, error) {
-	logger.Info("========InitCmdFactory==========")
-	logger.Info("========isPeerDeliverRequired && isOrdererRequired=========", isPeerDeliverRequired && isOrdererRequired)//false
+	//logger.Info("========InitCmdFactory==========")
+	//logger.Info("========isPeerDeliverRequired && isOrdererRequired=========", isPeerDeliverRequired && isOrdererRequired)//false
 	if isPeerDeliverRequired && isOrdererRequired {
 		// this is likely a bug during development caused by adding a new cmd
 		return nil, errors.New("ERROR - only a single deliver source is currently supported")
@@ -135,7 +135,7 @@ func InitCmdFactory(isEndorserRequired, isPeerDeliverRequired, isOrdererRequired
 	cf := &ChannelCmdFactory{}
 
 	cf.Signer, err = common.GetDefaultSignerFnc()
-	logger.Info("=============cf.Signer, err=============================",cf.Signer, err)
+	//logger.Info("=============cf.Signer, err=============================",cf.Signer, err)
 	/*
 	&{{0xc0002933c0 0xc000237b80 0xc00016c220 0xc0000e07e0} 0xc00039dd40} <nil>
 	*/
@@ -144,11 +144,11 @@ func InitCmdFactory(isEndorserRequired, isPeerDeliverRequired, isOrdererRequired
 	}
 
 	cf.BroadcastFactory = func() (common.BroadcastClient, error) {
-		logger.Info("========cf.BroadcastFactory = func() (common.BroadcastClient, error)=========")
+		//logger.Info("========cf.BroadcastFactory = func() (common.BroadcastClient, error)=========")
 		return common.GetBroadcastClientFnc()
 	}
 
-	logger.Info("========isEndorserRequired=========", isEndorserRequired) //true
+	//logger.Info("========isEndorserRequired=========", isEndorserRequired) //true
 	// for join and list, we need the endorser as well
 	if isEndorserRequired {
 		// creating an EndorserClient with these empty parameters will create a
@@ -160,7 +160,7 @@ func InitCmdFactory(isEndorserRequired, isPeerDeliverRequired, isOrdererRequired
 		}
 	}
 
-	logger.Info("========isPeerDeliverRequired=========", isPeerDeliverRequired)
+	//logger.Info("========isPeerDeliverRequired=========", isPeerDeliverRequired)
 	// for fetching blocks from a peer
 	if isPeerDeliverRequired {
 		cf.DeliverClient, err = common.NewDeliverClientForPeer(channelID)
@@ -169,7 +169,7 @@ func InitCmdFactory(isEndorserRequired, isPeerDeliverRequired, isOrdererRequired
 		}
 	}
 
-	logger.Info("========isOrdererRequired=========", isOrdererRequired)//false
+	//logger.Info("========isOrdererRequired=========", isOrdererRequired)//false
 
 	// for create and fetch, we need the orderer as well
 	if isOrdererRequired {
@@ -181,6 +181,6 @@ func InitCmdFactory(isEndorserRequired, isPeerDeliverRequired, isOrdererRequired
 			return nil, err
 		}
 	}
-	logger.Infof("Endorser and orderer connections initialized")
+	//logger.Infof("Endorser and orderer connections initialized")
 	return cf, nil
 }

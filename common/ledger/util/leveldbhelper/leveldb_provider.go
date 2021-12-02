@@ -18,7 +18,6 @@ package leveldbhelper
 
 import (
 	"bytes"
-	"fmt"
 	"sync"
 
 	"github.com/syndtr/goleveldb/leveldb"

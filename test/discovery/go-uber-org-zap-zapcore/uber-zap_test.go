@@ -77,13 +77,13 @@ func TestUberZap(t *testing.T) {
 //	filed := zap.Fields(zap.String("serviceName", "serviceName"))
 //	// 构造日志
 //	logger = zap.New(core, caller, development, filed)
-//	logger.Info("DefaultLogger init success")
+//	//logger.Info("DefaultLogger init success")
 //}
 //func main() {
 //	// 历史记录日志名字为：all.log，服务重新启动，日志会追加，不会删除
 //	InitLogger("./all.log", "debug")
 //	// 强结构形式
-//	logger.Info("test",
+//	//logger.Info("test",
 //		zap.String("string", "string"),
 //		zap.Int("int", 3),
 //		zap.Duration("time", time.Second),

@@ -7,7 +7,6 @@ package lockbasedtxmgr
 
 import (
 	"bytes"
-	"fmt"
 	"sync"
 
 	"github.com/golang/protobuf/proto"
@@ -28,7 +27,7 @@ import (
 	"github.com/hyperledger/fabric/protos/ledger/rwset/kvrwset"
 )
 
-var lockbasedtxmgrLogger = flogging.MustGetLogger("lockbasedtxmgr")
+var logger = flogging.MustGetLogger("lockbasedtxmgr")
 
 // LockBasedTxMgr a simple implementation of interface `txmgmt.TxMgr`.
 // This implementation uses a read-write lock to prevent conflicts between transaction simulation and committing
@@ -100,7 +99,7 @@ func (txmgr *LockBasedTxMgr) NewQueryExecutor(txid string) (ledger.QueryExecutor
 // NewTxSimulator implements method in interface `txmgmt.TxMgr`
 func (txmgr *LockBasedTxMgr) NewTxSimulator(txid string) (ledger.TxSimulator, error) {
 	logger.Info("==LockBasedTxMgr==NewTxSimulator=")
-	lockbasedtxmgrLogger.Debugf("constructing new tx simulator")
+	logger.Debugf("constructing new tx simulator")
 	s, err := newLockBasedTxSimulator(txmgr, txid)
 	if err != nil {
 		return nil, err
@@ -124,14 +123,14 @@ func (txmgr *LockBasedTxMgr) ValidateAndPrepare(blockAndPvtdata *ledger.BlockAnd
 	// Once the ledger cache (FAB-103) is introduced and existing
 	// LoadCommittedVersions() is refactored to return a map, we can allow
 	// these three functions to execute parallely.
-	lockbasedtxmgrLogger.Info("Waiting for purge mgr to finish the background job of computing expirying keys for the block")
+	logger.Info("Waiting for purge mgr to finish the background job of computing expirying keys for the block")
 	txmgr.pvtdataPurgeMgr.WaitForPrepareToFinish()
 	txmgr.oldBlockCommit.Lock()
 	defer txmgr.oldBlockCommit.Unlock()
-	lockbasedtxmgrLogger.Debug("lock acquired on oldBlockCommit for validating read set version against the committed version")
+	logger.Debug("lock acquired on oldBlockCommit for validating read set version against the committed version")
 
 	block := blockAndPvtdata.Block
-	lockbasedtxmgrLogger.Debugf("Validating new block with num trans = [%d]", len(block.Data.Data))
+	logger.Debugf("Validating new block with num trans = [%d]", len(block.Data.Data))
 	batch, txstatsInfo, err := txmgr.validator.ValidateAndPrepareBatch(blockAndPvtdata, doMVCCValidation)
 	if err != nil {
 		txmgr.reset()
@@ -179,16 +178,16 @@ func (txmgr *LockBasedTxMgr) RemoveStaleAndCommitPvtDataOfOldBlocks(blocksPvtDat
 	// the lock on oldBlockCommit as it is also used to avoid interleaving
 	// between Commit() and execution of this function for the correctness.
 	logger.Info("==LockBasedTxMgr==RemoveStaleAndCommitPvtDataOfOldBlocks=")
-	lockbasedtxmgrLogger.Debug("Waiting for purge mgr to finish the background job of computing expirying keys for the block")
+	logger.Debug("Waiting for purge mgr to finish the background job of computing expirying keys for the block")
 	txmgr.pvtdataPurgeMgr.WaitForPrepareToFinish()
 	txmgr.oldBlockCommit.Lock()
 	defer txmgr.oldBlockCommit.Unlock()
-	lockbasedtxmgrLogger.Debug("lock acquired on oldBlockCommit for committing pvtData of old blocks to state database")
+	logger.Debug("lock acquired on oldBlockCommit for committing pvtData of old blocks to state database")
 
 	// (1) as the blocksPvtData can contain multiple versions of pvtData for
 	// a given <ns, coll, key>, we need to find duplicate tuples with different
 	// versions and use the one with the higher version
-	lockbasedtxmgrLogger.Debug("Constructing unique pvtData by removing duplicate entries")
+	logger.Debug("Constructing unique pvtData by removing duplicate entries")
 	uniquePvtData, err := constructUniquePvtData(blocksPvtData)
 	if len(uniquePvtData) == 0 || err != nil {
 		return err
@@ -196,7 +195,7 @@ func (txmgr *LockBasedTxMgr) RemoveStaleAndCommitPvtDataOfOldBlocks(blocksPvtDat
 
 	// (3) remove the pvt data which does not matches the hashed
 	// value stored in the public state
-	lockbasedtxmgrLogger.Debug("Finding and removing stale pvtData")
+	logger.Debug("Finding and removing stale pvtData")
 	if err := uniquePvtData.findAndRemoveStalePvtData(txmgr.db); err != nil {
 		return err
 	}
@@ -210,13 +209,13 @@ func (txmgr *LockBasedTxMgr) RemoveStaleAndCommitPvtDataOfOldBlocks(blocksPvtDat
 	// to update the list. This is because RemoveStaleAndCommitPvtDataOfOldBlocks
 	// may have added new data which might be eligible for expiry during the
 	// next regular block commit.
-	lockbasedtxmgrLogger.Debug("Updating bookkeeping info in the purge manager")
+	logger.Debug("Updating bookkeeping info in the purge manager")
 	if err := txmgr.pvtdataPurgeMgr.UpdateBookkeepingForPvtDataOfOldBlocks(batch.PvtUpdates); err != nil {
 		return err
 	}
 
 	// (6) commit the pvt data to the stateDB
-	lockbasedtxmgrLogger.Debug("Committing updates to state database")
+	logger.Debug("Committing updates to state database")
 	if err := txmgr.db.ApplyPrivacyAwareUpdates(batch, nil); err != nil {
 		return err
 	}
@@ -450,7 +449,7 @@ func (txmgr *LockBasedTxMgr) invokeNamespaceListeners() error {
 		if err := listener.HandleStateUpdates(trigger); err != nil {
 			return err
 		}
-		lockbasedtxmgrLogger.Debugf("Invoking listener for state changes:%s", listener)
+		logger.Debugf("Invoking listener for state changes:%s", listener)
 	}
 	return nil
 }
@@ -477,7 +476,7 @@ func (txmgr *LockBasedTxMgr) Commit() error {
 	//     end up with an incorrect update batch.
 	txmgr.oldBlockCommit.Lock()
 	defer txmgr.oldBlockCommit.Unlock()
-	lockbasedtxmgrLogger.Debug("lock acquired on oldBlockCommit for committing regular updates to state database")
+	logger.Debug("lock acquired on oldBlockCommit for committing regular updates to state database")
 
 	// When using the purge manager for the first block commit after peer start, the asynchronous function
 	// 'PrepareForExpiringKeys' is invoked in-line. However, for the subsequent blocks commits, this function is invoked
@@ -488,11 +487,11 @@ func (txmgr *LockBasedTxMgr) Commit() error {
 	}
 	defer func() {
 		txmgr.pvtdataPurgeMgr.PrepareForExpiringKeys(txmgr.current.blockNum() + 1)
-		lockbasedtxmgrLogger.Debugf("launched the background routine for preparing keys to purge with the next block")
+		logger.Debugf("launched the background routine for preparing keys to purge with the next block")
 		txmgr.reset()
 	}()
 
-	lockbasedtxmgrLogger.Debugf("Committing updates to state database")
+	logger.Debugf("Committing updates to state database")
 	if txmgr.current == nil {
 		panic("validateAndPrepare() method should have been called before calling commit()")
 	}
@@ -504,7 +503,7 @@ func (txmgr *LockBasedTxMgr) Commit() error {
 
 	commitHeight := version.NewHeight(txmgr.current.blockNum(), txmgr.current.maxTxNumber())
 	txmgr.commitRWLock.Lock()
-	lockbasedtxmgrLogger.Debugf("Write lock acquired for committing updates to state database")
+	logger.Debugf("Write lock acquired for committing updates to state database")
 	if err := txmgr.db.ApplyPrivacyAwareUpdates(txmgr.current.batch, commitHeight); err != nil {
 		txmgr.commitRWLock.Unlock()
 		return err
@@ -514,7 +513,7 @@ func (txmgr *LockBasedTxMgr) Commit() error {
 	// cache is being used by the old pvtData committer to load the version of
 	// hashedKeys. Also, note that the PrepareForExpiringKeys uses the cache.
 	txmgr.clearCache()
-	lockbasedtxmgrLogger.Debugf("Updates committed to state database and the write lock is released")
+	logger.Debugf("Updates committed to state database and the write lock is released")
 
 	// purge manager should be called (in this call the purge mgr removes the expiry entries from schedules) after committing to statedb
 	if err := txmgr.pvtdataPurgeMgr.BlockCommitDone(); err != nil {
@@ -557,16 +556,16 @@ func (txmgr *LockBasedTxMgr) ShouldRecover(lastAvailableBlock uint64) (bool, uin
 func (txmgr *LockBasedTxMgr) CommitLostBlock(blockAndPvtdata *ledger.BlockAndPvtData) error {
 	logger.Info("==LockBasedTxMgr==CommitLostBlock==")
 	block := blockAndPvtdata.Block
-	lockbasedtxmgrLogger.Debugf("Constructing updateSet for the block %d", block.Header.Number)
+	logger.Debugf("Constructing updateSet for the block %d", block.Header.Number)
 	if _, err := txmgr.ValidateAndPrepare(blockAndPvtdata, false); err != nil {
 		return err
 	}
 
 	// log every 1000th block at Info level so that statedb rebuild progress can be tracked in production envs.
 	if block.Header.Number%1000 == 0 {
-		lockbasedtxmgrLogger.Infof("Recommitting block [%d] to state database", block.Header.Number)
+		logger.Infof("Recommitting block [%d] to state database", block.Header.Number)
 	} else {
-		lockbasedtxmgrLogger.Debugf("Recommitting block [%d] to state database", block.Header.Number)
+		logger.Debugf("Recommitting block [%d] to state database", block.Header.Number)
 	}
 
 	return txmgr.Commit()

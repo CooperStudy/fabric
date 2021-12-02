@@ -2735,7 +2735,7 @@ func (x *gossipGossipStreamClient) Recv() (*Envelope, error) {
 
 func (c *gossipClient) Ping(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Empty, error) {
 	out := new(Empty)
-	logger.Info("===========gossipClient======Ping========================")
+	//logger.Info("===========gossipClient======Ping========================")
 	err := c.cc.Invoke(ctx, "/gossip.Gossip/Ping", in, out, opts...)
 	if err != nil {
 		return nil, err

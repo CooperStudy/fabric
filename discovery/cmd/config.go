@@ -9,13 +9,14 @@ package discovery
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"io"
 
 	"github.com/hyperledger/fabric/cmd/common"
 	"github.com/hyperledger/fabric/discovery/client"
 	"github.com/pkg/errors"
 )
-
+var logger = flogging.MustGetLogger("discovery.cmd")
 // NewConfigCmd creates a new ConfigCmd
 func NewConfigCmd(stub Stub, parser ResponseParser) *ConfigCmd {
 	return &ConfigCmd{

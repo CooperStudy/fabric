@@ -27,7 +27,7 @@ var viperLock sync.RWMutex
 
 // Contains returns whether a given slice a contains a string s
 func Contains(s string, a []string) bool {
-	//logger.Info("===Contains==")
+	////logger.Info("===Contains==")
 	for _, e := range a {
 		if e == s {
 			return true
@@ -38,7 +38,7 @@ func Contains(s string, a []string) bool {
 
 // IndexInSlice returns the index of given object o in array
 func IndexInSlice(array interface{}, o interface{}, equals Equals) int {
-	//logger.Info("===IndexInSlice==")
+	////logger.Info("===IndexInSlice==")
 	arr := reflect.ValueOf(array)
 	for i := 0; i < arr.Len(); i++ {
 		if equals(arr.Index(i).Interface(), o) {
@@ -49,14 +49,14 @@ func IndexInSlice(array interface{}, o interface{}, equals Equals) int {
 }
 
 func numbericEqual(a interface{}, b interface{}) bool {
-	//logger.Info("===numbericEqual==")
+	////logger.Info("===numbericEqual==")
 	return a.(int) == b.(int)
 }
 
 // GetRandomIndices returns a slice of random indices
 // from 0 to given highestIndex
 func GetRandomIndices(indiceCount, highestIndex int) []int {
-	//logger.Info("===GetRandomIndices==")
+	////logger.Info("===GetRandomIndices==")
 	if highestIndex+1 < indiceCount {
 		return nil
 	}
@@ -88,13 +88,13 @@ type Set struct {
 
 // NewSet returns a new set
 func NewSet() *Set {
-	//logger.Info("===NewSet==")
+	////logger.Info("===NewSet==")
 	return &Set{lock: &sync.RWMutex{}, items: make(map[interface{}]struct{})}
 }
 
 // Add adds given item to the set
 func (s *Set) Add(item interface{}) {
-	//logger.Info("===Set==Add==")
+	////logger.Info("===Set==Add==")
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.items[item] = struct{}{}
@@ -102,7 +102,7 @@ func (s *Set) Add(item interface{}) {
 
 // Exists returns true whether given item is in the set
 func (s *Set) Exists(item interface{}) bool {
-	//logger.Info("===Set==Exists==")
+	////logger.Info("===Set==Exists==")
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	_, exists := s.items[item]
@@ -111,7 +111,7 @@ func (s *Set) Exists(item interface{}) bool {
 
 // Size returns the size of the set
 func (s *Set) Size() int {
-	//logger.Info("===Set==Size==")
+	////logger.Info("===Set==Size==")
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	return len(s.items)
@@ -120,7 +120,7 @@ func (s *Set) Size() int {
 // ToArray returns a slice with items
 // at the point in time the method was invoked
 func (s *Set) ToArray() []interface{} {
-	//logger.Info("===Set==ToArray==")
+	////logger.Info("===Set==ToArray==")
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	a := make([]interface{}, len(s.items))
@@ -134,7 +134,7 @@ func (s *Set) ToArray() []interface{} {
 
 // Clear removes all elements from set
 func (s *Set) Clear() {
-	//logger.Info("===Set==Clear==")
+	////logger.Info("===Set==Clear==")
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.items = make(map[interface{}]struct{})
@@ -142,7 +142,7 @@ func (s *Set) Clear() {
 
 // Remove removes a given item from the set
 func (s *Set) Remove(item interface{}) {
-	//logger.Info("===Set==Remove==")
+	////logger.Info("===Set==Remove==")
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	delete(s.items, item)
@@ -151,7 +151,7 @@ func (s *Set) Remove(item interface{}) {
 // PrintStackTrace prints to stdout
 // all goroutines
 func PrintStackTrace() {
-	//logger.Info("===PrintStackTrace==")
+	////logger.Info("===PrintStackTrace==")
 	buf := make([]byte, 1<<16)
 	runtime.Stack(buf, true)
 	fmt.Printf("%s", buf)
@@ -159,7 +159,7 @@ func PrintStackTrace() {
 
 // GetIntOrDefault returns the int value from config if present otherwise default value
 func GetIntOrDefault(key string, defVal int) int {
-	//logger.Info("===GetIntOrDefault==")
+	////logger.Info("===GetIntOrDefault==")
 	viperLock.RLock()
 	defer viperLock.RUnlock()
 
@@ -172,7 +172,7 @@ func GetIntOrDefault(key string, defVal int) int {
 
 // GetFloat64OrDefault returns the float64 value from config if present otherwise default value
 func GetFloat64OrDefault(key string, defVal float64) float64 {
-	//logger.Info("===GetFloat64OrDefault==")
+	////logger.Info("===GetFloat64OrDefault==")
 	viperLock.RLock()
 	defer viperLock.RUnlock()
 
@@ -185,7 +185,7 @@ func GetFloat64OrDefault(key string, defVal float64) float64 {
 
 // GetDurationOrDefault returns the Duration value from config if present otherwise default value
 func GetDurationOrDefault(key string, defVal time.Duration) time.Duration {
-	//logger.Info("===GetDurationOrDefault==")
+	////logger.Info("===GetDurationOrDefault==")
 	viperLock.RLock()
 	defer viperLock.RUnlock()
 
@@ -198,7 +198,7 @@ func GetDurationOrDefault(key string, defVal time.Duration) time.Duration {
 
 // SetVal stores key value to viper
 func SetVal(key string, val interface{}) {
-	//logger.Info("===SetVal==")
+	////logger.Info("===SetVal==")
 	viperLock.Lock()
 	defer viperLock.Unlock()
 	viper.Set(key, val)
@@ -207,7 +207,7 @@ func SetVal(key string, val interface{}) {
 // RandomInt returns, as an int, a non-negative pseudo-random integer in [0,n)
 // It panics if n <= 0
 func RandomInt(n int) int {
-	//logger.Info("===RandomInt==")
+	////logger.Info("===RandomInt==")
 	if n <= 0 {
 		panic(fmt.Sprintf("Got invalid (non positive) value: %d", n))
 	}
@@ -220,14 +220,14 @@ func RandomInt(n int) int {
 
 // RandomUInt64 returns a random uint64
 func RandomUInt64() uint64 {
-	//logger.Info("===RandomUInt64==")
+	////logger.Info("===RandomUInt64==")
 	b := make([]byte, 8)
 	_, err := io.ReadFull(cryptorand.Reader, b)
-	//logger.Info("===err=====",err)
+	////logger.Info("===err=====",err)
 	if err == nil {
 		n := new(big.Int)
 		b:= n.SetBytes(b).Uint64()
-		//logger.Info("===========RandomUInt64",b)
+		////logger.Info("===========RandomUInt64",b)
 		return b
 	}
 	rand.Seed(rand.Int63())
@@ -235,7 +235,7 @@ func RandomUInt64() uint64 {
 }
 
 func BytesToStrings(bytes [][]byte) []string {
-	//logger.Info("===BytesToStrings==")
+	////logger.Info("===BytesToStrings==")
 	strings := make([]string, len(bytes))
 	for i, b := range bytes {
 		strings[i] = string(b)
@@ -244,7 +244,7 @@ func BytesToStrings(bytes [][]byte) []string {
 }
 
 func StringsToBytes(strings []string) [][]byte {
-	//logger.Info("===StringsToBytes==")
+	////logger.Info("===StringsToBytes==")
 	bytes := make([][]byte, len(strings))
 	for i, str := range strings {
 		bytes[i] = []byte(str)

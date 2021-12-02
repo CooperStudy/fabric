@@ -19,6 +19,7 @@ package util
 import (
 	"crypto/rand"
 	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"io"
 	"math/big"
 	"reflect"
@@ -36,7 +37,7 @@ type alg struct {
 }
 
 const defaultAlg = "sha256"
-
+var logger = flogging.MustGetLogger("common.util")
 var availableIDgenAlgs = map[string]alg{
 	defaultAlg: {GenerateIDfromTxSHAHash},
 }

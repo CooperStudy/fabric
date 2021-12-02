@@ -6,7 +6,6 @@ SPDX-License-Identifier: Apache-2.0
 package lockbasedtxmgr
 
 import (
-	"fmt"
 	"github.com/hyperledger/fabric/core/ledger"
 	"github.com/hyperledger/fabric/protos/common"
 )
@@ -64,6 +63,7 @@ type collConfigkey struct {
 }
 
 func (c collConfigCache) populate(ns string, pkg *common.CollectionConfigPackage) {
+
 	logger.Info("==collConfigCache=populate==")
 	// an entry with an empty collection name to indicate that the cache is populated for the namespace 'ns'
 	// see function 'isPopulatedFor'

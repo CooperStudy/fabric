@@ -81,7 +81,7 @@ func readPemFile(file string) ([]byte, error) {
 
 func getPemMaterialFromDir(dir string) ([][]byte, error) {
 	logger.Info("====getPemMaterialFromDir===")
-	mspLogger.Debugf("Reading directory %s", dir)
+	logger.Debugf("Reading directory %s", dir)
 
 	_, err := os.Stat(dir)
 	if os.IsNotExist(err) {
@@ -99,18 +99,18 @@ func getPemMaterialFromDir(dir string) ([][]byte, error) {
 
 		f, err := os.Stat(fullName)
 		if err != nil {
-			mspLogger.Warningf("Failed to stat %s: %s", fullName, err)
+			logger.Warningf("Failed to stat %s: %s", fullName, err)
 			continue
 		}
 		if f.IsDir() {
 			continue
 		}
 
-		mspLogger.Debugf("Inspecting file %s", fullName)
+		logger.Debugf("Inspecting file %s", fullName)
 
 		item, err := readPemFile(fullName)
 		if err != nil {
-			mspLogger.Warningf("Failed reading file %s: %s", fullName, err)
+			logger.Warningf("Failed reading file %s: %s", fullName, err)
 			continue
 		}
 
@@ -231,7 +231,7 @@ func getMspConfig(dir string, ID string, sigid *msp.SigningIdentityInfo) (*msp.M
 
 	intermediatecerts, err := getPemMaterialFromDir(intermediatecertsDir)
 	if os.IsNotExist(err) {
-		mspLogger.Debugf("Intermediate certs folder not found at [%s]. Skipping. [%s]", intermediatecertsDir, err)
+		logger.Debugf("Intermediate certs folder not found at [%s]. Skipping. [%s]", intermediatecertsDir, err)
 	} else if err != nil {
 		return nil, errors.WithMessage(err, fmt.Sprintf("failed loading intermediate ca certs at [%s]", intermediatecertsDir))
 	}
@@ -239,23 +239,23 @@ func getMspConfig(dir string, ID string, sigid *msp.SigningIdentityInfo) (*msp.M
 	tlsCACerts, err := getPemMaterialFromDir(tlscacertDir)
 	tlsIntermediateCerts := [][]byte{}
 	if os.IsNotExist(err) {
-		mspLogger.Debugf("TLS CA certs folder not found at [%s]. Skipping and ignoring TLS intermediate CA folder. [%s]", tlsintermediatecertsDir, err)
+		logger.Debugf("TLS CA certs folder not found at [%s]. Skipping and ignoring TLS intermediate CA folder. [%s]", tlsintermediatecertsDir, err)
 	} else if err != nil {
 		return nil, errors.WithMessage(err, fmt.Sprintf("failed loading TLS ca certs at [%s]", tlsintermediatecertsDir))
 	} else if len(tlsCACerts) != 0 {
 		tlsIntermediateCerts, err = getPemMaterialFromDir(tlsintermediatecertsDir)
 		if os.IsNotExist(err) {
-			mspLogger.Debugf("TLS intermediate certs folder not found at [%s]. Skipping. [%s]", tlsintermediatecertsDir, err)
+			logger.Debugf("TLS intermediate certs folder not found at [%s]. Skipping. [%s]", tlsintermediatecertsDir, err)
 		} else if err != nil {
 			return nil, errors.WithMessage(err, fmt.Sprintf("failed loading TLS intermediate ca certs at [%s]", tlsintermediatecertsDir))
 		}
 	} else {
-		mspLogger.Debugf("TLS CA certs folder at [%s] is empty. Skipping.", tlsintermediatecertsDir)
+		logger.Debugf("TLS CA certs folder at [%s] is empty. Skipping.", tlsintermediatecertsDir)
 	}
 
 	crls, err := getPemMaterialFromDir(crlsDir)
 	if os.IsNotExist(err) {
-		mspLogger.Debugf("crls folder not found at [%s]. Skipping. [%s]", crlsDir, err)
+		logger.Debugf("crls folder not found at [%s]. Skipping. [%s]", crlsDir, err)
 	} else if err != nil {
 		return nil, errors.WithMessage(err, fmt.Sprintf("failed loading crls at [%s]", crlsDir))
 	}
@@ -299,7 +299,7 @@ func getMspConfig(dir string, ID string, sigid *msp.SigningIdentityInfo) (*msp.M
 
 		// Prepare NodeOUs
 		if configuration.NodeOUs != nil && configuration.NodeOUs.Enable {
-			mspLogger.Debug("Loading NodeOUs")
+			logger.Debug("Loading NodeOUs")
 			if configuration.NodeOUs.ClientOUIdentifier == nil || len(configuration.NodeOUs.ClientOUIdentifier.OrganizationalUnitIdentifier) == 0 {
 				return nil, errors.New("Failed loading NodeOUs. ClientOU must be different from nil.")
 			}
@@ -319,7 +319,7 @@ func getMspConfig(dir string, ID string, sigid *msp.SigningIdentityInfo) (*msp.M
 			f := filepath.Join(dir, configuration.NodeOUs.ClientOUIdentifier.Certificate)
 			raw, err = readFile(f)
 			if err != nil {
-				mspLogger.Infof("Failed loading ClientOU certificate at [%s]: [%s]", f, err)
+				logger.Infof("Failed loading ClientOU certificate at [%s]: [%s]", f, err)
 			} else {
 				nodeOUs.ClientOuIdentifier.Certificate = raw
 			}
@@ -328,13 +328,13 @@ func getMspConfig(dir string, ID string, sigid *msp.SigningIdentityInfo) (*msp.M
 			f = filepath.Join(dir, configuration.NodeOUs.PeerOUIdentifier.Certificate)
 			raw, err = readFile(f)
 			if err != nil {
-				mspLogger.Debugf("Failed loading PeerOU certificate at [%s]: [%s]", f, err)
+				logger.Debugf("Failed loading PeerOU certificate at [%s]: [%s]", f, err)
 			} else {
 				nodeOUs.PeerOuIdentifier.Certificate = raw
 			}
 		}
 	} else {
-		mspLogger.Debugf("MSP configuration file not found at [%s]: [%s]", configFile, err)
+		logger.Debugf("MSP configuration file not found at [%s]: [%s]", configFile, err)
 	}
 
 	// Set FabricCryptoConfig

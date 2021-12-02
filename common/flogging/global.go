@@ -22,7 +22,7 @@ var Global *Logging
 var logger *FabricLogger
 
 func init() {
-	//logger.Info("==init============")
+	////logger.Info("==init============")
 	logging, err := New(Config{})
 	if err != nil {
 		panic(err)
@@ -36,7 +36,7 @@ func init() {
 
 // Init initializes logging with the provided config.
 func Init(config Config) {
-	//logger.Info("==Init============")
+	////logger.Info("==Init============")
 	err := Global.Apply(config)
 	if err != nil {
 		panic(err)
@@ -47,27 +47,27 @@ func Init(config Config) {
 //
 // Used in tests and in the package init
 func Reset() {
-	//logger.Info("==Reset============")
+	////logger.Info("==Reset============")
 	Global.Apply(Config{})
 }
 
 // GetLoggerLevel gets the current logging level for the logger with the
 // provided name.
 func GetLoggerLevel(loggerName string) string {
-	//logger.Info("==GetLoggerLevel============")
+	////logger.Info("==GetLoggerLevel============")
 	return strings.ToUpper(Global.Level(loggerName).String())
 }
 
 // MustGetLogger creates a logger with the specified name. If an invalid name
 // is provided, the operation will panic.
 func MustGetLogger(loggerName string) *FabricLogger {
-	//logger.Info("==MustGetLogger============")
+	////logger.Info("==MustGetLogger============")
 	return Global.Logger(loggerName)
 }
 
 // ActivateSpec is used to activate a logging specification.
 func ActivateSpec(spec string) {
-	//logger.Info("==ActivateSpec============")
+	////logger.Info("==ActivateSpec============")
 	err := Global.ActivateSpec(spec)
 	if err != nil {
 		panic(err)

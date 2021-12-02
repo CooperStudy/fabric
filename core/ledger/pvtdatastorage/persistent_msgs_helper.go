@@ -6,8 +6,6 @@ SPDX-License-Identifier: Apache-2.0
 
 package pvtdatastorage
 
-import "fmt"
-
 func newExpiryData() *ExpiryData {
 	logger.Info("======newExpiryData=======")
 	return &ExpiryData{Map: make(map[string]*Collections)}

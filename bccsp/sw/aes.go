@@ -30,7 +30,7 @@ import (
 
 // GetRandomBytes returns len random looking bytes
 func GetRandomBytes(len int) ([]byte, error) {
-	logger.Info("====GetRandomBytes======")
+	//logger.Info("====GetRandomBytes======")
 	if len < 0 {
 		return nil, errors.New("Len must be larger than 0")
 	}
@@ -49,14 +49,14 @@ func GetRandomBytes(len int) ([]byte, error) {
 }
 
 func pkcs7Padding(src []byte) []byte {
-	logger.Info("====GetRandomBytes======")
+	//logger.Info("====GetRandomBytes======")
 	padding := aes.BlockSize - len(src)%aes.BlockSize
 	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
 	return append(src, padtext...)
 }
 
 func pkcs7UnPadding(src []byte) ([]byte, error) {
-	logger.Info("====pkcs7UnPadding======")
+	//logger.Info("====pkcs7UnPadding======")
 	length := len(src)
 	unpadding := int(src[length-1])
 
@@ -75,12 +75,12 @@ func pkcs7UnPadding(src []byte) ([]byte, error) {
 }
 
 func aesCBCEncrypt(key, s []byte) ([]byte, error) {
-	logger.Info("====aesCBCEncrypt======")
+	//logger.Info("====aesCBCEncrypt======")
 	return aesCBCEncryptWithRand(rand.Reader, key, s)
 }
 
 func aesCBCEncryptWithRand(prng io.Reader, key, s []byte) ([]byte, error) {
-	logger.Info("====aesCBCEncryptWithRand======")
+	//logger.Info("====aesCBCEncryptWithRand======")
 	if len(s)%aes.BlockSize != 0 {
 		return nil, errors.New("Invalid plaintext. It must be a multiple of the block size")
 	}
@@ -103,7 +103,7 @@ func aesCBCEncryptWithRand(prng io.Reader, key, s []byte) ([]byte, error) {
 }
 
 func aesCBCEncryptWithIV(IV []byte, key, s []byte) ([]byte, error) {
-	logger.Info("====aesCBCEncryptWithIV======")
+	//logger.Info("====aesCBCEncryptWithIV======")
 	if len(s)%aes.BlockSize != 0 {
 		return nil, errors.New("Invalid plaintext. It must be a multiple of the block size")
 	}
@@ -127,7 +127,7 @@ func aesCBCEncryptWithIV(IV []byte, key, s []byte) ([]byte, error) {
 }
 
 func aesCBCDecrypt(key, src []byte) ([]byte, error) {
-	logger.Info("====aesCBCDecrypt======")
+	//logger.Info("====aesCBCDecrypt======")
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
@@ -152,7 +152,7 @@ func aesCBCDecrypt(key, src []byte) ([]byte, error) {
 
 // AESCBCPKCS7Encrypt combines CBC encryption and PKCS7 padding
 func AESCBCPKCS7Encrypt(key, src []byte) ([]byte, error) {
-	logger.Info("====AESCBCPKCS7Encrypt======")
+	//logger.Info("====AESCBCPKCS7Encrypt======")
 	// First pad
 	tmp := pkcs7Padding(src)
 
@@ -162,7 +162,7 @@ func AESCBCPKCS7Encrypt(key, src []byte) ([]byte, error) {
 
 // AESCBCPKCS7Encrypt combines CBC encryption and PKCS7 padding using as prng the passed to the function
 func AESCBCPKCS7EncryptWithRand(prng io.Reader, key, src []byte) ([]byte, error) {
-	logger.Info("====AESCBCPKCS7EncryptWithRand======")
+	//logger.Info("====AESCBCPKCS7EncryptWithRand======")
 	// First pad
 	tmp := pkcs7Padding(src)
 
@@ -172,7 +172,7 @@ func AESCBCPKCS7EncryptWithRand(prng io.Reader, key, src []byte) ([]byte, error)
 
 // AESCBCPKCS7Encrypt combines CBC encryption and PKCS7 padding, the IV used is the one passed to the function
 func AESCBCPKCS7EncryptWithIV(IV []byte, key, src []byte) ([]byte, error) {
-	logger.Info("====AESCBCPKCS7EncryptWithIV======")
+	//logger.Info("====AESCBCPKCS7EncryptWithIV======")
 	// First pad
 	tmp := pkcs7Padding(src)
 
@@ -182,7 +182,7 @@ func AESCBCPKCS7EncryptWithIV(IV []byte, key, src []byte) ([]byte, error) {
 
 // AESCBCPKCS7Decrypt combines CBC decryption and PKCS7 unpadding
 func AESCBCPKCS7Decrypt(key, src []byte) ([]byte, error) {
-	logger.Info("====AESCBCPKCS7Decrypt======")
+	//logger.Info("====AESCBCPKCS7Decrypt======")
 	// First decrypt
 	pt, err := aesCBCDecrypt(key, src)
 	if err == nil {
@@ -194,7 +194,7 @@ func AESCBCPKCS7Decrypt(key, src []byte) ([]byte, error) {
 type aescbcpkcs7Encryptor struct{}
 
 func (e *aescbcpkcs7Encryptor) Encrypt(k bccsp.Key, plaintext []byte, opts bccsp.EncrypterOpts) ([]byte, error) {
-	logger.Info("===aescbcpkcs7Encryptor=Encrypt======")
+	//logger.Info("===aescbcpkcs7Encryptor=Encrypt======")
 	switch o := opts.(type) {
 	case *bccsp.AESCBCPKCS7ModeOpts:
 		// AES in CBC mode with PKCS7 padding
@@ -222,7 +222,7 @@ func (e *aescbcpkcs7Encryptor) Encrypt(k bccsp.Key, plaintext []byte, opts bccsp
 type aescbcpkcs7Decryptor struct{}
 
 func (*aescbcpkcs7Decryptor) Decrypt(k bccsp.Key, ciphertext []byte, opts bccsp.DecrypterOpts) ([]byte, error) {
-	logger.Info("===aescbcpkcs7Decryptor=Decrypt======")
+	//logger.Info("===aescbcpkcs7Decryptor=Decrypt======")
 	// check for mode
 	switch opts.(type) {
 	case *bccsp.AESCBCPKCS7ModeOpts, bccsp.AESCBCPKCS7ModeOpts:

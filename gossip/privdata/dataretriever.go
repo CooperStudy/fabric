@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package privdata
 
 import (
-	"fmt"
 	"github.com/hyperledger/fabric/core/ledger"
 	"github.com/hyperledger/fabric/core/transientstore"
 	"github.com/hyperledger/fabric/gossip/privdata/common"

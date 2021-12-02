@@ -40,17 +40,17 @@ func newQueryHelper(txmgr *LockBasedTxMgr, rwsetBuilder *rwsetutil.RWSetBuilder)
 }
 
 func (h *queryHelper) getState(ns string, key string) ([]byte, []byte, error) {
-	lockbasedtxmgrLogger.Info("==queryHelper=getState====")
+	logger.Info("==queryHelper=getState====")
 	if err := h.checkDone(); err != nil {
 		return nil, nil, err
 	}
 	versionedValue, err := h.txmgr.db.GetState(ns, key)
-	lockbasedtxmgrLogger.Infof("===1.%v, %v := h.txmgr.db.GetState(%v, %v)",versionedValue,err,ns,key)
+	logger.Infof("===1.%v, %v := h.txmgr.db.GetState(%v, %v)",versionedValue,err,ns,key)
 	if err != nil {
 		return nil, nil, err
 	}
 	val, metadata, ver := decomposeVersionedValue(versionedValue)
-	lockbasedtxmgrLogger.Infof("===2.val, metadata, ver := decomposeVersionedValue(versionedValue)",val,metadata,ver,versionedValue)
+	logger.Infof("===2.val, metadata, ver := decomposeVersionedValue(versionedValue)",val,metadata,ver,versionedValue)
 	if h.rwsetBuilder != nil {
 		h.rwsetBuilder.AddToReadSet(ns, key, ver)
 	}
@@ -464,7 +464,7 @@ func (itr *queryResultsItr) Next() (commonledger.QueryResult, error) {
 		return nil, nil
 	}
 	versionedQueryRecord := queryResult.(*statedb.VersionedKV)
-	lockbasedtxmgrLogger.Debugf("queryResultsItr.Next() returned a record:%s", string(versionedQueryRecord.Value))
+	logger.Debugf("queryResultsItr.Next() returned a record:%s", string(versionedQueryRecord.Value))
 
 	if itr.RWSetBuilder != nil {
 		itr.RWSetBuilder.AddToReadSet(versionedQueryRecord.Namespace, versionedQueryRecord.Key, versionedQueryRecord.Version)

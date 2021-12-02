@@ -8,8 +8,6 @@ package msgprocessor
 
 import (
 	"errors"
-	"fmt"
-
 	ab "github.com/hyperledger/fabric/protos/common"
 )
 

@@ -33,17 +33,17 @@ var (
 )
 
 func GetCurveHalfOrdersAt(c elliptic.Curve) *big.Int {
-//	logger.Info("===GetCurveHalfOrdersAt======")
+//	//logger.Info("===GetCurveHalfOrdersAt======")
 	return big.NewInt(0).Set(curveHalfOrders[c])
 }
 
 func MarshalECDSASignature(r, s *big.Int) ([]byte, error) {
-//	logger.Info("===MarshalECDSASignature======")
+//	//logger.Info("===MarshalECDSASignature======")
 	return asn1.Marshal(ECDSASignature{r, s})
 }
 
 func UnmarshalECDSASignature(raw []byte) (*big.Int, *big.Int, error) {
-	//logger.Info("===UnmarshalECDSASignature======")
+	////logger.Info("===UnmarshalECDSASignature======")
 	// Unmarshal
 	sig := new(ECDSASignature)
 	_, err := asn1.Unmarshal(raw, sig)
@@ -70,7 +70,7 @@ func UnmarshalECDSASignature(raw []byte) (*big.Int, *big.Int, error) {
 }
 
 func SignatureToLowS(k *ecdsa.PublicKey, signature []byte) ([]byte, error) {
-	//logger.Info("===SignatureToLowS======")
+	////logger.Info("===SignatureToLowS======")
 	r, s, err := UnmarshalECDSASignature(signature)
 	if err != nil {
 		return nil, err
@@ -90,16 +90,16 @@ func SignatureToLowS(k *ecdsa.PublicKey, signature []byte) ([]byte, error) {
 
 // IsLow checks that s is a low-S
 func IsLowS(k *ecdsa.PublicKey, s *big.Int) (bool, error) {
-	//logger.Info("===IsLowS======")
+	////logger.Info("===IsLowS======")
 	halfOrder, ok := curveHalfOrders[k.Curve]
-	//logger.Info("============k.Curve==========",k.Curve)
-	//logger.Info("============ok==========",ok)
-	//logger.Info("============halfOrder==========",halfOrder)
+	////logger.Info("============k.Curve==========",k.Curve)
+	////logger.Info("============ok==========",ok)
+	////logger.Info("============halfOrder==========",halfOrder)
 	if !ok {
 		return false, fmt.Errorf("curve not recognized [%s]", k.Curve)
 	}
 
-	//logger.Info("======================s.Cmp(halfOrder)=============",s.Cmp(halfOrder))
+	////logger.Info("======================s.Cmp(halfOrder)=============",s.Cmp(halfOrder))
 	return s.Cmp(halfOrder) != 1, nil
 
 }

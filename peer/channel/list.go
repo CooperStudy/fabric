@@ -51,7 +51,7 @@ func listCmd(cf *ChannelCmdFactory) *cobra.Command {
 }
 
 func (cc *endorserClient) getChannels() ([]*pb.ChannelInfo, error) {
-	logger.Info("====endorserClient==getChannels====")
+	//logger.Info("====endorserClient==getChannels====")
 	var err error
 
 	invocation := &pb.ChaincodeInvocationSpec{
@@ -94,7 +94,7 @@ func (cc *endorserClient) getChannels() ([]*pb.ChannelInfo, error) {
 }
 
 func list(cf *ChannelCmdFactory) error {
-	logger.Info("====list====")
+	//logger.Info("====list====")
 	var err error
 	if cf == nil {
 		cf, err = InitCmdFactory(EndorserRequired, PeerDeliverNotRequired, OrdererNotRequired)
@@ -108,7 +108,7 @@ func list(cf *ChannelCmdFactory) error {
 	if channels, err := client.getChannels(); err != nil {
 		return err
 	} else {
-		logger.Info("Channels peers has joined: ")
+		//logger.Info("Channels peers has joined: ")
 
 		for _, channel := range channels {
 			fmt.Printf("%s\n", channel.ChannelId)

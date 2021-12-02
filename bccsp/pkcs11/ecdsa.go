@@ -15,7 +15,7 @@ import (
 )
 
 func (csp *impl) signECDSA(k ecdsaPrivateKey, digest []byte, opts bccsp.SignerOpts) ([]byte, error) {
-	logger.Info("====impl======signECDSA================")
+	//logger.Info("====impl======signECDSA================")
 	r, s, err := csp.signP11ECDSA(k.ski, digest)
 	if err != nil {
 		return nil, err
@@ -30,7 +30,7 @@ func (csp *impl) signECDSA(k ecdsaPrivateKey, digest []byte, opts bccsp.SignerOp
 }
 
 func (csp *impl) verifyECDSA(k ecdsaPublicKey, signature, digest []byte, opts bccsp.SignerOpts) (bool, error) {
-	logger.Info("====impl======verifyECDSA================")
+	//logger.Info("====impl======verifyECDSA================")
 	r, s, err := utils.UnmarshalECDSASignature(signature)
 	if err != nil {
 		return false, fmt.Errorf("Failed unmashalling signature [%s]", err)

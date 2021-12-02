@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package channelconfig
 
 import (
-	"fmt"
 	"sync/atomic"
 
 	"github.com/hyperledger/fabric/common/configtx"

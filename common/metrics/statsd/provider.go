@@ -7,8 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package statsd
 
 import (
-	"fmt"
 	"github.com/go-kit/kit/metrics/statsd"
+	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/common/metrics"
 	"github.com/hyperledger/fabric/common/metrics/internal/namer"
 )
@@ -18,7 +18,7 @@ const defaultFormat = "%{#fqname}"
 type Provider struct {
 	Statsd *statsd.Statsd
 }
-
+var logger = flogging.MustGetLogger("common.metrics.statsd")
 func (p *Provider) NewCounter(o metrics.CounterOpts) metrics.Counter {
 	logger.Info("===Provider===NewCounter==========")
 	if o.StatsdFormat == "" {

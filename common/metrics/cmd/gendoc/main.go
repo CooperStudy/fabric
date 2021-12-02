@@ -29,7 +29,7 @@ var templatePath = flag.String(
 )
 
 func main() {
-	logger.Info("=======main=============")
+	//logger.Info("=======main=============")
 	flag.Parse()
 
 	patterns := flag.Args()

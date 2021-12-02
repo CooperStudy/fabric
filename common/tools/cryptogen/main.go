@@ -16,7 +16,6 @@ import (
 
 	"github.com/hyperledger/fabric/common/tools/cryptogen/ca"
 	"github.com/hyperledger/fabric/common/tools/cryptogen/csp"
-	"github.com/hyperledger/fabric/common/tools/cryptogen/metadata"
 	"github.com/hyperledger/fabric/common/tools/cryptogen/msp"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"gopkg.in/yaml.v2"
@@ -213,7 +212,7 @@ var (
 )
 
 func main() {
-	logger.Info("====main=========")
+	////logger.Info.Info("====main=========")
 	kingpin.Version("0.0.1")
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
 
@@ -237,7 +236,7 @@ func main() {
 }
 
 func getConfig() (*Config, error) {
-	logger.Info("====getConfig=========")
+	//logger.Info.Info("====getConfig=========")
 	var configData string
 
 	if *genConfigFile != nil {
@@ -268,7 +267,7 @@ func getConfig() (*Config, error) {
 }
 
 func extend() {
-	logger.Info("====extend=========")
+	//logger.Info.Info("====extend=========")
 	config, err := getConfig()
 	if err != nil {
 		fmt.Printf("Error reading config: %s", err)
@@ -296,7 +295,7 @@ func extend() {
 }
 
 func extendPeerOrg(orgSpec OrgSpec) {
-	logger.Info("====extendPeerOrg=========")
+	//logger.Info.Info("====extendPeerOrg=========")
 	orgName := orgSpec.Domain
 	orgDir := filepath.Join(*inputDir, "peerOrganizations", orgName)
 	if _, err := os.Stat(orgDir); os.IsNotExist(err) {
@@ -342,7 +341,7 @@ func extendPeerOrg(orgSpec OrgSpec) {
 }
 
 func extendOrdererOrg(orgSpec OrgSpec) {
-	logger.Info("====extendOrdererOrg=========")
+	//logger.Info.Info("====extendOrdererOrg=========")
 	orgName := orgSpec.Domain
 
 	orgDir := filepath.Join(*inputDir, "ordererOrganizations", orgName)
@@ -376,7 +375,7 @@ func extendOrdererOrg(orgSpec OrgSpec) {
 }
 
 func generate() {
-	logger.Info("====generate=========")
+	//logger.Info.Info("====generate=========")
 	config, err := getConfig()
 	if err != nil {
 		fmt.Printf("Error reading config: %s", err)
@@ -403,7 +402,7 @@ func generate() {
 }
 
 func parseTemplate(input string, data interface{}) (string, error) {
-	logger.Info("====parseTemplate=========")
+	//logger.Info.Info("====parseTemplate=========")
 	t, err := template.New("parse").Parse(input)
 	if err != nil {
 		return "", fmt.Errorf("Error parsing template: %s", err)
@@ -419,7 +418,7 @@ func parseTemplate(input string, data interface{}) (string, error) {
 }
 
 func parseTemplateWithDefault(input, defaultInput string, data interface{}) (string, error) {
-	logger.Info("====parseTemplateWithDefault=========")
+	//logger.Info.Info("====parseTemplateWithDefault=========")
 	// Use the default if the input is an empty string
 	if len(input) == 0 {
 		input = defaultInput
@@ -429,7 +428,7 @@ func parseTemplateWithDefault(input, defaultInput string, data interface{}) (str
 }
 
 func renderNodeSpec(domain string, spec *NodeSpec) error {
-	logger.Info("====renderNodeSpec=========")
+	//logger.Info.Info("====renderNodeSpec=========")
 	data := SpecData{
 		Hostname: spec.Hostname,
 		Domain:   domain,
@@ -464,7 +463,7 @@ func renderNodeSpec(domain string, spec *NodeSpec) error {
 }
 
 func renderOrgSpec(orgSpec *OrgSpec, prefix string) error {
-	logger.Info("====renderOrgSpec=========")
+	//logger.Info.Info("====renderOrgSpec=========")
 	// First process all of our templated nodes
 	for i := 0; i < orgSpec.Template.Count; i++ {
 		data := HostnameData{
@@ -508,10 +507,10 @@ func renderOrgSpec(orgSpec *OrgSpec, prefix string) error {
 }
 
 func generatePeerOrg(baseDir string, orgSpec OrgSpec) {
-	logger.Info("====generatePeerOrg=========")
+	//logger.Info.Info("====generatePeerOrg=========")
 	orgName := orgSpec.Domain
 
-	logger.Info(orgName)
+	//logger.Info.Info(orgName)
 	// generate CAs
 	orgDir := filepath.Join(baseDir, "peerOrganizations", orgName)
 	caDir := filepath.Join(orgDir, "ca")
@@ -579,7 +578,7 @@ func generatePeerOrg(baseDir string, orgSpec OrgSpec) {
 }
 
 func copyAdminCert(usersDir, adminCertsDir, adminUserName string) error {
-	logger.Info("====copyAdminCert=========")
+	//logger.Info.Info("====copyAdminCert=========")
 	if _, err := os.Stat(filepath.Join(adminCertsDir,
 		adminUserName+"-cert.pem")); err == nil {
 		return nil
@@ -605,7 +604,7 @@ func copyAdminCert(usersDir, adminCertsDir, adminUserName string) error {
 }
 
 func generateNodes(baseDir string, nodes []NodeSpec, signCA *ca.CA, tlsCA *ca.CA, nodeType int, nodeOUs bool) {
-	logger.Info("====generateNodes=========")
+	//logger.Info.Info("====generateNodes=========")
 	for _, node := range nodes {
 		nodeDir := filepath.Join(baseDir, node.CommonName)
 		if _, err := os.Stat(nodeDir); os.IsNotExist(err) {
@@ -619,7 +618,7 @@ func generateNodes(baseDir string, nodes []NodeSpec, signCA *ca.CA, tlsCA *ca.CA
 }
 
 func generateOrdererOrg(baseDir string, orgSpec OrgSpec) {
-	logger.Info("====generateOrdererOrg=========")
+	//logger.Info.Info("====generateOrdererOrg=========")
 	orgName := orgSpec.Domain
 
 	// generate CAs
@@ -683,7 +682,7 @@ func generateOrdererOrg(baseDir string, orgSpec OrgSpec) {
 }
 
 func copyFile(src, dst string) error {
-	logger.Info("====copyFile========")
+	//logger.Info.Info("====copyFile========")
 	in, err := os.Open(src)
 	if err != nil {
 		return err
@@ -703,12 +702,12 @@ func copyFile(src, dst string) error {
 }
 
 func printVersion() {
-	logger.Info("====printVersion========")
-	logger.Info(metadata.GetVersionInfo())
+	//logger.Info.Info("====printVersion========")
+	//logger.Info.Info(metadata.GetVersionInfo())
 }
 
 func getCA(caDir string, spec OrgSpec, name string) *ca.CA {
-	logger.Info("====getCA========")
+	//logger.Info.Info("====getCA========")
 	_, signer, _ := csp.LoadPrivateKey(caDir)
 	cert, _ := ca.LoadCertificateECDSA(caDir)
 

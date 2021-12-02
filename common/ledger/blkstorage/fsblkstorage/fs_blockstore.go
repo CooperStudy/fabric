@@ -17,7 +17,6 @@ limitations under the License.
 package fsblkstorage
 
 import (
-	"fmt"
 	"github.com/hyperledger/fabric/common/ledger"
 	"github.com/hyperledger/fabric/common/ledger/blkstorage"
 	"github.com/hyperledger/fabric/common/ledger/util/leveldbhelper"
@@ -35,25 +34,25 @@ type fsBlockStore struct {
 // NewFsBlockStore constructs a `FsBlockStore`
 func newFsBlockStore(id string, conf *Conf, indexConfig *blkstorage.IndexConfig,
 	dbHandle *leveldbhelper.DBHandle) *fsBlockStore {
-	logger.Info("======newFsBlockStore==============")
+	//logger.Info("======newFsBlockStore==============")
 	return &fsBlockStore{id, conf, newBlockfileMgr(id, conf, indexConfig, dbHandle)}
 }
 
 // AddBlock adds a new block
 func (store *fsBlockStore) AddBlock(block *common.Block) error {
-	logger.Info("=====fsBlockStore=AddBlock==============")
+	//logger.Info("=====fsBlockStore=AddBlock==============")
 	return store.fileMgr.addBlock(block)
 }
 
 // GetBlockchainInfo returns the current info about blockchain
 func (store *fsBlockStore) GetBlockchainInfo() (*common.BlockchainInfo, error) {
-	//logger.Info("=====fsBlockStore=GetBlockchainInfo==============")
+	////logger.Info("=====fsBlockStore=GetBlockchainInfo==============")
 	return store.fileMgr.getBlockchainInfo(), nil
 }
 
 // RetrieveBlocks returns an iterator that can be used for iterating over a range of blocks
 func (store *fsBlockStore) RetrieveBlocks(startNum uint64) (ledger.ResultsIterator, error) {
-	logger.Info("=====fsBlockStore=GetBlockchainInfo======RetrieveBlocks========")
+	//logger.Info("=====fsBlockStore=GetBlockchainInfo======RetrieveBlocks========")
 	var itr *blocksItr
 	var err error
 	if itr, err = store.fileMgr.retrieveBlocks(startNum); err != nil {
@@ -64,41 +63,41 @@ func (store *fsBlockStore) RetrieveBlocks(startNum uint64) (ledger.ResultsIterat
 
 // RetrieveBlockByHash returns the block for given block-hash
 func (store *fsBlockStore) RetrieveBlockByHash(blockHash []byte) (*common.Block, error) {
-	logger.Info("=====fsBlockStore=RetrieveBlockByHash========")
+	//logger.Info("=====fsBlockStore=RetrieveBlockByHash========")
 	return store.fileMgr.retrieveBlockByHash(blockHash)
 }
 
 // RetrieveBlockByNumber returns the block at a given blockchain height
 func (store *fsBlockStore) RetrieveBlockByNumber(blockNum uint64) (*common.Block, error) {
-	logger.Info("=====fsBlockStore=RetrieveBlockByNumber========")
+	//logger.Info("=====fsBlockStore=RetrieveBlockByNumber========")
 	return store.fileMgr.retrieveBlockByNumber(blockNum)
 }
 
 // RetrieveTxByID returns a transaction for given transaction id
 func (store *fsBlockStore) RetrieveTxByID(txID string) (*common.Envelope, error) {
-	logger.Info("=====fsBlockStore=RetrieveTxByID========")
+	//logger.Info("=====fsBlockStore=RetrieveTxByID========")
 	return store.fileMgr.retrieveTransactionByID(txID)
 }
 
 // RetrieveTxByID returns a transaction for given transaction id
 func (store *fsBlockStore) RetrieveTxByBlockNumTranNum(blockNum uint64, tranNum uint64) (*common.Envelope, error) {
-	logger.Info("=====fsBlockStore=RetrieveTxByBlockNumTranNum========")
+	//logger.Info("=====fsBlockStore=RetrieveTxByBlockNumTranNum========")
 	return store.fileMgr.retrieveTransactionByBlockNumTranNum(blockNum, tranNum)
 }
 
 func (store *fsBlockStore) RetrieveBlockByTxID(txID string) (*common.Block, error) {
-	logger.Info("=====fsBlockStore=RetrieveBlockByTxID========")
+	//logger.Info("=====fsBlockStore=RetrieveBlockByTxID========")
 	return store.fileMgr.retrieveBlockByTxID(txID)
 }
 
 func (store *fsBlockStore) RetrieveTxValidationCodeByTxID(txID string) (peer.TxValidationCode, error) {
-	logger.Info("=====fsBlockStore=RetrieveTxValidationCodeByTxID========")
+	//logger.Info("=====fsBlockStore=RetrieveTxValidationCodeByTxID========")
 	return store.fileMgr.retrieveTxValidationCodeByTxID(txID)
 }
 
 // Shutdown shuts down the block store
 func (store *fsBlockStore) Shutdown() {
-	logger.Info("=====fsBlockStore=Shutdown========")
+	//logger.Info("=====fsBlockStore=Shutdown========")
 	logger.Debugf("closing fs blockStore:%s", store.id)
 	store.fileMgr.close()
 }

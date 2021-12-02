@@ -23,7 +23,7 @@ import (
 
 // DirMissingOrEmpty checks is a directory is missing or empty
 func DirMissingOrEmpty(path string) (bool, error) {
-	logger.Info("===DirMissingOrEmpty======")
+	//logger.Info("===DirMissingOrEmpty======")
 	dirExists, err := DirExists(path)
 	if err != nil {
 		return false, err
@@ -44,7 +44,7 @@ func DirMissingOrEmpty(path string) (bool, error) {
 
 // DirExists checks if a directory exists
 func DirExists(path string) (bool, error) {
-	logger.Info("===DirExists======")
+	//logger.Info("===DirExists======")
 	_, err := os.Stat(path)
 	if err == nil {
 		return true, nil
@@ -57,7 +57,7 @@ func DirExists(path string) (bool, error) {
 
 // DirEmpty checks if a directory is empty
 func DirEmpty(path string) (bool, error) {
-	logger.Info("===DirEmpty======")
+	//logger.Info("===DirEmpty======")
 	f, err := os.Open(path)
 	if err != nil {
 		return false, err

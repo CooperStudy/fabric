@@ -47,7 +47,7 @@ type CSP struct {
 }
 
 func New(keyStore bccsp.KeyStore) (*CSP, error) {
-	//logger.Info("===New===")
+	////logger.Info("===New===")
 	if keyStore == nil {
 		return nil, errors.Errorf("Invalid bccsp.KeyStore instance. It must be different from nil.")
 	}
@@ -70,7 +70,7 @@ func New(keyStore bccsp.KeyStore) (*CSP, error) {
 
 // KeyGen generates a key using opts.
 func (csp *CSP) KeyGen(opts bccsp.KeyGenOpts) (k bccsp.Key, err error) {
-	//logger.Info("==CSP=KeyGen===")
+	////logger.Info("==CSP=KeyGen===")
 	// Validate arguments
 	if opts == nil {
 		return nil, errors.New("Invalid Opts parameter. It must not be nil.")
@@ -101,7 +101,7 @@ func (csp *CSP) KeyGen(opts bccsp.KeyGenOpts) (k bccsp.Key, err error) {
 // KeyDeriv derives a key from k using opts.
 // The opts argument should be appropriate for the primitive used.
 func (csp *CSP) KeyDeriv(k bccsp.Key, opts bccsp.KeyDerivOpts) (dk bccsp.Key, err error) {
-	//logger.Info("==CSP=KeyDeriv===")
+	////logger.Info("==CSP=KeyDeriv===")
 	// Validate arguments
 	if k == nil {
 		return nil, errors.New("Invalid Key. It must not be nil.")
@@ -135,7 +135,7 @@ func (csp *CSP) KeyDeriv(k bccsp.Key, opts bccsp.KeyDerivOpts) (dk bccsp.Key, er
 // KeyImport imports a key from its raw representation using opts.
 // The opts argument should be appropriate for the primitive used.
 func (csp *CSP) KeyImport(raw interface{}, opts bccsp.KeyImportOpts) (k bccsp.Key, err error) {
-	//logger.Info("==CSP=KeyImport===")
+	////logger.Info("==CSP=KeyImport===")
 	// Validate arguments
 	if raw == nil {
 		return nil, errors.New("Invalid raw. It must not be nil.")
@@ -169,7 +169,7 @@ func (csp *CSP) KeyImport(raw interface{}, opts bccsp.KeyImportOpts) (k bccsp.Ke
 // GetKey returns the key this CSP associates to
 // the Subject Key Identifier ski.
 func (csp *CSP) GetKey(ski []byte) (k bccsp.Key, err error) {
-//	logger.Info("==CSP=GetKey===")
+//	//logger.Info("==CSP=GetKey===")
 	k, err = csp.ks.GetKey(ski)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed getting key for SKI [%v]", ski)
@@ -180,33 +180,33 @@ func (csp *CSP) GetKey(ski []byte) (k bccsp.Key, err error) {
 
 // Hash hashes messages msg using options opts.
 func (csp *CSP) Hash(msg []byte, opts bccsp.HashOpts) (digest []byte, err error) {
-	//logger.Info("==CSP=Hash===")
+	////logger.Info("==CSP=Hash===")
 	//// Validate arguments
 	if opts == nil {
 		return nil, errors.New("Invalid opts. It must not be nil.")
 	}
 
-	//logger.Info("=====msg=====",msg)//[48 130 2 58 48 130 1 225...]
+	////logger.Info("=====msg=====",msg)//[48 130 2 58 48 130 1 225...]
 	/*
 	[24 1 42 80 10 63 10 27 112 101 101 114 48 46 111 114 103 49 46 101 120 97 109 112 108 101 46 99 111 109 58 55 48 53 49 26 32 118 194 196 73 211 33 35 179 193 248 91 246 73 229 211 110 220 205 190 29 34 139 230 19 15 56 121 96 72 116 127 240 18 13 8 206 188 172 175 159 155 230 219 22 16 139 1]
 
 	*/
-	//logger.Info("==bccsp.HashOpts==opt===",opts)
+	////logger.Info("==bccsp.HashOpts==opt===",opts)
 //	fmt.Printf("========bccsp.HashOpts==opts type:%T==============\n",opts)
 	a := reflect.TypeOf(opts)//==bccsp.HashOpts==opt=== &{}
-//	logger.Info("======reflect.TypeOf(opts)==",a)//*bccsp.SHA256Opts
+//	//logger.Info("======reflect.TypeOf(opts)==",a)//*bccsp.SHA256Opts
 	hasher, found := csp.Hashers[a]
-	//logger.Info("======hasher==========",hasher)//&{0x9d71a0}
+	////logger.Info("======hasher==========",hasher)//&{0x9d71a0}
 	//fmt.Printf("======hasher Type:%T==========\n",hasher)//*sw.hasher
-	//logger.Info("======found==========",found)//true
+	////logger.Info("======found==========",found)//true
 
 	if !found {
 		return nil, errors.Errorf("Unsupported 'HashOpt' provided [%v]", opts)
 	}
 
 	digest, err = hasher.Hash(msg, opts)
-	//logger.Info("==digest===",digest)
-	//logger.Info("==err===",err)
+	////logger.Info("==digest===",digest)
+	////logger.Info("==err===",err)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed hashing with opts [%v]", opts)
 	}
@@ -217,7 +217,7 @@ func (csp *CSP) Hash(msg []byte, opts bccsp.HashOpts) (digest []byte, err error)
 // GetHash returns and instance of hash.Hash using options opts.
 // If opts is nil then the default hash function is returned.
 func (csp *CSP) GetHash(opts bccsp.HashOpts) (h hash.Hash, err error) {
-	//logger.Info("==CSP=GetHash===")
+	////logger.Info("==CSP=GetHash===")
 	// Validate arguments
 	if opts == nil {
 		return nil, errors.New("Invalid opts. It must not be nil.")
@@ -243,7 +243,7 @@ func (csp *CSP) GetHash(opts bccsp.HashOpts) (h hash.Hash, err error) {
 // the caller is responsible for hashing the larger message and passing
 // the hash (as digest).
 func (csp *CSP) Sign(k bccsp.Key, digest []byte, opts bccsp.SignerOpts) (signature []byte, err error) {
-	//logger.Info("==CSP=Sign===")
+	////logger.Info("==CSP=Sign===")
 	// Validate arguments
 	if k == nil {
 		return nil, errors.New("Invalid Key. It must not be nil.")
@@ -253,17 +253,17 @@ func (csp *CSP) Sign(k bccsp.Key, digest []byte, opts bccsp.SignerOpts) (signatu
 	}
 
 	keyType := reflect.TypeOf(k)
-	//logger.Info("========keyType======",keyType)   *sw.ecdsaPrivateKey
+	////logger.Info("========keyType======",keyType)   *sw.ecdsaPrivateKey
 	signer, found := csp.Signers[keyType]
 	//fmt.Printf("====signer type:%T===\n",signer)
-	//logger.Info("====found===\n",found)
+	////logger.Info("====found===\n",found)
 	if !found {
 		return nil, errors.Errorf("Unsupported 'SignKey' provided [%s]", keyType)
 	}
 
 	signature, err = signer.Sign(k, digest, opts)//ECDSA
-	//logger.Info("=======signature=====",signature)
-	//logger.Info("==============err============",err)
+	////logger.Info("=======signature=====",signature)
+	////logger.Info("==============err============",err)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed signing with opts [%v]", opts)
 	}
@@ -274,7 +274,7 @@ func (csp *CSP) Sign(k bccsp.Key, digest []byte, opts bccsp.SignerOpts) (signatu
 // Verify verifies signature against key k and digest
 //id.msp.bccsp.Verify( id.pk,        sig,      digest,                          nil)
 func (csp *CSP) Verify(k bccsp.Key, signature, digest []byte, opts bccsp.SignerOpts) (valid bool, err error) {
-	//logger.Info("==CSP=Verify===")
+	////logger.Info("==CSP=Verify===")
 	// Validate arguments
 	if k == nil {
 		return false, errors.New("Invalid Key. It must not be nil.")
@@ -302,7 +302,7 @@ func (csp *CSP) Verify(k bccsp.Key, signature, digest []byte, opts bccsp.SignerO
 // Encrypt encrypts plaintext using key k.
 // The opts argument should be appropriate for the primitive used.
 func (csp *CSP) Encrypt(k bccsp.Key, plaintext []byte, opts bccsp.EncrypterOpts) ([]byte, error) {
-	//logger.Info("==CSP=Encrypt===")
+	////logger.Info("==CSP=Encrypt===")
 	// Validate arguments
 	if k == nil {
 		return nil, errors.New("Invalid Key. It must not be nil.")
@@ -319,7 +319,7 @@ func (csp *CSP) Encrypt(k bccsp.Key, plaintext []byte, opts bccsp.EncrypterOpts)
 // Decrypt decrypts ciphertext using key k.
 // The opts argument should be appropriate for the primitive used.
 func (csp *CSP) Decrypt(k bccsp.Key, ciphertext []byte, opts bccsp.DecrypterOpts) (plaintext []byte, err error) {
-	//logger.Info("==CSP=Decrypt===")
+	////logger.Info("==CSP=Decrypt===")
 	// Validate arguments
 	if k == nil {
 		return nil, errors.New("Invalid Key. It must not be nil.")
@@ -342,7 +342,7 @@ func (csp *CSP) Decrypt(k bccsp.Key, ciphertext []byte, opts bccsp.DecrypterOpts
 // Notice that that wrapper must be an instance of one of the following interfaces:
 // KeyGenerator, KeyDeriver, KeyImporter, Encryptor, Decryptor, Signer, Verifier, Hasher.
 func (csp *CSP) AddWrapper(t reflect.Type, w interface{}) error {
-	//logger.Info("==CSP=AddWrapper===")
+	////logger.Info("==CSP=AddWrapper===")
 	if t == nil {
 		return errors.Errorf("type cannot be nil")
 	}

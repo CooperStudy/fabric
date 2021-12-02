@@ -28,7 +28,7 @@ func newAckSendOperation(snd sendFunc, waitForAck waitFunc) *ackSendOperation {
 }
 
 func (aso *ackSendOperation) send(msg *proto.SignedGossipMessage, minAckNum int, peers ...*RemotePeer) []SendResult {
-	//logger.Info("======ackSendOperation=======send==============")
+	////logger.Info("======ackSendOperation=======send==============")
 	successAcks := 0
 	results := []SendResult{}
 
@@ -63,7 +63,7 @@ func (aso *ackSendOperation) send(msg *proto.SignedGossipMessage, minAckNum int,
 }
 
 func interceptAcks(nextHandler handler, remotePeerID common.PKIidType, pubSub *util.PubSub) func(*proto.SignedGossipMessage) {
-	//logger.Info("=====interceptAcks==============")
+	////logger.Info("=====interceptAcks==============")
 	return func(m *proto.SignedGossipMessage) {
 		if m.IsAck() {
 			topic := topicForAck(m.Nonce, remotePeerID)

@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package channelconfig
 
 import (
-	"fmt"
 	"math"
 
 	"github.com/golang/protobuf/proto"

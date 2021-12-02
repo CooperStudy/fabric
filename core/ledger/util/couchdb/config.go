@@ -17,7 +17,6 @@ limitations under the License.
 package couchdb
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/spf13/viper"

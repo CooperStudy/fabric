@@ -33,14 +33,14 @@ type IdemixIssuerKeyGenOpts struct {
 
 // Algorithm returns the key generation algorithm identifier (to be used).
 func (*IdemixIssuerKeyGenOpts) Algorithm() string {
-	//logger.Info("===IdemixIssuerKeyGenOpts==Algorithm===")
+	////logger.Info("===IdemixIssuerKeyGenOpts==Algorithm===")
 	return IDEMIX
 }
 
 // Ephemeral returns true if the key to generate has to be ephemeral,
 // false otherwise.
 func (o *IdemixIssuerKeyGenOpts) Ephemeral() bool {
-	//logger.Info("===IdemixIssuerKeyGenOpts==Ephemeral===")
+	////logger.Info("===IdemixIssuerKeyGenOpts==Ephemeral===")
 	return o.Temporary
 }
 
@@ -53,14 +53,14 @@ type IdemixIssuerPublicKeyImportOpts struct {
 
 // Algorithm returns the key generation algorithm identifier (to be used).
 func (*IdemixIssuerPublicKeyImportOpts) Algorithm() string {
-	//logger.Info("===IdemixIssuerPublicKeyImportOpts==Algorithm===")
+	////logger.Info("===IdemixIssuerPublicKeyImportOpts==Algorithm===")
 	return IDEMIX
 }
 
 // Ephemeral returns true if the key to generate has to be ephemeral,
 // false otherwise.
 func (o *IdemixIssuerPublicKeyImportOpts) Ephemeral() bool {
-	//logger.Info("===IdemixIssuerPublicKeyImportOpts==Ephemeral===")
+	////logger.Info("===IdemixIssuerPublicKeyImportOpts==Ephemeral===")
 	return o.Temporary
 }
 
@@ -71,14 +71,14 @@ type IdemixUserSecretKeyGenOpts struct {
 
 // Algorithm returns the key generation algorithm identifier (to be used).
 func (*IdemixUserSecretKeyGenOpts) Algorithm() string {
-	//logger.Info("===IdemixUserSecretKeyGenOpts==Algorithm===")
+	////logger.Info("===IdemixUserSecretKeyGenOpts==Algorithm===")
 	return IDEMIX
 }
 
 // Ephemeral returns true if the key to generate has to be ephemeral,
 // false otherwise.
 func (o *IdemixUserSecretKeyGenOpts) Ephemeral() bool {
-	//logger.Info("===IdemixUserSecretKeyGenOpts==Ephemeral===")
+	////logger.Info("===IdemixUserSecretKeyGenOpts==Ephemeral===")
 	return o.Temporary
 }
 
@@ -89,14 +89,14 @@ type IdemixUserSecretKeyImportOpts struct {
 
 // Algorithm returns the key generation algorithm identifier (to be used).
 func (*IdemixUserSecretKeyImportOpts) Algorithm() string {
-	//logger.Info("===IdemixUserSecretKeyImportOpts==Algorithm===")
+	////logger.Info("===IdemixUserSecretKeyImportOpts==Algorithm===")
 	return IDEMIX
 }
 
 // Ephemeral returns true if the key to generate has to be ephemeral,
 // false otherwise.
 func (o *IdemixUserSecretKeyImportOpts) Ephemeral() bool {
-	//logger.Info("===IdemixUserSecretKeyImportOpts==Ephemeral===")
+	////logger.Info("===IdemixUserSecretKeyImportOpts==Ephemeral===")
 	return o.Temporary
 }
 
@@ -111,21 +111,21 @@ type IdemixNymKeyDerivationOpts struct {
 
 // Algorithm returns the key derivation algorithm identifier (to be used).
 func (*IdemixNymKeyDerivationOpts) Algorithm() string {
-	//logger.Info("===IdemixNymKeyDerivationOpts==Algorithm===")
+	////logger.Info("===IdemixNymKeyDerivationOpts==Algorithm===")
 	return IDEMIX
 }
 
 // Ephemeral returns true if the key to derive has to be ephemeral,
 // false otherwise.
 func (o *IdemixNymKeyDerivationOpts) Ephemeral() bool {
-	//logger.Info("===IdemixNymKeyDerivationOpts==Ephemeral===")
+	////logger.Info("===IdemixNymKeyDerivationOpts==Ephemeral===")
 	return o.Temporary
 }
 
 // IssuerPublicKey returns the issuer public key used to derive
 // a new unlinkable pseudonym from a credential secret key
 func (o *IdemixNymKeyDerivationOpts) IssuerPublicKey() Key {
-	//logger.Info("===IdemixNymKeyDerivationOpts==IssuerPublicKey===")
+	////logger.Info("===IdemixNymKeyDerivationOpts==IssuerPublicKey===")
 	return o.IssuerPK
 }
 
@@ -137,14 +137,14 @@ type IdemixNymPublicKeyImportOpts struct {
 
 // Algorithm returns the key derivation algorithm identifier (to be used).
 func (*IdemixNymPublicKeyImportOpts) Algorithm() string {
-	//logger.Info("===IdemixNymPublicKeyImportOpts==Algorithm===")
+	////logger.Info("===IdemixNymPublicKeyImportOpts==Algorithm===")
 	return IDEMIX
 }
 
 // Ephemeral returns true if the key to derive has to be ephemeral,
 // false otherwise.
 func (o *IdemixNymPublicKeyImportOpts) Ephemeral() bool {
-	//logger.Info("===IdemixNymPublicKeyImportOpts==Ephemeral===")
+	////logger.Info("===IdemixNymPublicKeyImportOpts==Ephemeral===")
 	return o.Temporary
 }
 
@@ -163,14 +163,14 @@ type IdemixCredentialRequestSignerOpts struct {
 }
 
 func (o *IdemixCredentialRequestSignerOpts) HashFunc() crypto.Hash {
-	//logger.Info("===IdemixCredentialRequestSignerOpts==HashFunc===")
+	////logger.Info("===IdemixCredentialRequestSignerOpts==HashFunc===")
 	return o.H
 }
 
 // IssuerPublicKey returns the issuer public key used to derive
 // a new unlinkable pseudonym from a credential secret key
 func (o *IdemixCredentialRequestSignerOpts) IssuerPublicKey() Key {
-	//logger.Info("===IdemixCredentialRequestSignerOpts==IssuerPublicKey===")
+	////logger.Info("===IdemixCredentialRequestSignerOpts==IssuerPublicKey===")
 	return o.IssuerPK
 }
 
@@ -207,12 +207,12 @@ type IdemixCredentialSignerOpts struct {
 // the message passed to Signer.Sign, or else zero to indicate that no
 // hashing was done.
 func (o *IdemixCredentialSignerOpts) HashFunc() crypto.Hash {
-	//logger.Info("===IdemixCredentialSignerOpts==HashFunc===")
+	////logger.Info("===IdemixCredentialSignerOpts==HashFunc===")
 	return o.H
 }
 
 func (o *IdemixCredentialSignerOpts) IssuerPublicKey() Key {
-	//logger.Info("===IdemixCredentialSignerOpts==IssuerPublicKey===")
+	////logger.Info("===IdemixCredentialSignerOpts==IssuerPublicKey===")
 	return o.IssuerPK
 }
 
@@ -245,7 +245,7 @@ type IdemixSignerOpts struct {
 }
 
 func (o *IdemixSignerOpts) HashFunc() crypto.Hash {
-	//logger.Info("===IdemixSignerOpts==HashFunc===")
+	////logger.Info("===IdemixSignerOpts==HashFunc===")
 	return o.H
 }
 

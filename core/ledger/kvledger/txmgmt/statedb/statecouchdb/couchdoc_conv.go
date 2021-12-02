@@ -8,7 +8,6 @@ package statecouchdb
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"strings"
 	"unicode/utf8"
 

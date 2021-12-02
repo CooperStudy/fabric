@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package ledgerconfig
 
 import (
-	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"path/filepath"
 
 	"github.com/hyperledger/fabric/core/config"
@@ -41,7 +41,7 @@ const confWarmIndexesAfterNBlocks = "ledger.state.couchDBConfig.warmIndexesAfter
 
 var confCollElgProcMaxDbBatchSize = &conf{"ledger.pvtdataStore.collElgProcMaxDbBatchSize", 5000}
 var confCollElgProcDbBatchesInterval = &conf{"ledger.pvtdataStore.collElgProcDbBatchesInterval", 1000}
-
+var logger = flogging.MustGetLogger("core.ldeger.ldegerconfig")
 // GetRootPath returns the filesystem path.
 // All ledger related contents are expected to be stored under this path
 func GetRootPath() string {

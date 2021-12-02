@@ -31,13 +31,13 @@ type SWFactory struct{}
 
 // Name returns the name of this factory
 func (f *SWFactory) Name() string {
-	logger.Info("======SWFactory===Name================")
+	//logger.Info("======SWFactory===Name================")
 	return SoftwareBasedFactoryName
 }
 
 // Get returns an instance of BCCSP using Opts.
 func (f *SWFactory) Get(config *FactoryOpts) (bccsp.BCCSP, error) {
-	logger.Info("======SWFactory===Get================")
+	//logger.Info("======SWFactory===Get================")
 	// Validate arguments
 	if config == nil || config.SwOpts == nil {
 		return nil, errors.New("Invalid config. It must not be nil.")

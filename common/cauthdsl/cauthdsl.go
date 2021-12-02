@@ -17,7 +17,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-var cauthdslLogger = flogging.MustGetLogger("cauthdsl")
+var logger = flogging.MustGetLogger("cauthdsl")
 
 // deduplicate removes any duplicated identities while otherwise preserving identity order
 func deduplicate(sds []IdentityAndSignature) []IdentityAndSignature {
@@ -33,7 +33,7 @@ func deduplicate(sds []IdentityAndSignature) []IdentityAndSignature {
 		identity, err := sd.Identity()
 		logger.Info("=======identity========",identity)//&{0xc0001bb500 0xc0003a8f60}
 		if err != nil {
-			cauthdslLogger.Errorf("Principal deserialization failure (%s) for identity %d", err, i)
+			logger.Errorf("Principal deserialization failure (%s) for identity %d", err, i)
 			continue
 		}
 		key := identity.GetIdentifier().Mspid + identity.GetIdentifier().Id
@@ -73,7 +73,7 @@ func compile(policy *cb.SignaturePolicy, identities []*mb.MSPPrincipal, deserial
 		}
 		return func(signedData []IdentityAndSignature, used []bool) bool {
 			grepKey := time.Now().UnixNano()
-			cauthdslLogger.Debugf("%p gate %d evaluation starts", signedData, grepKey)
+			logger.Debugf("%p gate %d evaluation starts", signedData, grepKey)
 			verified := int32(0)
 			_used := make([]bool, len(used))
 			for _, policy := range policies {
@@ -85,9 +85,9 @@ func compile(policy *cb.SignaturePolicy, identities []*mb.MSPPrincipal, deserial
 			}
 
 			if verified >= t.NOutOf.N {
-				cauthdslLogger.Debugf("%p gate %d evaluation succeeds", signedData, grepKey)
+				logger.Debugf("%p gate %d evaluation succeeds", signedData, grepKey)
 			} else {
-				cauthdslLogger.Debugf("%p gate %d evaluation fails", signedData, grepKey)
+				logger.Debugf("%p gate %d evaluation fails", signedData, grepKey)
 			}
 
 			return verified >= t.NOutOf.N
@@ -98,37 +98,37 @@ func compile(policy *cb.SignaturePolicy, identities []*mb.MSPPrincipal, deserial
 		}
 		signedByID := identities[t.SignedBy]
 		return func(signedData []IdentityAndSignature, used []bool) bool {
-			cauthdslLogger.Debugf("%p signed by %d principal evaluation starts (used %v)", signedData, t.SignedBy, used)
+			logger.Debugf("%p signed by %d principal evaluation starts (used %v)", signedData, t.SignedBy, used)
 			for i, sd := range signedData {
 				if used[i] {
-					cauthdslLogger.Debugf("%p skipping identity %d because it has already been used", signedData, i)
+					logger.Debugf("%p skipping identity %d because it has already been used", signedData, i)
 					continue
 				}
-				if cauthdslLogger.IsEnabledFor(zapcore.DebugLevel) {
+				if logger.IsEnabledFor(zapcore.DebugLevel) {
 					// Unlike most places, this is a huge print statement, and worth checking log level before create garbage
-					cauthdslLogger.Debugf("%p processing identity %d with bytes of %x", signedData, i, sd.Identity)
+					logger.Debugf("%p processing identity %d with bytes of %x", signedData, i, sd.Identity)
 				}
 				identity, err := sd.Identity()
 				if err != nil {
-					cauthdslLogger.Errorf("Principal deserialization failure (%s) for identity %d", err, i)
+					logger.Errorf("Principal deserialization failure (%s) for identity %d", err, i)
 					continue
 				}
 				err = identity.SatisfiesPrincipal(signedByID)
 				if err != nil {
-					cauthdslLogger.Debugf("%p identity %d does not satisfy principal: %s", signedData, i, err)
+					logger.Debugf("%p identity %d does not satisfy principal: %s", signedData, i, err)
 					continue
 				}
-				cauthdslLogger.Debugf("%p principal matched by identity %d", signedData, i)
+				logger.Debugf("%p principal matched by identity %d", signedData, i)
 				err = sd.Verify()
 				if err != nil {
-					cauthdslLogger.Debugf("%p signature for identity %d is invalid: %s", signedData, i, err)
+					logger.Debugf("%p signature for identity %d is invalid: %s", signedData, i, err)
 					continue
 				}
-				cauthdslLogger.Debugf("%p principal evaluation succeeds for identity %d", signedData, i)
+				logger.Debugf("%p principal evaluation succeeds for identity %d", signedData, i)
 				used[i] = true
 				return true
 			}
-			cauthdslLogger.Debugf("%p principal evaluation fails", signedData)
+			logger.Debugf("%p principal evaluation fails", signedData)
 			return false
 		}, nil
 	default:

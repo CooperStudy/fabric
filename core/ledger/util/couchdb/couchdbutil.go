@@ -8,7 +8,6 @@ package couchdb
 import (
 	"bytes"
 	"encoding/hex"
-	"fmt"
 	"net/http"
 	"net/url"
 	"regexp"

@@ -27,7 +27,7 @@ import (
 
 var logger = flogging.MustGetLogger("integration.nwo")
 func GetConfigBlock(n *Network, peer *Peer, orderer *Orderer, channel string) *common.Config {
-	logger.Info("=====GetConfigBlock==========")
+	//logger.Info("=====GetConfigBlock==========")
 	tempDir, err := ioutil.TempDir("", "getConfigBlock")
 	Expect(err).NotTo(HaveOccurred())
 	defer os.RemoveAll(tempDir)
@@ -67,7 +67,7 @@ func GetConfigBlock(n *Network, peer *Peer, orderer *Orderer, channel string) *c
 // UpdateConfig computes, signs, and submits a configuration update and waits
 // for the update to complete.
 func UpdateConfig(n *Network, orderer *Orderer, channel string, current, updated *common.Config, submitter *Peer, additionalSigners ...*Peer) {
-	logger.Info("=====UpdateConfig==========")
+	//logger.Info("=====UpdateConfig==========")
 	tempDir, err := ioutil.TempDir("", "updateConfig")
 	Expect(err).NotTo(HaveOccurred())
 	defer os.RemoveAll(tempDir)
@@ -120,7 +120,7 @@ func UpdateConfig(n *Network, orderer *Orderer, channel string, current, updated
 // UpdateOrdererConfig computes, signs, and submits a configuration update which requires orderers signature and waits
 // for the update to complete.
 func UpdateOrdererConfig(n *Network, orderer *Orderer, channel string, current, updated *common.Config, submitter *Peer, additionalSigners ...*Orderer) {
-	logger.Info("=====UpdateOrdererConfig==========")
+	//logger.Info("=====UpdateOrdererConfig==========")
 	tempDir, err := ioutil.TempDir("", "updateConfig")
 	Expect(err).NotTo(HaveOccurred())
 	defer os.RemoveAll(tempDir)
@@ -174,7 +174,7 @@ func UpdateOrdererConfig(n *Network, orderer *Orderer, channel string, current, 
 // current config block. This can be used to detect whena configuration change
 // has completed.
 func CurrentConfigBlockNumber(n *Network, peer *Peer, orderer *Orderer, channel string) uint64 {
-	logger.Info("=====CurrentConfigBlockNumber==========")
+	//logger.Info("=====CurrentConfigBlockNumber==========")
 	tempDir, err := ioutil.TempDir("", "currentConfigBlock")
 	Expect(err).NotTo(HaveOccurred())
 	defer os.RemoveAll(tempDir)
@@ -198,7 +198,7 @@ func CurrentConfigBlockNumber(n *Network, peer *Peer, orderer *Orderer, channel 
 
 // UnmarshalBlockFromFile unmarshals a proto encoded block from a file.
 func UnmarshalBlockFromFile(blockFile string) *common.Block {
-	logger.Info("=====UnmarshalBlockFromFile==========")
+	//logger.Info("=====UnmarshalBlockFromFile==========")
 	blockBytes, err := ioutil.ReadFile(blockFile)
 	Expect(err).NotTo(HaveOccurred())
 

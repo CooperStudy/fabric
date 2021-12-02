@@ -27,7 +27,7 @@ type SignatureScheme struct {
 func (s *SignatureScheme) Sign(cred []byte, sk handlers.Big, Nym handlers.Ecp, RNym handlers.Big, ipk handlers.IssuerPublicKey, attributes []bccsp.IdemixAttribute,
 	msg []byte, rhIndex int, criRaw []byte) (res []byte, err error) {
 
-	//logger.Info("=======SignatureScheme===Sign=================")
+	////logger.Info("=======SignatureScheme===Sign=================")
 	defer func() {
 		if r := recover(); r != nil {
 			res = nil
@@ -94,7 +94,7 @@ func (s *SignatureScheme) Sign(cred []byte, sk handlers.Big, Nym handlers.Ecp, R
 // Verify checks that an idemix signature is valid with the respect to the passed issuer public key, digest, attributes,
 // revocation index (rhIndex), revocation public key, and epoch.
 func (*SignatureScheme) Verify(ipk handlers.IssuerPublicKey, signature, digest []byte, attributes []bccsp.IdemixAttribute, rhIndex int, revocationPublicKey *ecdsa.PublicKey, epoch int) (err error) {
-	//logger.Info("=======SignatureScheme===Verify=================")
+	////logger.Info("=======SignatureScheme===Verify=================")
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.Errorf("failure [%s]", r)

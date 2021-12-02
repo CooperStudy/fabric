@@ -23,7 +23,7 @@ const upgradeCmdName = "upgrade"
 
 // upgradeCmd returns the cobra command for Chaincode Upgrade
 func upgradeCmd(cf *ChaincodeCmdFactory) *cobra.Command {
-	logger.Info("========upgradeCmd==========")
+	//logger.Info("========upgradeCmd==========")
 	chaincodeUpgradeCmd = &cobra.Command{
 		Use:       upgradeCmdName,
 		Short:     "Upgrade chaincode.",
@@ -55,7 +55,7 @@ func upgradeCmd(cf *ChaincodeCmdFactory) *cobra.Command {
 
 //upgrade the command via Endorser
 func upgrade(cmd *cobra.Command, cf *ChaincodeCmdFactory) (*protcommon.Envelope, error) {
-	logger.Info("========upgrade==========")
+	//logger.Info("========upgrade==========")
 	spec, err := getChaincodeSpec(cmd)
 	if err != nil {
 		return nil, err
@@ -106,7 +106,7 @@ func upgrade(cmd *cobra.Command, cf *ChaincodeCmdFactory) (*protcommon.Envelope,
 // chaincodeUpgrade upgrades the chaincode. On success, the new chaincode
 // version is printed to STDOUT
 func chaincodeUpgrade(cmd *cobra.Command, args []string, cf *ChaincodeCmdFactory) error {
-	logger.Info("========chaincodeUpgrade==========")
+	//logger.Info("========chaincodeUpgrade==========")
 	if channelID == "" {
 		return errors.New("The required parameter 'channelID' is empty. Rerun the command with -C flag")
 	}

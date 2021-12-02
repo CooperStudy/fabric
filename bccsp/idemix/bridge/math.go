@@ -19,7 +19,7 @@ type Big struct {
 }
 
 func (b *Big) Bytes() ([]byte, error) {
-	logger.Info("====Big====Bytes=============")
+	//logger.Info("====Big====Bytes=============")
 	return idemix.BigToBytes(b.E), nil
 }
 
@@ -29,7 +29,7 @@ type Ecp struct {
 }
 
 func (o *Ecp) Bytes() ([]byte, error) {
-	logger.Info("====Ecp====Bytes=============")
+	//logger.Info("====Ecp====Bytes=============")
 	var res []byte
 	res = append(res, idemix.BigToBytes(o.E.GetX())...)
 	res = append(res, idemix.BigToBytes(o.E.GetY())...)

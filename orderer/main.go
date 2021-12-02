@@ -10,11 +10,9 @@ SPDX-License-Identifier: Apache-2.0
 package main
 
 import (
-	"fmt"
 	"github.com/hyperledger/fabric/orderer/common/server"
 )
 
 func main() {
-	logger.Info("================orderer versin 1.0.0======================")
 	server.Main()
 }

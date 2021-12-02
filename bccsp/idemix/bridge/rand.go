@@ -12,7 +12,7 @@ import (
 
 // NewRandOrPanic return a new amcl PRG or panic
 func NewRandOrPanic() *amcl.RAND {
-	//logger.Info("====NewRandOrPanic=======")
+	////logger.Info("====NewRandOrPanic=======")
 	rng, err := cryptolib.GetRand()
 	if err != nil {
 		panic(err)

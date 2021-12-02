@@ -33,7 +33,7 @@ var (
 func NewServerTransportCredentials(
 	serverConfig *tls.Config,
 	logger *flogging.FabricLogger) credentials.TransportCredentials {
-	commLogger.Info("======NewServerTransportCredentials======")
+	logger.Info("======NewServerTransportCredentials======")
 	// NOTE: unlike the default grpc/credentials implementation, we do not
 	// clone the tls.Config which allows us to update it dynamically
 	serverConfig.NextProtos = alpnProtoStr
@@ -55,13 +55,13 @@ type serverCreds struct {
 func (sc *serverCreds) ClientHandshake(context.Context,
 
 	string, net.Conn) (net.Conn, credentials.AuthInfo, error) {
-	commLogger.Info("======serverCreds====ClientHandshake==")
+	logger.Info("======serverCreds====ClientHandshake==")
 	return nil, nil, ClientHandshakeNotImplError
 }
 
 // ServerHandshake does the authentication handshake for servers.
 func (sc *serverCreds) ServerHandshake(rawConn net.Conn) (net.Conn, credentials.AuthInfo, error) {
-	commLogger.Info("======serverCreds====ServerHandshake==")
+	logger.Info("======serverCreds====ServerHandshake==")
 	conn := tls.Server(rawConn, sc.serverConfig)
 	if err := conn.Handshake(); err != nil {
 		if sc.logger != nil {
@@ -75,7 +75,7 @@ func (sc *serverCreds) ServerHandshake(rawConn net.Conn) (net.Conn, credentials.
 
 // Info provides the ProtocolInfo of this TransportCredentials.
 func (sc *serverCreds) Info() credentials.ProtocolInfo {
-	commLogger.Info("======serverCreds====Info==")
+	logger.Info("======serverCreds====Info==")
 	return credentials.ProtocolInfo{
 		SecurityProtocol: "tls",
 		SecurityVersion:  "1.2",
@@ -84,7 +84,7 @@ func (sc *serverCreds) Info() credentials.ProtocolInfo {
 
 // Clone makes a copy of this TransportCredentials.
 func (sc *serverCreds) Clone() credentials.TransportCredentials {
-	commLogger.Info("======serverCreds====Clone==")
+	logger.Info("======serverCreds====Clone==")
 	creds := NewServerTransportCredentials(sc.serverConfig, sc.logger)
 	return creds
 }
@@ -92,6 +92,6 @@ func (sc *serverCreds) Clone() credentials.TransportCredentials {
 // OverrideServerName overrides the server name used to verify the hostname
 // on the returned certificates from the server.
 func (sc *serverCreds) OverrideServerName(string) error {
-	commLogger.Info("======serverCreds====OverrideServerName==")
+	logger.Info("======serverCreds====OverrideServerName==")
 	return OverrrideHostnameNotSupportedError
 }

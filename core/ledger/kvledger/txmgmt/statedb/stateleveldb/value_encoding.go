@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package stateleveldb
 
 import (
-	"fmt"
 	proto "github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb/stateleveldb/msgs"

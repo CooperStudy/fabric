@@ -27,7 +27,7 @@ const instantiateDesc = "Deploy the specified chaincode to the network."
 
 // instantiateCmd returns the cobra command for Chaincode Deploy
 func instantiateCmd(cf *ChaincodeCmdFactory) *cobra.Command {
-	logger.Info("========instantiateCmd================")
+	//logger.Info("========instantiateCmd================")
 	chaincodeInstantiateCmd = &cobra.Command{
 		Use:       instantiateCmdName,
 		Short:     fmt.Sprint(instantiateDesc),
@@ -58,14 +58,14 @@ func instantiateCmd(cf *ChaincodeCmdFactory) *cobra.Command {
 
 //instantiate the command via Endorser
 func instantiate(cmd *cobra.Command, cf *ChaincodeCmdFactory) (*protcommon.Envelope, error) {
-	logger.Info("======func instantiate(cmd *cobra.Command, cf *ChaincodeCmdFactory) (*protcommon.Envelope, error)======")
-	logger.Info("======1.getChaincodeSpec(cmd)======")
+	//logger.Info("======func instantiate(cmd *cobra.Command, cf *ChaincodeCmdFactory) (*protcommon.Envelope, error)======")
+	//logger.Info("======1.getChaincodeSpec(cmd)======")
 	spec, err := getChaincodeSpec(cmd)
 	if err != nil {
 		return nil, err
 	}
 
-	logger.Info("======2. getChaincodeDeploymentSpec(spec, false)======")
+	//logger.Info("======2. getChaincodeDeploymentSpec(spec, false)======")
 	cds, err := getChaincodeDeploymentSpec(spec, false)
 	if err != nil {
 		return nil, fmt.Errorf("error getting chaincode code %s: %s", chaincodeName, err)
@@ -77,12 +77,12 @@ func instantiate(cmd *cobra.Command, cf *ChaincodeCmdFactory) (*protcommon.Envel
 	}
 	cc := &msp.SerializedIdentity{}
 	err = proto.Unmarshal(creator,cc)
-	logger.Infof("===========instantiate获取创建者.Name:%v==========",cc.Mspid)//Org1MSP
+	//logger.Infof("===========instantiate获取创建者.Name:%v==========",cc.Mspid)//Org1MSP
 
 
-	logger.Info("================policyMarshalled==============",policyMarshalled)
+	//logger.Info("================policyMarshalled==============",policyMarshalled)
 	prop, _, err := utils.CreateDeployProposalFromCDS(channelID, cds, creator, policyMarshalled, []byte(escc), []byte(vscc), collectionConfigBytes)
-	logger.Infof("====%v, _, %v := utils.CreateDeployProposalFromCDS(%v,%v,%v,%v, []byte(escc), []byte(vscc),%v)==",prop,err,channelID,cds,creator,policyMarshalled,collectionConfigBytes)
+	//logger.Infof("====%v, _, %v := utils.CreateDeployProposalFromCDS(%v,%v,%v,%v, []byte(escc), []byte(vscc),%v)==",prop,err,channelID,cds,creator,policyMarshalled,collectionConfigBytes)
 	if err != nil {
 		return nil, fmt.Errorf("error creating proposal  %s: %s", chainFuncName, err)
 	}
@@ -95,7 +95,7 @@ func instantiate(cmd *cobra.Command, cf *ChaincodeCmdFactory) (*protcommon.Envel
 
 	// instantiate is currently only supported for one peer
 
-	logger.Info("======instantiate 发送签名signedProp=========",signedProp)
+	//logger.Info("======instantiate 发送签名signedProp=========",signedProp)
 	proposalResponse, err := cf.EndorserClients[0].ProcessProposal(context.Background(), signedProp)
 	if err != nil {
 		return nil, fmt.Errorf("error endorsing %s: %s", chainFuncName, err)
@@ -119,19 +119,19 @@ func instantiate(cmd *cobra.Command, cf *ChaincodeCmdFactory) (*protcommon.Envel
 // (hash) is printed to STDOUT for use by subsequent chaincode-related CLI
 // commands.
 func chaincodeDeploy(cmd *cobra.Command, args []string, cf *ChaincodeCmdFactory) error {
-	logger.Info("=======func chaincodeDeploy(cmd *cobra.Command, args []string, cf *ChaincodeCmdFactory) error===============")
+	//logger.Info("=======func chaincodeDeploy(cmd *cobra.Command, args []string, cf *ChaincodeCmdFactory) error===============")
 
 	if channelID == "" {
 		return errors.New("The required parameter 'channelID' is empty. Rerun the command with -C flag")
 	}
-	logger.Info("=======1.chaincode initiate start===============")
+	//logger.Info("=======1.chaincode initiate start===============")
 	// Parsing of the command line is done so silence cmd usage
 	cmd.SilenceUsage = true
 
 	var err error
-	logger.Infof("=======cf:%v=======",cf)//nil
+	//logger.Infof("=======cf:%v=======",cf)//nil
 	if cf == nil {
-		logger.Infof("=======cmd.Name:%v=======",cmd.Name())//instantiate
+		//logger.Infof("=======cmd.Name:%v=======",cmd.Name())//instantiate
 		cf, err = InitCmdFactory(cmd.Name(), true, true)
 		if err != nil {
 			return err
@@ -139,7 +139,7 @@ func chaincodeDeploy(cmd *cobra.Command, args []string, cf *ChaincodeCmdFactory)
 	}
 	defer cf.BroadcastClient.Close()
 
-	logger.Info("=======2.chaincode initiate start===============")
+	//logger.Info("=======2.chaincode initiate start===============")
 	env, err := instantiate(cmd, cf)
 	if err != nil {
 		return err
@@ -149,6 +149,6 @@ func chaincodeDeploy(cmd *cobra.Command, args []string, cf *ChaincodeCmdFactory)
 		err = cf.BroadcastClient.Send(env)
 	}
 
-	logger.Info("=======chaincode initiate end===============")
+	//logger.Info("=======chaincode initiate end===============")
 	return err
 }

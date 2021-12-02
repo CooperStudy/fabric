@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package discovery
 
 import (
-	"fmt"
 	"math/rand"
 	"sort"
 	"time"

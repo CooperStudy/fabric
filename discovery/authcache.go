@@ -9,7 +9,6 @@ package discovery
 import (
 	"encoding/asn1"
 	"encoding/hex"
-	"fmt"
 	"sync"
 
 	"github.com/hyperledger/fabric/common/util"

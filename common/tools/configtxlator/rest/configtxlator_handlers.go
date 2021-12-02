@@ -19,6 +19,7 @@ package rest
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"io/ioutil"
 	"net/http"
 
@@ -27,7 +28,7 @@ import (
 	"github.com/hyperledger/fabric/common/tools/configtxlator/update"
 	cb "github.com/hyperledger/fabric/protos/common"
 )
-
+var logger = flogging.MustGetLogger("common.tools.configtxlator.rest")
 func fieldBytes(fieldName string, r *http.Request) ([]byte, error) {
 	logger.Info("=========fieldBytes=========")
 	fieldFile, _, err := r.FormFile(fieldName)

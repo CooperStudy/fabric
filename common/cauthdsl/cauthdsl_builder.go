@@ -17,7 +17,6 @@ limitations under the License.
 package cauthdsl
 
 import (
-	"fmt"
 	"sort"
 
 	"github.com/golang/protobuf/proto"

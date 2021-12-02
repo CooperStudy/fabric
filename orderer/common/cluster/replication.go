@@ -11,7 +11,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/pem"
-	"fmt"
 	"time"
 
 	"github.com/hyperledger/fabric/common/crypto"

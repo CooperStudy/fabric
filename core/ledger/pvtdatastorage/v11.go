@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package pvtdatastorage
 
 import (
-	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/common/ledger/util/leveldbhelper"
 	"github.com/hyperledger/fabric/core/ledger"

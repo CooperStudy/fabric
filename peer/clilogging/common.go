@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package clilogging
 
 import (
-	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/common/crypto"
 	"github.com/hyperledger/fabric/peer/common"

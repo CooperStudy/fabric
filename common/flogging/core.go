@@ -52,7 +52,7 @@ type Core struct {
 }
 
 func (c *Core) With(fields []zapcore.Field) zapcore.Core {
-//	logger.Info("==Core====With=========")
+//	//logger.Info("==Core====With=========")
 	clones := map[Encoding]zapcore.Encoder{}
 	for name, enc := range c.Encoders {
 		clone := enc.Clone()
@@ -70,7 +70,7 @@ func (c *Core) With(fields []zapcore.Field) zapcore.Core {
 }
 
 func (c *Core) Check(e zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
-	//logger.Info("==Core====Check=========")
+	////logger.Info("==Core====Check=========")
 	if c.Enabled(e.Level) && c.Levels.Level(e.LoggerName).Enabled(e.Level) {
 		return ce.AddCore(e, c)
 	}
@@ -78,7 +78,7 @@ func (c *Core) Check(e zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.Checked
 }
 
 func (c *Core) Write(e zapcore.Entry, fields []zapcore.Field) error {
-	//logger.Info("==Core====Write=========")
+	////logger.Info("==Core====Write=========")
 	encoding := c.Selector.Encoding()
 	enc := c.Encoders[encoding]
 
@@ -100,12 +100,12 @@ func (c *Core) Write(e zapcore.Entry, fields []zapcore.Field) error {
 }
 
 func (c *Core) Sync() error {
-	//logger.Info("==Core====Sync=========")
+	////logger.Info("==Core====Sync=========")
 	return c.Output.Sync()
 }
 
 func addFields(enc zapcore.ObjectEncoder, fields []zapcore.Field) {
-	//logger.Info("==addFields============")
+	////logger.Info("==addFields============")
 	for i := range fields {
 		fields[i].AddTo(enc)
 	}

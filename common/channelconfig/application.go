@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package channelconfig
 
 import (
-	"fmt"
 	"github.com/hyperledger/fabric/common/capabilities"
 	cb "github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric/protos/peer"

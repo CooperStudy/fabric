@@ -19,7 +19,7 @@ import (
 )
 
 func (msp *bccspmsp) validateIdentity(id *identity) error {
-	mspLogger.Info("======bccspmsp===validateIdentity======")
+	logger.Info("======bccspmsp===validateIdentity======")
 	validationChain, err := msp.getCertificationChainForBCCSPIdentity(id)
 	if err != nil {
 		return errors.WithMessage(err, "could not obtain certification chain")
@@ -39,7 +39,7 @@ func (msp *bccspmsp) validateIdentity(id *identity) error {
 }
 
 func (msp *bccspmsp) validateCAIdentity(id *identity) error {
-	mspLogger.Info("======bccspmsp===validateCAIdentity======")
+	logger.Info("======bccspmsp===validateCAIdentity======")
 	if !id.cert.IsCA {
 		return errors.New("Only CA identities can be validated")
 	}
@@ -57,7 +57,7 @@ func (msp *bccspmsp) validateCAIdentity(id *identity) error {
 }
 
 func (msp *bccspmsp) validateTLSCAIdentity(cert *x509.Certificate, opts *x509.VerifyOptions) error {
-	mspLogger.Info("======bccspmsp===validateTLSCAIdentity======")
+	logger.Info("======bccspmsp===validateTLSCAIdentity======")
 	if !cert.IsCA {
 		return errors.New("Only CA identities can be validated")
 	}
@@ -75,12 +75,12 @@ func (msp *bccspmsp) validateTLSCAIdentity(cert *x509.Certificate, opts *x509.Ve
 }
 
 func (msp *bccspmsp) validateIdentityAgainstChain(id *identity, validationChain []*x509.Certificate) error {
-	mspLogger.Info("======bccspmsp===validateIdentityAgainstChain======")
+	logger.Info("======bccspmsp===validateIdentityAgainstChain======")
 	return msp.validateCertAgainstChain(id.cert, validationChain)
 }
 
 func (msp *bccspmsp) validateCertAgainstChain(cert *x509.Certificate, validationChain []*x509.Certificate) error {
-	mspLogger.Info("======bccspmsp===validateCertAgainstChain======")
+	logger.Info("======bccspmsp===validateCertAgainstChain======")
 	// here we know that the identity is valid; now we have to check whether it has been revoked
 
 	// identify the SKI of the CA that signed this cert
@@ -112,7 +112,7 @@ func (msp *bccspmsp) validateCertAgainstChain(cert *x509.Certificate, validation
 						// the CA cert that signed the certificate
 						// that is under validation did not sign the
 						// candidate CRL - skip
-						mspLogger.Warningf("Invalid signature over the identified CRL, error %+v", err)
+						logger.Warningf("Invalid signature over the identified CRL, error %+v", err)
 						continue
 					}
 
@@ -132,7 +132,7 @@ func (msp *bccspmsp) validateCertAgainstChain(cert *x509.Certificate, validation
 }
 
 func (msp *bccspmsp) validateIdentityOUsV1(id *identity) error {
-	mspLogger.Info("======bccspmsp===validateIdentityOUsV1======")
+	logger.Info("======bccspmsp===validateIdentityOUsV1======")
 	// Check that the identity's OUs are compatible with those recognized by this MSP,
 	// meaning that the intersection is not empty.
 	if len(msp.ouIdentifiers) > 0 {
@@ -163,7 +163,7 @@ func (msp *bccspmsp) validateIdentityOUsV1(id *identity) error {
 }
 
 func (msp *bccspmsp) validateIdentityOUsV11(id *identity) error {
-	mspLogger.Info("======bccspmsp===validateIdentityOUsV11======")
+	logger.Info("======bccspmsp===validateIdentityOUsV11======")
 	// Run the same checks as per V1
 	err := msp.validateIdentityOUsV1(id)
 	if err != nil {
@@ -211,7 +211,7 @@ func (msp *bccspmsp) validateIdentityOUsV11(id *identity) error {
 }
 
 func (msp *bccspmsp) getValidityOptsForCert(cert *x509.Certificate) x509.VerifyOptions {
-	mspLogger.Info("======bccspmsp===getValidityOptsForCert======")
+	logger.Info("======bccspmsp===getValidityOptsForCert======")
 	// First copy the opts to override the CurrentTime field
 	// in order to make the certificate passing the expiration test
 	// independently from the real local current time.
@@ -252,7 +252,7 @@ type authorityKeyIdentifier struct {
 // for the supplied CRL. The authority key identifier can be used to identify
 // the public key corresponding to the private key which was used to sign the CRL.
 func getAuthorityKeyIdentifierFromCrl(crl *pkix.CertificateList) ([]byte, error) {
-	mspLogger.Info("======getAuthorityKeyIdentifierFromCrl======")
+	logger.Info("======getAuthorityKeyIdentifierFromCrl======")
 	aki := authorityKeyIdentifier{}
 
 	for _, ext := range crl.TBSCertList.Extensions {
@@ -274,7 +274,7 @@ func getAuthorityKeyIdentifierFromCrl(crl *pkix.CertificateList) ([]byte, error)
 // getSubjectKeyIdentifierFromCert returns the Subject Key Identifier for the supplied certificate
 // Subject Key Identifier is an identifier of the public key of this certificate
 func getSubjectKeyIdentifierFromCert(cert *x509.Certificate) ([]byte, error) {
-	mspLogger.Info("======getSubjectKeyIdentifierFromCert======")
+	logger.Info("======getSubjectKeyIdentifierFromCert======")
 	var SKI []byte
 
 	for _, ext := range cert.Extensions {

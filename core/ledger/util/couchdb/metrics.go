@@ -6,7 +6,6 @@ SPDX-License-Identifier: Apache-2.0
 package couchdb
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/hyperledger/fabric/common/metrics"

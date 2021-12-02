@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package common
 
 import (
-	"fmt"
 	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/common/localmsp"
 	"github.com/hyperledger/fabric/common/util"
@@ -43,7 +42,7 @@ type DeliverClient struct {
 }
 
 func (d *DeliverClient) seekSpecified(blockNumber uint64) error {
-	logger.Info("====DeliverClient==seekSpecified==")
+	//logger.Info("====DeliverClient==seekSpecified==")
 	seekPosition := &ab.SeekPosition{
 		Type: &ab.SeekPosition_Specified{
 			Specified: &ab.SeekSpecified{
@@ -56,29 +55,29 @@ func (d *DeliverClient) seekSpecified(blockNumber uint64) error {
 }
 
 func (d *DeliverClient) seekOldest() error {
-	logger.Info("====DeliverClient==seekOldest==")
+	//logger.Info("====DeliverClient==seekOldest==")
 	env := seekHelper(d.ChannelID, seekOldest, d.TLSCertHash)
 	return d.Service.Send(env)
 }
 
 func (d *DeliverClient) seekNewest() error {
-	logger.Info("====DeliverClient==seekNewest==")
+	//logger.Info("====DeliverClient==seekNewest==")
 	env := seekHelper(d.ChannelID, seekNewest, d.TLSCertHash)
 	return d.Service.Send(env)
 }
 
 func (d *DeliverClient) readBlock() (*cb.Block, error) {
-	logger.Info("====DeliverClient==readBlock==")
+	//logger.Info("====DeliverClient==readBlock==")
 	msg, err := d.Service.Recv()
 	if err != nil {
 		return nil, errors.Wrap(err, "error receiving")
 	}
 	switch t := msg.Type.(type) {
 	case *ab.DeliverResponse_Status:
-		logger.Infof("Got status: %v", t)
+		//logger.Infof("Got status: %v", t)
 		return nil, errors.Errorf("can't read the block: %v", t)
 	case *ab.DeliverResponse_Block:
-		logger.Infof("Received block: %v", t.Block.Header.Number)
+		//logger.Infof("Received block: %v", t.Block.Header.Number)
 		d.Service.Recv() // Flush the success message
 		return t.Block, nil
 	default:

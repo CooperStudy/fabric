@@ -17,7 +17,6 @@ limitations under the License.
 package protolator
 
 import (
-	"fmt"
 	"reflect"
 
 	"github.com/golang/protobuf/proto"

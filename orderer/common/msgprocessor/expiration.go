@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package msgprocessor
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/hyperledger/fabric/common/channelconfig"

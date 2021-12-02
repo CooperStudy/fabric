@@ -8,8 +8,6 @@ package clilogging
 
 import (
 	"context"
-	"fmt"
-
 	pb "github.com/hyperledger/fabric/protos/peer"
 	"github.com/spf13/cobra"
 )

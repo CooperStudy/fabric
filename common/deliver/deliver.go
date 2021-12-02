@@ -8,7 +8,6 @@ package deliver
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"math"
 	"strconv"

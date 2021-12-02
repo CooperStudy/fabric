@@ -7,8 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package blockledger
 
 import (
-	"fmt"
 	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/flogging"
 	cb "github.com/hyperledger/fabric/protos/common"
 	ab "github.com/hyperledger/fabric/protos/orderer"
 )
@@ -19,7 +19,7 @@ func init() {
 	closedChan = make(chan struct{})
 	close(closedChan)
 }
-
+var logger = flogging.MustGetLogger("common.ledger.blockledger")
 // NotFoundErrorIterator simply always returns an error of cb.Status_NOT_FOUND,
 // and is generally useful for implementations of the Reader interface
 type NotFoundErrorIterator struct{}

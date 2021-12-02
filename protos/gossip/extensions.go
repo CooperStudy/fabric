@@ -650,7 +650,7 @@ func (dd *DataDigest) FormattedDigests() []string {
 
 // Hash returns the SHA256 representation of the PvtDataDigest's bytes
 func (dig *PvtDataDigest) Hash() (string, error) {
-	logger.Info("==========PvtDataDigest==Hash====")
+	//logger.Info("==========PvtDataDigest==Hash====")
 	b, err := proto.Marshal(dig)
 	if err != nil {
 		return "", err

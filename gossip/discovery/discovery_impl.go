@@ -981,7 +981,7 @@ func (d *gossipDiscoveryImpl) Self() NetworkMember {
 	msg, _ := d.aliveMsgAndInternalEndpoint()
 	sMsg, err := msg.NoopSign()
 	if err != nil {
-		logger.Info("ailed creating SignedGossipMessage:", err)
+		fmt.Println("ailed creating SignedGossipMessage:", err)
 	} else {
 		env = sMsg.Envelope
 	}

@@ -22,7 +22,7 @@ type VSCCInfoLookupFailureError struct {
 
 // Error returns reasons which lead to the failure
 func (e VSCCInfoLookupFailureError) Error() string {
-	logger.Info("======VSCCInfoLookupFailureError==Error=")
+	//logger.Info("======VSCCInfoLookupFailureError==Error=")
 	return e.Reason
 }
 

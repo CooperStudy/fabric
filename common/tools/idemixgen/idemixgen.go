@@ -22,7 +22,6 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/common/tools/idemixgen/idemixca"
-	"github.com/hyperledger/fabric/common/tools/idemixgen/metadata"
 	"github.com/hyperledger/fabric/idemix"
 	"github.com/hyperledger/fabric/msp"
 	"github.com/pkg/errors"
@@ -52,7 +51,6 @@ var (
 )
 
 func main() {
-	logger.Info("====main========")
 	app.HelpFlag.Short('h')
 
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
@@ -110,13 +108,12 @@ func main() {
 }
 
 func printVersion() {
-	logger.Info("====printVersion========")
-	logger.Info(metadata.GetVersionInfo())
+	//logger.Info(metadata.GetVersionInfo())
 }
 
 // writeFile writes bytes to a file and panics in case of an error
 func writeFile(path string, contents []byte) {
-	logger.Info("====writeFile========")
+	//logger.Info("====writeFile========")
 	handleError(ioutil.WriteFile(path, contents, 0640))
 }
 
@@ -166,7 +163,7 @@ func checkDirectoryNotExists(path string, errorMessage string) {
 
 func handleError(err error) {
 	if err != nil {
-		logger.Info(err)
+		//logger.Info(err)
 		os.Exit(1)
 	}
 }

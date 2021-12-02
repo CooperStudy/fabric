@@ -17,7 +17,6 @@ limitations under the License.
 package fileledger
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/hyperledger/fabric/common/ledger/blkstorage"
@@ -33,16 +32,16 @@ type fileLedgerFactory struct {
 
 // GetOrCreate gets an existing ledger (if it exists) or creates it if it does not
 func (flf *fileLedgerFactory) GetOrCreate(chainID string) (blockledger.ReadWriter, error) {
-	logger.Info("=========fileLedgerFactory=======GetOrCreate=======")
+	//logger.Info("=========fileLedgerFactory=======GetOrCreate=======")
 	flf.mutex.Lock()
 	defer flf.mutex.Unlock()
 
 	key := chainID
 	// check cache
 	ledger, ok := flf.ledgers[key]
-	logger.Info("==========ok=======",ok)
+	//logger.Info("==========ok=======",ok)
 	if ok {
-		logger.Info("======if ledge exist,return ledger========")
+		//logger.Info("======if ledge exist,return ledger========")
 		return ledger, nil
 	}
 	// open fresh
@@ -51,16 +50,16 @@ func (flf *fileLedgerFactory) GetOrCreate(chainID string) (blockledger.ReadWrite
 		return nil, err
 	}
 	ledger = NewFileLedger(blockStore)
-	logger.Info("=====flf.ledgers[key] = ledger==============",key)
+	//logger.Info("=====flf.ledgers[key] = ledger==============",key)
 	flf.ledgers[key] = ledger
 	return ledger, nil
 }
 
 // ChainIDs returns the chain IDs the factory is aware of
 func (flf *fileLedgerFactory) ChainIDs() []string {
-	logger.Info("=========fileLedgerFactory=======ChainIDs=======")
+	//logger.Info("=========fileLedgerFactory=======ChainIDs=======")
 	chainIDs, err := flf.blkstorageProvider.List()
-	logger.Info("=====chainIDs========",chainIDs)
+	//logger.Info("=====chainIDs========",chainIDs)
 	if err != nil {
 		logger.Panic(err)
 	}
@@ -69,13 +68,13 @@ func (flf *fileLedgerFactory) ChainIDs() []string {
 
 // Close releases all resources acquired by the factory
 func (flf *fileLedgerFactory) Close() {
-	logger.Info("=========fileLedgerFactory=======Close=======")
+	//logger.Info("=========fileLedgerFactory=======Close=======")
 	flf.blkstorageProvider.Close()
 }
 
 // New creates a new ledger factory
 func New(directory string) blockledger.Factory {
-	logger.Info("=========New======")
+	//logger.Info("=========New======")
 	return &fileLedgerFactory{
 		blkstorageProvider: fsblkstorage.NewProvider(
 			fsblkstorage.NewConf(directory, -1),

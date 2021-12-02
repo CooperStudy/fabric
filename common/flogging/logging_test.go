@@ -82,7 +82,7 @@ func TestNamedLogger(t *testing.T) {
 		logger2 := logger.Named("george")
 		flogging.ActivateSpec("eugene=info:eugene.george=error")
 
-		logger.Info("from eugene")
+		//logger.Info("from eugene")
 		logger2.Info("from george")
 		assert.Contains(t, buf.String(), "from eugene")
 		assert.NotContains(t, buf.String(), "from george")

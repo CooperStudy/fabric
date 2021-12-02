@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package encoder
 
 import (
-	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/hyperledger/fabric/common/channelconfig"

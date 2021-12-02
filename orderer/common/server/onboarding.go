@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package server
 
 import (
-	"fmt"
 	"github.com/hyperledger/fabric/common/crypto"
 	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/common/ledger/blockledger"

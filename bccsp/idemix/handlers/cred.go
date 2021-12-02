@@ -18,7 +18,7 @@ type CredentialRequestSigner struct {
 }
 
 func (c *CredentialRequestSigner) Sign(k bccsp.Key, digest []byte, opts bccsp.SignerOpts) ([]byte, error) {
-	logger.Info("=====CredentialRequestSigner=====Sign===============")
+	//logger.Info("=====CredentialRequestSigner=====Sign===============")
 	userSecretKey, ok := k.(*userSecretKey)
 	if !ok {
 		return nil, errors.New("invalid key, expected *userSecretKey")
@@ -45,7 +45,7 @@ type CredentialRequestVerifier struct {
 }
 
 func (c *CredentialRequestVerifier) Verify(k bccsp.Key, signature, digest []byte, opts bccsp.SignerOpts) (bool, error) {
-	logger.Info("=====CredentialRequestSigner=====Verify===============")
+	//logger.Info("=====CredentialRequestSigner=====Verify===============")
 	issuerPublicKey, ok := k.(*issuerPublicKey)
 	if !ok {
 		return false, errors.New("invalid key, expected *issuerPublicKey")
@@ -68,7 +68,7 @@ type CredentialSigner struct {
 }
 
 func (s *CredentialSigner) Sign(k bccsp.Key, digest []byte, opts bccsp.SignerOpts) (signature []byte, err error) {
-	logger.Info("=====CredentialSigner=====Sign===============")
+	//logger.Info("=====CredentialSigner=====Sign===============")
 	issuerSecretKey, ok := k.(*issuerSecretKey)
 	if !ok {
 		return nil, errors.New("invalid key, expected *issuerSecretKey")
@@ -91,7 +91,7 @@ type CredentialVerifier struct {
 }
 
 func (v *CredentialVerifier) Verify(k bccsp.Key, signature, digest []byte, opts bccsp.SignerOpts) (valid bool, err error) {
-	logger.Info("=====CredentialVerifier=====Verify===============")
+	//logger.Info("=====CredentialVerifier=====Verify===============")
 	userSecretKey, ok := k.(*userSecretKey)
 	if !ok {
 		return false, errors.New("invalid key, expected *userSecretKey")

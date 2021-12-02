@@ -18,7 +18,7 @@ package factory
 // GetDefaultOpts offers a default implementation for Opts
 // returns a new instance every time
 func GetDefaultOpts() *FactoryOpts {
-	logger.Info("=========GetDefaultOpts================")
+	//logger.Info("=========GetDefaultOpts================")
 	return &FactoryOpts{
 		ProviderName: "SW",
 		SwOpts: &SwOpts{

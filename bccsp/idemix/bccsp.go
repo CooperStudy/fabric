@@ -22,7 +22,7 @@ type csp struct {
 }
 
 func New(keyStore bccsp.KeyStore) (*csp, error) {
-	//logger.Info("==New========")
+	////logger.Info("==New========")
 	base, err := sw.New(keyStore)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed instantiating base bccsp")
@@ -91,7 +91,7 @@ func New(keyStore bccsp.KeyStore) (*csp, error) {
 // the hash (as digest).
 // Notice that this is overriding the Sign methods of the sw impl. to avoid the digest check.
 func (csp *csp) Sign(k bccsp.Key, digest []byte, opts bccsp.SignerOpts) (signature []byte, err error) {
-	//logger.Info("==csp=====Sign===")
+	////logger.Info("==csp=====Sign===")
 	// Validate arguments
 	if k == nil {
 		return nil, errors.New("Invalid Key. It must not be nil.")
@@ -115,7 +115,7 @@ func (csp *csp) Sign(k bccsp.Key, digest []byte, opts bccsp.SignerOpts) (signatu
 // Verify verifies signature against key k and digest
 // Notice that this is overriding the Sign methods of the sw impl. to avoid the digest check.
 func (csp *csp) Verify(k bccsp.Key, signature, digest []byte, opts bccsp.SignerOpts) (valid bool, err error) {
-	//logger.Info("==csp=====Verify===")
+	////logger.Info("==csp=====Verify===")
 	// Validate arguments
 	if k == nil {
 		return false, errors.New("Invalid Key. It must not be nil.")
@@ -145,7 +145,7 @@ type userSecreKeySignerMultiplexer struct {
 }
 
 func (s *userSecreKeySignerMultiplexer) Sign(k bccsp.Key, digest []byte, opts bccsp.SignerOpts) (signature []byte, err error) {
-	//logger.Info("==userSecreKeySignerMultiplexer=====Sign===")
+	////logger.Info("==userSecreKeySignerMultiplexer=====Sign===")
 	switch opts.(type) {
 	case *bccsp.IdemixSignerOpts:
 		return s.signer.Sign(k, digest, opts)
@@ -164,7 +164,7 @@ type issuerPublicKeyVerifierMultiplexer struct {
 }
 
 func (v *issuerPublicKeyVerifierMultiplexer) Verify(k bccsp.Key, signature, digest []byte, opts bccsp.SignerOpts) (valid bool, err error) {
-	//logger.Info("==userSecreKeySignerMultiplexer=====Verify===")
+	////logger.Info("==userSecreKeySignerMultiplexer=====Verify===")
 	switch opts.(type) {
 	case *bccsp.IdemixSignerOpts:
 		return v.verifier.Verify(k, signature, digest, opts)

@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package chaincode
 
 import (
-	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"sync"
 
 	"github.com/hyperledger/fabric/protos/gossip"
@@ -31,10 +31,10 @@ type Metadata struct {
 
 // MetadataSet defines an aggregation of Metadata
 type MetadataSet []Metadata
-
+var logger = flogging.MustGetLogger("common.chaincode")
 // AsChaincodes converts this MetadataSet to a slice of gossip.Chaincodes
 func (ccs MetadataSet) AsChaincodes() []*gossip.Chaincode {
-	 logger.Info("====MetadataSet======AsChaincodes=========")
+	 //logger.Info("====MetadataSet======AsChaincodes=========")
 	var res []*gossip.Chaincode
 	for _, cc := range ccs {
 		res = append(res, &gossip.Chaincode{
@@ -53,7 +53,7 @@ type MetadataMapping struct {
 
 // NewMetadataMapping creates a new metadata mapping
 func NewMetadataMapping() *MetadataMapping {
-	logger.Info("====NewMetadataMapping=========")
+	//logger.Info("====NewMetadataMapping=========")
 	return &MetadataMapping{
 		mdByName: make(map[string]Metadata),
 	}
@@ -61,7 +61,7 @@ func NewMetadataMapping() *MetadataMapping {
 
 // Lookup returns the Metadata that is associated with the given chaincode
 func (m *MetadataMapping) Lookup(cc string) (Metadata, bool) {
-	logger.Info("==MetadataMapping==Lookup=========")
+	//logger.Info("==MetadataMapping==Lookup=========")
 	m.RLock()
 	defer m.RUnlock()
 	md, exists := m.mdByName[cc]
@@ -70,7 +70,7 @@ func (m *MetadataMapping) Lookup(cc string) (Metadata, bool) {
 
 // Update updates the chaincode metadata in the mapping
 func (m *MetadataMapping) Update(ccMd Metadata) {
-	logger.Info("==MetadataMapping==Update=========")
+	//logger.Info("==MetadataMapping==Update=========")
 	m.Lock()
 	defer m.Unlock()
 	m.mdByName[ccMd.Name] = ccMd
@@ -78,7 +78,7 @@ func (m *MetadataMapping) Update(ccMd Metadata) {
 
 // Aggregate aggregates all Metadata to a MetadataSet
 func (m *MetadataMapping) Aggregate() MetadataSet {
-	logger.Info("==MetadataMapping==Aggregate=========")
+	//logger.Info("==MetadataMapping==Aggregate=========")
 	m.RLock()
 	defer m.RUnlock()
 	var set MetadataSet

@@ -17,7 +17,6 @@ limitations under the License.
 package mgmt
 
 import (
-	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/msp"
 	mspproto "github.com/hyperledger/fabric/protos/msp"

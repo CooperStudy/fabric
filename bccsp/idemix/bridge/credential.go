@@ -28,7 +28,7 @@ type Credential struct {
 // Notice that attributes should not contain attributes whose type is IdemixHiddenAttribute
 // cause the credential needs to carry all the attribute values.
 func (c *Credential) Sign(key handlers.IssuerSecretKey, credentialRequest []byte, attributes []bccsp.IdemixAttribute) (res []byte, err error) {
-	//logger.Info("====Credential====Sign=============")
+	////logger.Info("====Credential====Sign=============")
 	defer func() {
 		if r := recover(); r != nil {
 			res = nil
@@ -72,7 +72,7 @@ func (c *Credential) Sign(key handlers.IssuerSecretKey, credentialRequest []byte
 // and a list of attributes. The list of attributes is optional, in case it is specified, Verify
 // checks that the credential carries the specified attributes.
 func (*Credential) Verify(sk handlers.Big, ipk handlers.IssuerPublicKey, credential []byte, attributes []bccsp.IdemixAttribute) (err error) {
-	//logger.Info("====Credential====Verify=============")
+	////logger.Info("====Credential====Verify=============")
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.Errorf("failure [%s]", r)

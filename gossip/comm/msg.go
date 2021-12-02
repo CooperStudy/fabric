@@ -24,13 +24,13 @@ type ReceivedMessageImpl struct {
 // GetSourceEnvelope Returns the Envelope the ReceivedMessage was
 // constructed with
 func (m *ReceivedMessageImpl) GetSourceEnvelope() *proto.Envelope {
-	//logger.Info("==ReceivedMessageImpl==GetSourceEnvelope==")
+	////logger.Info("==ReceivedMessageImpl==GetSourceEnvelope==")
 	return m.Envelope
 }
 
 // Respond sends a msg to the source that sent the ReceivedMessageImpl
 func (m *ReceivedMessageImpl) Respond(msg *proto.GossipMessage) {
-	//logger.Info("==ReceivedMessageImpl==Respond==")
+	////logger.Info("==ReceivedMessageImpl==Respond==")
 	sMsg, err := msg.NoopSign()
 	if err != nil {
 		err = errors.WithStack(err)
@@ -42,20 +42,20 @@ func (m *ReceivedMessageImpl) Respond(msg *proto.GossipMessage) {
 
 // GetGossipMessage returns the inner GossipMessage
 func (m *ReceivedMessageImpl) GetGossipMessage() *proto.SignedGossipMessage {
-	//logger.Info("==ReceivedMessageImpl==GetGossipMessage==")
+	////logger.Info("==ReceivedMessageImpl==GetGossipMessage==")
 	return m.SignedGossipMessage
 }
 
 // GetConnectionInfo returns information about the remote peer
 // that send the message
 func (m *ReceivedMessageImpl) GetConnectionInfo() *proto.ConnectionInfo {
-	//logger.Info("==ReceivedMessageImpl==GetConnectionInfo==")
+	////logger.Info("==ReceivedMessageImpl==GetConnectionInfo==")
 	return m.connInfo
 }
 
 // Ack returns to the sender an acknowledgement for the message
 func (m *ReceivedMessageImpl) Ack(err error) {
-//	logger.Info("==ReceivedMessageImpl==Ack==")
+//	//logger.Info("==ReceivedMessageImpl==Ack==")
 	ackMsg := &proto.GossipMessage{
 
 		Nonce: m.GetGossipMessage().Nonce,

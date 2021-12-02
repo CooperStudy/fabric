@@ -39,7 +39,7 @@ type cacheItem struct {
 }
 
 func newSecondChanceCache(cacheSize int) *secondChanceCache {
-	mspLogger.Debugf("======newSecondChanceCacheh=========")
+	logger.Debugf("======newSecondChanceCacheh=========")
 	var cache secondChanceCache
 	cache.position = 0
 	cache.items = make([]*cacheItem, cacheSize)
@@ -49,7 +49,7 @@ func newSecondChanceCache(cacheSize int) *secondChanceCache {
 }
 
 func (cache *secondChanceCache) len() int {
-	mspLogger.Debugf("======secondChanceCache===len======")
+	logger.Debugf("======secondChanceCache===len======")
 	cache.rwlock.RLock()
 	defer cache.rwlock.RUnlock()
 
@@ -57,7 +57,7 @@ func (cache *secondChanceCache) len() int {
 }
 
 func (cache *secondChanceCache) get(key string) (interface{}, bool) {
-	mspLogger.Debugf("======secondChanceCache===get======")
+	logger.Debugf("======secondChanceCache===get======")
 	cache.rwlock.RLock()
 	defer cache.rwlock.RUnlock()
 
@@ -73,7 +73,7 @@ func (cache *secondChanceCache) get(key string) (interface{}, bool) {
 }
 
 func (cache *secondChanceCache) add(key string, value interface{}) {
-	mspLogger.Debugf("======secondChanceCache===add======")
+	logger.Debugf("======secondChanceCache===add======")
 	cache.rwlock.Lock()
 	defer cache.rwlock.Unlock()
 

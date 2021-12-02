@@ -23,7 +23,7 @@ type ChannelDeMultiplexer struct {
 
 // NewChannelDemultiplexer creates a new ChannelDeMultiplexer
 func NewChannelDemultiplexer() *ChannelDeMultiplexer {
-	//logger.Info("==NewChannelDemultiplexer==")
+	////logger.Info("==NewChannelDemultiplexer==")
 	return &ChannelDeMultiplexer{
 		channels: make([]*channel, 0),
 		lock:     &sync.RWMutex{},
@@ -36,14 +36,14 @@ type channel struct {
 }
 
 func (m *ChannelDeMultiplexer) isClosed() bool {
-	//logger.Info("==ChannelDeMultiplexer==isClosed==")
+	////logger.Info("==ChannelDeMultiplexer==isClosed==")
 	return m.closed
 }
 
 // Close closes this channel, which makes all channels registered before
 // to close as well.
 func (m *ChannelDeMultiplexer) Close() {
-	//logger.Info("==ChannelDeMultiplexer==Close==")
+	////logger.Info("==ChannelDeMultiplexer==Close==")
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	m.closed = true
@@ -55,7 +55,7 @@ func (m *ChannelDeMultiplexer) Close() {
 
 // AddChannel registers a channel with a certain predicate
 func (m *ChannelDeMultiplexer) AddChannel(predicate common.MessageAcceptor) chan interface{} {
-	//logger.Info("==ChannelDeMultiplexer==AddChannel==")
+	////logger.Info("==ChannelDeMultiplexer==AddChannel==")
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	ch := &channel{ch: make(chan interface{}, 10), pred: predicate}
@@ -66,16 +66,16 @@ func (m *ChannelDeMultiplexer) AddChannel(predicate common.MessageAcceptor) chan
 // DeMultiplex broadcasts the message to all channels that were returned
 // by AddChannel calls and that hold the respected predicates.
 func (m *ChannelDeMultiplexer) DeMultiplex(msg interface{}) {
-	//logger.Info("==ChannelDeMultiplexer==DeMultiplex==")
+	////logger.Info("==ChannelDeMultiplexer==DeMultiplex==")
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 	if m.isClosed() {
 		return
 	}
 	for _, ch := range m.channels {
-		//logger.Info("==========ch",ch)
+		////logger.Info("==========ch",ch)
 		if ch.pred(msg) {
-			//logger.Info("==========msg======",msg)
+			////logger.Info("==========msg======",msg)
 			ch.ch <- msg
 		}
 	}

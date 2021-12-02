@@ -22,17 +22,17 @@ type msgImpl struct {
 }
 
 func (mi *msgImpl) SenderID() peerID {
-	//logger.Info("====msgImpl===SenderID=======")
+	////logger.Info("====msgImpl===SenderID=======")
 	return mi.msg.GetLeadershipMsg().PkiId
 }
 
 func (mi *msgImpl) IsProposal() bool {
-	//logger.Info("====msgImpl===IsProposal=======")
+	////logger.Info("====msgImpl===IsProposal=======")
 	return !mi.IsDeclaration()
 }
 
 func (mi *msgImpl) IsDeclaration() bool {
-	//logger.Info("====msgImpl===IsDeclaration=======")
+	////logger.Info("====msgImpl===IsDeclaration=======")
 	return mi.msg.GetLeadershipMsg().IsDeclaration
 }
 
@@ -41,7 +41,7 @@ type peerImpl struct {
 }
 
 func (pi *peerImpl) ID() peerID {
-	//logger.Info("====peerImpl===ID=======")
+	////logger.Info("====peerImpl===ID=======")
 	return peerID(pi.member.PKIid)
 }
 
@@ -76,7 +76,7 @@ type adapterImpl struct {
 
 // NewAdapter creates new leader election adapter
 func NewAdapter(gossip gossip, pkiid common.PKIidType, channel common.ChainID) LeaderElectionAdapter {
-	//logger.Info("====NewAdapter======")
+	////logger.Info("====NewAdapter======")
 	return &adapterImpl{
 		gossip:    gossip,
 		selfPKIid: pkiid,
@@ -94,12 +94,12 @@ func NewAdapter(gossip gossip, pkiid common.PKIidType, channel common.ChainID) L
 }
 
 func (ai *adapterImpl) Gossip(msg Msg) {
-	//logger.Info("====adapterImpl====Gossip==")
+	////logger.Info("====adapterImpl====Gossip==")
 	ai.gossip.Gossip(msg.(*msgImpl).msg)
 }
 
 func (ai *adapterImpl) Accept() <-chan Msg {
-	//logger.Info("====adapterImpl====Accept==")
+	////logger.Info("====adapterImpl====Accept==")
 	adapterCh, _ := ai.gossip.Accept(func(message interface{}) bool {
 		// Get only leadership org and channel messages
 		return message.(*proto.GossipMessage).Tag == proto.GossipMessage_CHAN_AND_ORG &&
@@ -127,7 +127,7 @@ func (ai *adapterImpl) Accept() <-chan Msg {
 }
 
 func (ai *adapterImpl) CreateMessage(isDeclaration bool) Msg {
-	//logger.Info("====adapterImpl====CreateMessage==")
+	////logger.Info("====adapterImpl====CreateMessage==")
 	ai.seqNum++
 	seqNum := ai.seqNum
 
@@ -150,7 +150,7 @@ func (ai *adapterImpl) CreateMessage(isDeclaration bool) Msg {
 }
 
 func (ai *adapterImpl) Peers() []Peer {
-	//logger.Info("====adapterImpl====Peers==")
+	////logger.Info("====adapterImpl====Peers==")
 	peers := ai.gossip.Peers()
 
 	var res []Peer
@@ -162,7 +162,7 @@ func (ai *adapterImpl) Peers() []Peer {
 }
 
 func (ai *adapterImpl) Stop() {
-	//logger.Info("====adapterImpl====Stop==")
+	////logger.Info("====adapterImpl====Stop==")
 	stopFunc := func() {
 		close(ai.doneCh)
 	}

@@ -15,7 +15,7 @@ type NymSigner struct {
 }
 
 func (s *NymSigner) Sign(k bccsp.Key, digest []byte, opts bccsp.SignerOpts) ([]byte, error) {
-	logger.Info("=NymSigner=Sign===============")
+	//logger.Info("=NymSigner=Sign===============")
 	userSecretKey, ok := k.(*userSecretKey)
 	if !ok {
 		return nil, errors.New("invalid key, expected *userSecretKey")
@@ -61,7 +61,7 @@ type NymVerifier struct {
 }
 
 func (v *NymVerifier) Verify(k bccsp.Key, signature, digest []byte, opts bccsp.SignerOpts) (bool, error) {
-	logger.Info("=NymSigner=Verify===============")
+	//logger.Info("=NymSigner=Verify===============")
 	nymPublicKey, ok := k.(*nymPublicKey)
 	if !ok {
 		return false, errors.New("invalid key, expected *nymPublicKey")

@@ -27,7 +27,7 @@ var (
 // New WithParams returns a new instance of the software-based BCCSP
 // set at the passed security level, hash family and KeyStore.
 func New(opts PKCS11Opts, keyStore bccsp.KeyStore) (bccsp.BCCSP, error) {
-	logger.Info("====New================")
+	//logger.Info("====New================")
 	// Init config
 	conf := &config{}
 	err := conf.setSecurityLevel(opts.SecLevel, opts.HashFamily)
@@ -78,7 +78,7 @@ type impl struct {
 
 // KeyGen generates a key using opts.
 func (csp *impl) KeyGen(opts bccsp.KeyGenOpts) (k bccsp.Key, err error) {
-	logger.Info("====impl=======KeyGen=========")
+	//logger.Info("====impl=======KeyGen=========")
 	// Validate arguments
 	if opts == nil {
 		return nil, errors.New("Invalid Opts parameter. It must not be nil")
@@ -119,7 +119,7 @@ func (csp *impl) KeyGen(opts bccsp.KeyGenOpts) (k bccsp.Key, err error) {
 // KeyImport imports a key from its raw representation using opts.
 // The opts argument should be appropriate for the primitive used.
 func (csp *impl) KeyImport(raw interface{}, opts bccsp.KeyImportOpts) (k bccsp.Key, err error) {
-	logger.Info("====impl=======KeyImport=========")
+	//logger.Info("====impl=======KeyImport=========")
 	// Validate arguments
 	if raw == nil {
 		return nil, errors.New("Invalid raw. Cannot be nil")
@@ -157,7 +157,7 @@ func (csp *impl) KeyImport(raw interface{}, opts bccsp.KeyImportOpts) (k bccsp.K
 // GetKey returns the key this CSP associates to
 // the Subject Key Identifier ski.
 func (csp *impl) GetKey(ski []byte) (bccsp.Key, error) {
-	logger.Info("====impl=======GetKey=========")
+	//logger.Info("====impl=======GetKey=========")
 	pubKey, isPriv, err := csp.getECKey(ski)
 	if err == nil {
 		if isPriv {
@@ -175,7 +175,7 @@ func (csp *impl) GetKey(ski []byte) (bccsp.Key, error) {
 // the caller is responsible for hashing the larger message and passing
 // the hash (as digest).
 func (csp *impl) Sign(k bccsp.Key, digest []byte, opts bccsp.SignerOpts) ([]byte, error) {
-	logger.Info("====impl=======Sign=========")
+	//logger.Info("====impl=======Sign=========")
 	// Validate arguments
 	if k == nil {
 		return nil, errors.New("Invalid Key. It must not be nil")
@@ -195,7 +195,7 @@ func (csp *impl) Sign(k bccsp.Key, digest []byte, opts bccsp.SignerOpts) ([]byte
 
 // Verify verifies signature against key k and digest
 func (csp *impl) Verify(k bccsp.Key, signature, digest []byte, opts bccsp.SignerOpts) (bool, error) {
-	logger.Info("====impl=======Verify=========")
+	//logger.Info("====impl=======Verify=========")
 	// Validate arguments
 	if k == nil {
 		return false, errors.New("Invalid Key. It must not be nil")
@@ -221,7 +221,7 @@ func (csp *impl) Verify(k bccsp.Key, signature, digest []byte, opts bccsp.Signer
 // Encrypt encrypts plaintext using key k.
 // The opts argument should be appropriate for the primitive used.
 func (csp *impl) Encrypt(k bccsp.Key, plaintext []byte, opts bccsp.EncrypterOpts) ([]byte, error) {
-	logger.Info("====impl=======Encrypt=========")
+	//logger.Info("====impl=======Encrypt=========")
 	// TODO: Add PKCS11 support for encryption, when fabric starts requiring it
 	return csp.BCCSP.Encrypt(k, plaintext, opts)
 }
@@ -229,7 +229,7 @@ func (csp *impl) Encrypt(k bccsp.Key, plaintext []byte, opts bccsp.EncrypterOpts
 // Decrypt decrypts ciphertext using key k.
 // The opts argument should be appropriate for the primitive used.
 func (csp *impl) Decrypt(k bccsp.Key, ciphertext []byte, opts bccsp.DecrypterOpts) ([]byte, error) {
-	logger.Info("====impl=======Decrypt=========")
+	//logger.Info("====impl=======Decrypt=========")
 	return csp.BCCSP.Decrypt(k, ciphertext, opts)
 }
 
@@ -237,7 +237,7 @@ func (csp *impl) Decrypt(k bccsp.Key, ciphertext []byte, opts bccsp.DecrypterOpt
 // This is a convenience function. Useful to self-configure, for tests where usual configuration is not
 // available
 func FindPKCS11Lib() (lib, pin, label string) {
-	logger.Info("====FindPKCS11Lib========")
+	//logger.Info("====FindPKCS11Lib========")
 	//FIXME: Till we workout the configuration piece, look for the libraries in the familiar places
 	lib = os.Getenv("PKCS11_LIB")
 	if lib == "" {

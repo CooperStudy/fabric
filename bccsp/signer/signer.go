@@ -35,7 +35,7 @@ type bccspCryptoSigner struct {
 // New returns a new BCCSP-based crypto.Signer
 // for the given BCCSP instance and key.
 func New(csp bccsp.BCCSP, key bccsp.Key) (crypto.Signer, error) {
-	logger.Info("=========New======")
+	//logger.Info("=========New======")
 	// Validate arguments
 	if csp == nil {
 		return nil, errors.New("bccsp instance must be different from nil.")
@@ -69,7 +69,7 @@ func New(csp bccsp.BCCSP, key bccsp.Key) (crypto.Signer, error) {
 // Public returns the public key corresponding to the opaque,
 // private key.
 func (s *bccspCryptoSigner) Public() crypto.PublicKey {
-	logger.Info("====bccspCryptoSigner=====Public======")
+	//logger.Info("====bccspCryptoSigner=====Public======")
 	return s.pk
 }
 
@@ -87,6 +87,6 @@ func (s *bccspCryptoSigner) Public() crypto.PublicKey {
 // the caller is responsible for hashing the larger message and passing
 // the hash (as digest) and the hash function (as opts) to Sign.
 func (s *bccspCryptoSigner) Sign(rand io.Reader, digest []byte, opts crypto.SignerOpts) ([]byte, error) {
-	//logger.Info("====bccspCryptoSigner=====Sign======")
+	////logger.Info("====bccspCryptoSigner=====Sign======")
 	return s.csp.Sign(s.key, digest, opts)
 }

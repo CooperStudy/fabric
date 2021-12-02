@@ -157,7 +157,7 @@ type Network struct {
 // artifacts for the network will be located under rootDir. Ports will be
 // allocated sequentially from the specified startPort.
 func New(c *Config, rootDir string, client *docker.Client, startPort int, components *Components) *Network {
-	logger.Info("=====New==========")
+	//logger.Info("=====New==========")
 	network := &Network{
 		StartPort:    uint16(startPort),
 		RootDir:      rootDir,
@@ -215,56 +215,56 @@ func New(c *Config, rootDir string, client *docker.Client, startPort int, compon
 // ConfigTxPath returns the path to the generated configtxgen configuration
 // file.
 func (n *Network) ConfigTxConfigPath() string {
-	logger.Info("=====Network==ConfigTxConfigPath========")
+	//logger.Info("=====Network==ConfigTxConfigPath========")
 	return filepath.Join(n.RootDir, "configtx.yaml")
 }
 
 // CryptoPath returns the path to the directory where cryptogen will place its
 // generated artifacts.
 func (n *Network) CryptoPath() string {
-	logger.Info("=====Network==CryptoPath========")
+	//logger.Info("=====Network==CryptoPath========")
 	return filepath.Join(n.RootDir, "crypto")
 }
 
 // CryptoConfigPath returns the path to the generated cryptogen configuration
 // file.
 func (n *Network) CryptoConfigPath() string {
-	logger.Info("=====Network==CryptoConfigPath========")
+	//logger.Info("=====Network==CryptoConfigPath========")
 	return filepath.Join(n.RootDir, "crypto-config.yaml")
 }
 
 // OutputBlockPath returns the path to the genesis block for the named system
 // channel.
 func (n *Network) OutputBlockPath(channelName string) string {
-	logger.Info("=====Network==OutputBlockPath========")
+	//logger.Info("=====Network==OutputBlockPath========")
 	return filepath.Join(n.RootDir, fmt.Sprintf("%s_block.pb", channelName))
 }
 
 // CreateChannelTxPath returns the path to the create channel transaction for
 // the named channel.
 func (n *Network) CreateChannelTxPath(channelName string) string {
-	logger.Info("=====Network==CreateChannelTxPath========")
+	//logger.Info("=====Network==CreateChannelTxPath========")
 	return filepath.Join(n.RootDir, fmt.Sprintf("%s_tx.pb", channelName))
 }
 
 // OrdererDir returns the path to the configuration directory for the specified
 // Orderer.
 func (n *Network) OrdererDir(o *Orderer) string {
-	logger.Info("=====Network==OrdererDir========")
+	//logger.Info("=====Network==OrdererDir========")
 	return filepath.Join(n.RootDir, "orderers", o.ID())
 }
 
 // OrdererConfigPath returns the path to the orderer configuration document for
 // the specified Orderer.
 func (n *Network) OrdererConfigPath(o *Orderer) string {
-	logger.Info("=====Network==OrdererConfigPath========")
+	//logger.Info("=====Network==OrdererConfigPath========")
 	return filepath.Join(n.OrdererDir(o), "orderer.yaml")
 }
 
 // ReadOrdererConfig  unmarshals an orderer's orderer.yaml and returns an
 // object approximating its contents.
 func (n *Network) ReadOrdererConfig(o *Orderer) *fabricconfig.Orderer {
-	logger.Info("=====Network==ReadOrdererConfig========")
+	//logger.Info("=====Network==ReadOrdererConfig========")
 	var orderer fabricconfig.Orderer
 	ordererBytes, err := ioutil.ReadFile(n.OrdererConfigPath(o))
 	Expect(err).NotTo(HaveOccurred())
@@ -278,7 +278,7 @@ func (n *Network) ReadOrdererConfig(o *Orderer) *fabricconfig.Orderer {
 // WriteOrdererConfig serializes the provided configuration as the specified
 // orderer's orderer.yaml document.
 func (n *Network) WriteOrdererConfig(o *Orderer, config *fabricconfig.Orderer) {
-	logger.Info("=====Network==WriteOrdererConfig========")
+	//logger.Info("=====Network==WriteOrdererConfig========")
 	ordererBytes, err := yaml.Marshal(config)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -289,21 +289,21 @@ func (n *Network) WriteOrdererConfig(o *Orderer, config *fabricconfig.Orderer) {
 // PeerDir returns the path to the configuration directory for the specified
 // Peer.
 func (n *Network) PeerDir(p *Peer) string {
-	logger.Info("=====Network==PeerDir========")
+	//logger.Info("=====Network==PeerDir========")
 	return filepath.Join(n.RootDir, "peers", p.ID())
 }
 
 // PeerConfigPath returns the path to the peer configuration document for the
 // specified peer.
 func (n *Network) PeerConfigPath(p *Peer) string {
-	logger.Info("=====Network==PeerConfigPath========")
+	//logger.Info("=====Network==PeerConfigPath========")
 	return filepath.Join(n.PeerDir(p), "core.yaml")
 }
 
 // ReadPeerConfig unmarshals a peer's core.yaml and returns an object
 // approximating its contents.
 func (n *Network) ReadPeerConfig(p *Peer) *fabricconfig.Core {
-	logger.Info("=====Network==ReadPeerConfig========")
+	//logger.Info("=====Network==ReadPeerConfig========")
 	var core fabricconfig.Core
 	coreBytes, err := ioutil.ReadFile(n.PeerConfigPath(p))
 	Expect(err).NotTo(HaveOccurred())
@@ -317,7 +317,7 @@ func (n *Network) ReadPeerConfig(p *Peer) *fabricconfig.Core {
 // WritePeerConfig serializes the provided configuration as the specified
 // peer's core.yaml document.
 func (n *Network) WritePeerConfig(p *Peer, config *fabricconfig.Core) {
-	logger.Info("=====Network==WritePeerConfig========")
+	//logger.Info("=====Network==WritePeerConfig========")
 	coreBytes, err := yaml.Marshal(config)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -328,7 +328,7 @@ func (n *Network) WritePeerConfig(p *Peer, config *fabricconfig.Core) {
 // peerUserCryptoDir returns the path to the directory containing the
 // certificates and keys for the specified user of the peer.
 func (n *Network) peerUserCryptoDir(p *Peer, user, cryptoMaterialType string) string {
-	logger.Info("=====Network==peerUserCryptoDir========")
+	//logger.Info("=====Network==peerUserCryptoDir========")
 	org := n.Organization(p.Organization)
 	Expect(org).NotTo(BeNil())
 
@@ -338,7 +338,7 @@ func (n *Network) peerUserCryptoDir(p *Peer, user, cryptoMaterialType string) st
 // ordererUserCryptoDir returns the path to the directory containing the
 // certificates and keys for the specified user of the orderer.
 func (n *Network) ordererUserCryptoDir(o *Orderer, user, cryptoMaterialType string) string {
-	logger.Info("=====Network==ordererUserCryptoDir========")
+	//logger.Info("=====Network==ordererUserCryptoDir========")
 	org := n.Organization(o.Organization)
 
 	Expect(org).NotTo(BeNil())
@@ -349,7 +349,7 @@ func (n *Network) ordererUserCryptoDir(o *Orderer, user, cryptoMaterialType stri
 // userCryptoDir returns the path to the folder with crypto materials for either peers or orderer organizations
 // specific user
 func (n *Network) userCryptoDir(org *Organization, nodeOrganizationType, user, cryptoMaterialType string) string {
-	logger.Info("=====Network==userCryptoDir========")
+	//logger.Info("=====Network==userCryptoDir========")
 	return filepath.Join(
 		n.RootDir,
 		"crypto",
@@ -364,28 +364,28 @@ func (n *Network) userCryptoDir(org *Organization, nodeOrganizationType, user, c
 // PeerUserMSPDir returns the path to the MSP directory containing the
 // certificates and keys for the specified user of the peer.
 func (n *Network) PeerUserMSPDir(p *Peer, user string) string {
-	logger.Info("=====Network==PeerUserMSPDir========")
+	//logger.Info("=====Network==PeerUserMSPDir========")
 	return n.peerUserCryptoDir(p, user, "msp")
 }
 
 // OrdererUserMSPDir returns the path to the MSP directory containing the
 // certificates and keys for the specified user of the peer.
 func (n *Network) OrdererUserMSPDir(o *Orderer, user string) string {
-	logger.Info("=====Network==OrdererUserMSPDir========")
+	//logger.Info("=====Network==OrdererUserMSPDir========")
 	return n.ordererUserCryptoDir(o, user, "msp")
 }
 
 // PeerUserTLSDir returns the path to the TLS directory containing the
 // certificates and keys for the specified user of the peer.
 func (n *Network) PeerUserTLSDir(p *Peer, user string) string {
-	logger.Info("=====Network==PeerUserTLSDir========")
+	//logger.Info("=====Network==PeerUserTLSDir========")
 	return n.peerUserCryptoDir(p, user, "tls")
 }
 
 // PeerUserCert returns the path to the certificate for the specified user in
 // the peer organization.
 func (n *Network) PeerUserCert(p *Peer, user string) string {
-	logger.Info("=====Network==PeerUserCert========")
+	//logger.Info("=====Network==PeerUserCert========")
 	org := n.Organization(p.Organization)
 	Expect(org).NotTo(BeNil())
 
@@ -399,7 +399,7 @@ func (n *Network) PeerUserCert(p *Peer, user string) string {
 // PeerUserKey returns the path to the private key for the specified user in
 // the peer organization.
 func (n *Network) PeerUserKey(p *Peer, user string) string {
-	logger.Info("=====Network==PeerUserKey========")
+	//logger.Info("=====Network==PeerUserKey========")
 	org := n.Organization(p.Organization)
 	Expect(org).NotTo(BeNil())
 
@@ -418,7 +418,7 @@ func (n *Network) PeerUserKey(p *Peer, user string) string {
 
 // peerLocalCryptoDir returns the path to the local crypto directory for the peer.
 func (n *Network) peerLocalCryptoDir(p *Peer, cryptoType string) string {
-	logger.Info("=====Network==peerLocalCryptoDir========")
+	//logger.Info("=====Network==peerLocalCryptoDir========")
 	org := n.Organization(p.Organization)
 	Expect(org).NotTo(BeNil())
 
@@ -435,19 +435,19 @@ func (n *Network) peerLocalCryptoDir(p *Peer, cryptoType string) string {
 
 // PeerLocalMSPDir returns the path to the local MSP directory for the peer.
 func (n *Network) PeerLocalMSPDir(p *Peer) string {
-	logger.Info("=====Network==PeerLocalMSPDir========")
+	//logger.Info("=====Network==PeerLocalMSPDir========")
 	return n.peerLocalCryptoDir(p, "msp")
 }
 
 // PeerLocalTLSDir returns the path to the local TLS directory for the peer.
 func (n *Network) PeerLocalTLSDir(p *Peer) string {
-	logger.Info("=====Network==PeerLocalTLSDir========")
+	//logger.Info("=====Network==PeerLocalTLSDir========")
 	return n.peerLocalCryptoDir(p, "tls")
 }
 
 // PeerCert returns the path to the peer's certificate.
 func (n *Network) PeerCert(p *Peer) string {
-	logger.Info("=====Network==PeerCert========")
+	//logger.Info("=====Network==PeerCert========")
 	org := n.Organization(p.Organization)
 	Expect(org).NotTo(BeNil())
 
@@ -460,7 +460,7 @@ func (n *Network) PeerCert(p *Peer) string {
 
 // PeerOrgMSPDir returns the path to the MSP directory of the Peer organization.
 func (n *Network) PeerOrgMSPDir(org *Organization) string {
-	logger.Info("=====Network==PeerOrgMSPDir========")
+	//logger.Info("=====Network==PeerOrgMSPDir========")
 	return filepath.Join(
 		n.RootDir,
 		"crypto",
@@ -473,7 +473,7 @@ func (n *Network) PeerOrgMSPDir(org *Organization) string {
 // OrdererOrgMSPDir returns the path to the MSP directory of the Orderer
 // organization.
 func (n *Network) OrdererOrgMSPDir(o *Organization) string {
-	logger.Info("=====Network==OrdererOrgMSPDir========")
+	//logger.Info("=====Network==OrdererOrgMSPDir========")
 	return filepath.Join(
 		n.RootDir,
 		"crypto",
@@ -486,7 +486,7 @@ func (n *Network) OrdererOrgMSPDir(o *Organization) string {
 // OrdererLocalCryptoDir returns the path to the local crypto directory for the
 // Orderer.
 func (n *Network) OrdererLocalCryptoDir(o *Orderer, cryptoType string) string {
-	logger.Info("=====Network==OrdererLocalCryptoDir========")
+	//logger.Info("=====Network==OrdererLocalCryptoDir========")
 	org := n.Organization(o.Organization)
 	Expect(org).NotTo(BeNil())
 
@@ -504,21 +504,21 @@ func (n *Network) OrdererLocalCryptoDir(o *Orderer, cryptoType string) string {
 // OrdererLocalMSPDir returns the path to the local MSP directory for the
 // Orderer.
 func (n *Network) OrdererLocalMSPDir(o *Orderer) string {
-	logger.Info("=====Network==OrdererLocalMSPDir========")
+	//logger.Info("=====Network==OrdererLocalMSPDir========")
 	return n.OrdererLocalCryptoDir(o, "msp")
 }
 
 // OrdererLocalTLSDir returns the path to the local TLS directory for the
 // Orderer.
 func (n *Network) OrdererLocalTLSDir(o *Orderer) string {
-	logger.Info("=====Network==OrdererLocalTLSDir========")
+	//logger.Info("=====Network==OrdererLocalTLSDir========")
 	return n.OrdererLocalCryptoDir(o, "tls")
 }
 
 // ProfileForChannel gets the configtxgen profile name associated with the
 // specified channel.
 func (n *Network) ProfileForChannel(channelName string) string {
-	logger.Info("=====Network==ProfileForChannel========")
+	//logger.Info("=====Network==ProfileForChannel========")
 	for _, ch := range n.Channels {
 		if ch.Name == channelName {
 			return ch.Profile
@@ -530,7 +530,7 @@ func (n *Network) ProfileForChannel(channelName string) string {
 // CACertsBundlePath returns the path to the bundle of CA certificates for the
 // network. This bundle is used when connecting to peers.
 func (n *Network) CACertsBundlePath() string {
-	logger.Info("=====Network==CACertsBundlePath========")
+	//logger.Info("=====Network==CACertsBundlePath========")
 	return filepath.Join(
 		n.RootDir,
 		"crypto",
@@ -555,7 +555,7 @@ func (n *Network) CACertsBundlePath() string {
 // ${rootDir}/peers/peer1.org2/core.yaml
 //
 func (n *Network) GenerateConfigTree() {
-	logger.Info("=====Network==GenerateConfigTree========")
+	//logger.Info("=====Network==GenerateConfigTree========")
 	n.GenerateCryptoConfig()
 	n.GenerateConfigTxConfig()
 	for _, o := range n.Orderers {
@@ -582,7 +582,7 @@ func (n *Network) GenerateConfigTree() {
 // the Network using the channel's Profile attribute. The transactions are
 // written to ${rootDir}/${Channel.Name}_tx.pb.
 func (n *Network) Bootstrap() {
-	logger.Info("=====Network==Bootstrap========")
+	//logger.Info("=====Network==Bootstrap========")
 	_, err := n.DockerClient.CreateNetwork(
 		docker.CreateNetworkOptions{
 			Name:   n.NetworkID,
@@ -624,7 +624,7 @@ func (n *Network) Bootstrap() {
 // concatenateTLSCACertificates concatenates all TLS CA certificates into a
 // single file to be used by peer CLI.
 func (n *Network) concatenateTLSCACertificates() {
-	logger.Info("=====Network==concatenateTLSCACertificates========")
+	//logger.Info("=====Network==concatenateTLSCACertificates========")
 	bundle := &bytes.Buffer{}
 	for _, tlsCertPath := range n.listTLSCACertificates() {
 		certBytes, err := ioutil.ReadFile(tlsCertPath)
@@ -638,7 +638,7 @@ func (n *Network) concatenateTLSCACertificates() {
 // listTLSCACertificates returns the paths of all TLS CA certificates in the
 // network, across all organizations.
 func (n *Network) listTLSCACertificates() []string {
-	logger.Info("=====Network==listTLSCACertificates========")
+	//logger.Info("=====Network==listTLSCACertificates========")
 	fileName2Path := make(map[string]string)
 	filepath.Walk(filepath.Join(n.RootDir, "crypto"), func(path string, info os.FileInfo, err error) error {
 		// File starts with "tlsca" and has "-cert.pem" in it
@@ -658,7 +658,7 @@ func (n *Network) listTLSCACertificates() []string {
 // Cleanup attempts to cleanup docker related artifacts that may
 // have been created by the network.
 func (n *Network) Cleanup() {
-	logger.Info("=====Network==Cleanup========")
+	//logger.Info("=====Network==Cleanup========")
 	nw, err := n.DockerClient.NetworkInfo(n.NetworkID)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -696,7 +696,7 @@ func (n *Network) Cleanup() {
 //
 // The network must be running before this is called.
 func (n *Network) CreateAndJoinChannels(o *Orderer) {
-	logger.Info("=====Network==CreateAndJoinChannels========")
+	//logger.Info("=====Network==CreateAndJoinChannels========")
 	for _, c := range n.Channels {
 		n.CreateAndJoinChannel(o, c.Name)
 	}
@@ -707,7 +707,7 @@ func (n *Network) CreateAndJoinChannels(o *Orderer) {
 //
 // The network must be running before this is called.
 func (n *Network) CreateAndJoinChannel(o *Orderer, channelName string) {
-	logger.Info("=====Network==CreateAndJoinChannel========")
+	//logger.Info("=====Network==CreateAndJoinChannel========")
 	peers := n.PeersWithChannel(channelName)
 	if len(peers) == 0 {
 		return
@@ -721,7 +721,7 @@ func (n *Network) CreateAndJoinChannel(o *Orderer, channelName string) {
 // creates an anchor peer update transaction for each organization, and submits
 // the update transactions to the orderer.
 func (n *Network) UpdateChannelAnchors(o *Orderer, channelName string) {
-	logger.Info("=====Network==UpdateChannelAnchors========")
+	//logger.Info("=====Network==UpdateChannelAnchors========")
 	tempFile, err := ioutil.TempFile("", "update-anchors")
 	Expect(err).NotTo(HaveOccurred())
 	tempFile.Close()
@@ -760,7 +760,7 @@ func (n *Network) UpdateChannelAnchors(o *Orderer, channelName string) {
 //
 // The orderer must be running when this is called.
 func (n *Network) CreateChannel(channelName string, o *Orderer, p *Peer) {
-	logger.Info("=====Network==CreateChannel========")
+	//logger.Info("=====Network==CreateChannel========")
 	createChannel := func() int {
 		sess, err := n.PeerAdminSession(p, commands.ChannelCreate{
 			ChannelID:   channelName,
@@ -780,7 +780,7 @@ func (n *Network) CreateChannel(channelName string, o *Orderer, p *Peer) {
 //
 // The orderer and listed peers must be running before this is called.
 func (n *Network) JoinChannel(name string, o *Orderer, peers ...*Peer) {
-	logger.Info("=====Network==JoinChannel========")
+	//logger.Info("=====Network==JoinChannel========")
 	if len(peers) == 0 {
 		return
 	}
@@ -810,21 +810,21 @@ func (n *Network) JoinChannel(name string, o *Orderer, peers ...*Peer) {
 
 // Cryptogen starts a gexec.Session for the provided cryptogen command.
 func (n *Network) Cryptogen(command Command) (*gexec.Session, error) {
-	logger.Info("=====Cryptogen========")
+	//logger.Info("=====Cryptogen========")
 	cmd := NewCommand(n.Components.Cryptogen(), command)
 	return n.StartSession(cmd, command.SessionName())
 }
 
 // ConfigTxGen starts a gexec.Session for the provided configtxgen command.
 func (n *Network) ConfigTxGen(command Command) (*gexec.Session, error) {
-	logger.Info("==Network===ConfigTxGen========")
+	//logger.Info("==Network===ConfigTxGen========")
 	cmd := NewCommand(n.Components.ConfigTxGen(), command)
 	return n.StartSession(cmd, command.SessionName())
 }
 
 // Discover starts a gexec.Session for the provided discover command.
 func (n *Network) Discover(command Command) (*gexec.Session, error) {
-	logger.Info("==Network===Discover========")
+	//logger.Info("==Network===Discover========")
 	cmd := NewCommand(n.Components.Discover(), command)
 	cmd.Args = append(cmd.Args, "--peerTLSCA", n.CACertsBundlePath())
 	return n.StartSession(cmd, command.SessionName())
@@ -832,7 +832,7 @@ func (n *Network) Discover(command Command) (*gexec.Session, error) {
 
 // ZooKeeperRunner returns a runner for a ZooKeeper instance.
 func (n *Network) ZooKeeperRunner(idx int) *runner.ZooKeeper {
-	logger.Info("==Network===ZooKeeperRunner========")
+	//logger.Info("==Network===ZooKeeperRunner========")
 	colorCode := n.nextColor()
 
 	name := fmt.Sprintf("zookeeper-%d-%s", idx, n.NetworkID)
@@ -854,7 +854,7 @@ func (n *Network) ZooKeeperRunner(idx int) *runner.ZooKeeper {
 }
 
 func (n *Network) minBrokersInSync() int {
-	logger.Info("==Network===minBrokersInSync========")
+	//logger.Info("==Network===minBrokersInSync========")
 	if n.Consensus.Brokers < 2 {
 		return n.Consensus.Brokers
 	}
@@ -862,7 +862,7 @@ func (n *Network) minBrokersInSync() int {
 }
 
 func (n *Network) defaultBrokerReplication() int {
-	logger.Info("==Network===defaultBrokerReplication========")
+	//logger.Info("==Network===defaultBrokerReplication========")
 	if n.Consensus.Brokers < 3 {
 		return n.Consensus.Brokers
 	}
@@ -871,7 +871,7 @@ func (n *Network) defaultBrokerReplication() int {
 
 // BrokerRunner returns a runner for an kafka broker instance.
 func (n *Network) BrokerRunner(id int, zookeepers []string) *runner.Kafka {
-	logger.Info("==Network===BrokerRunner========")
+	//logger.Info("==Network===BrokerRunner========")
 	colorCode := n.nextColor()
 	name := fmt.Sprintf("kafka-%d-%s", id, n.NetworkID)
 
@@ -899,7 +899,7 @@ func (n *Network) BrokerRunner(id int, zookeepers []string) *runner.Kafka {
 // BrokerGroupRunner returns a runner that manages the processes that make up
 // the kafka broker network for fabric.
 func (n *Network) BrokerGroupRunner() ifrit.Runner {
-	logger.Info("==Network===BrokerGroupRunner========")
+	//logger.Info("==Network===BrokerGroupRunner========")
 	members := grouper.Members{}
 	zookeepers := []string{}
 
@@ -920,7 +920,7 @@ func (n *Network) BrokerGroupRunner() ifrit.Runner {
 // OrdererRunner returns an ifrit.Runner for the specified orderer. The runner
 // can be used to start and manage an orderer process.
 func (n *Network) OrdererRunner(o *Orderer) *ginkgomon.Runner {
-	logger.Info("==Network===OrdererRunner========")
+	//logger.Info("==Network===OrdererRunner========")
 	cmd := exec.Command(n.Components.Orderer())
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, fmt.Sprintf("FABRIC_CFG_PATH=%s", n.OrdererDir(o)))
@@ -944,7 +944,7 @@ func (n *Network) OrdererRunner(o *Orderer) *ginkgomon.Runner {
 // OrdererGroupRunner returns a runner that can be used to start and stop all
 // orderers in a network.
 func (n *Network) OrdererGroupRunner() ifrit.Runner {
-	logger.Info("==Network===OrdererGroupRunner========")
+	//logger.Info("==Network===OrdererGroupRunner========")
 	members := grouper.Members{}
 	for _, o := range n.Orderers {
 		members = append(members, grouper.Member{Name: o.ID(), Runner: n.OrdererRunner(o)})
@@ -955,7 +955,7 @@ func (n *Network) OrdererGroupRunner() ifrit.Runner {
 // PeerRunner returns an ifrit.Runner for the specified peer. The runner can be
 // used to start and manage a peer process.
 func (n *Network) PeerRunner(p *Peer) *ginkgomon.Runner {
-	logger.Info("==Network===PeerRunner========")
+	//logger.Info("==Network===PeerRunner========")
 	cmd := n.peerCommand(
 		commands.NodeStart{PeerID: p.ID()},
 		fmt.Sprintf("FABRIC_CFG_PATH=%s", n.PeerDir(p)),
@@ -973,7 +973,7 @@ func (n *Network) PeerRunner(p *Peer) *ginkgomon.Runner {
 // PeerGroupRunner returns a runner that can be used to start and stop all
 // peers in a network.
 func (n *Network) PeerGroupRunner() ifrit.Runner {
-	logger.Info("==Network===PeerGroupRunner========")
+	//logger.Info("==Network===PeerGroupRunner========")
 	members := grouper.Members{}
 	for _, p := range n.Peers {
 		members = append(members, grouper.Member{Name: p.ID(), Runner: n.PeerRunner(p)})
@@ -984,7 +984,7 @@ func (n *Network) PeerGroupRunner() ifrit.Runner {
 // NetworkGroupRunner returns a runner that can be used to start and stop an
 // entire fabric network.
 func (n *Network) NetworkGroupRunner() ifrit.Runner {
-	logger.Info("==Network===NetworkGroupRunner========")
+	//logger.Info("==Network===NetworkGroupRunner========")
 	members := grouper.Members{
 		{Name: "brokers", Runner: n.BrokerGroupRunner()},
 		{Name: "orderers", Runner: n.OrdererGroupRunner()},
@@ -994,7 +994,7 @@ func (n *Network) NetworkGroupRunner() ifrit.Runner {
 }
 
 func (n *Network) peerCommand(command Command, env ...string) *exec.Cmd {
-	logger.Info("==Network===peerCommand========")
+	//logger.Info("==Network===peerCommand========")
 	cmd := NewCommand(n.Components.Peer(), command)
 	cmd.Env = append(cmd.Env, env...)
 	if ConnectsToOrderer(command) {

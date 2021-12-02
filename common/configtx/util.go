@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package configtx
 
 import (
-	"fmt"
 	"github.com/golang/protobuf/proto"
 	cb "github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric/protos/utils"
@@ -15,7 +14,7 @@ import (
 
 // UnmarshalConfig attempts to unmarshal bytes to a *cb.Config
 func UnmarshalConfig(data []byte) (*cb.Config, error) {
-	logger.Info("==UnmarshalConfig===")
+	//logger.Info("==UnmarshalConfig===")
 	config := &cb.Config{}
 	err := proto.Unmarshal(data, config)
 	if err != nil {
@@ -26,7 +25,7 @@ func UnmarshalConfig(data []byte) (*cb.Config, error) {
 
 // UnmarshalConfigOrPanic attempts to unmarshal bytes to a *cb.Config or panics on error
 func UnmarshalConfigOrPanic(data []byte) *cb.Config {
-	logger.Info("==UnmarshalConfigOrPanic===")
+	//logger.Info("==UnmarshalConfigOrPanic===")
 	result, err := UnmarshalConfig(data)
 	if err != nil {
 		panic(err)
@@ -36,7 +35,7 @@ func UnmarshalConfigOrPanic(data []byte) *cb.Config {
 
 // UnmarshalConfigUpdate attempts to unmarshal bytes to a *cb.ConfigUpdate
 func UnmarshalConfigUpdate(data []byte) (*cb.ConfigUpdate, error) {
-	logger.Info("==UnmarshalConfigUpdate===")
+	//logger.Info("==UnmarshalConfigUpdate===")
 	configUpdate := &cb.ConfigUpdate{}
 	err := proto.Unmarshal(data, configUpdate)
 	if err != nil {
@@ -47,7 +46,7 @@ func UnmarshalConfigUpdate(data []byte) (*cb.ConfigUpdate, error) {
 
 // UnmarshalConfigUpdateOrPanic attempts to unmarshal bytes to a *cb.ConfigUpdate or panics on error
 func UnmarshalConfigUpdateOrPanic(data []byte) *cb.ConfigUpdate {
-	logger.Info("==UnmarshalConfigUpdateOrPanic===")
+	//logger.Info("==UnmarshalConfigUpdateOrPanic===")
 	result, err := UnmarshalConfigUpdate(data)
 	if err != nil {
 		panic(err)
@@ -57,7 +56,7 @@ func UnmarshalConfigUpdateOrPanic(data []byte) *cb.ConfigUpdate {
 
 // UnmarshalConfigUpdateEnvelope attempts to unmarshal bytes to a *cb.ConfigUpdate
 func UnmarshalConfigUpdateEnvelope(data []byte) (*cb.ConfigUpdateEnvelope, error) {
-	logger.Info("==UnmarshalConfigUpdateEnvelope===")
+	//logger.Info("==UnmarshalConfigUpdateEnvelope===")
 	configUpdateEnvelope := &cb.ConfigUpdateEnvelope{}
 	err := proto.Unmarshal(data, configUpdateEnvelope)
 	if err != nil {
@@ -68,7 +67,7 @@ func UnmarshalConfigUpdateEnvelope(data []byte) (*cb.ConfigUpdateEnvelope, error
 
 // UnmarshalConfigUpdateEnvelopeOrPanic attempts to unmarshal bytes to a *cb.ConfigUpdateEnvelope or panics on error
 func UnmarshalConfigUpdateEnvelopeOrPanic(data []byte) *cb.ConfigUpdateEnvelope {
-	logger.Info("==UnmarshalConfigUpdateEnvelopeOrPanic===")
+	//logger.Info("==UnmarshalConfigUpdateEnvelopeOrPanic===")
 	result, err := UnmarshalConfigUpdateEnvelope(data)
 	if err != nil {
 		panic(err)
@@ -78,7 +77,7 @@ func UnmarshalConfigUpdateEnvelopeOrPanic(data []byte) *cb.ConfigUpdateEnvelope 
 
 // UnmarshalConfigEnvelope attempts to unmarshal bytes to a *cb.ConfigEnvelope
 func UnmarshalConfigEnvelope(data []byte) (*cb.ConfigEnvelope, error) {
-	logger.Info("==UnmarshalConfigEnvelope===")
+	//logger.Info("==UnmarshalConfigEnvelope===")
 	configEnv := &cb.ConfigEnvelope{}
 	err := proto.Unmarshal(data, configEnv)
 	if err != nil {
@@ -89,7 +88,7 @@ func UnmarshalConfigEnvelope(data []byte) (*cb.ConfigEnvelope, error) {
 
 // UnmarshalConfigEnvelopeOrPanic attempts to unmarshal bytes to a *cb.ConfigEnvelope or panics on error
 func UnmarshalConfigEnvelopeOrPanic(data []byte) *cb.ConfigEnvelope {
-	logger.Info("==UnmarshalConfigEnvelopeOrPanic===")
+	//logger.Info("==UnmarshalConfigEnvelopeOrPanic===")
 	result, err := UnmarshalConfigEnvelope(data)
 	if err != nil {
 		panic(err)
@@ -99,7 +98,7 @@ func UnmarshalConfigEnvelopeOrPanic(data []byte) *cb.ConfigEnvelope {
 
 // UnmarshalConfigUpdateFromPayload unmarshals configuration update from given payload
 func UnmarshalConfigUpdateFromPayload(payload *cb.Payload) (*cb.ConfigUpdate, error) {
-	logger.Info("==UnmarshalConfigUpdateFromPayload===")
+	//logger.Info("==UnmarshalConfigUpdateFromPayload===")
 	configEnv, err := UnmarshalConfigEnvelope(payload.Data)
 	if err != nil {
 		return nil, err

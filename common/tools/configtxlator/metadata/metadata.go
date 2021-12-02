@@ -24,7 +24,6 @@ var CommitSHA string
 const ProgramName = "configtxlator"
 
 func GetVersionInfo() string {
-	logger.Info("=========GetVersionInfo=========")
 	if CommitSHA == "" {
 		CommitSHA = "development build"
 	}

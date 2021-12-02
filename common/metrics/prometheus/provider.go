@@ -7,15 +7,15 @@ SPDX-License-Identifier: Apache-2.0
 package prometheus
 
 import (
-	"fmt"
 	kitmetrics "github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/prometheus"
+	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/common/metrics"
 	prom "github.com/prometheus/client_golang/prometheus"
 )
 
 type Provider struct{}
-
+var logger = flogging.MustGetLogger("common.metrics.prometheus")
 func (p *Provider) NewCounter(o metrics.CounterOpts) metrics.Counter {
 	logger.Info("===Provider========NewCounter================")
 	return &Counter{

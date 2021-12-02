@@ -56,7 +56,7 @@ func (d *deserializeAndVerify) Identity() (Identity, error) {
 func (d *deserializeAndVerify) Verify() error {
 	logger.Info("==deserializeAndVerify==Verify=")
 	if d.deserializedIdentity == nil {
-		cauthdslLogger.Panicf("programming error, Identity must be called prior to Verify")
+		logger.Panicf("programming error, Identity must be called prior to Verify")
 	}
 	return d.deserializedIdentity.Verify(d.signedData.Data, d.signedData.Signature)
 }

@@ -21,7 +21,7 @@ import (
 func Test1(t *testing.T){
 	expression, err := govaluate.NewEvaluableExpression( "10 < 0" )
 	result, err := expression.Evaluate( nil )
-	logger.Info(result,err)
+	//logger.Info(result,err)
 }
 /*
 表达式中加入参数
@@ -33,8 +33,8 @@ func Test2(t *testing.T){
 	parameters[ "foo" ] = -1
 
 	result, err := expression.Evaluate(parameters)
-	logger.Info("result",result)
-	logger.Info("err",err)
+	//logger.Info("result",result)
+	//logger.Info("err",err)
 }
 /*
 那如何在表达式中引入复杂的数***算呢
@@ -47,8 +47,8 @@ func Test3(t *testing.T) {
 
 	result, err := expression.Evaluate(parameters)
 
-	logger.Info("result",result)
-	logger.Info("err",err)
+	//logger.Info("result",result)
+	//logger.Info("err",err)
 }
 
 /*
@@ -60,7 +60,7 @@ func Test4(t *testing.T) {
 	parameters := make ( map [ string ] interface {}, 8 )
 	parameters[ "http_response_body" ] = "service is ok"
 	result, err := expression.Evaluate(parameters)
-	logger.Info("result",result,"err",err)
+	//logger.Info("result",result,"err",err)
 }
 /*
 实数值型计算也是支持的
@@ -72,10 +72,10 @@ func Test5(t *testing.T) {
 	parameters[ "total_mem" ] = 1024
 	parameters[ "mem_used" ] = 51
 	result, err := expression.Evaluate(parameters)
-	logger.Info("result",result,"err",err) //50
+	//logger.Info("result",result,"err",err) //50
 	fmt.Printf("%T\n",result)
 	a := result.(float64)
-	logger.Info("a",a)
+	//logger.Info("a",a)
 }
 /*
 函数可以接受任意数量的参数，正确地处理嵌套函数，并且参数可以是任何类型（即使此库的任何运算符都不支持对该类型的计算
@@ -93,12 +93,12 @@ func Test6(t *testing.T) {
 	expression, _ := govaluate.NewEvaluableExpressionWithFunctions(expString, functions)
 
 	result, err := expression.Evaluate( nil )
-	logger.Info("result",result,"err",err)
+	//logger.Info("result",result,"err",err)
 }
 
 func Test7(t *testing.T) {
 	policy := []byte{18,8,18 ,6, 8 ,1 ,18, 2, 8, 0, 26, 19 ,18 ,17, 10 ,13 ,109, 97, 115, 116, 101, 114, 79 ,114, 103, 49, 77 ,83, 80 ,16 ,3}
 
 
-	logger.Info(string(policy))
+	//logger.Info(string(policy))
 }

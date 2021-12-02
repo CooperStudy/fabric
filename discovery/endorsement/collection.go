@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package endorsement
 
 import (
-	"fmt"
 	"github.com/hyperledger/fabric/common/policies"
 	"github.com/hyperledger/fabric/core/common/privdata"
 	"github.com/hyperledger/fabric/gossip/api"

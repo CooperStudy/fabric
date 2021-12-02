@@ -17,7 +17,6 @@ limitations under the License.
 package genesis
 
 import (
-	"fmt"
 	cb "github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric/protos/utils"
 )
@@ -41,13 +40,11 @@ type factory struct {
 
 // NewFactoryImpl creates a new Factory.
 func NewFactoryImpl(channelGroup *cb.ConfigGroup) Factory {
-	logger.Info("====NewFactoryImpl================")
 	return &factory{channelGroup: channelGroup}
 }
 
 // Block constructs and returns a genesis block for a given channel ID.
 func (f *factory) Block(channelID string) (*cb.Block, error) {
-	logger.Info("====factory=======Block=================")
 	payloadChannelHeader := utils.MakeChannelHeader(cb.HeaderType_CONFIG, msgVersion, channelID, epoch,"","")
 	payloadSignatureHeader := utils.MakeSignatureHeader(nil, utils.CreateNonceOrPanic())
 	utils.SetTxID(payloadChannelHeader, payloadSignatureHeader)

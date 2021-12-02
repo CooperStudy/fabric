@@ -10,7 +10,6 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"fmt"
 	"github.com/hyperledger/fabric/common/flogging"
 	"time"
 
@@ -36,7 +35,7 @@ type GRPCClient struct {
 // NewGRPCClient creates a new implementation of GRPCClient given an address
 // and client configuration
 func NewGRPCClient(config ClientConfig) (*GRPCClient, error) {
-	logger.Info("=============NewGRPCClient===========")
+	//logger.Info("=============NewGRPCClient===========")
 	client := &GRPCClient{}
 
 	// parse secure options
@@ -73,7 +72,7 @@ func NewGRPCClient(config ClientConfig) (*GRPCClient, error) {
 }
 
 func (client *GRPCClient) parseSecureOptions(opts *SecureOptions) error {
-	logger.Info("======GRPCClient=======parseSecureOptions===========")
+	//logger.Info("======GRPCClient=======parseSecureOptions===========")
 	if opts == nil || !opts.UseTLS {
 		return nil
 	}
@@ -85,7 +84,7 @@ func (client *GRPCClient) parseSecureOptions(opts *SecureOptions) error {
 		for _, certBytes := range opts.ServerRootCAs {
 			err := AddPemToCertPool(certBytes, client.tlsConfig.RootCAs)
 			if err != nil {
-				commLogger.Debugf("error adding root certificate: %v", err)
+				logger.Debugf("error adding root certificate: %v", err)
 				return errors.WithMessage(err,
 					"error adding root certificate")
 			}

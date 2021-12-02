@@ -17,7 +17,6 @@ limitations under the License.
 package rwsetutil
 
 import (
-	"fmt"
 	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/core/ledger"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/version"

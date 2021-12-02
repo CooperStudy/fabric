@@ -52,7 +52,7 @@ type Logger interface {
 
 // GetLogger returns a logger for given gossip logger name and peerID
 func GetLogger(name string, peerID string) Logger {
-	//logger.Info("===GetLogger==")
+	////logger.Info("===GetLogger==")
 	if peerID != "" && testMode {
 		name = name + "#" + peerID
 	}
@@ -72,7 +72,7 @@ func GetLogger(name string, peerID string) Logger {
 
 // SetupTestLogging sets the default log levels for gossip unit tests
 func SetupTestLogging() {
-	//logger.Info("===SetupTestLogging==")
+	////logger.Info("===SetupTestLogging==")
 	testMode = true
 	flogging.InitFromSpec(defaultTestSpec)
 }

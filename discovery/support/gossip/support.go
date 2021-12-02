@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package gossip
 
 import (
-	"fmt"
 	"github.com/hyperledger/fabric/gossip/common"
 	"github.com/hyperledger/fabric/gossip/discovery"
 	gossip2 "github.com/hyperledger/fabric/gossip/gossip"
@@ -22,21 +21,21 @@ type DiscoverySupport struct {
 
 // NewDiscoverySupport creates a new DiscoverySupport
 func NewDiscoverySupport(g gossip2.Gossip) *DiscoverySupport {
-	logger.Info("=======NewDiscoverySupport===")
+	//logger.Info("=======NewDiscoverySupport===")
 	return &DiscoverySupport{g}
 }
 
 // ChannelExists returns whether a given channel exists or not
 func (s *DiscoverySupport) ChannelExists(channel string) bool {
-	logger.Info("=======DiscoverySupport=ChannelExists===")
+	//logger.Info("=======DiscoverySupport=ChannelExists===")
 	return s.SelfChannelInfo(common.ChainID(channel)) != nil
 }
 
 // PeersOfChannel returns the NetworkMembers considered alive
 // and also subscribed to the channel given
 func (s *DiscoverySupport) PeersOfChannel(chain common.ChainID) discovery.Members {
-	logger.Info("=======DiscoverySupport=PeersOfChannel===")
-	logger.Info("====chain=======",chain)
+	//logger.Info("=======DiscoverySupport=PeersOfChannel===")
+	//logger.Info("====chain=======",chain)
 	msg := s.SelfChannelInfo(chain)
 	if msg == nil {
 		return nil
@@ -52,7 +51,7 @@ func (s *DiscoverySupport) PeersOfChannel(chain common.ChainID) discovery.Member
 
 // Peers returns the NetworkMembers considered alive
 func (s *DiscoverySupport) Peers() discovery.Members {
-	logger.Info("=======DiscoverySupport==Peers===")
+	//logger.Info("=======DiscoverySupport==Peers===")
 	peers := s.Gossip.Peers()
 	peers = append(peers, s.Gossip.SelfMembershipInfo())
 	// Return only the peers that have an external endpoint, and sanitizes the envelopes.
@@ -60,7 +59,7 @@ func (s *DiscoverySupport) Peers() discovery.Members {
 }
 
 func sanitizeEnvelope(member discovery.NetworkMember) discovery.NetworkMember {
-	logger.Info("=======sanitizeEnvelope====")
+	//logger.Info("=======sanitizeEnvelope====")
 	// Make a local copy of the member
 	returnedMember := member
 	if returnedMember.Envelope == nil {

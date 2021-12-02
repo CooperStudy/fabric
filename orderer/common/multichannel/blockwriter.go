@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package multichannel
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/golang/protobuf/proto"

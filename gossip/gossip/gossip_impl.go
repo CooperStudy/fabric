@@ -789,7 +789,7 @@ func (g *gossipServiceImpl) SelfMembershipInfo() discovery.NetworkMember {
 
 // SelfChannelInfo returns the peer's latest StateInfo message of a given channel
 func (g *gossipServiceImpl) SelfChannelInfo(chain common.ChainID) *proto.SignedGossipMessage {
-	logger.Info("====gossipServiceImpl===SelfChannelInfo=======")
+	//logger.Info("====gossipServiceImpl===SelfChannelInfo=======")
 	ch := g.chanState.getGossipChannelByChainID(chain)
 	//logger.Info("===========ch",ch)
 	/*
@@ -1153,7 +1153,7 @@ func (sa *discoverySecurityAdapter) validateAliveMsgSignature(m *proto.SignedGos
 }
 
 func (g *gossipServiceImpl) createCertStorePuller() pull.Mediator {
-	logger.Info("====gossipServiceImpl=====createCertStorePuller===")
+	//logger.Info("====gossipServiceImpl=====createCertStorePuller===")
 	conf := pull.Config{
 		MsgType:           proto.PullMsgType_IDENTITY_MSG,
 		Channel:           []byte(""),

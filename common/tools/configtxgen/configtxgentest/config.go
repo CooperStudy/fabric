@@ -14,7 +14,6 @@ import (
 )
 
 func Load(profile string) *localconfig.Profile {
-	logger.Info("===Load=")
 	devConfigDir, err := configtest.GetDevConfigDir()
 	if err != nil {
 		panic(fmt.Sprintf("failed to get dev config dir: %s", err))
@@ -23,7 +22,6 @@ func Load(profile string) *localconfig.Profile {
 }
 
 func LoadTopLevel() *localconfig.TopLevel {
-	logger.Info("===LoadTopLevel=")
 	devConfigDir, err := configtest.GetDevConfigDir()
 	if err != nil {
 		panic(fmt.Sprintf("failed to get dev config dir: %s", err))

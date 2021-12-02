@@ -45,7 +45,7 @@ type Collector struct {
 }
 
 func NewCollector(p metrics.Provider) *Collector {
-	logger.Info("===NewCollector================")
+	//logger.Info("===NewCollector================")
 	return &Collector{
 		CgoCalls:       p.NewGauge(cgoCallsGaugeOpts),
 		GoRoutines:     p.NewGauge(goRoutinesGaugeOpts),
@@ -78,7 +78,7 @@ func NewCollector(p metrics.Provider) *Collector {
 }
 
 func (c *Collector) CollectAndPublish(ticks <-chan time.Time) {
-	logger.Info("===Collector===CollectAndPublish=============")
+	//logger.Info("===Collector===CollectAndPublish=============")
 	for range ticks {
 		stats := CollectStats()
 		c.Publish(stats)
@@ -86,7 +86,7 @@ func (c *Collector) CollectAndPublish(ticks <-chan time.Time) {
 }
 
 func (c *Collector) Publish(stats Stats) {
-	logger.Info("===Collector===Publish=============")
+	//logger.Info("===Collector===Publish=============")
 	c.CgoCalls.Set(float64(stats.CgoCalls))
 	c.GoRoutines.Set(float64(stats.GoRoutines))
 	c.ThreadsCreated.Set(float64(stats.ThreadsCreated))
@@ -124,7 +124,7 @@ type Stats struct {
 }
 
 func CollectStats() Stats {
-	logger.Info("===CollectStats=============")
+	//logger.Info("===CollectStats=============")
 	stats := Stats{
 		CgoCalls:   runtime.NumCgoCall(),
 		GoRoutines: runtime.NumGoroutine(),

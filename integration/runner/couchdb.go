@@ -9,6 +9,7 @@ package runner
 import (
 	"context"
 	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"io"
 	"net"
 	"net/http"
@@ -46,10 +47,10 @@ type CouchDB struct {
 	mutex   sync.Mutex
 	stopped bool
 }
-
+var logger = flogging.MustGetLogger("integration.runner.couchdb")
 // Run runs a CouchDB container. It implements the ifrit.Runner interface
 func (c *CouchDB) Run(sigCh <-chan os.Signal, ready chan<- struct{}) error {
-	logger.Info("=====CouchDB=====Run=====")
+	//logger.Info("=====CouchDB=====Run=====")
 	if c.Image == "" {
 		c.Image = CouchDBDefaultImage
 	}
@@ -154,7 +155,7 @@ func (c *CouchDB) Run(sigCh <-chan os.Signal, ready chan<- struct{}) error {
 }
 
 func endpointReady(ctx context.Context, url string) bool {
-	logger.Info("=====endpointReady====")
+	//logger.Info("=====endpointReady====")
 	ctx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
 	defer cancel()
 
@@ -168,7 +169,7 @@ func endpointReady(ctx context.Context, url string) bool {
 }
 
 func (c *CouchDB) ready(ctx context.Context, addr string) <-chan struct{} {
-	logger.Info("=====CouchDB==ready==")
+	//logger.Info("=====CouchDB==ready==")
 	readyCh := make(chan struct{})
 	url := fmt.Sprintf("http://%s/", addr)
 	go func() {
@@ -191,7 +192,7 @@ func (c *CouchDB) ready(ctx context.Context, addr string) <-chan struct{} {
 }
 
 func (c *CouchDB) wait() <-chan error {
-	logger.Info("=====CouchDB==wait==")
+	//logger.Info("=====CouchDB==wait==")
 	exitCh := make(chan error)
 	go func() {
 		exitCode, err := c.Client.WaitContainer(c.containerID)
@@ -205,7 +206,7 @@ func (c *CouchDB) wait() <-chan error {
 }
 
 func (c *CouchDB) streamLogs(ctx context.Context) {
-	logger.Info("=====CouchDB==streamLogs==")
+	//logger.Info("=====CouchDB==streamLogs==")
 	if c.ErrorStream == nil && c.OutputStream == nil {
 		return
 	}
@@ -228,32 +229,32 @@ func (c *CouchDB) streamLogs(ctx context.Context) {
 
 // Address returns the address successfully used by the readiness check.
 func (c *CouchDB) Address() string {
-	logger.Info("=====CouchDB==Address==")
+	//logger.Info("=====CouchDB==Address==")
 	return c.address
 }
 
 // HostAddress returns the host address where this CouchDB instance is available.
 func (c *CouchDB) HostAddress() string {
-	logger.Info("=====CouchDB==HostAddress==")
+	//logger.Info("=====CouchDB==HostAddress==")
 	return c.hostAddress
 }
 
 // ContainerAddress returns the container address where this CouchDB instance
 // is available.
 func (c *CouchDB) ContainerAddress() string {
-	logger.Info("=====CouchDB==ContainerAddress==")
+	//logger.Info("=====CouchDB==ContainerAddress==")
 	return c.containerAddress
 }
 
 // ContainerID returns the container ID of this CouchDB
 func (c *CouchDB) ContainerID() string {
-	logger.Info("=====CouchDB==ContainerID==")
+	//logger.Info("=====CouchDB==ContainerID==")
 	return c.containerID
 }
 
 // Start starts the CouchDB container using an ifrit runner
 func (c *CouchDB) Start() error {
-	logger.Info("=====CouchDB==Start==")
+	//logger.Info("=====CouchDB==Start==")
 	p := ifrit.Invoke(c)
 
 	select {
@@ -266,7 +267,7 @@ func (c *CouchDB) Start() error {
 
 // Stop stops and removes the CouchDB container
 func (c *CouchDB) Stop() error {
-	logger.Info("=====CouchDB==Stop==")
+	//logger.Info("=====CouchDB==Stop==")
 	c.mutex.Lock()
 	if c.stopped {
 		c.mutex.Unlock()

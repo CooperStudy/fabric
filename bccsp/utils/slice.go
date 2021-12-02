@@ -16,11 +16,10 @@ limitations under the License.
 
 package utils
 
-import "fmt"
 
 // Clone clones the passed slice
 func Clone(src []byte) []byte {
-	logger.Info("===Clone======")
+	//logger.Info("===Clone======")
 	clone := make([]byte, len(src))
 	copy(clone, src)
 

@@ -80,9 +80,9 @@ func TestPrintf(t *testing.T) {
 	slogger := logger.Sugar()
 
 	slogger.Debugf("debug message age is %d, agender is %s", 19, "man")
-	slogger.Info("Info() uses sprint")
-	slogger.Infof("Infof() uses %s", "sprintf")
-	slogger.Infow("Infow() allows tags", "name", "Legolas", "type", 1)
+	s//logger.Info("Info() uses sprint")
+	s//logger.Infof("Infof() uses %s", "sprintf")
+	s//logger.Infow("Infow() allows tags", "name", "Legolas", "type", 1)
 }
 /*
  把日志吸入文件

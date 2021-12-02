@@ -102,7 +102,7 @@ type bccspmsp struct {
 // certificates and keypairs
 func newBccspMsp(version MSPVersion) (MSP, error) {
 	//logger.Info("==newBccspMsp==")
-	mspLogger.Debugf("Creating BCCSP-based MSP instance")
+	logger.Debugf("Creating BCCSP-based MSP instance")
 
 	bccsp := factory.GetDefault()
 	theMsp := &bccspmsp{}
@@ -188,7 +188,7 @@ func (msp *bccspmsp) getSigningIdentityFromConf(sidInfo *m.SigningIdentityInfo) 
 	privKey, err := msp.bccsp.GetKey(pubKey.SKI())
 	// Less Secure: Attempt to import Private Key from KeyInfo, if BCCSP was not able to find the key
 	if err != nil {
-		mspLogger.Debugf("Could not find SKI [%s], trying KeyMaterial field: %+v\n", hex.EncodeToString(pubKey.SKI()), err)
+		logger.Debugf("Could not find SKI [%s], trying KeyMaterial field: %+v\n", hex.EncodeToString(pubKey.SKI()), err)
 		if sidInfo.PrivateSigner == nil || sidInfo.PrivateSigner.KeyMaterial == nil {
 			return nil, errors.New("KeyMaterial not found in SigningIdentityInfo")
 		}
@@ -227,7 +227,7 @@ func (msp *bccspmsp) Setup(conf1 *m.MSPConfig) error {
 
 	// set the name for this msp
 	msp.name = conf.Name
-	mspLogger.Debugf("Setting up MSP instance %s", msp.name)
+	logger.Debugf("Setting up MSP instance %s", msp.name)
 
 	// setup
 	return msp.internalSetupFunc(conf)
@@ -267,7 +267,7 @@ func (msp *bccspmsp) GetTLSIntermediateCerts() [][]byte {
 // default signing identity for this MSP (if any)
 func (msp *bccspmsp) GetDefaultSigningIdentity() (SigningIdentity, error) {
 	//logger.Info("===bccspmsp==GetDefaultSigningIdentity==")
-	mspLogger.Debugf("Obtaining default signing identity")
+	logger.Debugf("Obtaining default signing identity")
 
 	if msp.signer == nil {
 		return nil, errors.New("this MSP does not possess a valid default signing identity")
@@ -291,7 +291,7 @@ func (msp *bccspmsp) GetSigningIdentity(identifier *IdentityIdentifier) (Signing
 // error otherwise
 func (msp *bccspmsp) Validate(id Identity) error {
 	//logger.Info("===bccspmsp==Validate==")
-	mspLogger.Debugf("MSP %s validating identity", msp.name)
+	logger.Debugf("MSP %s validating identity", msp.name)
 
 	switch id := id.(type) {
 	// If this identity is of this specific type,
@@ -315,7 +315,7 @@ func (msp *bccspmsp) hasOURole(id Identity, mspRole m.MSPRole_MSPRoleType) error
 		return errors.New("NodeOUs not activated. Cannot tell apart identities.")
 	}
 
-	mspLogger.Debugf("MSP %s checking if the identity is a client", msp.name)
+	logger.Debugf("MSP %s checking if the identity is a client", msp.name)
 
 	switch id := id.(type) {
 	// If this identity is of this specific type,
@@ -353,7 +353,7 @@ func (msp *bccspmsp) hasOURoleInternal(id *identity, mspRole m.MSPRole_MSPRoleTy
 // representation of a SerializedIdentity struct
 func (msp *bccspmsp) DeserializeIdentity(serializedID []byte) (Identity, error) {
 //	logger.Info("===bccspmsp==DeserializeIdentity==")
-	mspLogger.Debug("Obtaining identity")
+	logger.Debug("Obtaining identity")
 
 	// We first deserialize to a SerializedIdentity to get the MSP ID
 	sId := &m.SerializedIdentity{}
@@ -476,10 +476,10 @@ func (msp *bccspmsp) satisfiesPrincipalInternalPreV13(id Identity, principal *m.
 		case m.MSPRole_MEMBER:
 			// in the case of member, we simply check
 			// whether this identity is valid for the MSP
-			mspLogger.Debugf("Checking if identity satisfies MEMBER role for %s", msp.name)
+			logger.Debugf("Checking if identity satisfies MEMBER role for %s", msp.name)
 			return msp.Validate(id)
 		case m.MSPRole_ADMIN:
-			mspLogger.Debugf("Checking if identity satisfies ADMIN role for %s", msp.name)
+			logger.Debugf("Checking if identity satisfies ADMIN role for %s", msp.name)
 			// in the case of admin, we check that the
 			// id is exactly one of our admins
 			for _, admincert := range msp.admins {
@@ -494,7 +494,7 @@ func (msp *bccspmsp) satisfiesPrincipalInternalPreV13(id Identity, principal *m.
 		case m.MSPRole_CLIENT:
 			fallthrough
 		case m.MSPRole_PEER:
-			mspLogger.Debugf("Checking if identity satisfies role [%s] for %s", m.MSPRole_MSPRoleType_name[int32(mspRole.Role)], msp.name)
+			logger.Debugf("Checking if identity satisfies role [%s] for %s", m.MSPRole_MSPRoleType_name[int32(mspRole.Role)], msp.name)
 			if err := msp.Validate(id); err != nil {
 				return errors.Wrapf(err, "The identity is not valid under this MSP [%s]", msp.name)
 			}
@@ -588,7 +588,7 @@ func (msp *bccspmsp) satisfiesPrincipalInternalV13(id Identity, principal *m.MSP
 // getCertificationChain returns the certification chain of the passed identity within this msp
 func (msp *bccspmsp) getCertificationChain(id Identity) ([]*x509.Certificate, error) {
 	//logger.Info("===bccspmsp====getCertificationChain==")
-	mspLogger.Debugf("MSP %s getting certification chain", msp.name)
+	logger.Debugf("MSP %s getting certification chain", msp.name)
 
 	switch id := id.(type) {
 	// If this identity is of this specific type,

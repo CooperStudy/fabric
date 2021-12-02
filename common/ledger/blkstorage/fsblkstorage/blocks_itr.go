@@ -17,7 +17,6 @@ limitations under the License.
 package fsblkstorage
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/hyperledger/fabric/common/ledger"

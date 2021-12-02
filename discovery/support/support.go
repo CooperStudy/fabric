@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package support
 
 import (
-	"fmt"
 	"github.com/hyperledger/fabric/discovery"
 )
 
@@ -28,7 +27,6 @@ func NewDiscoverySupport(
 	config discovery.ConfigSupport,
 	sequence discovery.ConfigSequenceSupport,
 ) *DiscoverySupport {
-	logger.Info("=======NewDiscoverySupport====")
 	return &DiscoverySupport{
 		AccessControlSupport:  access,
 		GossipSupport:         gossip,

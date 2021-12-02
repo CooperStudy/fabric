@@ -8,13 +8,14 @@ package sanitycheck
 
 import (
 	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 
 	"github.com/golang/protobuf/proto"
 	newchannelconfig "github.com/hyperledger/fabric/common/channelconfig"
 	cb "github.com/hyperledger/fabric/protos/common"
 	mspprotos "github.com/hyperledger/fabric/protos/msp"
 )
-
+var logger = flogging.MustGetLogger("common.tools.configtxlator.sanitycheck")
 type Messages struct {
 	GeneralErrors   []string          `json:"general_errors"`
 	ElementWarnings []*ElementMessage `json:"element_warnings"`

@@ -8,8 +8,6 @@ package idemixca
 
 import (
 	"crypto/ecdsa"
-	"fmt"
-
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-amcl/amcl/FP256BN"
 	"github.com/hyperledger/fabric/idemix"
@@ -26,7 +24,7 @@ import (
 // AttributeNameRevocationHandle contains the revocation handle, which can be used to revoke this user
 // Generated keys are serialized to bytes.
 func GenerateIssuerKey() ([]byte, []byte, error) {
-	logger.Info("====GenerateIssuerKey========")
+	//logger.Info("====GenerateIssuerKey========")
 	rng, err := idemix.GetRand()
 	if err != nil {
 		return nil, nil, err
@@ -45,7 +43,7 @@ func GenerateIssuerKey() ([]byte, []byte, error) {
 // It generates a fresh user secret and issues a credential
 // with four attributes (described above) using the CA's key pair.
 func GenerateSignerConfig(roleMask int, ouString string, enrollmentId string, revocationHandle int, key *idemix.IssuerKey, revKey *ecdsa.PrivateKey) ([]byte, error) {
-	logger.Info("====GenerateSignerConfig========")
+	//logger.Info("====GenerateSignerConfig========")
 	attrs := make([]*FP256BN.BIG, 4)
 
 	if ouString == "" {

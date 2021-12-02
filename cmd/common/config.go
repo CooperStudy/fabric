@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package common
 
 import (
-	"fmt"
 	"io/ioutil"
 
 	"github.com/hyperledger/fabric/cmd/common/comm"

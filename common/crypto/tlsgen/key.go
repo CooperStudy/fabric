@@ -15,7 +15,6 @@ import (
 	"crypto/x509/pkix"
 	"encoding/base64"
 	"encoding/pem"
-	"fmt"
 	"math/big"
 	"net"
 	"time"

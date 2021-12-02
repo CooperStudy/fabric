@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package multichannel
 
 import (
-	"fmt"
 	"github.com/hyperledger/fabric/common/channelconfig"
 	"github.com/hyperledger/fabric/common/crypto"
 	"github.com/hyperledger/fabric/common/ledger/blockledger"

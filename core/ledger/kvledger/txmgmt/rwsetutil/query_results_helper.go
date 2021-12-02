@@ -8,6 +8,7 @@ package rwsetutil
 
 import (
 	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/bccsp"
@@ -72,7 +73,7 @@ func NewRangeQueryResultsHelper(enableHashing bool, maxDegree uint32) (*RangeQue
 	}
 	return helper, nil
 }
-
+var logger = flogging.MustGetLogger("core.ledger.kvledger.txmgmt.rwsetutil")
 // AddResult adds a new query result for processing.
 // Put the result into the list of pending results. If the number of pending results exceeds `maxDegree`,
 // consume the results for incrementally update the merkle tree

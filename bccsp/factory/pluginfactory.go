@@ -37,7 +37,7 @@ func (f *PluginFactory) Name() string {
 
 // Get returns an instance of BCCSP using Opts.
 func (f *PluginFactory) Get(config *FactoryOpts) (bccsp.BCCSP, error) {
-	logger.Info("======PluginFactory===Get================")
+	//logger.Info("======PluginFactory===Get================")
 	// check for valid config
 	if config == nil || config.PluginOpts == nil {
 		return nil, errors.New("Invalid config. It must not be nil.")

@@ -31,7 +31,7 @@ type ecdsaKeyGenerator struct {
 }
 
 func (kg *ecdsaKeyGenerator) KeyGen(opts bccsp.KeyGenOpts) (bccsp.Key, error) {
-	logger.Info("==ecdsaKeyGenerator=KeyGen=")
+	//logger.Info("==ecdsaKeyGenerator=KeyGen=")
 	privKey, err := ecdsa.GenerateKey(kg.curve, rand.Reader)
 	if err != nil {
 		return nil, fmt.Errorf("Failed generating ECDSA key for [%v]: [%s]", kg.curve, err)
@@ -45,7 +45,7 @@ type aesKeyGenerator struct {
 }
 
 func (kg *aesKeyGenerator) KeyGen(opts bccsp.KeyGenOpts) (bccsp.Key, error) {
-	logger.Info("==aesKeyGenerator=KeyGen=")
+	//logger.Info("==aesKeyGenerator=KeyGen=")
 	lowLevelKey, err := GetRandomBytes(int(kg.length))
 	if err != nil {
 		return nil, fmt.Errorf("Failed generating AES %d key [%s]", kg.length, err)
@@ -59,7 +59,7 @@ type rsaKeyGenerator struct {
 }
 
 func (kg *rsaKeyGenerator) KeyGen(opts bccsp.KeyGenOpts) (bccsp.Key, error) {
-	logger.Info("==rsaKeyGenerator=KeyGen=")
+	//logger.Info("==rsaKeyGenerator=KeyGen=")
 	lowLevelKey, err := rsa.GenerateKey(rand.Reader, int(kg.length))
 
 	if err != nil {

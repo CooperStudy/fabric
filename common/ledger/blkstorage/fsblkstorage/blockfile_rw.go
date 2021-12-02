@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package fsblkstorage
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/pkg/errors"

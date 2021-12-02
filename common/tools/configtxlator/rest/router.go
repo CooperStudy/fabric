@@ -17,7 +17,6 @@ limitations under the License.
 package rest
 
 import (
-	"fmt"
 	"github.com/gorilla/mux"
 )
 

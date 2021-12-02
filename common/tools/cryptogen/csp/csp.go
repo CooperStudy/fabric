@@ -10,7 +10,6 @@ import (
 	"crypto/ecdsa"
 	"crypto/x509"
 	"encoding/pem"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -24,7 +23,6 @@ import (
 
 // LoadPrivateKey loads a private key from file in keystorePath
 func LoadPrivateKey(keystorePath string) (bccsp.Key, crypto.Signer, error) {
-	logger.Info("====LoadPrivateKey=========")
 	var err error
 	var priv bccsp.Key
 	var s crypto.Signer
@@ -85,7 +83,6 @@ func GeneratePrivateKey(keystorePath string) (bccsp.Key,
 	crypto.Signer, error) {
 
 
-	logger.Info("====GeneratePrivateKey=========")
 	var err error
 	var priv bccsp.Key
 	var s crypto.Signer
@@ -114,7 +111,6 @@ func GeneratePrivateKey(keystorePath string) (bccsp.Key,
 }
 
 func GetECPublicKey(priv bccsp.Key) (*ecdsa.PublicKey, error) {
-	logger.Info("====GetECPublicKey=========")
 	// get the public key
 	pubKey, err := priv.PublicKey()
 	if err != nil {

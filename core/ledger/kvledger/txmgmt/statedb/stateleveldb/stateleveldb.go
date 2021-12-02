@@ -7,8 +7,6 @@ package stateleveldb
 
 import (
 	"bytes"
-	"fmt"
-
 	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/common/ledger/util/leveldbhelper"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb"

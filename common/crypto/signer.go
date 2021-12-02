@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package crypto
 
 import (
-	"fmt"
 	cb "github.com/hyperledger/fabric/protos/common"
 )
 

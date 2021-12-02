@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package deliver
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/hyperledger/fabric/protos/common"

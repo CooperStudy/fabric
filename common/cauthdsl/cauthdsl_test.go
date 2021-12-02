@@ -353,9 +353,9 @@ func TestDeserializeIdentityError(t *testing.T) {
 
 	logger, recorder := floggingtest.NewTestLogger(t)
 	defer func(old *flogging.FabricLogger) {
-		cauthdslLogger = old
-	}(cauthdslLogger)
-	cauthdslLogger = logger
+		logger = old
+	}(logger)
+	logger = logger
 
 	// Call
 	signedData, used := toSignedData([][]byte{nil}, [][]byte{nil}, [][]byte{nil}, &mockDeserializer{fail: errors.New("myError")})

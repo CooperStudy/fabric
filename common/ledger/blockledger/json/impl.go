@@ -27,7 +27,7 @@ var closedChan chan struct{}
 var fileLock sync.Mutex
 
 func init() {
-	logger.Info("====init======")
+	//logger.Info("====init======")
 	closedChan = make(chan struct{})
 	close(closedChan)
 }
@@ -54,7 +54,7 @@ type jsonLedger struct {
 
 // readBlock returns the block or nil, and whether the block was found or not, (nil,true) generally indicates an irrecoverable problem
 func (jl *jsonLedger) readBlock(number uint64) (*cb.Block, bool) {
-	logger.Info("====jsonLedger===readBlock===")
+	//logger.Info("====jsonLedger===readBlock===")
 	name := jl.blockFilename(number)
 
 	// In case of ongoing write, reading the block file may result in `unexpected EOF` error.
@@ -79,7 +79,7 @@ func (jl *jsonLedger) readBlock(number uint64) (*cb.Block, bool) {
 // Next blocks until there is a new block available, or returns an error if the
 // next block is no longer retrievable
 func (cu *cursor) Next() (*cb.Block, cb.Status) {
-	logger.Info("====cursor===Next===")
+	//logger.Info("====cursor===Next===")
 	// This only loops once, as signal reading
 	// indicates the new block has been written
 	for {
@@ -106,7 +106,7 @@ func (cu *cursor) Close() {}
 // Iterator returns an Iterator, as specified by a ab.SeekInfo message, and its
 // starting block number
 func (jl *jsonLedger) Iterator(startPosition *ab.SeekPosition) (blockledger.Iterator, uint64) {
-	logger.Info("====jsonLedger===Iterator===")
+	//logger.Info("====jsonLedger===Iterator===")
 	switch start := startPosition.Type.(type) {
 	case *ab.SeekPosition_Oldest:
 		return &cursor{jl: jl, blockNumber: 0}, 0
@@ -125,13 +125,13 @@ func (jl *jsonLedger) Iterator(startPosition *ab.SeekPosition) (blockledger.Iter
 
 // Height returns the number of blocks on the ledger
 func (jl *jsonLedger) Height() uint64 {
-	logger.Info("====jsonLedger===Height===")
+	//logger.Info("====jsonLedger===Height===")
 	return jl.height
 }
 
 // Append appends a new block to the ledger
 func (jl *jsonLedger) Append(block *cb.Block) error {
-	logger.Info("====jsonLedger===Append===")
+	//logger.Info("====jsonLedger===Append===")
 	if block.Header.Number != jl.height {
 		return errors.Errorf("block number should have been %d but was %d", jl.height, block.Header.Number)
 	}
@@ -154,7 +154,7 @@ func (jl *jsonLedger) Append(block *cb.Block) error {
 
 // writeBlock commits a block to disk
 func (jl *jsonLedger) writeBlock(block *cb.Block) {
-	logger.Info("====jsonLedger===writeBlock===")
+	//logger.Info("====jsonLedger===writeBlock===")
 	name := jl.blockFilename(block.Header.Number)
 
 	fileLock.Lock()
@@ -176,6 +176,6 @@ func (jl *jsonLedger) writeBlock(block *cb.Block) {
 // blockFilename returns the fully qualified path to where a block
 // of a given number should be stored on disk
 func (jl *jsonLedger) blockFilename(number uint64) string {
-	logger.Info("====jsonLedger===blockFilename===")
+	//logger.Info("====jsonLedger===blockFilename===")
 	return filepath.Join(jl.directory, fmt.Sprintf(blockFileFormatString, number))
 }

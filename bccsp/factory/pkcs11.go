@@ -36,7 +36,7 @@ type FactoryOpts struct {
 // some defaults will get used
 // Error is returned only if defaultBCCSP cannot be found
 func InitFactories(config *FactoryOpts) error {
-	logger.Info("=========InitFactories================")
+	//logger.Info("=========InitFactories================")
 	factoriesInitOnce.Do(func() {
 		setFactories(config)
 	})
@@ -45,7 +45,7 @@ func InitFactories(config *FactoryOpts) error {
 }
 
 func setFactories(config *FactoryOpts) error {
-	logger.Info("=========setFactories================")
+	//logger.Info("=========setFactories================")
 	// Take some precautions on default opts
 	if config == nil {
 		config = GetDefaultOpts()
@@ -100,7 +100,7 @@ func setFactories(config *FactoryOpts) error {
 
 // GetBCCSPFromOpts returns a BCCSP created according to the options passed in input.
 func GetBCCSPFromOpts(config *FactoryOpts) (bccsp.BCCSP, error) {
-	logger.Info("=========GetBCCSPFromOpts================")
+	//logger.Info("=========GetBCCSPFromOpts================")
 	var f BCCSPFactory
 	switch config.ProviderName {
 	case "SW":

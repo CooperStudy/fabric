@@ -8,8 +8,6 @@ package discovery
 
 import (
 	"context"
-	"fmt"
-
 	"github.com/hyperledger/fabric/cmd/common"
 	"github.com/hyperledger/fabric/cmd/common/comm"
 	"github.com/hyperledger/fabric/cmd/common/signer"

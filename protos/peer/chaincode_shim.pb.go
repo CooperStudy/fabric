@@ -3,7 +3,10 @@
 
 package peer // import "github.com/hyperledger/fabric/protos/peer"
 
-import proto "github.com/golang/protobuf/proto"
+import (
+	proto "github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/flogging"
+)
 import fmt "fmt"
 import math "math"
 import timestamp "github.com/golang/protobuf/ptypes/timestamp"
@@ -23,7 +26,7 @@ var _ = math.Inf
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
-
+var logger = flogging.MustGetLogger("protos.peer")
 type ChaincodeMessage_Type int32
 
 const (

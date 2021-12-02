@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package acl
 
 import (
-	"fmt"
 	"github.com/hyperledger/fabric/common/channelconfig"
 	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/common/policies"

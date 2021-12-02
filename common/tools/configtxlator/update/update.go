@@ -19,11 +19,12 @@ package update
 import (
 	"bytes"
 	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 
 	"github.com/golang/protobuf/proto"
 	cb "github.com/hyperledger/fabric/protos/common"
 )
-
+var logger = flogging.MustGetLogger("common.tools.configtxlator.update")
 func computePoliciesMapUpdate(original, updated map[string]*cb.ConfigPolicy) (readSet, writeSet, sameSet map[string]*cb.ConfigPolicy, updatedMembers bool) {
 	logger.Info("========computePoliciesMapUpdate========")
 	readSet = make(map[string]*cb.ConfigPolicy)

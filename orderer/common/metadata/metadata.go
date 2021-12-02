@@ -24,7 +24,6 @@ var Version string
 const ProgramName = "orderer"
 
 func GetVersionInfo() string {
-	logger.Info("==GetVersionInfo==")
 	Version = common.Version
 	if Version == "" {
 		Version = "development build"

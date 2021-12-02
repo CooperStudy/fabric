@@ -8,7 +8,6 @@ package discovery
 
 import (
 	"encoding/hex"
-	"fmt"
 	"sync"
 
 	"github.com/hyperledger/fabric/common/util"

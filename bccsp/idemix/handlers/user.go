@@ -21,12 +21,12 @@ type userSecretKey struct {
 }
 
 func NewUserSecretKey(sk Big, exportable bool) *userSecretKey {
-	logger.Info("===NewUserSecretKey=======")
+	//logger.Info("===NewUserSecretKey=======")
 	return &userSecretKey{sk: sk, exportable: exportable}
 }
 
 func (k *userSecretKey) Bytes() ([]byte, error) {
-	logger.Info("==userSecretKey=Bytes=======")
+	//logger.Info("==userSecretKey=Bytes=======")
 	if k.exportable {
 		return k.sk.Bytes()
 	}
@@ -35,7 +35,7 @@ func (k *userSecretKey) Bytes() ([]byte, error) {
 }
 
 func (k *userSecretKey) SKI() []byte {
-	logger.Info("==userSecretKey=SKI=======")
+	//logger.Info("==userSecretKey=SKI=======")
 	raw, err := k.sk.Bytes()
 	if err != nil {
 		return nil
@@ -46,17 +46,17 @@ func (k *userSecretKey) SKI() []byte {
 }
 
 func (*userSecretKey) Symmetric() bool {
-	logger.Info("==userSecretKey=Symmetric=======")
+	//logger.Info("==userSecretKey=Symmetric=======")
 	return true
 }
 
 func (*userSecretKey) Private() bool {
-	logger.Info("==userSecretKey=Private=======")
+	//logger.Info("==userSecretKey=Private=======")
 	return true
 }
 
 func (k *userSecretKey) PublicKey() (bccsp.Key, error) {
-	logger.Info("==userSecretKey=PublicKey=======")
+	//logger.Info("==userSecretKey=PublicKey=======")
 	return nil, errors.New("cannot call this method on a symmetric key")
 }
 
@@ -69,7 +69,7 @@ type UserKeyGen struct {
 }
 
 func (g *UserKeyGen) KeyGen(opts bccsp.KeyGenOpts) (bccsp.Key, error) {
-	logger.Info("==UserKeyGen=KeyGen=======")
+	//logger.Info("==UserKeyGen=KeyGen=======")
 	sk, err := g.User.NewKey()
 	if err != nil {
 		return nil, err
@@ -88,7 +88,7 @@ type UserKeyImporter struct {
 }
 
 func (i *UserKeyImporter) KeyImport(raw interface{}, opts bccsp.KeyImportOpts) (k bccsp.Key, err error) {
-	logger.Info("==UserKeyImporter=KeyImport=======")
+	//logger.Info("==UserKeyImporter=KeyImport=======")
 	der, ok := raw.([]byte)
 	if !ok {
 		return nil, errors.New("invalid raw, expected byte array")

@@ -17,7 +17,6 @@ limitations under the License.
 package fsblkstorage
 
 import (
-	"fmt"
 	"github.com/hyperledger/fabric/common/ledger/blkstorage"
 	"github.com/hyperledger/fabric/common/ledger/util"
 	"github.com/hyperledger/fabric/common/ledger/util/leveldbhelper"
@@ -32,14 +31,14 @@ type FsBlockstoreProvider struct {
 
 // NewProvider constructs a filesystem based block store provider
 func NewProvider(conf *Conf, indexConfig *blkstorage.IndexConfig) blkstorage.BlockStoreProvider {
-	logger.Info("=====NewProvider=========")
+	//logger.Info("=====NewProvider=========")
 	p := leveldbhelper.NewProvider(&leveldbhelper.Conf{DBPath: conf.getIndexDir()})
 	return &FsBlockstoreProvider{conf, indexConfig, p}
 }
 
 // CreateBlockStore simply calls OpenBlockStore
 func (p *FsBlockstoreProvider) CreateBlockStore(ledgerid string) (blkstorage.BlockStore, error) {
-	logger.Info("=====FsBlockstoreProvider===CreateBlockStore======")
+	//logger.Info("=====FsBlockstoreProvider===CreateBlockStore======")
 	return p.OpenBlockStore(ledgerid)
 }
 
@@ -47,28 +46,28 @@ func (p *FsBlockstoreProvider) CreateBlockStore(ledgerid string) (blkstorage.Blo
 // If a blockstore is not existing, this method creates one
 // This method should be invoked only once for a particular ledgerid
 func (p *FsBlockstoreProvider) OpenBlockStore(ledgerid string) (blkstorage.BlockStore, error) {
-	logger.Info("=====FsBlockstoreProvider===OpenBlockStore======")
-	logger.Info("=========ledgerid========",ledgerid)//mychannel
-	logger.Info("============== p.leveldbProvider.GetDBHandle(ledgerid)===========================")
+	//logger.Info("=====FsBlockstoreProvider===OpenBlockStore======")
+	//logger.Info("=========ledgerid========",ledgerid)//mychannel
+	//logger.Info("============== p.leveldbProvider.GetDBHandle(ledgerid)===========================")
 	indexStoreHandle := p.leveldbProvider.GetDBHandle(ledgerid)
 	return newFsBlockStore(ledgerid, p.conf, p.indexConfig, indexStoreHandle), nil
 }
 
 // Exists tells whether the BlockStore with given id exists
 func (p *FsBlockstoreProvider) Exists(ledgerid string) (bool, error) {
-	logger.Info("=====FsBlockstoreProvider===Exists======")
+	//logger.Info("=====FsBlockstoreProvider===Exists======")
 	exists, _, err := util.FileExists(p.conf.getLedgerBlockDir(ledgerid))
 	return exists, err
 }
 
 // List lists the ids of the existing ledgers
 func (p *FsBlockstoreProvider) List() ([]string, error) {
-	logger.Info("=====FsBlockstoreProvider===List======")
+	//logger.Info("=====FsBlockstoreProvider===List======")
 	return util.ListSubdirs(p.conf.getChainsDir())
 }
 
 // Close closes the FsBlockstoreProvider
 func (p *FsBlockstoreProvider) Close() {
-	logger.Info("=====FsBlockstoreProvider===Close======")
+	//logger.Info("=====FsBlockstoreProvider===Close======")
 	p.leveldbProvider.Close()
 }

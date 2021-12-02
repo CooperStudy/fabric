@@ -33,13 +33,13 @@ type ecdsaPrivateKey struct {
 // Bytes converts this key to its byte representation,
 // if this operation is allowed.
 func (k *ecdsaPrivateKey) Bytes() ([]byte, error) {
-	logger.Info("===ecdsaPrivateKey==Bytes===")
+	//logger.Info("===ecdsaPrivateKey==Bytes===")
 	return nil, errors.New("Not supported.")
 }
 
 // SKI returns the subject key identifier of this key.
 func (k *ecdsaPrivateKey) SKI() []byte {
-	logger.Info("===ecdsaPrivateKey==SKI===")
+	//logger.Info("===ecdsaPrivateKey==SKI===")
 	if k.privKey == nil {
 		return nil
 	}
@@ -56,21 +56,21 @@ func (k *ecdsaPrivateKey) SKI() []byte {
 // Symmetric returns true if this key is a symmetric key,
 // false if this key is asymmetric
 func (k *ecdsaPrivateKey) Symmetric() bool {
-	logger.Info("===ecdsaPrivateKey==Symmetric===")
+	//logger.Info("===ecdsaPrivateKey==Symmetric===")
 	return false
 }
 
 // Private returns true if this key is a private key,
 // false otherwise.
 func (k *ecdsaPrivateKey) Private() bool {
-	logger.Info("===ecdsaPrivateKey==Private===")
+	//logger.Info("===ecdsaPrivateKey==Private===")
 	return true
 }
 
 // PublicKey returns the corresponding public key part of an asymmetric public/private key pair.
 // This method returns an error in symmetric key schemes.
 func (k *ecdsaPrivateKey) PublicKey() (bccsp.Key, error) {
-	logger.Info("===ecdsaPrivateKey==PublicKey===")
+	//logger.Info("===ecdsaPrivateKey==PublicKey===")
 	return &ecdsaPublicKey{&k.privKey.PublicKey}, nil
 }
 
@@ -81,7 +81,7 @@ type ecdsaPublicKey struct {
 // Bytes converts this key to its byte representation,
 // if this operation is allowed.
 func (k *ecdsaPublicKey) Bytes() (raw []byte, err error) {
-	logger.Info("===ecdsaPublicKey==Bytes===")
+	//logger.Info("===ecdsaPublicKey==Bytes===")
 	raw, err = x509.MarshalPKIXPublicKey(k.pubKey)
 	if err != nil {
 		return nil, fmt.Errorf("Failed marshalling key [%s]", err)
@@ -91,7 +91,7 @@ func (k *ecdsaPublicKey) Bytes() (raw []byte, err error) {
 
 // SKI returns the subject key identifier of this key.
 func (k *ecdsaPublicKey) SKI() []byte {
-	logger.Info("===ecdsaPublicKey==SKI===")
+	//logger.Info("===ecdsaPublicKey==SKI===")
 	if k.pubKey == nil {
 		return nil
 	}
@@ -108,20 +108,20 @@ func (k *ecdsaPublicKey) SKI() []byte {
 // Symmetric returns true if this key is a symmetric key,
 // false if this key is asymmetric
 func (k *ecdsaPublicKey) Symmetric() bool {
-	logger.Info("===ecdsaPublicKey==Symmetric===")
+	//logger.Info("===ecdsaPublicKey==Symmetric===")
 	return false
 }
 
 // Private returns true if this key is a private key,
 // false otherwise.
 func (k *ecdsaPublicKey) Private() bool {
-	logger.Info("===ecdsaPublicKey==Private===")
+	//logger.Info("===ecdsaPublicKey==Private===")
 	return false
 }
 
 // PublicKey returns the corresponding public key part of an asymmetric public/private key pair.
 // This method returns an error in symmetric key schemes.
 func (k *ecdsaPublicKey) PublicKey() (bccsp.Key, error) {
-	logger.Info("===ecdsaPublicKey==PublicKey===")
+	//logger.Info("===ecdsaPublicKey==PublicKey===")
 	return k, nil
 }

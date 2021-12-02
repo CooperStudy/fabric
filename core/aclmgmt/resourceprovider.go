@@ -98,7 +98,7 @@ func (rp *aclmgmtPolicyProviderImpl) GetPolicyName(resName string) string {
 //as a provider with aclmgmt
 func (rp *aclmgmtPolicyProviderImpl) CheckACL(polName string, idinfo interface{}) error {
 	logger.Info("===aclmgmtPolicyProviderImpl==CheckACL=====")
-	aclLogger.Debugf("acl check(%s)", polName)
+	logger.Debugf("acl check(%s)", polName)
 
 	//we will implement other identifiers. In the end we just need a SignedData
 	var sd []*common.SignedData
@@ -173,10 +173,10 @@ func (rp *resourceProvider) CheckACL(resName string, channelID string, idinfo in
 		pp := &aclmgmtPolicyProviderImpl{&policyEvaluatorImpl{resCfg}}
 		policyName := pp.GetPolicyName(resName)
 		if policyName != "" {
-			aclLogger.Debugf("acl policy %s found in config for resource %s", policyName, resName)
+			logger.Debugf("acl policy %s found in config for resource %s", policyName, resName)
 			return pp.CheckACL(policyName, idinfo)
 		}
-		aclLogger.Debugf("acl policy not found in config for resource %s", resName)
+		logger.Debugf("acl policy not found in config for resource %s", resName)
 	}
 
 	return rp.defaultProvider.CheckACL(resName, channelID, idinfo)

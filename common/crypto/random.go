@@ -18,7 +18,7 @@ package crypto
 
 import (
 	"crypto/rand"
-	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 
 	"github.com/pkg/errors"
 )
@@ -27,7 +27,7 @@ const (
 	// NonceSize is the default NonceSize
 	NonceSize = 24
 )
-
+var logger = flogging.MustGetLogger("common.crypto")
 // GetRandomBytes returns len random looking bytes
 func GetRandomBytes(len int) ([]byte, error) {
 	logger.Info("======GetRandomBytes===========")

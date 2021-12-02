@@ -10,6 +10,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"math/rand"
 	"time"
 
@@ -29,7 +30,7 @@ type Client struct {
 	createConnection Dialer
 	signRequest      Signer
 }
-
+var logger = flogging.MustGetLogger("discovery.client.client.go")
 // NewRequest creates a new request
 func NewRequest() *Request {
 	logger.Info("========NewRequest==========")

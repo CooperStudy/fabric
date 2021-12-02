@@ -3,7 +3,10 @@
 
 package discovery // import "github.com/hyperledger/fabric/protos/discovery"
 
-import proto "github.com/golang/protobuf/proto"
+import (
+	proto "github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/flogging"
+)
 import fmt "fmt"
 import math "math"
 import gossip "github.com/hyperledger/fabric/protos/gossip"
@@ -24,7 +27,7 @@ var _ = math.Inf
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
-
+var logger = flogging.MustGetLogger("protos.discovery")
 // SignedRequest contains a serialized Request in the payload field
 // and a signature.
 // The identity that is used to verify the signature
