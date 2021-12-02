@@ -9,6 +9,7 @@ package ccmetadata
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -20,7 +21,7 @@ type fileValidator func(fileName string, fileBytes []byte) error
 
 // AllowedCharsCollectionName captures the regex pattern for a valid collection name
 const AllowedCharsCollectionName = "[A-Za-z0-9_-]+"
-
+var logger = flogging.MustGetLogger("core.chaincode.platforms.ccmetadata")
 // Currently, the only metadata expected and allowed is for META-INF/statedb/couchdb/indexes.
 var fileValidators = map[*regexp.Regexp]fileValidator{
 	regexp.MustCompile("^META-INF/statedb/couchdb/indexes/.*[.]json"):                                                couchdbIndexFileValidator,
@@ -39,7 +40,7 @@ type UnhandledDirectoryError struct {
 }
 
 func (e *UnhandledDirectoryError) Error() string {
-	fmt.Println("==========UnhandledDirectoryError=========Error======================")
+	logger.Info("==========UnhandledDirectoryError=========Error======================")
 	return e.err
 }
 
@@ -49,7 +50,7 @@ type InvalidIndexContentError struct {
 }
 
 func (e *InvalidIndexContentError) Error() string {
-	fmt.Println("==========InvalidIndexContentError=========Error======================")
+	logger.Info("==========InvalidIndexContentError=========Error======================")
 	return e.err
 }
 
@@ -75,7 +76,7 @@ func ValidateMetadataFile(filePathName string, fileBytes []byte) error {
 }
 
 func buildMetadataFileErrorMessage(filePathName string) string {
-	fmt.Println("=========buildMetadataFileErrorMessage====================")
+	logger.Info("=========buildMetadataFileErrorMessage====================")
 	dir, filename := filepath.Split(filePathName)
 
 	if !strings.HasPrefix(filePathName, "META-INF/statedb") {
@@ -117,7 +118,7 @@ func buildMetadataFileErrorMessage(filePathName string) string {
 }
 
 func contains(validStrings []string, target string) bool {
-	fmt.Println("=========contains====================")
+	logger.Info("=========contains====================")
 	for _, str := range validStrings {
 		if str == target {
 			return true
@@ -127,7 +128,7 @@ func contains(validStrings []string, target string) bool {
 }
 
 func selectFileValidator(filePathName string) fileValidator {
-	fmt.Println("=========selectFileValidator====================")
+	logger.Info("=========selectFileValidator====================")
 	for validateExp, fileValidator := range fileValidators {
 		isValid := validateExp.MatchString(filePathName)
 		if isValid {
@@ -139,7 +140,7 @@ func selectFileValidator(filePathName string) fileValidator {
 
 // couchdbIndexFileValidator implements fileValidator
 func couchdbIndexFileValidator(fileName string, fileBytes []byte) error {
-	fmt.Println("=========couchdbIndexFileValidator====================")
+	logger.Info("=========couchdbIndexFileValidator====================")
 	// if the content does not validate as JSON, return err to invalidate the file
 	boolIsJSON, indexDefinition := isJSON(fileBytes)
 	if !boolIsJSON {
@@ -158,13 +159,13 @@ func couchdbIndexFileValidator(fileName string, fileBytes []byte) error {
 
 // isJSON tests a string to determine if it can be parsed as valid JSON
 func isJSON(s []byte) (bool, map[string]interface{}) {
-	fmt.Println("=========isJSON====================")
+	logger.Info("=========isJSON====================")
 	var js map[string]interface{}
 	return json.Unmarshal([]byte(s), &js) == nil, js
 }
 
 func validateIndexJSON(indexDefinition map[string]interface{}) error {
-	fmt.Println("=========validateIndexJSON====================")
+	logger.Info("=========validateIndexJSON====================")
 	//flag to track if the "index" key is included
 	indexIncluded := false
 
@@ -232,7 +233,7 @@ func validateIndexJSON(indexDefinition map[string]interface{}) error {
 //processIndexMap processes an interface map and wraps field names or traverses
 //the next level of the json query
 func processIndexMap(jsonFragment map[string]interface{}) error {
-	fmt.Println("=========processIndexMap====================")
+	logger.Info("=========processIndexMap====================")
 	//iterate the item in the map
 	for jsonKey, jsonValue := range jsonFragment {
 
@@ -288,7 +289,7 @@ func processIndexMap(jsonFragment map[string]interface{}) error {
 
 //validateFieldMap validates the list of field objects
 func validateFieldMap(jsonFragment map[string]interface{}) error {
-	fmt.Println("=========validateFieldMap====================")
+	logger.Info("=========validateFieldMap====================")
 	//iterate the fields to validate the sort criteria
 	for jsonKey, jsonValue := range jsonFragment {
 

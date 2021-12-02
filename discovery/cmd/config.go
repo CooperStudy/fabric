@@ -44,7 +44,7 @@ func (pc *ConfigCmd) SetChannel(channel *string) {
 
 // Execute executes the command
 func (pc *ConfigCmd) Execute(conf common.Config) error {
-	fmt.Println("====ConfigCmd==Execute==")
+	logger.Info("====ConfigCmd==Execute==")
 	if pc.server == nil || *pc.server == "" {
 		return errors.New("no server specified")
 	}
@@ -70,7 +70,7 @@ type ConfigResponseParser struct {
 
 // ParseResponse parses the given response for the given channel
 func (parser *ConfigResponseParser) ParseResponse(channel string, res ServiceResponse) error {
-	fmt.Println("====ConfigResponseParser==ParseResponse==")
+	logger.Info("====ConfigResponseParser==ParseResponse==")
 	chanConf, err := res.ForChannel(channel).Config()
 	if err != nil {
 		return err

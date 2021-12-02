@@ -120,7 +120,7 @@ func TestConfigerInit(t *testing.T) {
 	stub := shim.NewMockStub("PeerConfiger", e)
 
 	if res := stub.MockInit("1", nil); res.Status != shim.OK {
-		fmt.Println("Init failed", string(res.Message))
+		logger.Info("Init failed", string(res.Message))
 		t.FailNow()
 	}
 }
@@ -164,7 +164,7 @@ func TestConfigerInvokeJoinChainMissingParams(t *testing.T) {
 	stub := shim.NewMockStub("PeerConfiger", e)
 
 	if res := stub.MockInit("1", nil); res.Status != shim.OK {
-		fmt.Println("Init failed", string(res.Message))
+		logger.Info("Init failed", string(res.Message))
 		t.FailNow()
 	}
 
@@ -185,7 +185,7 @@ func TestConfigerInvokeJoinChainWrongParams(t *testing.T) {
 	stub := shim.NewMockStub("PeerConfiger", e)
 
 	if res := stub.MockInit("1", nil); res.Status != shim.OK {
-		fmt.Println("Init failed", string(res.Message))
+		logger.Info("Init failed", string(res.Message))
 		t.FailNow()
 	}
 
@@ -501,7 +501,7 @@ func TestPeerConfiger_SubmittingOrdererGenesis(t *testing.T) {
 	stub := shim.NewMockStub("PeerConfiger", e)
 
 	if res := stub.MockInit("1", nil); res.Status != shim.OK {
-		fmt.Println("Init failed", string(res.Message))
+		logger.Info("Init failed", string(res.Message))
 		t.FailNow()
 	}
 	conf := configtxgentest.Load(genesisconfig.SampleSingleMSPSoloProfile)

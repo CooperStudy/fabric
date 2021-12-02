@@ -23,7 +23,7 @@ import (
 )
 
 func NewConfigGroup() *ConfigGroup {
-	fmt.Println("===NewConfigGroup======")
+	logger.Info("===NewConfigGroup======")
 	return &ConfigGroup{
 		Groups:   make(map[string]*ConfigGroup),
 		Values:   make(map[string]*ConfigValue),
@@ -32,12 +32,12 @@ func NewConfigGroup() *ConfigGroup {
 }
 
 func (cue *ConfigUpdateEnvelope) StaticallyOpaqueFields() []string {
-	fmt.Println("===ConfigUpdateEnvelope=============StaticallyOpaqueFields=======")
+	logger.Info("===ConfigUpdateEnvelope=============StaticallyOpaqueFields=======")
 	return []string{"config_update"}
 }
 
 func (cue *ConfigUpdateEnvelope) StaticallyOpaqueFieldProto(name string) (proto.Message, error) {
-	fmt.Println("===ConfigUpdateEnvelope====StaticallyOpaqueFieldProto==")
+	logger.Info("===ConfigUpdateEnvelope====StaticallyOpaqueFieldProto==")
 	if name != cue.StaticallyOpaqueFields()[0] {
 		return nil, fmt.Errorf("Not a marshaled field: %s", name)
 	}
@@ -45,12 +45,12 @@ func (cue *ConfigUpdateEnvelope) StaticallyOpaqueFieldProto(name string) (proto.
 }
 
 func (cs *ConfigSignature) StaticallyOpaqueFields() []string {
-	fmt.Println("===ConfigSignature====StaticallyOpaqueFields==")
+	logger.Info("===ConfigSignature====StaticallyOpaqueFields==")
 	return []string{"signature_header"}
 }
 
 func (cs *ConfigSignature) StaticallyOpaqueFieldProto(name string) (proto.Message, error) {
-	fmt.Println("===ConfigSignature====StaticallyOpaqueFieldProto==")
+	logger.Info("===ConfigSignature====StaticallyOpaqueFieldProto==")
 	if name != cs.StaticallyOpaqueFields()[0] {
 		return nil, fmt.Errorf("Not a marshaled field: %s", name)
 	}
@@ -58,12 +58,12 @@ func (cs *ConfigSignature) StaticallyOpaqueFieldProto(name string) (proto.Messag
 }
 
 func (c *Config) DynamicFields() []string {
-	fmt.Println("===Config====DynamicFields==")
+	logger.Info("===Config====DynamicFields==")
 	return []string{"channel_group"}
 }
 
 func (c *Config) DynamicFieldProto(name string, base proto.Message) (proto.Message, error) {
-	fmt.Println("===Config====DynamicFieldProto==")
+	logger.Info("===Config====DynamicFieldProto==")
 	if name != c.DynamicFields()[0] {
 		return nil, fmt.Errorf("Not a dynamic field: %s", name)
 	}
@@ -81,12 +81,12 @@ func (c *Config) DynamicFieldProto(name string, base proto.Message) (proto.Messa
 var ConfigUpdateIsolatedDataTypes = map[string]func(string) proto.Message{}
 
 func (c *ConfigUpdate) StaticallyOpaqueMapFields() []string {
-	fmt.Println("===ConfigUpdate====StaticallyOpaqueMapFields==")
+	logger.Info("===ConfigUpdate====StaticallyOpaqueMapFields==")
 	return []string{"isolated_data"}
 }
 
 func (c *ConfigUpdate) StaticallyOpaqueMapFieldProto(name string, key string) (proto.Message, error) {
-	fmt.Println("===ConfigUpdate====StaticallyOpaqueMapFieldProto==")
+	logger.Info("===ConfigUpdate====StaticallyOpaqueMapFieldProto==")
 	if name != c.StaticallyOpaqueMapFields()[0] {
 		return nil, fmt.Errorf("Not a statically opaque map field: %s", name)
 	}
@@ -100,12 +100,12 @@ func (c *ConfigUpdate) StaticallyOpaqueMapFieldProto(name string, key string) (p
 }
 
 func (c *ConfigUpdate) DynamicFields() []string {
-	fmt.Println("===ConfigUpdate====DynamicFields==")
+	logger.Info("===ConfigUpdate====DynamicFields==")
 	return []string{"read_set", "write_set"}
 }
 
 func (c *ConfigUpdate) DynamicFieldProto(name string, base proto.Message) (proto.Message, error) {
-	fmt.Println("===ConfigUpdate====DynamicFieldProto==")
+	logger.Info("===ConfigUpdate====DynamicFieldProto==")
 	if name != c.DynamicFields()[0] && name != c.DynamicFields()[1] {
 		return nil, fmt.Errorf("Not a dynamic field: %s", name)
 	}
@@ -119,21 +119,21 @@ func (c *ConfigUpdate) DynamicFieldProto(name string, base proto.Message) (proto
 }
 
 func (cv *ConfigValue) VariablyOpaqueFields() []string {
-	fmt.Println("===ConfigUpdate====VariablyOpaqueFields==")
+	logger.Info("===ConfigUpdate====VariablyOpaqueFields==")
 	return []string{"value"}
 }
 
 func (cv *ConfigValue) Underlying() proto.Message {
-	fmt.Println("===ConfigUpdate====Underlying==")
+	logger.Info("===ConfigUpdate====Underlying==")
 	return cv
 }
 
 func (cg *ConfigGroup) DynamicMapFields() []string {
-	fmt.Println("===ConfigGroup====DynamicMapFields==")
+	logger.Info("===ConfigGroup====DynamicMapFields==")
 	return []string{"groups", "values"}
 }
 
 func (cg *ConfigGroup) Underlying() proto.Message {
-	fmt.Println("===ConfigGroup====Underlying==")
+	logger.Info("===ConfigGroup====Underlying==")
 	return cg
 }

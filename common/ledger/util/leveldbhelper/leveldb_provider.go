@@ -37,7 +37,7 @@ type Provider struct {
 
 // NewProvider constructs a Provider
 func NewProvider(conf *Conf) *Provider {
-	fmt.Println("====NewProvider==")
+	logger.Info("====NewProvider==")
 	db := CreateDB(conf)
 	db.Open()
 	return &Provider{db, make(map[string]*DBHandle), sync.Mutex{}}
@@ -45,20 +45,20 @@ func NewProvider(conf *Conf) *Provider {
 
 // GetDBHandle returns a handle to a named db
 func (p *Provider) GetDBHandle(dbName string) *DBHandle {
-	fmt.Println("====Provider==GetDBHandle==")
+	logger.Info("====Provider==GetDBHandle==")
 	p.mux.Lock()
 	defer p.mux.Unlock()
-	fmt.Println("======dbName====",dbName)
+	logger.Info("======dbName====",dbName)
 	//mychannel
 	//mychannel/0
 	dbHandle := p.dbHandles[dbName]
 	if dbHandle == nil {
-		fmt.Println("===========dbHandle not exist======",dbHandle)//
+		logger.Info("===========dbHandle not exist======",dbHandle)//
 
 		dbHandle = &DBHandle{dbName, p.db}
 		p.dbHandles[dbName] = dbHandle
 	}
-	fmt.Println("===========dbHandle exist======",dbHandle)
+	logger.Info("===========dbHandle exist======",dbHandle)
 	//&{mychannel 0xc0005bee40}
 	//&{mychannel/0 0xc000049480}
 	return dbHandle
@@ -66,7 +66,7 @@ func (p *Provider) GetDBHandle(dbName string) *DBHandle {
 
 // Close closes the underlying leveldb
 func (p *Provider) Close() {
-	fmt.Println("====Provider==Close==")
+	logger.Info("====Provider==Close==")
 	p.db.Close()
 }
 
@@ -78,25 +78,25 @@ type DBHandle struct {
 
 // Get returns the value for the given key
 func (h *DBHandle) Get(key []byte) ([]byte, error) {
-	//fmt.Println("====DBHandle==Get==")
+	//logger.Info("====DBHandle==Get==")
 	return h.db.Get(constructLevelKey(h.dbName, key))
 }
 
 // Put saves the key/value
 func (h *DBHandle) Put(key []byte, value []byte, sync bool) error {
-	//fmt.Println("====DBHandle==Put==")
+	//logger.Info("====DBHandle==Put==")
 	return h.db.Put(constructLevelKey(h.dbName, key), value, sync)
 }
 
 // Delete deletes the given key
 func (h *DBHandle) Delete(key []byte, sync bool) error {
-	//fmt.Println("====DBHandle==Delete==")
+	//logger.Info("====DBHandle==Delete==")
 	return h.db.Delete(constructLevelKey(h.dbName, key), sync)
 }
 
 // WriteBatch writes a batch in an atomic way
 func (h *DBHandle) WriteBatch(batch *UpdateBatch, sync bool) error {
-	//fmt.Println("====DBHandle==WriteBatch==")
+	//logger.Info("====DBHandle==WriteBatch==")
 	if len(batch.KVs) == 0 {
 		return nil
 	}
@@ -119,7 +119,7 @@ func (h *DBHandle) WriteBatch(batch *UpdateBatch, sync bool) error {
 // The resultset contains all the keys that are present in the db between the startKey (inclusive) and the endKey (exclusive).
 // A nil startKey represents the first available key and a nil endKey represent a logical key after the last available key
 func (h *DBHandle) GetIterator(startKey []byte, endKey []byte) *Iterator {
-	//fmt.Println("====DBHandle==GetIterator==")
+	//logger.Info("====DBHandle==GetIterator==")
 	sKey := constructLevelKey(h.dbName, startKey)
 	eKey := constructLevelKey(h.dbName, endKey)
 	if endKey == nil {
@@ -137,13 +137,13 @@ type UpdateBatch struct {
 
 // NewUpdateBatch constructs an instance of a Batch
 func NewUpdateBatch() *UpdateBatch {
-	//fmt.Println("====NewUpdateBatch=")
+	//logger.Info("====NewUpdateBatch=")
 	return &UpdateBatch{make(map[string][]byte)}
 }
 
 // Put adds a KV
 func (batch *UpdateBatch) Put(key []byte, value []byte) {
-	//fmt.Println("====UpdateBatch===Put==")
+	//logger.Info("====UpdateBatch===Put==")
 	if value == nil {
 		panic("Nil value not allowed")
 	}
@@ -152,13 +152,13 @@ func (batch *UpdateBatch) Put(key []byte, value []byte) {
 
 // Delete deletes a Key and associated value
 func (batch *UpdateBatch) Delete(key []byte) {
-	//fmt.Println("====UpdateBatch===Delete==")
+	//logger.Info("====UpdateBatch===Delete==")
 	batch.KVs[string(key)] = nil
 }
 
 // Len returns the number of entries in the batch
 func (batch *UpdateBatch) Len() int {
-	//fmt.Println("====UpdateBatch===Len==")
+	//logger.Info("====UpdateBatch===Len==")
 	return len(batch.KVs)
 }
 
@@ -169,16 +169,16 @@ type Iterator struct {
 
 // Key wraps actual leveldb iterator method
 func (itr *Iterator) Key() []byte {
-	//fmt.Println("====Iterator===Key==")
+	//logger.Info("====Iterator===Key==")
 	return retrieveAppKey(itr.Iterator.Key())
 }
 
 func constructLevelKey(dbName string, key []byte) []byte {
-	//fmt.Println("====constructLevelKey=")
+	//logger.Info("====constructLevelKey=")
 	return append(append([]byte(dbName), dbNameKeySep...), key...)
 }
 
 func retrieveAppKey(levelKey []byte) []byte {
-	//fmt.Println("====retrieveAppKey====")
+	//logger.Info("====retrieveAppKey====")
 	return bytes.SplitN(levelKey, dbNameKeySep, 2)[1]
 }

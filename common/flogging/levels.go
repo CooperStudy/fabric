@@ -26,7 +26,7 @@ const (
 // NameToLevel converts a level name to a zapcore.Level.  If the level name is
 // unknown, zapcore.InfoLevel is returned.
 func NameToLevel(level string) zapcore.Level {
-	//fmt.Println("==NameToLevel============")
+	//logger.Info("==NameToLevel============")
 	l, err := nameToLevel(level)
 	if err != nil {
 		return zapcore.InfoLevel
@@ -35,7 +35,7 @@ func NameToLevel(level string) zapcore.Level {
 }
 
 func nameToLevel(level string) (zapcore.Level, error) {
-	//fmt.Println("==nameToLevel============")
+	//logger.Info("==nameToLevel============")
 	switch level {
 	case "PAYLOAD", "payload":
 		return PayloadLevel, nil
@@ -65,7 +65,7 @@ func nameToLevel(level string) (zapcore.Level, error) {
 }
 
 func IsValidLevel(level string) bool {
-	//fmt.Println("==IsValidLevel============")
+	//logger.Info("==IsValidLevel============")
 	_, err := nameToLevel(level)
 	return err == nil
 }

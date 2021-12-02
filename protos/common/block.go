@@ -19,17 +19,15 @@ package common
 import (
 	"encoding/asn1"
 	"fmt"
-	"github.com/hyperledger/fabric/common/flogging"
 	"math"
 
 	"github.com/hyperledger/fabric/common/util"
 )
 
-var protosLogger = flogging.MustGetLogger("protos")
 
 // NewBlock construct a block with no data and no metadata.
 func NewBlock(seqNum uint64, previousHash []byte) *Block {
-	protosLogger.Info("============NewBlock===========")
+	commonLogger.Info("============NewBlock===========")
 	block := &Block{}
 	block.Header = &BlockHeader{}
 	block.Header.Number = seqNum
@@ -53,7 +51,7 @@ type asn1Header struct {
 
 // Bytes returns the ASN.1 marshaled representation of the block header.
 func (b *BlockHeader) Bytes() []byte {
-	fmt.Println("======BlockHeader======Bytes===========")
+	logger.Info("======BlockHeader======Bytes===========")
 	asn1Header := asn1Header{
 		PreviousHash: b.PreviousHash,
 		DataHash:     b.DataHash,
@@ -76,7 +74,7 @@ func (b *BlockHeader) Bytes() []byte {
 // Hash returns the hash of the block header.
 // XXX This method will be removed shortly to allow for confgurable hashing algorithms
 func (b *BlockHeader) Hash() []byte {
-	fmt.Println("======BlockHeader======Hash===========")
+	logger.Info("======BlockHeader======Hash===========")
 	return util.ComputeSHA256(b.Bytes())
 }
 
@@ -85,12 +83,12 @@ func (b *BlockHeader) Hash() []byte {
 // but for the moment, we assume a Merkle tree of infinite width (uint32_max)
 // which degrades to a flat hash
 func (b *BlockData) Bytes() []byte {
-	fmt.Println("======BlockData======Bytes===========")
+	logger.Info("======BlockData======Bytes===========")
 	return util.ConcatenateBytes(b.Data...)
 }
 
 // Hash returns the hash of the marshaled representation of the block data.
 func (b *BlockData) Hash() []byte {
-	fmt.Println("======BlockData======Hash===========")
+	logger.Info("======BlockData======Hash===========")
 	return util.ComputeSHA256(b.Bytes())
 }

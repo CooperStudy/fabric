@@ -72,7 +72,7 @@ func (m *ConfigEnvelope) XXX_DiscardUnknown() {
 var xxx_messageInfo_ConfigEnvelope proto.InternalMessageInfo
 
 func (m *ConfigEnvelope) GetConfig() *Config {
-	fmt.Println("===ConfigEnvelope==GetConfig==")
+	logger.Info("===ConfigEnvelope==GetConfig==")
 	if m != nil {
 		return m.Config
 	}
@@ -80,7 +80,7 @@ func (m *ConfigEnvelope) GetConfig() *Config {
 }
 
 func (m *ConfigEnvelope) GetLastUpdate() *Envelope {
-	fmt.Println("===ConfigEnvelope==GetLastUpdate==")
+	logger.Info("===ConfigEnvelope==GetLastUpdate==")
 	if m != nil {
 		return m.LastUpdate
 	}
@@ -121,7 +121,7 @@ func (m *ConfigGroupSchema) XXX_DiscardUnknown() {
 var xxx_messageInfo_ConfigGroupSchema proto.InternalMessageInfo
 
 func (m *ConfigGroupSchema) GetGroups() map[string]*ConfigGroupSchema {
-	fmt.Println("===ConfigGroupSchema==GetGroups==")
+	logger.Info("===ConfigGroupSchema==GetGroups==")
 	if m != nil {
 		return m.Groups
 	}
@@ -129,7 +129,7 @@ func (m *ConfigGroupSchema) GetGroups() map[string]*ConfigGroupSchema {
 }
 
 func (m *ConfigGroupSchema) GetValues() map[string]*ConfigValueSchema {
-	fmt.Println("===ConfigGroupSchema==GetValues==")
+	logger.Info("===ConfigGroupSchema==GetValues==")
 	if m != nil {
 		return m.Values
 	}
@@ -137,7 +137,7 @@ func (m *ConfigGroupSchema) GetValues() map[string]*ConfigValueSchema {
 }
 
 func (m *ConfigGroupSchema) GetPolicies() map[string]*ConfigPolicySchema {
-	fmt.Println("===ConfigGroupSchema==GetPolicies==")
+	logger.Info("===ConfigGroupSchema==GetPolicies==")
 	if m != nil {
 		return m.Policies
 	}
@@ -238,7 +238,7 @@ func (m *Config) XXX_DiscardUnknown() {
 var xxx_messageInfo_Config proto.InternalMessageInfo
 
 func (m *Config) GetSequence() uint64 {
-	fmt.Println("===ConfigGroupSchema==GetSequence==")
+	logger.Info("===ConfigGroupSchema==GetSequence==")
 	if m != nil {
 		return m.Sequence
 	}
@@ -246,7 +246,7 @@ func (m *Config) GetSequence() uint64 {
 }
 
 func (m *Config) GetChannelGroup() *ConfigGroup {
-	fmt.Println("===Config==GetChannelGroup==")
+	logger.Info("===Config==GetChannelGroup==")
 	if m != nil {
 		return m.ChannelGroup
 	}
@@ -286,7 +286,7 @@ func (m *ConfigUpdateEnvelope) XXX_DiscardUnknown() {
 var xxx_messageInfo_ConfigUpdateEnvelope proto.InternalMessageInfo
 
 func (m *ConfigUpdateEnvelope) GetConfigUpdate() []byte {
-	fmt.Println("===ConfigUpdateEnvelope==GetConfigUpdate==")
+	logger.Info("===ConfigUpdateEnvelope==GetConfigUpdate==")
 	if m != nil {
 		return m.ConfigUpdate
 	}
@@ -294,7 +294,7 @@ func (m *ConfigUpdateEnvelope) GetConfigUpdate() []byte {
 }
 
 func (m *ConfigUpdateEnvelope) GetSignatures() []*ConfigSignature {
-	fmt.Println("===ConfigUpdateEnvelope==GetSignatures==")
+	logger.Info("===ConfigUpdateEnvelope==GetSignatures==")
 	if m != nil {
 		return m.Signatures
 	}
@@ -345,7 +345,7 @@ func (m *ConfigUpdate) XXX_DiscardUnknown() {
 var xxx_messageInfo_ConfigUpdate proto.InternalMessageInfo
 
 func (m *ConfigUpdate) GetChannelId() string {
-	fmt.Println("===ConfigUpdate==GetChannelId==")
+	logger.Info("===ConfigUpdate==GetChannelId==")
 	if m != nil {
 		return m.ChannelId
 	}
@@ -353,7 +353,7 @@ func (m *ConfigUpdate) GetChannelId() string {
 }
 
 func (m *ConfigUpdate) GetReadSet() *ConfigGroup {
-	fmt.Println("===ConfigUpdate==GetReadSet==")
+	logger.Info("===ConfigUpdate==GetReadSet==")
 	if m != nil {
 		return m.ReadSet
 	}
@@ -361,7 +361,7 @@ func (m *ConfigUpdate) GetReadSet() *ConfigGroup {
 }
 
 func (m *ConfigUpdate) GetWriteSet() *ConfigGroup {
-	fmt.Println("===ConfigUpdate==GetWriteSet==")
+	logger.Info("===ConfigUpdate==GetWriteSet==")
 	if m != nil {
 		return m.WriteSet
 	}
@@ -369,7 +369,7 @@ func (m *ConfigUpdate) GetWriteSet() *ConfigGroup {
 }
 
 func (m *ConfigUpdate) GetIsolatedData() map[string][]byte {
-	fmt.Println("===ConfigUpdate==GetIsolatedData==")
+	logger.Info("===ConfigUpdate==GetIsolatedData==")
 	if m != nil {
 		return m.IsolatedData
 	}
@@ -413,7 +413,7 @@ func (m *ConfigGroup) XXX_DiscardUnknown() {
 var xxx_messageInfo_ConfigGroup proto.InternalMessageInfo
 
 func (m *ConfigGroup) GetVersion() uint64 {
-	fmt.Println("===ConfigUpdate==GetVersion==")
+	logger.Info("===ConfigUpdate==GetVersion==")
 	if m != nil {
 		return m.Version
 	}
@@ -421,7 +421,7 @@ func (m *ConfigGroup) GetVersion() uint64 {
 }
 
 func (m *ConfigGroup) GetGroups() map[string]*ConfigGroup {
-	fmt.Println("===ConfigUpdate==GetGroups==")
+	logger.Info("===ConfigUpdate==GetGroups==")
 	if m != nil {
 		return m.Groups
 	}
@@ -429,7 +429,7 @@ func (m *ConfigGroup) GetGroups() map[string]*ConfigGroup {
 }
 
 func (m *ConfigGroup) GetValues() map[string]*ConfigValue {
-	fmt.Println("===ConfigUpdate==GetValues==")
+	logger.Info("===ConfigUpdate==GetValues==")
 	if m != nil {
 		return m.Values
 	}
@@ -437,7 +437,7 @@ func (m *ConfigGroup) GetValues() map[string]*ConfigValue {
 }
 
 func (m *ConfigGroup) GetPolicies() map[string]*ConfigPolicy {
-	fmt.Println("===ConfigUpdate==GetPolicies==")
+	logger.Info("===ConfigUpdate==GetPolicies==")
 	if m != nil {
 		return m.Policies
 	}
@@ -445,7 +445,7 @@ func (m *ConfigGroup) GetPolicies() map[string]*ConfigPolicy {
 }
 
 func (m *ConfigGroup) GetModPolicy() string {
-	fmt.Println("===ConfigUpdate==GetModPolicy==")
+	logger.Info("===ConfigUpdate==GetModPolicy==")
 	if m != nil {
 		return m.ModPolicy
 	}
@@ -487,7 +487,7 @@ func (m *ConfigValue) XXX_DiscardUnknown() {
 var xxx_messageInfo_ConfigValue proto.InternalMessageInfo
 
 func (m *ConfigValue) GetVersion() uint64 {
-	fmt.Println("===ConfigValue==GetVersion==")
+	logger.Info("===ConfigValue==GetVersion==")
 	if m != nil {
 		return m.Version
 	}
@@ -495,7 +495,7 @@ func (m *ConfigValue) GetVersion() uint64 {
 }
 
 func (m *ConfigValue) GetValue() []byte {
-	fmt.Println("===ConfigValue==GetValue==")
+	logger.Info("===ConfigValue==GetValue==")
 	if m != nil {
 		return m.Value
 	}
@@ -503,7 +503,7 @@ func (m *ConfigValue) GetValue() []byte {
 }
 
 func (m *ConfigValue) GetModPolicy() string {
-	fmt.Println("===ConfigValue==GetModPolicy==")
+	logger.Info("===ConfigValue==GetModPolicy==")
 	if m != nil {
 		return m.ModPolicy
 	}
@@ -544,7 +544,7 @@ func (m *ConfigPolicy) XXX_DiscardUnknown() {
 var xxx_messageInfo_ConfigPolicy proto.InternalMessageInfo
 
 func (m *ConfigPolicy) GetVersion() uint64 {
-	fmt.Println("===ConfigPolicy==GetVersion==")
+	logger.Info("===ConfigPolicy==GetVersion==")
 	if m != nil {
 		return m.Version
 	}
@@ -552,7 +552,7 @@ func (m *ConfigPolicy) GetVersion() uint64 {
 }
 
 func (m *ConfigPolicy) GetPolicy() *Policy {
-	fmt.Println("===ConfigPolicy==GetPolicy==")
+	logger.Info("===ConfigPolicy==GetPolicy==")
 	if m != nil {
 		return m.Policy
 	}
@@ -560,7 +560,7 @@ func (m *ConfigPolicy) GetPolicy() *Policy {
 }
 
 func (m *ConfigPolicy) GetModPolicy() string {
-	fmt.Println("===ConfigPolicy==GetModPolicy==")
+	logger.Info("===ConfigPolicy==GetModPolicy==")
 	if m != nil {
 		return m.ModPolicy
 	}
@@ -600,7 +600,7 @@ func (m *ConfigSignature) XXX_DiscardUnknown() {
 var xxx_messageInfo_ConfigSignature proto.InternalMessageInfo
 
 func (m *ConfigSignature) GetSignatureHeader() []byte {
-	fmt.Println("===ConfigSignature==GetSignatureHeader==")
+	logger.Info("===ConfigSignature==GetSignatureHeader==")
 	if m != nil {
 		return m.SignatureHeader
 	}
@@ -608,7 +608,7 @@ func (m *ConfigSignature) GetSignatureHeader() []byte {
 }
 
 func (m *ConfigSignature) GetSignature() []byte {
-	fmt.Println("===ConfigSignature==GetSignature==")
+	logger.Info("===ConfigSignature==GetSignature==")
 	if m != nil {
 		return m.Signature
 	}

@@ -9,8 +9,6 @@ package gossip
 import (
 	"bytes"
 	"encoding/hex"
-	"fmt"
-
 	"github.com/hyperledger/fabric/gossip/api"
 	"github.com/hyperledger/fabric/gossip/common"
 	"github.com/hyperledger/fabric/gossip/gossip/pull"
@@ -30,7 +28,7 @@ type certStore struct {
 }
 
 func newCertStore(puller pull.Mediator, idMapper identity.Mapper, selfIdentity api.PeerIdentityType, mcs api.MessageCryptoService) *certStore {
-	//fmt.Println("====newCertStore=====")
+	//logger.Info("====newCertStore=====")
 	selfPKIID := idMapper.GetPKIidOfCert(selfIdentity)
 	logger := util.GetLogger(util.GossipLogger, hex.EncodeToString(selfPKIID))
 
@@ -64,13 +62,13 @@ func newCertStore(puller pull.Mediator, idMapper identity.Mapper, selfIdentity a
 }
 
 func (cs *certStore) handleMessage(msg proto.ReceivedMessage) {
-	//fmt.Println("====certStore===handleMessage==")
+	//logger.Info("====certStore===handleMessage==")
 	if update := msg.GetGossipMessage().GetDataUpdate(); update != nil {
 		for _, env := range update.Data {
-			//fmt.Println("=======k==========",k)
-			//fmt.Println("=======env==========",env)
+			//logger.Info("=======k==========",k)
+			//logger.Info("=======env==========",env)
 			m, err := env.ToGossipMessage()
-			//fmt.Println("===m======",m)
+			//logger.Info("===m======",m)
 			if err != nil {
 				cs.logger.Warningf("Data update contains an invalid message: %+v", errors.WithStack(err))
 				return
@@ -89,9 +87,9 @@ func (cs *certStore) handleMessage(msg proto.ReceivedMessage) {
 }
 
 func (cs *certStore) validateIdentityMsg(msg *proto.SignedGossipMessage) error {
-	fmt.Println("====certStore===validateIdentityMsg==")
+	//errorlogger.Info("====certStore===validateIdentityMsg==")
 	idMsg := msg.GetPeerIdentity()
-	//fmt.Println("=======idMsg==========",idMsg)
+	//logger.Info("=======idMsg==========",idMsg)
 	if idMsg == nil {
 		return errors.Errorf("Identity empty: %+v", msg)
 	}
@@ -99,16 +97,16 @@ func (cs *certStore) validateIdentityMsg(msg *proto.SignedGossipMessage) error {
 	cert := idMsg.Cert
 	calculatedPKIID := cs.mcs.GetPKIidOfCert(api.PeerIdentityType(cert))
 	claimedPKIID := common.PKIidType(pkiID)
-	//fmt.Println("=======pkiID==========",pkiID)
-	//fmt.Println("=======cert==========",cert)
-	//fmt.Println("=======calculatedPKIID==========",calculatedPKIID)
-	//fmt.Println("=======claimedPKIID==========",claimedPKIID)
+	//logger.Info("=======pkiID==========",pkiID)
+	//logger.Info("=======cert==========",cert)
+	//logger.Info("=======calculatedPKIID==========",calculatedPKIID)
+	//logger.Info("=======claimedPKIID==========",claimedPKIID)
 	if !bytes.Equal(calculatedPKIID, claimedPKIID) {
 		return errors.Errorf("Calculated pkiID doesn't match identity: calculated: %v, claimedPKI-ID: %v", calculatedPKIID, claimedPKIID)
 	}
 
 	verifier := func(peerIdentity []byte, signature, message []byte) error {
-		//fmt.Println("==========verifier=========")
+		//logger.Info("==========verifier=========")
 		return cs.mcs.Verify(api.PeerIdentityType(peerIdentity), signature, message)
 	}
 
@@ -121,7 +119,7 @@ func (cs *certStore) validateIdentityMsg(msg *proto.SignedGossipMessage) error {
 }
 
 func (cs *certStore) createIdentityMessage() (*proto.SignedGossipMessage, error) {
-	//fmt.Println("====certStore===createIdentityMessage==")
+	//logger.Info("====certStore===createIdentityMessage==")
 	pi := &proto.PeerIdentity{
 		Cert:     cs.selfIdentity,
 		Metadata: nil,
@@ -146,12 +144,12 @@ func (cs *certStore) createIdentityMessage() (*proto.SignedGossipMessage, error)
 }
 
 func (cs *certStore) suspectPeers(isSuspected api.PeerSuspector) {
-	//fmt.Println("====certStore===suspectPeers==")
+	//logger.Info("====certStore===suspectPeers==")
 	cs.idMapper.SuspectPeers(isSuspected)
 }
 
 func (cs *certStore) stop() {
-	//fmt.Println("====certStore===stop==")
+	//logger.Info("====certStore===stop==")
 	cs.pull.Stop()
 	cs.idMapper.Stop()
 }

@@ -99,7 +99,7 @@ func TestClientBadConfig(t *testing.T) {
 func loadFileOrDie(path string) []byte {
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
-		fmt.Println("Failed opening file", path, ":", err)
+		logger.Info("Failed opening file", path, ":", err)
 		os.Exit(1)
 	}
 	return b

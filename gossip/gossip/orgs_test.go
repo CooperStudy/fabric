@@ -56,7 +56,7 @@ func (c *configurableCryptoService) OrgByPeerIdentity(identity api.PeerIdentityT
 // VerifyByChannel verifies a peer's signature on a message in the context
 // of a specific channel
 func (c *configurableCryptoService) VerifyByChannel(_ common.ChainID, identity api.PeerIdentityType, _, _ []byte) error {
-	fmt.Println("========VerifyByChannel=========")
+	logger.Info("========VerifyByChannel=========")
 	return nil
 }
 

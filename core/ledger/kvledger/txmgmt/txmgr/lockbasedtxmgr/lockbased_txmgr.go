@@ -28,7 +28,7 @@ import (
 	"github.com/hyperledger/fabric/protos/ledger/rwset/kvrwset"
 )
 
-var logger = flogging.MustGetLogger("lockbasedtxmgr")
+var lockbasedtxmgrLogger = flogging.MustGetLogger("lockbasedtxmgr")
 
 // LockBasedTxMgr a simple implementation of interface `txmgmt.TxMgr`.
 // This implementation uses a read-write lock to prevent conflicts between transaction simulation and committing
@@ -51,12 +51,12 @@ type current struct {
 }
 
 func (c *current) blockNum() uint64 {
-	fmt.Println("==current==blockNum==")
+	logger.Info("==current==blockNum==")
 	return c.block.Header.Number
 }
 
 func (c *current) maxTxNumber() uint64 {
-	fmt.Println("==current==maxTxNumber==")
+	logger.Info("==current==maxTxNumber==")
 	return uint64(len(c.block.Data.Data)) - 1
 }
 
@@ -64,7 +64,7 @@ func (c *current) maxTxNumber() uint64 {
 func NewLockBasedTxMgr(ledgerid string, db privacyenabledstate.DB, stateListeners []ledger.StateListener,
 
 	btlPolicy pvtdatapolicy.BTLPolicy, bookkeepingProvider bookkeeping.Provider, ccInfoProvider ledger.DeployedChaincodeInfoProvider) (*LockBasedTxMgr, error) {
-	fmt.Println("==NewLockBasedTxMgr==")
+	logger.Info("==NewLockBasedTxMgr==")
 
 	db.Open()
 	txmgr := &LockBasedTxMgr{
@@ -85,13 +85,13 @@ func NewLockBasedTxMgr(ledgerid string, db privacyenabledstate.DB, stateListener
 // GetLastSavepoint returns the block num recorded in savepoint,
 // returns 0 if NO savepoint is found
 func (txmgr *LockBasedTxMgr) GetLastSavepoint() (*version.Height, error) {
-	fmt.Println("==LockBasedTxMgr==GetLastSavepoint=")
+	logger.Info("==LockBasedTxMgr==GetLastSavepoint=")
 	return txmgr.db.GetLatestSavePoint()
 }
 
 // NewQueryExecutor implements method in interface `txmgmt.TxMgr`
 func (txmgr *LockBasedTxMgr) NewQueryExecutor(txid string) (ledger.QueryExecutor, error) {
-	fmt.Println("==LockBasedTxMgr==NewQueryExecutor=")
+	logger.Info("==LockBasedTxMgr==NewQueryExecutor=")
 	qe := newQueryExecutor(txmgr, txid)
 	txmgr.commitRWLock.RLock()
 	return qe, nil
@@ -99,8 +99,8 @@ func (txmgr *LockBasedTxMgr) NewQueryExecutor(txid string) (ledger.QueryExecutor
 
 // NewTxSimulator implements method in interface `txmgmt.TxMgr`
 func (txmgr *LockBasedTxMgr) NewTxSimulator(txid string) (ledger.TxSimulator, error) {
-	fmt.Println("==LockBasedTxMgr==NewTxSimulator=")
-	logger.Debugf("constructing new tx simulator")
+	logger.Info("==LockBasedTxMgr==NewTxSimulator=")
+	lockbasedtxmgrLogger.Debugf("constructing new tx simulator")
 	s, err := newLockBasedTxSimulator(txmgr, txid)
 	if err != nil {
 		return nil, err
@@ -113,7 +113,7 @@ func (txmgr *LockBasedTxMgr) NewTxSimulator(txid string) (ledger.TxSimulator, er
 func (txmgr *LockBasedTxMgr) ValidateAndPrepare(blockAndPvtdata *ledger.BlockAndPvtData, doMVCCValidation bool) (
 	[]*txmgr.TxStatInfo, error,
 ) {
-	fmt.Println("==LockBasedTxMgr==ValidateAndPrepare=")
+	logger.Info("==LockBasedTxMgr==ValidateAndPrepare=")
 	// Among ValidateAndPrepare(), PrepareExpiringKeys(), and
 	// RemoveStaleAndCommitPvtDataOfOldBlocks(), we can allow only one
 	// function to execute at a time. The reason is that each function calls
@@ -124,14 +124,14 @@ func (txmgr *LockBasedTxMgr) ValidateAndPrepare(blockAndPvtdata *ledger.BlockAnd
 	// Once the ledger cache (FAB-103) is introduced and existing
 	// LoadCommittedVersions() is refactored to return a map, we can allow
 	// these three functions to execute parallely.
-	logger.Debugf("Waiting for purge mgr to finish the background job of computing expirying keys for the block")
+	lockbasedtxmgrLogger.Info("Waiting for purge mgr to finish the background job of computing expirying keys for the block")
 	txmgr.pvtdataPurgeMgr.WaitForPrepareToFinish()
 	txmgr.oldBlockCommit.Lock()
 	defer txmgr.oldBlockCommit.Unlock()
-	logger.Debug("lock acquired on oldBlockCommit for validating read set version against the committed version")
+	lockbasedtxmgrLogger.Debug("lock acquired on oldBlockCommit for validating read set version against the committed version")
 
 	block := blockAndPvtdata.Block
-	logger.Debugf("Validating new block with num trans = [%d]", len(block.Data.Data))
+	lockbasedtxmgrLogger.Debugf("Validating new block with num trans = [%d]", len(block.Data.Data))
 	batch, txstatsInfo, err := txmgr.validator.ValidateAndPrepareBatch(blockAndPvtdata, doMVCCValidation)
 	if err != nil {
 		txmgr.reset()
@@ -178,17 +178,17 @@ func (txmgr *LockBasedTxMgr) RemoveStaleAndCommitPvtDataOfOldBlocks(blocksPvtDat
 	// these three functions to execute parallely. However, we cannot remove
 	// the lock on oldBlockCommit as it is also used to avoid interleaving
 	// between Commit() and execution of this function for the correctness.
-	fmt.Println("==LockBasedTxMgr==RemoveStaleAndCommitPvtDataOfOldBlocks=")
-	logger.Debug("Waiting for purge mgr to finish the background job of computing expirying keys for the block")
+	logger.Info("==LockBasedTxMgr==RemoveStaleAndCommitPvtDataOfOldBlocks=")
+	lockbasedtxmgrLogger.Debug("Waiting for purge mgr to finish the background job of computing expirying keys for the block")
 	txmgr.pvtdataPurgeMgr.WaitForPrepareToFinish()
 	txmgr.oldBlockCommit.Lock()
 	defer txmgr.oldBlockCommit.Unlock()
-	logger.Debug("lock acquired on oldBlockCommit for committing pvtData of old blocks to state database")
+	lockbasedtxmgrLogger.Debug("lock acquired on oldBlockCommit for committing pvtData of old blocks to state database")
 
 	// (1) as the blocksPvtData can contain multiple versions of pvtData for
 	// a given <ns, coll, key>, we need to find duplicate tuples with different
 	// versions and use the one with the higher version
-	logger.Debug("Constructing unique pvtData by removing duplicate entries")
+	lockbasedtxmgrLogger.Debug("Constructing unique pvtData by removing duplicate entries")
 	uniquePvtData, err := constructUniquePvtData(blocksPvtData)
 	if len(uniquePvtData) == 0 || err != nil {
 		return err
@@ -196,7 +196,7 @@ func (txmgr *LockBasedTxMgr) RemoveStaleAndCommitPvtDataOfOldBlocks(blocksPvtDat
 
 	// (3) remove the pvt data which does not matches the hashed
 	// value stored in the public state
-	logger.Debug("Finding and removing stale pvtData")
+	lockbasedtxmgrLogger.Debug("Finding and removing stale pvtData")
 	if err := uniquePvtData.findAndRemoveStalePvtData(txmgr.db); err != nil {
 		return err
 	}
@@ -210,13 +210,13 @@ func (txmgr *LockBasedTxMgr) RemoveStaleAndCommitPvtDataOfOldBlocks(blocksPvtDat
 	// to update the list. This is because RemoveStaleAndCommitPvtDataOfOldBlocks
 	// may have added new data which might be eligible for expiry during the
 	// next regular block commit.
-	logger.Debug("Updating bookkeeping info in the purge manager")
+	lockbasedtxmgrLogger.Debug("Updating bookkeeping info in the purge manager")
 	if err := txmgr.pvtdataPurgeMgr.UpdateBookkeepingForPvtDataOfOldBlocks(batch.PvtUpdates); err != nil {
 		return err
 	}
 
 	// (6) commit the pvt data to the stateDB
-	logger.Debug("Committing updates to state database")
+	lockbasedtxmgrLogger.Debug("Committing updates to state database")
 	if err := txmgr.db.ApplyPrivacyAwareUpdates(batch, nil); err != nil {
 		return err
 	}
@@ -226,7 +226,7 @@ func (txmgr *LockBasedTxMgr) RemoveStaleAndCommitPvtDataOfOldBlocks(blocksPvtDat
 type uniquePvtDataMap map[privacyenabledstate.HashedCompositeKey]*privacyenabledstate.PvtKVWrite
 
 func constructUniquePvtData(blocksPvtData map[uint64][]*ledger.TxPvtData) (uniquePvtDataMap, error) {
-	fmt.Println("==constructUniquePvtData==")
+	logger.Info("==constructUniquePvtData==")
 	uniquePvtData := make(uniquePvtDataMap)
 	// go over the blocksPvtData to find duplicate <ns, coll, key>
 	// in the pvtWrites and use the one with the higher version number
@@ -239,7 +239,7 @@ func constructUniquePvtData(blocksPvtData map[uint64][]*ledger.TxPvtData) (uniqu
 }
 
 func (uniquePvtData uniquePvtDataMap) updateUsingBlockPvtData(blockPvtData []*ledger.TxPvtData, blkNum uint64) error {
-	fmt.Println("==uniquePvtDataMap==updateUsingBlockPvtData==")
+	logger.Info("==uniquePvtDataMap==updateUsingBlockPvtData==")
 	for _, txPvtData := range blockPvtData {
 		ver := version.NewHeight(blkNum, txPvtData.SeqInBlock)
 		if err := uniquePvtData.updateUsingTxPvtData(txPvtData, ver); err != nil {
@@ -249,7 +249,7 @@ func (uniquePvtData uniquePvtDataMap) updateUsingBlockPvtData(blockPvtData []*le
 	return nil
 }
 func (uniquePvtData uniquePvtDataMap) updateUsingTxPvtData(txPvtData *ledger.TxPvtData, ver *version.Height) error {
-	fmt.Println("==uniquePvtDataMap==updateUsingTxPvtData==")
+	logger.Info("==uniquePvtDataMap==updateUsingTxPvtData==")
 	for _, nsPvtData := range txPvtData.WriteSet.NsPvtRwset {
 		if err := uniquePvtData.updateUsingNsPvtData(nsPvtData, ver); err != nil {
 			return err
@@ -258,7 +258,7 @@ func (uniquePvtData uniquePvtDataMap) updateUsingTxPvtData(txPvtData *ledger.TxP
 	return nil
 }
 func (uniquePvtData uniquePvtDataMap) updateUsingNsPvtData(nsPvtData *rwset.NsPvtReadWriteSet, ver *version.Height) error {
-	fmt.Println("==uniquePvtDataMap==updateUsingNsPvtData==")
+	logger.Info("==uniquePvtDataMap==updateUsingNsPvtData==")
 	for _, collPvtData := range nsPvtData.CollectionPvtRwset {
 		if err := uniquePvtData.updateUsingCollPvtData(collPvtData, nsPvtData.Namespace, ver); err != nil {
 			return err
@@ -271,7 +271,7 @@ func (uniquePvtData uniquePvtDataMap) updateUsingCollPvtData(collPvtData *rwset.
 
 	ns string, ver *version.Height) error {
 
-	fmt.Println("==uniquePvtDataMap==updateUsingCollPvtData==")
+	logger.Info("==uniquePvtDataMap==updateUsingCollPvtData==")
 	kvRWSet := &kvrwset.KVRWSet{}
 	if err := proto.Unmarshal(collPvtData.Rwset, kvRWSet); err != nil {
 		return err
@@ -293,7 +293,7 @@ func (uniquePvtData uniquePvtDataMap) updateUsingCollPvtData(collPvtData *rwset.
 func (uniquePvtData uniquePvtDataMap) updateUsingPvtWrite(pvtWrite *kvrwset.KVWrite,
 	hashedCompositeKey privacyenabledstate.HashedCompositeKey, ver *version.Height) {
 
-	fmt.Println("==uniquePvtDataMap==updateUsingPvtWrite==")
+	logger.Info("==uniquePvtDataMap==updateUsingPvtWrite==")
 	pvtData, ok := uniquePvtData[hashedCompositeKey]
 	if !ok || pvtData.Version.Compare(ver) < 0 {
 		uniquePvtData[hashedCompositeKey] =
@@ -307,7 +307,7 @@ func (uniquePvtData uniquePvtDataMap) updateUsingPvtWrite(pvtWrite *kvrwset.KVWr
 }
 
 func (uniquePvtData uniquePvtDataMap) findAndRemoveStalePvtData(db privacyenabledstate.DB) error {
-	fmt.Println("==uniquePvtDataMap==findAndRemoveStalePvtData==")
+	logger.Info("==uniquePvtDataMap==findAndRemoveStalePvtData==")
 	// (1) load all committed versions
 	if err := uniquePvtData.loadCommittedVersionIntoCache(db); err != nil {
 		return err
@@ -327,7 +327,7 @@ func (uniquePvtData uniquePvtDataMap) findAndRemoveStalePvtData(db privacyenable
 }
 
 func (uniquePvtData uniquePvtDataMap) loadCommittedVersionIntoCache(db privacyenabledstate.DB) error {
-	fmt.Println("==uniquePvtDataMap==loadCommittedVersionIntoCache==")
+	logger.Info("==uniquePvtDataMap==loadCommittedVersionIntoCache==")
 	// Note that ClearCachedVersions would not be called till we validate and commit these
 	// pvt data of old blocks. This is because only during the exclusive lock duration, we
 	// clear the cache and we have already acquired one before reaching here.
@@ -349,7 +349,7 @@ func checkIfPvtWriteIsStale(hashedKey *privacyenabledstate.HashedCompositeKey,
 
 	kvWrite *privacyenabledstate.PvtKVWrite, db privacyenabledstate.DB) (bool, error) {
 
-	fmt.Println("==checkIfPvtWriteIsStale==")
+	logger.Info("==checkIfPvtWriteIsStale==")
 	ns := hashedKey.Namespace
 	coll := hashedKey.CollectionName
 	keyHashBytes := []byte(hashedKey.KeyHash)
@@ -406,7 +406,7 @@ func checkIfPvtWriteIsStale(hashedKey *privacyenabledstate.HashedCompositeKey,
 }
 
 func (uniquePvtData uniquePvtDataMap) transformToUpdateBatch() *privacyenabledstate.UpdateBatch {
-	fmt.Println("==uniquePvtData==uniquePvtDataMap==")
+	logger.Info("==uniquePvtData==uniquePvtDataMap==")
 	batch := privacyenabledstate.NewUpdateBatch()
 	for hashedCompositeKey, pvtWrite := range uniquePvtData {
 		ns := hashedCompositeKey.Namespace
@@ -422,7 +422,7 @@ func (uniquePvtData uniquePvtDataMap) transformToUpdateBatch() *privacyenabledst
 
 func (txmgr *LockBasedTxMgr) invokeNamespaceListeners() error {
 
-	fmt.Println("==LockBasedTxMgr==invokeNamespaceListeners==")
+	logger.Info("==LockBasedTxMgr==invokeNamespaceListeners==")
 	for _, listener := range txmgr.stateListeners {
 		stateUpdatesForListener := extractStateUpdates(txmgr.current.batch, listener.InterestedInNamespaces())
 		if len(stateUpdatesForListener) == 0 {
@@ -450,14 +450,14 @@ func (txmgr *LockBasedTxMgr) invokeNamespaceListeners() error {
 		if err := listener.HandleStateUpdates(trigger); err != nil {
 			return err
 		}
-		logger.Debugf("Invoking listener for state changes:%s", listener)
+		lockbasedtxmgrLogger.Debugf("Invoking listener for state changes:%s", listener)
 	}
 	return nil
 }
 
 // Shutdown implements method in interface `txmgmt.TxMgr`
 func (txmgr *LockBasedTxMgr) Shutdown() {
-	fmt.Println("==LockBasedTxMgr==Shutdown==")
+	logger.Info("==LockBasedTxMgr==Shutdown==")
 	// wait for background go routine to finish else the timing issue causes a nil pointer inside goleveldb code
 	// see FAB-11974
 	txmgr.pvtdataPurgeMgr.WaitForPrepareToFinish()
@@ -467,7 +467,7 @@ func (txmgr *LockBasedTxMgr) Shutdown() {
 // Commit implements method in interface `txmgmt.TxMgr`
 func (txmgr *LockBasedTxMgr) Commit() error {
 
-	fmt.Println("==LockBasedTxMgr==Commit==")
+	logger.Info("==LockBasedTxMgr==Commit==")
 	// we need to acquire a lock on oldBlockCommit. The following are the two reasons:
 	// (1) the DeleteExpiredAndUpdateBookkeeping() would perform incorrect operation if
 	//        toPurgeList is updated by RemoveStaleAndCommitPvtDataOfOldBlocks().
@@ -477,7 +477,7 @@ func (txmgr *LockBasedTxMgr) Commit() error {
 	//     end up with an incorrect update batch.
 	txmgr.oldBlockCommit.Lock()
 	defer txmgr.oldBlockCommit.Unlock()
-	logger.Debug("lock acquired on oldBlockCommit for committing regular updates to state database")
+	lockbasedtxmgrLogger.Debug("lock acquired on oldBlockCommit for committing regular updates to state database")
 
 	// When using the purge manager for the first block commit after peer start, the asynchronous function
 	// 'PrepareForExpiringKeys' is invoked in-line. However, for the subsequent blocks commits, this function is invoked
@@ -488,11 +488,11 @@ func (txmgr *LockBasedTxMgr) Commit() error {
 	}
 	defer func() {
 		txmgr.pvtdataPurgeMgr.PrepareForExpiringKeys(txmgr.current.blockNum() + 1)
-		logger.Debugf("launched the background routine for preparing keys to purge with the next block")
+		lockbasedtxmgrLogger.Debugf("launched the background routine for preparing keys to purge with the next block")
 		txmgr.reset()
 	}()
 
-	logger.Debugf("Committing updates to state database")
+	lockbasedtxmgrLogger.Debugf("Committing updates to state database")
 	if txmgr.current == nil {
 		panic("validateAndPrepare() method should have been called before calling commit()")
 	}
@@ -504,7 +504,7 @@ func (txmgr *LockBasedTxMgr) Commit() error {
 
 	commitHeight := version.NewHeight(txmgr.current.blockNum(), txmgr.current.maxTxNumber())
 	txmgr.commitRWLock.Lock()
-	logger.Debugf("Write lock acquired for committing updates to state database")
+	lockbasedtxmgrLogger.Debugf("Write lock acquired for committing updates to state database")
 	if err := txmgr.db.ApplyPrivacyAwareUpdates(txmgr.current.batch, commitHeight); err != nil {
 		txmgr.commitRWLock.Unlock()
 		return err
@@ -514,7 +514,7 @@ func (txmgr *LockBasedTxMgr) Commit() error {
 	// cache is being used by the old pvtData committer to load the version of
 	// hashedKeys. Also, note that the PrepareForExpiringKeys uses the cache.
 	txmgr.clearCache()
-	logger.Debugf("Updates committed to state database and the write lock is released")
+	lockbasedtxmgrLogger.Debugf("Updates committed to state database and the write lock is released")
 
 	// purge manager should be called (in this call the purge mgr removes the expiry entries from schedules) after committing to statedb
 	if err := txmgr.pvtdataPurgeMgr.BlockCommitDone(); err != nil {
@@ -528,13 +528,13 @@ func (txmgr *LockBasedTxMgr) Commit() error {
 
 // Rollback implements method in interface `txmgmt.TxMgr`
 func (txmgr *LockBasedTxMgr) Rollback() {
-	fmt.Println("==LockBasedTxMgr==Rollback==")
+	logger.Info("==LockBasedTxMgr==Rollback==")
 	txmgr.reset()
 }
 
 // clearCache empty the cache maintained by the statedb implementation
 func (txmgr *LockBasedTxMgr) clearCache() {
-	fmt.Println("==LockBasedTxMgr==clearCache==")
+	logger.Info("==LockBasedTxMgr==clearCache==")
 	if txmgr.db.IsBulkOptimizable() {
 		txmgr.db.ClearCachedVersions()
 	}
@@ -542,7 +542,7 @@ func (txmgr *LockBasedTxMgr) clearCache() {
 
 // ShouldRecover implements method in interface kvledger.Recoverer
 func (txmgr *LockBasedTxMgr) ShouldRecover(lastAvailableBlock uint64) (bool, uint64, error) {
-	fmt.Println("==LockBasedTxMgr==ShouldRecover==")
+	logger.Info("==LockBasedTxMgr==ShouldRecover==")
 	savepoint, err := txmgr.GetLastSavepoint()
 	if err != nil {
 		return false, 0, err
@@ -555,25 +555,25 @@ func (txmgr *LockBasedTxMgr) ShouldRecover(lastAvailableBlock uint64) (bool, uin
 
 // CommitLostBlock implements method in interface kvledger.Recoverer
 func (txmgr *LockBasedTxMgr) CommitLostBlock(blockAndPvtdata *ledger.BlockAndPvtData) error {
-	fmt.Println("==LockBasedTxMgr==CommitLostBlock==")
+	logger.Info("==LockBasedTxMgr==CommitLostBlock==")
 	block := blockAndPvtdata.Block
-	logger.Debugf("Constructing updateSet for the block %d", block.Header.Number)
+	lockbasedtxmgrLogger.Debugf("Constructing updateSet for the block %d", block.Header.Number)
 	if _, err := txmgr.ValidateAndPrepare(blockAndPvtdata, false); err != nil {
 		return err
 	}
 
 	// log every 1000th block at Info level so that statedb rebuild progress can be tracked in production envs.
 	if block.Header.Number%1000 == 0 {
-		logger.Infof("Recommitting block [%d] to state database", block.Header.Number)
+		lockbasedtxmgrLogger.Infof("Recommitting block [%d] to state database", block.Header.Number)
 	} else {
-		logger.Debugf("Recommitting block [%d] to state database", block.Header.Number)
+		lockbasedtxmgrLogger.Debugf("Recommitting block [%d] to state database", block.Header.Number)
 	}
 
 	return txmgr.Commit()
 }
 
 func extractStateUpdates(batch *privacyenabledstate.UpdateBatch, namespaces []string) ledger.StateUpdates {
-	fmt.Println("==extractStateUpdates==")
+	logger.Info("==extractStateUpdates==")
 	stateupdates := make(ledger.StateUpdates)
 	for _, namespace := range namespaces {
 		updatesMap := batch.PubUpdates.GetUpdates(namespace)
@@ -589,14 +589,14 @@ func extractStateUpdates(batch *privacyenabledstate.UpdateBatch, namespaces []st
 }
 
 func (txmgr *LockBasedTxMgr) updateStateListeners() {
-	fmt.Println("==LockBasedTxMgr==updateStateListeners==")
+	logger.Info("==LockBasedTxMgr==updateStateListeners==")
 	for _, l := range txmgr.current.listeners {
 		l.StateCommitDone(txmgr.ledgerid)
 	}
 }
 
 func (txmgr *LockBasedTxMgr) reset() {
-	fmt.Println("==LockBasedTxMgr==reset==")
+	logger.Info("==LockBasedTxMgr==reset==")
 	txmgr.current = nil
 }
 

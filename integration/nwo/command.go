@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package nwo
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 )
@@ -35,7 +34,7 @@ func ConnectsToOrderer(c Command) bool {
 }
 
 func NewCommand(path string, command Command) *exec.Cmd {
-	fmt.Println("=====NewCommand==============")
+	logger.Info("=====NewCommand==============")
 	cmd := exec.Command(path, command.Args()...)
 	cmd.Env = os.Environ()
 	if ce, ok := command.(Enver); ok {

@@ -20,7 +20,7 @@ type protoMarshaler struct {
 }
 
 func (m *protoMarshaler) MarshalJSON() ([]byte, error) {
-	fmt.Println("====protoMarshaler====MarshalJSON============")
+	logger.Info("====protoMarshaler====MarshalJSON============")
 	out, err := m.Marshaler.MarshalToString(m.message)
 	if err != nil {
 		return nil, err
@@ -29,7 +29,7 @@ func (m *protoMarshaler) MarshalJSON() ([]byte, error) {
 }
 
 func ProtoMessage(key string, val interface{}) zapcore.Field {
-	fmt.Println("====ProtoMessage============")
+	logger.Info("====ProtoMessage============")
 	if pm, ok := val.(proto.Message); ok {
 		return zap.Reflect(key, &protoMarshaler{message: pm})
 	}
@@ -37,7 +37,7 @@ func ProtoMessage(key string, val interface{}) zapcore.Field {
 }
 
 func Error(err error) zapcore.Field {
-	fmt.Println("===Error===========")
+	logger.Info("===Error===========")
 	if err == nil {
 		return zap.Skip()
 	}

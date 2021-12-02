@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package pvtstatepurgemgmt
 
 import (
-	"fmt"
 	math "math"
 
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/privacyenabledstate"
@@ -22,12 +21,12 @@ type expiryScheduleBuilder struct {
 }
 
 func newExpiryScheduleBuilder(btlPolicy pvtdatapolicy.BTLPolicy) *expiryScheduleBuilder {
-	fmt.Println("==newExpiryScheduleBuilder==")
+	logger.Info("==newExpiryScheduleBuilder==")
 	return &expiryScheduleBuilder{btlPolicy, make(map[expiryInfoKey]*PvtdataKeys)}
 }
 
 func (builder *expiryScheduleBuilder) add(ns, coll, key string, keyHash []byte, versionedValue *statedb.VersionedValue) error {
-	fmt.Println("==expiryScheduleBuilder==add===")
+	logger.Info("==expiryScheduleBuilder==add===")
 	committingBlk := versionedValue.Version.BlockNum
 	expiryBlk, err := builder.btlPolicy.GetExpiringBlock(ns, coll, committingBlk)
 	if err != nil {
@@ -47,17 +46,17 @@ func (builder *expiryScheduleBuilder) add(ns, coll, key string, keyHash []byte, 
 }
 
 func isDelete(versionedValue *statedb.VersionedValue) bool {
-	fmt.Println("==isDelete===")
+	logger.Info("==isDelete===")
 	return versionedValue.Value == nil
 }
 
 func neverExpires(expiryBlk uint64) bool {
-	fmt.Println("==neverExpires===")
+	logger.Info("==neverExpires===")
 	return expiryBlk == math.MaxUint64
 }
 
 func (builder *expiryScheduleBuilder) getExpiryInfo() []*expiryInfo {
-	fmt.Println("==expiryScheduleBuilder===getExpiryInfo==")
+	logger.Info("==expiryScheduleBuilder===getExpiryInfo==")
 	var listExpinfo []*expiryInfo
 	for expinfoKey, pvtdataKeys := range builder.scheduleEntries {
 		expinfoKeyCopy := expinfoKey
@@ -72,7 +71,7 @@ func buildExpirySchedule(
 	hashedUpdates *privacyenabledstate.HashedUpdateBatch) ([]*expiryInfo, error) {
 
 
-	fmt.Println("==buildExpirySchedule==")
+	logger.Info("==buildExpirySchedule==")
 	hashedUpdateKeys := hashedUpdates.ToCompositeKeyMap()
 	expiryScheduleBuilder := newExpiryScheduleBuilder(btlPolicy)
 

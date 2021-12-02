@@ -34,7 +34,7 @@ type Platform struct {
 
 // Returns whether the given file or directory exists or not
 func pathExists(path string) (bool, error) {
-	fmt.Println("====pathExists=======")
+	logger.Info("====pathExists=======")
 	_, err := os.Stat(path)
 	if err == nil {
 		return true, nil
@@ -46,7 +46,7 @@ func pathExists(path string) (bool, error) {
 }
 
 func decodeUrl(path string) (string, error) {
-	fmt.Println("====decodeUrl=======")
+	logger.Info("====decodeUrl=======")
 	var urlLocation string
 	if strings.HasPrefix(path, "http://") {
 		urlLocation = path[7:]
@@ -68,7 +68,7 @@ func decodeUrl(path string) (string, error) {
 }
 
 func getGopath() (string, error) {
-	fmt.Println("====getGopath=======")
+	logger.Info("====getGopath=======")
 	env, err := getGoEnv()
 	if err != nil {
 		return "", err
@@ -82,7 +82,7 @@ func getGopath() (string, error) {
 }
 
 func filter(vs []string, f func(string) bool) []string {
-	fmt.Println("====filter=======")
+	logger.Info("====filter=======")
 	vsf := make([]string, 0)
 	for _, v := range vs {
 		if f(v) {
@@ -94,13 +94,13 @@ func filter(vs []string, f func(string) bool) []string {
 
 // Name returns the name of this platform
 func (goPlatform *Platform) Name() string {
-	fmt.Println("====Platform====Name===")
+	logger.Info("====Platform====Name===")
 	return pb.ChaincodeSpec_GOLANG.String()
 }
 
 // ValidateSpec validates Go chaincodes
 func (goPlatform *Platform) ValidatePath(rawPath string) error {
-	fmt.Println("====Platform====ValidatePath===")
+	logger.Info("====Platform====ValidatePath===")
 	path, err := url.Parse(rawPath)
 	if err != nil || path == nil {
 		return fmt.Errorf("invalid path: %s", err)
@@ -127,7 +127,7 @@ func (goPlatform *Platform) ValidatePath(rawPath string) error {
 }
 
 func (goPlatform *Platform) ValidateCodePackage(code []byte) error {
-	fmt.Println("====Platform====ValidateCodePackage===")
+	logger.Info("====Platform====ValidateCodePackage===")
 	if len(code) == 0 {
 		// Nothing to validate if no CodePackage was included
 		return nil
@@ -188,7 +188,7 @@ func (goPlatform *Platform) ValidateCodePackage(code []byte) error {
 // For anything that needs to be vendored, we simply update its path specification.
 // Everything else, we pass through untouched.
 func vendorDependencies(pkg string, files Sources) {
-	fmt.Println("=====vendorDependencies===")
+	logger.Info("=====vendorDependencies===")
 	exclusions := make([]string, 0)
 	elements := strings.Split(pkg, "/")
 
@@ -502,7 +502,7 @@ func (goPlatform *Platform) GetDeploymentPayload(path string) ([]byte, error) {
 }
 
 func (goPlatform *Platform) GenerateDockerfile() (string, error) {
-	fmt.Println("=====Platform==GenerateDockerfile===")
+	logger.Info("=====Platform==GenerateDockerfile===")
 	var buf []string
 
 	buf = append(buf, "FROM "+cutil.GetDockerfileFromConfig("chaincode.golang.runtime"))
@@ -510,7 +510,7 @@ func (goPlatform *Platform) GenerateDockerfile() (string, error) {
 
 	dockerFileContents := strings.Join(buf, "\n")
 
-	fmt.Println("==========dockerFileContents================",dockerFileContents)
+	logger.Info("==========dockerFileContents================",dockerFileContents)
 	//==========dockerFileContents================ FROM hyperledger/fabric-baseos:amd64-0.4.14
 	//ADD binpackage.tar /usr/local/bin
 	//building chaincode with ldflagsOpt: '-ldflags "-linkmode external -extldflags '-static'"'
@@ -549,8 +549,8 @@ func getLDFlagsOpts() string {
 }
 
 func (goPlatform *Platform) GenerateDockerBuild(path string, code []byte, tw *tar.Writer) error {
-	fmt.Println("=====Platform==GenerateDockerBuild===")
-	fmt.Println("=============path===============",path)
+	logger.Info("=====Platform==GenerateDockerBuild===")
+	logger.Info("=============path===============",path)
 	//github.com/hyperledger/fabric-samples/chaincode/chaincode_example02/go
 	pkgname, err := decodeUrl(path)
 	if err != nil {
@@ -571,7 +571,7 @@ func (goPlatform *Platform) GenerateDockerBuild(path string, code []byte, tw *ta
 		OutputStream: binpackage,
 	})
 	a := fmt.Sprintf("GOPATH=/chaincode/input:$GOPATH go build  %s -o /chaincode/output/chaincode %s", ldflagsOpt, pkgname)
-	fmt.Println("=================cmd====",a)
+	logger.Info("=================cmd====",a)
 	//GOPATH=/chaincode/input:$GOPATH go build  -ldflags "-linkmode external -extldflags '-static'" -o /chaincode/output/chaincode github.com/hyperledger/fabric-samples/chaincode/chaincode_example02/go
 	if err != nil {
 		return err
@@ -582,6 +582,6 @@ func (goPlatform *Platform) GenerateDockerBuild(path string, code []byte, tw *ta
 
 //GetMetadataProvider fetches metadata provider given deployment spec
 func (goPlatform *Platform) GetMetadataProvider(code []byte) platforms.MetadataProvider {
-	fmt.Println("=====Platform  GetMetadataProvider===")
+	logger.Info("=====Platform  GetMetadataProvider===")
 	return &ccmetadata.TargzMetadataProvider{Code: code}
 }

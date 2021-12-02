@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package ledgerstorage
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/hyperledger/fabric/common/flogging"
@@ -39,7 +38,7 @@ type Store struct {
 
 // NewProvider returns the handle to the provider
 func NewProvider() *Provider {
-	fmt.Println("====NewProvider====")
+	logger.Info("====NewProvider====")
 	// Initialize the block storage
 	attrsToIndex := []blkstorage.IndexableAttr{
 		blkstorage.IndexableAttrBlockHash,
@@ -60,7 +59,7 @@ func NewProvider() *Provider {
 
 // Open opens the store
 func (p *Provider) Open(ledgerid string) (*Store, error) {
-	fmt.Println("===Provider=Open====")
+	logger.Info("===Provider=Open====")
 	var blockStore blkstorage.BlockStore
 	var pvtdataStore pvtdatastorage.Store
 	var err error
@@ -80,20 +79,20 @@ func (p *Provider) Open(ledgerid string) (*Store, error) {
 
 // Close closes the provider
 func (p *Provider) Close() {
-	fmt.Println("===Provider=Close====")
+	logger.Info("===Provider=Close====")
 	p.blkStoreProvider.Close()
 	p.pvtdataStoreProvider.Close()
 }
 
 // Init initializes store with essential configurations
 func (s *Store) Init(btlPolicy pvtdatapolicy.BTLPolicy) {
-	fmt.Println("===Store=Init====")
+	logger.Info("===Store=Init====")
 	s.pvtdataStore.Init(btlPolicy)
 }
 
 // CommitWithPvtData commits the block and the corresponding pvt data in an atomic operation
 func (s *Store) CommitWithPvtData(blockAndPvtdata *ledger.BlockAndPvtData) error {
-	fmt.Println("===Store=CommitWithPvtData====")
+	logger.Info("===Store=CommitWithPvtData====")
 	blockNum := blockAndPvtdata.Block.Header.Number
 	s.rwlock.Lock()
 	defer s.rwlock.Unlock()
@@ -151,7 +150,7 @@ func constructValidTxPvtDataAndMissingData(blockAndPvtData *ledger.BlockAndPvtDa
 	ledger.TxMissingPvtDataMap) {
 
 
-	fmt.Println("===constructValidTxPvtDataAndMissingData=====")
+	logger.Info("===constructValidTxPvtDataAndMissingData=====")
 	var validTxPvtData []*ledger.TxPvtData
 	validTxMissingPvtData := make(ledger.TxMissingPvtDataMap)
 
@@ -180,7 +179,7 @@ func constructValidTxPvtDataAndMissingData(blockAndPvtData *ledger.BlockAndPvtDa
 
 // CommitPvtDataOfOldBlocks commits the pvtData of old blocks
 func (s *Store) CommitPvtDataOfOldBlocks(blocksPvtData map[uint64][]*ledger.TxPvtData) error {
-	fmt.Println("===Store==CommitPvtDataOfOldBlocks===")
+	logger.Info("===Store==CommitPvtDataOfOldBlocks===")
 	err := s.pvtdataStore.CommitPvtDataOfOldBlocks(blocksPvtData)
 	if err != nil {
 		return err
@@ -191,7 +190,7 @@ func (s *Store) CommitPvtDataOfOldBlocks(blocksPvtData map[uint64][]*ledger.TxPv
 // GetPvtDataAndBlockByNum returns the block and the corresponding pvt data.
 // The pvt data is filtered by the list of 'collections' supplied
 func (s *Store) GetPvtDataAndBlockByNum(blockNum uint64, filter ledger.PvtNsCollFilter) (*ledger.BlockAndPvtData, error) {
-	fmt.Println("===Store==GetPvtDataAndBlockByNum===")
+	logger.Info("===Store==GetPvtDataAndBlockByNum===")
 	s.rwlock.RLock()
 	defer s.rwlock.RUnlock()
 
@@ -211,7 +210,7 @@ func (s *Store) GetPvtDataAndBlockByNum(blockNum uint64, filter ledger.PvtNsColl
 // The pvt data is filtered by the list of 'ns/collections' supplied in the filter
 // A nil filter does not filter any results
 func (s *Store) GetPvtDataByNum(blockNum uint64, filter ledger.PvtNsCollFilter) ([]*ledger.TxPvtData, error) {
-	fmt.Println("===Store==GetPvtDataByNum===")
+	logger.Info("===Store==GetPvtDataByNum===")
 	s.rwlock.RLock()
 	defer s.rwlock.RUnlock()
 	return s.getPvtDataByNumWithoutLock(blockNum, filter)
@@ -221,7 +220,7 @@ func (s *Store) GetPvtDataByNum(blockNum uint64, filter ledger.PvtNsCollFilter) 
 // This function does not acquire a readlock and it is expected that in most of the circumstances, the caller
 // possesses a read lock on `s.rwlock`
 func (s *Store) getPvtDataByNumWithoutLock(blockNum uint64, filter ledger.PvtNsCollFilter) ([]*ledger.TxPvtData, error) {
-	fmt.Println("===Store==getPvtDataByNumWithoutLock===")
+	logger.Info("===Store==getPvtDataByNumWithoutLock===")
 	var pvtdata []*ledger.TxPvtData
 	var err error
 	if pvtdata, err = s.pvtdataStore.GetPvtDataByBlockNum(blockNum, filter); err != nil {
@@ -233,7 +232,7 @@ func (s *Store) getPvtDataByNumWithoutLock(blockNum uint64, filter ledger.PvtNsC
 // GetMissingPvtDataInfoForMostRecentBlocks invokes the function on underlying pvtdata store
 func (s *Store) GetMissingPvtDataInfoForMostRecentBlocks(maxBlock int) (ledger.MissingPvtDataInfo, error) {
 
-	fmt.Println("===Store==GetMissingPvtDataInfoForMostRecentBlocks===")
+	logger.Info("===Store==GetMissingPvtDataInfoForMostRecentBlocks===")
 	// it is safe to not acquire a read lock on s.rwlock. Without a lock, the value of
 	// lastCommittedBlock can change due to a new block commit. As a result, we may not
 	// be able to fetch the missing data info of truly the most recent blocks. This
@@ -243,19 +242,19 @@ func (s *Store) GetMissingPvtDataInfoForMostRecentBlocks(maxBlock int) (ledger.M
 
 // ProcessCollsEligibilityEnabled invokes the function on underlying pvtdata store
 func (s *Store) ProcessCollsEligibilityEnabled(committingBlk uint64, nsCollMap map[string][]string) error {
-	fmt.Println("===Store==ProcessCollsEligibilityEnabled===")
+	logger.Info("===Store==ProcessCollsEligibilityEnabled===")
 	return s.pvtdataStore.ProcessCollsEligibilityEnabled(committingBlk, nsCollMap)
 }
 
 // GetLastUpdatedOldBlocksPvtData invokes the function on underlying pvtdata store
 func (s *Store) GetLastUpdatedOldBlocksPvtData() (map[uint64][]*ledger.TxPvtData, error) {
-	fmt.Println("===Store==GetLastUpdatedOldBlocksPvtData===")
+	logger.Info("===Store==GetLastUpdatedOldBlocksPvtData===")
 	return s.pvtdataStore.GetLastUpdatedOldBlocksPvtData()
 }
 
 // ResetLastUpdatedOldBlocksList invokes the function on underlying pvtdata store
 func (s *Store) ResetLastUpdatedOldBlocksList() error {
-	fmt.Println("===Store==ResetLastUpdatedOldBlocksList===")
+	logger.Info("===Store==ResetLastUpdatedOldBlocksList===")
 	return s.pvtdataStore.ResetLastUpdatedOldBlocksList()
 }
 
@@ -265,7 +264,7 @@ func (s *Store) ResetLastUpdatedOldBlocksList() error {
 // not the case then this init will invoke function `syncPvtdataStoreWithBlockStore`
 // to follow the normal course
 func (s *Store) init() error {
-	fmt.Println("===Store==init===")
+	logger.Info("===Store==init===")
 	var initialized bool
 	var err error
 	if initialized, err = s.initPvtdataStoreFromExistingBlockchain(); err != nil || initialized {
@@ -282,7 +281,7 @@ func (s *Store) init() error {
 // processed existing blocks with no pvt data. This function returns true if the
 // above mentioned condition is found to be true and pvtdata store is successfully updated
 func (s *Store) initPvtdataStoreFromExistingBlockchain() (bool, error) {
-	fmt.Println("===Store==initPvtdataStoreFromExistingBlockchain===")
+	logger.Info("===Store==initPvtdataStoreFromExistingBlockchain===")
 	var bcInfo *common.BlockchainInfo
 	var pvtdataStoreEmpty bool
 	var err error
@@ -310,7 +309,7 @@ func (s *Store) initPvtdataStoreFromExistingBlockchain() (bool, error) {
 // or not. If the block was committed, the private data batch is committed
 // otherwise, the pvt data batch is rolledback
 func (s *Store) syncPvtdataStoreWithBlockStore() error {
-	fmt.Println("===Store==syncPvtdataStoreWithBlockStore===")
+	logger.Info("===Store==syncPvtdataStoreWithBlockStore===")
 	var pendingPvtbatch bool
 	var err error
 	if pendingPvtbatch, err = s.pvtdataStore.HasPendingBatch(); err != nil {
@@ -341,7 +340,7 @@ func (s *Store) syncPvtdataStoreWithBlockStore() error {
 }
 
 func constructPvtdataMap(pvtdata []*ledger.TxPvtData) map[uint64]*ledger.TxPvtData {
-	fmt.Println("===constructPvtdataMap===")
+	logger.Info("===constructPvtdataMap===")
 	if pvtdata == nil {
 		return nil
 	}

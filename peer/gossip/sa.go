@@ -30,7 +30,7 @@ type mspSecurityAdvisor struct {
 // NewSecurityAdvisor creates a new instance of mspSecurityAdvisor
 // that implements MessageCryptoService
 func NewSecurityAdvisor(deserializer mgmt.DeserializersManager) api.SecurityAdvisor {
-	fmt.Println("======NewSecurityAdvisor======")
+	logger.Info("======NewSecurityAdvisor======")
 	return &mspSecurityAdvisor{deserializer: deserializer}
 }
 
@@ -40,10 +40,10 @@ func NewSecurityAdvisor(deserializer mgmt.DeserializersManager) api.SecurityAdvi
 // This method does not validate peerIdentity.
 // This validation is supposed to be done appropriately during the execution flow.
 func (advisor *mspSecurityAdvisor) OrgByPeerIdentity(peerIdentity api.PeerIdentityType) api.OrgIdentityType {
-	//fmt.Println("===mspSecurityAdvisor===OrgByPeerIdentity======")
+	//logger.Info("===mspSecurityAdvisor===OrgByPeerIdentity======")
 
 	// Validate arguments
-	//fmt.Println("========len(peerIdentity)====================",len(peerIdentity))
+	//logger.Info("========len(peerIdentity)====================",len(peerIdentity))
 	if len(peerIdentity) == 0 {
 		saLogger.Error("Invalid Peer Identity. It must be different from nil.")
 

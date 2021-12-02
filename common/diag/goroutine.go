@@ -18,7 +18,7 @@ type Logger interface {
 }
 
 func CaptureGoRoutines() (string, error) {
-	fmt.Println("======CaptureGoRoutines===")
+	logger.Info("======CaptureGoRoutines===")
 	var buf bytes.Buffer
 	err := pprof.Lookup("goroutine").WriteTo(&buf, 2)
 	if err != nil {
@@ -28,7 +28,7 @@ func CaptureGoRoutines() (string, error) {
 }
 
 func LogGoRoutines(logger Logger) {
-	fmt.Println("======SLogGoRoutines===")
+	logger.Info("======SLogGoRoutines===")
 	output, err := CaptureGoRoutines()
 	if err != nil {
 		logger.Errorf("failed to capture go routines: %s", err)

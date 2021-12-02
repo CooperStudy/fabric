@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package decoration
 
 import (
-	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/protos/peer"
 )
 
@@ -16,11 +16,10 @@ type Decorator interface {
 	// Decorate decorates a chaincode input by changing it
 	Decorate(proposal *peer.Proposal, input *peer.ChaincodeInput) *peer.ChaincodeInput
 }
-
+var logger = flogging.MustGetLogger("core.handlers.decoration.decorator")
 // Apply decorators in the order provided
 func Apply(proposal *peer.Proposal, input *peer.ChaincodeInput, decorators ...Decorator) *peer.ChaincodeInput {
-
-	fmt.Println("=======Apply==================")
+	logger.Info("=======Apply==================")
 	for _, decorator := range decorators {
 		input = decorator.Decorate(proposal, input)
 	}

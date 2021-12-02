@@ -29,7 +29,7 @@ import (
 )
 
 func fieldBytes(fieldName string, r *http.Request) ([]byte, error) {
-	fmt.Println("=========fieldBytes=========")
+	logger.Info("=========fieldBytes=========")
 	fieldFile, _, err := r.FormFile(fieldName)
 	if err != nil {
 		return nil, err
@@ -40,7 +40,7 @@ func fieldBytes(fieldName string, r *http.Request) ([]byte, error) {
 }
 
 func fieldConfigProto(fieldName string, r *http.Request) (*cb.Config, error) {
-	fmt.Println("========fieldConfigProto========")
+	logger.Info("========fieldConfigProto========")
 	fieldBytes, err := fieldBytes(fieldName, r)
 	if err != nil {
 		return nil, fmt.Errorf("error reading field bytes: %s", err)
@@ -56,7 +56,7 @@ func fieldConfigProto(fieldName string, r *http.Request) (*cb.Config, error) {
 }
 
 func ComputeUpdateFromConfigs(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("========ComputeUpdateFromConfigs========")
+	logger.Info("========ComputeUpdateFromConfigs========")
 	originalConfig, err := fieldConfigProto("original", r)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -93,7 +93,7 @@ func ComputeUpdateFromConfigs(w http.ResponseWriter, r *http.Request) {
 }
 
 func SanityCheckConfig(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("========SanityCheckConfig========")
+	logger.Info("========SanityCheckConfig========")
 	buf, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)

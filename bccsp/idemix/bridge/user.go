@@ -21,7 +21,7 @@ type User struct {
 
 // NewKey generates an idemix user secret key
 func (u *User) NewKey() (res handlers.Big, err error) {
-	fmt.Println("=======User===NewKey=================")
+	logger.Info("=======User===NewKey=================")
 	defer func() {
 		if r := recover(); r != nil {
 			res = nil
@@ -35,7 +35,7 @@ func (u *User) NewKey() (res handlers.Big, err error) {
 }
 
 func (*User) NewKeyFromBytes(raw []byte) (res handlers.Big, err error) {
-	fmt.Println("=======User===NewKeyFromBytes=================")
+	logger.Info("=======User===NewKeyFromBytes=================")
 	if len(raw) != int(FP256BN.MODBYTES) {
 		return nil, errors.Errorf("invalid length, expected [%d], got [%d]", FP256BN.MODBYTES, len(raw))
 	}
@@ -47,7 +47,7 @@ func (*User) NewKeyFromBytes(raw []byte) (res handlers.Big, err error) {
 
 // MakeNym generates a new pseudonym key-pair derived from the passed user secret key (sk) and issuer public key (ipk)
 func (u *User) MakeNym(sk handlers.Big, ipk handlers.IssuerPublicKey) (r1 handlers.Ecp, r2 handlers.Big, err error) {
-	fmt.Println("=======User===MakeNym=================")
+	logger.Info("=======User===MakeNym=================")
 	defer func() {
 		if r := recover(); r != nil {
 			r1 = nil
@@ -74,7 +74,7 @@ func (u *User) MakeNym(sk handlers.Big, ipk handlers.IssuerPublicKey) (r1 handle
 }
 
 func (*User) NewPublicNymFromBytes(raw []byte) (r handlers.Ecp, err error) {
-	fmt.Println("=======User===NewPublicNymFromBytes=================")
+	logger.Info("=======User===NewPublicNymFromBytes=================")
 	defer func() {
 		if r := recover(); r != nil {
 			r = nil

@@ -8,8 +8,6 @@ package comm
 
 import (
 	"context"
-	"fmt"
-
 	"github.com/hyperledger/fabric/common/metrics"
 	"google.golang.org/grpc/stats"
 )
@@ -20,19 +18,19 @@ type ServerStatsHandler struct {
 }
 
 func (h *ServerStatsHandler) TagRPC(ctx context.Context, info *stats.RPCTagInfo) context.Context {
-	fmt.Println("=====ServerStatsHandler==TagRPC==")
+	commLogger.Info("=====ServerStatsHandler==TagRPC==")
 	return ctx
 }
 
 func (h *ServerStatsHandler) HandleRPC(ctx context.Context, s stats.RPCStats) {}
 
 func (h *ServerStatsHandler) TagConn(ctx context.Context, info *stats.ConnTagInfo) context.Context {
-	fmt.Println("=====ServerStatsHandler==TagConn==")
+	commLogger.Info("=====ServerStatsHandler==TagConn==")
 	return ctx
 }
 
 func (h *ServerStatsHandler) HandleConn(ctx context.Context, s stats.ConnStats) {
-	fmt.Println("=====ServerStatsHandler==HandleConn==")
+	commLogger.Info("=====ServerStatsHandler==HandleConn==")
 	switch s.(type) {
 	case *stats.ConnBegin:
 		h.OpenConnCounter.Add(1)

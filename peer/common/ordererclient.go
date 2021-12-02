@@ -24,7 +24,7 @@ type OrdererClient struct {
 // NewOrdererClientFromEnv creates an instance of an OrdererClient from the
 // global Viper instance
 func NewOrdererClientFromEnv() (*OrdererClient, error) {
-	fmt.Println("===NewOrdererClientFromEnv===")
+	logger.Info("===NewOrdererClientFromEnv===")
 	address, override, clientConfig, err := configFromEnv("orderer")
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to load config for OrdererClient")
@@ -43,7 +43,7 @@ func NewOrdererClientFromEnv() (*OrdererClient, error) {
 
 // Broadcast returns a broadcast client for the AtomicBroadcast service
 func (oc *OrdererClient) Broadcast() (ab.AtomicBroadcast_BroadcastClient, error) {
-	fmt.Println("==OrdererClient=Broadcast===")
+	logger.Info("==OrdererClient=Broadcast===")
 	conn, err := oc.commonClient.NewConnection(oc.address, oc.sn)
 	if err != nil {
 		return nil, errors.WithMessage(err, fmt.Sprintf("orderer client failed to connect to %s", oc.address))
@@ -54,7 +54,7 @@ func (oc *OrdererClient) Broadcast() (ab.AtomicBroadcast_BroadcastClient, error)
 
 // Deliver returns a deliver client for the AtomicBroadcast service
 func (oc *OrdererClient) Deliver() (ab.AtomicBroadcast_DeliverClient, error) {
-	fmt.Println("==OrdererClient=Deliver===")
+	logger.Info("==OrdererClient=Deliver===")
 	conn, err := oc.commonClient.NewConnection(oc.address, oc.sn)
 	if err != nil {
 		return nil, errors.WithMessage(err, fmt.Sprintf("orderer client failed to connect to %s", oc.address))
@@ -66,6 +66,6 @@ func (oc *OrdererClient) Deliver() (ab.AtomicBroadcast_DeliverClient, error) {
 
 // Certificate returns the TLS client certificate (if available)
 func (oc *OrdererClient) Certificate() tls.Certificate {
-	fmt.Println("==OrdererClient=Certificate===")
+	logger.Info("==OrdererClient=Certificate===")
 	return oc.commonClient.Certificate()
 }

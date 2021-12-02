@@ -27,7 +27,7 @@ const instantiateDesc = "Deploy the specified chaincode to the network."
 
 // instantiateCmd returns the cobra command for Chaincode Deploy
 func instantiateCmd(cf *ChaincodeCmdFactory) *cobra.Command {
-	fmt.Println("========instantiateCmd================")
+	logger.Info("========instantiateCmd================")
 	chaincodeInstantiateCmd = &cobra.Command{
 		Use:       instantiateCmdName,
 		Short:     fmt.Sprint(instantiateDesc),

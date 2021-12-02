@@ -66,7 +66,7 @@ func TestDeploy(t *testing.T) {
 	ledgermgmt.InitializeTestEnv()
 	defer ledgermgmt.CleanupTestEnv()
 	err := peer.MockCreateChain("a")
-	fmt.Println(err)
+	logger.Info(err)
 	deploySysCC("a", ccp, &SysCCWrapper{SCC: &SystemChaincode{
 		Enabled: true,
 		Name:    "invokableCC2CCButNotExternal",

@@ -8,7 +8,7 @@ package grpclogging
 
 import (
 	"context"
-	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 
 	"go.uber.org/zap/zapcore"
 )
@@ -16,9 +16,9 @@ import (
 type fieldKeyType struct{}
 
 var fieldKey = &fieldKeyType{}
-
+var grpcloggingLogger = flogging.MustGetLogger("common.grpclogging")
 func ZapFields(ctx context.Context) []zapcore.Field {
-	fmt.Println("====ZapFields================")
+	grpcloggingLogger.Info("====ZapFields================")
 	fields, ok := ctx.Value(fieldKey).([]zapcore.Field)
 	if ok {
 		return fields
@@ -27,7 +27,7 @@ func ZapFields(ctx context.Context) []zapcore.Field {
 }
 
 func Fields(ctx context.Context) []interface{} {
-	fmt.Println("====Fields================")
+	grpcloggingLogger.Info("====Fields================")
 	fields, ok := ctx.Value(fieldKey).([]zapcore.Field)
 	if !ok {
 		return nil
@@ -40,6 +40,8 @@ func Fields(ctx context.Context) []interface{} {
 }
 
 func WithFields(ctx context.Context, fields []zapcore.Field) context.Context {
-	fmt.Println("====WithFields================")
+	grpcloggingLogger.Info("====WithFields================")
+	grpcloggingLogger.Infof("===context.WithValue(%v, %v, %v)===============",ctx,fieldKey,fields)
+
 	return context.WithValue(ctx, fieldKey, fields)
 }

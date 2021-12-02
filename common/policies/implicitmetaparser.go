@@ -15,7 +15,7 @@ import (
 )
 
 func ImplicitMetaFromString(input string) (*cb.ImplicitMetaPolicy, error) {
-	fmt.Println("===ImplicitMetaFromString===")
+	logger.Info("===ImplicitMetaFromString===")
 	args := strings.Split(input, " ")
 	if len(args) != 2 {
 		return nil, errors.Errorf("expected two space separated tokens, but got %d", len(args))

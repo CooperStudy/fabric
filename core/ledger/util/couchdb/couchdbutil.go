@@ -37,7 +37,7 @@ var collectionNameAllowedLength = 50
 func CreateCouchInstance(couchDBConnectURL, id, pw string, maxRetries,
 	maxRetriesOnStartup int, connectionTimeout time.Duration, createGlobalChangesDB bool, metricsProvider metrics.Provider) (*CouchInstance, error) {
 
-	fmt.Println("==CreateCouchInstance====")
+	logger.Info("==CreateCouchInstance====")
 
 	couchConf, err := CreateConnectionDefinition(couchDBConnectURL,
 		id, pw, maxRetries, maxRetriesOnStartup, connectionTimeout, createGlobalChangesDB)
@@ -79,7 +79,7 @@ func CreateCouchInstance(couchDBConnectURL, id, pw string, maxRetries,
 
 //checkCouchDBVersion verifies CouchDB is at least 2.0.0
 func checkCouchDBVersion(version string) error {
-	fmt.Println("==checkCouchDBVersion====")
+	logger.Info("==checkCouchDBVersion====")
 	//split the version into parts
 	majorVersion := strings.Split(version, ".")
 
@@ -94,7 +94,7 @@ func checkCouchDBVersion(version string) error {
 
 //CreateCouchDatabase creates a CouchDB database object, as well as the underlying database if it does not exist
 func CreateCouchDatabase(couchInstance *CouchInstance, dbName string) (*CouchDatabase, error) {
-	fmt.Println("==CreateCouchDatabase====")
+	logger.Info("==CreateCouchDatabase====")
 	databaseName, err := mapAndValidateDatabaseName(dbName)
 	if err != nil {
 		logger.Errorf("Error calling CouchDB CreateDatabaseIfNotExist() for dbName: %s, error: %s", dbName, err)
@@ -115,7 +115,7 @@ func CreateCouchDatabase(couchInstance *CouchInstance, dbName string) (*CouchDat
 
 //CreateSystemDatabasesIfNotExist - creates the system databases if they do not exist
 func CreateSystemDatabasesIfNotExist(couchInstance *CouchInstance) error {
-	fmt.Println("==CreateSystemDatabasesIfNotExist====")
+	logger.Info("==CreateSystemDatabasesIfNotExist====")
 	dbName := "_users"
 	systemCouchDBDatabase := CouchDatabase{CouchInstance: couchInstance, DBName: dbName, IndexWarmCounter: 1}
 	err := systemCouchDBDatabase.CreateDatabaseIfNotExist()
@@ -147,7 +147,7 @@ func CreateSystemDatabasesIfNotExist(couchInstance *CouchInstance) error {
 // constructCouchDBUrl constructs a couchDB url with encoding for the database name
 // and all path elements
 func constructCouchDBUrl(connectURL *url.URL, dbName string, pathElements ...string) *url.URL {
-	fmt.Println("==constructCouchDBUrl====")
+	logger.Info("==constructCouchDBUrl====")
 	var buffer bytes.Buffer
 	buffer.WriteString(connectURL.String())
 	if dbName != "" {
@@ -164,7 +164,7 @@ func constructCouchDBUrl(connectURL *url.URL, dbName string, pathElements ...str
 // ConstructMetadataDBName truncates the db name to couchdb allowed length to
 // construct the metadataDBName
 func ConstructMetadataDBName(dbName string) string {
-	fmt.Println("==ConstructMetadataDBName====")
+	logger.Info("==ConstructMetadataDBName====")
 	if len(dbName) > maxLength {
 		untruncatedDBName := dbName
 		// Truncate the name if the length violates the allowed limit
@@ -181,7 +181,7 @@ func ConstructMetadataDBName(dbName string) string {
 // ConstructNamespaceDBName truncates db name to couchdb allowed length to
 // construct the namespaceDBName
 func ConstructNamespaceDBName(chainName, namespace string) string {
-	fmt.Println("==ConstructNamespaceDBName====")
+	logger.Info("==ConstructNamespaceDBName====")
 
 	// replace upper-case in namespace with a escape sequence '$' and the respective lower-case letter
 	escapedNamespace := escapeUpperCase(namespace)
@@ -250,7 +250,7 @@ func ConstructNamespaceDBName(chainName, namespace string) string {
 //This validation will simply check whether the database name matches the above pattern and will replace
 // all occurence of '.' by '$'. This will not cause collisions in the transformed named
 func mapAndValidateDatabaseName(databaseName string) (string, error) {
-	fmt.Println("==mapAndValidateDatabaseName====")
+	logger.Info("==mapAndValidateDatabaseName====")
 	// test Length
 	if len(databaseName) <= 0 {
 		return "", errors.Errorf("database name is illegal, cannot be empty")
@@ -275,7 +275,7 @@ func mapAndValidateDatabaseName(databaseName string) (string, error) {
 // escapeUpperCase replaces every upper case letter with a '$' and the respective
 // lower-case letter
 func escapeUpperCase(dbName string) string {
-	fmt.Println("==escapeUpperCase====")
+	logger.Info("==escapeUpperCase====")
 	re := regexp.MustCompile(`([A-Z])`)
 	dbName = re.ReplaceAllString(dbName, "$$"+"$1")
 	return strings.ToLower(dbName)

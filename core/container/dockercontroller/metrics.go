@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package dockercontroller
 
 import (
-	"fmt"
 	"github.com/hyperledger/fabric/common/metrics"
 )
 
@@ -26,7 +25,7 @@ type BuildMetrics struct {
 }
 
 func NewBuildMetrics(p metrics.Provider) *BuildMetrics {
-	fmt.Println("=NewBuildMetrics==")
+	logger.Info("=NewBuildMetrics==")
 	return &BuildMetrics{
 		ChaincodeImageBuildDuration: p.NewHistogram(chaincodeImageBuildDuration),
 	}

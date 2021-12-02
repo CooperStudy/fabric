@@ -28,14 +28,14 @@ type stats struct {
 }
 
 func newStats(metricsProvider metrics.Provider) *stats {
-	fmt.Println("==newStats====")
+	logger.Info("==newStats====")
 	return &stats{
 		apiProcessingTime: metricsProvider.NewHistogram(apiProcessingTimeOpts),
 	}
 }
 
 func (s *stats) observeProcessingTime(startTime time.Time, dbName, functionName, result string) {
-	fmt.Println("==stats==observeProcessingTime====")
+	logger.Info("==stats==observeProcessingTime====")
 	s.apiProcessingTime.With(
 		"database", dbName,
 		"function_name", functionName,

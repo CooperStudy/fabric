@@ -12,8 +12,6 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
-	"fmt"
-
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/credentials"
@@ -22,7 +20,7 @@ import (
 
 // AddPemToCertPool adds PEM-encoded certs to a cert pool
 func AddPemToCertPool(pemCerts []byte, pool *x509.CertPool) error {
-	fmt.Println("=====AddPemToCertPool==")
+	logger.Info("=====AddPemToCertPool==")
 	certs, _, err := pemToX509Certs(pemCerts)
 	if err != nil {
 		return err
@@ -35,7 +33,7 @@ func AddPemToCertPool(pemCerts []byte, pool *x509.CertPool) error {
 
 //utility function to parse PEM-encoded certs
 func pemToX509Certs(pemCerts []byte) ([]*x509.Certificate, []string, error) {
-	fmt.Println("=====pemToX509Certs==")
+	logger.Info("=====pemToX509Certs==")
 	//it's possible that multiple certs are encoded
 	certs := []*x509.Certificate{}
 	subjects := []string{}
@@ -74,7 +72,7 @@ type CertHashExtractor func(proto.Message) []byte
 // mutualTLS is configured or not, and according to a function that extracts
 // TLS certificate hashes from proto messages
 func NewBindingInspector(mutualTLS bool, extractTLSCertHash CertHashExtractor) BindingInspector {
-	fmt.Println("=====NewBindingInspector==")
+	logger.Info("=====NewBindingInspector==")
 	if extractTLSCertHash == nil {
 		panic(errors.New("extractTLSCertHash parameter is nil"))
 	}
@@ -97,7 +95,7 @@ func NewBindingInspector(mutualTLS bool, extractTLSCertHash CertHashExtractor) B
 // there is no TLS certificate to be excavated from the gRPC context,
 // an error is returned.
 func mutualTLSBinding(ctx context.Context, claimedTLScertHash []byte) error {
-	fmt.Println("=====mutualTLSBinding==")
+	logger.Info("=====mutualTLSBinding==")
 	if len(claimedTLScertHash) == 0 {
 		return errors.Errorf("client didn't include its TLS cert hash")
 	}
@@ -113,14 +111,14 @@ func mutualTLSBinding(ctx context.Context, claimedTLScertHash []byte) error {
 
 // noopBinding is a BindingInspector that always returns nil
 func noopBinding(_ context.Context, _ []byte) error {
-	fmt.Println("=====noopBinding==")
+	logger.Info("=====noopBinding==")
 	return nil
 }
 
 // ExtractCertificateHashFromContext extracts the hash of the certificate from the given context.
 // If the certificate isn't present, nil is returned
 func ExtractCertificateHashFromContext(ctx context.Context) []byte {
-	fmt.Println("=====ExtractCertificateHashFromContext==")
+	logger.Info("=====ExtractCertificateHashFromContext==")
 	rawCert := ExtractCertificateFromContext(ctx)
 	if len(rawCert) == 0 {
 		return nil
@@ -133,7 +131,7 @@ func ExtractCertificateHashFromContext(ctx context.Context) []byte {
 // ExtractCertificateFromContext returns the TLS certificate (if applicable)
 // from the given context of a gRPC stream
 func ExtractCertificateFromContext(ctx context.Context) []byte {
-	fmt.Println("=====ExtractCertificateFromContext==")
+	logger.Info("=====ExtractCertificateFromContext==")
 	pr, extracted := peer.FromContext(ctx)
 	if !extracted {
 		return nil

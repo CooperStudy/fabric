@@ -33,16 +33,16 @@ func TestMockStateRangeQueryIterator(t *testing.T) {
 
 	rqi := NewMockStateRangeQueryIterator(stub, "2", "5")
 
-	fmt.Println("Running loop")
+	logger.Info("Running loop")
 	for i := 0; i < 2; i++ {
 		response, err := rqi.Next()
-		fmt.Println("Loop", i, "got", response.Key, response.Value, err)
+		logger.Info("Loop", i, "got", response.Key, response.Value, err)
 		if expectKeys[i] != response.Key {
-			fmt.Println("Expected key", expectKeys[i], "got", response.Key)
+			logger.Info("Expected key", expectKeys[i], "got", response.Key)
 			t.FailNow()
 		}
 		if expectValues[i][0] != response.Value[0] {
-			fmt.Println("Expected value", expectValues[i], "got", response.Value)
+			logger.Info("Expected value", expectValues[i], "got", response.Value)
 		}
 	}
 }
@@ -157,28 +157,28 @@ func TestGetStateByPartialCompositeKey(t *testing.T) {
 	expectValues := [][]byte{marbleJSONBytes2, marbleJSONBytes1}
 
 	rqi, _ := stub.GetStateByPartialCompositeKey("marble", []string{"set-1"})
-	fmt.Println("Running loop")
+	logger.Info("Running loop")
 	for i := 0; i < 2; i++ {
 		response, err := rqi.Next()
-		fmt.Println("Loop", i, "got", response.Key, response.Value, err)
+		logger.Info("Loop", i, "got", response.Key, response.Value, err)
 		if expectKeys[i] != response.Key {
-			fmt.Println("Expected key", expectKeys[i], "got", response.Key)
+			logger.Info("Expected key", expectKeys[i], "got", response.Key)
 			t.FailNow()
 		}
 		objectType, attributes, _ := stub.SplitCompositeKey(response.Key)
 		if objectType != "marble" {
-			fmt.Println("Expected objectType", "marble", "got", objectType)
+			logger.Info("Expected objectType", "marble", "got", objectType)
 			t.FailNow()
 		}
-		fmt.Println(attributes)
+		logger.Info(attributes)
 		for index, attr := range attributes {
 			if expectKeysAttributes[i][index] != attr {
-				fmt.Println("Expected keys attribute", expectKeysAttributes[index][i], "got", attr)
+				logger.Info("Expected keys attribute", expectKeysAttributes[index][i], "got", attr)
 				t.FailNow()
 			}
 		}
 		if jsonBytesEqual(expectValues[i], response.Value) != true {
-			fmt.Println("Expected value", expectValues[i], "got", response.Value)
+			logger.Info("Expected value", expectValues[i], "got", response.Value)
 			t.FailNow()
 		}
 	}
@@ -201,15 +201,15 @@ func TestGetStateByPartialCompositeKeyCollision(t *testing.T) {
 	// Only the single "Vehicle" object should be returned, not the "VehicleListing" object
 	rqi, _ := stub.GetStateByPartialCompositeKey("Vehicle", []string{})
 	i := 0
-	fmt.Println("Running loop")
+	logger.Info("Running loop")
 	for rqi.HasNext() {
 		i++
 		response, err := rqi.Next()
-		fmt.Println("Loop", i, "got", response.Key, response.Value, err)
+		logger.Info("Loop", i, "got", response.Key, response.Value, err)
 	}
 	// Only the single "Vehicle" object should be returned, not the "VehicleListing" object
 	if i != 1 {
-		fmt.Println("Expected 1, got", i)
+		logger.Info("Expected 1, got", i)
 		t.FailNow()
 	}
 }

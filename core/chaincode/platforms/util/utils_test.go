@@ -295,7 +295,7 @@ func getDeploymentPayload() []byte {
 	package main
 	import "fmt"
 	func main() {
-		fmt.Println("Hello World")
+		logger.Info("Hello World")
 	}
 	`
 	var zeroTime time.Time

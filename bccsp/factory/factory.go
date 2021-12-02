@@ -57,7 +57,7 @@ type BCCSPFactory interface {
 
 // GetDefault returns a non-ephemeral (long-term) BCCSP
 func GetDefault() bccsp.BCCSP {
-	//fmt.Println("====fabric-factory-factory.go===")
+	//logger.Info("====fabric-factory-factory.go===")
 	//logger.Info("=======GetDefault=================defaultBCCSP",defaultBCCSP)//0xc000114b90
 	if defaultBCCSP == nil {
 		logger.Warning("Before using BCCSP, please call InitFactories(). Falling back to bootBCCSP.")

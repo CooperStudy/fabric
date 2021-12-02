@@ -9,7 +9,6 @@ package confighistory
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"math"
 
 	"github.com/hyperledger/fabric/common/ledger/util/leveldbhelper"
@@ -44,35 +43,35 @@ type batch struct {
 }
 
 func newDBProvider(dbPath string) *dbProvider {
-	fmt.Println("====newDBProvider============")
+	logger.Info("====newDBProvider============")
 	logger.Debugf("Opening db for config history: db path = %s", dbPath)
 	return &dbProvider{leveldbhelper.NewProvider(&leveldbhelper.Conf{DBPath: dbPath})}
 }
 
 func newBatch() *batch {
-	fmt.Println("====newBatch============")
+	logger.Info("====newBatch============")
 	return &batch{leveldbhelper.NewUpdateBatch()}
 }
 
 func (p *dbProvider) getDB(id string) *db {
-	fmt.Println("====dbProvider=====getDB=======")
+	logger.Info("====dbProvider=====getDB=======")
 	return &db{p.GetDBHandle(id)}
 }
 
 func (b *batch) add(ns, key string, blockNum uint64, value []byte) {
-	fmt.Println("====batch=====add=======")
+	logger.Info("====batch=====add=======")
 	logger.Debugf("add() - {%s, %s, %d}", ns, key, blockNum)
 	k, v := encodeCompositeKey(ns, key, blockNum), value
 	b.Put(k, v)
 }
 
 func (d *db) writeBatch(batch *batch, sync bool) error {
-	fmt.Println("====db=====writeBatch=======")
+	logger.Info("====db=====writeBatch=======")
 	return d.WriteBatch(batch.UpdateBatch, sync)
 }
 
 func (d *db) mostRecentEntryBelow(blockNum uint64, ns, key string) (*compositeKV, error) {
-	fmt.Println("====db=====mostRecentEntryBelow=======")
+	logger.Info("====db=====mostRecentEntryBelow=======")
 	logger.Debugf("mostRecentEntryBelow() - {%s, %s, %d}", ns, key, blockNum)
 	if blockNum == 0 {
 		return nil, errors.New("blockNum should be greater than 0")
@@ -89,7 +88,7 @@ func (d *db) mostRecentEntryBelow(blockNum uint64, ns, key string) (*compositeKV
 }
 
 func (d *db) entryAt(blockNum uint64, ns, key string) (*compositeKV, error) {
-	fmt.Println("====db=====entryAt=======")
+	logger.Info("====db=====entryAt=======")
 	logger.Debugf("entryAt() - {%s, %s, %d}", ns, key, blockNum)
 	keyBytes := encodeCompositeKey(ns, key, blockNum)
 	valBytes, err := d.Get(keyBytes)
@@ -104,7 +103,7 @@ func (d *db) entryAt(blockNum uint64, ns, key string) (*compositeKV, error) {
 }
 
 func encodeCompositeKey(ns, key string, blockNum uint64) []byte {
-	fmt.Println("====encodeCompositeKey======")
+	logger.Info("====encodeCompositeKey======")
 	b := []byte(keyPrefix + ns)
 	b = append(b, separatorByte)
 	b = append(b, []byte(key)...)
@@ -112,7 +111,7 @@ func encodeCompositeKey(ns, key string, blockNum uint64) []byte {
 }
 
 func decodeCompositeKey(b []byte) *compositeKey {
-	fmt.Println("====decodeCompositeKey======")
+	logger.Info("====decodeCompositeKey======")
 	blockNumStartIndex := len(b) - 8
 	nsKeyBytes, blockNumBytes := b[1:blockNumStartIndex], b[blockNumStartIndex:]
 	separatorIndex := bytes.Index(nsKeyBytes, []byte{separatorByte})
@@ -121,13 +120,13 @@ func decodeCompositeKey(b []byte) *compositeKey {
 }
 
 func encodeBlockNum(blockNum uint64) []byte {
-	fmt.Println("====encodeBlockNum======")
+	logger.Info("====encodeBlockNum======")
 	b := make([]byte, 8)
 	binary.BigEndian.PutUint64(b, math.MaxUint64-blockNum)
 	return b
 }
 
 func decodeBlockNum(blockNumBytes []byte) uint64 {
-	fmt.Println("====decodeBlockNum======")
+	logger.Info("====decodeBlockNum======")
 	return math.MaxUint64 - binary.BigEndian.Uint64(blockNumBytes)
 }

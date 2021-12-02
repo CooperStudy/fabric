@@ -17,7 +17,7 @@ import (
 type Provider struct{}
 
 func (p *Provider) NewCounter(o metrics.CounterOpts) metrics.Counter {
-	fmt.Println("===Provider========NewCounter================")
+	logger.Info("===Provider========NewCounter================")
 	return &Counter{
 		Counter: prometheus.NewCounterFrom(
 			prom.CounterOpts{
@@ -32,7 +32,7 @@ func (p *Provider) NewCounter(o metrics.CounterOpts) metrics.Counter {
 }
 
 func (p *Provider) NewGauge(o metrics.GaugeOpts) metrics.Gauge {
-	fmt.Println("===Provider========NewGauge================")
+	logger.Info("===Provider========NewGauge================")
 	return &Gauge{
 		Gauge: prometheus.NewGaugeFrom(
 			prom.GaugeOpts{
@@ -47,7 +47,7 @@ func (p *Provider) NewGauge(o metrics.GaugeOpts) metrics.Gauge {
 }
 
 func (p *Provider) NewHistogram(o metrics.HistogramOpts) metrics.Histogram {
-	fmt.Println("===Provider========NewHistogram================")
+	logger.Info("===Provider========NewHistogram================")
 	return &Histogram{
 		Histogram: prometheus.NewHistogramFrom(
 			prom.HistogramOpts{
@@ -65,20 +65,20 @@ func (p *Provider) NewHistogram(o metrics.HistogramOpts) metrics.Histogram {
 type Counter struct{ kitmetrics.Counter }
 
 func (c *Counter) With(labelValues ...string) metrics.Counter {
-	fmt.Println("===Counter========With================")
+	logger.Info("===Counter========With================")
 	return &Counter{Counter: c.Counter.With(labelValues...)}
 }
 
 type Gauge struct{ kitmetrics.Gauge }
 
 func (g *Gauge) With(labelValues ...string) metrics.Gauge {
-	fmt.Println("===Gauge========With================")
+	logger.Info("===Gauge========With================")
 	return &Gauge{Gauge: g.Gauge.With(labelValues...)}
 }
 
 type Histogram struct{ kitmetrics.Histogram }
 
 func (h *Histogram) With(labelValues ...string) metrics.Histogram {
-	fmt.Println("===Histogram========With================")
+	logger.Info("===Histogram========With================")
 	return &Histogram{Histogram: h.Histogram.With(labelValues...)}
 }

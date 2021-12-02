@@ -37,7 +37,7 @@ func newChainSupport(
 	signer crypto.LocalSigner,
 	blockcutterMetrics *blockcutter.Metrics,
 ) *ChainSupport {
-	fmt.Println("==newChainSupport===")
+	logger.Info("==newChainSupport===")
 	// Read in the last block and metadata for the channel
 	lastBlock := blockledger.GetBlock(ledgerResources, ledgerResources.Height()-1)
 
@@ -85,7 +85,7 @@ func newChainSupport(
 // Block returns a block with the following number,
 // or nil if such a block doesn't exist.
 func (cs *ChainSupport) Block(number uint64) *cb.Block {
-	fmt.Println("==ChainSupport===Block==")
+	logger.Info("==ChainSupport===Block==")
 	if cs.Height() <= number {
 		return nil
 	}
@@ -93,36 +93,36 @@ func (cs *ChainSupport) Block(number uint64) *cb.Block {
 }
 
 func (cs *ChainSupport) Reader() blockledger.Reader {
-	fmt.Println("==ChainSupport===Reader==")
+	logger.Info("==ChainSupport===Reader==")
 	return cs
 }
 
 // Signer returns the crypto.Localsigner for this channel.
 func (cs *ChainSupport) Signer() crypto.LocalSigner {
-	fmt.Println("==ChainSupport===Signer==")
+	logger.Info("==ChainSupport===Signer==")
 	return cs
 }
 
 func (cs *ChainSupport) start() {
-	fmt.Println("==ChainSupport===start==")
+	logger.Info("==ChainSupport===start==")
 	cs.Chain.Start()
 }
 
 // BlockCutter returns the blockcutter.Receiver instance for this channel.
 func (cs *ChainSupport) BlockCutter() blockcutter.Receiver {
-	fmt.Println("==ChainSupport===BlockCutter==")
+	logger.Info("==ChainSupport===BlockCutter==")
 	return cs.cutter
 }
 
 // Validate passes through to the underlying configtx.Validator
 func (cs *ChainSupport) Validate(configEnv *cb.ConfigEnvelope) error {
-	fmt.Println("==ChainSupport===Validate==")
+	logger.Info("==ChainSupport===Validate==")
 	return cs.ConfigtxValidator().Validate(configEnv)
 }
 
 // ProposeConfigUpdate passes through to the underlying configtx.Validator
 func (cs *ChainSupport) ProposeConfigUpdate(configtx *cb.Envelope) (*cb.ConfigEnvelope, error) {
-	fmt.Println("==ChainSupport===ProposeConfigUpdate==")
+	logger.Info("==ChainSupport===ProposeConfigUpdate==")
 	env, err := cs.ConfigtxValidator().ProposeConfigUpdate(configtx)
 	if err != nil {
 		return nil, err
@@ -142,20 +142,20 @@ func (cs *ChainSupport) ProposeConfigUpdate(configtx *cb.Envelope) (*cb.ConfigEn
 
 // ChainID passes through to the underlying configtx.Validator
 func (cs *ChainSupport) ChainID() string {
-	fmt.Println("==ChainSupport===ChainID==")
+	logger.Info("==ChainSupport===ChainID==")
 	return cs.ConfigtxValidator().ChainID()
 }
 
 // ConfigProto passes through to the underlying configtx.Validator
 func (cs *ChainSupport) ConfigProto() *cb.Config {
-	fmt.Println("==ChainSupport===ConfigProto==")
+	logger.Info("==ChainSupport===ConfigProto==")
 	return cs.ConfigtxValidator().ConfigProto()
 }
 
 // Sequence passes through to the underlying configtx.Validator
 func (cs *ChainSupport) Sequence() uint64 {
-	fmt.Println("==ChainSupport===Sequence==")
-	fmt.Println("========cs.ConfigtxValidator().Sequence()=================",cs.ConfigtxValidator().Sequence())
+	logger.Info("==ChainSupport===Sequence==")
+	logger.Info("========cs.ConfigtxValidator().Sequence()=================",cs.ConfigtxValidator().Sequence())
 	return cs.ConfigtxValidator().Sequence()
 }
 
@@ -166,7 +166,7 @@ func (cs *ChainSupport) Sequence() uint64 {
 // If the config envelope passed is nil, then the validation rules used
 // are the ones that were applied at commit of previous blocks.
 func (cs *ChainSupport) VerifyBlockSignature(sd []*cb.SignedData, envelope *cb.ConfigEnvelope) error {
-	fmt.Println("==ChainSupport===VerifyBlockSignature==")
+	logger.Info("==ChainSupport===VerifyBlockSignature==")
 	policyMgr := cs.PolicyManager()
 
 

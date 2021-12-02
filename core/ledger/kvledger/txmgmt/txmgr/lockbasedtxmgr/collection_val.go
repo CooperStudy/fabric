@@ -20,12 +20,12 @@ type collNameValidator struct {
 }
 
 func newCollNameValidator(ccInfoProvider ledger.DeployedChaincodeInfoProvider, qe *lockBasedQueryExecutor) *collNameValidator {
-	fmt.Println("==newCollNameValidator=")
+	logger.Info("==newCollNameValidator=")
 	return &collNameValidator{ccInfoProvider, qe, make(collConfigCache)}
 }
 
 func (v *collNameValidator) validateCollName(ns, coll string) error {
-	fmt.Println("==collNameValidator=validateCollName==")
+	logger.Info("==collNameValidator=validateCollName==")
 	if !v.cache.isPopulatedFor(ns) {
 		conf, err := v.retrieveCollConfigFromStateDB(ns)
 		if err != nil {
@@ -43,7 +43,7 @@ func (v *collNameValidator) validateCollName(ns, coll string) error {
 }
 
 func (v *collNameValidator) retrieveCollConfigFromStateDB(ns string) (*common.CollectionConfigPackage, error) {
-	fmt.Println("==collNameValidator=retrieveCollConfigFromStateDB==")
+	logger.Info("==collNameValidator=retrieveCollConfigFromStateDB==")
 	logger.Debugf("retrieveCollConfigFromStateDB() begin - ns=[%s]", ns)
 	ccInfo, err := v.ccInfoProvider.ChaincodeInfo(ns, v.queryExecutor)
 	if err != nil {
@@ -64,7 +64,7 @@ type collConfigkey struct {
 }
 
 func (c collConfigCache) populate(ns string, pkg *common.CollectionConfigPackage) {
-	fmt.Println("==collConfigCache=populate==")
+	logger.Info("==collConfigCache=populate==")
 	// an entry with an empty collection name to indicate that the cache is populated for the namespace 'ns'
 	// see function 'isPopulatedFor'
 	c[collConfigkey{ns, ""}] = true
@@ -78,11 +78,11 @@ func (c collConfigCache) populate(ns string, pkg *common.CollectionConfigPackage
 }
 
 func (c collConfigCache) isPopulatedFor(ns string) bool {
-	fmt.Println("==collConfigCache=isPopulatedFor==")
+	logger.Info("==collConfigCache=isPopulatedFor==")
 	return c[collConfigkey{ns, ""}]
 }
 
 func (c collConfigCache) containsCollName(ns, coll string) bool {
-	fmt.Println("==collConfigCache=containsCollName==")
+	logger.Info("==collConfigCache=containsCollName==")
 	return c[collConfigkey{ns, coll}]
 }

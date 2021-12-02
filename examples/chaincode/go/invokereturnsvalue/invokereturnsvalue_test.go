@@ -25,7 +25,7 @@ import (
 func checkInit(t *testing.T, stub *shim.MockStub, args [][]byte, retval []byte) {
 	res := stub.MockInit("1", args)
 	if res.Status != shim.OK {
-		fmt.Println("Init failed", string(res.Message))
+		logger.Info("Init failed", string(res.Message))
 		t.FailNow()
 	}
 	if retval != nil {
@@ -43,11 +43,11 @@ func checkInit(t *testing.T, stub *shim.MockStub, args [][]byte, retval []byte) 
 func checkState(t *testing.T, stub *shim.MockStub, name string, value string) {
 	bytes := stub.State[name]
 	if bytes == nil {
-		fmt.Println("State", name, "failed to get value")
+		logger.Info("State", name, "failed to get value")
 		t.FailNow()
 	}
 	if string(bytes) != value {
-		fmt.Println("State value", name, "was not", value, "as expected")
+		logger.Info("State value", name, "was not", value, "as expected")
 		t.FailNow()
 	}
 }
@@ -55,7 +55,7 @@ func checkState(t *testing.T, stub *shim.MockStub, name string, value string) {
 func checkInvoke(t *testing.T, stub *shim.MockStub, args [][]byte, retval []byte) {
 	res := stub.MockInvoke("1", args)
 	if res.Status != shim.OK {
-		fmt.Println("Invoke", args, "failed", string(res.Message))
+		logger.Info("Invoke", args, "failed", string(res.Message))
 		t.FailNow()
 	}
 

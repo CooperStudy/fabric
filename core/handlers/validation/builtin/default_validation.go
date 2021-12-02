@@ -23,7 +23,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var logger = flogging.MustGetLogger("vscc")
+var logger = flogging.MustGetLogger("core.handles.validation.builtin.vscc")
 
 type DefaultValidationFactory struct {
 }
@@ -44,7 +44,7 @@ type TransactionValidator interface {
 }
 
 func (v *DefaultValidation) Validate(block *common.Block, namespace string, txPosition int, actionPosition int, contextData ...validation.ContextDatum) error {
-	fmt.Println("==DefaultValidation==Validate==")
+	logger.Info("==DefaultValidation==Validate==")
 	if len(contextData) == 0 {
 		logger.Panicf("Expected to receive policy bytes in context data")
 	}
@@ -80,7 +80,7 @@ func (v *DefaultValidation) Validate(block *common.Block, namespace string, txPo
 }
 
 func convertErrorTypeOrPanic(err error) error {
-	fmt.Println("=convertErrorTypeOrPanic==")
+	logger.Info("=convertErrorTypeOrPanic==")
 	if err == nil {
 		return nil
 	}
@@ -98,7 +98,7 @@ func convertErrorTypeOrPanic(err error) error {
 
 func (v *DefaultValidation) Init(dependencies ...validation.Dependency) error {
 
-	fmt.Println("=========DefaultValidation====Init=================")
+	logger.Info("=========DefaultValidation====Init=================")
 	var (
 		d  IdentityDeserializer
 		c  Capabilities

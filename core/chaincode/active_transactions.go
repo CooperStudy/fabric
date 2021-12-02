@@ -7,26 +7,26 @@ SPDX-License-Identifier: Apache-2.0
 package chaincode
 
 import (
-	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"sync"
 )
 
 func NewTxKey(channelID, txID string) string { return channelID + txID }
-
+var logger = flogging.MustGetLogger("core.chaincode")
 type ActiveTransactions struct {
 	mutex sync.Mutex
 	ids   map[string]struct{}
 }
 
 func NewActiveTransactions() *ActiveTransactions {
-	fmt.Println("=======NewActiveTransactions=========")
+	logger.Info("=======NewActiveTransactions=========")
 	return &ActiveTransactions{
 		ids: map[string]struct{}{},
 	}
 }
 
 func (a *ActiveTransactions) Add(channelID, txID string) bool {
-	fmt.Println("=======ActiveTransactions==Add=======")
+	logger.Info("=======ActiveTransactions==Add=======")
 	key := NewTxKey(channelID, txID)
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
@@ -39,7 +39,7 @@ func (a *ActiveTransactions) Add(channelID, txID string) bool {
 }
 
 func (a *ActiveTransactions) Remove(channelID, txID string) {
-	fmt.Println("=======ActiveTransactions==Remove=======")
+	logger.Info("=======ActiveTransactions==Remove=======")
 	key := NewTxKey(channelID, txID)
 	a.mutex.Lock()
 	delete(a.ids, key)

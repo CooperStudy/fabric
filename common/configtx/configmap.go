@@ -29,7 +29,7 @@ const (
 // mapConfig is intended to be called outside this file
 // it takes a ConfigGroup and generates a map of fqPath to comparables (or error on invalid keys)
 func mapConfig(channelGroup *cb.ConfigGroup, rootGroupKey string) (map[string]comparable, error) {
-	fmt.Println("=====mapConfig====")
+	logger.Info("=====mapConfig====")
 	result := make(map[string]comparable)
 	if channelGroup != nil {
 		err := recurseConfig(result, []string{rootGroupKey}, channelGroup)
@@ -42,7 +42,7 @@ func mapConfig(channelGroup *cb.ConfigGroup, rootGroupKey string) (map[string]co
 
 // addToMap is used only internally by mapConfig
 func addToMap(cg comparable, result map[string]comparable) error {
-	fmt.Println("=====addToMap====")
+	logger.Info("=====addToMap====")
 	var fqPath string
 
 	switch {
@@ -73,7 +73,7 @@ func addToMap(cg comparable, result map[string]comparable) error {
 
 // recurseConfig is used only internally by mapConfig
 func recurseConfig(result map[string]comparable, path []string, group *cb.ConfigGroup) error {
-	fmt.Println("=====recurseConfig====")
+	logger.Info("=====recurseConfig====")
 	if err := addToMap(comparable{key: path[len(path)-1], path: path[:len(path)-1], ConfigGroup: group}, result); err != nil {
 		return err
 	}
@@ -105,7 +105,7 @@ func recurseConfig(result map[string]comparable, path []string, group *cb.Config
 // configMapToConfig is intended to be called from outside this file
 // It takes a configMap and converts it back into a *cb.ConfigGroup structure
 func configMapToConfig(configMap map[string]comparable, rootGroupKey string) (*cb.ConfigGroup, error) {
-	fmt.Println("=====configMapToConfig====")
+	logger.Info("=====configMapToConfig====")
 	rootPath := pathSeparator + rootGroupKey
 	return recurseConfigMap(rootPath, configMap)
 }
@@ -113,7 +113,7 @@ func configMapToConfig(configMap map[string]comparable, rootGroupKey string) (*c
 // recurseConfigMap is used only internally by configMapToConfig
 // Note, this function no longer mutates the cb.Config* entries within configMap
 func recurseConfigMap(path string, configMap map[string]comparable) (*cb.ConfigGroup, error) {
-	fmt.Println("=====recurseConfigMap====")
+	logger.Info("=====recurseConfigMap====")
 	groupPath := groupPrefix + path
 	group, ok := configMap[groupPath]
 	if !ok {

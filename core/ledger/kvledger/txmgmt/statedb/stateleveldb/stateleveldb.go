@@ -32,7 +32,7 @@ type VersionedDBProvider struct {
 // NewVersionedDBProvider instantiates VersionedDBProvider
 func NewVersionedDBProvider() *VersionedDBProvider {
 
-	fmt.Println("===NewVersionedDBProvider==")
+	logger.Info("===NewVersionedDBProvider==")
 	dbPath := ledgerconfig.GetStateLevelDBPath()
 	logger.Debugf("constructing VersionedDBProvider dbPath=%s", dbPath)
 	dbProvider := leveldbhelper.NewProvider(&leveldbhelper.Conf{DBPath: dbPath})
@@ -41,13 +41,13 @@ func NewVersionedDBProvider() *VersionedDBProvider {
 
 // GetDBHandle gets the handle to a named database
 func (provider *VersionedDBProvider) GetDBHandle(dbName string) (statedb.VersionedDB, error) {
-	fmt.Println("==VersionedDBProvider=GetDBHandle==")
+	logger.Info("==VersionedDBProvider=GetDBHandle==")
 	return newVersionedDB(provider.dbProvider.GetDBHandle(dbName), dbName), nil
 }
 
 // Close closes the underlying db
 func (provider *VersionedDBProvider) Close() {
-	fmt.Println("==VersionedDBProvider=Close==")
+	logger.Info("==VersionedDBProvider=Close==")
 	provider.dbProvider.Close()
 }
 
@@ -59,38 +59,38 @@ type versionedDB struct {
 
 // newVersionedDB constructs an instance of VersionedDB
 func newVersionedDB(db *leveldbhelper.DBHandle, dbName string) *versionedDB {
-	fmt.Println("==newVersionedDB==")
+	logger.Info("==newVersionedDB==")
 	return &versionedDB{db, dbName}
 }
 
 // Open implements method in VersionedDB interface
 func (vdb *versionedDB) Open() error {
-	fmt.Println("==versionedDB==Open==")
+	logger.Info("==versionedDB==Open==")
 	// do nothing because shared db is used
 	return nil
 }
 
 // Close implements method in VersionedDB interface
 func (vdb *versionedDB) Close() {
-	fmt.Println("==versionedDB==Close==")
+	logger.Info("==versionedDB==Close==")
 	// do nothing because shared db is used
 }
 
 // ValidateKeyValue implements method in VersionedDB interface
 func (vdb *versionedDB) ValidateKeyValue(key string, value []byte) error {
-	fmt.Println("==versionedDB==ValidateKeyValue==")
+	logger.Info("==versionedDB==ValidateKeyValue==")
 	return nil
 }
 
 // BytesKeySupported implements method in VersionedDB interface
 func (vdb *versionedDB) BytesKeySupported() bool {
-	fmt.Println("==versionedDB==BytesKeySupported==")
+	logger.Info("==versionedDB==BytesKeySupported==")
 	return true
 }
 
 // GetState implements method in VersionedDB interface
 func (vdb *versionedDB) GetState(namespace string, key string) (*statedb.VersionedValue, error) {
-	fmt.Println("==versionedDB==GetState==")
+	logger.Info("==versionedDB==GetState==")
 	logger.Debugf("GetState(). ns=%s, key=%s", namespace, key)
 	compositeKey := constructCompositeKey(namespace, key)
 	dbVal, err := vdb.db.Get(compositeKey)
@@ -105,7 +105,7 @@ func (vdb *versionedDB) GetState(namespace string, key string) (*statedb.Version
 
 // GetVersion implements method in VersionedDB interface
 func (vdb *versionedDB) GetVersion(namespace string, key string) (*version.Height, error) {
-	fmt.Println("==versionedDB==GetVersion==")
+	logger.Info("==versionedDB==GetVersion==")
 	versionedValue, err := vdb.GetState(namespace, key)
 	if err != nil {
 		return nil, err
@@ -118,7 +118,7 @@ func (vdb *versionedDB) GetVersion(namespace string, key string) (*version.Heigh
 
 // GetStateMultipleKeys implements method in VersionedDB interface
 func (vdb *versionedDB) GetStateMultipleKeys(namespace string, keys []string) ([]*statedb.VersionedValue, error) {
-	fmt.Println("==versionedDB==GetStateMultipleKeys==")
+	logger.Info("==versionedDB==GetStateMultipleKeys==")
 	vals := make([]*statedb.VersionedValue, len(keys))
 	for i, key := range keys {
 		val, err := vdb.GetState(namespace, key)
@@ -134,7 +134,7 @@ func (vdb *versionedDB) GetStateMultipleKeys(namespace string, keys []string) ([
 // startKey is inclusive
 // endKey is exclusive
 func (vdb *versionedDB) GetStateRangeScanIterator(namespace string, startKey string, endKey string) (statedb.ResultsIterator, error) {
-	fmt.Println("==versionedDB==GetStateRangeScanIterator==")
+	logger.Info("==versionedDB==GetStateRangeScanIterator==")
 	return vdb.GetStateRangeScanIteratorWithMetadata(namespace, startKey, endKey, nil)
 }
 
@@ -142,7 +142,7 @@ const optionLimit = "limit"
 
 // GetStateRangeScanIteratorWithMetadata implements method in VersionedDB interface
 func (vdb *versionedDB) GetStateRangeScanIteratorWithMetadata(namespace string, startKey string, endKey string, metadata map[string]interface{}) (statedb.QueryResultsIterator, error) {
-	fmt.Println("==versionedDB==GetStateRangeScanIteratorWithMetadata==")
+	logger.Info("==versionedDB==GetStateRangeScanIteratorWithMetadata==")
 	requestedLimit := int32(0)
 	// if metadata is provided, validate and apply options
 	if metadata != nil {
@@ -170,19 +170,19 @@ func (vdb *versionedDB) GetStateRangeScanIteratorWithMetadata(namespace string, 
 
 // ExecuteQuery implements method in VersionedDB interface
 func (vdb *versionedDB) ExecuteQuery(namespace, query string) (statedb.ResultsIterator, error) {
-	fmt.Println("==versionedDB==ExecuteQuery==")
+	logger.Info("==versionedDB==ExecuteQuery==")
 	return nil, errors.New("ExecuteQuery not supported for leveldb")
 }
 
 // ExecuteQueryWithMetadata implements method in VersionedDB interface
 func (vdb *versionedDB) ExecuteQueryWithMetadata(namespace, query string, metadata map[string]interface{}) (statedb.QueryResultsIterator, error) {
-	fmt.Println("==versionedDB==ExecuteQueryWithMetadata==")
+	logger.Info("==versionedDB==ExecuteQueryWithMetadata==")
 	return nil, errors.New("ExecuteQueryWithMetadata not supported for leveldb")
 }
 
 // ApplyUpdates implements method in VersionedDB interface
 func (vdb *versionedDB) ApplyUpdates(batch *statedb.UpdateBatch, height *version.Height) error {
-	fmt.Println("==versionedDB==ApplyUpdates==")
+	logger.Info("==versionedDB==ApplyUpdates==")
 	dbBatch := leveldbhelper.NewUpdateBatch()
 	namespaces := batch.GetUpdatedNamespaces()
 	for _, ns := range namespaces {
@@ -218,7 +218,7 @@ func (vdb *versionedDB) ApplyUpdates(batch *statedb.UpdateBatch, height *version
 
 // GetLatestSavePoint implements method in VersionedDB interface
 func (vdb *versionedDB) GetLatestSavePoint() (*version.Height, error) {
-	fmt.Println("==versionedDB==GetLatestSavePoint==")
+	logger.Info("==versionedDB==GetLatestSavePoint==")
 	versionBytes, err := vdb.db.Get(savePointKey)
 	if err != nil {
 		return nil, err
@@ -231,12 +231,12 @@ func (vdb *versionedDB) GetLatestSavePoint() (*version.Height, error) {
 }
 
 func constructCompositeKey(ns string, key string) []byte {
-	fmt.Println("==constructCompositeKey==")
+	logger.Info("==constructCompositeKey==")
 	return append(append([]byte(ns), compositeKeySep...), []byte(key)...)
 }
 
 func splitCompositeKey(compositeKey []byte) (string, string) {
-	fmt.Println("==splitCompositeKey==")
+	logger.Info("==splitCompositeKey==")
 	split := bytes.SplitN(compositeKey, compositeKeySep, 2)
 	return string(split[0]), string(split[1])
 }
@@ -249,12 +249,12 @@ type kvScanner struct {
 }
 
 func newKVScanner(namespace string, dbItr iterator.Iterator, requestedLimit int32) *kvScanner {
-	fmt.Println("==newKVScanner==")
+	logger.Info("==newKVScanner==")
 	return &kvScanner{namespace, dbItr, requestedLimit, 0}
 }
 
 func (scanner *kvScanner) Next() (statedb.QueryResult, error) {
-	fmt.Println("==kvScanner==Next==")
+	logger.Info("==kvScanner==Next==")
 	if scanner.requestedLimit > 0 && scanner.totalRecordsReturned >= scanner.requestedLimit {
 		return nil, nil
 	}
@@ -283,12 +283,12 @@ func (scanner *kvScanner) Next() (statedb.QueryResult, error) {
 }
 
 func (scanner *kvScanner) Close() {
-	fmt.Println("==kvScanner==Close==")
+	logger.Info("==kvScanner==Close==")
 	scanner.dbItr.Release()
 }
 
 func (scanner *kvScanner) GetBookmarkAndClose() string {
-	fmt.Println("==kvScanner==GetBookmarkAndClose==")
+	logger.Info("==kvScanner==GetBookmarkAndClose==")
 	retval := ""
 	if scanner.dbItr.Next() {
 		dbKey := scanner.dbItr.Key()

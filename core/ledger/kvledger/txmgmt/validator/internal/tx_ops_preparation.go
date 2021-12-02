@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package internal
 
 import (
-	"fmt"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/privacyenabledstate"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwsetutil"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb"
@@ -19,7 +18,7 @@ import (
 func prepareTxOps(rwset *rwsetutil.TxRwSet, txht *version.Height,
 
 	precedingUpdates *PubAndHashUpdates, db privacyenabledstate.DB) (txOps, error) {
-	fmt.Println("==prepareTxOps==")
+	logger.Info("==prepareTxOps==")
 	txops := txOps{}
 	txops.applyTxRwset(rwset)
 	//logger.Debugf("prepareTxOps() txops after applying raw rwset=%#v", spew.Sdump(txops))
@@ -59,7 +58,7 @@ func prepareTxOps(rwset *rwsetutil.TxRwSet, txht *version.Height,
 // applyTxRwset records the upsertion/deletion of a kv and updatation/deletion
 // of asociated metadata present in a txrwset
 func (txops txOps) applyTxRwset(rwset *rwsetutil.TxRwSet) error {
-	fmt.Println("==txOps==applyTxRwset==")
+	logger.Info("==txOps==applyTxRwset==")
 	for _, nsRWSet := range rwset.NsRwSets {
 		ns := nsRWSet.NameSpace
 		for _, kvWrite := range nsRWSet.KvRwSet.Writes {
@@ -98,7 +97,7 @@ func (txops txOps) applyTxRwset(rwset *rwsetutil.TxRwSet) error {
 // applyKVWrite records upsertion/deletion of a kvwrite
 func (txops txOps) applyKVWrite(ns, coll string, kvWrite *kvrwset.KVWrite) {
 
-	fmt.Println("==txOps==applyKVWrite==")
+	logger.Info("==txOps==applyKVWrite==")
 	if kvWrite.IsDelete {
 		txops.delete(compositeKey{ns, coll, kvWrite.Key})
 	} else {
@@ -108,7 +107,7 @@ func (txops txOps) applyKVWrite(ns, coll string, kvWrite *kvrwset.KVWrite) {
 
 // applyMetadata records updatation/deletion of a metadataWrite
 func (txops txOps) applyMetadata(ns, coll string, metadataWrite *kvrwset.KVMetadataWrite) error {
-	fmt.Println("==txOps==applyMetadata==")
+	logger.Info("==txOps==applyMetadata==")
 	if metadataWrite.Entries == nil {
 		txops.metadataDelete(compositeKey{ns, coll, metadataWrite.Key})
 	} else {
@@ -129,7 +128,7 @@ func (txops txOps) applyMetadata(ns, coll string, metadataWrite *kvrwset.KVMetad
 func retrieveLatestState(ns, coll, key string,
 	precedingUpdates *PubAndHashUpdates, db privacyenabledstate.DB) (*statedb.VersionedValue, error) {
 
-	fmt.Println("==retrieveLatestState==")
+	logger.Info("==retrieveLatestState==")
 	var vv *statedb.VersionedValue
 	var err error
 	if coll == "" {
@@ -150,7 +149,7 @@ func retrieveLatestState(ns, coll, key string,
 func retrieveLatestMetadata(ns, coll, key string,
 	precedingUpdates *PubAndHashUpdates, db privacyenabledstate.DB) ([]byte, error) {
 
-	fmt.Println("==retrieveLatestMetadata==")
+	logger.Info("==retrieveLatestMetadata==")
 	if coll == "" {
 		vv := precedingUpdates.PubUpdates.Get(ns, key)
 		if vv != nil {
@@ -189,33 +188,33 @@ type keyOps struct {
 ////////////////// txOps functions
 
 func (txops txOps) upsert(k compositeKey, val []byte) {
-	fmt.Println("==txOps==upsert==")
+	logger.Info("==txOps==upsert==")
 	keyops := txops.getOrCreateKeyEntry(k)
 	keyops.flag += upsertVal
 	keyops.value = val
 }
 
 func (txops txOps) delete(k compositeKey) {
-	fmt.Println("==txOps==delete==")
+	logger.Info("==txOps==delete==")
 	keyops := txops.getOrCreateKeyEntry(k)
 	keyops.flag += keyDelete
 }
 
 func (txops txOps) metadataUpdate(k compositeKey, metadata []byte) {
-	fmt.Println("==txOps==metadataUpdate==")
+	logger.Info("==txOps==metadataUpdate==")
 	keyops := txops.getOrCreateKeyEntry(k)
 	keyops.flag += metadataUpdate
 	keyops.metadata = metadata
 }
 
 func (txops txOps) metadataDelete(k compositeKey) {
-	fmt.Println("==txOps==metadataDelete==")
+	logger.Info("==txOps==metadataDelete==")
 	keyops := txops.getOrCreateKeyEntry(k)
 	keyops.flag += metadataDelete
 }
 
 func (txops txOps) getOrCreateKeyEntry(k compositeKey) *keyOps {
-	fmt.Println("==txOps==getOrCreateKeyEntry==")
+	logger.Info("==txOps==getOrCreateKeyEntry==")
 	keyops, ok := txops[k]
 	if !ok {
 		keyops = &keyOps{}
@@ -227,12 +226,12 @@ func (txops txOps) getOrCreateKeyEntry(k compositeKey) *keyOps {
 ////////////////// keyOps functions
 
 func (keyops keyOps) isDelete() bool {
-	fmt.Println("==keyOps==isDelete==")
+	logger.Info("==keyOps==isDelete==")
 	return keyops.flag&(keyDelete) == keyDelete
 }
 
 func (keyops keyOps) isUpsertAndMetadataUpdate() bool {
-	fmt.Println("==keyOps==isUpsertAndMetadataUpdate==")
+	logger.Info("==keyOps==isUpsertAndMetadataUpdate==")
 	if keyops.flag&upsertVal == upsertVal {
 		return keyops.flag&metadataUpdate == metadataUpdate ||
 			keyops.flag&metadataDelete == metadataDelete
@@ -241,6 +240,6 @@ func (keyops keyOps) isUpsertAndMetadataUpdate() bool {
 }
 
 func (keyops keyOps) isOnlyUpsert() bool {
-	fmt.Println("==keyOps==isOnlyUpsert==")
+	logger.Info("==keyOps==isOnlyUpsert==")
 	return keyops.flag|upsertVal == upsertVal
 }

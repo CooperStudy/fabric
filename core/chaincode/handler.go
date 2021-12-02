@@ -81,7 +81,7 @@ type InstantiationPolicyChecker interface {
 type CheckInstantiationPolicyFunc func(name, version string, cd *ccprovider.ChaincodeData) error
 
 func (c CheckInstantiationPolicyFunc) CheckInstantiationPolicy(name, version string, cd *ccprovider.ChaincodeData) error {
-	fmt.Println("====CheckInstantiationPolicyFunc==CheckInstantiationPolicy==")
+	logger.Info("====CheckInstantiationPolicyFunc==CheckInstantiationPolicy==")
 	return c(name, version, cd)
 }
 
@@ -173,20 +173,20 @@ type Handler struct {
 
 // handleMessage is called by ProcessStream to dispatch messages.
 func (h *Handler) handleMessage(msg *pb.ChaincodeMessage) error {
-	fmt.Println("====Handler==handleMessage==")
+	logger.Info("====Handler==handleMessage==")
 	chaincodeLogger.Infof("[%s] Fabric side handling ChaincodeMessage of type: %s in state %s", shorttxid(msg.Txid), msg.Type, h.state)
 //[] Fabric side handling ChaincodeMessage of type: REGISTER in state created
 	if msg.Type == pb.ChaincodeMessage_KEEPALIVE {
-		fmt.Println("====================msg.Type == pb.ChaincodeMessage_KEEPALIVE=================")
+		logger.Info("====================msg.Type == pb.ChaincodeMessage_KEEPALIVE=================")
 		return nil
 	}
 
 	switch h.state {
 	case Created:
-		fmt.Println("===================Created=================")
+		logger.Info("===================Created=================")
 		return h.handleMessageCreatedState(msg)
 	case Ready:
-		fmt.Println("===================Ready=================")
+		logger.Info("===================Ready=================")
 		return h.handleMessageReadyState(msg)
 	default:
 		return errors.Errorf("handle message: invalid state %s for transaction %s", h.state, msg.Txid)
@@ -194,7 +194,7 @@ func (h *Handler) handleMessage(msg *pb.ChaincodeMessage) error {
 }
 
 func (h *Handler) handleMessageCreatedState(msg *pb.ChaincodeMessage) error {
-	fmt.Println("====Handler==handleMessageCreatedState==")
+	logger.Info("====Handler==handleMessageCreatedState==")
 	switch msg.Type {
 	case pb.ChaincodeMessage_REGISTER:
 		h.HandleRegister(msg)
@@ -205,49 +205,49 @@ func (h *Handler) handleMessageCreatedState(msg *pb.ChaincodeMessage) error {
 }
 
 func (h *Handler) handleMessageReadyState(msg *pb.ChaincodeMessage) error {
-	fmt.Println("====Handler==handleMessageReadyState==")
+	logger.Info("====Handler==handleMessageReadyState==")
 	switch msg.Type {
 	case pb.ChaincodeMessage_COMPLETED, pb.ChaincodeMessage_ERROR:
 		//安装链码经过这里
-		fmt.Println("====pb.ChaincodeMessage_COMPLETED, pb.ChaincodeMessage_ERROR==")
+		logger.Info("====pb.ChaincodeMessage_COMPLETED, pb.ChaincodeMessage_ERROR==")
 		h.Notify(msg)
 
 	case pb.ChaincodeMessage_PUT_STATE:
 		//add data
-		fmt.Println("====pb.ChaincodeMessage_PUT_STATE==")
+		logger.Info("====pb.ChaincodeMessage_PUT_STATE==")
 		go h.HandleTransaction(msg, h.HandlePutState)
 	case pb.ChaincodeMessage_DEL_STATE:
-		fmt.Println("====pb.ChaincodeMessage_DEL_STATE==")
+		logger.Info("====pb.ChaincodeMessage_DEL_STATE==")
 		go h.HandleTransaction(msg, h.HandleDelState)
 	case pb.ChaincodeMessage_INVOKE_CHAINCODE:
-		fmt.Println("====pb.ChaincodeMessage_INVOKE_CHAINCODE==")
+		logger.Info("====pb.ChaincodeMessage_INVOKE_CHAINCODE==")
 		go h.HandleTransaction(msg, h.HandleInvokeChaincode)
 
 	case pb.ChaincodeMessage_GET_STATE:
 		//初始化链码的时候
-		fmt.Println("====pb.ChaincodeMessage_GET_STATE==")
+		logger.Info("====pb.ChaincodeMessage_GET_STATE==")
 		go h.HandleTransaction(msg, h.HandleGetState)
 	case pb.ChaincodeMessage_GET_STATE_BY_RANGE:
-		fmt.Println("====pb.ChaincodeMessage_GET_STATE_BY_RANGE==")
+		logger.Info("====pb.ChaincodeMessage_GET_STATE_BY_RANGE==")
 		go h.HandleTransaction(msg, h.HandleGetStateByRange)
 	case pb.ChaincodeMessage_GET_QUERY_RESULT:
-		fmt.Println("====pb.ChaincodeMessage_GET_QUERY_RESULT==")
+		logger.Info("====pb.ChaincodeMessage_GET_QUERY_RESULT==")
 		go h.HandleTransaction(msg, h.HandleGetQueryResult)
 	case pb.ChaincodeMessage_GET_HISTORY_FOR_KEY:
-		fmt.Println("====pb.ChaincodeMessage_GET_HISTORY_FOR_KEY==")
+		logger.Info("====pb.ChaincodeMessage_GET_HISTORY_FOR_KEY==")
 		go h.HandleTransaction(msg, h.HandleGetHistoryForKey)
 	case pb.ChaincodeMessage_QUERY_STATE_NEXT:
-		fmt.Println("====pb.ChaincodeMessage_QUERY_STATE_NEXT==")
+		logger.Info("====pb.ChaincodeMessage_QUERY_STATE_NEXT==")
 		go h.HandleTransaction(msg, h.HandleQueryStateNext)
 	case pb.ChaincodeMessage_QUERY_STATE_CLOSE:
-		fmt.Println("====pb.ChaincodeMessage_QUERY_STATE_CLOSE==")
+		logger.Info("====pb.ChaincodeMessage_QUERY_STATE_CLOSE==")
 		go h.HandleTransaction(msg, h.HandleQueryStateClose)
 
 	case pb.ChaincodeMessage_GET_STATE_METADATA:
-		fmt.Println("====pb.ChaincodeMessage_GET_STATE_METADATA==")
+		logger.Info("====pb.ChaincodeMessage_GET_STATE_METADATA==")
 		go h.HandleTransaction(msg, h.HandleGetStateMetadata)
 	case pb.ChaincodeMessage_PUT_STATE_METADATA:
-		fmt.Println("====pb.ChaincodeMessage_PUT_STATE_METADATA==")
+		logger.Info("====pb.ChaincodeMessage_PUT_STATE_METADATA==")
 		go h.HandleTransaction(msg, h.HandlePutStateMetadata)
 	default:
 		return fmt.Errorf("[%s] Fabric side handler cannot handle message (%s) while in ready state", msg.Txid, msg.Type)
@@ -267,7 +267,7 @@ type handleFunc func(*pb.ChaincodeMessage, *TransactionContext) (*pb.ChaincodeMe
 // returned by the delegate are sent to the chat stream. Any errors returned by the
 // delegate are packaged as chaincode error messages.
 func (h *Handler) HandleTransaction(msg *pb.ChaincodeMessage, delegate handleFunc) {
-	fmt.Println("====Handler==HandleTransaction==")
+	logger.Info("====Handler==HandleTransaction==")
 	chaincodeLogger.Debugf("[%s] handling %s from chaincode", shorttxid(msg.Txid), msg.Type.String())
 	if !h.registerTxid(msg) {
 		return
@@ -311,7 +311,7 @@ func (h *Handler) HandleTransaction(msg *pb.ChaincodeMessage, delegate handleFun
 }
 
 func shorttxid(txid string) string {
-	fmt.Println("======shorttxid==")
+	logger.Info("======shorttxid==")
 	if len(txid) < 8 {
 		return txid
 	}
@@ -321,7 +321,7 @@ func shorttxid(txid string) string {
 // ParseName parses a chaincode name into a ChaincodeInstance. The name should
 // be of the form "chaincode-name:version/channel-name" with optional elements.
 func ParseName(ccName string) *sysccprovider.ChaincodeInstance {
-	fmt.Println("======ParseName==")
+	logger.Info("======ParseName==")
 	ci := &sysccprovider.ChaincodeInstance{}
 
 	z := strings.SplitN(ccName, "/", 2)
@@ -338,7 +338,7 @@ func ParseName(ccName string) *sysccprovider.ChaincodeInstance {
 }
 
 func (h *Handler) ChaincodeName() string {
-	fmt.Println("====Handler==ChaincodeName==")
+	logger.Info("====Handler==ChaincodeName==")
 	if h.ccInstance == nil {
 		return ""
 	}
@@ -347,7 +347,7 @@ func (h *Handler) ChaincodeName() string {
 
 // serialSend serializes msgs so gRPC will be happy
 func (h *Handler) serialSend(msg *pb.ChaincodeMessage) error {
-	fmt.Println("====Handler==serialSend==")
+	logger.Info("====Handler==serialSend==")
 	h.serialLock.Lock()
 	defer h.serialLock.Unlock()
 
@@ -366,7 +366,7 @@ func (h *Handler) serialSend(msg *pb.ChaincodeMessage) error {
 // communication on supplied error channel. A typical use will be a non-blocking or
 // nil channel
 func (h *Handler) serialSendAsync(msg *pb.ChaincodeMessage) {
-	fmt.Println("====Handler==serialSendAsync==")
+	logger.Info("====Handler==serialSendAsync==")
 	go func() {
 		if err := h.serialSend(msg); err != nil {
 			// provide an error response to the caller
@@ -386,7 +386,7 @@ func (h *Handler) serialSendAsync(msg *pb.ChaincodeMessage) {
 
 // Check if the transactor is allow to call this chaincode on this channel
 func (h *Handler) checkACL(signedProp *pb.SignedProposal, proposal *pb.Proposal, ccIns *sysccprovider.ChaincodeInstance) error {
-	fmt.Println("====Handler==checkACL==")
+	logger.Info("====Handler==checkACL==")
 	// ensure that we don't invoke a system chaincode
 	// that is not invokable through a cc2cc invocation
 	if h.SystemCCProvider.IsSysCCAndNotInvokableCC2CC(ccIns.ChaincodeName) {
@@ -413,14 +413,14 @@ func (h *Handler) checkACL(signedProp *pb.SignedProposal, proposal *pb.Proposal,
 }
 
 func (h *Handler) deregister() {
-	fmt.Println("====Handler==deregister==")
+	logger.Info("====Handler==deregister==")
 	if h.chaincodeID != nil {
 		h.Registry.Deregister(h.chaincodeID.Name)
 	}
 }
 
 func (h *Handler) ProcessStream(stream ccintf.ChaincodeStream) error {
-	fmt.Println("====Handler==ProcessStream==")
+	logger.Info("====Handler==ProcessStream==")
 	defer h.deregister()
 
 	h.chatStream = stream
@@ -441,7 +441,7 @@ func (h *Handler) ProcessStream(stream ccintf.ChaincodeStream) error {
 	msgAvail := make(chan *recvMsg, 1)
 
 	receiveMessage := func() {
-		fmt.Println("==========receiveMessage==================")
+		logger.Info("==========receiveMessage==================")
 		in, err := h.chatStream.Recv()
 		msgAvail <- &recvMsg{in, err}
 	}
@@ -489,7 +489,7 @@ func (h *Handler) ProcessStream(stream ccintf.ChaincodeStream) error {
 
 // sendReady sends READY to chaincode serially (just like REGISTER)
 func (h *Handler) sendReady() error {
-	fmt.Println("====Handler==sendReady==")
+	logger.Info("====Handler==sendReady==")
 	chaincodeLogger.Debugf("sending READY for chaincode %+v", h.chaincodeID)
 	ccMsg := &pb.ChaincodeMessage{Type: pb.ChaincodeMessage_READY}
 
@@ -509,7 +509,7 @@ func (h *Handler) sendReady() error {
 // notifyRegistry will send ready on registration success and
 // update the launch state of the chaincode in the handler registry.
 func (h *Handler) notifyRegistry(err error) {
-	fmt.Println("====Handler==notifyRegistry==")
+	logger.Info("====Handler==notifyRegistry==")
 	if err == nil {
 		err = h.sendReady()
 	}
@@ -525,7 +525,7 @@ func (h *Handler) notifyRegistry(err error) {
 
 // handleRegister is invoked when chaincode tries to register.
 func (h *Handler) HandleRegister(msg *pb.ChaincodeMessage) {
-	fmt.Println("====Handler==HandleRegister==")
+	logger.Info("====Handler==HandleRegister==")
 	chaincodeLogger.Debugf("Received %s in state %s", msg.Type, h.state)
 	chaincodeID := &pb.ChaincodeID{}
 	err := proto.Unmarshal(msg.Payload, chaincodeID)
@@ -562,7 +562,7 @@ func (h *Handler) HandleRegister(msg *pb.ChaincodeMessage) {
 }
 
 func (h *Handler) Notify(msg *pb.ChaincodeMessage) {
-	fmt.Println("====Handler==Notify==")
+	logger.Info("====Handler==Notify==")
 	tctx := h.TXContexts.Get(msg.ChannelId, msg.Txid)
 	if tctx == nil {
 		chaincodeLogger.Debugf("notifier Txid:%s, channelID:%s does not exist for handling message %s", msg.Txid, msg.ChannelId, msg.Type)
@@ -576,7 +576,7 @@ func (h *Handler) Notify(msg *pb.ChaincodeMessage) {
 
 // is this a txid for which there is a valid txsim
 func (h *Handler) isValidTxSim(channelID string, txid string, fmtStr string, args ...interface{}) (*TransactionContext, error) {
-	fmt.Println("====Handler==isValidTxSim==")
+	logger.Info("====Handler==isValidTxSim==")
 	txContext := h.TXContexts.Get(channelID, txid)
 	if txContext == nil || txContext.TXSimulator == nil {
 		err := errors.Errorf(fmtStr, args...)
@@ -588,7 +588,7 @@ func (h *Handler) isValidTxSim(channelID string, txid string, fmtStr string, arg
 
 // register Txid to prevent overlapping handle messages from chaincode
 func (h *Handler) registerTxid(msg *pb.ChaincodeMessage) bool {
-	fmt.Println("====Handler==registerTxid==")
+	logger.Info("====Handler==registerTxid==")
 	// Check if this is the unique state request from this chaincode txid
 	if h.ActiveTransactions.Add(msg.ChannelId, msg.Txid) {
 		return true
@@ -604,7 +604,7 @@ func (h *Handler) registerTxid(msg *pb.ChaincodeMessage) bool {
 }
 
 func (h *Handler) checkMetadataCap(msg *pb.ChaincodeMessage) error {
-	fmt.Println("====Handler==checkMetadataCap==")
+	logger.Info("====Handler==checkMetadataCap==")
 	ac, exists := h.AppConfig.GetApplicationConfig(msg.ChannelId)
 	if !exists {
 		return errors.Errorf("application config does not exist for %s", msg.ChannelId)
@@ -617,7 +617,7 @@ func (h *Handler) checkMetadataCap(msg *pb.ChaincodeMessage) error {
 }
 
 func errorIfCreatorHasNoReadAccess(chaincodeName, collection string, txContext *TransactionContext) error {
-	fmt.Println("====errorIfCreatorHasNoReadAccess==")
+	logger.Info("====errorIfCreatorHasNoReadAccess==")
 	accessAllowed, err := hasReadAccess(chaincodeName, collection, txContext)
 	if err != nil {
 		return err
@@ -630,7 +630,7 @@ func errorIfCreatorHasNoReadAccess(chaincodeName, collection string, txContext *
 }
 
 func hasReadAccess(chaincodeName, collection string, txContext *TransactionContext) (bool, error) {
-	fmt.Println("====hasReadAccess==")
+	logger.Info("====hasReadAccess==")
 	// check to see if read access has already been checked in the scope of this chaincode simulation
 	if txContext.AllowedCollectionAccess[collection] {
 		return true, nil
@@ -655,7 +655,7 @@ func hasReadAccess(chaincodeName, collection string, txContext *TransactionConte
 
 // Handles query to ledger to get state
 func (h *Handler) HandleGetState(msg *pb.ChaincodeMessage, txContext *TransactionContext) (*pb.ChaincodeMessage, error) {
-	fmt.Println("====Handler==HandleGetState==")
+	logger.Info("====Handler==HandleGetState==")
 	getState := &pb.GetState{}
 	err := proto.Unmarshal(msg.Payload, getState)
 	if err != nil {
@@ -691,7 +691,7 @@ func (h *Handler) HandleGetState(msg *pb.ChaincodeMessage, txContext *Transactio
 
 // Handles query to ledger to get state metadata
 func (h *Handler) HandleGetStateMetadata(msg *pb.ChaincodeMessage, txContext *TransactionContext) (*pb.ChaincodeMessage, error) {
-	fmt.Println("====Handler==HandleGetStateMetadata==")
+	logger.Info("====Handler==HandleGetStateMetadata==")
 	err := h.checkMetadataCap(msg)
 	if err != nil {
 		return nil, err
@@ -738,7 +738,7 @@ func (h *Handler) HandleGetStateMetadata(msg *pb.ChaincodeMessage, txContext *Tr
 
 // Handles query to ledger to rage query state
 func (h *Handler) HandleGetStateByRange(msg *pb.ChaincodeMessage, txContext *TransactionContext) (*pb.ChaincodeMessage, error) {
-	fmt.Println("====Handler==HandleGetStateByRange==")
+	logger.Info("====Handler==HandleGetStateByRange==")
 	getStateByRange := &pb.GetStateByRange{}
 	err := proto.Unmarshal(msg.Payload, getStateByRange)
 	if err != nil {
@@ -812,7 +812,7 @@ func (h *Handler) HandleGetStateByRange(msg *pb.ChaincodeMessage, txContext *Tra
 
 // Handles query to ledger for query state next
 func (h *Handler) HandleQueryStateNext(msg *pb.ChaincodeMessage, txContext *TransactionContext) (*pb.ChaincodeMessage, error) {
-	fmt.Println("====Handler==HandleQueryStateNext==")
+	logger.Info("====Handler==HandleQueryStateNext==")
 	queryStateNext := &pb.QueryStateNext{}
 	err := proto.Unmarshal(msg.Payload, queryStateNext)
 	if err != nil {
@@ -843,7 +843,7 @@ func (h *Handler) HandleQueryStateNext(msg *pb.ChaincodeMessage, txContext *Tran
 
 // Handles the closing of a state iterator
 func (h *Handler) HandleQueryStateClose(msg *pb.ChaincodeMessage, txContext *TransactionContext) (*pb.ChaincodeMessage, error) {
-	fmt.Println("====Handler==HandleQueryStateClose==")
+	logger.Info("====Handler==HandleQueryStateClose==")
 	queryStateClose := &pb.QueryStateClose{}
 	err := proto.Unmarshal(msg.Payload, queryStateClose)
 	if err != nil {
@@ -866,7 +866,7 @@ func (h *Handler) HandleQueryStateClose(msg *pb.ChaincodeMessage, txContext *Tra
 
 // Handles query to ledger to execute query state
 func (h *Handler) HandleGetQueryResult(msg *pb.ChaincodeMessage, txContext *TransactionContext) (*pb.ChaincodeMessage, error) {
-	fmt.Println("====Handler==HandleGetQueryResult==")
+	logger.Info("====Handler==HandleGetQueryResult==")
 	iterID := h.UUIDGenerator.New()
 
 	getQueryResult := &pb.GetQueryResult{}
@@ -932,7 +932,7 @@ func (h *Handler) HandleGetQueryResult(msg *pb.ChaincodeMessage, txContext *Tran
 
 // Handles query to ledger history db
 func (h *Handler) HandleGetHistoryForKey(msg *pb.ChaincodeMessage, txContext *TransactionContext) (*pb.ChaincodeMessage, error) {
-	fmt.Println("====Handler==HandleGetHistoryForKey==")
+	logger.Info("====Handler==HandleGetHistoryForKey==")
 	iterID := h.UUIDGenerator.New()
 	chaincodeName := h.ChaincodeName()
 
@@ -967,12 +967,12 @@ func (h *Handler) HandleGetHistoryForKey(msg *pb.ChaincodeMessage, txContext *Tr
 }
 
 func isCollectionSet(collection string) bool {
-	fmt.Println("=====isCollectionSet==")
+	logger.Info("=====isCollectionSet==")
 	return collection != ""
 }
 
 func isMetadataSetForPagination(metadata *pb.QueryMetadata) bool {
-	fmt.Println("=====isMetadataSetForPagination==")
+	logger.Info("=====isMetadataSetForPagination==")
 	if metadata == nil {
 		return false
 	}
@@ -985,7 +985,7 @@ func isMetadataSetForPagination(metadata *pb.QueryMetadata) bool {
 }
 
 func getQueryMetadataFromBytes(metadataBytes []byte) (*pb.QueryMetadata, error) {
-	fmt.Println("=====getQueryMetadataFromBytes==")
+	logger.Info("=====getQueryMetadataFromBytes==")
 	if metadataBytes != nil {
 		metadata := &pb.QueryMetadata{}
 		err := proto.Unmarshal(metadataBytes, metadata)
@@ -998,7 +998,7 @@ func getQueryMetadataFromBytes(metadataBytes []byte) (*pb.QueryMetadata, error) 
 }
 
 func createPaginationInfoFromMetadata(metadata *pb.QueryMetadata, totalReturnLimit int32, queryType pb.ChaincodeMessage_Type) (map[string]interface{}, error) {
-	fmt.Println("=====createPaginationInfoFromMetadata==")
+	logger.Info("=====createPaginationInfoFromMetadata==")
 	paginationInfoMap := make(map[string]interface{})
 
 	switch queryType {
@@ -1015,7 +1015,7 @@ func createPaginationInfoFromMetadata(metadata *pb.QueryMetadata, totalReturnLim
 }
 
 func calculateTotalReturnLimit(metadata *pb.QueryMetadata) int32 {
-	fmt.Println("=====calculateTotalReturnLimit==")
+	logger.Info("=====calculateTotalReturnLimit==")
 	totalReturnLimit := int32(ledgerconfig.GetTotalQueryLimit())
 	if metadata != nil {
 		pageSize := int32(metadata.PageSize)
@@ -1027,7 +1027,7 @@ func calculateTotalReturnLimit(metadata *pb.QueryMetadata) int32 {
 }
 
 func (h *Handler) getTxContextForInvoke(channelID string, txid string, payload []byte, format string, args ...interface{}) (*TransactionContext, error) {
-	fmt.Println("===Handler==getTxContextForInvoke==")
+	logger.Info("===Handler==getTxContextForInvoke==")
 	// if we have a channelID, just get the txsim from isValidTxSim
 	if channelID != "" {
 		return h.isValidTxSim(channelID, txid, "could not get valid transaction")
@@ -1063,7 +1063,7 @@ func (h *Handler) getTxContextForInvoke(channelID string, txid string, payload [
 }
 
 func (h *Handler) HandlePutState(msg *pb.ChaincodeMessage, txContext *TransactionContext) (*pb.ChaincodeMessage, error) {
-	fmt.Println("===Handler==HandlePutState==")
+	logger.Info("===Handler==HandlePutState==")
 	putState := &pb.PutState{}
 	err := proto.Unmarshal(msg.Payload, putState)
 	if err != nil {
@@ -1088,7 +1088,7 @@ func (h *Handler) HandlePutState(msg *pb.ChaincodeMessage, txContext *Transactio
 }
 
 func (h *Handler) HandlePutStateMetadata(msg *pb.ChaincodeMessage, txContext *TransactionContext) (*pb.ChaincodeMessage, error) {
-	fmt.Println("===Handler==HandlePutStateMetadata==")
+	logger.Info("===Handler==HandlePutStateMetadata==")
 	err := h.checkMetadataCap(msg)
 	if err != nil {
 		return nil, err
@@ -1121,7 +1121,7 @@ func (h *Handler) HandlePutStateMetadata(msg *pb.ChaincodeMessage, txContext *Tr
 }
 
 func (h *Handler) HandleDelState(msg *pb.ChaincodeMessage, txContext *TransactionContext) (*pb.ChaincodeMessage, error) {
-	fmt.Println("===Handler==HandleDelState==")
+	logger.Info("===Handler==HandleDelState==")
 	delState := &pb.DelState{}
 	err := proto.Unmarshal(msg.Payload, delState)
 	if err != nil {
@@ -1148,7 +1148,7 @@ func (h *Handler) HandleDelState(msg *pb.ChaincodeMessage, txContext *Transactio
 
 // Handles requests that modify ledger state
 func (h *Handler) HandleInvokeChaincode(msg *pb.ChaincodeMessage, txContext *TransactionContext) (*pb.ChaincodeMessage, error) {
-	fmt.Println("===Handler==HandleInvokeChaincode==")
+	logger.Info("===Handler==HandleInvokeChaincode==")
 	chaincodeLogger.Debugf("[%s] C-call-C", shorttxid(msg.Txid))
 
 	chaincodeSpec := &pb.ChaincodeSpec{}
@@ -1256,10 +1256,10 @@ func (h *Handler) HandleInvokeChaincode(msg *pb.ChaincodeMessage, txContext *Tra
 }
 //                           h.Execute(txParams,                    cccid,                      ccMsg (ccMsg.payload包含背书策略）                      c       s.ExecuteTimeout)
 func (h *Handler) Execute(txParams *ccprovider.TransactionParams, cccid *ccprovider.CCContext, msg *pb.ChaincodeMessage, timeout time.Duration) (*pb.ChaincodeMessage, error) {
-	fmt.Println("===Handler==Execute==")
-	chaincodeLogger.Debugf("Entry")
+	chaincodeLogger.Info("===Handler==Execute==")
+	chaincodeLogger.Info("Entry")
 
-	defer chaincodeLogger.Debugf("Exit")
+	defer chaincodeLogger.Info("Exit")
 
 	txParams.CollectionStore = h.getCollectionStore(msg.ChannelId)
 	txParams.IsInitTransaction = (msg.Type == pb.ChaincodeMessage_INIT)
@@ -1293,7 +1293,7 @@ func (h *Handler) Execute(txParams *ccprovider.TransactionParams, cccid *ccprovi
 }
 
 func (h *Handler) setChaincodeProposal(signedProp *pb.SignedProposal, prop *pb.Proposal, msg *pb.ChaincodeMessage) error {
-	fmt.Println("===Handler==setChaincodeProposal==")
+	logger.Info("===Handler==setChaincodeProposal==")
 	if prop != nil && signedProp == nil {
 		return errors.New("failed getting proposal context. Signed proposal is nil")
 	}
@@ -1306,8 +1306,8 @@ func (h *Handler) setChaincodeProposal(signedProp *pb.SignedProposal, prop *pb.P
 }
 
 func (h *Handler) getCollectionStore(channelID string) privdata.CollectionStore {
-	fmt.Println("===Handler==getCollectionStore==")
-	fmt.Println("=========channelID=======",channelID)
+	logger.Info("===Handler==getCollectionStore==")
+	logger.Info("=========channelID=======",channelID)
 	csStoreSupport := &peer.CollectionSupport{
 		PeerLedger: h.LedgerGetter.GetLedger(channelID),
 	}
@@ -1316,12 +1316,12 @@ func (h *Handler) getCollectionStore(channelID string) privdata.CollectionStore 
 }
 
 func (h *Handler) State() State {
-	fmt.Println("===Handler==State==")
+	logger.Info("===Handler==State==")
 
 	return h.state
 }
 func (h *Handler) Close()       {
-	fmt.Println("===Handler==Close==")
+	logger.Info("===Handler==Close==")
 	h.TXContexts.Close()
 }
 
@@ -1334,7 +1334,7 @@ const (
 )
 
 func (s State) String() string {
-	fmt.Println("===State==String==")
+	logger.Info("===State==String==")
 	switch s {
 	case Created:
 		return "created"

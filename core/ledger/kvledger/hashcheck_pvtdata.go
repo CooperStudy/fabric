@@ -7,8 +7,6 @@ package kvledger
 
 import (
 	"bytes"
-	"fmt"
-
 	"github.com/hyperledger/fabric/common/util"
 	"github.com/hyperledger/fabric/core/ledger"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwsetutil"
@@ -22,7 +20,7 @@ import (
 func ConstructValidAndInvalidPvtData(blocksPvtData []*ledger.BlockPvtData, blockStore *ledgerstorage.Store) (
 	map[uint64][]*ledger.TxPvtData, []*ledger.PvtdataHashMismatch, error,
 ) {
-	fmt.Println("===ConstructValidAndInvalidPvtData=====")
+	logger.Info("===ConstructValidAndInvalidPvtData=====")
 	// for each block, for each transaction, retrieve the txEnvelope to
 	// compare the hash of pvtRwSet in the block and the hash of the received
 	// txPvtData. On a mismatch, add an entry to hashMismatch list.
@@ -46,7 +44,7 @@ func ConstructValidAndInvalidPvtData(blocksPvtData []*ledger.BlockPvtData, block
 func findValidAndInvalidBlockPvtData(blockPvtData *ledger.BlockPvtData, blockStore *ledgerstorage.Store) (
 	[]*ledger.TxPvtData, []*ledger.PvtdataHashMismatch, error,
 ) {
-	fmt.Println("===findValidAndInvalidBlockPvtData=====")
+	logger.Info("===findValidAndInvalidBlockPvtData=====")
 	var validPvtData []*ledger.TxPvtData
 	var invalidPvtData []*ledger.PvtdataHashMismatch
 	for _, txPvtData := range blockPvtData.WriteSets {
@@ -74,7 +72,7 @@ func findValidAndInvalidBlockPvtData(blockPvtData *ledger.BlockPvtData, blockSto
 
 func retrieveRwsetForTx(blkNum uint64, txNum uint64, blockStore *ledgerstorage.Store) (*rwsetutil.TxRwSet, error) {
 
-	fmt.Println("===retrieveRwsetForTx=====")
+	logger.Info("===retrieveRwsetForTx=====")
 	// retrieve the txEnvelope from the block store so that the hash of
 	// the pvtData can be retrieved for comparison
 	txEnvelope, err := blockStore.RetrieveTxByBlockNumTranNum(blkNum, txNum)
@@ -97,7 +95,7 @@ func findValidAndInvalidTxPvtData(txPvtData *ledger.TxPvtData, txRWSet *rwsetuti
 	*ledger.TxPvtData, []*ledger.PvtdataHashMismatch,
 ) {
 
-	fmt.Println("===findValidAndInvalidTxPvtData=====")
+	logger.Info("===findValidAndInvalidTxPvtData=====")
 	var invalidPvtData []*ledger.PvtdataHashMismatch
 	var toDeleteNsColl []*nsColl
 	// Compare the hash of pvtData with the hash present in the rwset to
@@ -126,7 +124,7 @@ type nsColl struct {
 func findInvalidNsPvtData(nsRwset *rwset.NsPvtReadWriteSet, txRWSet *rwsetutil.TxRwSet, blkNum, txNum uint64) (
 	[]*ledger.PvtdataHashMismatch, []*nsColl,
 ) {
-	fmt.Println("===findInvalidNsPvtData=====")
+	logger.Info("===findInvalidNsPvtData=====")
 	var invalidPvtData []*ledger.PvtdataHashMismatch
 	var invalidNsColl []*nsColl
 

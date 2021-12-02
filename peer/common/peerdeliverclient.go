@@ -23,14 +23,14 @@ type PeerDeliverClient struct {
 
 // Deliver connects the client to the Deliver RPC
 func (dc PeerDeliverClient) Deliver(ctx context.Context, opts ...grpc.CallOption) (ccapi.Deliver, error) {
-	fmt.Println("==PeerDeliverClient==Deliver==")
+	logger.Info("==PeerDeliverClient==Deliver==")
 	d, err := dc.Client.Deliver(ctx, opts...)
 	return d, err
 }
 
 // DeliverFiltered connects the client to the DeliverFiltered RPC
 func (dc PeerDeliverClient) DeliverFiltered(ctx context.Context, opts ...grpc.CallOption) (ccapi.Deliver, error) {
-	fmt.Println("==DeliverFiltered==")
+	logger.Info("==DeliverFiltered==")
 	df, err := dc.Client.DeliverFiltered(ctx, opts...)
 	return df, err
 }

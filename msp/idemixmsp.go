@@ -69,7 +69,7 @@ type idemixmsp struct {
 
 // newIdemixMsp creates a new instance of idemixmsp
 func newIdemixMsp(version MSPVersion) (MSP, error) {
-	fmt.Println("====newIdemixMsp==")
+	mspLogger.Info("====newIdemixMsp==")
 	mspLogger.Debugf("Creating Idemix-based MSP instance")
 
 	csp, err := idemixbccsp.New(sw.NewDummyKeyStore())
@@ -83,7 +83,7 @@ func newIdemixMsp(version MSPVersion) (MSP, error) {
 }
 
 func (msp *idemixmsp) Setup(conf1 *m.MSPConfig) error {
-	fmt.Println("====idemixmsp==Setup==")
+	mspLogger.Info("====idemixmsp==Setup==")
 	mspLogger.Debugf("Setting up Idemix-based MSP instance")
 
 
@@ -242,27 +242,27 @@ func (msp *idemixmsp) Setup(conf1 *m.MSPConfig) error {
 
 // GetVersion returns the version of this MSP
 func (msp *idemixmsp) GetVersion() MSPVersion {
-	fmt.Println("====idemixmsp==GetVersion==")
+	mspLogger.Info("====idemixmsp==GetVersion==")
 	return msp.version
 }
 
 func (msp *idemixmsp) GetType() ProviderType {
-	fmt.Println("====idemixmsp==GetType==")
+	mspLogger.Info("====idemixmsp==GetType==")
 	return IDEMIX
 }
 
 func (msp *idemixmsp) GetIdentifier() (string, error) {
-	fmt.Println("====idemixmsp==GetIdentifier==")
+	mspLogger.Info("====idemixmsp==GetIdentifier==")
 	return msp.name, nil
 }
 
 func (msp *idemixmsp) GetSigningIdentity(identifier *IdentityIdentifier) (SigningIdentity, error) {
-	fmt.Println("====idemixmsp==GetSigningIdentity==")
+	mspLogger.Info("====idemixmsp==GetSigningIdentity==")
 	return nil, errors.Errorf("GetSigningIdentity not implemented")
 }
 
 func (msp *idemixmsp) GetDefaultSigningIdentity() (SigningIdentity, error) {
-	fmt.Println("====idemixmsp==GetDefaultSigningIdentity==")
+	mspLogger.Info("====idemixmsp==GetDefaultSigningIdentity==")
 	mspLogger.Debugf("Obtaining default idemix signing identity")
 
 	if msp.signer == nil {
@@ -272,7 +272,7 @@ func (msp *idemixmsp) GetDefaultSigningIdentity() (SigningIdentity, error) {
 }
 
 func (msp *idemixmsp) DeserializeIdentity(serializedID []byte) (Identity, error) {
-	fmt.Println("====idemixmsp==DeserializeIdentity==")
+	mspLogger.Info("====idemixmsp==DeserializeIdentity==")
 	sID := &m.SerializedIdentity{}
 	err := proto.Unmarshal(serializedID, sID)
 	if err != nil {
@@ -287,7 +287,7 @@ func (msp *idemixmsp) DeserializeIdentity(serializedID []byte) (Identity, error)
 }
 
 func (msp *idemixmsp) deserializeIdentityInternal(serializedID []byte) (Identity, error) {
-	fmt.Println("====idemixmsp==deserializeIdentityInternal==")
+	mspLogger.Info("====idemixmsp==deserializeIdentityInternal==")
 	mspLogger.Debug("idemixmsp: deserializing identity")
 	serialized := new(m.SerializedIdemixIdentity)
 	err := proto.Unmarshal(serializedID, serialized)
@@ -328,7 +328,7 @@ func (msp *idemixmsp) deserializeIdentityInternal(serializedID []byte) (Identity
 }
 
 func (msp *idemixmsp) Validate(id Identity) error {
-	fmt.Println("====idemixmsp==Validate==")
+	mspLogger.Info("====idemixmsp==Validate==")
 	var identity *idemixidentity
 	switch t := id.(type) {
 	case *idemixidentity:
@@ -347,7 +347,7 @@ func (msp *idemixmsp) Validate(id Identity) error {
 }
 
 func (id *idemixidentity) verifyProof() error {
-	fmt.Println("====idemixidentity==verifyProof==")
+	mspLogger.Info("====idemixidentity==verifyProof==")
 	// Verify signature
 	valid, err := id.msp.csp.Verify(
 		id.msp.ipk,
@@ -373,7 +373,7 @@ func (id *idemixidentity) verifyProof() error {
 }
 
 func (msp *idemixmsp) SatisfiesPrincipal(id Identity, principal *m.MSPPrincipal) error {
-	fmt.Println("====idemixidentity==SatisfiesPrincipal==")
+	mspLogger.Info("====idemixidentity==SatisfiesPrincipal==")
 	err := msp.Validate(id)
 	if err != nil {
 		return errors.Wrap(err, "identity is not valid with respect to this MSP")
@@ -385,7 +385,7 @@ func (msp *idemixmsp) SatisfiesPrincipal(id Identity, principal *m.MSPPrincipal)
 // satisfiesPrincipalValidated performs all the tasks of satisfiesPrincipal except the identity validation,
 // such that combined principals will not cause multiple expensive identity validations.
 func (msp *idemixmsp) satisfiesPrincipalValidated(id Identity, principal *m.MSPPrincipal) error {
-	fmt.Println("====idemixmsp==satisfiesPrincipalValidated==")
+	mspLogger.Info("====idemixmsp==satisfiesPrincipalValidated==")
 	switch principal.PrincipalClassification {
 	// in this case, we have to check whether the
 	// identity has a role in the msp - member or admin
@@ -516,7 +516,7 @@ func (msp *idemixmsp) satisfiesPrincipalValidated(id Identity, principal *m.MSPP
 // In this MSP implementation, an identity is considered well formed if it contains a
 // marshaled SerializedIdemixIdentity protobuf message.
 func (id *idemixmsp) IsWellFormed(identity *m.SerializedIdentity) error {
-	fmt.Println("====idemixmsp==IsWellFormed==")
+	mspLogger.Info("====idemixmsp==IsWellFormed==")
 	sId := new(m.SerializedIdemixIdentity)
 	err := proto.Unmarshal(identity.IdBytes, sId)
 	if err != nil {
@@ -526,7 +526,7 @@ func (id *idemixmsp) IsWellFormed(identity *m.SerializedIdentity) error {
 }
 
 func (msp *idemixmsp) GetTLSRootCerts() [][]byte {
-	fmt.Println("====idemixmsp==GetTLSRootCerts==")
+	mspLogger.Info("====idemixmsp==GetTLSRootCerts==")
 	// TODO
 	return nil
 }

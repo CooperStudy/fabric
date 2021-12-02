@@ -25,7 +25,7 @@ import (
 )
 
 func signECDSA(k *ecdsa.PrivateKey, digest []byte, opts bccsp.SignerOpts) ([]byte, error) {
-	//fmt.Println("===signECDSA=====")
+	//logger.Info("===signECDSA=====")
 	a := rand.Reader
 	r, s, err := ecdsa.Sign(a, k, digest)
 	if err != nil {
@@ -41,7 +41,7 @@ func signECDSA(k *ecdsa.PrivateKey, digest []byte, opts bccsp.SignerOpts) ([]byt
 }
 
 func verifyECDSA(k *ecdsa.PublicKey, signature, digest []byte, opts bccsp.SignerOpts) (bool, error) {
-	//fmt.Println("===verifyECDSA=====")
+	//logger.Info("===verifyECDSA=====")
 	r, s, err := utils.UnmarshalECDSASignature(signature)
 	if err != nil {
 		return false, fmt.Errorf("Failed unmashalling signature [%s]", err)
@@ -62,20 +62,20 @@ func verifyECDSA(k *ecdsa.PublicKey, signature, digest []byte, opts bccsp.Signer
 type ecdsaSigner struct{}
 
 func (s *ecdsaSigner) Sign(k bccsp.Key, digest []byte, opts bccsp.SignerOpts) ([]byte, error) {
-	//fmt.Println("===ecdsaSigner==Sign===")
+	//logger.Info("===ecdsaSigner==Sign===")
 	return signECDSA(k.(*ecdsaPrivateKey).privKey, digest, opts)
 }
 
 type ecdsaPrivateKeyVerifier struct{}
 
 func (v *ecdsaPrivateKeyVerifier) Verify(k bccsp.Key, signature, digest []byte, opts bccsp.SignerOpts) (bool, error) {
-	//fmt.Println("===ecdsaPrivateKeyVerifier==Verify===")
+	//logger.Info("===ecdsaPrivateKeyVerifier==Verify===")
 	return verifyECDSA(&(k.(*ecdsaPrivateKey).privKey.PublicKey), signature, digest, opts)
 }
 
 type ecdsaPublicKeyKeyVerifier struct{}
 
 func (v *ecdsaPublicKeyKeyVerifier) Verify(k bccsp.Key, signature, digest []byte, opts bccsp.SignerOpts) (bool, error) {
-	//fmt.Println("===ecdsaPublicKeyKeyVerifier==Verify===")
+	//logger.Info("===ecdsaPublicKeyKeyVerifier==Verify===")
 	return verifyECDSA(k.(*ecdsaPublicKey).pubKey, signature, digest, opts)
 }

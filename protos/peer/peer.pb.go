@@ -3,7 +3,10 @@
 
 package peer // import "github.com/hyperledger/fabric/protos/peer"
 
-import proto "github.com/golang/protobuf/proto"
+import (
+	proto "github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/flogging"
+)
 import fmt "fmt"
 import math "math"
 
@@ -22,7 +25,7 @@ var _ = math.Inf
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
-
+var peerLogger = flogging.MustGetLogger("protos.peer")
 type PeerID struct {
 	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -136,7 +139,7 @@ func NewEndorserClient(cc *grpc.ClientConn) EndorserClient {
 }
 
 func (c *endorserClient) ProcessProposal(ctx context.Context, in *SignedProposal, opts ...grpc.CallOption) (*ProposalResponse, error) {
-    fmt.Println("===========endorserClient========ProcessProposal==============")
+    peerLogger.Info("===========endorserClient========ProcessProposal==============")
 	out := new(ProposalResponse)
 	err := c.cc.Invoke(ctx, "/protos.Endorser/ProcessProposal", in, out, opts...)
 	if err != nil {
@@ -156,14 +159,15 @@ type EndorserServer interface {
 func RegisterEndorserServer(s *grpc.Server, srv EndorserServer) {
 	s.RegisterService(&_Endorser_serviceDesc, srv)
 }
-
+//
 func _Endorser_ProcessProposal_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	fmt.Println("=================_Endorser_ProcessProposal_Handler========================")
-	fmt.Printf("==========srv:%T=======\n",srv)//==========srv:*filter.filter=======
+	peerLogger.Info("=================_Endorser_ProcessProposal_Handler========================")
+	peerLogger.Infof("==========srv:%T=======\n",srv)//==========srv:*filter.filter=======
 	in := new(SignedProposal)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
+
 	if interceptor == nil {
 		return srv.(EndorserServer).ProcessProposal(ctx, in)
 	}
@@ -172,7 +176,7 @@ func _Endorser_ProcessProposal_Handler(srv interface{}, ctx context.Context, dec
 		FullMethod: "/protos.Endorser/ProcessProposal",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		fmt.Println("=========handler==========")
+		peerLogger.Info("======handler==========")
 		return srv.(EndorserServer).ProcessProposal(ctx, req.(*SignedProposal))
 	}
 	return interceptor(ctx, in, info, handler)

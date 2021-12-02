@@ -29,7 +29,7 @@ type replicationInitiator struct {
 }
 
 func (ri *replicationInitiator) replicateIfNeeded() {
-	fmt.Println("==replicationInitiator==replicateIfNeeded==")
+	logger.Info("==replicationInitiator==replicateIfNeeded==")
 	if ri.bootstrapBlock.Header.Number == 0 {
 		ri.logger.Debug("Booted with a genesis block, replication isn't an option")
 		return
@@ -81,6 +81,6 @@ type ledgerFactory struct {
 }
 
 func (lf *ledgerFactory) GetOrCreate(chainID string) (cluster.LedgerWriter, error) {
-	fmt.Println("==ledgerFactory==GetOrCreate==")
+	logger.Info("==ledgerFactory==GetOrCreate==")
 	return lf.Factory.GetOrCreate(chainID)
 }

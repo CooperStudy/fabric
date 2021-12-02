@@ -28,7 +28,7 @@ type LoggingCmdFactory struct {
 
 // InitCmdFactory init the LoggingCmdFactory with default admin client
 func InitCmdFactory() (*LoggingCmdFactory, error) {
-	fmt.Println("====InitCmdFactory====")
+	logger.Info("====InitCmdFactory====")
 	var err error
 	var adminClient pb.AdminClient
 
@@ -58,7 +58,7 @@ func InitCmdFactory() (*LoggingCmdFactory, error) {
 }
 
 func checkLoggingCmdParams(cmd *cobra.Command, args []string) error {
-	fmt.Println("====checkLoggingCmdParams====")
+	logger.Info("====checkLoggingCmdParams====")
 	var err error
 	if cmd.Name() == "revertlevels" || cmd.Name() == "getlogspec" {
 		if len(args) > 0 {

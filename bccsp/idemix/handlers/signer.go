@@ -16,7 +16,7 @@ type Signer struct {
 }
 
 func (s *Signer) Sign(k bccsp.Key, digest []byte, opts bccsp.SignerOpts) ([]byte, error) {
-	fmt.Println("===Signer==Sign=======")
+	logger.Info("===Signer==Sign=======")
 	userSecretKey, ok := k.(*userSecretKey)
 	if !ok {
 		return nil, errors.New("invalid key, expected *userSecretKey")
@@ -67,7 +67,7 @@ type Verifier struct {
 }
 
 func (v *Verifier) Verify(k bccsp.Key, signature, digest []byte, opts bccsp.SignerOpts) (bool, error) {
-	fmt.Println("===Verifier==Verify=======")
+	logger.Info("===Verifier==Verify=======")
 	issuerPublicKey, ok := k.(*issuerPublicKey)
 	if !ok {
 		return false, errors.New("invalid key, expected *issuerPublicKey")

@@ -8,7 +8,6 @@ package pvtdatastorage
 
 import (
 	"bytes"
-	"fmt"
 	"math"
 
 	"github.com/golang/protobuf/proto"
@@ -34,32 +33,32 @@ var (
 )
 
 func getDataKeysForRangeScanByBlockNum(blockNum uint64) (startKey, endKey []byte) {
-	fmt.Println("===getDataKeysForRangeScanByBlockNum==")
+	logger.Info("===getDataKeysForRangeScanByBlockNum==")
 	startKey = append(pvtDataKeyPrefix, version.NewHeight(blockNum, 0).ToBytes()...)
 	endKey = append(pvtDataKeyPrefix, version.NewHeight(blockNum+1, 0).ToBytes()...)
 	return
 }
 
 func getExpiryKeysForRangeScan(minBlkNum, maxBlkNum uint64) (startKey, endKey []byte) {
-	fmt.Println("===getExpiryKeysForRangeScan==")
+	logger.Info("===getExpiryKeysForRangeScan==")
 	startKey = append(expiryKeyPrefix, version.NewHeight(minBlkNum, 0).ToBytes()...)
 	endKey = append(expiryKeyPrefix, version.NewHeight(maxBlkNum+1, 0).ToBytes()...)
 	return
 }
 
 func encodeLastCommittedBlockVal(blockNum uint64) []byte {
-	fmt.Println("===encodeLastCommittedBlockVal==")
+	logger.Info("===encodeLastCommittedBlockVal==")
 	return proto.EncodeVarint(blockNum)
 }
 
 func decodeLastCommittedBlockVal(blockNumBytes []byte) uint64 {
-	fmt.Println("===decodeLastCommittedBlockVal==")
+	logger.Info("===decodeLastCommittedBlockVal==")
 	s, _ := proto.DecodeVarint(blockNumBytes)
 	return s
 }
 
 func encodeDataKey(key *dataKey) []byte {
-	fmt.Println("===encodeDataKey==")
+	logger.Info("===encodeDataKey==")
 	dataKeyBytes := append(pvtDataKeyPrefix, version.NewHeight(key.blkNum, key.txNum).ToBytes()...)
 	dataKeyBytes = append(dataKeyBytes, []byte(key.ns)...)
 	dataKeyBytes = append(dataKeyBytes, nilByte)
@@ -67,36 +66,36 @@ func encodeDataKey(key *dataKey) []byte {
 }
 
 func encodeDataValue(collData *rwset.CollectionPvtReadWriteSet) ([]byte, error) {
-	fmt.Println("===encodeDataValue==")
+	logger.Info("===encodeDataValue==")
 	return proto.Marshal(collData)
 }
 
 func encodeExpiryKey(expiryKey *expiryKey) []byte {
-	fmt.Println("===encodeExpiryKey==")
+	logger.Info("===encodeExpiryKey==")
 	// reusing version encoding scheme here
 	return append(expiryKeyPrefix, version.NewHeight(expiryKey.expiringBlk, expiryKey.committingBlk).ToBytes()...)
 }
 
 func encodeExpiryValue(expiryData *ExpiryData) ([]byte, error) {
-	fmt.Println("===encodeExpiryValue==")
+	logger.Info("===encodeExpiryValue==")
 	return proto.Marshal(expiryData)
 }
 
 func decodeExpiryKey(expiryKeyBytes []byte) *expiryKey {
-	fmt.Println("===decodeExpiryKey==")
+	logger.Info("===decodeExpiryKey==")
 	height, _ := version.NewHeightFromBytes(expiryKeyBytes[1:])
 	return &expiryKey{expiringBlk: height.BlockNum, committingBlk: height.TxNum}
 }
 
 func decodeExpiryValue(expiryValueBytes []byte) (*ExpiryData, error) {
-	fmt.Println("===decodeExpiryValue==")
+	logger.Info("===decodeExpiryValue==")
 	expiryData := &ExpiryData{}
 	err := proto.Unmarshal(expiryValueBytes, expiryData)
 	return expiryData, err
 }
 
 func decodeDatakey(datakeyBytes []byte) *dataKey {
-	fmt.Println("===decodeDatakey==")
+	logger.Info("===decodeDatakey==")
 	v, n := version.NewHeightFromBytes(datakeyBytes[1:])
 	blkNum := v.BlockNum
 	tranNum := v.TxNum
@@ -108,14 +107,14 @@ func decodeDatakey(datakeyBytes []byte) *dataKey {
 }
 
 func decodeDataValue(datavalueBytes []byte) (*rwset.CollectionPvtReadWriteSet, error) {
-	fmt.Println("===decodeDataValue==")
+	logger.Info("===decodeDataValue==")
 	collPvtdata := &rwset.CollectionPvtReadWriteSet{}
 	err := proto.Unmarshal(datavalueBytes, collPvtdata)
 	return collPvtdata, err
 }
 
 func encodeMissingDataKey(key *missingDataKey) []byte {
-	fmt.Println("===encodeMissingDataKey==")
+	logger.Info("===encodeMissingDataKey==")
 	if key.isEligible {
 		keyBytes := append(eligibleMissingDataKeyPrefix, util.EncodeReverseOrderVarUint64(key.blkNum)...)
 		keyBytes = append(keyBytes, []byte(key.ns)...)
@@ -131,7 +130,7 @@ func encodeMissingDataKey(key *missingDataKey) []byte {
 }
 
 func decodeMissingDataKey(keyBytes []byte) *missingDataKey {
-	fmt.Println("===decodeMissingDataKey==")
+	logger.Info("===decodeMissingDataKey==")
 	key := &missingDataKey{nsCollBlk: nsCollBlk{}}
 	if keyBytes[0] == eligibleMissingDataKeyPrefix[0] {
 		blkNum, numBytesConsumed := util.DecodeReverseOrderVarUint64(keyBytes[1:])
@@ -153,12 +152,12 @@ func decodeMissingDataKey(keyBytes []byte) *missingDataKey {
 }
 
 func encodeMissingDataValue(bitmap *bitset.BitSet) ([]byte, error) {
-	fmt.Println("===encodeMissingDataValue==")
+	logger.Info("===encodeMissingDataValue==")
 	return bitmap.MarshalBinary()
 }
 
 func decodeMissingDataValue(bitmapBytes []byte) (*bitset.BitSet, error) {
-	fmt.Println("===decodeMissingDataValue==")
+	logger.Info("===decodeMissingDataValue==")
 	bitmap := &bitset.BitSet{}
 	if err := bitmap.UnmarshalBinary(bitmapBytes); err != nil {
 		return nil, err
@@ -167,23 +166,23 @@ func decodeMissingDataValue(bitmapBytes []byte) (*bitset.BitSet, error) {
 }
 
 func encodeCollElgKey(blkNum uint64) []byte {
-	fmt.Println("===encodeCollElgKey==")
+	logger.Info("===encodeCollElgKey==")
 	return append(collElgKeyPrefix, util.EncodeReverseOrderVarUint64(blkNum)...)
 }
 
 func decodeCollElgKey(b []byte) uint64 {
-	fmt.Println("===decodeCollElgKey==")
+	logger.Info("===decodeCollElgKey==")
 	blkNum, _ := util.DecodeReverseOrderVarUint64(b[1:])
 	return blkNum
 }
 
 func encodeCollElgVal(m *CollElgInfo) ([]byte, error) {
-	fmt.Println("===encodeCollElgVal==")
+	logger.Info("===encodeCollElgVal==")
 	return proto.Marshal(m)
 }
 
 func decodeCollElgVal(b []byte) (*CollElgInfo, error) {
-	fmt.Println("===decodeCollElgVal==")
+	logger.Info("===decodeCollElgVal==")
 	m := &CollElgInfo{}
 	if err := proto.Unmarshal(b, m); err != nil {
 		return nil, errors.WithStack(err)
@@ -192,7 +191,7 @@ func decodeCollElgVal(b []byte) (*CollElgInfo, error) {
 }
 
 func createRangeScanKeysForEligibleMissingDataEntries(blkNum uint64) (startKey, endKey []byte) {
-	fmt.Println("===createRangeScanKeysForEligibleMissingDataEntries==")
+	logger.Info("===createRangeScanKeysForEligibleMissingDataEntries==")
 	startKey = append(eligibleMissingDataKeyPrefix, util.EncodeReverseOrderVarUint64(blkNum)...)
 	endKey = append(eligibleMissingDataKeyPrefix, util.EncodeReverseOrderVarUint64(0)...)
 
@@ -200,7 +199,7 @@ func createRangeScanKeysForEligibleMissingDataEntries(blkNum uint64) (startKey, 
 }
 
 func createRangeScanKeysForIneligibleMissingData(maxBlkNum uint64, ns, coll string) (startKey, endKey []byte) {
-	fmt.Println("===createRangeScanKeysForIneligibleMissingData==")
+	logger.Info("===createRangeScanKeysForIneligibleMissingData==")
 	startKey = encodeMissingDataKey(
 		&missingDataKey{
 			nsCollBlk:  nsCollBlk{ns: ns, coll: coll, blkNum: maxBlkNum},
@@ -217,20 +216,20 @@ func createRangeScanKeysForIneligibleMissingData(maxBlkNum uint64, ns, coll stri
 }
 
 func createRangeScanKeysForCollElg() (startKey, endKey []byte) {
-	fmt.Println("===createRangeScanKeysForCollElg==")
+	logger.Info("===createRangeScanKeysForCollElg==")
 	return encodeCollElgKey(math.MaxUint64),
 		encodeCollElgKey(0)
 }
 
 func datakeyRange(blockNum uint64) (startKey, endKey []byte) {
-	fmt.Println("===datakeyRange==")
+	logger.Info("===datakeyRange==")
 	startKey = append(pvtDataKeyPrefix, version.NewHeight(blockNum, 0).ToBytes()...)
 	endKey = append(pvtDataKeyPrefix, version.NewHeight(blockNum, math.MaxUint64).ToBytes()...)
 	return
 }
 
 func eligibleMissingdatakeyRange(blkNum uint64) (startKey, endKey []byte) {
-	fmt.Println("===eligibleMissingdatakeyRange==")
+	logger.Info("===eligibleMissingdatakeyRange==")
 	startKey = append(eligibleMissingDataKeyPrefix, util.EncodeReverseOrderVarUint64(blkNum)...)
 	endKey = append(eligibleMissingDataKeyPrefix, util.EncodeReverseOrderVarUint64(blkNum-1)...)
 	return

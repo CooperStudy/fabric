@@ -18,7 +18,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var logger = flogging.MustGetLogger("confighistory")
+var logger = flogging.MustGetLogger("core.ledger.confighistory")
 
 const (
 	collectionConfigNamespace = "lscc" // lscc namespace was introduced in version 1.2 and we continue to use this in order to be compatible with existing data
@@ -38,24 +38,24 @@ type mgr struct {
 
 // NewMgr constructs an instance that implements interface `Mgr`
 func NewMgr(ccInfoProvider ledger.DeployedChaincodeInfoProvider) Mgr {
-	fmt.Println("====NewMgr======")
+	logger.Info("====NewMgr======")
 	return newMgr(ccInfoProvider, dbPath())
 }
 
 func newMgr(ccInfoProvider ledger.DeployedChaincodeInfoProvider, dbPath string) Mgr {
-	fmt.Println("====newMgr======")
+	logger.Info("====newMgr======")
 	return &mgr{ccInfoProvider, newDBProvider(dbPath)}
 }
 
 // InterestedInNamespaces implements function from the interface ledger.StateListener
 func (m *mgr) InterestedInNamespaces() []string {
-	fmt.Println("==mgr==InterestedInNamespaces======")
+	logger.Info("==mgr==InterestedInNamespaces======")
 	return m.ccInfoProvider.Namespaces()
 }
 
 // StateCommitDone implements function from the interface ledger.StateListener
 func (m *mgr) StateCommitDone(ledgerID string) {
-	fmt.Println("==mgr==StateCommitDone======")
+	logger.Info("==mgr==StateCommitDone======")
 	// Noop
 }
 
@@ -64,7 +64,7 @@ func (m *mgr) StateCommitDone(ledgerID string) {
 // ledger.DeployedChaincodeInfoProvider and is persisted as a separate entry in a separate db.
 // The composite key for the entry is a tuple of <blockNum, namespace, key>
 func (m *mgr) HandleStateUpdates(trigger *ledger.StateUpdateTrigger) error {
-	fmt.Println("==mgr==HandleStateUpdates======")
+	logger.Info("==mgr==HandleStateUpdates======")
 	updatedCCs, err := m.ccInfoProvider.UpdatedChaincodes(convertToKVWrites(trigger.StateUpdates))
 	if err != nil {
 		return err
@@ -98,13 +98,13 @@ func (m *mgr) HandleStateUpdates(trigger *ledger.StateUpdateTrigger) error {
 
 // GetRetriever returns an implementation of `ledger.ConfigHistoryRetriever` for the given ledger id.
 func (m *mgr) GetRetriever(ledgerID string, ledgerInfoRetriever LedgerInfoRetriever) ledger.ConfigHistoryRetriever {
-	fmt.Println("==mgr==GetRetriever======")
+	logger.Info("==mgr==GetRetriever======")
 	return &retriever{dbHandle: m.dbProvider.getDB(ledgerID), ledgerInfoRetriever: ledgerInfoRetriever}
 }
 
 // Close implements the function in the interface 'Mgr'
 func (m *mgr) Close() {
-	fmt.Println("==mgr==Close======")
+	logger.Info("==mgr==Close======")
 	m.dbProvider.Close()
 }
 
@@ -116,7 +116,7 @@ type retriever struct {
 
 // MostRecentCollectionConfigBelow implements function from the interface ledger.ConfigHistoryRetriever
 func (r *retriever) MostRecentCollectionConfigBelow(blockNum uint64, chaincodeName string) (*ledger.CollectionConfigInfo, error) {
-	fmt.Println("==retriever==MostRecentCollectionConfigBelow======")
+	logger.Info("==retriever==MostRecentCollectionConfigBelow======")
 	compositeKV, err := r.dbHandle.mostRecentEntryBelow(blockNum, collectionConfigNamespace, constructCollectionConfigKey(chaincodeName))
 	if err != nil || compositeKV == nil {
 		return nil, err
@@ -126,7 +126,7 @@ func (r *retriever) MostRecentCollectionConfigBelow(blockNum uint64, chaincodeNa
 
 // CollectionConfigAt implements function from the interface ledger.ConfigHistoryRetriever
 func (r *retriever) CollectionConfigAt(blockNum uint64, chaincodeName string) (*ledger.CollectionConfigInfo, error) {
-	fmt.Println("==retriever==CollectionConfigAt======")
+	logger.Info("==retriever==CollectionConfigAt======")
 	info, err := r.ledgerInfoRetriever.GetBlockchainInfo()
 	if err != nil {
 		return nil, err
@@ -145,7 +145,7 @@ func (r *retriever) CollectionConfigAt(blockNum uint64, chaincodeName string) (*
 }
 
 func prepareDBBatch(chaincodeCollConfigs map[string]*common.CollectionConfigPackage, committingBlockNum uint64) (*batch, error) {
-	fmt.Println("==prepareDBBatch======")
+	logger.Info("==prepareDBBatch======")
 	batch := newBatch()
 	for ccName, collConfig := range chaincodeCollConfigs {
 		key := constructCollectionConfigKey(ccName)
@@ -160,7 +160,7 @@ func prepareDBBatch(chaincodeCollConfigs map[string]*common.CollectionConfigPack
 }
 
 func compositeKVToCollectionConfig(compositeKV *compositeKV) (*ledger.CollectionConfigInfo, error) {
-	fmt.Println("==compositeKVToCollectionConfig======")
+	logger.Info("==compositeKVToCollectionConfig======")
 	conf := &common.CollectionConfigPackage{}
 	if err := proto.Unmarshal(compositeKV.value, conf); err != nil {
 		return nil, errors.Wrap(err, "error unmarshalling compositeKV to collection config")
@@ -169,17 +169,17 @@ func compositeKVToCollectionConfig(compositeKV *compositeKV) (*ledger.Collection
 }
 
 func constructCollectionConfigKey(chaincodeName string) string {
-	fmt.Println("==constructCollectionConfigKey======")
+	logger.Info("==constructCollectionConfigKey======")
 	return chaincodeName + "~collection" // collection config key as in version 1.2 and we continue to use this in order to be compatible with existing data
 }
 
 func dbPath() string {
-	fmt.Println("==dbPath======")
+	logger.Info("==dbPath======")
 	return ledgerconfig.GetConfigHistoryPath()
 }
 
 func convertToKVWrites(stateUpdates ledger.StateUpdates) map[string][]*kvrwset.KVWrite {
-	fmt.Println("==convertToKVWrites======")
+	logger.Info("==convertToKVWrites======")
 	m := map[string][]*kvrwset.KVWrite{}
 	for ns, updates := range stateUpdates {
 		m[ns] = updates.([]*kvrwset.KVWrite)

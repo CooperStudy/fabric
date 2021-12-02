@@ -9,7 +9,6 @@ package operations
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"fmt"
 	"io/ioutil"
 
 	"github.com/hyperledger/fabric/core/comm"
@@ -24,7 +23,7 @@ type TLS struct {
 }
 
 func (t TLS) Config() (*tls.Config, error) {
-	fmt.Println("====TLS==Config=")
+	logger.Info("====TLS==Config=")
 	var tlsConfig *tls.Config
 
 	if t.Enabled {

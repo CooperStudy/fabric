@@ -51,7 +51,7 @@ type ClientStub struct {
 
 // Send sends the request, and receives a response
 func (stub *ClientStub) Send(server string, conf common.Config, req *discovery.Request) (ServiceResponse, error) {
-	fmt.Println("==ClientStub==Send==")
+	logger.Info("==ClientStub==Send==")
 	comm, err := comm.NewClient(conf.TLSConfig)
 	if err != nil {
 		return nil, err
@@ -84,7 +84,7 @@ type RawStub struct {
 
 // Send sends the request, and receives a response
 func (stub *RawStub) Send(server string, conf common.Config, req *discovery.Request) (ServiceResponse, error) {
-	fmt.Println("==RawStub==Send==")
+	logger.Info("==RawStub==Send==")
 	comm, err := comm.NewClient(conf.TLSConfig)
 	if err != nil {
 		return nil, err

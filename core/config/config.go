@@ -9,14 +9,15 @@ package config
 
 import (
 	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"os"
 	"path/filepath"
 
 	"github.com/spf13/viper"
 )
-
+var logger = flogging.MustGetLogger("core.config.config")
 func dirExists(path string) bool {
-	fmt.Println("==dirExists=====")
+	logger.Info("==dirExists=====")
 	fi, err := os.Stat(path)
 	if err != nil {
 		return false
@@ -25,7 +26,7 @@ func dirExists(path string) bool {
 }
 
 func AddConfigPath(v *viper.Viper, p string) {
-	fmt.Println("==AddConfigPath=====")
+	logger.Info("==AddConfigPath=====")
 	if v != nil {
 		v.AddConfigPath(p)
 	} else {
@@ -40,9 +41,9 @@ func AddConfigPath(v *viper.Viper, p string) {
 // file that specified it.  Absolute paths are passed unscathed.
 //----------------------------------------------------------------------------------
 func TranslatePath(base, p string) string {
-	fmt.Println("==TranslatePath=====")
+	logger.Info("==TranslatePath=====")
 	if filepath.IsAbs(p) {
-		fmt.Println("===========p",p)
+		logger.Info("===========p",p)
 		// /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
 		// /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
 		// /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
@@ -56,7 +57,7 @@ func TranslatePath(base, p string) string {
 	}
 
 	a:= filepath.Join(base, p)
-	fmt.Println("==============a===",a)
+	logger.Info("==============a===",a)
 	return a
 }
 
@@ -68,7 +69,7 @@ func TranslatePath(base, p string) string {
 // passed unscathed.
 //----------------------------------------------------------------------------------
 func TranslatePathInPlace(base string, p *string) {
-	fmt.Println("==TranslatePathInPlace=====")
+	logger.Info("==TranslatePathInPlace=====")
 	*p = TranslatePath(base, *p)
 }
 
@@ -85,7 +86,7 @@ func TranslatePathInPlace(base string, p *string) {
 //
 //----------------------------------------------------------------------------------
 func GetPath(key string) string {
-	fmt.Println("==GetPath=====")
+	logger.Info("==GetPath=====")
 	p := viper.GetString(key)
 	if p == "" {
 		return ""
@@ -105,7 +106,7 @@ const OfficialPath = "/etc/hyperledger/fabric"
 // Viper instance
 //----------------------------------------------------------------------------------
 func InitViper(v *viper.Viper, configName string) error {
-	fmt.Println("==InitViper=====")
+	logger.Info("==InitViper=====")
 	var altPath = os.Getenv("FABRIC_CFG_PATH")
 	if altPath != "" {
 		// If the user has overridden the path with an envvar, its the only path

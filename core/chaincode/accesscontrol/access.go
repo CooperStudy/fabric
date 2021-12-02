@@ -33,13 +33,13 @@ type Authenticator struct {
 }
 
 func (auth *Authenticator) Wrap(srv pb.ChaincodeSupportServer) pb.ChaincodeSupportServer {
-	fmt.Println("===Authenticator=Wrap==")
+	logger.Info("===Authenticator=Wrap==")
 	return newInterceptor(srv, auth.authenticate)
 }
 
 // NewAuthenticator returns a new authenticator that can wrap a chaincode service
 func NewAuthenticator(ca tlsgen.CA) *Authenticator {
-	fmt.Println("===NewAuthenticator===")
+	logger.Info("===NewAuthenticator===")
 	return &Authenticator{
 		mapper: newCertMapper(ca.NewClientCertKeyPair),
 	}
@@ -49,7 +49,7 @@ func NewAuthenticator(ca tlsgen.CA) *Authenticator {
 // and associates the hash of the certificate with the given
 // chaincode name
 func (ac *Authenticator) Generate(ccName string) (*CertAndPrivKeyPair, error) {
-	fmt.Println("===Authenticator===Generate==")
+	logger.Info("===Authenticator===Generate==")
 	cert, err := ac.mapper.genCert(ccName)
 	if err != nil {
 		return nil, err
@@ -61,7 +61,7 @@ func (ac *Authenticator) Generate(ccName string) (*CertAndPrivKeyPair, error) {
 }
 
 func (ac *Authenticator) authenticate(msg *pb.ChaincodeMessage, stream grpc.ServerStream) error {
-	fmt.Println("===Authenticator===authenticate==")
+	logger.Info("===Authenticator===authenticate==")
 	if msg.Type != pb.ChaincodeMessage_REGISTER {
 		logger.Warning("Got message", msg, "but expected a ChaincodeMessage_REGISTER message")
 		return errors.New("First message needs to be a register")

@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package customtx
 
 import (
-	"fmt"
 	"github.com/hyperledger/fabric/core/ledger"
 	"github.com/hyperledger/fabric/protos/common"
 )
@@ -19,7 +18,7 @@ type InvalidTxError struct {
 }
 
 func (e *InvalidTxError) Error() string {
-	fmt.Println("==InvalidTxError===Error===")
+	logger.Info("==InvalidTxError===Error===")
 	return e.Msg
 }
 

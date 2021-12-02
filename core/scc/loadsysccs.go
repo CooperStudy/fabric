@@ -35,7 +35,7 @@ var sccPlugins []*SystemChaincode
 
 // loadSysCCs reads system chaincode plugin configuration and loads them
 func loadSysCCs(p *Provider) []*SystemChaincode {
-	fmt.Println("===loadSysCCs====")
+	logger.Info("===loadSysCCs====")
 	once.Do(func() {
 		var config []*PluginConfig
 		err := viperutil.EnhancedExactUnmarshalKey("chaincode.systemPlugins", &config)
@@ -48,7 +48,7 @@ func loadSysCCs(p *Provider) []*SystemChaincode {
 }
 
 func loadSysCCsWithConfig(configs []*PluginConfig) {
-	fmt.Println("===loadSysCCsWithConfig====")
+	logger.Info("===loadSysCCsWithConfig====")
 	for _, conf := range configs {
 		plugin := loadPlugin(conf.Path)
 		chaincode := &SystemChaincode{
@@ -65,7 +65,7 @@ func loadSysCCsWithConfig(configs []*PluginConfig) {
 }
 
 func loadPlugin(path string) *shim.Chaincode {
-	fmt.Println("===loadPlugin====")
+	logger.Info("===loadPlugin====")
 	if _, err := os.Stat(path); err != nil {
 		panic(fmt.Errorf("Could not find plugin at path %s: %s", path, err))
 	}

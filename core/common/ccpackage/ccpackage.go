@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/msp"
@@ -27,10 +28,10 @@ import (
 	"github.com/hyperledger/fabric/protos/peer"
 	"github.com/hyperledger/fabric/protos/utils"
 )
-
+var logger = flogging.MustGetLogger("core.common.ccpackage")
 // ExtractSignedCCDepSpec extracts the messages from the envelope
 func ExtractSignedCCDepSpec(env *common.Envelope) (*common.ChannelHeader, *peer.SignedChaincodeDeploymentSpec, error) {
-	fmt.Println("==ExtractSignedCCDepSpec===")
+	logger.Info("==ExtractSignedCCDepSpec===")
 	p := &common.Payload{}
 	err := proto.Unmarshal(env.Payload, p)
 	if err != nil {
@@ -62,7 +63,7 @@ func ExtractSignedCCDepSpec(env *common.Envelope) (*common.ChannelHeader, *peer.
 
 // ValidateCip validate the endorsed package against the base package
 func ValidateCip(baseCip, otherCip *peer.SignedChaincodeDeploymentSpec) error {
-	fmt.Println("==ValidateCip===")
+	logger.Info("==ValidateCip===")
 	if baseCip == nil || otherCip == nil {
 		panic("do not call with nil parameters")
 	}
@@ -93,7 +94,7 @@ func ValidateCip(baseCip, otherCip *peer.SignedChaincodeDeploymentSpec) error {
 }
 
 func createSignedCCDepSpec(cdsbytes []byte, instpolicybytes []byte, endorsements []*peer.Endorsement) (*common.Envelope, error) {
-	fmt.Println("==createSignedCCDepSpec===")
+	logger.Info("==createSignedCCDepSpec===")
 	if cdsbytes == nil {
 		return nil, fmt.Errorf("nil chaincode deployment spec")
 	}
@@ -128,7 +129,7 @@ func createSignedCCDepSpec(cdsbytes []byte, instpolicybytes []byte, endorsements
 // owners.  This is similar to how the SDK assembles a TX from various proposal
 // responses from the signatures.
 func CreateSignedCCDepSpecForInstall(pack []*common.Envelope) (*common.Envelope, error) {
-	fmt.Println("==CreateSignedCCDepSpecForInstall===")
+	logger.Info("==CreateSignedCCDepSpecForInstall===")
 	if len(pack) == 0 {
 		return nil, errors.New("no packages provided to collate")
 	}
@@ -175,7 +176,7 @@ func CreateSignedCCDepSpecForInstall(pack []*common.Envelope) (*common.Envelope,
 // OwnerCreateSignedCCDepSpec creates a package from a ChaincodeDeploymentSpec and
 // optionally endorses it
 func OwnerCreateSignedCCDepSpec(cds *peer.ChaincodeDeploymentSpec, instPolicy *common.SignaturePolicyEnvelope, owner msp.SigningIdentity) (*common.Envelope, error) {
-	fmt.Println("==OwnerCreateSignedCCDepSpec===")
+	logger.Info("==OwnerCreateSignedCCDepSpec===")
 	if cds == nil {
 		return nil, fmt.Errorf("invalid chaincode deployment spec")
 	}
@@ -218,7 +219,7 @@ func OwnerCreateSignedCCDepSpec(cds *peer.ChaincodeDeploymentSpec, instPolicy *c
 
 // SignExistingPackage adds a signature to a signed package.
 func SignExistingPackage(env *common.Envelope, owner msp.SigningIdentity) (*common.Envelope, error) {
-	fmt.Println("==SignExistingPackage===")
+	logger.Info("==SignExistingPackage===")
 	if owner == nil {
 		return nil, fmt.Errorf("owner not provided")
 	}

@@ -20,13 +20,13 @@ type blockfileWriter struct {
 }
 
 func newBlockfileWriter(filePath string) (*blockfileWriter, error) {
-	fmt.Println("==newBlockfileWriter===")
+	logger.Info("==newBlockfileWriter===")
 	writer := &blockfileWriter{filePath: filePath}
 	return writer, writer.open()
 }
 
 func (w *blockfileWriter) truncateFile(targetSize int) error {
-	fmt.Println("==blockfileWriter==truncateFile=")
+	logger.Info("==blockfileWriter==truncateFile=")
 	fileStat, err := w.file.Stat()
 	if err != nil {
 		return err
@@ -38,7 +38,7 @@ func (w *blockfileWriter) truncateFile(targetSize int) error {
 }
 
 func (w *blockfileWriter) append(b []byte, sync bool) error {
-	fmt.Println("==blockfileWriter==append=")
+	logger.Info("==blockfileWriter==append=")
 	_, err := w.file.Write(b)
 	if err != nil {
 		return err
@@ -50,7 +50,7 @@ func (w *blockfileWriter) append(b []byte, sync bool) error {
 }
 
 func (w *blockfileWriter) open() error {
-	fmt.Println("==blockfileWriter==open=")
+	logger.Info("==blockfileWriter==open=")
 	file, err := os.OpenFile(w.filePath, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0660)
 	if err != nil {
 		return errors.Wrapf(err, "error opening block file writer for file %s", w.filePath)
@@ -60,7 +60,7 @@ func (w *blockfileWriter) open() error {
 }
 
 func (w *blockfileWriter) close() error {
-	fmt.Println("==blockfileWriter==close=")
+	logger.Info("==blockfileWriter==close=")
 	return errors.WithStack(w.file.Close())
 }
 
@@ -70,7 +70,7 @@ type blockfileReader struct {
 }
 
 func newBlockfileReader(filePath string) (*blockfileReader, error) {
-	fmt.Println("==newBlockfileReader=")
+	logger.Info("==newBlockfileReader=")
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0600)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error opening block file reader for file %s", filePath)
@@ -80,7 +80,7 @@ func newBlockfileReader(filePath string) (*blockfileReader, error) {
 }
 
 func (r *blockfileReader) read(offset int, length int) ([]byte, error) {
-	fmt.Println("====blockfileReader====read=")
+	logger.Info("====blockfileReader====read=")
 	b := make([]byte, length)
 	_, err := r.file.ReadAt(b, int64(offset))
 	if err != nil {
@@ -90,6 +90,6 @@ func (r *blockfileReader) read(offset int, length int) ([]byte, error) {
 }
 
 func (r *blockfileReader) close() error {
-	fmt.Println("====blockfileReader====close=")
+	logger.Info("====blockfileReader====close=")
 	return errors.WithStack(r.file.Close())
 }

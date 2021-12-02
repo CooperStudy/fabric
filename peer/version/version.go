@@ -39,7 +39,7 @@ var cobraCommand = &cobra.Command{
 
 // GetInfo returns version information for the peer
 func GetInfo() string {
-	fmt.Println("===GetInfo======")
+	logger.Info("===GetInfo======")
 	if metadata.Version == "" {
 		metadata.Version = "development build"
 	}

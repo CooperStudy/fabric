@@ -22,9 +22,9 @@ type ChaincodeDefinition struct {
 }
 
 func (cdef *ChaincodeDefinition) String() string {
-	fmt.Println("=========ChaincodeDefinition====String=================")
+	logger.Info("=========ChaincodeDefinition====String=================")
 	a:= fmt.Sprintf("Name=%s, Version=%s, Hash=%#v", cdef.Name, cdef.Version, cdef.Hash)
-	fmt.Println("===================a",a)
+	logger.Info("===================a",a)
 	return a
 }
 

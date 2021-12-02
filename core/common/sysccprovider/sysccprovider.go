@@ -17,8 +17,8 @@ limitations under the License.
 package sysccprovider
 
 import (
-	"fmt"
 	"github.com/hyperledger/fabric/common/channelconfig"
+	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/common/policies"
 	"github.com/hyperledger/fabric/core/ledger"
 )
@@ -60,8 +60,8 @@ type ChaincodeInstance struct {
 	ChaincodeName    string
 	ChaincodeVersion string
 }
-
+var logger = flogging.MustGetLogger("core.common.sysccprovider")
 func (ci *ChaincodeInstance) String() string {
-	fmt.Println("==ChaincodeInstance==String==")
+	logger.Info("==ChaincodeInstance==String==")
 	return ci.ChainID + "." + ci.ChaincodeName + "#" + ci.ChaincodeVersion
 }

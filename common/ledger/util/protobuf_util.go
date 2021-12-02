@@ -31,13 +31,13 @@ type Buffer struct {
 
 // NewBuffer constructs a new instance of Buffer
 func NewBuffer(b []byte) *Buffer {
-	fmt.Println("====NewBuffer====")
+	logger.Info("====NewBuffer====")
 	return &Buffer{proto.NewBuffer(b), 0}
 }
 
 // DecodeVarint wraps the actual method and updates the position
 func (b *Buffer) DecodeVarint() (uint64, error) {
-	fmt.Println("===Buffer=DecodeVarint====")
+	logger.Info("===Buffer=DecodeVarint====")
 	val, err := b.buf.DecodeVarint()
 	if err == nil {
 		b.position += proto.SizeVarint(val)
@@ -49,7 +49,7 @@ func (b *Buffer) DecodeVarint() (uint64, error) {
 
 // DecodeRawBytes wraps the actual method and updates the position
 func (b *Buffer) DecodeRawBytes(alloc bool) ([]byte, error) {
-	fmt.Println("===Buffer=DecodeRawBytes====")
+	logger.Info("===Buffer=DecodeRawBytes====")
 	val, err := b.buf.DecodeRawBytes(alloc)
 	if err == nil {
 		b.position += proto.SizeVarint(uint64(len(val))) + len(val)
@@ -61,7 +61,7 @@ func (b *Buffer) DecodeRawBytes(alloc bool) ([]byte, error) {
 
 // GetBytesConsumed returns the offset of the current position in the underlying []byte
 func (b *Buffer) GetBytesConsumed() int {
-	fmt.Println("===Buffer=GetBytesConsumed====")
-	fmt.Println("=====b.position=======",b.position)
+	logger.Info("===Buffer=GetBytesConsumed====")
+	logger.Info("=====b.position=======",b.position)
 	return b.position
 }

@@ -6,7 +6,6 @@ SPDX-License-Identifier: Apache-2.0
 package statecouchdb
 
 import (
-	"fmt"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/version"
 )
 
@@ -25,12 +24,12 @@ type versionsCache struct {
 }
 
 func newVersionCache() *versionsCache {
-	fmt.Println("=====newVersionCache==")
+	logger.Info("=====newVersionCache==")
 	return &versionsCache{make(versions), make(revisions)}
 }
 
 func (c *versionsCache) getVersion(ns, key string) (*version.Height, bool) {
-	fmt.Println("===versionsCache==getVersion==")
+	logger.Info("===versionsCache==getVersion==")
 	ver, ok := c.vers[ns][key]
 	if ok {
 		return ver, true
@@ -46,7 +45,7 @@ func (c *versionsCache) getVersion(ns, key string) (*version.Height, bool) {
 // between the read-set and the write-set. During the commit, we load missing revisions for
 // any additional writes in the write-sets corresponding to which there were no reads in the read-sets
 func (c *versionsCache) setVerAndRev(ns, key string, ver *version.Height, rev string) {
-	fmt.Println("===versionsCache==setVerAndRev==")
+	logger.Info("===versionsCache==setVerAndRev==")
 	_, ok := c.vers[ns]
 	if !ok {
 		c.vers[ns] = make(nsVersions)

@@ -35,7 +35,7 @@ type broadcastClient struct {
 
 // GetBroadcastClient creates a simple instance of the BroadcastClient interface
 func GetBroadcastClient() (BroadcastClient, error) {
-	fmt.Println("====GetBroadcastClient====")
+	logger.Info("====GetBroadcastClient====")
 	oc, err := NewOrdererClientFromEnv()
 	if err != nil {
 		return nil, err
@@ -49,7 +49,7 @@ func GetBroadcastClient() (BroadcastClient, error) {
 }
 
 func (s *broadcastClient) getAck() error {
-	fmt.Println("====broadcastClient==getAck==")
+	logger.Info("====broadcastClient==getAck==")
 	msg, err := s.client.Recv()
 	if err != nil {
 		return err
@@ -62,7 +62,7 @@ func (s *broadcastClient) getAck() error {
 
 //Send data to orderer
 func (s *broadcastClient) Send(env *cb.Envelope) error {
-	fmt.Println("====broadcastClient==Send==")
+	logger.Info("====broadcastClient==Send==")
 	if err := s.client.Send(env); err != nil {
 		return errors.WithMessage(err, "could not send")
 	}
@@ -73,6 +73,6 @@ func (s *broadcastClient) Send(env *cb.Envelope) error {
 }
 
 func (s *broadcastClient) Close() error {
-	fmt.Println("====broadcastClient==Close==")
+	logger.Info("====broadcastClient==Close==")
 	return s.client.CloseSend()
 }

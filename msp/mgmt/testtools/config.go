@@ -17,7 +17,7 @@ import (
 // LoadTestMSPSetup sets up the local MSP
 // and a chain MSP for the default chain
 func LoadMSPSetupForTesting() error {
-	fmt.Println("======LoadMSPSetupForTesting======")
+	logger.Info("======LoadMSPSetupForTesting======")
 	dir, err := configtest.GetDevMspDir()
 	if err != nil {
 		return err
@@ -42,7 +42,7 @@ func LoadMSPSetupForTesting() error {
 
 // Loads the development local MSP for use in testing.  Not valid for production/runtime context
 func LoadDevMsp() error {
-	fmt.Println("=====LoadDevMsp=====")
+	logger.Info("=====LoadDevMsp=====")
 	mspDir, err := configtest.GetDevMspDir()
 	if err != nil {
 		return err

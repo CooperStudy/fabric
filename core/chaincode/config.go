@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package chaincode
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -39,7 +38,7 @@ func GlobalConfig() *Config {
 }
 
 func (c *Config) load() {
-	fmt.Println("====Config=load==")
+	logger.Info("====Config=load==")
 	viper.SetEnvPrefix("CORE")
 	viper.AutomaticEnv()
 	replacer := strings.NewReplacer(".", "_")
@@ -63,7 +62,7 @@ func (c *Config) load() {
 }
 
 func toSeconds(s string, def int) time.Duration {
-	fmt.Println("====toSeconds==")
+	logger.Info("====toSeconds==")
 	seconds, err := strconv.Atoi(s)
 	if err != nil {
 		return time.Duration(def) * time.Second
@@ -74,7 +73,7 @@ func toSeconds(s string, def int) time.Duration {
 
 // getLogLevelFromViper gets the chaincode container log levels from viper
 func getLogLevelFromViper(key string) string {
-	fmt.Println("====getLogLevelFromViper==")
+	logger.Info("====getLogLevelFromViper==")
 	levelString := viper.GetString(key)
 	_, err := logging.LogLevel(levelString)
 	if err != nil {

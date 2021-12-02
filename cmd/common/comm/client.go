@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package comm
 
 import (
-	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"time"
 
 	"github.com/hyperledger/fabric/common/crypto/tlsgen"
@@ -25,10 +25,10 @@ type Client struct {
 	TLSCertHash []byte
 	*comm.GRPCClient
 }
-
+var logger = flogging.MustGetLogger("cmd.common.comm")
 // NewClient creates a new comm client out of the given configuration
 func NewClient(conf Config) (*Client, error) {
-	fmt.Println("========NewClient===========")
+	logger.Info("========NewClient===========")
 	if conf.Timeout == time.Duration(0) {
 		conf.Timeout = defaultTimeout
 	}
@@ -48,7 +48,7 @@ func NewClient(conf Config) (*Client, error) {
 
 // NewDialer creates a new dialer from the given endpoint
 func (c *Client) NewDialer(endpoint string) func() (*grpc.ClientConn, error) {
-	fmt.Println("==Client=====NewDialer=======")
+	logger.Info("==Client=====NewDialer=======")
 	return func() (*grpc.ClientConn, error) {
 		conn, err := c.NewConnection(endpoint, "")
 		if err != nil {
@@ -59,7 +59,7 @@ func (c *Client) NewDialer(endpoint string) func() (*grpc.ClientConn, error) {
 }
 
 func newSelfSignedTLSCert() (*tlsgen.CertKeyPair, error) {
-	fmt.Println("==newSelfSignedTLSCert=======")
+	logger.Info("==newSelfSignedTLSCert=======")
 	ca, err := tlsgen.NewCA()
 	if err != nil {
 		return nil, err

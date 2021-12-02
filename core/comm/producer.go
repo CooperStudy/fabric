@@ -16,7 +16,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-var logger = flogging.MustGetLogger("ConnProducer")
+var connProducerLogger = flogging.MustGetLogger("ConnProducer")
 
 var EndpointDisableInterval = time.Second * 10
 
@@ -49,7 +49,7 @@ type connProducer struct {
 // NewConnectionProducer creates a new ConnectionProducer with given endpoints and connection factory.
 // It returns nil, if the given endpoints slice is empty.
 func NewConnectionProducer(factory ConnectionFactory, endpoints []string) ConnectionProducer {
-	fmt.Println("=====NewConnectionProducer==")
+	connProducerLogger.Info("=====NewConnectionProducer==")
 	if len(endpoints) == 0 {
 		return nil
 	}
@@ -60,7 +60,7 @@ func NewConnectionProducer(factory ConnectionFactory, endpoints []string) Connec
 // Returns the connection, the endpoint selected, nil on success.
 // Returns nil, "", error on failure
 func (cp *connProducer) NewConnection() (*grpc.ClientConn, string, error) {
-	fmt.Println("=====connProducer==NewConnection==")
+	logger.Info("=====connProducer==NewConnection==")
 	cp.Lock()
 	defer cp.Unlock()
 
@@ -89,7 +89,7 @@ func (cp *connProducer) NewConnection() (*grpc.ClientConn, string, error) {
 // UpdateEndpoints updates the endpoints of the ConnectionProducer
 // to be the given endpoints
 func (cp *connProducer) UpdateEndpoints(endpoints []string) {
-	fmt.Println("=====connProducer==UpdateEndpoints==")
+	logger.Info("=====connProducer==UpdateEndpoints==")
 	if len(endpoints) == 0 {
 		// Ignore updates with empty endpoints
 		return
@@ -98,9 +98,9 @@ func (cp *connProducer) UpdateEndpoints(endpoints []string) {
 	defer cp.Unlock()
 
 	newDisabled := make(map[string]time.Time)
-	fmt.Println("========endpoints==========",endpoints)
+	logger.Info("========endpoints==========",endpoints)
 	for i := range endpoints {
-		fmt.Println("==============i",i)
+		logger.Info("==============i",i)
 		if startTime, ok := cp.disabledEndpoints[endpoints[i]]; ok {
 			newDisabled[endpoints[i]] = startTime
 		}
@@ -110,7 +110,7 @@ func (cp *connProducer) UpdateEndpoints(endpoints []string) {
 }
 
 func (cp *connProducer) DisableEndpoint(endpoint string) {
-	fmt.Println("=====connProducer==DisableEndpoint==")
+	logger.Info("=====connProducer==DisableEndpoint==")
 	cp.Lock()
 	defer cp.Unlock()
 
@@ -128,7 +128,7 @@ func (cp *connProducer) DisableEndpoint(endpoint string) {
 }
 
 func shuffle(a []string) []string {
-	fmt.Println("=====shuffle==")
+	logger.Info("=====shuffle==")
 	n := len(a)
 	returnedSlice := make([]string, n)
 	rand.Seed(time.Now().UnixNano())
@@ -141,7 +141,7 @@ func shuffle(a []string) []string {
 
 // GetEndpoints returns configured endpoints for ordering service
 func (cp *connProducer) GetEndpoints() []string {
-	fmt.Println("=====connProducer==GetEndpoints==")
+	logger.Info("=====connProducer==GetEndpoints==")
 	cp.RLock()
 	defer cp.RUnlock()
 	return cp.endpoints

@@ -76,10 +76,10 @@ func Printf(format string, a ...interface{}) (n int, errno error) {
 // Println pretty-prints its operands and writes to standard output.
 //
 // Calling Print(x, y) is equivalent to
-// fmt.Println(Formatter(x), Formatter(y)), but each operand is
+// logger.Info(Formatter(x), Formatter(y)), but each operand is
 // formatted with "%# v".
 func Println(a ...interface{}) (n int, errno error) {
-	return fmt.Println(wrap(a, true)...)
+	return logger.Info(wrap(a, true)...)
 }
 
 // Sprint is a convenience wrapper for fmt.Sprintf.

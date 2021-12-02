@@ -7,14 +7,14 @@ SPDX-License-Identifier: Apache-2.0
 package scc
 
 import (
-	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/core/common/ccprovider"
 )
-
+var logger = flogging.MustGetLogger("core.scc")
 //DeploySysCCs is the hook for system chaincodes where system chaincodes are registered with the fabric
 //note the chaincode must still be deployed and launched like a user chaincode will be
 func (p *Provider) DeploySysCCs(chainID string, ccp ccprovider.ChaincodeProvider) {
-	fmt.Println("===Provider==DeploySysCCs==")
+	logger.Info("===Provider==DeploySysCCs==")
 	for _, sysCC := range p.SysCCs {
 		deploySysCC(chainID, ccp, sysCC)
 	}
@@ -24,7 +24,7 @@ func (p *Provider) DeploySysCCs(chainID string, ccp ccprovider.ChaincodeProvider
 //restarting them in the same process. This allows clean start of the system
 //in the same process
 func (p *Provider) DeDeploySysCCs(chainID string, ccp ccprovider.ChaincodeProvider) {
-	fmt.Println("===Provider==DeDeploySysCCs==")
+	logger.Info("===Provider==DeDeploySysCCs==")
 	for _, sysCC := range p.SysCCs {
 		deDeploySysCC(chainID, ccp, sysCC)
 	}

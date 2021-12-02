@@ -80,7 +80,7 @@ type puller struct {
 
 // NewPuller creates new private data puller
 func NewPuller(cs privdata.CollectionStore, g gossip, dataRetriever PrivateDataRetriever, factory CollectionAccessFactory, channel string) *puller {
-	fmt.Println("===NewPuller==")
+	logger.Info("===NewPuller==")
 	p := &puller{
 		pubSub:                  util.NewPubSub(),
 		stopChan:                make(chan struct{}),
@@ -103,7 +103,7 @@ func NewPuller(cs privdata.CollectionStore, g gossip, dataRetriever PrivateDataR
 }
 
 func (p *puller) listen() {
-	fmt.Println("===puller===listen==")
+	logger.Info("===puller===listen==")
 	for {
 		select {
 		case <-p.stopChan:
@@ -125,7 +125,7 @@ func (p *puller) listen() {
 }
 
 func (p *puller) handleRequest(message proto.ReceivedMessage) {
-	fmt.Println("===puller==handleRequest==")
+	logger.Info("===puller==handleRequest==")
 	logger.Debug("Got", message.GetGossipMessage(), "from", message.GetConnectionInfo().Endpoint)
 	message.Respond(&proto.GossipMessage{
 		Channel: []byte(p.channel),
@@ -140,7 +140,7 @@ func (p *puller) handleRequest(message proto.ReceivedMessage) {
 }
 
 func (p *puller) createResponse(message proto.ReceivedMessage) []*proto.PvtDataElement {
-	fmt.Println("===puller==createResponse==")
+	logger.Info("===puller==createResponse==")
 	authInfo := message.GetConnectionInfo().Auth
 
 	var returned []*proto.PvtDataElement
@@ -173,7 +173,7 @@ func (p *puller) createResponse(message proto.ReceivedMessage) []*proto.PvtDataE
 func groupDigestsByBlockNum(digests []*proto.PvtDataDigest) map[uint64][]*proto.PvtDataDigest {
 
 
-	fmt.Println("===groupDigestsByBlockNum==")
+	logger.Info("===groupDigestsByBlockNum==")
 	results := make(map[uint64][]*proto.PvtDataDigest)
 
 
@@ -184,7 +184,7 @@ func groupDigestsByBlockNum(digests []*proto.PvtDataDigest) map[uint64][]*proto.
 }
 
 func (p *puller) handleResponse(message proto.ReceivedMessage) {
-	fmt.Println("===puller==handleResponse==")
+	logger.Info("===puller==handleResponse==")
 	msg := message.GetGossipMessage().GetPrivateRes()
 	logger.Debug("Got", msg, "from", message.GetConnectionInfo().Endpoint)
 	for _, el := range msg.Elements {
@@ -202,7 +202,7 @@ func (p *puller) handleResponse(message proto.ReceivedMessage) {
 }
 
 func (p *puller) waitForMembership() []discovery.NetworkMember {
-	fmt.Println("===puller==waitForMembership==")
+	logger.Info("===puller==waitForMembership==")
 	polIteration := 0
 	for {
 		members := p.PeersOfChannel(common.ChainID(p.channel))
@@ -218,7 +218,7 @@ func (p *puller) waitForMembership() []discovery.NetworkMember {
 }
 
 func (p *puller) fetch(dig2src dig2sources) (*privdatacommon.FetchedPvtDataContainer, error) {
-	fmt.Println("===puller==fetch==")
+	logger.Info("===puller==fetch==")
 	// computeFilters returns a map from a digest to a routing filter
 	dig2Filter, err := p.computeFilters(dig2src)
 	if err != nil {
@@ -228,7 +228,7 @@ func (p *puller) fetch(dig2src dig2sources) (*privdatacommon.FetchedPvtDataConta
 }
 
 func (p *puller) FetchReconciledItems(dig2collectionConfig privdatacommon.Dig2CollectionConfig) (*privdatacommon.FetchedPvtDataContainer, error) {
-	fmt.Println("===puller==FetchReconciledItems==")
+	logger.Info("===puller==FetchReconciledItems==")
 	// computeFilters returns a map from a digest to a routing filter
 	dig2Filter, err := p.computeReconciliationFilters(dig2collectionConfig)
 	if err != nil {
@@ -238,7 +238,7 @@ func (p *puller) FetchReconciledItems(dig2collectionConfig privdatacommon.Dig2Co
 }
 
 func (p *puller) fetchPrivateData(dig2Filter digestToFilterMapping) (*privdatacommon.FetchedPvtDataContainer, error) {
-	fmt.Println("===puller==fetchPrivateData==")
+	logger.Info("===puller==fetchPrivateData==")
 	// Get a list of peers per channel
 	allFilters := dig2Filter.flattenFilterValues()
 	members := p.waitForMembership()
@@ -309,7 +309,7 @@ func (p *puller) fetchPrivateData(dig2Filter digestToFilterMapping) (*privdataco
 }
 
 func (p *puller) gatherResponses(subscriptions []util.Subscription) []*proto.PvtDataElement {
-	fmt.Println("===puller==gatherResponses==")
+	logger.Info("===puller==gatherResponses==")
 	var res []*proto.PvtDataElement
 	privateElements := make(chan *proto.PvtDataElement, len(subscriptions))
 	var wg sync.WaitGroup
@@ -337,7 +337,7 @@ func (p *puller) gatherResponses(subscriptions []util.Subscription) []*proto.Pvt
 }
 
 func (p *puller) scatterRequests(peersDigestMapping peer2Digests) []util.Subscription {
-	fmt.Println("===puller==scatterRequests==")
+	logger.Info("===puller==scatterRequests==")
 	var subscriptions []util.Subscription
 	for peer, digests := range peersDigestMapping {
 		msg := &proto.GossipMessage{
@@ -372,7 +372,7 @@ type peer2Digests map[remotePeer][]proto.PvtDataDigest
 type noneSelectedPeers []discovery.NetworkMember
 
 func (p *puller) assignDigestsToPeers(members []discovery.NetworkMember, dig2Filter digestToFilterMapping) (peer2Digests, noneSelectedPeers) {
-	fmt.Println("===puller==assignDigestsToPeers==")
+	logger.Info("===puller==assignDigestsToPeers==")
 	if logger.IsEnabledFor(zapcore.DebugLevel) {
 		logger.Debug("Matching", members, "to", dig2Filter.String())
 	}
@@ -420,7 +420,7 @@ type collectionRoutingFilter struct {
 type digestToFilterMapping map[privdatacommon.DigKey]collectionRoutingFilter
 
 func (dig2f digestToFilterMapping) flattenFilterValues() []filter.RoutingFilter {
-	fmt.Println("===digestToFilterMapping==flattenFilterValues==")
+	logger.Info("===digestToFilterMapping==flattenFilterValues==")
 	var filters []filter.RoutingFilter
 	for _, f := range dig2f {
 		filters = append(filters, f.preferredPeer)
@@ -430,7 +430,7 @@ func (dig2f digestToFilterMapping) flattenFilterValues() []filter.RoutingFilter 
 }
 
 func (dig2f digestToFilterMapping) digests() []proto.PvtDataDigest {
-	fmt.Println("===digestToFilterMapping==digests==")
+	logger.Info("===digestToFilterMapping==digests==")
 	var digs []proto.PvtDataDigest
 	for d := range dig2f {
 		digs = append(digs, proto.PvtDataDigest{
@@ -446,7 +446,7 @@ func (dig2f digestToFilterMapping) digests() []proto.PvtDataDigest {
 
 // String returns a string representation of t he digestToFilterMapping
 func (dig2f digestToFilterMapping) String() string {
-	fmt.Println("===digestToFilterMapping==String==")
+	logger.Info("===digestToFilterMapping==String==")
 	var buffer bytes.Buffer
 	collection2TxID := make(map[string][]string)
 	for dig := range dig2f {
@@ -459,7 +459,7 @@ func (dig2f digestToFilterMapping) String() string {
 }
 
 func (p *puller) computeFilters(dig2src dig2sources) (digestToFilterMapping, error) {
-	fmt.Println("===puller==computeFilters==")
+	logger.Info("===puller==computeFilters==")
 	filters := make(map[privdatacommon.DigKey]collectionRoutingFilter)
 	for digest, sources := range dig2src {
 		anyPeerInCollection, err := p.getLatestCollectionConfigRoutingFilter(digest.Namespace, digest.Collection)
@@ -489,7 +489,7 @@ func (p *puller) computeFilters(dig2src dig2sources) (digestToFilterMapping, err
 }
 
 func (p *puller) computeReconciliationFilters(dig2collectionConfig privdatacommon.Dig2CollectionConfig) (digestToFilterMapping, error) {
-	fmt.Println("===puller==computeReconciliationFilters==")
+	logger.Info("===puller==computeReconciliationFilters==")
 	filters := make(map[privdatacommon.DigKey]collectionRoutingFilter)
 	for digest, originalCollectionConfig := range dig2collectionConfig {
 		anyPeerInCollection, err := p.getLatestCollectionConfigRoutingFilter(digest.Namespace, digest.Collection)
@@ -526,7 +526,7 @@ func (p *puller) computeReconciliationFilters(dig2collectionConfig privdatacommo
 }
 
 func (p *puller) getLatestCollectionConfigRoutingFilter(chaincode string, collection string) (filter.RoutingFilter, error) {
-	fmt.Println("===puller==getLatestCollectionConfigRoutingFilter==")
+	logger.Info("===puller==getLatestCollectionConfigRoutingFilter==")
 	cc := fcommon.CollectionCriteria{
 		Channel:    p.channel,
 		Collection: collection,
@@ -552,7 +552,7 @@ func (p *puller) getLatestCollectionConfigRoutingFilter(chaincode string, collec
 }
 
 func (p *puller) getMatchAllRoutingFilter(filt privdata.Filter) (filter.RoutingFilter, error) {
-	fmt.Println("===puller==getMatchAllRoutingFilter==")
+	logger.Info("===puller==getMatchAllRoutingFilter==")
 	routingFilter, err := p.PeerFilter(common.ChainID(p.channel), func(peerSignature api.PeerSignature) bool {
 		return filt(fcommon.SignedData{
 			Signature: peerSignature.Signature,
@@ -564,7 +564,7 @@ func (p *puller) getMatchAllRoutingFilter(filt privdata.Filter) (filter.RoutingF
 }
 
 func (p *puller) getPurgedCollections(members []discovery.NetworkMember, dig2Filter digestToFilterMapping) []privdatacommon.DigKey {
-	fmt.Println("===puller==getPurgedCollections==")
+	logger.Info("===puller==getPurgedCollections==")
 	var res []privdatacommon.DigKey
 	for dig := range dig2Filter {
 		purged, err := p.purgedFilter(dig)
@@ -586,7 +586,7 @@ func (p *puller) getPurgedCollections(members []discovery.NetworkMember, dig2Fil
 }
 
 func (p *puller) purgedFilter(dig privdatacommon.DigKey) (filter.RoutingFilter, error) {
-	fmt.Println("===puller==purgedFilter==")
+	logger.Info("===puller==purgedFilter==")
 	cc := fcommon.CollectionCriteria{
 		Channel:    p.channel,
 		TxId:       dig.TxId,
@@ -622,7 +622,7 @@ func (p *puller) purgedFilter(dig privdatacommon.DigKey) (filter.RoutingFilter, 
 }
 
 func (p *puller) filterNotEligible(dig2rwSets Dig2PvtRWSetWithConfig, shouldCheckLatestConfig bool, signedData fcommon.SignedData, endpoint string) []*proto.PvtDataElement {
-	fmt.Println("===puller==filterNotEligible==")
+	logger.Info("===puller==filterNotEligible==")
 	var returned []*proto.PvtDataElement
 	for d, rwSets := range dig2rwSets {
 		if rwSets == nil {
@@ -671,7 +671,7 @@ func (p *puller) filterNotEligible(dig2rwSets Dig2PvtRWSetWithConfig, shouldChec
 }
 
 func (p *puller) isEligibleByLatestConfig(channel string, collection string, chaincode string, signedData fcommon.SignedData) bool {
-	fmt.Println("===puller==isEligibleByLatestConfig==")
+	logger.Info("===puller==isEligibleByLatestConfig==")
 	cc := fcommon.CollectionCriteria{
 		Channel:    channel,
 		Collection: collection,
@@ -688,7 +688,7 @@ func (p *puller) isEligibleByLatestConfig(channel string, collection string, cha
 }
 
 func randomizeMemberList(members []discovery.NetworkMember) []discovery.NetworkMember {
-	fmt.Println("===randomizeMemberList==")
+	logger.Info("===randomizeMemberList==")
 	rand.Seed(time.Now().UnixNano())
 	res := make([]discovery.NetworkMember, len(members))
 	for i, j := range rand.Perm(len(members)) {
@@ -698,7 +698,7 @@ func randomizeMemberList(members []discovery.NetworkMember) []discovery.NetworkM
 }
 
 func digestsAsPointerSlice(digests []proto.PvtDataDigest) []*proto.PvtDataDigest {
-	fmt.Println("===digestsAsPointerSlice==")
+	logger.Info("===digestsAsPointerSlice==")
 	res := make([]*proto.PvtDataDigest, len(digests))
 	for i, dig := range digests {
 		// re-introduce dig variable to allocate
@@ -716,7 +716,7 @@ type remotePeer struct {
 
 // AsRemotePeer converts this remotePeer to comm.RemotePeer
 func (rp remotePeer) AsRemotePeer() *comm.RemotePeer {
-	fmt.Println("===remotePeer==AsRemotePeer==")
+	logger.Info("===remotePeer==AsRemotePeer==")
 	return &comm.RemotePeer{
 		PKIID:    common.PKIidType(rp.pkiID),
 		Endpoint: rp.endpoint,
@@ -724,7 +724,7 @@ func (rp remotePeer) AsRemotePeer() *comm.RemotePeer {
 }
 
 func getBtlPullMargin() uint64 {
-	fmt.Println("===getBtlPullMargin==")
+	logger.Info("===getBtlPullMargin==")
 	var result uint64
 	if viper.IsSet("peer.gossip.pvtData.btlPullMargin") {
 		btlMarginVal := viper.GetInt("peer.gossip.pvtData.btlPullMargin")
@@ -740,7 +740,7 @@ func getBtlPullMargin() uint64 {
 }
 
 func addWithOverflow(a uint64, b uint64) uint64 {
-	fmt.Println("===addWithOverflow==")
+	logger.Info("===addWithOverflow==")
 	res := a + b
 	if res < a {
 		return math.MaxUint64

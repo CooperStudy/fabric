@@ -55,7 +55,7 @@ type Provider struct {
 // NewProvider instantiates a new Provider.
 // This is not thread-safe and assumed to be synchronized be the caller
 func NewProvider() (ledger.PeerLedgerProvider, error) {
-	fmt.Println("===NewProvider==")
+	logger.Info("===NewProvider==")
 	logger.Info("Initializing ledger provider")
 	// Initialize the ID store (inventory of chainIds/ledgerIds)
 	idStore := openIDStore(ledgerconfig.GetLedgerProviderPath())
@@ -70,7 +70,7 @@ func NewProvider() (ledger.PeerLedgerProvider, error) {
 
 // Initialize implements the corresponding method from interface ledger.PeerLedgerProvider
 func (provider *Provider) Initialize(initializer *ledger.Initializer) error {
-	fmt.Println("===Provider==Initialize==")
+	logger.Info("===Provider==Initialize==")
 	var err error
 	configHistoryMgr := confighistory.NewMgr(initializer.DeployedChaincodeInfoProvider)
 	collElgNotifier := &collElgNotifier{
@@ -102,7 +102,7 @@ func (provider *Provider) Initialize(initializer *ledger.Initializer) error {
 // created ledgers list (atomically). If a crash happens in between, the 'recoverUnderConstructionLedger'
 // function is invoked before declaring the provider to be usable
 func (provider *Provider) Create(genesisBlock *common.Block) (ledger.PeerLedger, error) {
-	fmt.Println("===Provider==Create==")
+	logger.Info("===Provider==Create==")
 	ledgerID, err := utils.GetChainIDFromBlock(genesisBlock)
 	if err != nil {
 		return nil, err
@@ -136,7 +136,7 @@ func (provider *Provider) Create(genesisBlock *common.Block) (ledger.PeerLedger,
 
 // Open implements the corresponding method from interface ledger.PeerLedgerProvider
 func (provider *Provider) Open(ledgerID string) (ledger.PeerLedger, error) {
-	fmt.Println("===Provider==Open==")
+	logger.Info("===Provider==Open==")
 	logger.Debugf("Open() opening kvledger: %s", ledgerID)
 	// Check the ID store to ensure that the chainId/ledgerId exists
 	exists, err := provider.idStore.ledgerIDExists(ledgerID)
@@ -150,7 +150,7 @@ func (provider *Provider) Open(ledgerID string) (ledger.PeerLedger, error) {
 }
 
 func (provider *Provider) openInternal(ledgerID string) (ledger.PeerLedger, error) {
-	fmt.Println("===Provider==openInternal==")
+	logger.Info("===Provider==openInternal==")
 	// Get the block store for a chain/ledger
 	blockStore, err := provider.ledgerStoreProvider.Open(ledgerID)
 	if err != nil {
@@ -186,19 +186,19 @@ func (provider *Provider) openInternal(ledgerID string) (ledger.PeerLedger, erro
 
 // Exists implements the corresponding method from interface ledger.PeerLedgerProvider
 func (provider *Provider) Exists(ledgerID string) (bool, error) {
-	fmt.Println("===Provider==Exists==")
+	logger.Info("===Provider==Exists==")
 	return provider.idStore.ledgerIDExists(ledgerID)
 }
 
 // List implements the corresponding method from interface ledger.PeerLedgerProvider
 func (provider *Provider) List() ([]string, error) {
-	fmt.Println("===Provider==List==")
+	logger.Info("===Provider==List==")
 	return provider.idStore.getAllLedgerIds()
 }
 
 // Close implements the corresponding method from interface ledger.PeerLedgerProvider
 func (provider *Provider) Close() {
-	fmt.Println("===Provider==Close==")
+	logger.Info("===Provider==Close==")
 	provider.idStore.close()
 	provider.ledgerStoreProvider.Close()
 	provider.vdbProvider.Close()
@@ -212,7 +212,7 @@ func (provider *Provider) Close() {
 // state. Recovery checks if the ledger was created and the genesis block was committed successfully then it completes
 // the last step of adding the ledger id to the list of created ledgers. Else, it clears the under construction flag
 func (provider *Provider) recoverUnderConstructionLedger() {
-	fmt.Println("===Provider==recoverUnderConstructionLedger==")
+	logger.Info("===Provider==recoverUnderConstructionLedger==")
 	logger.Debugf("Recovering under construction ledger")
 	ledgerID, err := provider.idStore.getUnderConstructionFlag()
 	panicOnErr(err, "Error while checking whether the under construction flag is set")
@@ -248,7 +248,7 @@ func (provider *Provider) recoverUnderConstructionLedger() {
 // runCleanup cleans up blockstorage, statedb, and historydb for what
 // may have got created during in-complete ledger creation
 func (provider *Provider) runCleanup(ledgerID string) error {
-	fmt.Println("===Provider==runCleanup==")
+	logger.Info("===Provider==runCleanup==")
 	// TODO - though, not having this is harmless for kv ledger.
 	// If we want, following could be done:
 	// - blockstorage could remove empty folders
@@ -258,7 +258,7 @@ func (provider *Provider) runCleanup(ledgerID string) error {
 }
 
 func panicOnErr(err error, mgsFormat string, args ...interface{}) {
-	fmt.Println("===panicOnErr==")
+	logger.Info("===panicOnErr==")
 	if err == nil {
 		return
 	}
@@ -274,24 +274,24 @@ type idStore struct {
 }
 
 func openIDStore(path string) *idStore {
-	fmt.Println("===openIDStore==")
+	logger.Info("===openIDStore==")
 	db := leveldbhelper.CreateDB(&leveldbhelper.Conf{DBPath: path})
 	db.Open()
 	return &idStore{db}
 }
 
 func (s *idStore) setUnderConstructionFlag(ledgerID string) error {
-	fmt.Println("==idStore=setUnderConstructionFlag==")
+	logger.Info("==idStore=setUnderConstructionFlag==")
 	return s.db.Put(underConstructionLedgerKey, []byte(ledgerID), true)
 }
 
 func (s *idStore) unsetUnderConstructionFlag() error {
-	fmt.Println("==idStore=unsetUnderConstructionFlag==")
+	logger.Info("==idStore=unsetUnderConstructionFlag==")
 	return s.db.Delete(underConstructionLedgerKey, true)
 }
 
 func (s *idStore) getUnderConstructionFlag() (string, error) {
-	fmt.Println("==idStore=getUnderConstructionFlag==")
+	logger.Info("==idStore=getUnderConstructionFlag==")
 	val, err := s.db.Get(underConstructionLedgerKey)
 	if err != nil {
 		return "", err
@@ -300,7 +300,7 @@ func (s *idStore) getUnderConstructionFlag() (string, error) {
 }
 
 func (s *idStore) createLedgerID(ledgerID string, gb *common.Block) error {
-	fmt.Println("==idStore=createLedgerID==")
+	logger.Info("==idStore=createLedgerID==")
 	key := s.encodeLedgerKey(ledgerID)
 	var val []byte
 	var err error
@@ -320,7 +320,7 @@ func (s *idStore) createLedgerID(ledgerID string, gb *common.Block) error {
 }
 
 func (s *idStore) ledgerIDExists(ledgerID string) (bool, error) {
-	fmt.Println("==idStore=ledgerIDExists==")
+	logger.Info("==idStore=ledgerIDExists==")
 	key := s.encodeLedgerKey(ledgerID)
 	val := []byte{}
 	err := error(nil)
@@ -331,7 +331,7 @@ func (s *idStore) ledgerIDExists(ledgerID string) (bool, error) {
 }
 
 func (s *idStore) getAllLedgerIds() ([]string, error) {
-	fmt.Println("==idStore=getAllLedgerIds==")
+	logger.Info("==idStore=getAllLedgerIds==")
 	var ids []string
 	itr := s.db.GetIterator(nil, nil)
 	defer itr.Release()
@@ -348,16 +348,16 @@ func (s *idStore) getAllLedgerIds() ([]string, error) {
 }
 
 func (s *idStore) close() {
-	fmt.Println("==idStore=close==")
+	logger.Info("==idStore=close==")
 	s.db.Close()
 }
 
 func (s *idStore) encodeLedgerKey(ledgerID string) []byte {
-	fmt.Println("==idStore=encodeLedgerKey==")
+	logger.Info("==idStore=encodeLedgerKey==")
 	return append(ledgerKeyPrefix, []byte(ledgerID)...)
 }
 
 func (s *idStore) decodeLedgerID(key []byte) string {
-	fmt.Println("==idStore=decodeLedgerID==")
+	logger.Info("==idStore=decodeLedgerID==")
 	return string(key[len(ledgerKeyPrefix):])
 }

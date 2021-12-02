@@ -6,10 +6,8 @@ SPDX-License-Identifier: Apache-2.0
 
 package pvtstatepurgemgmt
 
-import "fmt"
-
 func (pvtdataKeys *PvtdataKeys) addAll(toAdd *PvtdataKeys) {
-	fmt.Println("==PvtdataKeys===addAll======")
+	logger.Info("==PvtdataKeys===addAll======")
 	for ns, colls := range toAdd.Map {
 		for coll, keysAndHashes := range colls.Map {
 			for _, k := range keysAndHashes.List {
@@ -20,14 +18,14 @@ func (pvtdataKeys *PvtdataKeys) addAll(toAdd *PvtdataKeys) {
 }
 
 func (pvtdataKeys *PvtdataKeys) add(ns string, coll string, key string, keyhash []byte) {
-	fmt.Println("==PvtdataKeys===add======")
+	logger.Info("==PvtdataKeys===add======")
 	colls := pvtdataKeys.getOrCreateCollections(ns)
 	keysAndHashes := colls.getOrCreateKeysAndHashes(coll)
 	keysAndHashes.List = append(keysAndHashes.List, &KeyAndHash{Key: key, Hash: keyhash})
 }
 
 func (pvtdataKeys *PvtdataKeys) getOrCreateCollections(ns string) *Collections {
-	fmt.Println("==PvtdataKeys===getOrCreateCollections======")
+	logger.Info("==PvtdataKeys===getOrCreateCollections======")
 	colls, ok := pvtdataKeys.Map[ns]
 	if !ok {
 		colls = newCollections()
@@ -37,7 +35,7 @@ func (pvtdataKeys *PvtdataKeys) getOrCreateCollections(ns string) *Collections {
 }
 
 func (colls *Collections) getOrCreateKeysAndHashes(coll string) *KeysAndHashes {
-	fmt.Println("==Collections===getOrCreateKeysAndHashes======")
+	logger.Info("==Collections===getOrCreateKeysAndHashes======")
 	keysAndHashes, ok := colls.Map[coll]
 	if !ok {
 		keysAndHashes = &KeysAndHashes{}
@@ -47,11 +45,11 @@ func (colls *Collections) getOrCreateKeysAndHashes(coll string) *KeysAndHashes {
 }
 
 func newPvtdataKeys() *PvtdataKeys {
-	fmt.Println("==newPvtdataKeys========")
+	logger.Info("==newPvtdataKeys========")
 	return &PvtdataKeys{Map: make(map[string]*Collections)}
 }
 
 func newCollections() *Collections {
-	fmt.Println("==newCollections========")
+	logger.Info("==newCollections========")
 	return &Collections{Map: make(map[string]*KeysAndHashes)}
 }

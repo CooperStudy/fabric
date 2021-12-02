@@ -21,41 +21,41 @@ var cauthdslLogger = flogging.MustGetLogger("cauthdsl")
 
 // deduplicate removes any duplicated identities while otherwise preserving identity order
 func deduplicate(sds []IdentityAndSignature) []IdentityAndSignature {
-	fmt.Println("==deduplicate===")
+	logger.Info("==deduplicate===")
 	ids := make(map[string]struct{})
 	result := make([]IdentityAndSignature, 0, len(sds))
 	for i, sd := range sds {
-		fmt.Println("=========i",i)//0
-		fmt.Println("=========sd",sd)
+		logger.Info("=========i",i)//0
+		logger.Info("=========sd",sd)
 		/*
 		&{0xc0002169b0 0xc00060b440 <nil>}
 		*/
 		identity, err := sd.Identity()
-		fmt.Println("=======identity========",identity)//&{0xc0001bb500 0xc0003a8f60}
+		logger.Info("=======identity========",identity)//&{0xc0001bb500 0xc0003a8f60}
 		if err != nil {
 			cauthdslLogger.Errorf("Principal deserialization failure (%s) for identity %d", err, i)
 			continue
 		}
 		key := identity.GetIdentifier().Mspid + identity.GetIdentifier().Id
 
-		fmt.Println("=======================",identity.GetIdentifier().Mspid) //Org1MSP
-		fmt.Println("=======================",identity.GetIdentifier().Id)    //a2a4c9bcba1dc3e3f8f11e4bbad67f564f0045eaf91005836304bbb23f5f7329
+		logger.Info("=======================",identity.GetIdentifier().Mspid) //Org1MSP
+		logger.Info("=======================",identity.GetIdentifier().Id)    //a2a4c9bcba1dc3e3f8f11e4bbad67f564f0045eaf91005836304bbb23f5f7329
 		if _, ok := ids[key]; ok {
-			fmt.Println("--------ok",ok)
+			logger.Info("--------ok",ok)
 			fmt.Printf("De-duplicating identity [%s] at index %d in signature set\n", key, i)
 		} else {
 			result = append(result, sd)
 			ids[key] = struct{}{}
 		}
 	}
-	fmt.Println("========result======",result)//[0xc0001bb110]
+	logger.Info("========result======",result)//[0xc0001bb110]
 	return result
 }
 
 // compile recursively builds a go evaluatable function corresponding to the policy specified, remember to call deduplicate on identities before
 // passing them to this function for evaluation
 func compile(policy *cb.SignaturePolicy, identities []*mb.MSPPrincipal, deserializer msp.IdentityDeserializer) (func([]IdentityAndSignature, []bool) bool, error) {
-	fmt.Println("==compile===")
+	logger.Info("==compile===")
 	if policy == nil {
 		return nil, fmt.Errorf("Empty policy element")
 	}

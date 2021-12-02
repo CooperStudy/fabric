@@ -64,20 +64,20 @@ var Default Operations = &peerImpl{
 var DefaultSupport Support = &supportImpl{operations: Default}
 
 func (p *peerImpl) CreateChainFromBlock(cb *common.Block, ccp ccprovider.ChaincodeProvider, sccp sysccprovider.SystemChaincodeProvider) error {
-	fmt.Println("===peerImpl===CreateChainFromBlock==")
+	logger.Info("===peerImpl===CreateChainFromBlock==")
 	return p.createChainFromBlock(cb, ccp, sccp)
 }
 func (p *peerImpl) GetChannelConfig(cid string) channelconfig.Resources {
-	fmt.Println("===peerImpl===GetChannelConfig==")
-	fmt.Println("===cid====",cid)
+	logger.Info("===peerImpl===GetChannelConfig==")
+	logger.Info("===cid====",cid)
 	return p.getChannelConfig(cid)
 }
 func (p *peerImpl) GetChannelsInfo() []*pb.ChannelInfo           {
-	fmt.Println("===peerImpl===GetChannelsInfo==")
+	logger.Info("===peerImpl===GetChannelsInfo==")
 	return p.getChannelsInfo()
 }
 func (p *peerImpl) GetCurrConfigBlock(cid string) *common.Block  {
-	fmt.Println("===peerImpl===GetCurrConfigBlock==")
+	logger.Info("===peerImpl===GetCurrConfigBlock==")
 	return p.getCurrConfigBlock(cid)
 }
 func (p *peerImpl) GetLedger(cid string) ledger.PeerLedger       {
@@ -85,18 +85,18 @@ func (p *peerImpl) GetLedger(cid string) ledger.PeerLedger       {
 	return p.getLedger(cid)
 }
 func (p *peerImpl) GetMSPIDs(cid string) []string                {
-	fmt.Println("===peerImpl===GetMSPIDs==")
+	logger.Info("===peerImpl===GetMSPIDs==")
 	return p.getMSPIDs(cid)
 }
 func (p *peerImpl) GetPolicyManager(cid string) policies.Manager {
-	fmt.Println("===peerImpl===GetPolicyManager==")
+	logger.Info("===peerImpl===GetPolicyManager==")
 	return p.getPolicyManager(cid)
 }
 func (p *peerImpl) InitChain(cid string)                         {
-	fmt.Println("===peerImpl===InitChain==")
+	logger.Info("===peerImpl===InitChain==")
 	p.initChain(cid)
 }
 func (p *peerImpl) Initialize(init func(string), ccp ccprovider.ChaincodeProvider, sccp sysccprovider.SystemChaincodeProvider, mapper txvalidator.PluginMapper, pr *platforms.Registry, deployedCCInfoProvider ledger.DeployedChaincodeInfoProvider, membershipProvider ledger.MembershipInfoProvider, metricsProvider metrics.Provider) {
-	fmt.Println("===peerImpl===Initialize==")
+	logger.Info("===peerImpl===Initialize==")
 	p.initialize(init, ccp, sccp, mapper, pr, deployedCCInfoProvider, membershipProvider, metricsProvider)
 }

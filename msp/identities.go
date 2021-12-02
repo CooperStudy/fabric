@@ -83,19 +83,19 @@ func newIdentity(cert *x509.Certificate, pk bccsp.Key, msp *bccspmsp) (Identity,
 
 // ExpiresAt returns the time at which the Identity expires.
 func (id *identity) ExpiresAt() time.Time {
-	fmt.Println("====identity==ExpiresAt=")
+	logger.Info("====identity==ExpiresAt=")
 	return id.cert.NotAfter
 }
 
 // SatisfiesPrincipal returns null if this instance matches the supplied principal or an error otherwise
 func (id *identity) SatisfiesPrincipal(principal *msp.MSPPrincipal) error {
-	fmt.Println("====identity==SatisfiesPrincipal=")
+	logger.Info("====identity==SatisfiesPrincipal=")
 	return id.msp.SatisfiesPrincipal(id, principal)
 }
 
 // GetIdentifier returns the identifier (MSPID/IDID) for this instance
 func (id *identity) GetIdentifier() *IdentityIdentifier {
-	//fmt.Println("====identity==GetIdentifier=")
+	//logger.Info("====identity==GetIdentifier=")
 	return id.id
 }
 
@@ -106,13 +106,13 @@ func (id *identity) GetMSPIdentifier() string {
 
 // Validate returns nil if this instance is a valid identity or an error otherwise
 func (id *identity) Validate() error {
-	fmt.Println("====identity==Validate=")
+	logger.Info("====identity==Validate=")
 	return id.msp.Validate(id)
 }
 
 // GetOrganizationalUnits returns the OU for this instance
 func (id *identity) GetOrganizationalUnits() []*OUIdentifier {
-	fmt.Println("====identity==GetOrganizationalUnits=")
+	logger.Info("====identity==GetOrganizationalUnits=")
 	if id.cert == nil {
 		return nil
 	}
@@ -137,7 +137,7 @@ func (id *identity) GetOrganizationalUnits() []*OUIdentifier {
 
 // Anonymous returns true if this identity provides anonymity
 func (id *identity) Anonymous() bool {
-	fmt.Println("====identity==Anonymous=")
+	logger.Info("====identity==Anonymous=")
 	return false
 }
 
@@ -146,7 +146,7 @@ func (id *identity) Anonymous() bool {
 // This method does not check the validity of certificate nor
 // any consistency of the mspID with it.
 func NewSerializedIdentity(mspID string, certPEM []byte) ([]byte, error) {
-	fmt.Println("====NewSerializedIdentity=")
+	logger.Info("====NewSerializedIdentity=")
 	// We serialize identities by prepending the MSPID
 	// and appending the x509 cert in PEM format
 	sId := &msp.SerializedIdentity{Mspid: mspID, IdBytes: certPEM}
@@ -161,7 +161,7 @@ func NewSerializedIdentity(mspID string, certPEM []byte) ([]byte, error) {
 // to determine whether this identity produced the
 // signature; it returns nil if so or an error otherwise
 func (id *identity) Verify(msg []byte, sig []byte) error {
-	//fmt.Println("==identity==Verify=")
+	//logger.Info("==identity==Verify=")
 	// mspIdentityLogger.Infof("Verifying signature")
 
 	// Compute Hash
@@ -218,13 +218,13 @@ func (id *identity) Serialize() ([]byte, error) {
 }
 
 func (id *identity) getHashOpt(hashFamily string) (bccsp.HashOpts, error) {
-	//fmt.Println("==identity==getHashOpt=")
+	//logger.Info("==identity==getHashOpt=")
 	switch hashFamily {
 	case bccsp.SHA2:
-		//fmt.Println("====bccsp.SHA2============")
+		//logger.Info("====bccsp.SHA2============")
 		return bccsp.GetHashOpt(bccsp.SHA256)
 	case bccsp.SHA3:
-	//	fmt.Println("====bccsp.SHA3============")
+	//	logger.Info("====bccsp.SHA3============")
 		return bccsp.GetHashOpt(bccsp.SHA3_256)
 	}
 	return nil, errors.Errorf("hash familiy not recognized [%s]", hashFamily)
@@ -239,7 +239,7 @@ type signingidentity struct {
 }
 
 func newSigningIdentity(cert *x509.Certificate, pk bccsp.Key, signer crypto.Signer, msp *bccspmsp) (SigningIdentity, error) {
-	//fmt.Println("==newSigningIdentity=")
+	//logger.Info("==newSigningIdentity=")
 	//mspIdentityLogger.Infof("Creating signing identity instance for ID %s", id)
 	mspId, err := newIdentity(cert, pk, msp)
 	if err != nil {
@@ -250,7 +250,7 @@ func newSigningIdentity(cert *x509.Certificate, pk bccsp.Key, signer crypto.Sign
 
 // Sign produces a signature over msg, signed by this instance
 func (id *signingidentity) Sign(msg []byte) ([]byte, error) {
-	//fmt.Println("==signingidentity=Sign==")
+	//logger.Info("==signingidentity=Sign==")
 	//mspIdentityLogger.Infof("Signing message")
 
 	// Compute Hash
@@ -278,6 +278,6 @@ func (id *signingidentity) Sign(msg []byte) ([]byte, error) {
 // GetPublicVersion returns the public version of this identity,
 // namely, the one that is only able to verify messages and not sign them
 func (id *signingidentity) GetPublicVersion() Identity {
-	//fmt.Println("==signingidentity=GetPublicVersion==")
+	//logger.Info("==signingidentity=GetPublicVersion==")
 	return &id.identity
 }

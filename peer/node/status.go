@@ -39,16 +39,16 @@ var nodeStatusCmd = &cobra.Command{
 }
 
 func status() (err error) {
-	fmt.Println("===status======")
+	logger.Info("===status======")
 	adminClient, err := common.GetAdminClient()
 	if err != nil {
 		logger.Warningf("%s", err)
-		fmt.Println(&pb.ServerStatus{Status: pb.ServerStatus_UNKNOWN})
+		logger.Info(&pb.ServerStatus{Status: pb.ServerStatus_UNKNOWN})
 		return err
 	}
 	signer, err := common.GetDefaultSignerFnc()
 	if err != nil {
-		fmt.Println(&pb.ServerStatus{Status: pb.ServerStatus_UNKNOWN})
+		logger.Info(&pb.ServerStatus{Status: pb.ServerStatus_UNKNOWN})
 		return errors.Errorf("failed obtaining default signer: %v", err)
 	}
 
@@ -65,9 +65,9 @@ func status() (err error) {
 	if err != nil {
 		logger.Infof("Error trying to get status from local peer: %s", err)
 		err = fmt.Errorf("Error trying to connect to local peer: %s", err)
-		fmt.Println(&pb.ServerStatus{Status: pb.ServerStatus_UNKNOWN})
+		logger.Info(&pb.ServerStatus{Status: pb.ServerStatus_UNKNOWN})
 		return err
 	}
-	fmt.Println(status)
+	logger.Info(status)
 	return nil
 }

@@ -45,13 +45,13 @@ type SignedCDSData struct {
 
 //Reset resets
 func (data *SignedCDSData) Reset() {
-	fmt.Println("==SignedCDSData==Reset==")
+	logger.Info("==SignedCDSData==Reset==")
 	*data = SignedCDSData{}
 }
 
 //String converts to string
 func (data *SignedCDSData) String() string {
-	fmt.Println("==SignedCDSData==String==")
+	logger.Info("==SignedCDSData==String==")
 	return proto.CompactTextString(data)
 }
 
@@ -60,7 +60,7 @@ func (*SignedCDSData) ProtoMessage() {}
 
 //Equals data equals other
 func (data *SignedCDSData) Equals(other *SignedCDSData) bool {
-	fmt.Println("==SignedCDSData==Equals==")
+	logger.Info("==SignedCDSData==Equals==")
 	return other != nil &&
 		bytes.Equal(data.CodeHash, other.CodeHash) &&
 		bytes.Equal(data.MetaDataHash, other.MetaDataHash) &&
@@ -82,13 +82,13 @@ type SignedCDSPackage struct {
 
 // resets data
 func (ccpack *SignedCDSPackage) reset() {
-	fmt.Println("==SignedCDSPackage==reset==")
+	logger.Info("==SignedCDSPackage==reset==")
 	*ccpack = SignedCDSPackage{}
 }
 
 // GetId gets the fingerprint of the chaincode based on package computation
 func (ccpack *SignedCDSPackage) GetId() []byte {
-	fmt.Println("==SignedCDSPackage==GetId==")
+	logger.Info("==SignedCDSPackage==GetId==")
 	//this has to be after creating a package and initializing it
 	//If those steps fail, GetId() should never be called
 	if ccpack.id == nil {
@@ -99,7 +99,7 @@ func (ccpack *SignedCDSPackage) GetId() []byte {
 
 // GetDepSpec gets the ChaincodeDeploymentSpec from the package
 func (ccpack *SignedCDSPackage) GetDepSpec() *pb.ChaincodeDeploymentSpec {
-	fmt.Println("==SignedCDSPackage==GetDepSpec==")
+	logger.Info("==SignedCDSPackage==GetDepSpec==")
 	//this has to be after creating a package and initializing it
 	//If those steps fail, GetDepSpec() should never be called
 	if ccpack.depSpec == nil {
@@ -110,7 +110,7 @@ func (ccpack *SignedCDSPackage) GetDepSpec() *pb.ChaincodeDeploymentSpec {
 
 // GetInstantiationPolicy gets the instantiation policy from the package
 func (ccpack *SignedCDSPackage) GetInstantiationPolicy() []byte {
-	fmt.Println("==SignedCDSPackage==GetInstantiationPolicy==")
+	logger.Info("==SignedCDSPackage==GetInstantiationPolicy==")
 	if ccpack.sDepSpec == nil {
 		panic("GetInstantiationPolicy called on uninitialized package")
 	}
@@ -119,7 +119,7 @@ func (ccpack *SignedCDSPackage) GetInstantiationPolicy() []byte {
 
 // GetDepSpecBytes gets the serialized ChaincodeDeploymentSpec from the package
 func (ccpack *SignedCDSPackage) GetDepSpecBytes() []byte {
-	fmt.Println("==SignedCDSPackage==GetDepSpecBytes==")
+	logger.Info("==SignedCDSPackage==GetDepSpecBytes==")
 	//this has to be after creating a package and initializing it
 	//If those steps fail, GetDepSpecBytes() should never be called
 	if ccpack.sDepSpec == nil || ccpack.sDepSpec.ChaincodeDeploymentSpec == nil {
@@ -130,13 +130,13 @@ func (ccpack *SignedCDSPackage) GetDepSpecBytes() []byte {
 
 // GetPackageObject gets the ChaincodeDeploymentSpec as proto.Message
 func (ccpack *SignedCDSPackage) GetPackageObject() proto.Message {
-	fmt.Println("==SignedCDSPackage==GetPackageObject==")
+	logger.Info("==SignedCDSPackage==GetPackageObject==")
 	return ccpack.env
 }
 
 // GetChaincodeData gets the ChaincodeData
 func (ccpack *SignedCDSPackage) GetChaincodeData() *ChaincodeData {
-	fmt.Println("==SignedCDSPackage==GetChaincodeData==")
+	logger.Info("==SignedCDSPackage==GetChaincodeData==")
 	//this has to be after creating a package and initializing it
 	//If those steps fail, GetChaincodeData() should never be called
 	if ccpack.depSpec == nil || ccpack.datab == nil || ccpack.id == nil {
@@ -158,7 +158,7 @@ func (ccpack *SignedCDSPackage) GetChaincodeData() *ChaincodeData {
 }
 
 func (ccpack *SignedCDSPackage) getCDSData(scds *pb.SignedChaincodeDeploymentSpec) ([]byte, []byte, *SignedCDSData, error) {
-	fmt.Println("==SignedCDSPackage==getCDSData==")
+	logger.Info("==SignedCDSPackage==getCDSData==")
 	// check for nil argument. It is an assertion that getCDSData
 	// is never called on a package that did not go through/succeed
 	// package initialization.
@@ -230,7 +230,7 @@ func (ccpack *SignedCDSPackage) getCDSData(scds *pb.SignedChaincodeDeploymentSpe
 // ValidateCC returns error if the chaincode is not found or if its not a
 // ChaincodeDeploymentSpec
 func (ccpack *SignedCDSPackage) ValidateCC(ccdata *ChaincodeData) error {
-	fmt.Println("==SignedCDSPackage==ValidateCC==")
+	logger.Info("==SignedCDSPackage==ValidateCC==")
 	if ccpack.sDepSpec == nil {
 		return fmt.Errorf("uninitialized package")
 	}
@@ -272,7 +272,7 @@ func (ccpack *SignedCDSPackage) ValidateCC(ccdata *ChaincodeData) error {
 
 //InitFromBuffer sets the buffer if valid and returns ChaincodeData
 func (ccpack *SignedCDSPackage) InitFromBuffer(buf []byte) (*ChaincodeData, error) {
-	fmt.Println("==SignedCDSPackage==InitFromBuffer==")
+	logger.Info("==SignedCDSPackage==InitFromBuffer==")
 	//incase ccpack is reused
 	ccpack.reset()
 
@@ -314,19 +314,19 @@ func (ccpack *SignedCDSPackage) InitFromBuffer(buf []byte) (*ChaincodeData, erro
 
 //InitFromFS returns the chaincode and its package from the file system
 func (ccpack *SignedCDSPackage) InitFromFS(ccname string, ccversion string) ([]byte, *pb.ChaincodeDeploymentSpec, error) {
-	fmt.Println("==SignedCDSPackage==InitFromFS==")
+	logger.Info("==SignedCDSPackage==InitFromFS==")
 	return ccpack.InitFromPath(ccname, ccversion, chaincodeInstallPath)
 }
 
 //InitFromPath returns the chaincode and its package from the file system
 func (ccpack *SignedCDSPackage) InitFromPath(ccname string, ccversion string, path string) ([]byte, *pb.ChaincodeDeploymentSpec, error) {
-	fmt.Println("==func (ccpack *SignedCDSPackage) InitFromPath(ccname string, ccversion string, path string) ([]byte, *pb.ChaincodeDeploymentSpec, error) {==")
+	logger.Info("==func (ccpack *SignedCDSPackage) InitFromPath(ccname string, ccversion string, path string) ([]byte, *pb.ChaincodeDeploymentSpec, error) {==")
 	//incase ccpack is reused
 	ccpack.reset()
 
-	fmt.Println("=============1.buf, err := GetChaincodePackageFromPath(ccname, ccversion, path)=====")
+	logger.Info("=============1.buf, err := GetChaincodePackageFromPath(ccname, ccversion, path)=====")
 	buf, err := GetChaincodePackageFromPath(ccname, ccversion, path)
-	fmt.Println("=============2.buf, err := GetChaincodePackageFromPath(ccname, ccversion, path)=====")
+	logger.Info("=============2.buf, err := GetChaincodePackageFromPath(ccname, ccversion, path)=====")
 	if err != nil {
 		return nil, nil, err
 	}
@@ -340,7 +340,7 @@ func (ccpack *SignedCDSPackage) InitFromPath(ccname string, ccversion string, pa
 
 //PutChaincodeToFS - serializes chaincode to a package on the file system
 func (ccpack *SignedCDSPackage) PutChaincodeToFS() error {
-	fmt.Println("==SignedCDSPackage==PutChaincodeToFS==")
+	logger.Info("==SignedCDSPackage==PutChaincodeToFS==")
 	if ccpack.buf == nil {
 		return fmt.Errorf("uninitialized package")
 	}

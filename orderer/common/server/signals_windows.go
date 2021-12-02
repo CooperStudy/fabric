@@ -13,6 +13,6 @@ import (
 )
 
 func addPlatformSignals(sigs map[os.Signal]func()) map[os.Signal]func() {
-	fmt.Println("==addPlatformSignals==")
+	logger.Info("==addPlatformSignals==")
 	return sigs
 }

@@ -6,12 +6,7 @@
 
 package ccmetadata
 
-import (
-	"github.com/hyperledger/fabric/common/flogging"
-)
-
 //logger used by this package
-var logger = flogging.MustGetLogger("chaincode.platform.metadata")
 
 //MetadataProvider is implemented by each platform in a platform specific manner.
 //It can process metadata stored in ChaincodeDeploymentSpec in different formats.

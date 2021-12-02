@@ -8,13 +8,13 @@ package util
 
 import (
 	"context"
-	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 
 	"google.golang.org/grpc/peer"
 )
-
+var utilLogger = flogging.MustGetLogger("common.util")
 func ExtractRemoteAddress(ctx context.Context) string {
-	fmt.Println("===ExtractRemoteAddress================")
+	utilLogger.Info("===ExtractRemoteAddress================")
 	var remoteAddress string
 	p, ok := peer.FromContext(ctx)
 	if !ok {
@@ -22,7 +22,7 @@ func ExtractRemoteAddress(ctx context.Context) string {
 	}
 	if address := p.Addr; address != nil {
 		remoteAddress = address.String()
-		fmt.Println("=====remoteAddress================",remoteAddress)
+		utilLogger.Infof("=====remoteAddress:%v================",remoteAddress)
 		//====remoteAddress================ 172.19.0.1:37296
 
 	}

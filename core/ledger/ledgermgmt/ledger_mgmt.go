@@ -8,7 +8,6 @@ package ledgermgmt
 
 import (
 	"bytes"
-	"fmt"
 	"sync"
 
 	"github.com/hyperledger/fabric/common/flogging"
@@ -49,14 +48,14 @@ type Initializer struct {
 
 // Initialize initializes ledgermgmt
 func Initialize(initializer *Initializer) {
-	fmt.Println("=====Initialize========")
+	logger.Info("=====Initialize========")
 	once.Do(func() {
 		initialize(initializer)
 	})
 }
 
 func initialize(initializer *Initializer) {
-	fmt.Println("=====initialize========")
+	logger.Info("=====initialize========")
 	logger.Info("Initializing ledger mgmt")
 	lock.Lock()
 	defer lock.Unlock()
@@ -86,7 +85,7 @@ func initialize(initializer *Initializer) {
 // This function guarantees that the creation of ledger and committing the genesis block would an atomic action
 // The chain id retrieved from the genesis block is treated as a ledger id
 func CreateLedger(genesisBlock *common.Block) (ledger.PeerLedger, error) {
-	fmt.Println("=====CreateLedger========")
+	logger.Info("=====CreateLedger========")
 	lock.Lock()
 	defer lock.Unlock()
 	if !initialized {
@@ -110,7 +109,7 @@ func CreateLedger(genesisBlock *common.Block) (ledger.PeerLedger, error) {
 
 // OpenLedger returns a ledger for the given id
 func OpenLedger(id string) (ledger.PeerLedger, error) {
-	fmt.Println("=====OpenLedger========")
+	logger.Info("=====OpenLedger========")
 	logger.Infof("Opening ledger with id = %s", id)
 	lock.Lock()
 	defer lock.Unlock()
@@ -133,7 +132,7 @@ func OpenLedger(id string) (ledger.PeerLedger, error) {
 
 // GetLedgerIDs returns the ids of the ledgers created
 func GetLedgerIDs() ([]string, error) {
-	fmt.Println("=====GetLedgerIDs========")
+	logger.Info("=====GetLedgerIDs========")
 	lock.Lock()
 	defer lock.Unlock()
 	if !initialized {
@@ -144,7 +143,7 @@ func GetLedgerIDs() ([]string, error) {
 
 // Close closes all the opened ledgers and any resources held for ledger management
 func Close() {
-	fmt.Println("=====Close========")
+	logger.Info("=====Close========")
 	logger.Infof("Closing ledger mgmt")
 	lock.Lock()
 	defer lock.Unlock()
@@ -160,7 +159,7 @@ func Close() {
 }
 
 func wrapLedger(id string, l ledger.PeerLedger) ledger.PeerLedger {
-	fmt.Println("=====wrapLedger========")
+	logger.Info("=====wrapLedger========")
 	return &closableLedger{id, l}
 }
 
@@ -172,14 +171,14 @@ type closableLedger struct {
 
 // Close closes the actual ledger and removes the entries from opened ledgers map
 func (l *closableLedger) Close() {
-	fmt.Println("=====closableLedger===Close=====")
+	logger.Info("=====closableLedger===Close=====")
 	lock.Lock()
 	defer lock.Unlock()
 	l.closeWithoutLock()
 }
 
 func (l *closableLedger) closeWithoutLock() {
-	fmt.Println("=====closableLedger===closeWithoutLock=====")
+	logger.Info("=====closableLedger===closeWithoutLock=====")
 	l.PeerLedger.Close()
 	delete(openedLedgers, l.id)
 }
@@ -190,7 +189,7 @@ func addListenerForCCEventsHandler(
 	deployedCCInfoProvider ledger.DeployedChaincodeInfoProvider,
 
 	stateListeners []ledger.StateListener) []ledger.StateListener {
-	fmt.Println("=====addListenerForCCEventsHandler====")
+	logger.Info("=====addListenerForCCEventsHandler====")
 	return append(stateListeners, &cceventmgmt.KVLedgerLSCCStateListener{DeployedChaincodeInfoProvider: deployedCCInfoProvider})
 }
 
@@ -203,7 +202,7 @@ type chaincodeInfoProviderImpl struct {
 // GetDeployedChaincodeInfo implements function in the interface cceventmgmt.ChaincodeInfoProvider
 func (p *chaincodeInfoProviderImpl) GetDeployedChaincodeInfo(chainid string, chaincodeDefinition *cceventmgmt.ChaincodeDefinition) (*ledger.DeployedChaincodeInfo, error) {
 
-	fmt.Println("=====chaincodeInfoProviderImpl==GetDeployedChaincodeInfo==")
+	logger.Info("=====chaincodeInfoProviderImpl==GetDeployedChaincodeInfo==")
 	lock.Lock()
 	ledger := openedLedgers[chainid]
 	lock.Unlock()
@@ -229,6 +228,6 @@ func (p *chaincodeInfoProviderImpl) GetDeployedChaincodeInfo(chainid string, cha
 
 // RetrieveChaincodeArtifacts implements function in the interface cceventmgmt.ChaincodeInfoProvider
 func (p *chaincodeInfoProviderImpl) RetrieveChaincodeArtifacts(chaincodeDefinition *cceventmgmt.ChaincodeDefinition) (installed bool, dbArtifactsTar []byte, err error) {
-	fmt.Println("=====chaincodeInfoProviderImpl==RetrieveChaincodeArtifacts==")
+	logger.Info("=====chaincodeInfoProviderImpl==RetrieveChaincodeArtifacts==")
 	return ccprovider.ExtractStatedbArtifactsForChaincode(chaincodeDefinition.Name, chaincodeDefinition.Version, p.pr)
 }

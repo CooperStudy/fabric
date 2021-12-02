@@ -22,7 +22,7 @@ import (
 // New returns an instance of QSCC.
 // Typically this is called once per peer.
 func New(aclProvider aclmgmt.ACLProvider) *LedgerQuerier {
-	fmt.Println("===New==")
+	logger.Info("===New==")
 	return &LedgerQuerier{
 		aclProvider: aclProvider,
 	}
@@ -45,7 +45,7 @@ type LedgerQuerier struct {
 	aclProvider aclmgmt.ACLProvider
 }
 
-var qscclogger = flogging.MustGetLogger("qscc")
+var logger = flogging.MustGetLogger("qscc")
 
 // These are function names from Invoke first parameter
 const (
@@ -60,8 +60,7 @@ const (
 // This allows the chaincode to initialize any variables on the ledger prior
 // to any transaction execution on the chain.
 func (e *LedgerQuerier) Init(stub shim.ChaincodeStubInterface) pb.Response {
-	fmt.Println("===LedgerQuerier==Init==")
-	qscclogger.Info("Init QSCC")
+	logger.Info("===LedgerQuerier==Init==")
 
 	return shim.Success(nil)
 }
@@ -74,7 +73,7 @@ func (e *LedgerQuerier) Init(stub shim.ChaincodeStubInterface) pb.Response {
 // # GetBlockByHash: Return the block specified by block hash in args[2]
 // # GetTransactionByID: Return the transaction specified by ID in args[2]
 func (e *LedgerQuerier) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
-	fmt.Println("===LedgerQuerier==Invoke==")
+	logger.Info("===LedgerQuerier==Invoke==")
 	args := stub.GetArgs()
 
 	if len(args) < 2 {
@@ -92,7 +91,7 @@ func (e *LedgerQuerier) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return shim.Error(fmt.Sprintf("Invalid chain ID, %s", cid))
 	}
 
-	qscclogger.Debugf("Invoke function: %s on chain: %s", fname, cid)
+	logger.Debugf("Invoke function: %s on chain: %s", fname, cid)
 
 	// Handle ACL:
 	// 1. get the signed proposal
@@ -124,7 +123,7 @@ func (e *LedgerQuerier) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 }
 
 func getTransactionByID(vledger ledger.PeerLedger, tid []byte) pb.Response {
-	fmt.Println("===getTransactionByID==")
+	logger.Info("===getTransactionByID==")
 	if tid == nil {
 		return shim.Error("Transaction ID must not be nil.")
 	}
@@ -143,7 +142,7 @@ func getTransactionByID(vledger ledger.PeerLedger, tid []byte) pb.Response {
 }
 
 func getBlockByNumber(vledger ledger.PeerLedger, number []byte) pb.Response {
-	fmt.Println("===getBlockByNumber==")
+	logger.Info("===getBlockByNumber==")
 	if number == nil {
 		return shim.Error("Block number must not be nil.")
 	}
@@ -169,7 +168,7 @@ func getBlockByNumber(vledger ledger.PeerLedger, number []byte) pb.Response {
 }
 
 func getBlockByHash(vledger ledger.PeerLedger, hash []byte) pb.Response {
-	fmt.Println("===getBlockByHash==")
+	logger.Info("===getBlockByHash==")
 	if hash == nil {
 		return shim.Error("Block hash must not be nil.")
 	}
@@ -191,7 +190,7 @@ func getBlockByHash(vledger ledger.PeerLedger, hash []byte) pb.Response {
 }
 
 func getChainInfo(vledger ledger.PeerLedger) pb.Response {
-	fmt.Println("===getChainInfo==")
+	logger.Info("===getChainInfo==")
 	binfo, err := vledger.GetBlockchainInfo()
 	if err != nil {
 		return shim.Error(fmt.Sprintf("Failed to get block info with error %s", err))
@@ -205,7 +204,7 @@ func getChainInfo(vledger ledger.PeerLedger) pb.Response {
 }
 
 func getBlockByTxID(vledger ledger.PeerLedger, rawTxID []byte) pb.Response {
-	fmt.Println("===getBlockByTxID==")
+	logger.Info("===getBlockByTxID==")
 	txID := string(rawTxID)
 	block, err := vledger.GetBlockByTxID(txID)
 
@@ -223,6 +222,6 @@ func getBlockByTxID(vledger ledger.PeerLedger, rawTxID []byte) pb.Response {
 }
 
 func getACLResource(fname string) string {
-	fmt.Println("===getACLResource==")
+	logger.Info("===getACLResource==")
 	return "qscc/" + fname
 }

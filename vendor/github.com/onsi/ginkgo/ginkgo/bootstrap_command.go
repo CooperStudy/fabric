@@ -192,7 +192,7 @@ func generateBootstrap(agouti, noDot, internal bool, customBootstrapFile string)
 		if err != nil {
 			complainAndQuit("Failed to import nodot declarations: " + err.Error())
 		}
-		fmt.Println("To update the nodot declarations in the future, switch to this directory and run:\n\tginkgo nodot")
+		logger.Info("To update the nodot declarations in the future, switch to this directory and run:\n\tginkgo nodot")
 		buf = bytes.NewBuffer(contents)
 	}
 

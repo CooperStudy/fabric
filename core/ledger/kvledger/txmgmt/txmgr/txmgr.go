@@ -52,7 +52,7 @@ type ErrUnsupportedTransaction struct {
 }
 
 func (e *ErrUnsupportedTransaction) Error() string {
-	fmt.Println("==ErrUnsupportedTransaction==Error==")
+	logger.Info("==ErrUnsupportedTransaction==Error==")
 	return e.Msg
 }
 
@@ -64,6 +64,6 @@ type ErrPvtdataNotAvailable struct {
 }
 
 func (e *ErrPvtdataNotAvailable) Error() string {
-	fmt.Println("==ErrPvtdataNotAvailable==Error==")
+	logger.Info("==ErrPvtdataNotAvailable==Error==")
 	return e.Msg
 }

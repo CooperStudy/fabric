@@ -38,7 +38,7 @@ import (
 
 // checkSpec to see if chaincode resides within current package capture for language.
 func checkSpec(spec *pb.ChaincodeSpec) error {
-	fmt.Println("=============checkSpec==================")
+	logger.Info("=============checkSpec==================")
 	// Don't allow nil value
 	if spec == nil {
 		return errors.New("expected chaincode specification, nil received")
@@ -124,7 +124,7 @@ func getChaincodeSpec(cmd *cobra.Command) (*pb.ChaincodeSpec, error) {
 }
 
 func chaincodeInvokeOrQuery(cmd *cobra.Command, invoke bool, cf *ChaincodeCmdFactory) (err error) {
-	fmt.Println("=============chaincodeInvokeOrQuery==================")
+	logger.Info("=============chaincodeInvokeOrQuery==================")
 	spec, err := getChaincodeSpec(cmd)
 	if err != nil {
 		return err
@@ -435,7 +435,7 @@ func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) 
 			//peer0.org1.example.com:7051
 			//peer0.org2.example.com:7051
 			var tlsRootCertFile string
-			fmt.Println("====tlsRootCertFiles",tlsRootCertFiles)
+			logger.Info("====tlsRootCertFiles",tlsRootCertFiles)
 			/*
 			[/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
 			 /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt]
@@ -443,25 +443,25 @@ func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) 
 			//
 			if tlsRootCertFiles != nil {
 				tlsRootCertFile = tlsRootCertFiles[i]
-				fmt.Println("==============================tlsRootCertFile",tlsRootCertFile)
+				logger.Info("==============================tlsRootCertFile",tlsRootCertFile)
 				// /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
 				// /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt
 			}
 			endorserClient, err := common.GetEndorserClientFnc(address, tlsRootCertFile)
-			fmt.Println("==================endorserClient========================",endorserClient)//&{0xc0000d2000}
+			logger.Info("==================endorserClient========================",endorserClient)//&{0xc0000d2000}
 
 			if err != nil {
 				return nil, errors.WithMessage(err, fmt.Sprintf("error getting endorser client for %s", cmdName))
 			}
 			endorserClients = append(endorserClients, endorserClient)
-			fmt.Println("==================endorserClients========================",endorserClients)//[0xc00014e038]
+			logger.Info("==================endorserClients========================",endorserClients)//[0xc00014e038]
 			deliverClient, err := common.GetPeerDeliverClientFnc(address, tlsRootCertFile)
-			fmt.Println("==================deliverClient========================",deliverClient)
+			logger.Info("==================deliverClient========================",deliverClient)
 			if err != nil {
 				return nil, errors.WithMessage(err, fmt.Sprintf("error getting deliver client for %s", cmdName))
 			}
 			deliverClients = append(deliverClients, deliverClient)
-			fmt.Println("==================deliverClients========================",deliverClients)//[0xc00013c690 0xc000267ad0]
+			logger.Info("==================deliverClients========================",deliverClients)//[0xc00013c690 0xc000267ad0]
 		}
 
 		logger.Infof("====len(endorserClients):%v====",len(endorserClients))
@@ -536,7 +536,7 @@ func ChaincodeInvokeOrQuery(
 	deliverClients []api.PeerDeliverClient,
 	bc common.BroadcastClient,
 ) (*pb.ProposalResponse, error) {
-	fmt.Println("=============ChaincodeInvokeOrQuery==================")
+	logger.Info("=============ChaincodeInvokeOrQuery==================")
 	// Build the ChaincodeInvocationSpec message
 
 	invocation := &pb.ChaincodeInvocationSpec{ChaincodeSpec: spec}
@@ -570,14 +570,14 @@ func ChaincodeInvokeOrQuery(
 	}
 	var responses []*pb.ProposalResponse
 	for k, endorser := range endorserClients {
-		fmt.Println("================k======================",k)//0
+		logger.Info("================k======================",k)//0
 		//1
-		fmt.Println("================endorser======================",endorser)//&{0xc0000d2000}
-		fmt.Println("====================signedProp==============================",signedProp)
+		logger.Info("================endorser======================",endorser)//&{0xc0000d2000}
+		logger.Info("====================signedProp==============================",signedProp)
 		//proposal_bytes:"\n\303\007\ng\010\003\032\014\010\200\352\361\214\006\020\276\347\376\207\002\"\tmychannel*@38ec6dc6617d415b856aa186fd67959c6273ed9529f38a88e83387dc6007cd44:\010\022\006\022\004mycc\022\327\006\n\272\006\n\007Org1MSP\022\256\006-----BEGIN CERTIFICATE-----\nMIICKzCCAdGgAwIBAgIRAJH5pT6oad0DwaoVpYvsnRYwCgYIKoZIzj0EAwIwczEL\nMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG\ncmFuY2lzY28xGTAXBgNVBAoTEG9yZzEuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh\nLm9yZzEuZXhhbXBsZS5jb20wHhcNMjExMTIzMDQ1MzAwWhcNMzExMTIxMDQ1MzAw\nWjBsMQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMN\nU2FuIEZyYW5jaXNjbzEPMA0GA1UECxMGY2xpZW50MR8wHQYDVQQDDBZBZG1pbkBv\ncmcxLmV4YW1wbGUuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEjkNw8fd0\nUNWAxVB9ge/V7yX7fuBWB7PLfcs3ir421JImYSDW0BwYxQMNNtaJzbrVh31Rp5fD\nsGg4CIs8RjR25aNNMEswDgYDVR0PAQH/BAQDAgeAMAwGA1UdEwEB/wQCMAAwKwYD\nVR0jBCQwIoAgwYCJKZTdr1gamBudkhq1imTZeKfgEKqV/J1R6+ojSpwwCgYIKoZI\nzj0EAwIDSAAwRQIhAIRBayA7nrL35q2p0IlcwuhQlgKQDVFySzrJSUtoHwQcAiA/\nr9pz6m5TGsbebgKgl3HqadC50EmPB18HHHCEtrs3dA==\n-----END CERTIFICATE-----\n\022\030j\377\250\006%%\3138\307\251\014\275\033\331\353FgD&w\020K\022z\022\"\n \n\036\010\001\022\006\022\004mycc\032\022\n\006invoke\n\001a\n\001b\n\00210" signature:"0E\002!\000\334\032K\332%\021nXnb\313\351gW\275\246)\026\034\010\"ot\"\3613j \241\342\0348\002 P\335\261(w\265K\255\325\350t\273\262\247\220\265K\220\367\257\013S\204\000\323\202\376\034\277R:\217"
 		//proposal_bytes:"\n\303\007\ng\010\003\032\014\010\203\352\361\214\006\020\265\246\304\324\003\"\tmychannel*@2b68f779a01681b47885d1f4a4fe51c731653ba1a7f2b9230cd87f880354ea85:\010\022\006\022\004mycc\022\327\006\n\272\006\n\007Org2MSP\022\256\006-----BEGIN CERTIFICATE-----\nMIICKzCCAdGgAwIBAgIRAPwS3GA4sA8r4Hqq6/4/GeswCgYIKoZIzj0EAwIwczEL\nMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG\ncmFuY2lzY28xGTAXBgNVBAoTEG9yZzIuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh\nLm9yZzIuZXhhbXBsZS5jb20wHhcNMjExMTIzMDQ1MzAwWhcNMzExMTIxMDQ1MzAw\nWjBsMQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMN\nU2FuIEZyYW5jaXNjbzEPMA0GA1UECxMGY2xpZW50MR8wHQYDVQQDDBZBZG1pbkBv\ncmcyLmV4YW1wbGUuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEzjlPS5pg\nrDY4tthuQtUuXVt/N2BooFJpWmGmXAZGv0EtMqzicD93phVjeaPWWETQtYMUi1BD\n0dHxC3hbZ1SCbqNNMEswDgYDVR0PAQH/BAQDAgeAMAwGA1UdEwEB/wQCMAAwKwYD\nVR0jBCQwIoAg2LmIkR1Yf1jrjdib6ItgOUE2vQONqeem9DrA1sP+494wCgYIKoZI\nzj0EAwIDSAAwRQIhANdAeQCEJ2KA3h1VmL/GYgwS/KlaeN92pZQ9Fi9YHdV2AiA5\nGPh/sDkJc1IBZc7yolZzyoS1fMIkXwFYj0/l/NtGPg==\n-----END CERTIFICATE-----\n\022\030q\271\216\334\317aw\367\232|V\007\rN*R\244&)\343\371D\365\253\022\032\n\030\n\026\010\001\022\006\022\004mycc\032\n\n\005query\n\001a" signature:"0D\002 z\306\247_\352\014\240\222\032\274\021\024a\341\335m\275\337\255\016k\007\246\223\316^\007L\366\031\302\354\002 X\362\0018\005\325\250Z\350|\226(\r\257\0063\367\275\024\307/\014\325\023\311\014\357\021#>D,"
 		proposalResp, err := endorser.ProcessProposal(context.Background(), signedProp)
-		fmt.Println("===============proposalResp============================",proposalResp)
+		logger.Info("===============proposalResp============================",proposalResp)
 		/*
 		version:1 response:<status:200 > payload:"\n q\036\365ac\233\364\2769\247\\\026\014\371\003\374\342\377E\320\260\341\365\250\311&`\202\032\245\310\007\022Y\nE\022\024\n\004lscc\022\014\n\n\n\004mycc\022\002\010\003\022-\n\004mycc\022%\n\007\n\001a\022\002\010\003\n\007\n\001b\022\002\010\003\032\007\n\001a\032\00290\032\010\n\001b\032\003210\032\003\010\310\001\"\013\022\004mycc\032\0031.0" endorsement:<endorser:"\n\007Org1MSP\022\252\006-----BEGIN CERTIFICATE-----\nMIICKDCCAc6gAwIBAgIQai9GfSR87xVbQ7+iETmmgjAKBggqhkjOPQQDAjBzMQsw\nCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMNU2FuIEZy\nYW5jaXNjbzEZMBcGA1UEChMQb3JnMS5leGFtcGxlLmNvbTEcMBoGA1UEAxMTY2Eu\nb3JnMS5leGFtcGxlLmNvbTAeFw0yMTExMjMwNDUzMDBaFw0zMTExMjEwNDUzMDBa\nMGoxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1T\nYW4gRnJhbmNpc2NvMQ0wCwYDVQQLEwRwZWVyMR8wHQYDVQQDExZwZWVyMC5vcmcx\nLmV4YW1wbGUuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEkPw4F4lx8qnd\n57OOCU9xTPpmQGXl6REwFrWY45WWFFgQHzHixWSnkjNNrjJ8Oq2X1KrsMT2xzLkv\njMiP9ArnIKNNMEswDgYDVR0PAQH/BAQDAgeAMAwGA1UdEwEB/wQCMAAwKwYDVR0j\nBCQwIoAgwYCJKZTdr1gamBudkhq1imTZeKfgEKqV/J1R6+ojSpwwCgYIKoZIzj0E\nAwIDSAAwRQIhAJ13cTfnCzUqeeYSnGvzJpt2Q6nN5gIsiU1pOs09oVChAiA5Maru\nXLPk9dKIa9xdD9X8HWn2is9JOesbCk+XiWJjpA==\n-----END CERTIFICATE-----\n" signature:"0D\002 \017\231\316\330\347\374\372\213Z\034\344\214\273M\246\002\275Q\225\364\226\262\370\005m\031%\005\253u\216\267\002 H\254~\354).I\\\3255\2455\212\254\321\013\030\241\343\300\216\333C\320\360\330\357\365\231\323\031\271" >
 		version:1 response:<status:200 payload:"90" > payload:"\n dT\312\355RT\306@\202\223\301\030NINk\217\301\034\332(\326\304\016\207\370\004\307H\312\353\036\022A\n)\022\024\n\004lscc\022\014\n\n\n\004mycc\022\002\010\003\022\021\n\004mycc\022\t\n\007\n\001a\022\002\010\004\032\007\010\310\001\032\00290\"\013\022\004mycc\032\0031.0" endorsement:<endorser:"\n\007Org2MSP\022\252\006-----BEGIN CERTIFICATE-----\nMIICKTCCAc+gAwIBAgIRAMM1T1QcvJxfWBgIn/lmubEwCgYIKoZIzj0EAwIwczEL\nMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG\ncmFuY2lzY28xGTAXBgNVBAoTEG9yZzIuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh\nLm9yZzIuZXhhbXBsZS5jb20wHhcNMjExMTIzMDQ1MzAwWhcNMzExMTIxMDQ1MzAw\nWjBqMQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMN\nU2FuIEZyYW5jaXNjbzENMAsGA1UECxMEcGVlcjEfMB0GA1UEAxMWcGVlcjEub3Jn\nMi5leGFtcGxlLmNvbTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABL/fGOhHLYjL\n/v0eZnwkGjCiEJ1GZ9HSxrrH2YFO7u3qglZ6Q3AF0+wIBmJb/Elx5g/7AtH2YfZQ\nWg/OgPbe5KCjTTBLMA4GA1UdDwEB/wQEAwIHgDAMBgNVHRMBAf8EAjAAMCsGA1Ud\nIwQkMCKAINi5iJEdWH9Y643Ym+iLYDlBNr0DjannpvQ6wNbD/uPeMAoGCCqGSM49\nBAMCA0gAMEUCIQDFAcKtsGJX9dYJ+UBTcqybNUx5Q/krI8NtLDhEP3wryAIgHgEw\nyXrcyHsSnHY9fGtopF2uRrdFAnUPno99gnRhOM4=\n-----END CERTIFICATE-----\n" signature:"0D\002 \021\2342\"\002\265\037\036\2114+uJ\305_;\324\241\266ZL\200\362\355\362\337.\352p\014\242\025\002 t!a\257\250\345V^\257\363\325\326\213:M\206\032\226JV\247\023+\327u\354\023\373\327['u" >
@@ -597,23 +597,23 @@ func ChaincodeInvokeOrQuery(
 	proposalResp := responses[0]
 
 	if invoke {
-		fmt.Println("==============if invoke {==================")
+		logger.Info("==============if invoke {==================")
 		if proposalResp != nil {
 			if proposalResp.Response.Status >= shim.ERRORTHRESHOLD {
-				fmt.Println("==================proposalResp.Response.Status >= shim.ERRORTHRESHOLD ===============================")
+				logger.Info("==================proposalResp.Response.Status >= shim.ERRORTHRESHOLD ===============================")
 				return proposalResp, nil
 			}
 			// assemble a signed transaction (it's an Envelope message)
 			env, err := putils.CreateSignedTx(prop, signer, responses...)
-			fmt.Println("======================env, err := putils.CreateSignedTx(prop, signer, responses...)==============================")
+			logger.Info("======================env, err := putils.CreateSignedTx(prop, signer, responses...)==============================")
 			if err != nil {
 				return proposalResp, errors.WithMessage(err, "could not assemble transaction")
 			}
 			var dg *deliverGroup
 			var ctx context.Context
-			fmt.Println("======================waitForEvent==============================",waitForEvent)
+			logger.Info("======================waitForEvent==============================",waitForEvent)
 			if waitForEvent {//false
-				fmt.Println("======================waitForEvent==============================")
+				logger.Info("======================waitForEvent==============================")
 
 				var cancelFunc context.CancelFunc
 				ctx, cancelFunc = context.WithTimeout(context.Background(), waitForEventTimeout)
@@ -628,9 +628,9 @@ func ChaincodeInvokeOrQuery(
 			}
 
 			// send the envelope for ordering
-			fmt.Println("===================1.err = bc.Send(env)=============================")
+			logger.Info("===================1.err = bc.Send(env)=============================")
 			 err = bc.Send(env)
-			 fmt.Println("===================2.err = bc.Send(env)=============================")
+			 logger.Info("===================2.err = bc.Send(env)=============================")
 			if err != nil {
 				return proposalResp, errors.WithMessage(err, fmt.Sprintf("error sending transaction for %s", funcName))
 			}
@@ -674,7 +674,7 @@ type deliverClient struct {
 }
 
 func newDeliverGroup(deliverClients []api.PeerDeliverClient, peerAddresses []string, certificate tls.Certificate, channelID string, txid string) *deliverGroup {
-	fmt.Println("=============newDeliverGroup==================")
+	logger.Info("=============newDeliverGroup==================")
 	clients := make([]*deliverClient, len(deliverClients))
 	for i, client := range deliverClients {
 		dc := &deliverClient{
@@ -699,7 +699,7 @@ func newDeliverGroup(deliverClients []api.PeerDeliverClient, peerAddresses []str
 // to timeout. An error will be returned whenever even a single
 // deliver client fails to connect to its peer
 func (dg *deliverGroup) Connect(ctx context.Context) error {
-	fmt.Println("=========deliverGroup====Connect==================")
+	logger.Info("=========deliverGroup====Connect==================")
 	dg.wg.Add(len(dg.Clients))
 	for _, client := range dg.Clients {
 		go dg.ClientConnect(ctx, client)
@@ -725,7 +725,7 @@ func (dg *deliverGroup) Connect(ctx context.Context) error {
 // provided deliver client, setting the deliverGroup's Error
 // field upon any error
 func (dg *deliverGroup) ClientConnect(ctx context.Context, dc *deliverClient) {
-	fmt.Println("=========deliverGroup====ClientConnect==================")
+	logger.Info("=========deliverGroup====ClientConnect==================")
 	defer dg.wg.Done()
 	df, err := dc.Client.DeliverFiltered(ctx)
 	if err != nil {
@@ -749,7 +749,7 @@ func (dg *deliverGroup) ClientConnect(ctx context.Context, dc *deliverClient) {
 // either receive a block with the txid, an error, or for the
 // context to timeout
 func (dg *deliverGroup) Wait(ctx context.Context) error {
-	fmt.Println("=========deliverGroup====Wait==================")
+	logger.Info("=========deliverGroup====Wait==================")
 	if len(dg.Clients) == 0 {
 		return nil
 	}
@@ -778,7 +778,7 @@ func (dg *deliverGroup) Wait(ctx context.Context) error {
 // ClientWait waits for the specified deliver client to receive
 // a block event with the requested txid
 func (dg *deliverGroup) ClientWait(dc *deliverClient) {
-	fmt.Println("=========deliverGroup====ClientWait==================")
+	logger.Info("=========deliverGroup====ClientWait==================")
 	defer dg.wg.Done()
 	for {
 		resp, err := dc.Connection.Recv()
@@ -811,21 +811,21 @@ func (dg *deliverGroup) ClientWait(dc *deliverClient) {
 // WaitForWG waits for the deliverGroup's wait group and closes
 // the channel when ready
 func (dg *deliverGroup) WaitForWG(readyCh chan struct{}) {
-	fmt.Println("=========deliverGroup====WaitForWG==================")
+	logger.Info("=========deliverGroup====WaitForWG==================")
 	dg.wg.Wait()
 	close(readyCh)
 }
 
 // setError serializes an error for the deliverGroup
 func (dg *deliverGroup) setError(err error) {
-	fmt.Println("=========deliverGroup====setError==================")
+	logger.Info("=========deliverGroup====setError==================")
 	dg.mutex.Lock()
 	dg.Error = err
 	dg.mutex.Unlock()
 }
 
 func createDeliverEnvelope(channelID string, certificate tls.Certificate) *pcommon.Envelope {
-	fmt.Println("========createDeliverEnvelope================")
+	logger.Info("========createDeliverEnvelope================")
 	var tlsCertHash []byte
 	// check for client certificate and create hash if present
 	if len(certificate.Certificate) > 0 {

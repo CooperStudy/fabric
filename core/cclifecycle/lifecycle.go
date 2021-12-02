@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package cc
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/hyperledger/fabric/common/chaincode"
@@ -19,7 +18,7 @@ import (
 var (
 	// Logger is the logging instance for this package.
 	// It's exported because the tests override its backend
-	Logger = flogging.MustGetLogger("discovery.lifecycle")
+	logger = flogging.MustGetLogger("discovery.lifecycle")
 )
 
 // Lifecycle manages information regarding chaincode lifecycle
@@ -45,7 +44,7 @@ type HandleMetadataUpdate func(channel string, chaincodes chaincode.MetadataSet)
 // LifeCycleChangeListener runs whenever there is a change to the metadata
 // // of a chaincode in the context of a specific channel
 func (mdUpdate HandleMetadataUpdate) LifeCycleChangeListener(channel string, chaincodes chaincode.MetadataSet) {
-	fmt.Println("===HandleMetadataUpdate==LifeCycleChangeListener==")
+	logger.Info("===HandleMetadataUpdate==LifeCycleChangeListener==")
 	mdUpdate(channel, chaincodes)
 }
 
@@ -62,7 +61,7 @@ type Enumerate func() ([]chaincode.InstalledChaincode, error)
 
 // Enumerate enumerates chaincodes
 func (listCCs Enumerate) Enumerate() ([]chaincode.InstalledChaincode, error) {
-	fmt.Println("===Enumerate==Enumerate==")
+	logger.Info("===Enumerate==Enumerate==")
 	return listCCs()
 }
 
@@ -90,13 +89,13 @@ type QueryCreatorFunc func() (Query, error)
 
 // NewQuery creates a new Query, or error on failure
 func (qc QueryCreatorFunc) NewQuery() (Query, error) {
-	fmt.Println("===QueryCreatorFunc==NewQuery==")
+	logger.Info("===QueryCreatorFunc==NewQuery==")
 	return qc()
 }
 
 // NewLifeCycle creates a new Lifecycle instance
 func NewLifeCycle(installedChaincodes Enumerator) (*Lifecycle, error) {
-	fmt.Println("===NewLifeCycle==NewLifeCycle==")
+	logger.Info("===NewLifeCycle==NewLifeCycle==")
 	installedCCs, err := installedChaincodes.Enumerate()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed listing installed chaincodes")
@@ -114,30 +113,30 @@ func NewLifeCycle(installedChaincodes Enumerator) (*Lifecycle, error) {
 // Metadata returns the metadata of the chaincode on the given channel,
 // or nil if not found or an error occurred at retrieving it
 func (lc *Lifecycle) Metadata(channel string, cc string, collections bool) *chaincode.Metadata {
-	fmt.Println("===Lifecycle==Metadata==")
+	logger.Info("===Lifecycle==Metadata==")
 	queryCreator := lc.queryCreatorsByChannel[channel]
 	if queryCreator == nil {
-		Logger.Warning("Requested Metadata for non-existent channel", channel)
+		logger.Warning("Requested Metadata for non-existent channel", channel)
 		return nil
 	}
 	// Search the metadata in our local cache, and if it exists - return it, but only if
 	// no collections were specified in the invocation.
 	if md, found := lc.deployedCCsByChannel[channel].Lookup(cc); found && !collections {
-		Logger.Debug("Returning metadata for channel", channel, ", chaincode", cc, ":", md)
+		logger.Debug("Returning metadata for channel", channel, ", chaincode", cc, ":", md)
 		return &md
 	}
 	query, err := queryCreator.NewQuery()
 	if err != nil {
-		Logger.Error("Failed obtaining new query for channel", channel, ":", err)
+		logger.Error("Failed obtaining new query for channel", channel, ":", err)
 		return nil
 	}
 	md, err := DeployedChaincodes(query, AcceptAll, collections, cc)
 	if err != nil {
-		Logger.Error("Failed querying LSCC for channel", channel, ":", err)
+		logger.Error("Failed querying LSCC for channel", channel, ":", err)
 		return nil
 	}
 	if len(md) == 0 {
-		Logger.Info("Chaincode", cc, "isn't defined in channel", channel)
+		logger.Info("Chaincode", cc, "isn't defined in channel", channel)
 		return nil
 	}
 
@@ -145,7 +144,7 @@ func (lc *Lifecycle) Metadata(channel string, cc string, collections bool) *chai
 }
 
 func (lc *Lifecycle) initMetadataForChannel(channel string, queryCreator QueryCreator) error {
-	fmt.Println("===Lifecycle==initMetadataForChannel==")
+	logger.Info("===Lifecycle==initMetadataForChannel==")
 	if lc.isChannelMetadataInitialized(channel) {
 		return nil
 	}
@@ -164,7 +163,7 @@ func (lc *Lifecycle) initMetadataForChannel(channel string, queryCreator QueryCr
 }
 
 func (lc *Lifecycle) createMetadataForChannel(channel string, newQuery QueryCreator) {
-	fmt.Println("===Lifecycle==createMetadataForChannel==")
+	logger.Info("===Lifecycle==createMetadataForChannel==")
 	lc.Lock()
 	defer lc.Unlock()
 	lc.deployedCCsByChannel[channel] = chaincode.NewMetadataMapping()
@@ -172,7 +171,7 @@ func (lc *Lifecycle) createMetadataForChannel(channel string, newQuery QueryCrea
 }
 
 func (lc *Lifecycle) isChannelMetadataInitialized(channel string) bool {
-	fmt.Println("===Lifecycle==isChannelMetadataInitialized==")
+	logger.Info("===Lifecycle==isChannelMetadataInitialized==")
 	lc.RLock()
 	defer lc.RUnlock()
 	_, exists := lc.deployedCCsByChannel[channel]
@@ -180,7 +179,7 @@ func (lc *Lifecycle) isChannelMetadataInitialized(channel string) bool {
 }
 
 func (lc *Lifecycle) updateState(channel string, ccUpdate chaincode.MetadataSet) {
-	fmt.Println("===Lifecycle==updateState==")
+	logger.Info("===Lifecycle==updateState==")
 	lc.RLock()
 	defer lc.RUnlock()
 	for _, cc := range ccUpdate {
@@ -189,7 +188,7 @@ func (lc *Lifecycle) updateState(channel string, ccUpdate chaincode.MetadataSet)
 }
 
 func (lc *Lifecycle) fireChangeListeners(channel string) {
-	fmt.Println("===Lifecycle==fireChangeListeners==")
+	logger.Info("===Lifecycle==fireChangeListeners==")
 	lc.RLock()
 	md := lc.deployedCCsByChannel[channel]
 	lc.RUnlock()
@@ -197,12 +196,12 @@ func (lc *Lifecycle) fireChangeListeners(channel string) {
 		aggregatedMD := md.Aggregate()
 		listener.LifeCycleChangeListener(channel, aggregatedMD)
 	}
-	Logger.Debug("Listeners for channel", channel, "invoked")
+	logger.Debug("Listeners for channel", channel, "invoked")
 }
 
 // NewChannelSubscription subscribes to a channel
 func (lc *Lifecycle) NewChannelSubscription(channel string, queryCreator QueryCreator) (*Subscription, error) {
-	fmt.Println("===Lifecycle==NewChannelSubscription==")
+	logger.Info("===Lifecycle==NewChannelSubscription==")
 	sub := &Subscription{
 		lc:             lc,
 		channel:        channel,
@@ -220,7 +219,7 @@ func (lc *Lifecycle) NewChannelSubscription(channel string, queryCreator QueryCr
 
 // AddListener registers the given listener to be triggered upon a lifecycle change
 func (lc *Lifecycle) AddListener(listener LifeCycleChangeListener) {
-	fmt.Println("===Lifecycle==AddListener==")
+	logger.Info("===Lifecycle==AddListener==")
 	lc.Lock()
 	defer lc.Unlock()
 	lc.listeners = append(lc.listeners, listener)

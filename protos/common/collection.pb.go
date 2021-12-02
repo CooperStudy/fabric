@@ -106,7 +106,7 @@ type CollectionConfig_StaticCollectionConfig struct {
 func (*CollectionConfig_StaticCollectionConfig) isCollectionConfig_Payload() {}
 
 func (m *CollectionConfig) GetPayload() isCollectionConfig_Payload {
-	fmt.Println("======CollectionConfig======GetPayload===========")
+	logger.Info("======CollectionConfig======GetPayload===========")
 	if m != nil {
 		return m.Payload
 	}
@@ -114,7 +114,7 @@ func (m *CollectionConfig) GetPayload() isCollectionConfig_Payload {
 }
 
 func (m *CollectionConfig) GetStaticCollectionConfig() *StaticCollectionConfig {
-	fmt.Println("======CollectionConfig======GetStaticCollectionConfig===========")
+	logger.Info("======CollectionConfig======GetStaticCollectionConfig===========")
 	if x, ok := m.GetPayload().(*CollectionConfig_StaticCollectionConfig); ok {
 		return x.StaticCollectionConfig
 	}
@@ -129,7 +129,7 @@ func (*CollectionConfig) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buff
 }
 
 func _CollectionConfig_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	fmt.Println("======_CollectionConfig_OneofMarshaler===========")
+	logger.Info("======_CollectionConfig_OneofMarshaler===========")
 	m := msg.(*CollectionConfig)
 	// payload
 	switch x := m.Payload.(type) {
@@ -146,7 +146,7 @@ func _CollectionConfig_OneofMarshaler(msg proto.Message, b *proto.Buffer) error 
 }
 
 func _CollectionConfig_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	fmt.Println("======_CollectionConfig_OneofUnmarshaler===========")
+	logger.Info("======_CollectionConfig_OneofUnmarshaler===========")
 	m := msg.(*CollectionConfig)
 	switch tag {
 	case 1: // payload.static_collection_config
@@ -163,7 +163,7 @@ func _CollectionConfig_OneofUnmarshaler(msg proto.Message, tag, wire int, b *pro
 }
 
 func _CollectionConfig_OneofSizer(msg proto.Message) (n int) {
-	fmt.Println("======_CollectionConfig_OneofSizer===========")
+	logger.Info("======_CollectionConfig_OneofSizer===========")
 	m := msg.(*CollectionConfig)
 	// payload
 	switch x := m.Payload.(type) {
@@ -235,7 +235,7 @@ func (m *StaticCollectionConfig) XXX_DiscardUnknown() {
 var xxx_messageInfo_StaticCollectionConfig proto.InternalMessageInfo
 
 func (m *StaticCollectionConfig) GetName() string {
-	fmt.Println("======StaticCollectionConfig====GetName=======")
+	logger.Info("======StaticCollectionConfig====GetName=======")
 	if m != nil {
 		return m.Name
 	}
@@ -243,7 +243,7 @@ func (m *StaticCollectionConfig) GetName() string {
 }
 
 func (m *StaticCollectionConfig) GetMemberOrgsPolicy() *CollectionPolicyConfig {
-	fmt.Println("======StaticCollectionConfig====GetMemberOrgsPolicy=======")
+	logger.Info("======StaticCollectionConfig====GetMemberOrgsPolicy=======")
 	if m != nil {
 		return m.MemberOrgsPolicy
 	}
@@ -251,7 +251,7 @@ func (m *StaticCollectionConfig) GetMemberOrgsPolicy() *CollectionPolicyConfig {
 }
 
 func (m *StaticCollectionConfig) GetRequiredPeerCount() int32 {
-	fmt.Println("======StaticCollectionConfig====GetRequiredPeerCount=======")
+	logger.Info("======StaticCollectionConfig====GetRequiredPeerCount=======")
 	if m != nil {
 		return m.RequiredPeerCount
 	}
@@ -259,7 +259,7 @@ func (m *StaticCollectionConfig) GetRequiredPeerCount() int32 {
 }
 
 func (m *StaticCollectionConfig) GetMaximumPeerCount() int32 {
-	fmt.Println("======StaticCollectionConfig====GetMaximumPeerCount=======")
+	logger.Info("======StaticCollectionConfig====GetMaximumPeerCount=======")
 	if m != nil {
 		return m.MaximumPeerCount
 	}
@@ -267,7 +267,7 @@ func (m *StaticCollectionConfig) GetMaximumPeerCount() int32 {
 }
 
 func (m *StaticCollectionConfig) GetBlockToLive() uint64 {
-	fmt.Println("======StaticCollectionConfig====GetBlockToLive=======")
+	logger.Info("======StaticCollectionConfig====GetBlockToLive=======")
 	if m != nil {
 		return m.BlockToLive
 	}
@@ -275,7 +275,7 @@ func (m *StaticCollectionConfig) GetBlockToLive() uint64 {
 }
 
 func (m *StaticCollectionConfig) GetMemberOnlyRead() bool {
-	fmt.Println("======StaticCollectionConfig====GetMemberOnlyRead=======")
+	logger.Info("======StaticCollectionConfig====GetMemberOnlyRead=======")
 	if m != nil {
 		return m.MemberOnlyRead
 	}
@@ -330,7 +330,7 @@ type CollectionPolicyConfig_SignaturePolicy struct {
 func (*CollectionPolicyConfig_SignaturePolicy) isCollectionPolicyConfig_Payload() {}
 
 func (m *CollectionPolicyConfig) GetPayload() isCollectionPolicyConfig_Payload {
-	fmt.Println("=====CollectionPolicyConfig=======")
+	logger.Info("=====CollectionPolicyConfig=======")
 	if m != nil {
 		return m.Payload
 	}
@@ -338,7 +338,7 @@ func (m *CollectionPolicyConfig) GetPayload() isCollectionPolicyConfig_Payload {
 }
 
 func (m *CollectionPolicyConfig) GetSignaturePolicy() *SignaturePolicyEnvelope {
-	fmt.Println("=====CollectionPolicyConfig====GetSignaturePolicy===")
+	logger.Info("=====CollectionPolicyConfig====GetSignaturePolicy===")
 	if x, ok := m.GetPayload().(*CollectionPolicyConfig_SignaturePolicy); ok {
 		return x.SignaturePolicy
 	}
@@ -353,7 +353,7 @@ func (*CollectionPolicyConfig) XXX_OneofFuncs() (func(msg proto.Message, b *prot
 }
 
 func _CollectionPolicyConfig_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	fmt.Println("=====_CollectionPolicyConfig_OneofMarshaler==")
+	logger.Info("=====_CollectionPolicyConfig_OneofMarshaler==")
 	m := msg.(*CollectionPolicyConfig)
 	// payload
 	switch x := m.Payload.(type) {
@@ -370,7 +370,7 @@ func _CollectionPolicyConfig_OneofMarshaler(msg proto.Message, b *proto.Buffer) 
 }
 
 func _CollectionPolicyConfig_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	fmt.Println("=====_CollectionPolicyConfig_OneofUnmarshaler==")
+	logger.Info("=====_CollectionPolicyConfig_OneofUnmarshaler==")
 	m := msg.(*CollectionPolicyConfig)
 	switch tag {
 	case 1: // payload.signature_policy
@@ -387,7 +387,7 @@ func _CollectionPolicyConfig_OneofUnmarshaler(msg proto.Message, tag, wire int, 
 }
 
 func _CollectionPolicyConfig_OneofSizer(msg proto.Message) (n int) {
-	fmt.Println("=====_CollectionPolicyConfig_OneofSizer==")
+	logger.Info("=====_CollectionPolicyConfig_OneofSizer==")
 	m := msg.(*CollectionPolicyConfig)
 	// payload
 	switch x := m.Payload.(type) {
@@ -440,7 +440,7 @@ func (m *CollectionCriteria) XXX_DiscardUnknown() {
 var xxx_messageInfo_CollectionCriteria proto.InternalMessageInfo
 
 func (m *CollectionCriteria) GetChannel() string {
-	fmt.Println("=====CollectionCriteria==GetChannel==")
+	logger.Info("=====CollectionCriteria==GetChannel==")
 	if m != nil {
 		return m.Channel
 	}
@@ -448,7 +448,7 @@ func (m *CollectionCriteria) GetChannel() string {
 }
 
 func (m *CollectionCriteria) GetTxId() string {
-	fmt.Println("=====CollectionCriteria==GetTxId==")
+	logger.Info("=====CollectionCriteria==GetTxId==")
 	if m != nil {
 		return m.TxId
 	}
@@ -456,7 +456,7 @@ func (m *CollectionCriteria) GetTxId() string {
 }
 
 func (m *CollectionCriteria) GetCollection() string {
-	fmt.Println("=====CollectionCriteria==GetCollection==")
+	logger.Info("=====CollectionCriteria==GetCollection==")
 	if m != nil {
 		return m.Collection
 	}
@@ -464,7 +464,7 @@ func (m *CollectionCriteria) GetCollection() string {
 }
 
 func (m *CollectionCriteria) GetNamespace() string {
-	fmt.Println("=====CollectionCriteria==GetNamespace==")
+	logger.Info("=====CollectionCriteria==GetNamespace==")
 	if m != nil {
 		return m.Namespace
 	}

@@ -28,19 +28,19 @@ type hasher struct {
 }
 
 func (c *hasher) Hash(msg []byte, opts bccsp.HashOpts) ([]byte, error) {
-	//fmt.Println("===hasher==Hash==")
+	//logger.Info("===hasher==Hash==")
 	h := c.hash()
-	//fmt.Println("===h",h)
+	//logger.Info("===h",h)
 	//fmt.Printf("===h type:%T==\n",h)//*sha256.digest
-	//fmt.Println("===msg",msg)//[48 130 2 58 48 130
-	//fmt.Println("===opts",opts)//=&{}
+	//logger.Info("===msg",msg)//[48 130 2 58 48 130
+	//logger.Info("===opts",opts)//=&{}
 	h.Write(msg)
 	b:= h.Sum(nil)
-	//fmt.Println("=======h.Sum(nil)=====",b)
+	//logger.Info("=======h.Sum(nil)=====",b)
 	return b,nil
 }
 
 func (c *hasher) GetHash(opts bccsp.HashOpts) (hash.Hash, error) {
-	fmt.Println("===hasher==GetHash==")
+	logger.Info("===hasher==GetHash==")
 	return c.hash(), nil
 }

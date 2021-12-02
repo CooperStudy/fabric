@@ -1042,18 +1042,18 @@ type chaincodeSupportRegisterClient struct {
 }
 
 func (x *chaincodeSupportRegisterClient) Send(m *ChaincodeMessage) error {
-	fmt.Println("===============func (x *chaincodeSupportRegisterClient) Send(m *ChaincodeMessage) error ===============")
-	fmt.Println("============ChaincodeMessage==========",m)
-	fmt.Println("===============grpc x.ClientStream.SendMsg(m)==============")
+	logger.Info("===============func (x *chaincodeSupportRegisterClient) Send(m *ChaincodeMessage) error ===============")
+	logger.Info("============ChaincodeMessage==========",m)
+	logger.Info("===============grpc x.ClientStream.SendMsg(m)==============")
 	return x.ClientStream.SendMsg(m)
 }
 
 func (x *chaincodeSupportRegisterClient) Recv() (*ChaincodeMessage, error) {
-	fmt.Println("========================func (x *chaincodeSupportRegisterClient) Recv() (*ChaincodeMessage, error) {=======================================")
+	logger.Info("========================func (x *chaincodeSupportRegisterClient) Recv() (*ChaincodeMessage, error) {=======================================")
 	m := new(ChaincodeMessage)
-	fmt.Println("===============grpc x.ClientStream.RecvMsg(m)==============")
+	logger.Info("===============grpc x.ClientStream.RecvMsg(m)==============")
 	 err := x.ClientStream.RecvMsg(m)
-	 fmt.Println("====================m",m)
+	 logger.Info("====================m",m)
 	 if err != nil {
 		return nil, err
 	}

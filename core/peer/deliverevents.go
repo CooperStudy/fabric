@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package peer
 
 import (
-	"fmt"
 	"runtime/debug"
 	"time"
 
@@ -43,7 +42,7 @@ type blockResponseSender struct {
 
 // SendStatusResponse generates status reply proto message
 func (brs *blockResponseSender) SendStatusResponse(status common.Status) error {
-	fmt.Println("====blockResponseSender==SendStatusResponse====")
+	logger.Info("====blockResponseSender==SendStatusResponse====")
 	reply := &peer.DeliverResponse{
 		Type: &peer.DeliverResponse_Status{Status: status},
 	}
@@ -52,7 +51,7 @@ func (brs *blockResponseSender) SendStatusResponse(status common.Status) error {
 
 // SendBlockResponse generates deliver response with block message
 func (brs *blockResponseSender) SendBlockResponse(block *common.Block) error {
-	fmt.Println("====blockResponseSender==SendBlockResponse====")
+	logger.Info("====blockResponseSender==SendBlockResponse====")
 	response := &peer.DeliverResponse{
 		Type: &peer.DeliverResponse_Block{Block: block},
 	}
@@ -66,7 +65,7 @@ type filteredBlockResponseSender struct {
 
 // SendStatusResponse generates status reply proto message
 func (fbrs *filteredBlockResponseSender) SendStatusResponse(status common.Status) error {
-	fmt.Println("====filteredBlockResponseSender==SendStatusResponse====")
+	logger.Info("====filteredBlockResponseSender==SendStatusResponse====")
 	response := &peer.DeliverResponse{
 		Type: &peer.DeliverResponse_Status{Status: status},
 	}
@@ -76,13 +75,13 @@ func (fbrs *filteredBlockResponseSender) SendStatusResponse(status common.Status
 // IsFiltered is a marker method which indicates that this response sender
 // sends filtered blocks.
 func (fbrs *filteredBlockResponseSender) IsFiltered() bool {
-	fmt.Println("====filteredBlockResponseSender==IsFiltered====")
+	logger.Info("====filteredBlockResponseSender==IsFiltered====")
 	return true
 }
 
 // SendBlockResponse generates deliver response with block message
 func (fbrs *filteredBlockResponseSender) SendBlockResponse(block *common.Block) error {
-	fmt.Println("====filteredBlockResponseSender==SendBlockResponse====")
+	logger.Info("====filteredBlockResponseSender==SendBlockResponse====")
 	// Generates filtered block response
 	b := blockEvent(*block)
 	filteredBlock, err := b.toFilteredBlock()
@@ -105,7 +104,7 @@ type blockEvent common.Block
 
 // Deliver sends a stream of blocks to a client after commitment
 func (s *server) DeliverFiltered(srv peer.Deliver_DeliverFilteredServer) error {
-	fmt.Println("====server==DeliverFiltered====")
+	logger.Info("====server==DeliverFiltered====")
 	logger.Debugf("Starting new DeliverFiltered handler")
 	defer dumpStacktraceOnPanic()
 	// getting policy checker based on resources.Event_FilteredBlock resource name
@@ -121,7 +120,7 @@ func (s *server) DeliverFiltered(srv peer.Deliver_DeliverFilteredServer) error {
 
 // Deliver sends a stream of blocks to a client after commitment
 func (s *server) Deliver(srv peer.Deliver_DeliverServer) (err error) {
-	fmt.Println("====server==Deliver====")
+	logger.Info("====server==Deliver====")
 	logger.Debugf("Starting new Deliver handler")
 	defer dumpStacktraceOnPanic()
 	// getting policy checker based on resources.Event_Block resource name
@@ -138,7 +137,7 @@ func (s *server) Deliver(srv peer.Deliver_DeliverServer) (err error) {
 // NewDeliverEventsServer creates a peer.Deliver server to deliver block and
 // filtered block events
 func NewDeliverEventsServer(mutualTLS bool, policyCheckerProvider PolicyCheckerProvider, chainManager deliver.ChainManager, metricsProvider metrics.Provider) peer.DeliverServer {
-	fmt.Println("===NewDeliverEventsServer====")
+	logger.Info("===NewDeliverEventsServer====")
 	timeWindow := viper.GetDuration("peer.authentication.timewindow")
 	if timeWindow == 0 {
 		defaultTimeWindow := 15 * time.Minute
@@ -153,7 +152,7 @@ func NewDeliverEventsServer(mutualTLS bool, policyCheckerProvider PolicyCheckerP
 }
 
 func (s *server) sendProducer(srv peer.Deliver_DeliverFilteredServer) func(msg proto.Message) error {
-	fmt.Println("===server===sendProducer===")
+	logger.Info("===server===sendProducer===")
 	return func(msg proto.Message) error {
 		response, ok := msg.(*peer.DeliverResponse)
 		if !ok {
@@ -165,7 +164,7 @@ func (s *server) sendProducer(srv peer.Deliver_DeliverFilteredServer) func(msg p
 }
 
 func (block *blockEvent) toFilteredBlock() (*peer.FilteredBlock, error) {
-	fmt.Println("===blockEvent===toFilteredBlock===")
+	logger.Info("===blockEvent===toFilteredBlock===")
 	filteredBlock := &peer.FilteredBlock{
 		Number: block.Header.Number,
 	}
@@ -231,7 +230,7 @@ func (block *blockEvent) toFilteredBlock() (*peer.FilteredBlock, error) {
 }
 
 func (ta transactionActions) toFilteredActions() (*peer.FilteredTransaction_TransactionActions, error) {
-	fmt.Println("===transactionActions===toFilteredActions===")
+	logger.Info("===transactionActions===toFilteredActions===")
 	transactionActions := &peer.FilteredTransactionActions{}
 	for _, action := range ta {
 		chaincodeActionPayload, err := utils.GetChaincodeActionPayload(action.Payload)
@@ -275,7 +274,7 @@ func (ta transactionActions) toFilteredActions() (*peer.FilteredTransaction_Tran
 }
 
 func dumpStacktraceOnPanic() {
-	fmt.Println("===dumpStacktraceOnPanic===")
+	logger.Info("===dumpStacktraceOnPanic===")
 	func() {
 		if r := recover(); r != nil {
 			logger.Criticalf("Deliver client triggered panic: %s\n%s", r, debug.Stack())

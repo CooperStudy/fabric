@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package privdata
 
 import (
-	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"strings"
 
 	"github.com/hyperledger/fabric/core/ledger"
@@ -15,6 +15,7 @@ import (
 	pb "github.com/hyperledger/fabric/protos/peer"
 )
 
+var logger = flogging.MustGetLogger("core.common.privdata")
 // Collection defines a common interface for collections
 type Collection interface {
 	// SetTxContext configures the tx-specific ephemeral collection info, such
@@ -130,21 +131,21 @@ const (
 
 // BuildCollectionKVSKey constructs the collection config key for a given chaincode name
 func BuildCollectionKVSKey(ccname string) string {
-	fmt.Println("==BuildCollectionKVSKey==")
+	logger.Info("==BuildCollectionKVSKey==")
 	a:= ccname + collectionSeparator + collectionSuffix
-	fmt.Println("==============a",a)
+	logger.Info("==============a",a)
 	return a
 }
 
 // IsCollectionConfigKey detects if a key is a collection key
 func IsCollectionConfigKey(key string) bool {
-	fmt.Println("==IsCollectionConfigKey==")
+	logger.Info("==IsCollectionConfigKey==")
 	return strings.Contains(key, collectionSeparator)
 }
 
 // GetCCNameFromCollectionConfigKey returns the chaincode name given a collection config key
 func GetCCNameFromCollectionConfigKey(key string) string {
-	fmt.Println("==GetCCNameFromCollectionConfigKey==")
+	logger.Info("==GetCCNameFromCollectionConfigKey==")
 	splittedKey := strings.Split(key, collectionSeparator)
 	return splittedKey[0]
 }

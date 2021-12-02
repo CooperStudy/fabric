@@ -16,8 +16,6 @@ limitations under the License.
 
 package bccsp
 
-import "fmt"
-
 // ECDSAP256KeyGenOpts contains options for ECDSA key generation with curve P-256.
 type ECDSAP256KeyGenOpts struct {
 	Temporary bool
@@ -25,14 +23,14 @@ type ECDSAP256KeyGenOpts struct {
 
 // Algorithm returns the key generation algorithm identifier (to be used).
 func (opts *ECDSAP256KeyGenOpts) Algorithm() string {
-	fmt.Println("===ECDSAP256KeyGenOpts==Algorithm====")
+	//logger.Info("===ECDSAP256KeyGenOpts==Algorithm====")
 	return ECDSAP256
 }
 
 // Ephemeral returns true if the key to generate has to be ephemeral,
 // false otherwise.
 func (opts *ECDSAP256KeyGenOpts) Ephemeral() bool {
-	fmt.Println("===ECDSAP256KeyGenOpts==Ephemeral====")
+	//logger.Info("===ECDSAP256KeyGenOpts==Ephemeral====")
 	return opts.Temporary
 }
 
@@ -43,13 +41,13 @@ type ECDSAP384KeyGenOpts struct {
 
 // Algorithm returns the key generation algorithm identifier (to be used).
 func (opts *ECDSAP384KeyGenOpts) Algorithm() string {
-	fmt.Println("===ECDSAP384KeyGenOpts==Algorithm====")
+	//logger.Info("===ECDSAP384KeyGenOpts==Algorithm====")
 	return ECDSAP384
 }
 
 // Ephemeral returns true if the key to generate has to be ephemeral,
 // false otherwise.
 func (opts *ECDSAP384KeyGenOpts) Ephemeral() bool {
-	fmt.Println("===ECDSAP384KeyGenOpts==Ephemeral====")
+	//logger.Info("===ECDSAP384KeyGenOpts==Ephemeral====")
 	return opts.Temporary
 }

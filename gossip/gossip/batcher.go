@@ -36,7 +36,7 @@ type batchingEmitter interface {
 // latency: the maximum delay that each message can be stored without being forwarded
 // cb: a callback that is called in order for the forwarding to take place
 func newBatchingEmitter(iterations, burstSize int, latency time.Duration, cb emitBatchCallback) batchingEmitter {
-	//fmt.Println("====newBatchingEmitter===")
+	//logger.Info("====newBatchingEmitter===")
 	if iterations < 0 {
 		panic(errors.Errorf("Got a negative iterations number"))
 	}
@@ -59,7 +59,7 @@ func newBatchingEmitter(iterations, burstSize int, latency time.Duration, cb emi
 }
 
 func (p *batchingEmitterImpl) periodicEmit() {
-	//fmt.Println("====batchingEmitterImpl===periodicEmit==")
+	//logger.Info("====batchingEmitterImpl===periodicEmit==")
 	for !p.toDie() {
 		time.Sleep(p.delay)
 		p.lock.Lock()
@@ -77,36 +77,36 @@ func (p *batchingEmitterImpl) emit() {
 	}
 	msgs2beEmitted := make([]interface{}, len(p.buff))
 	for i, v := range p.buff {
-		//fmt.Println("=====i",i)
-		//fmt.Println("=====v",v)
+		//logger.Info("=====i",i)
+		//logger.Info("=====v",v)
 		msgs2beEmitted[i] = v.data
-		//fmt.Println("==v.data===",v.data)
+		//logger.Info("==v.data===",v.data)
 		//GossipMessage: tag:EMPTY alive_msg:<membership:<endpoint:"peer0.org1.example.com:7051" pki_id:"o$\242\205\020\032\336\250\3065\r\354\274\242\3071\360yx\243*\\\250v\303\362\314\247\265\263\340\220" > timestamp:<inc_num:1637029473266694744 seq_num:11 > > , Envelope: 83 bytes, Signature: 71 bytes Secret payload: 29 bytes, Secret Signature: 70 bytes
 	}
 
-	//fmt.Println("====msgs2beEmitted======",msgs2beEmitted)
+	//logger.Info("====msgs2beEmitted======",msgs2beEmitted)
 	p.cb(msgs2beEmitted)
 	p.decrementCounters()
 }
 
 func (p *batchingEmitterImpl) decrementCounters() {
-	//fmt.Println("====batchingEmitterImpl===decrementCounters==")
+	//logger.Info("====batchingEmitterImpl===decrementCounters==")
 	n := len(p.buff)
-	//fmt.Println("========n=========",n)
+	//logger.Info("========n=========",n)
 	for i := 0; i < n; i++ {
 		msg := p.buff[i]
 		msg.iterationsLeft--
-		//fmt.Println("=====msg============",msg)
-		//fmt.Println("=====msg.iterationsLeft============",msg.iterationsLeft)
-		//fmt.Println("+=====p.buff====",p.buff)
+		//logger.Info("=====msg============",msg)
+		//logger.Info("=====msg.iterationsLeft============",msg.iterationsLeft)
+		//logger.Info("+=====p.buff====",p.buff)
 		if msg.iterationsLeft == 0 {
-			//fmt.Println("=====msg.iterationsLeft=========",msg.iterationsLeft)
+			//logger.Info("=====msg.iterationsLeft=========",msg.iterationsLeft)
 			p.buff = append(p.buff[:i], p.buff[i+1:]...)
-			//fmt.Println("===========p.buff============",p.buff)
+			//logger.Info("===========p.buff============",p.buff)
 			n--
-			//fmt.Println("======n=======",n)
+			//logger.Info("======n=======",n)
 			i--
-			//fmt.Println("======i=======",i)
+			//logger.Info("======i=======",i)
 		}
 	}
 }
@@ -131,20 +131,20 @@ type batchedMessage struct {
 }
 
 func (p *batchingEmitterImpl) Stop() {
-	//fmt.Println("====batchingEmitterImpl===Stop==")
+	//logger.Info("====batchingEmitterImpl===Stop==")
 	atomic.StoreInt32(&(p.stopFlag), int32(1))
 }
 
 func (p *batchingEmitterImpl) Size() int {
-	//fmt.Println("====batchingEmitterImpl===Size==")
+	//logger.Info("====batchingEmitterImpl===Size==")
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	return len(p.buff)
 }
 
 func (p *batchingEmitterImpl) Add(message interface{}) {
-	//fmt.Println("====batchingEmitterImpl===Add==")
-	//fmt.Println("===message=====",message)
+	//logger.Info("====batchingEmitterImpl===Add==")
+	//logger.Info("===message=====",message)
 	if p.iterations == 0 {
 		return
 	}

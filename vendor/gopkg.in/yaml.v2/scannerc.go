@@ -616,9 +616,9 @@ func yaml_parser_set_scanner_tag_error(parser *yaml_parser_t, directive bool, co
 
 func trace(args ...interface{}) func() {
 	pargs := append([]interface{}{"+++"}, args...)
-	fmt.Println(pargs...)
+	logger.Info(pargs...)
 	pargs = append([]interface{}{"---"}, args...)
-	return func() { fmt.Println(pargs...) }
+	return func() { logger.Info(pargs...) }
 }
 
 // Ensure that the tokens queue contains at least one token which can be

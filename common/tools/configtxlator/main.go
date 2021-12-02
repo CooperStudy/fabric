@@ -63,7 +63,7 @@ var (
 var logger = flogging.MustGetLogger("configtxlator")
 
 func main() {
-	fmt.Println("========main========")
+	logger.Info("========main========")
 	kingpin.Version("0.0.1")
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
 	// "start" command
@@ -124,7 +124,7 @@ func startServer(address string, cors []string) {
 }
 
 func printVersion() {
-	fmt.Println(metadata.GetVersionInfo())
+	logger.Info(metadata.GetVersionInfo())
 }
 
 func encodeProto(msgName string, input, output *os.File) error {

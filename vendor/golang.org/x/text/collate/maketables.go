@@ -518,7 +518,7 @@ func testCollator(c *collate.Collator) {
 		}
 		buf.Reset()
 	}
-	fmt.Println("PASS")
+	logger.Info("PASS")
 }
 
 func main() {

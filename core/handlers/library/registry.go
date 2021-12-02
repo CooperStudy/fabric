@@ -78,7 +78,7 @@ type HandlerConfig struct {
 // InitRegistry creates the (only) instance
 // of the registry
 func InitRegistry(c Config) Registry {
-	fmt.Println("====InitRegistry====")
+	logger.Info("====InitRegistry====")
 	once.Do(func() {
 		reg = registry{
 			endorsers:  make(map[string]endorsement2.PluginFactory),
@@ -91,7 +91,7 @@ func InitRegistry(c Config) Registry {
 
 // loadHandlers loads the configured handlers
 func (r *registry) loadHandlers(c Config) {
-	fmt.Println("===registry=loadHandlers====")
+	logger.Info("===registry=loadHandlers====")
 	for _, config := range c.AuthFilters {
 		r.evaluateModeAndLoad(config, Auth)
 	}
@@ -110,7 +110,7 @@ func (r *registry) loadHandlers(c Config) {
 
 // evaluateModeAndLoad if a library path is provided, load the shared object
 func (r *registry) evaluateModeAndLoad(c *HandlerConfig, handlerType HandlerType, extraArgs ...string) {
-	fmt.Println("===registry=evaluateModeAndLoad====")
+	logger.Info("===registry=evaluateModeAndLoad====")
 	if c.Library != "" {
 		r.loadPlugin(c.Library, handlerType, extraArgs...)
 	} else {
@@ -120,7 +120,7 @@ func (r *registry) evaluateModeAndLoad(c *HandlerConfig, handlerType HandlerType
 
 // loadCompiled loads a statically compiled handler
 func (r *registry) loadCompiled(handlerFactory string, handlerType HandlerType, extraArgs ...string) {
-	fmt.Println("===registry=loadCompiled====")
+	logger.Info("===registry=loadCompiled====")
 	registryMD := reflect.ValueOf(&HandlerLibrary{})
 
 	o := registryMD.MethodByName(handlerFactory)
@@ -149,7 +149,7 @@ func (r *registry) loadCompiled(handlerFactory string, handlerType HandlerType, 
 
 // loadPlugin loads a pluggagle handler
 func (r *registry) loadPlugin(pluginPath string, handlerType HandlerType, extraArgs ...string) {
-	fmt.Println("===registry=loadPlugin====")
+	logger.Info("===registry=loadPlugin====")
 	if _, err := os.Stat(pluginPath); err != nil {
 		logger.Panicf(fmt.Sprintf("Could not find plugin at path %s: %s", pluginPath, err))
 	}
@@ -171,7 +171,7 @@ func (r *registry) loadPlugin(pluginPath string, handlerType HandlerType, extraA
 
 // initAuthPlugin constructs an auth filter from the given plugin
 func (r *registry) initAuthPlugin(p *plugin.Plugin) {
-	fmt.Println("===registry=initAuthPlugin====")
+	logger.Info("===registry=initAuthPlugin====")
 	constructorSymbol, err := p.Lookup(authPluginFactory)
 	if err != nil {
 		panicWithLookupError(authPluginFactory, err)
@@ -189,7 +189,7 @@ func (r *registry) initAuthPlugin(p *plugin.Plugin) {
 
 // initDecoratorPlugin constructs a decorator from the given plugin
 func (r *registry) initDecoratorPlugin(p *plugin.Plugin) {
-	fmt.Println("===registry=initDecoratorPlugin====")
+	logger.Info("===registry=initDecoratorPlugin====")
 	constructorSymbol, err := p.Lookup(decoratorPluginFactory)
 	if err != nil {
 		panicWithLookupError(decoratorPluginFactory, err)
@@ -205,7 +205,7 @@ func (r *registry) initDecoratorPlugin(p *plugin.Plugin) {
 }
 
 func (r *registry) initEndorsementPlugin(p *plugin.Plugin, extraArgs ...string) {
-	fmt.Println("===registry=initEndorsementPlugin====")
+	logger.Info("===registry=initEndorsementPlugin====")
 	if len(extraArgs) != 1 {
 		logger.Panicf("expected 1 argument in extraArgs")
 	}
@@ -226,7 +226,7 @@ func (r *registry) initEndorsementPlugin(p *plugin.Plugin, extraArgs ...string) 
 }
 
 func (r *registry) initValidationPlugin(p *plugin.Plugin, extraArgs ...string) {
-	fmt.Println("===registry=initValidationPlugin====")
+	logger.Info("===registry=initValidationPlugin====")
 	if len(extraArgs) != 1 {
 		logger.Panicf("expected 1 argument in extraArgs")
 	}
@@ -248,7 +248,7 @@ func (r *registry) initValidationPlugin(p *plugin.Plugin, extraArgs ...string) {
 
 // panicWithLookupError panics when a handler constructor lookup fails
 func panicWithLookupError(factory string, err error) {
-	fmt.Println("===panicWithLookupError====")
+	logger.Info("===panicWithLookupError====")
 	logger.Panicf(fmt.Sprintf("Plugin must contain constructor with name %s. Error from lookup: %s",
 		factory, err))
 }
@@ -256,7 +256,7 @@ func panicWithLookupError(factory string, err error) {
 // panicWithDefinitionError panics when a handler constructor does not match
 // the expected function definition
 func panicWithDefinitionError(factory string) {
-	fmt.Println("===panicWithDefinitionError====")
+	logger.Info("===panicWithDefinitionError====")
 	logger.Panicf(fmt.Sprintf("Constructor method %s does not match expected definition",
 		factory))
 }
@@ -264,21 +264,21 @@ func panicWithDefinitionError(factory string) {
 // Lookup returns a list of handlers with the given
 // given type, or nil if none exist
 func (r *registry) Lookup(handlerType HandlerType) interface{} {
-	fmt.Println("===registry==Lookup==")
+	logger.Info("===registry==Lookup==")
 	if handlerType == Auth {
-		fmt.Println("=======handlerType == Auth====")
+		logger.Info("=======handlerType == Auth====")
 		return r.filters
 	} else if handlerType == Decoration {
 		/*
 		安装链码走这里
 		 */
-		fmt.Println("=======handlerType == Decoration====")
+		logger.Info("=======handlerType == Decoration====")
 		return r.decorators
 	} else if handlerType == Endorsement {
-		fmt.Println("=======handlerType == Endorsement====")
+		logger.Info("=======handlerType == Endorsement====")
 		return r.endorsers
 	} else if handlerType == Validation {
-		fmt.Println("=======handlerType == Validation====")
+		logger.Info("=======handlerType == Validation====")
 		return r.validators
 	}
 

@@ -16,7 +16,6 @@ limitations under the License.
 package shim
 
 import (
-	"fmt"
 	pb "github.com/hyperledger/fabric/protos/peer"
 )
 
@@ -33,7 +32,7 @@ const (
 )
 
 func Success(payload []byte) pb.Response {
-	fmt.Println("=======Success=========")
+	logger.Info("=======Success=========")
 	return pb.Response{
 		Status:  OK,
 		Payload: payload,
@@ -41,7 +40,7 @@ func Success(payload []byte) pb.Response {
 }
 
 func Error(msg string) pb.Response {
-	fmt.Println("=======Error=========")
+	logger.Info("=======Error=========")
 	return pb.Response{
 		Status:  ERROR,
 		Message: msg,

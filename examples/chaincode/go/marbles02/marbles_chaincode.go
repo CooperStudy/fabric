@@ -123,7 +123,7 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 // ========================================
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	function, args := stub.GetFunctionAndParameters()
-	fmt.Println("invoke is running " + function)
+	logger.Info("invoke is running " + function)
 
 	// Handle different functions
 	if function == "initMarble" { //create a new marble
@@ -150,7 +150,7 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return t.queryMarblesWithPagination(stub, args)
 	}
 
-	fmt.Println("invoke did not find func: " + function) //error
+	logger.Info("invoke did not find func: " + function) //error
 	return shim.Error("Received unknown function invocation")
 }
 
@@ -167,7 +167,7 @@ func (t *SimpleChaincode) initMarble(stub shim.ChaincodeStubInterface, args []st
 	}
 
 	// ==== Input sanitation ====
-	fmt.Println("- start init marble")
+	logger.Info("- start init marble")
 	if len(args[0]) <= 0 {
 		return shim.Error("1st argument must be a non-empty string")
 	}
@@ -193,7 +193,7 @@ func (t *SimpleChaincode) initMarble(stub shim.ChaincodeStubInterface, args []st
 	if err != nil {
 		return shim.Error("Failed to get marble: " + err.Error())
 	} else if marbleAsBytes != nil {
-		fmt.Println("This marble already exists: " + marbleName)
+		logger.Info("This marble already exists: " + marbleName)
 		return shim.Error("This marble already exists: " + marbleName)
 	}
 
@@ -230,7 +230,7 @@ func (t *SimpleChaincode) initMarble(stub shim.ChaincodeStubInterface, args []st
 	stub.PutState(colorNameIndexKey, value)
 
 	// ==== Marble saved and indexed. Return success ====
-	fmt.Println("- end init marble")
+	logger.Info("- end init marble")
 	return shim.Success(nil)
 }
 
@@ -318,7 +318,7 @@ func (t *SimpleChaincode) transferMarble(stub shim.ChaincodeStubInterface, args 
 
 	marbleName := args[0]
 	newOwner := strings.ToLower(args[1])
-	fmt.Println("- start transferMarble ", marbleName, newOwner)
+	logger.Info("- start transferMarble ", marbleName, newOwner)
 
 	marbleAsBytes, err := stub.GetState(marbleName)
 	if err != nil {
@@ -340,7 +340,7 @@ func (t *SimpleChaincode) transferMarble(stub shim.ChaincodeStubInterface, args 
 		return shim.Error(err.Error())
 	}
 
-	fmt.Println("- end transferMarble (success)")
+	logger.Info("- end transferMarble (success)")
 	return shim.Success(nil)
 }
 
@@ -451,7 +451,7 @@ func (t *SimpleChaincode) transferMarblesBasedOnColor(stub shim.ChaincodeStubInt
 
 	color := args[0]
 	newOwner := strings.ToLower(args[1])
-	fmt.Println("- start transferMarblesBasedOnColor ", color, newOwner)
+	logger.Info("- start transferMarblesBasedOnColor ", color, newOwner)
 
 	// Query the color~name index by color
 	// This will execute a key range query on all keys starting with 'color'
@@ -489,7 +489,7 @@ func (t *SimpleChaincode) transferMarblesBasedOnColor(stub shim.ChaincodeStubInt
 	}
 
 	responsePayload := fmt.Sprintf("Transferred %d %s marbles to %s", i, color, newOwner)
-	fmt.Println("- end transferMarblesBasedOnColor: " + responsePayload)
+	logger.Info("- end transferMarblesBasedOnColor: " + responsePayload)
 	return shim.Success([]byte(responsePayload))
 }
 

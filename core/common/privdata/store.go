@@ -37,7 +37,7 @@ type State interface {
 type NoSuchCollectionError common.CollectionCriteria
 
 func (f NoSuchCollectionError) Error() string {
-	fmt.Println("==NoSuchCollectionError==Error==")
+	logger.Info("==NoSuchCollectionError==Error==")
 	return fmt.Sprintf("collection %s/%s/%s could not be found", f.Channel, f.Namespace, f.Collection)
 }
 
@@ -50,12 +50,12 @@ type simpleCollectionStore struct {
 // an internal name formed as specified by the supplied
 // collectionNamer function
 func NewSimpleCollectionStore(s Support) CollectionStore {
-	fmt.Println("==NewSimpleCollectionStore==")
+	logger.Info("==NewSimpleCollectionStore==")
 	return &simpleCollectionStore{s}
 }
 
 func (c *simpleCollectionStore) retrieveCollectionConfigPackage(cc common.CollectionCriteria, qe ledger.QueryExecutor) (*common.CollectionConfigPackage, error) {
-	fmt.Println("==simpleCollectionStore==retrieveCollectionConfigPackage==")
+	logger.Info("==simpleCollectionStore==retrieveCollectionConfigPackage==")
 	if qe != nil {
 		return RetrieveCollectionConfigPackageFromState(cc, qe)
 	}
@@ -70,7 +70,7 @@ func (c *simpleCollectionStore) retrieveCollectionConfigPackage(cc common.Collec
 
 // RetrieveCollectionConfigPackageFromState retrieves the collection config package from the given key from the given state
 func RetrieveCollectionConfigPackageFromState(cc common.CollectionCriteria, state State) (*common.CollectionConfigPackage, error) {
-	fmt.Println("==RetrieveCollectionConfigPackageFromState==")
+	logger.Info("==RetrieveCollectionConfigPackageFromState==")
 	cb, err := state.GetState("lscc", BuildCollectionKVSKey(cc.Namespace))
 	if err != nil {
 		return nil, errors.WithMessage(err, fmt.Sprintf("error while retrieving collection for collection criteria %#v", cc))
@@ -87,7 +87,7 @@ func RetrieveCollectionConfigPackageFromState(cc common.CollectionCriteria, stat
 
 // ParseCollectionConfig parses the collection configuration from the given serialized representation
 func ParseCollectionConfig(colBytes []byte) (*common.CollectionConfigPackage, error) {
-	fmt.Println("==ParseCollectionConfig==")
+	logger.Info("==ParseCollectionConfig==")
 	collections := &common.CollectionConfigPackage{}
 	err := proto.Unmarshal(colBytes, collections)
 	if err != nil {
@@ -98,7 +98,7 @@ func ParseCollectionConfig(colBytes []byte) (*common.CollectionConfigPackage, er
 }
 
 func (c *simpleCollectionStore) retrieveCollectionConfig(cc common.CollectionCriteria, qe ledger.QueryExecutor) (*common.StaticCollectionConfig, error) {
-	fmt.Println("==simpleCollectionStore==retrieveCollectionConfig==")
+	logger.Info("==simpleCollectionStore==retrieveCollectionConfig==")
 	collections, err := c.retrieveCollectionConfigPackage(cc, qe)
 	if err != nil {
 		return nil, err
@@ -120,7 +120,7 @@ func (c *simpleCollectionStore) retrieveCollectionConfig(cc common.CollectionCri
 }
 
 func (c *simpleCollectionStore) retrieveSimpleCollection(cc common.CollectionCriteria, qe ledger.QueryExecutor) (*SimpleCollection, error) {
-	fmt.Println("==simpleCollectionStore==retrieveSimpleCollection==")
+	logger.Info("==simpleCollectionStore==retrieveSimpleCollection==")
 	staticCollectionConfig, err := c.retrieveCollectionConfig(cc, qe)
 	if err != nil {
 		return nil, err
@@ -134,7 +134,7 @@ func (c *simpleCollectionStore) retrieveSimpleCollection(cc common.CollectionCri
 }
 
 func (c *simpleCollectionStore) AccessFilter(channelName string, collectionPolicyConfig *common.CollectionPolicyConfig) (Filter, error) {
-	fmt.Println("==simpleCollectionStore==AccessFilter==")
+	logger.Info("==simpleCollectionStore==AccessFilter==")
 	sc := &SimpleCollection{}
 	err := sc.setupAccessPolicy(collectionPolicyConfig, c.s.GetIdentityDeserializer(channelName))
 	if err != nil {
@@ -144,23 +144,23 @@ func (c *simpleCollectionStore) AccessFilter(channelName string, collectionPolic
 }
 
 func (c *simpleCollectionStore) RetrieveCollection(cc common.CollectionCriteria) (Collection, error) {
-	fmt.Println("==simpleCollectionStore==RetrieveCollection==")
+	logger.Info("==simpleCollectionStore==RetrieveCollection==")
 	return c.retrieveSimpleCollection(cc, nil)
 }
 
 func (c *simpleCollectionStore) RetrieveCollectionAccessPolicy(cc common.CollectionCriteria) (CollectionAccessPolicy, error) {
-	fmt.Println("==simpleCollectionStore==RetrieveCollectionAccessPolicy==")
+	logger.Info("==simpleCollectionStore==RetrieveCollectionAccessPolicy==")
 	return c.retrieveSimpleCollection(cc, nil)
 }
 
 func (c *simpleCollectionStore) RetrieveCollectionConfigPackage(cc common.CollectionCriteria) (*common.CollectionConfigPackage, error) {
-	fmt.Println("==simpleCollectionStore==RetrieveCollectionConfigPackage==")
+	logger.Info("==simpleCollectionStore==RetrieveCollectionConfigPackage==")
 	return c.retrieveCollectionConfigPackage(cc, nil)
 }
 
 // RetrieveCollectionPersistenceConfigs retrieves the collection's persistence related configurations
 func (c *simpleCollectionStore) RetrieveCollectionPersistenceConfigs(cc common.CollectionCriteria) (CollectionPersistenceConfigs, error) {
-	fmt.Println("==simpleCollectionStore==RetrieveCollectionPersistenceConfigs==")
+	logger.Info("==simpleCollectionStore==RetrieveCollectionPersistenceConfigs==")
 	staticCollectionConfig, err := c.retrieveCollectionConfig(cc, nil)
 	if err != nil {
 		return nil, err
@@ -169,7 +169,7 @@ func (c *simpleCollectionStore) RetrieveCollectionPersistenceConfigs(cc common.C
 }
 
 func (c *simpleCollectionStore) HasReadAccess(cc common.CollectionCriteria, signedProposal *pb.SignedProposal, qe ledger.QueryExecutor) (bool, error) {
-	fmt.Println("==simpleCollectionStore==HasReadAccess==")
+	logger.Info("==simpleCollectionStore==HasReadAccess==")
 	accessPolicy, err := c.retrieveSimpleCollection(cc, qe)
 	if err != nil {
 		return false, err
@@ -189,7 +189,7 @@ func (c *simpleCollectionStore) HasReadAccess(cc common.CollectionCriteria, sign
 }
 
 func getSignedData(signedProposal *pb.SignedProposal) (common.SignedData, error) {
-	fmt.Println("==getSignedData==")
+	logger.Info("==getSignedData==")
 	proposal, err := utils.GetProposal(signedProposal.ProposalBytes)
 	if err != nil {
 		return common.SignedData{}, err

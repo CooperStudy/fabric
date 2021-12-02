@@ -44,8 +44,8 @@ to parse the command line into the defined flags.
 
 Flags may then be used directly. If you're using the flags themselves,
 they are all pointers; if you bind to variables, they're values.
-	fmt.Println("ip has value ", *ip)
-	fmt.Println("flagvar has value ", flagvar)
+	logger.Info("ip has value ", *ip)
+	logger.Info("flagvar has value ", flagvar)
 
 After parsing, the arguments after the flag are available as the
 slice flag.Args() or individually as flag.Arg(i).
@@ -1132,7 +1132,7 @@ func (f *FlagSet) Parse(arguments []string) error {
 		case ContinueOnError:
 			return err
 		case ExitOnError:
-			fmt.Println(err)
+			logger.Info(err)
 			os.Exit(2)
 		case PanicOnError:
 			panic(err)

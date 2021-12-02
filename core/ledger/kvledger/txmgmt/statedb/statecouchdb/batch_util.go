@@ -6,7 +6,6 @@ SPDX-License-Identifier: Apache-2.0
 package statecouchdb
 
 import (
-	"fmt"
 	"sync"
 )
 
@@ -18,7 +17,7 @@ type batch interface {
 // executeBatches executes each batch in a separate goroutine and returns error if
 // any of the batches return error during its execution
 func executeBatches(batches []batch) error {
-	fmt.Println("========executeBatches=============")
+	logger.Info("========executeBatches=============")
 	logger.Debugf("Executing batches = %s", batches)
 	numBatches := len(batches)
 	if numBatches == 0 {

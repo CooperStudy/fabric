@@ -16,7 +16,7 @@ import (
 )
 
 func setLogSpecCmd(cf *LoggingCmdFactory) *cobra.Command {
-	fmt.Println("====setLogSpecCmd====")
+	logger.Info("====setLogSpecCmd====")
 	var loggingSetLogSpecCmd = &cobra.Command{
 		Use:   "setlogspec",
 		Short: "Sets the logging spec.",
@@ -30,7 +30,7 @@ func setLogSpecCmd(cf *LoggingCmdFactory) *cobra.Command {
 }
 
 func setLogSpec(cf *LoggingCmdFactory, cmd *cobra.Command, args []string) (err error) {
-	fmt.Println("====setLogSpec====")
+	logger.Info("====setLogSpec====")
 	err = checkLoggingCmdParams(cmd, args)
 	if err == nil {
 		// Parsing of the command line is done so silence cmd usage

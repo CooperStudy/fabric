@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package committer
 
 import (
-	"fmt"
 	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/core/ledger"
 	"github.com/hyperledger/fabric/protos/common"
@@ -59,7 +58,7 @@ type ConfigBlockEventer func(block *common.Block) error
 // NewLedgerCommitter is a factory function to create an instance of the committer
 // which passes incoming blocks via validation and commits them into the ledger.
 func NewLedgerCommitter(ledger PeerLedgerSupport) *LedgerCommitter {
-	fmt.Println("==NewLedgerCommitter==")
+	logger.Info("==NewLedgerCommitter==")
 	return NewLedgerCommitterReactive(ledger, func(_ *common.Block) error { return nil })
 }
 
@@ -67,14 +66,14 @@ func NewLedgerCommitter(ledger PeerLedgerSupport) *LedgerCommitter {
 // same as way as NewLedgerCommitter, while also provides an option to specify callback to
 // be called upon new configuration block arrival and commit event
 func NewLedgerCommitterReactive(ledger PeerLedgerSupport, eventer ConfigBlockEventer) *LedgerCommitter {
-	fmt.Println("==NewLedgerCommitterReactive==")
+	logger.Info("==NewLedgerCommitterReactive==")
 	return &LedgerCommitter{PeerLedgerSupport: ledger, eventer: eventer}
 }
 
 // preCommit takes care to validate the block and update based on its
 // content
 func (lc *LedgerCommitter) preCommit(block *common.Block) error {
-	fmt.Println("==LedgerCommitter=preCommit===")
+	logger.Info("==LedgerCommitter=preCommit===")
 	// Updating CSCC with new configuration block
 	if utils.IsConfigBlock(block) {
 		logger.Debug("Received configuration update, calling CSCC ConfigUpdate")
@@ -87,7 +86,7 @@ func (lc *LedgerCommitter) preCommit(block *common.Block) error {
 
 // CommitWithPvtData commits blocks atomically with private data
 func (lc *LedgerCommitter) CommitWithPvtData(blockAndPvtData *ledger.BlockAndPvtData) error {
-	fmt.Println("==LedgerCommitter=CommitWithPvtData===")
+	logger.Info("==LedgerCommitter=CommitWithPvtData===")
 	// Do validation and whatever needed before
 	// committing new block
 	if err := lc.preCommit(blockAndPvtData.Block); err != nil {
@@ -104,13 +103,13 @@ func (lc *LedgerCommitter) CommitWithPvtData(blockAndPvtData *ledger.BlockAndPvt
 
 // GetPvtDataAndBlockByNum retrieves private data and block for given sequence number
 func (lc *LedgerCommitter) GetPvtDataAndBlockByNum(seqNum uint64) (*ledger.BlockAndPvtData, error) {
-	fmt.Println("==LedgerCommitter=GetPvtDataAndBlockByNum===")
+	logger.Info("==LedgerCommitter=GetPvtDataAndBlockByNum===")
 	return lc.PeerLedgerSupport.GetPvtDataAndBlockByNum(seqNum, nil)
 }
 
 // LedgerHeight returns recently committed block sequence number
 func (lc *LedgerCommitter) LedgerHeight() (uint64, error) {
-	//fmt.Println("==LedgerCommitter=LedgerHeight===")
+	//logger.Info("==LedgerCommitter=LedgerHeight===")
 	var info *common.BlockchainInfo
 	var err error
 	if info, err = lc.GetBlockchainInfo(); err != nil {
@@ -123,7 +122,7 @@ func (lc *LedgerCommitter) LedgerHeight() (uint64, error) {
 
 // GetBlocks used to retrieve blocks with sequence numbers provided in the slice
 func (lc *LedgerCommitter) GetBlocks(blockSeqs []uint64) []*common.Block {
-	fmt.Println("==LedgerCommitter=GetBlocks===")
+	logger.Info("==LedgerCommitter=GetBlocks===")
 	var blocks []*common.Block
 
 	for _, seqNum := range blockSeqs {

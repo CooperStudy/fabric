@@ -27,7 +27,7 @@ func setLevelCmd(cf *LoggingCmdFactory) *cobra.Command {
 }
 
 func setLevel(cf *LoggingCmdFactory, cmd *cobra.Command, args []string) (err error) {
-	fmt.Println("====setLevel====")
+	logger.Info("====setLevel====")
 	err = checkLoggingCmdParams(cmd, args)
 	if err == nil {
 		// Parsing of the command line is done so silence cmd usage

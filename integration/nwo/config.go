@@ -23,7 +23,7 @@ type Config struct {
 }
 
 func (c *Config) RemovePeer(orgName, peerName string) {
-	fmt.Println("=====Config===RemovePeer===========")
+	logger.Info("=====Config===RemovePeer===========")
 	peers := []*Peer{}
 	for _, p := range c.Peers {
 		if p.Organization != orgName || p.Name != peerName {

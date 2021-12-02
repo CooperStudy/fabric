@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package aclmgmt
 
 import (
-	"fmt"
 	"github.com/hyperledger/fabric/common/flogging"
 )
 
@@ -28,7 +27,7 @@ type aclMgmtImpl struct {
 //idinfo. idinfo is an object such as SignedProposal from which an
 //id can be extracted for testing against a policy
 func (am *aclMgmtImpl) CheckACL(resName string, channelID string, idinfo interface{}) error {
-	fmt.Println("====aclMgmtImpl=======CheckACL=============")
+	logger.Info("====aclMgmtImpl=======CheckACL=============")
 	//use the resource based config provider (which will in turn default to 1.0 provider)
 	return am.rescfgProvider.CheckACL(resName, channelID, idinfo)
 }
@@ -37,7 +36,7 @@ func (am *aclMgmtImpl) CheckACL(resName string, channelID string, idinfo interfa
 //using ChannelReaders and ChannelWriters). If supplied provider is nil, a resource based
 //ACL provider is created.
 func NewACLProvider(rg ResourceGetter) ACLProvider {
-	fmt.Println("====NewACLProvider============")
+	logger.Info("====NewACLProvider============")
 	return &aclMgmtImpl{
 		rescfgProvider: newResourceProvider(rg, NewDefaultACLProvider()),
 	}

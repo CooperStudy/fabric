@@ -15,6 +15,6 @@ import (
 )
 
 func main() {
-	fmt.Println("================orderer versin 1.0.0======================")
+	logger.Info("================orderer versin 1.0.0======================")
 	server.Main()
 }

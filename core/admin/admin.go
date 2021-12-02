@@ -36,7 +36,7 @@ type AccessControlEvaluator interface {
 
 // NewAdminServer creates and returns a Admin service instance.
 func NewAdminServer(ace AccessControlEvaluator) *ServerAdmin {
-	fmt.Println("===NewAdminServer==")
+	logger.Info("===NewAdminServer==")
 	s := &ServerAdmin{
 		v: &validator{
 			ace: ace,
@@ -54,7 +54,7 @@ type ServerAdmin struct {
 }
 
 func (s *ServerAdmin) GetStatus(ctx context.Context, env *common.Envelope) (*pb.ServerStatus, error) {
-	fmt.Println("===ServerAdmin==GetStatus==")
+	logger.Info("===ServerAdmin==GetStatus==")
 	if _, err := s.v.validate(ctx, env); err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func (s *ServerAdmin) GetStatus(ctx context.Context, env *common.Envelope) (*pb.
 }
 
 func (s *ServerAdmin) StartServer(ctx context.Context, env *common.Envelope) (*pb.ServerStatus, error) {
-	fmt.Println("===StartServer==")
+	logger.Info("===StartServer==")
 	if _, err := s.v.validate(ctx, env); err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func (s *ServerAdmin) StartServer(ctx context.Context, env *common.Envelope) (*p
 }
 
 func (s *ServerAdmin) GetModuleLogLevel(ctx context.Context, env *common.Envelope) (*pb.LogLevelResponse, error) {
-	fmt.Println("===ServerAdmin==GetModuleLogLevel==")
+	logger.Info("===ServerAdmin==GetModuleLogLevel==")
 	op, err := s.v.validate(ctx, env)
 	if err != nil {
 		return nil, err
@@ -89,7 +89,7 @@ func (s *ServerAdmin) GetModuleLogLevel(ctx context.Context, env *common.Envelop
 }
 
 func (s *ServerAdmin) SetModuleLogLevel(ctx context.Context, env *common.Envelope) (*pb.LogLevelResponse, error) {
-	fmt.Println("===ServerAdmin==SetModuleLogLevel==")
+	logger.Info("===ServerAdmin==SetModuleLogLevel==")
 	op, err := s.v.validate(ctx, env)
 	if err != nil {
 		return nil, err
@@ -111,7 +111,7 @@ func (s *ServerAdmin) SetModuleLogLevel(ctx context.Context, env *common.Envelop
 }
 
 func (s *ServerAdmin) RevertLogLevels(ctx context.Context, env *common.Envelope) (*empty.Empty, error) {
-	fmt.Println("===ServerAdmin==RevertLogLevels==")
+	logger.Info("===ServerAdmin==RevertLogLevels==")
 	if _, err := s.v.validate(ctx, env); err != nil {
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func (s *ServerAdmin) RevertLogLevels(ctx context.Context, env *common.Envelope)
 }
 
 func (s *ServerAdmin) GetLogSpec(ctx context.Context, env *common.Envelope) (*pb.LogSpecResponse, error) {
-	fmt.Println("===ServerAdmin==GetLogSpec==")
+	logger.Info("===ServerAdmin==GetLogSpec==")
 	if _, err := s.v.validate(ctx, env); err != nil {
 		return nil, err
 	}
@@ -130,7 +130,7 @@ func (s *ServerAdmin) GetLogSpec(ctx context.Context, env *common.Envelope) (*pb
 }
 
 func (s *ServerAdmin) SetLogSpec(ctx context.Context, env *common.Envelope) (*pb.LogSpecResponse, error) {
-	fmt.Println("===ServerAdmin==SetLogSpec==")
+	logger.Info("===ServerAdmin==SetLogSpec==")
 	op, err := s.v.validate(ctx, env)
 	if err != nil {
 		return nil, err

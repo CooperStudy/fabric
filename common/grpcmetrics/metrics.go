@@ -80,7 +80,7 @@ var (
 )
 
 func NewUnaryMetrics(p metrics.Provider) *UnaryMetrics {
-	fmt.Println("===NewUnaryMetrics===")
+	logger.Info("===NewUnaryMetrics===")
 	return &UnaryMetrics{
 		RequestDuration:   p.NewHistogram(unaryRequestDuration),
 		RequestsReceived:  p.NewCounter(unaryRequestsReceived),
@@ -89,7 +89,7 @@ func NewUnaryMetrics(p metrics.Provider) *UnaryMetrics {
 }
 
 func NewStreamMetrics(p metrics.Provider) *StreamMetrics {
-	fmt.Println("===NewStreamMetrics===")
+	logger.Info("===NewStreamMetrics===")
 	return &StreamMetrics{
 		RequestDuration:   p.NewHistogram(streamRequestDuration),
 		RequestsReceived:  p.NewCounter(streamRequestsReceived),

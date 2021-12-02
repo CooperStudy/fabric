@@ -8,7 +8,6 @@ package chaincode
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	commonledger "github.com/hyperledger/fabric/common/ledger"
@@ -38,7 +37,7 @@ type TransactionContexts struct {
 
 // NewTransactionContexts creates a registry for active transaction contexts.
 func NewTransactionContexts() *TransactionContexts {
-	fmt.Println("======NewTransactionContexts=======")
+	logger.Info("======NewTransactionContexts=======")
 	return &TransactionContexts{
 		contexts: map[string]*TransactionContext{},
 	}
@@ -46,7 +45,7 @@ func NewTransactionContexts() *TransactionContexts {
 
 // contextID creates a transaction identifier that is scoped to a chain.
 func contextID(chainID, txID string) string {
-	fmt.Println("======contextID=======")
+	logger.Info("======contextID=======")
 	return chainID + txID
 }
 
@@ -54,7 +53,7 @@ func contextID(chainID, txID string) string {
 // transaction ID. An error is returned when a transaction context has already
 // been created for the specified chain and transaction ID.
 func (c *TransactionContexts) Create(txParams *ccprovider.TransactionParams) (*TransactionContext, error) {
-	fmt.Println("=========TransactionContexts==Create==============")
+	logger.Info("=========TransactionContexts==Create==============")
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
@@ -84,7 +83,7 @@ func (c *TransactionContexts) Create(txParams *ccprovider.TransactionParams) (*T
 }
 
 func getTxSimulator(ctx context.Context) ledger.TxSimulator {
-	fmt.Println("======getTxSimulator=======")
+	logger.Info("======getTxSimulator=======")
 	if txsim, ok := ctx.Value(TXSimulatorKey).(ledger.TxSimulator); ok {
 		return txsim
 	}
@@ -92,7 +91,7 @@ func getTxSimulator(ctx context.Context) ledger.TxSimulator {
 }
 
 func getHistoryQueryExecutor(ctx context.Context) ledger.HistoryQueryExecutor {
-	fmt.Println("======getHistoryQueryExecutor=======")
+	logger.Info("======getHistoryQueryExecutor=======")
 	if historyQueryExecutor, ok := ctx.Value(HistoryQueryExecutorKey).(ledger.HistoryQueryExecutor); ok {
 		return historyQueryExecutor
 	}
@@ -102,7 +101,7 @@ func getHistoryQueryExecutor(ctx context.Context) ledger.HistoryQueryExecutor {
 // Get retrieves the transaction context associated with the chain and
 // transaction ID.
 func (c *TransactionContexts) Get(chainID, txID string) *TransactionContext {
-	fmt.Println("======TransactionContexts====Get===")
+	logger.Info("======TransactionContexts====Get===")
 	ctxID := contextID(chainID, txID)
 	c.mutex.Lock()
 	tc := c.contexts[ctxID]
@@ -113,7 +112,7 @@ func (c *TransactionContexts) Get(chainID, txID string) *TransactionContext {
 // Delete removes the transaction context associated with the specified chain
 // and transaction ID.
 func (c *TransactionContexts) Delete(chainID, txID string) {
-	fmt.Println("======TransactionContexts====Delete===")
+	logger.Info("======TransactionContexts====Delete===")
 	ctxID := contextID(chainID, txID)
 	c.mutex.Lock()
 	delete(c.contexts, ctxID)
@@ -122,7 +121,7 @@ func (c *TransactionContexts) Delete(chainID, txID string) {
 
 // Close closes all query iterators assocated with the context.
 func (c *TransactionContexts) Close() {
-	fmt.Println("======TransactionContexts====Close===")
+	logger.Info("======TransactionContexts====Close===")
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 

@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package service
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/hyperledger/fabric/core/committer"
@@ -64,7 +63,7 @@ type deliveryFactoryImpl struct {
 
 // Returns an instance of delivery client
 func (*deliveryFactoryImpl) Service(g GossipService, endpoints []string, mcs api.MessageCryptoService) (deliverclient.DeliverService, error) {
-	fmt.Println("===deliveryFactoryImpl==Service==")
+	logger.Info("===deliveryFactoryImpl==Service==")
 	return deliverclient.NewDeliverService(&deliverclient.Config{
 		CryptoSvc:   mcs,
 		Gossip:      g,
@@ -106,13 +105,13 @@ type joinChannelMessage struct {
 }
 
 func (jcm *joinChannelMessage) SequenceNumber() uint64 {
-	fmt.Println("===joinChannelMessage==SequenceNumber==")
+	logger.Info("===joinChannelMessage==SequenceNumber==")
 	return jcm.seqNum
 }
 
 // Members returns the organizations of the channel
 func (jcm *joinChannelMessage) Members() []api.OrgIdentityType {
-	fmt.Println("===joinChannelMessage==Members==")
+	logger.Info("===joinChannelMessage==Members==")
 	members := make([]api.OrgIdentityType, len(jcm.members2AnchorPeers))
 	i := 0
 	for org := range jcm.members2AnchorPeers {
@@ -124,8 +123,8 @@ func (jcm *joinChannelMessage) Members() []api.OrgIdentityType {
 
 // AnchorPeersOf returns the anchor peers of the given organization
 func (jcm *joinChannelMessage) AnchorPeersOf(org api.OrgIdentityType) []api.AnchorPeer {
-	fmt.Println("===joinChannelMessage==AnchorPeersOf==")
-	fmt.Println("========string(org)=====",string(org))
+	logger.Info("===joinChannelMessage==AnchorPeersOf==")
+	logger.Info("========string(org)=====",string(org))
 	return jcm.members2AnchorPeers[string(org)]
 }
 
@@ -135,7 +134,7 @@ var logger = util.GetLogger(util.ServiceLogger, "")
 func InitGossipService(peerIdentity []byte, endpoint string, s *grpc.Server, certs *gossipCommon.TLSCertificates,
 
 	mcs api.MessageCryptoService, secAdv api.SecurityAdvisor, secureDialOpts api.PeerSecureDialOpts, bootPeers ...string) error {
-	fmt.Println("===InitGossipService==")
+	logger.Info("===InitGossipService==")
 	// TODO: Remove this.
 	// TODO: This is a temporary work-around to make the gossip leader election module load its logger at startup
 	// TODO: in order for the flogging package to register this logger in time so it can set the log levels as requested in the config
@@ -150,7 +149,7 @@ func InitGossipServiceCustomDeliveryFactory(peerIdentity []byte, endpoint string
 	certs *gossipCommon.TLSCertificates, factory DeliveryServiceFactory, mcs api.MessageCryptoService,
 	secAdv api.SecurityAdvisor, secureDialOpts api.PeerSecureDialOpts, bootPeers ...string) error {
 
-	fmt.Println("===InitGossipServiceCustomDeliveryFactory==")
+	logger.Info("===InitGossipServiceCustomDeliveryFactory==")
 	var err error
 	var gossip gossip.Gossip
 	once.Do(func() {
@@ -179,13 +178,13 @@ func InitGossipServiceCustomDeliveryFactory(peerIdentity []byte, endpoint string
 
 // GetGossipService returns an instance of gossip service
 func GetGossipService() GossipService {
-	fmt.Println("===GetGossipService==")
+	logger.Info("===GetGossipService==")
 	return gossipServiceInstance
 }
 
 // DistributePrivateData distribute private read write set inside the channel based on the collections policies
 func (g *gossipServiceImpl) DistributePrivateData(chainID string, txID string, privData *transientstore.TxPvtReadWriteSetWithConfigInfo, blkHt uint64) error {
-	fmt.Println("===gossipServiceImpl==DistributePrivateData==")
+	logger.Info("===gossipServiceImpl==DistributePrivateData==")
 	g.lock.RLock()
 	handler, exists := g.privateHandlers[chainID]
 	g.lock.RUnlock()
@@ -208,7 +207,7 @@ func (g *gossipServiceImpl) DistributePrivateData(chainID string, txID string, p
 
 // NewConfigEventer creates a ConfigProcessor which the channelconfig.BundleSource can ultimately route config updates to
 func (g *gossipServiceImpl) NewConfigEventer() ConfigProcessor {
-	fmt.Println("===gossipServiceImpl==NewConfigEventer==")
+	logger.Info("===gossipServiceImpl==NewConfigEventer==")
 	return newConfigEventer(g)
 }
 
@@ -231,7 +230,7 @@ type DataStoreSupport struct {
 
 // InitializeChannel allocates the state provider and should be invoked once per channel per execution
 func (g *gossipServiceImpl) InitializeChannel(chainID string, endpoints []string, support Support) {
-	fmt.Println("===gossipServiceImpl==InitializeChannel==")
+	logger.Info("===gossipServiceImpl==InitializeChannel==")
 	g.lock.Lock()
 	defer g.lock.Unlock()
 	// Initialize new state provider for given committer
@@ -316,7 +315,7 @@ func (g *gossipServiceImpl) InitializeChannel(chainID string, endpoints []string
 }
 
 func (g *gossipServiceImpl) createSelfSignedData() common.SignedData {
-	fmt.Println("===gossipServiceImpl==createSelfSignedData==")
+	logger.Info("===gossipServiceImpl==createSelfSignedData==")
 	msg := make([]byte, 32)
 
 	sig, err := g.mcs.Sign(msg)
@@ -332,7 +331,7 @@ func (g *gossipServiceImpl) createSelfSignedData() common.SignedData {
 
 // updateAnchors constructs a joinChannelMessage and sends it to the gossipSvc
 func (g *gossipServiceImpl) updateAnchors(config Config) {
-	fmt.Println("===gossipServiceImpl==updateAnchors==")
+	logger.Info("===gossipServiceImpl==updateAnchors==")
 	myOrg := string(g.secAdv.OrgByPeerIdentity(api.PeerIdentityType(g.peerIdentity)))
 	if !g.amIinChannel(myOrg, config) {
 		logger.Error("Tried joining channel", config.ChainID(), "but our org(", myOrg, "), isn't "+
@@ -358,10 +357,10 @@ func (g *gossipServiceImpl) updateAnchors(config Config) {
 }
 
 func (g *gossipServiceImpl) updateEndpoints(chainID string, endpoints []string) {
-	fmt.Println("===gossipServiceImpl==updateEndpoints==")
+	logger.Info("===gossipServiceImpl==updateEndpoints==")
 	if ds, ok := g.deliveryService[chainID]; ok {
-		fmt.Println("=====================ds",ds)
-		fmt.Println("=====================chain id",chainID)
+		logger.Info("=====================ds",ds)
+		logger.Info("=====================chain id",chainID)
 		logger.Info("Updating endpoints for chainID", chainID)
 		if err := ds.UpdateEndpoints(chainID, endpoints); err != nil {
 			// The only reason to fail is because of absence of block provider
@@ -373,7 +372,7 @@ func (g *gossipServiceImpl) updateEndpoints(chainID string, endpoints []string) 
 
 // AddPayload appends message payload to for given chain
 func (g *gossipServiceImpl) AddPayload(chainID string, payload *gproto.Payload) error {
-	fmt.Println("===gossipServiceImpl==AddPayload==")
+	logger.Info("===gossipServiceImpl==AddPayload==")
 	g.lock.RLock()
 	defer g.lock.RUnlock()
 	return g.chains[chainID].AddPayload(payload)
@@ -381,7 +380,7 @@ func (g *gossipServiceImpl) AddPayload(chainID string, payload *gproto.Payload) 
 
 // Stop stops the gossip component
 func (g *gossipServiceImpl) Stop() {
-	fmt.Println("===gossipServiceImpl==Stop==")
+	logger.Info("===gossipServiceImpl==Stop==")
 	g.lock.Lock()
 	defer g.lock.Unlock()
 
@@ -402,14 +401,14 @@ func (g *gossipServiceImpl) Stop() {
 }
 
 func (g *gossipServiceImpl) newLeaderElectionComponent(chainID string, callback func(bool)) election.LeaderElectionService {
-	fmt.Println("===gossipServiceImpl==newLeaderElectionComponent==")
+	logger.Info("===gossipServiceImpl==newLeaderElectionComponent==")
 	PKIid := g.mcs.GetPKIidOfCert(g.peerIdentity)
 	adapter := election.NewAdapter(g, PKIid, gossipCommon.ChainID(chainID))
 	return election.NewLeaderElectionService(adapter, string(PKIid), callback)
 }
 
 func (g *gossipServiceImpl) amIinChannel(myOrg string, config Config) bool {
-	fmt.Println("===gossipServiceImpl==amIinChannel==")
+	logger.Info("===gossipServiceImpl==amIinChannel==")
 	for _, orgName := range orgListFromConfig(config) {
 		if orgName == myOrg {
 			return true
@@ -419,7 +418,7 @@ func (g *gossipServiceImpl) amIinChannel(myOrg string, config Config) bool {
 }
 
 func (g *gossipServiceImpl) onStatusChangeFactory(chainID string, committer blocksprovider.LedgerInfo) func(bool) {
-	fmt.Println("===gossipServiceImpl==onStatusChangeFactory==")
+	logger.Info("===gossipServiceImpl==onStatusChangeFactory==")
 	return func(isLeader bool) {
 		if isLeader {
 			yield := func() {
@@ -444,7 +443,7 @@ func (g *gossipServiceImpl) onStatusChangeFactory(chainID string, committer bloc
 }
 
 func orgListFromConfig(config Config) []string {
-	fmt.Println("===orgListFromConfig==")
+	logger.Info("===orgListFromConfig==")
 	var orgList []string
 	for _, appOrg := range config.Organizations() {
 		orgList = append(orgList, appOrg.MSPID())

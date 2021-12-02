@@ -31,7 +31,7 @@ type NewBaseOpts struct {
 }
 
 func (o *NewBaseOpts) GetVersion() MSPVersion {
-	fmt.Println("====NewBaseOpts==GetVersion===")
+	logger.Info("====NewBaseOpts==GetVersion===")
 	return o.Version
 }
 
@@ -47,18 +47,18 @@ type IdemixNewOpts struct {
 
 // New create a new MSP instance depending on the passed Opts
 func New(opts NewOpts) (MSP, error) {
-	fmt.Println("====New===")
+	logger.Info("====New===")
 	switch opts.(type) {
 	case *BCCSPNewOpts:
 		switch opts.GetVersion() {
 		case MSPv1_0:
-			fmt.Println("====MSPv1_0===")
+			logger.Info("====MSPv1_0===")
 			return newBccspMsp(MSPv1_0)
 		case MSPv1_1:
-			fmt.Println("====MSPv1_1===")
+			logger.Info("====MSPv1_1===")
 			return newBccspMsp(MSPv1_1)
 		case MSPv1_3:
-			fmt.Println("====MSPv1_3===")
+			logger.Info("====MSPv1_3===")
 			return newBccspMsp(MSPv1_3)
 		default:
 			return nil, errors.Errorf("Invalid *BCCSPNewOpts. Version not recognized [%v]", opts.GetVersion())

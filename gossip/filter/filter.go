@@ -31,7 +31,7 @@ var SelectAllPolicy = func(discovery.NetworkMember) bool {
 
 // CombineRoutingFilters returns the logical AND of given routing filters
 func CombineRoutingFilters(filters ...RoutingFilter) RoutingFilter {
-	//fmt.Println("====CombineRoutingFilters=")
+	//logger.Info("====CombineRoutingFilters=")
 	return func(member discovery.NetworkMember) bool {
 		for _, filter := range filters {
 			if !filter(member) {
@@ -44,7 +44,7 @@ func CombineRoutingFilters(filters ...RoutingFilter) RoutingFilter {
 
 // SelectPeers returns a slice of peers that match the routing filter
 func SelectPeers(k int, peerPool []discovery.NetworkMember, filter RoutingFilter) []*comm.RemotePeer {
-	//fmt.Println("====SelectPeers=")
+	//logger.Info("====SelectPeers=")
 	var res []*comm.RemotePeer
 	rand.Seed(int64(util.RandomUInt64()))
 	// Iterate over the possible candidates in random order
@@ -66,7 +66,7 @@ func SelectPeers(k int, peerPool []discovery.NetworkMember, filter RoutingFilter
 
 // First returns the first peer that matches the given filter
 func First(peerPool []discovery.NetworkMember, filter RoutingFilter) *comm.RemotePeer {
-	//fmt.Println("====First=")
+	//logger.Info("====First=")
 	for _, p := range peerPool {
 		if filter(p) {
 			return &comm.RemotePeer{PKIID: p.PKIid, Endpoint: p.PreferredEndpoint()}
@@ -77,7 +77,7 @@ func First(peerPool []discovery.NetworkMember, filter RoutingFilter) *comm.Remot
 
 // AnyMatch filters out peers that don't match any of the given filters
 func AnyMatch(peerPool []discovery.NetworkMember, filters ...RoutingFilter) []discovery.NetworkMember {
-	//fmt.Println("====AnyMatch=")
+	//logger.Info("====AnyMatch=")
 	var res []discovery.NetworkMember
 	for _, peer := range peerPool {
 		for _, matches := range filters {

@@ -40,7 +40,7 @@ type SystemChainFilter struct {
 
 // NewSystemChannelFilter returns a new instance of a *SystemChainFilter.
 func NewSystemChannelFilter(ls LimitedSupport, cc ChainCreator) *SystemChainFilter {
-	fmt.Println("==NewSystemChannelFilter==")
+	logger.Info("==NewSystemChannelFilter==")
 	return &SystemChainFilter{
 		support: ls,
 		cc:      cc,
@@ -49,7 +49,7 @@ func NewSystemChannelFilter(ls LimitedSupport, cc ChainCreator) *SystemChainFilt
 
 // Apply rejects bad messages with an error.
 func (scf *SystemChainFilter) Apply(env *cb.Envelope) error {
-	fmt.Println("==SystemChainFilter==Apply==")
+	logger.Info("==SystemChainFilter==Apply==")
 	msgData := &cb.Payload{}
 
 	err := proto.Unmarshal(env.Payload, msgData)
@@ -93,7 +93,7 @@ func (scf *SystemChainFilter) Apply(env *cb.Envelope) error {
 }
 
 func (scf *SystemChainFilter) authorizeAndInspect(configTx *cb.Envelope) error {
-	fmt.Println("==SystemChainFilter==authorizeAndInspect==")
+	logger.Info("==SystemChainFilter==authorizeAndInspect==")
 	payload := &cb.Payload{}
 	err := proto.Unmarshal(configTx.Payload, payload)
 	if err != nil {

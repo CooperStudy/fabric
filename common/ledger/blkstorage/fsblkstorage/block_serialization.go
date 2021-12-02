@@ -38,7 +38,7 @@ type txindexInfo struct {
 }
 
 func serializeBlock(block *common.Block) ([]byte, *serializedBlockInfo, error) {
-	fmt.Println("===serializeBlock===")
+	logger.Info("===serializeBlock===")
 	buf := proto.NewBuffer(nil)
 	var err error
 	info := &serializedBlockInfo{}
@@ -57,7 +57,7 @@ func serializeBlock(block *common.Block) ([]byte, *serializedBlockInfo, error) {
 }
 
 func deserializeBlock(serializedBlockBytes []byte) (*common.Block, error) {
-	fmt.Println("===deserializeBlock===")
+	logger.Info("===deserializeBlock===")
 	block := &common.Block{}
 	var err error
 	b := ledgerutil.NewBuffer(serializedBlockBytes)
@@ -74,7 +74,7 @@ func deserializeBlock(serializedBlockBytes []byte) (*common.Block, error) {
 }
 
 func extractSerializedBlockInfo(serializedBlockBytes []byte) (*serializedBlockInfo, error) {
-	fmt.Println("===extractSerializedBlockInfo===")
+	logger.Info("===extractSerializedBlockInfo===")
 	info := &serializedBlockInfo{}
 	var err error
 	b := ledgerutil.NewBuffer(serializedBlockBytes)
@@ -96,7 +96,7 @@ func extractSerializedBlockInfo(serializedBlockBytes []byte) (*serializedBlockIn
 }
 
 func addHeaderBytes(blockHeader *common.BlockHeader, buf *proto.Buffer) error {
-	fmt.Println("===addHeaderBytes===")
+	logger.Info("===addHeaderBytes===")
 	if err := buf.EncodeVarint(blockHeader.Number); err != nil {
 		return err
 	}
@@ -110,7 +110,7 @@ func addHeaderBytes(blockHeader *common.BlockHeader, buf *proto.Buffer) error {
 }
 
 func addDataBytes(blockData *common.BlockData, buf *proto.Buffer) ([]*txindexInfo, error) {
-	fmt.Println("===addDataBytes===")
+	logger.Info("===addDataBytes===")
 	var txOffsets []*txindexInfo
 
 	if err := buf.EncodeVarint(uint64(len(blockData.Data))); err != nil {
@@ -132,7 +132,7 @@ func addDataBytes(blockData *common.BlockData, buf *proto.Buffer) ([]*txindexInf
 }
 
 func addMetadataBytes(blockMetadata *common.BlockMetadata, buf *proto.Buffer) error {
-	fmt.Println("===addMetadataBytes===")
+	logger.Info("===addMetadataBytes===")
 	numItems := uint64(0)
 	if blockMetadata != nil {
 		numItems = uint64(len(blockMetadata.Metadata))
@@ -149,7 +149,7 @@ func addMetadataBytes(blockMetadata *common.BlockMetadata, buf *proto.Buffer) er
 }
 
 func extractHeader(buf *ledgerutil.Buffer) (*common.BlockHeader, error) {
-	fmt.Println("===extractHeader===")
+	logger.Info("===extractHeader===")
 	header := &common.BlockHeader{}
 	var err error
 	if header.Number, err = buf.DecodeVarint(); err != nil {
@@ -168,7 +168,7 @@ func extractHeader(buf *ledgerutil.Buffer) (*common.BlockHeader, error) {
 }
 
 func extractData(buf *ledgerutil.Buffer) (*common.BlockData, []*txindexInfo, error) {
-	fmt.Println("===extractData===")
+	logger.Info("===extractData===")
 	data := &common.BlockData{}
 	var txOffsets []*txindexInfo
 	var numItems uint64
@@ -195,7 +195,7 @@ func extractData(buf *ledgerutil.Buffer) (*common.BlockData, []*txindexInfo, err
 }
 
 func extractMetadata(buf *ledgerutil.Buffer) (*common.BlockMetadata, error) {
-	fmt.Println("===extractMetadata===")
+	logger.Info("===extractMetadata===")
 	metadata := &common.BlockMetadata{}
 	var numItems uint64
 	var metadataEntry []byte
@@ -213,7 +213,7 @@ func extractMetadata(buf *ledgerutil.Buffer) (*common.BlockMetadata, error) {
 }
 
 func extractTxID(txEnvelopBytes []byte) (string, error) {
-	fmt.Println("===extractTxID===")
+	logger.Info("===extractTxID===")
 	txEnvelope, err := utils.GetEnvelopeFromBlock(txEnvelopBytes)
 	if err != nil {
 		return "", err

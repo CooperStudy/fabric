@@ -8,7 +8,7 @@ package entities
 
 import (
 	"encoding/pem"
-	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"reflect"
 
 	"github.com/hyperledger/fabric/bccsp"
@@ -25,6 +25,7 @@ type BCCSPEntity struct {
 	IDstr string
 	BCCSP bccsp.BCCSP
 }
+var logger = flogging.MustGetLogger("core.chaincode.shim.ext.entities")
 
 // BCCSPSignerEntity is an implementation of the SignerEntity interface
 type BCCSPSignerEntity struct {
@@ -57,7 +58,7 @@ type BCCSPEncrypterSignerEntity struct {
 // Optionally, the IV can be provided in which case it is used during
 // the encryption; othjerwise, a random one is generated.
 func NewAES256EncrypterEntity(ID string, b bccsp.BCCSP, key, IV []byte) (*BCCSPEncrypterEntity, error) {
-	fmt.Println("=========NewAES256EncrypterEntity=======================")
+	logger.Info("=========NewAES256EncrypterEntity=======================")
 	if b == nil {
 		return nil, errors.New("nil BCCSP")
 	}
@@ -77,7 +78,7 @@ func NewAES256EncrypterEntity(ID string, b bccsp.BCCSP, key, IV []byte) (*BCCSPE
 // as an argument as well - it's the caller's responsibility to
 // choose it in a way that it is meaningful
 func NewEncrypterEntity(ID string, bccsp bccsp.BCCSP, eKey bccsp.Key, eOpts bccsp.EncrypterOpts, dOpts bccsp.DecrypterOpts) (*BCCSPEncrypterEntity, error) {
-	fmt.Println("=========NewEncrypterEntity=======================")
+	logger.Info("=========NewEncrypterEntity=======================")
 	if ID == "" {
 		return nil, errors.New("NewEntity error: empty ID")
 	}
@@ -103,7 +104,7 @@ func NewEncrypterEntity(ID string, bccsp bccsp.BCCSP, eKey bccsp.Key, eOpts bccs
 
 // NewECDSASignerEntity returns a signer entity that is capable of signing using ECDSA
 func NewECDSASignerEntity(ID string, b bccsp.BCCSP, signKeyBytes []byte) (*BCCSPSignerEntity, error) {
-	fmt.Println("=========NewECDSASignerEntity=======================")
+	logger.Info("=========NewECDSASignerEntity=======================")
 	if b == nil {
 		return nil, errors.New("nil BCCSP")
 	}
@@ -123,7 +124,7 @@ func NewECDSASignerEntity(ID string, b bccsp.BCCSP, signKeyBytes []byte) (*BCCSP
 
 // NewECDSAVerifierEntity returns a verifier entity that is capable of verifying using ECDSA
 func NewECDSAVerifierEntity(ID string, b bccsp.BCCSP, signKeyBytes []byte) (*BCCSPSignerEntity, error) {
-	fmt.Println("=========NewECDSAVerifierEntity=======================")
+	logger.Info("=========NewECDSAVerifierEntity=======================")
 	if b == nil {
 		return nil, errors.New("nil BCCSP")
 	}
@@ -143,7 +144,7 @@ func NewECDSAVerifierEntity(ID string, b bccsp.BCCSP, signKeyBytes []byte) (*BCC
 
 // NewSignerEntity returns a SignerEntity
 func NewSignerEntity(ID string, bccsp bccsp.BCCSP, sKey bccsp.Key, sOpts bccsp.SignerOpts, hOpts bccsp.HashOpts) (*BCCSPSignerEntity, error) {
-	fmt.Println("=========NewSignerEntity=======================")
+	logger.Info("=========NewSignerEntity=======================")
 	if ID == "" {
 		return nil, errors.New("NewSignerEntity error: empty ID")
 	}
@@ -171,7 +172,7 @@ func NewSignerEntity(ID string, bccsp bccsp.BCCSP, sKey bccsp.Key, sOpts bccsp.S
 // capable of performing AES 256 bit encryption using PKCS#7 padding and
 // signing using ECDSA
 func NewAES256EncrypterECDSASignerEntity(ID string, b bccsp.BCCSP, encKeyBytes, signKeyBytes []byte) (*BCCSPEncrypterSignerEntity, error) {
-	fmt.Println("=========NewAES256EncrypterECDSASignerEntity=======================")
+	logger.Info("=========NewAES256EncrypterECDSASignerEntity=======================")
 	if b == nil {
 		return nil, errors.New("nil BCCSP")
 	}
@@ -203,7 +204,7 @@ func NewAES256EncrypterECDSASignerEntity(ID string, b bccsp.BCCSP, encKeyBytes, 
 // supplied as an argument as well - it's the caller's responsibility
 // to choose it in a way that it is meaningful
 func NewEncrypterSignerEntity(ID string, bccsp bccsp.BCCSP, eKey, sKey bccsp.Key, eOpts bccsp.EncrypterOpts, dOpts bccsp.DecrypterOpts, sOpts bccsp.SignerOpts, hOpts bccsp.HashOpts) (*BCCSPEncrypterSignerEntity, error) {
-	fmt.Println("=========NewEncrypterSignerEntity=======================")
+	logger.Info("=========NewEncrypterSignerEntity=======================")
 	if ID == "" {
 		return nil, errors.New("NewEntity error: empty ID")
 	}
@@ -243,22 +244,22 @@ func NewEncrypterSignerEntity(ID string, bccsp bccsp.BCCSP, eKey, sKey bccsp.Key
 /***********/
 
 func (e *BCCSPEntity) ID() string {
-	fmt.Println("=========BCCSPEntity====ID===================")
+	logger.Info("=========BCCSPEntity====ID===================")
 	return e.IDstr
 }
 
 func (e *BCCSPEncrypterEntity) Encrypt(plaintext []byte) ([]byte, error) {
-	fmt.Println("=========BCCSPEncrypterEntity====Encrypt================")
+	logger.Info("=========BCCSPEncrypterEntity====Encrypt================")
 	return e.BCCSP.Encrypt(e.EKey, plaintext, e.EOpts)
 }
 
 func (e *BCCSPEncrypterEntity) Decrypt(ciphertext []byte) ([]byte, error) {
-	fmt.Println("=========BCCSPEncrypterEntity====Decrypt================")
+	logger.Info("=========BCCSPEncrypterEntity====Decrypt================")
 	return e.BCCSP.Decrypt(e.EKey, ciphertext, e.DOpts)
 }
 
 func (this *BCCSPEncrypterEntity) Equals(e Entity) bool {
-	fmt.Println("=========BCCSPEncrypterEntity====Equals================")
+	logger.Info("=========BCCSPEncrypterEntity====Equals================")
 	if that, rightType := e.(*BCCSPEncrypterEntity); rightType {
 		return compare(this.EKey, that.EKey)
 	}
@@ -267,7 +268,7 @@ func (this *BCCSPEncrypterEntity) Equals(e Entity) bool {
 }
 
 func (pe *BCCSPEncrypterEntity) Public() (Entity, error) {
-	fmt.Println("=========BCCSPEncrypterEntity====Public================")
+	logger.Info("=========BCCSPEncrypterEntity====Public================")
 	var err error
 	eKeyPub := pe.EKey
 
@@ -289,7 +290,7 @@ func (pe *BCCSPEncrypterEntity) Public() (Entity, error) {
 }
 
 func (this *BCCSPSignerEntity) Equals(e Entity) bool {
-	fmt.Println("=========BCCSPSignerEntity====Equals================")
+	logger.Info("=========BCCSPSignerEntity====Equals================")
 	if that, rightType := e.(*BCCSPSignerEntity); rightType {
 		return compare(this.SKey, that.SKey)
 	}
@@ -298,7 +299,7 @@ func (this *BCCSPSignerEntity) Equals(e Entity) bool {
 }
 
 func (e *BCCSPSignerEntity) Public() (Entity, error) {
-	fmt.Println("=========BCCSPSignerEntity====Public================")
+	logger.Info("=========BCCSPSignerEntity====Public================")
 	var err error
 	sKeyPub := e.SKey
 
@@ -320,7 +321,7 @@ func (e *BCCSPSignerEntity) Public() (Entity, error) {
 }
 
 func (e *BCCSPSignerEntity) Sign(msg []byte) ([]byte, error) {
-	fmt.Println("=========BCCSPSignerEntity====Sign================")
+	logger.Info("=========BCCSPSignerEntity====Sign================")
 	h, err := e.BCCSP.Hash(msg, e.HOpts)
 	if err != nil {
 		return nil, errors.WithMessage(err, "sign error: bccsp.Hash returned")
@@ -330,7 +331,7 @@ func (e *BCCSPSignerEntity) Sign(msg []byte) ([]byte, error) {
 }
 
 func (e *BCCSPSignerEntity) Verify(signature, msg []byte) (bool, error) {
-	fmt.Println("=========BCCSPSignerEntity====Verify================")
+	logger.Info("=========BCCSPSignerEntity====Verify================")
 	h, err := e.BCCSP.Hash(msg, e.HOpts)
 	if err != nil {
 		return false, errors.WithMessage(err, "sign error: bccsp.Hash returned")
@@ -340,7 +341,7 @@ func (e *BCCSPSignerEntity) Verify(signature, msg []byte) (bool, error) {
 }
 
 func (pe *BCCSPEncrypterSignerEntity) Public() (Entity, error) {
-	fmt.Println("=========BCCSPEncrypterSignerEntity====Public================")
+	logger.Info("=========BCCSPEncrypterSignerEntity====Public================")
 	var err error
 	eKeyPub := pe.EKey
 
@@ -378,7 +379,7 @@ func (pe *BCCSPEncrypterSignerEntity) Public() (Entity, error) {
 }
 
 func (this *BCCSPEncrypterSignerEntity) Equals(e Entity) bool {
-	fmt.Println("=========BCCSPEncrypterSignerEntity====Equals================")
+	logger.Info("=========BCCSPEncrypterSignerEntity====Equals================")
 	if that, rightType := e.(*BCCSPEncrypterSignerEntity); rightType {
 		return compare(this.SKey, that.SKey) && compare(this.EKey, that.EKey)
 	} else {
@@ -387,7 +388,7 @@ func (this *BCCSPEncrypterSignerEntity) Equals(e Entity) bool {
 }
 
 func (e *BCCSPEncrypterSignerEntity) ID() string {
-	fmt.Println("=========BCCSPEncrypterSignerEntity====ID================")
+	logger.Info("=========BCCSPEncrypterSignerEntity====ID================")
 	return e.BCCSPEncrypterEntity.ID()
 }
 
@@ -402,7 +403,7 @@ func (e *BCCSPEncrypterSignerEntity) ID() string {
 // version of the same entity and expect to be told that the
 // entities are equivalent
 func compare(this, that bccsp.Key) bool {
-	fmt.Println("========compare================")
+	logger.Info("========compare================")
 	var err error
 	if this.Private() {
 		this, err = this.PublicKey()

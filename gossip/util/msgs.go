@@ -22,14 +22,14 @@ type MembershipStore struct {
 
 // NewMembershipStore creates new membership store instance
 func NewMembershipStore() *MembershipStore {
-	//fmt.Println("===NewMembershipStore==")
+	//logger.Info("===NewMembershipStore==")
 	return &MembershipStore{m: make(map[string]*proto.SignedGossipMessage)}
 }
 
 // MsgByID returns a message stored by a certain ID, or nil
 // if such an ID isn't found
 func (m *MembershipStore) MsgByID(pkiID common.PKIidType) *proto.SignedGossipMessage {
-	//fmt.Println("===MembershipStore==MsgByID==")
+	//logger.Info("===MembershipStore==MsgByID==")
 	m.RLock()
 	defer m.RUnlock()
 	if msg, exists := m.m[string(pkiID)]; exists {
@@ -40,7 +40,7 @@ func (m *MembershipStore) MsgByID(pkiID common.PKIidType) *proto.SignedGossipMes
 
 // Size of the membership store
 func (m *MembershipStore) Size() int {
-	//fmt.Println("===MembershipStore==Size==")
+	//logger.Info("===MembershipStore==Size==")
 	m.RLock()
 	defer m.RUnlock()
 	return len(m.m)
@@ -48,7 +48,7 @@ func (m *MembershipStore) Size() int {
 
 // Put associates msg with the given pkiID
 func (m *MembershipStore) Put(pkiID common.PKIidType, msg *proto.SignedGossipMessage) {
-	//fmt.Println("===MembershipStore==Put==")
+	//logger.Info("===MembershipStore==Put==")
 	m.Lock()
 	defer m.Unlock()
 	m.m[string(pkiID)] = msg
@@ -56,7 +56,7 @@ func (m *MembershipStore) Put(pkiID common.PKIidType, msg *proto.SignedGossipMes
 
 // Remove removes a message with a given pkiID
 func (m *MembershipStore) Remove(pkiID common.PKIidType) {
-	//fmt.Println("===MembershipStore==Remove==")
+	//logger.Info("===MembershipStore==Remove==")
 	m.Lock()
 	defer m.Unlock()
 	delete(m.m, string(pkiID))
@@ -65,16 +65,16 @@ func (m *MembershipStore) Remove(pkiID common.PKIidType) {
 // ToSlice returns a slice backed by the elements
 // of the MembershipStore
 func (m *MembershipStore) ToSlice() []*proto.SignedGossipMessage {
-	//fmt.Println("===MembershipStore==ToSlice==")
+	//logger.Info("===MembershipStore==ToSlice==")
 	m.RLock()
 	defer m.RUnlock()
 	members := make([]*proto.SignedGossipMessage, len(m.m))
 	i := 0
 	for _, member := range m.m {
-		//fmt.Println("=====member====",member)
+		//logger.Info("=====member====",member)
 		members[i] = member
 		i++
 	}
-	//fmt.Println("=====members========",members)
+	//logger.Info("=====members========",members)
 	return members
 }

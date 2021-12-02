@@ -20,7 +20,7 @@ import "fmt"
 
 // ErrToString converts and error to a string. If the error is nil, it returns the string "<clean>"
 func ErrToString(err error) string {
-	fmt.Println("===ErrToString======")
+	logger.Info("===ErrToString======")
 	if err != nil {
 		return err.Error()
 	}

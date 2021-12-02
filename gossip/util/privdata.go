@@ -25,7 +25,7 @@ type PvtDataCollections []*ledger.TxPvtData
 
 // Marshal encodes private collection into bytes array
 func (pvt *PvtDataCollections) Marshal() ([][]byte, error) {
-	fmt.Println("===PvtDataCollections==Marshal==")
+	logger.Info("===PvtDataCollections==Marshal==")
 	pvtDataBytes := make([][]byte, 0)
 	for index, each := range *pvt {
 		if each == nil {
@@ -54,7 +54,7 @@ func (pvt *PvtDataCollections) Marshal() ([][]byte, error) {
 // Unmarshal read and unmarshal collection of private data
 // from given bytes array
 func (pvt *PvtDataCollections) Unmarshal(data [][]byte) error {
-	fmt.Println("===PvtDataCollections==Unmarshal==")
+	logger.Info("===PvtDataCollections==Unmarshal==")
 	for _, each := range data {
 		payload := &gossip.PvtDataPayload{}
 		if err := proto.Unmarshal(each, payload); err != nil {
@@ -75,7 +75,7 @@ func (pvt *PvtDataCollections) Unmarshal(data [][]byte) error {
 
 // PrivateRWSets creates an aggregated slice of RWSets
 func PrivateRWSets(rwsets ...PrivateRWSet) [][]byte {
-	fmt.Println("===PrivateRWSets==")
+	logger.Info("===PrivateRWSets==")
 	var res [][]byte
 	for _, rws := range rwsets {
 		res = append(res, []byte(rws))
@@ -88,7 +88,7 @@ type PrivateRWSet []byte
 
 // Digest returns a deterministic and collision-free representation of the PrivateRWSet
 func (rws PrivateRWSet) Digest() string {
-	fmt.Println("===PrivateRWSet==Digest==")
+	logger.Info("===PrivateRWSet==Digest==")
 	return hex.EncodeToString(util.ComputeSHA256(rws))
 }
 

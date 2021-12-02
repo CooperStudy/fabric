@@ -61,7 +61,7 @@ func (t *ginkgoTestingTProxy) Parallel() {
 }
 
 func (t *ginkgoTestingTProxy) Skip(args ...interface{}) {
-	fmt.Println(args...)
+	logger.Info(args...)
 }
 
 func (t *ginkgoTestingTProxy) Skipf(format string, args ...interface{}) {

@@ -29,7 +29,7 @@ var includeFileTypes = map[string]bool{
 var logger = flogging.MustGetLogger("chaincode.platform.golang")
 
 func getCodeFromFS(path string) (codegopath string, err error) {
-	fmt.Println("=====getCodeFromFS==========")
+	logger.Info("=====getCodeFromFS==========")
 	logger.Debugf("getCodeFromFS %s", path)
 	gopath, err := getGopath()
 	if err != nil {
@@ -85,12 +85,12 @@ func (s Sources) Len() int {
 }
 
 func (s Sources) Swap(i, j int) {
-	fmt.Println("=====Sources==Swap========")
+	logger.Info("=====Sources==Swap========")
 	s[i], s[j] = s[j], s[i]
 }
 
 func (s Sources) Less(i, j int) bool {
-	fmt.Println("=====Sources==Less========")
+	logger.Info("=====Sources==Less========")
 	return strings.Compare(s[i].Name, s[j].Name) < 0
 }
 
@@ -154,6 +154,6 @@ func findSource(gopath, pkg string) (SourceMap, error) {
 func isMetadataDir(path, tld string) bool {
 	logger.Info("====func isMetadataDir(path, tld string) bool=====")
 	a:= strings.HasPrefix(path, filepath.Join(tld, "META-INF"))
-	fmt.Println("==============a",a)
+	logger.Info("==============a",a)
 	return a
 }

@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package pvtdatapolicy
 
 import (
-	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"math"
 	"sync"
 
@@ -24,7 +24,7 @@ type BTLPolicy interface {
 	// GetExpiringBlock returns the block number by which the pvtdata for given namespace,collection, and committingBlock should expire
 	GetExpiringBlock(namesapce string, collection string, committingBlock uint64) (uint64, error)
 }
-
+var logger = flogging.MustGetLogger("core.ledger.kvledger.pvtdatapolicy")
 // LSCCBasedBTLPolicy implements interface BTLPolicy.
 // This implementation loads the BTL policy from lscc namespace which is populated
 // with the collection configuration during chaincode initialization
@@ -41,7 +41,7 @@ type btlkey struct {
 
 // ConstructBTLPolicy constructs an instance of LSCCBasedBTLPolicy
 func ConstructBTLPolicy(collInfoProvider collectionInfoProvider) BTLPolicy {
-	fmt.Println("===ConstructBTLPolicy===")
+	logger.Info("===ConstructBTLPolicy===")
 	return &LSCCBasedBTLPolicy{
 		collInfoProvider: collInfoProvider,
 		cache:            make(map[btlkey]uint64),
@@ -50,7 +50,7 @@ func ConstructBTLPolicy(collInfoProvider collectionInfoProvider) BTLPolicy {
 
 // GetBTL implements corresponding function in interface `BTLPolicyMgr`
 func (p *LSCCBasedBTLPolicy) GetBTL(namesapce string, collection string) (uint64, error) {
-	fmt.Println("===LSCCBasedBTLPolicy==GetBTL===")
+	logger.Info("===LSCCBasedBTLPolicy==GetBTL===")
 	var btl uint64
 	var ok bool
 	key := btlkey{namesapce, collection}
@@ -78,7 +78,7 @@ func (p *LSCCBasedBTLPolicy) GetBTL(namesapce string, collection string) (uint64
 
 // GetExpiringBlock implements function from the interface `BTLPolicy`
 func (p *LSCCBasedBTLPolicy) GetExpiringBlock(namesapce string, collection string, committingBlock uint64) (uint64, error) {
-	fmt.Println("===LSCCBasedBTLPolicy==GetExpiringBlock===")
+	logger.Info("===LSCCBasedBTLPolicy==GetExpiringBlock===")
 	btl, err := p.GetBTL(namesapce, collection)
 	if err != nil {
 		return 0, err

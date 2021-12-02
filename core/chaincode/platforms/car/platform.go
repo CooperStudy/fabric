@@ -10,6 +10,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"io"
 	"io/ioutil"
 	"strings"
@@ -23,10 +24,11 @@ import (
 // Platform for the CAR type
 type Platform struct {
 }
+var logger = flogging.MustGetLogger("core.chaincode.platforms.car")
 
 // Name returns the name of this platform
 func (carPlatform *Platform) Name() string {
-	fmt.Println("==========Platform=========Name======================")
+	logger.Info("==========Platform=========Name======================")
 	return pb.ChaincodeSpec_CAR.String()
 }
 
@@ -34,24 +36,24 @@ func (carPlatform *Platform) Name() string {
 // the platform interface.  This chaincode type currently doesn't
 // require anything specific so we just implicitly approve any spec
 func (carPlatform *Platform) ValidatePath(path string) error {
-	fmt.Println("==========Platform=========ValidatePath======================")
+	logger.Info("==========Platform=========ValidatePath======================")
 	return nil
 }
 
 func (carPlatform *Platform) ValidateCodePackage(codePackage []byte) error {
-	fmt.Println("==========Platform=========ValidateCodePackage======================")
+	logger.Info("==========Platform=========ValidateCodePackage======================")
 	// CAR platform will validate the code package within chaintool
 	return nil
 }
 
 func (carPlatform *Platform) GetDeploymentPayload(path string) ([]byte, error) {
-	fmt.Println("==========Platform=========GetDeploymentPayload======================")
-	fmt.Println("======path=====",path)
+	logger.Info("==========Platform=========GetDeploymentPayload======================")
+	logger.Info("======path=====",path)
 	return ioutil.ReadFile(path)
 }
 
 func (carPlatform *Platform) GenerateDockerfile() (string, error) {
-	fmt.Println("==========Platform=========GenerateDockerfile======================")
+	logger.Info("==========Platform=========GenerateDockerfile======================")
 	var buf []string
 
 	//let the executable's name be chaincode ID's name
@@ -64,7 +66,7 @@ func (carPlatform *Platform) GenerateDockerfile() (string, error) {
 }
 
 func (carPlatform *Platform) GenerateDockerBuild(path string, code []byte, tw *tar.Writer) error {
-	fmt.Println("==========Platform=========GenerateDockerBuild======================")
+	logger.Info("==========Platform=========GenerateDockerBuild======================")
 	// Bundle the .car file into a tar stream so it may be transferred to the builder container
 	codepackage, output := io.Pipe()
 	go func() {
@@ -91,6 +93,6 @@ func (carPlatform *Platform) GenerateDockerBuild(path string, code []byte, tw *t
 
 //GetMetadataProvider fetches metadata provider given deployment spec
 func (carPlatform *Platform) GetMetadataProvider(code []byte) platforms.MetadataProvider {
-	fmt.Println("==========Platform=========GetMetadataProvider======================")
+	logger.Info("==========Platform=========GetMetadataProvider======================")
 	return &MetadataProvider{}
 }

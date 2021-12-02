@@ -67,23 +67,23 @@ func (r *deliverClient) readUntilClose() {
 	for {
 		msg, err := r.client.Recv()
 		if err != nil {
-			fmt.Println("Error receiving:", err)
+			logger.Info("Error receiving:", err)
 			return
 		}
 
 		switch t := msg.Type.(type) {
 		case *ab.DeliverResponse_Status:
-			fmt.Println("Got status ", t)
+			logger.Info("Got status ", t)
 			return
 		case *ab.DeliverResponse_Block:
 			if !r.quiet {
-				fmt.Println("Received block: ")
+				logger.Info("Received block: ")
 				err := protolator.DeepMarshalJSON(os.Stdout, t.Block)
 				if err != nil {
 					fmt.Printf("  Error pretty printing block: %s", err)
 				}
 			} else {
-				fmt.Println("Received block: ", t.Block.Header.Number)
+				logger.Info("Received block: ", t.Block.Header.Number)
 			}
 		}
 	}
@@ -92,14 +92,14 @@ func (r *deliverClient) readUntilClose() {
 func main() {
 	conf, err := localconfig.Load()
 	if err != nil {
-		fmt.Println("failed to load config:", err)
+		logger.Info("failed to load config:", err)
 		os.Exit(1)
 	}
 
 	// Load local MSP
 	err = mspmgmt.LoadLocalMsp(conf.General.LocalMSPDir, conf.General.BCCSP, conf.General.LocalMSPID)
 	if err != nil { // Handle errors reading the config file
-		fmt.Println("Failed to initialize local MSP:", err)
+		logger.Info("Failed to initialize local MSP:", err)
 		os.Exit(0)
 	}
 
@@ -120,18 +120,18 @@ func main() {
 	flag.Parse()
 
 	if seek < -2 {
-		fmt.Println("Wrong seek value.")
+		logger.Info("Wrong seek value.")
 		flag.PrintDefaults()
 	}
 
 	conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
 	if err != nil {
-		fmt.Println("Error connecting:", err)
+		logger.Info("Error connecting:", err)
 		return
 	}
 	client, err := ab.NewAtomicBroadcastClient(conn).Deliver(context.TODO())
 	if err != nil {
-		fmt.Println("Error connecting:", err)
+		logger.Info("Error connecting:", err)
 		return
 	}
 
@@ -146,7 +146,7 @@ func main() {
 	}
 
 	if err != nil {
-		fmt.Println("Received error:", err)
+		logger.Info("Received error:", err)
 	}
 
 	s.readUntilClose()

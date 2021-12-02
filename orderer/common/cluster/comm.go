@@ -50,11 +50,14 @@ type RemoteNode struct {
 	ServerTLSCert []byte
 	// ClientTLSCert is the DER encoded TLS client certificate of the node
 	ClientTLSCert []byte
+
 }
+
+var logger = flogging.MustGetLogger("orderer.common.cluster")
 
 // String returns a string representation of this RemoteNode
 func (rm RemoteNode) String() string {
-	fmt.Println("======RemoteNode=======String=============")
+	logger.Info("======RemoteNode=======String=============")
 	return fmt.Sprintf("ID: %d\nEndpoint: %s\nServerTLSCert:%s ClientTLSCert:%s",
 		rm.ID, rm.Endpoint, DERtoPEM(rm.ServerTLSCert), DERtoPEM(rm.ClientTLSCert))
 }
@@ -99,7 +102,7 @@ type requestContext struct {
 // DispatchSubmit identifies the channel and sender of the submit request and passes it
 // to the underlying Handler
 func (c *Comm) DispatchSubmit(ctx context.Context, request *orderer.SubmitRequest) (*orderer.SubmitResponse, error) {
-	fmt.Println("======Comm=======DispatchSubmit=============")
+	logger.Info("======Comm=======DispatchSubmit=============")
 	c.Logger.Debug(request.Channel)
 	reqCtx, err := c.requestContext(ctx, request)
 	if err != nil {
@@ -111,7 +114,7 @@ func (c *Comm) DispatchSubmit(ctx context.Context, request *orderer.SubmitReques
 // DispatchStep identifies the channel and sender of the step request and passes it
 // to the underlying Handler
 func (c *Comm) DispatchStep(ctx context.Context, request *orderer.StepRequest) (*orderer.StepResponse, error) {
-	fmt.Println("======Comm=======DispatchStep=============")
+	logger.Info("======Comm=======DispatchStep=============")
 	reqCtx, err := c.requestContext(ctx, request)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -122,7 +125,7 @@ func (c *Comm) DispatchStep(ctx context.Context, request *orderer.StepRequest) (
 // classifyRequest identifies the sender and channel of the request and returns
 // it wrapped in a requestContext
 func (c *Comm) requestContext(ctx context.Context, msg proto.Message) (*requestContext, error) {
-	fmt.Println("======Comm=======requestContext=============")
+	logger.Info("======Comm=======requestContext=============")
 	channel := c.ChanExt.TargetChannel(msg)
 	if channel == "" {
 		return nil, errors.Errorf("badly formatted message, cannot extract channel")
@@ -152,7 +155,7 @@ func (c *Comm) requestContext(ctx context.Context, msg proto.Message) (*requestC
 // Remote obtains a RemoteContext linked to the destination node on the context
 // of a given channel
 func (c *Comm) Remote(channel string, id uint64) (*RemoteContext, error) {
-	fmt.Println("======Comm=======Remote=============")
+	logger.Info("======Comm=======Remote=============")
 	c.Lock.RLock()
 	defer c.Lock.RUnlock()
 
@@ -182,7 +185,7 @@ func (c *Comm) Remote(channel string, id uint64) (*RemoteContext, error) {
 
 // Configure configures the channel with the given RemoteNodes
 func (c *Comm) Configure(channel string, newNodes []RemoteNode) {
-	fmt.Println("======Comm=======Configure=============")
+	logger.Info("======Comm=======Configure=============")
 	c.Logger.Infof("Entering, channel: %s, nodes: %v", channel, newNodes)
 	defer c.Logger.Infof("Exiting")
 
@@ -202,7 +205,7 @@ func (c *Comm) Configure(channel string, newNodes []RemoteNode) {
 
 // Shutdown shuts down the instance
 func (c *Comm) Shutdown() {
-	fmt.Println("======Comm=======Shutdown=============")
+	logger.Info("======Comm=======Shutdown=============")
 	c.Lock.Lock()
 	defer c.Lock.Unlock()
 
@@ -217,7 +220,7 @@ func (c *Comm) Shutdown() {
 // cleanUnusedConnections disconnects all connections that are un-used
 // at the moment of the invocation
 func (c *Comm) cleanUnusedConnections(serverCertsBeforeConfig StringSet) {
-	fmt.Println("======Comm=======cleanUnusedConnections=============")
+	logger.Info("======Comm=======cleanUnusedConnections=============")
 	// Scan all nodes after the reconfiguration
 	serverCertsAfterConfig := c.serverCertsInUse()
 	// Filter out the certificates that remained after the reconfiguration

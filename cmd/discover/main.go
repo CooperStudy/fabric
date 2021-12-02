@@ -7,16 +7,16 @@ SPDX-License-Identifier: Apache-2.0
 package main
 
 import (
-	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"os"
 
 	"github.com/hyperledger/fabric/bccsp/factory"
 	"github.com/hyperledger/fabric/cmd/common"
 	"github.com/hyperledger/fabric/discovery/cmd"
 )
-
+var logger = flogging.MustGetLogger("cmd.discover")
 func main() {
-	fmt.Println("========main===========")
+	logger.Info("========main===========")
 	factory.InitFactories(nil)
 	cli := common.NewCLI("discover", "Command line client for fabric discovery service")
 	discovery.AddCommands(cli)

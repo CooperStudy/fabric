@@ -32,7 +32,7 @@ type Client struct {
 
 // NewRequest creates a new request
 func NewRequest() *Request {
-	fmt.Println("========NewRequest==========")
+	logger.Info("========NewRequest==========")
 	r := &Request{
 		invocationChainMapping: make(map[int][]InvocationChain),
 		queryMapping:           make(map[discovery.QueryType]map[string]int),
@@ -58,20 +58,20 @@ type Request struct {
 
 // AddConfigQuery adds to the request a config query
 func (req *Request) AddConfigQuery() *Request {
-	fmt.Println("=====Request===AddConfigQuery==========")
+	logger.Info("=====Request===AddConfigQuery==========")
 	ch := req.lastChannel
 
 	q := &discovery.Query_ConfigQuery{
 		ConfigQuery: &discovery.ConfigQuery{},
 	}
-	fmt.Println("=======ch",ch)//mychannel
-	fmt.Println("=======q",q)//&{}
+	logger.Info("=======ch",ch)//mychannel
+	logger.Info("=======q",q)//&{}
 	req.Queries = append(req.Queries, &discovery.Query{
 		Channel: ch,
 		Query:   q,
 	})
 	req.addQueryMapping(discovery.ConfigQueryType, ch)
-	fmt.Println("====req=",req)
+	logger.Info("====req=",req)
 	//queries:<channel:"mychannel" peer_query:<filter:<> > > queries:<channel:"mychannel" config_query:<> >
 	return req
 }
@@ -83,8 +83,8 @@ func (req *Request) AddConfigQuery() *Request {
 // 兴趣是客户端想要查询的链码兴趣。
 // 应在聚合切片中提供给定频道的所有兴趣
 func (req *Request) AddEndorsersQuery(interests ...*discovery.ChaincodeInterest) (*Request, error) {
-	fmt.Println("=====Request===AddEndorsersQuery==========")
-	fmt.Println("=======interests========",interests)//[chaincodes:<name:"mycc" > ]
+	logger.Info("=====Request===AddEndorsersQuery==========")
+	logger.Info("=======interests========",interests)//[chaincodes:<name:"mycc" > ]
 	if err := validateInterests(interests...); err != nil {
 		return nil, err
 	}
@@ -109,7 +109,7 @@ func (req *Request) AddEndorsersQuery(interests ...*discovery.ChaincodeInterest)
 
 // AddLocalPeersQuery adds to the request a local peer query
 func (req *Request) AddLocalPeersQuery() *Request {
-	fmt.Println("=====Request===AddLocalPeersQuery==========")
+	logger.Info("=====Request===AddLocalPeersQuery==========")
 	q := &discovery.Query_LocalPeers{
 		LocalPeers: &discovery.LocalPeerQuery{},
 	}
@@ -118,14 +118,14 @@ func (req *Request) AddLocalPeersQuery() *Request {
 	})
 	var ic InvocationChain
 	req.addQueryMapping(discovery.LocalMembershipQueryType, channnelAndInvocationChain("", ic))
-	fmt.Println("=============req",req)
+	logger.Info("=============req",req)
 	//queries:<channel:"mychannel" peer_query:<filter:<> > > queries:<channel:"mychannel" config_query:<> > queries:<local_peers:<> >
 	return req
 }
 
 // AddPeersQuery adds to the request a peer query
 func (req *Request) AddPeersQuery(invocationChain ...*discovery.ChaincodeCall) *Request {
-	fmt.Println("=====Request===AddPeersQuery==========invocationChain",invocationChain)//[]
+	logger.Info("=====Request===AddPeersQuery==========invocationChain",invocationChain)//[]
 	ch := req.lastChannel
 	q := &discovery.Query_PeerQuery{
 		PeerQuery: &discovery.PeerMembershipQuery{
@@ -148,39 +148,39 @@ func (req *Request) AddPeersQuery(invocationChain ...*discovery.ChaincodeCall) *
 }
 
 func channnelAndInvocationChain(ch string, ic InvocationChain) string {
-	fmt.Println("====channnelAndInvocationChain=========")
+	logger.Info("====channnelAndInvocationChain=========")
 	a:= fmt.Sprintf("%s %s", ch, ic.String())
-	fmt.Println("=======a",a)//mychannel null
+	logger.Info("=======a",a)//mychannel null
 	return a
 }
 
 // OfChannel sets the next queries added to be in the given channel's context
 func (req *Request) OfChannel(ch string) *Request {
-	fmt.Println("====Request===OfChannel======ch",ch)//mychannel
+	logger.Info("====Request===OfChannel======ch",ch)//mychannel
 	req.lastChannel = ch
 	return req
 }
 
 func (req *Request) addChaincodeQueryMapping(invocationChains []InvocationChain) {
-	fmt.Println("====Request===addChaincodeQueryMapping======")
-	fmt.Println("==req.lastIndex==",req.lastIndex)///0  3
-	fmt.Println("==invocationChains==",invocationChains)//[null] [[{"name":"mycc"}]]
+	logger.Info("====Request===addChaincodeQueryMapping======")
+	logger.Info("==req.lastIndex==",req.lastIndex)///0  3
+	logger.Info("==invocationChains==",invocationChains)//[null] [[{"name":"mycc"}]]
 	req.invocationChainMapping[req.lastIndex] = invocationChains
 }
 
 func (req *Request) addQueryMapping(queryType discovery.QueryType, key string) {
-	fmt.Println("====Request===addQueryMapping======")
-	fmt.Println("=====queryType====",queryType)//2 3
-	fmt.Println("=====key====",key)// mychannel null
-	fmt.Println("=====req.lastIndex====",req.lastIndex)//0 3
+	logger.Info("====Request===addQueryMapping======")
+	logger.Info("=====queryType====",queryType)//2 3
+	logger.Info("=====key====",key)// mychannel null
+	logger.Info("=====req.lastIndex====",req.lastIndex)//0 3
 	req.queryMapping[queryType][key] = req.lastIndex
 	req.lastIndex++
-	fmt.Println("===req.lastIndex===",req.lastIndex)//1 2
+	logger.Info("===req.lastIndex===",req.lastIndex)//1 2
 }
 
 // Send sends the request and returns the response, or error on failure
 func (c *Client) Send(ctx context.Context, req *Request, auth *discovery.AuthInfo) (Response, error) {
-	fmt.Println("====Client===Send======")
+	logger.Info("====Client===Send======")
 	reqToBeSent := *req.Request
 	reqToBeSent.Authentication = auth
 	payload, err := proto.Marshal(&reqToBeSent)
@@ -222,7 +222,7 @@ type localResponse struct {
 }
 
 func (cr *localResponse) Peers() ([]*Peer, error) {
-	fmt.Println("====localResponse===Peers======")
+	logger.Info("====localResponse===Peers======")
 	return parsePeers(discovery.LocalMembershipQueryType, cr.response, "")
 }
 
@@ -232,7 +232,7 @@ type channelResponse struct {
 }
 
 func (cr *channelResponse) Config() (*discovery.ConfigResult, error) {
-	fmt.Println("====channelResponse===Config======")
+	logger.Info("====channelResponse===Config======")
 	res, exists := cr.response[key{
 		queryType: discovery.ConfigQueryType,
 		k:         cr.channel,
@@ -250,7 +250,7 @@ func (cr *channelResponse) Config() (*discovery.ConfigResult, error) {
 }
 
 func parsePeers(queryType discovery.QueryType, r response, channel string, invocationChain ...*discovery.ChaincodeCall) ([]*Peer, error) {
-	fmt.Println("====parsePeers======")
+	logger.Info("====parsePeers======")
 	peerKeys := key{
 		queryType: queryType,
 		k:         fmt.Sprintf("%s %s", channel, InvocationChain(invocationChain).String()),
@@ -269,12 +269,12 @@ func parsePeers(queryType discovery.QueryType, r response, channel string, invoc
 }
 
 func (cr *channelResponse) Peers(invocationChain ...*discovery.ChaincodeCall) ([]*Peer, error) {
-	fmt.Println("====channelResponse==Peers====")
+	logger.Info("====channelResponse==Peers====")
 	return parsePeers(discovery.PeerMembershipQueryType, cr.response, cr.channel, invocationChain...)
 }
 
 func (cr *channelResponse) Endorsers(invocationChain InvocationChain, f Filter) (Endorsers, error) {
-	fmt.Println("====channelResponse==Endorsers====")
+	logger.Info("====channelResponse==Endorsers====")
 	// If we have a key that has no chaincode field,
 	// it means it's an error returned from the service
 	if err, exists := cr.response[key{
@@ -316,7 +316,7 @@ type filter struct {
 // NewFilter returns an endorser filter that uses the given exclusion filter and priority selector
 // to filter and sort the endorsers
 func NewFilter(ps PrioritySelector, ef ExclusionFilter) Filter {
-	fmt.Println("====NewFilter====")
+	logger.Info("====NewFilter====")
 	return &filter{
 		ef: ef,
 		ps: ps,
@@ -325,7 +325,7 @@ func NewFilter(ps PrioritySelector, ef ExclusionFilter) Filter {
 
 // Filter returns a filtered and sorted list of endorsers
 func (f *filter) Filter(endorsers Endorsers) Endorsers {
-	fmt.Println("====filter==Filter====")
+	logger.Info("====filter==Filter====")
 	return endorsers.Shuffle().Filter(f.ef).Sort(f.ps)
 }
 
@@ -333,7 +333,7 @@ func (f *filter) Filter(endorsers Endorsers) Endorsers {
 var NoFilter = NewFilter(NoPriorities, NoExclusion)
 
 func selectPeersForLayout(endorsersByGroups map[string][]*Peer, layout map[string]int, f Filter) (Endorsers, bool) {
-	fmt.Println("====selectPeersForLayout====")
+	logger.Info("====selectPeersForLayout====")
 	var endorsers []*Peer
 	for grp, count := range layout {
 		endorsersOfGrp := f.Filter(Endorsers(endorsersByGroups[grp]))
@@ -352,14 +352,14 @@ func selectPeersForLayout(endorsersByGroups map[string][]*Peer, layout map[strin
 }
 
 func (resp response) ForLocal() LocalResponse {
-	fmt.Println("====response==ForLocal==")
+	logger.Info("====response==ForLocal==")
 	return &localResponse{
 		response: resp,
 	}
 }
 
 func (resp response) ForChannel(ch string) ChannelResponse {
-	fmt.Println("====response==ForChannel==")
+	logger.Info("====response==ForChannel==")
 	return &channelResponse{
 		channel:  ch,
 		response: resp,
@@ -373,22 +373,22 @@ type key struct {
 }
 
 func (req *Request) computeResponse(r *discovery.Response) (response, error) {
-	fmt.Println("====Request==computeResponse==")
+	logger.Info("====Request==computeResponse==")
 	var err error
 	resp := make(response)
 	for configType, channel2index := range req.queryMapping {
 		switch configType {
 		case discovery.ConfigQueryType:
-			fmt.Println("==========discovery.ConfigQueryType===================")
+			logger.Info("==========discovery.ConfigQueryType===================")
 			err = resp.mapConfig(channel2index, r)
 		case discovery.ChaincodeQueryType:
-			fmt.Println("==========discovery.ChaincodeQueryType==================")
+			logger.Info("==========discovery.ChaincodeQueryType==================")
 			err = resp.mapEndorsers(channel2index, r, req.invocationChainMapping)
 		case discovery.PeerMembershipQueryType:
-			fmt.Println("==========discovery.PeerMembershipQueryType:==================")
+			logger.Info("==========discovery.PeerMembershipQueryType:==================")
 			err = resp.mapPeerMembership(channel2index, r, discovery.PeerMembershipQueryType)
 		case discovery.LocalMembershipQueryType:
-			fmt.Println("==========discovery.LocalMembershipQueryType==================")
+			logger.Info("==========discovery.LocalMembershipQueryType==================")
 			err = resp.mapPeerMembership(channel2index, r, discovery.LocalMembershipQueryType)
 		}
 		if err != nil {
@@ -400,7 +400,7 @@ func (req *Request) computeResponse(r *discovery.Response) (response, error) {
 }
 
 func (resp response) mapConfig(channel2index map[string]int, r *discovery.Response) error {
-	fmt.Println("====response==mapConfig==")
+	logger.Info("====response==mapConfig==")
 	for ch, index := range channel2index {
 		config, err := r.ConfigAt(index)
 		if config == nil && err == nil {
@@ -422,7 +422,7 @@ func (resp response) mapConfig(channel2index map[string]int, r *discovery.Respon
 }
 
 func (resp response) mapPeerMembership(key2Index map[string]int, r *discovery.Response, qt discovery.QueryType) error {
-	fmt.Println("====response==mapPeerMembership==")
+	logger.Info("====response==mapPeerMembership==")
 	for k, index := range key2Index {
 		membersRes, err := r.MembershipAt(index)
 		if membersRes == nil && err == nil {
@@ -450,13 +450,13 @@ func (resp response) mapPeerMembership(key2Index map[string]int, r *discovery.Re
 }
 
 func peersForChannel(membersRes *discovery.PeerMembershipResult, qt discovery.QueryType) ([]*Peer, error) {
-	fmt.Println("====response==peersForChannel==")
+	logger.Info("====response==peersForChannel==")
 	var peers []*Peer
 	for org, peersOfCurrentOrg := range membersRes.PeersByOrg {
-		fmt.Println("=================org===========",org)
-		fmt.Println("=================peersOfCurrentOrg===========",peersOfCurrentOrg)
+		logger.Info("=================org===========",org)
+		logger.Info("=================peersOfCurrentOrg===========",peersOfCurrentOrg)
 		for _, peer := range peersOfCurrentOrg.Peers {
-			fmt.Println("============peer===================")
+			logger.Info("============peer===================")
 			aliveMsg, err := peer.MembershipInfo.ToGossipMessage()
 			if err != nil {
 				return nil, errors.Wrap(err, "failed unmarshaling alive message")
@@ -486,8 +486,8 @@ func peersForChannel(membersRes *discovery.PeerMembershipResult, qt discovery.Qu
 }
 
 func isStateInfoExpected(qt discovery.QueryType) bool {
-	fmt.Println("====isStateInfoExpected==")
-	fmt.Println("======================qt != discovery.LocalMembershipQueryType==================",qt != discovery.LocalMembershipQueryType)
+	logger.Info("====isStateInfoExpected==")
+	logger.Info("======================qt != discovery.LocalMembershipQueryType==================",qt != discovery.LocalMembershipQueryType)
 	return qt != discovery.LocalMembershipQueryType
 }
 
@@ -496,7 +496,7 @@ func (resp response) mapEndorsers(
 	r *discovery.Response,
 	chaincodeQueryMapping map[int][]InvocationChain) error {
 
-	fmt.Println("====response==mapEndorsers==")
+	logger.Info("====response==mapEndorsers==")
 
 	for ch, index := range channel2index {
 		ccQueryRes, err := r.EndorsersAt(index)
@@ -522,7 +522,7 @@ func (resp response) mapEndorsers(
 
 func (resp response) mapEndorsersOfChannel(ccRs *discovery.ChaincodeQueryResult, channel string, invocationChain []InvocationChain) error {
 
-	fmt.Println("====response==mapEndorsersOfChannel==")
+	logger.Info("====response==mapEndorsersOfChannel==")
 	if len(ccRs.Content) < len(invocationChain) {
 		return errors.Errorf("expected %d endorsement descriptors but got only %d", len(invocationChain), len(ccRs.Content))
 	}
@@ -548,7 +548,7 @@ func (resp response) mapEndorsersOfChannel(ccRs *discovery.ChaincodeQueryResult,
 }
 
 func (resp response) createEndorsementDescriptor(desc *discovery.EndorsementDescriptor, channel string) (*endorsementDescriptor, error) {
-	fmt.Println("====response==createEndorsementDescriptor==")
+	logger.Info("====response==createEndorsementDescriptor==")
 	descriptor := &endorsementDescriptor{
 		layouts:           []map[string]int{},
 		endorsersByGroups: make(map[string][]*Peer),
@@ -580,19 +580,19 @@ func (resp response) createEndorsementDescriptor(desc *discovery.EndorsementDesc
 }
 
 func endorser(peer *discovery.Peer, chaincode, channel string) (*Peer, error) {
-	fmt.Println("====endorser==")
-	fmt.Println("===========peer.MembershipInfo==========================",peer.MembershipInfo)
-	fmt.Println("===========peer.StateInfo==========================",peer.StateInfo)
+	logger.Info("====endorser==")
+	logger.Info("===========peer.MembershipInfo==========================",peer.MembershipInfo)
+	logger.Info("===========peer.StateInfo==========================",peer.StateInfo)
 	if peer.MembershipInfo == nil || peer.StateInfo == nil {
 		return nil, errors.Errorf("received empty envelope(s) for endorsers for chaincode %s, channel %s", chaincode, channel)
 	}
 	aliveMsg, err := peer.MembershipInfo.ToGossipMessage()
-	fmt.Println("===========aliveMsg==========================",aliveMsg)
+	logger.Info("===========aliveMsg==========================",aliveMsg)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed unmarshaling gossip envelope to alive message")
 	}
 	stateInfMsg, err := peer.StateInfo.ToGossipMessage()
-	fmt.Println("===========stateInfMsg==========================",stateInfMsg)
+	logger.Info("===========stateInfMsg==========================",stateInfMsg)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed unmarshaling gossip envelope to state info message")
 	}
@@ -621,7 +621,7 @@ type endorsementDescriptor struct {
 
 // NewClient creates a new Client instance
 func NewClient(createConnection Dialer, s Signer, signerCacheSize uint) *Client {
-	fmt.Println("====NewClient==")
+	logger.Info("====NewClient==")
 	return &Client{
 		createConnection: createConnection,
 		signRequest:      NewMemoizeSigner(s, signerCacheSize).Sign,
@@ -629,18 +629,18 @@ func NewClient(createConnection Dialer, s Signer, signerCacheSize uint) *Client 
 }
 
 func validateAliveMessage(message *gossip.SignedGossipMessage) error {
-	fmt.Println("====validateAliveMessage==")
+	logger.Info("====validateAliveMessage==")
 	am := message.GetAliveMsg()
-	fmt.Println("======am===========",am)
+	logger.Info("======am===========",am)
 	if am == nil {
 		return errors.New("message isn't an alive message")
 	}
 	m := am.Membership
-	fmt.Println("======m===========",m)
+	logger.Info("======m===========",m)
 	if m == nil {
 		return errors.New("membership is empty")
 	}
-	fmt.Println("======am.Timestamp==========",am.Timestamp)
+	logger.Info("======am.Timestamp==========",am.Timestamp)
 	if am.Timestamp == nil {
 		return errors.New("timestamp is nil")
 	}
@@ -648,17 +648,17 @@ func validateAliveMessage(message *gossip.SignedGossipMessage) error {
 }
 
 func validateStateInfoMessage(message *gossip.SignedGossipMessage) error {
-	fmt.Println("====validateStateInfoMessage==")
+	logger.Info("====validateStateInfoMessage==")
 	si := message.GetStateInfo()
-	fmt.Println("===========si===============",si)
+	logger.Info("===========si===============",si)
 	if si == nil {
 		return errors.New("message isn't a stateInfo message")
 	}
-	fmt.Println("===========si.Timestamp===============",si.Timestamp)
+	logger.Info("===========si.Timestamp===============",si.Timestamp)
 	if si.Timestamp == nil {
 		return errors.New("timestamp is nil")
 	}
-	fmt.Println("===========si.Properties ===============",si.Properties)
+	logger.Info("===========si.Properties ===============",si.Properties)
 	if si.Properties == nil {
 		return errors.New("properties is nil")
 	}
@@ -666,13 +666,13 @@ func validateStateInfoMessage(message *gossip.SignedGossipMessage) error {
 }
 
 func validateInterests(interests ...*discovery.ChaincodeInterest) error {
-	fmt.Println("====validateInterests==")
-	fmt.Println("=======len(interests)=====",len(interests)) //1
+	logger.Info("====validateInterests==")
+	logger.Info("=======len(interests)=====",len(interests)) //1
 	if len(interests) == 0 {
 		return errors.New("no chaincode interests given")
 	}
 	for _, interest := range interests {
-		fmt.Println("=======interest========",interest) //chaincodes:<name:"mycc" >
+		logger.Info("=======interest========",interest) //chaincodes:<name:"mycc" >
 		if interest == nil {
 			return errors.New("chaincode interest is nil")
 		}
@@ -688,21 +688,21 @@ type InvocationChain []*discovery.ChaincodeCall
 
 // String returns a string representation of this invocation chain
 func (ic InvocationChain) String() string {
-	fmt.Println("====InvocationChain==String==")
+	logger.Info("====InvocationChain==String==")
 	s, _ := json.Marshal(ic)
 	a := string(s)
-	fmt.Println("====a==",a) //null
+	logger.Info("====a==",a) //null
 	return a
 }
 
 // ValidateInvocationChain validates the InvocationChain's structure
 func (ic InvocationChain) ValidateInvocationChain() error {
-	fmt.Println("====InvocationChain==ValidateInvocationChain==")
+	logger.Info("====InvocationChain==ValidateInvocationChain==")
 	if len(ic) == 0 {
 		return errors.New("invocation chain should not be empty")
 	}
 	for _, cc := range ic {
-		fmt.Println("=========cc===",cc)//name:"mycc"
+		logger.Info("=========cc===",cc)//name:"mycc"
 		if cc.Name == "" {
 			return errors.New("chaincode name should not be empty")
 		}

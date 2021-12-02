@@ -74,7 +74,7 @@ func isECDSASignedCert(cert *x509.Certificate) bool {
 // If the signature is not in low-S, then a new certificate is generated
 // that is equals to cert but the signature that is in low-S.
 func sanitizeECDSASignedCert(cert *x509.Certificate, parentCert *x509.Certificate) (*x509.Certificate, error) {
-	fmt.Println("====sanitizeECDSASignedCert==")
+	logger.Info("====sanitizeECDSASignedCert==")
 	if cert == nil {
 		return nil, errors.New("certificate must be different from nil")
 	}
@@ -82,7 +82,7 @@ func sanitizeECDSASignedCert(cert *x509.Certificate, parentCert *x509.Certificat
 		return nil, errors.New("parent certificate must be different from nil")
 	}
 
-	fmt.Println("============utils.SignatureToLowS===================")
+	logger.Info("============utils.SignatureToLowS===================")
 	expectedSig, err := utils.SignatureToLowS(parentCert.PublicKey.(*ecdsa.PublicKey), cert.Signature)
 	if err != nil {
 		return nil, err
@@ -118,7 +118,7 @@ func sanitizeECDSASignedCert(cert *x509.Certificate, parentCert *x509.Certificat
 }
 
 func certFromX509Cert(cert *x509.Certificate) (certificate, error) {
-	fmt.Println("====certFromX509Cert==")
+	logger.Info("====certFromX509Cert==")
 	var newCert certificate
 	_, err := asn1.Unmarshal(cert.Raw, &newCert)
 	if err != nil {
@@ -129,7 +129,7 @@ func certFromX509Cert(cert *x509.Certificate) (certificate, error) {
 
 // String returns a PEM representation of a certificate
 func (c certificate) String() string {
-	fmt.Println("====certificate==String==")
+	logger.Info("====certificate==String==")
 	b, err := asn1.Marshal(c)
 	if err != nil {
 		return fmt.Sprintf("Failed marshaling cert: %v", err)
@@ -145,7 +145,7 @@ func (c certificate) String() string {
 // certToPEM converts the given x509.Certificate to a PEM
 // encoded string
 func certToPEM(certificate *x509.Certificate) string {
-	fmt.Println("====certToPEM===")
+	logger.Info("====certToPEM===")
 	cert, err := certFromX509Cert(certificate)
 	if err != nil {
 		mspIdentityLogger.Warning("Failed converting certificate to asn1", err)

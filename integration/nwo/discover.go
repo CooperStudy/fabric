@@ -27,7 +27,7 @@ type DiscoveredPeer struct {
 // running discovery service command discover peers against peer using channel name and user as specified in the
 // function arguments. return a slice of the discovered peers
 func DiscoverPeers(n *Network, p *Peer, user, channelName string) func() []DiscoveredPeer {
-	fmt.Println("=====DiscoverPeers==========")
+	logger.Info("=====DiscoverPeers==========")
 	return func() []DiscoveredPeer {
 		peers := commands.Peers{
 			UserCert: n.PeerUserCert(p, user),

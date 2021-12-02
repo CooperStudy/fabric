@@ -33,7 +33,7 @@ type config struct {
 }
 
 func (conf *config) setSecurityLevel(securityLevel int, hashFamily string) (err error) {
-	fmt.Println("===config=setSecurityLevel======")
+	logger.Info("===config=setSecurityLevel======")
 	switch hashFamily {
 	case "SHA2":
 		err = conf.setSecurityLevelSHA2(securityLevel)
@@ -46,7 +46,7 @@ func (conf *config) setSecurityLevel(securityLevel int, hashFamily string) (err 
 }
 
 func (conf *config) setSecurityLevelSHA2(level int) (err error) {
-	fmt.Println("===config=setSecurityLevelSHA2======")
+	logger.Info("===config=setSecurityLevelSHA2======")
 	switch level {
 	case 256:
 		conf.ellipticCurve = elliptic.P256()
@@ -65,7 +65,7 @@ func (conf *config) setSecurityLevelSHA2(level int) (err error) {
 }
 
 func (conf *config) setSecurityLevelSHA3(level int) (err error) {
-	fmt.Println("===config=setSecurityLevelSHA3======")
+	logger.Info("===config=setSecurityLevelSHA3======")
 	switch level {
 	case 256:
 		conf.ellipticCurve = elliptic.P256()

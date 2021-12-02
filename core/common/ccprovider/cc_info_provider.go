@@ -9,14 +9,16 @@ package ccprovider
 import (
 	"bytes"
 	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/core/common/sysccprovider"
 )
 
+var logger = flogging.MustGetLogger("core.common.ccprovider")
 // IsChaincodeDeployed returns true if the chaincode with given name and version is deployed
 func IsChaincodeDeployed(chainid, ccName, ccVersion string, ccHash []byte, sccp sysccprovider.SystemChaincodeProvider) (bool, error) {
-	fmt.Println("==IsChaincodeDeployed===")
+	logger.Info("==IsChaincodeDeployed===")
 	qe, err := sccp.GetQueryExecutorForLedger(chainid)
 	if err != nil {
 		return false, fmt.Errorf("Could not retrieve QueryExecutor for channel %s, error %s", chainid, err)

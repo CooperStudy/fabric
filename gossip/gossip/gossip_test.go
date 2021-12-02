@@ -422,7 +422,7 @@ func TestPull(t *testing.T) {
 
 	t.Log("Took", time.Since(t1))
 	atomic.StoreInt32(&stopped, int32(1))
-	fmt.Println("<<<TestPull>>>")
+	logger.Info("<<<TestPull>>>")
 }
 
 func TestConnectToAnchorPeers(t *testing.T) {
@@ -489,7 +489,7 @@ func TestConnectToAnchorPeers(t *testing.T) {
 	}
 	waitUntilOrFailBlocking(t, stop)
 
-	fmt.Println("<<<TestConnectToAnchorPeers>>>")
+	logger.Info("<<<TestConnectToAnchorPeers>>>")
 	atomic.StoreInt32(&stopped, int32(1))
 
 }
@@ -559,7 +559,7 @@ func TestMembership(t *testing.T) {
 	}
 	metadataDisseminationTime := time.Now()
 	waitUntilOrFail(t, metaDataUpdated)
-	fmt.Println("Metadata updated")
+	logger.Info("Metadata updated")
 	t.Log("Metadata dissemination took", time.Since(metadataDisseminationTime))
 
 	stop := func() {
@@ -572,7 +572,7 @@ func TestMembership(t *testing.T) {
 
 	t.Log("Took", time.Since(t1))
 	atomic.StoreInt32(&stopped, int32(1))
-	fmt.Println("<<<TestMembership>>>")
+	logger.Info("<<<TestMembership>>>")
 
 }
 
@@ -761,7 +761,7 @@ func TestDissemination(t *testing.T) {
 	t.Log("Stop took", time.Since(stopTime))
 	t.Log("Took", time.Since(t1))
 	atomic.StoreInt32(&stopped, int32(1))
-	fmt.Println("<<<TestDissemination>>>")
+	logger.Info("<<<TestDissemination>>>")
 }
 
 func TestMembershipConvergence(t *testing.T) {
@@ -859,7 +859,7 @@ func TestMembershipConvergence(t *testing.T) {
 	waitUntilOrFailBlocking(t, stop)
 	atomic.StoreInt32(&stopped, int32(1))
 	t.Log("Took", time.Since(t1))
-	fmt.Println("<<<TestMembershipConvergence>>>")
+	logger.Info("<<<TestMembershipConvergence>>>")
 }
 
 func TestMembershipRequestSpoofing(t *testing.T) {
@@ -1054,7 +1054,7 @@ func TestDataLeakage(t *testing.T) {
 	waitUntilOrFailBlocking(t, stop)
 	t.Log("Stop took", time.Since(stopTime))
 	atomic.StoreInt32(&stopped, int32(1))
-	fmt.Println("<<<TestDataLeakage>>>")
+	logger.Info("<<<TestDataLeakage>>>")
 }
 
 func TestDisseminateAll2All(t *testing.T) {
@@ -1124,7 +1124,7 @@ func TestDisseminateAll2All(t *testing.T) {
 	}
 	waitUntilOrFailBlocking(t, stop)
 	atomic.StoreInt32(&stopped, int32(1))
-	fmt.Println("<<<TestDisseminateAll2All>>>")
+	logger.Info("<<<TestDisseminateAll2All>>>")
 	testWG.Done()
 }
 
@@ -1349,7 +1349,7 @@ func TestIdentityExpiration(t *testing.T) {
 				expectedNeighborCount = 0
 			}
 			if neighborCount != expectedNeighborCount {
-				fmt.Println("neighbor count of", i, "is", neighborCount)
+				logger.Info("neighbor count of", i, "is", neighborCount)
 				return false
 			}
 		}

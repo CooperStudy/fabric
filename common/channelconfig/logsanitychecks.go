@@ -12,7 +12,7 @@ import (
 )
 
 func LogSanityChecks(res Resources) {
-	fmt.Println("=====LogSanityChecks====")
+	logger.Info("=====LogSanityChecks====")
 	pm := res.PolicyManager()
 	for _, policyName := range []string{policies.ChannelReaders, policies.ChannelWriters} {
 		_, ok := pm.GetPolicy(policyName)

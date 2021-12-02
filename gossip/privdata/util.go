@@ -31,17 +31,17 @@ type blockFactory struct {
 }
 
 func (bf *blockFactory) AddTxn(txID string, nsName string, hash []byte, collections ...string) *blockFactory {
-	fmt.Println("===blockFactory===AddTxn=")
+	logger.Info("===blockFactory===AddTxn=")
 	return bf.AddTxnWithEndorsement(txID, nsName, hash, "", true, collections...)
 }
 
 func (bf *blockFactory) AddReadOnlyTxn(txID string, nsName string, hash []byte, collections ...string) *blockFactory {
-	fmt.Println("===blockFactory===AddReadOnlyTxn=")
+	logger.Info("===blockFactory===AddReadOnlyTxn=")
 	return bf.AddTxnWithEndorsement(txID, nsName, hash, "", false, collections...)
 }
 
 func (bf *blockFactory) AddTxnWithEndorsement(txID string, nsName string, hash []byte, org string, hasWrites bool, collections ...string) *blockFactory {
-	fmt.Println("===blockFactory===AddTxnWithEndorsement=")
+	logger.Info("===blockFactory===AddTxnWithEndorsement=")
 	txn := &peer.Transaction{
 		Actions: []*peer.TransactionAction{
 			{},
@@ -124,7 +124,7 @@ func (bf *blockFactory) AddTxnWithEndorsement(txID string, nsName string, hash [
 }
 
 func (bf *blockFactory) create() *common.Block {
-	fmt.Println("===blockFactory===create=")
+	logger.Info("===blockFactory===create=")
 	defer func() {
 		*bf = blockFactory{channelID: bf.channelID}
 	}()
@@ -157,19 +157,19 @@ func (bf *blockFactory) create() *common.Block {
 }
 
 func (bf *blockFactory) withoutMetadata() *blockFactory {
-	fmt.Println("===blockFactory===withoutMetadata=")
+	logger.Info("===blockFactory===withoutMetadata=")
 	bf.lacksMetadata = true
 	return bf
 }
 
 func (bf *blockFactory) withMetadataSize(mdSize int) *blockFactory {
-	fmt.Println("===blockFactory===withMetadataSize=")
+	logger.Info("===blockFactory===withMetadataSize=")
 	bf.metadataSize = mdSize
 	return bf
 }
 
 func (bf *blockFactory) withInvalidTxns(sequences ...int) *blockFactory {
-	fmt.Println("===blockFactory===withInvalidTxns=")
+	logger.Info("===blockFactory===withInvalidTxns=")
 	bf.invalidTxns = make(map[int]struct{})
 	for _, seq := range sequences {
 		bf.invalidTxns[seq] = struct{}{}
@@ -178,7 +178,7 @@ func (bf *blockFactory) withInvalidTxns(sequences ...int) *blockFactory {
 }
 
 func sampleNsRwSet(ns string, hash []byte, collections ...string) *rwsetutil.NsRwSet {
-	fmt.Println("===sampleNsRwSet=")
+	logger.Info("===sampleNsRwSet=")
 	nsRwSet := &rwsetutil.NsRwSet{NameSpace: ns,
 		KvRwSet: sampleKvRwSet(),
 	}
@@ -189,7 +189,7 @@ func sampleNsRwSet(ns string, hash []byte, collections ...string) *rwsetutil.NsR
 }
 
 func sampleReadOnlyNsRwSet(ns string, hash []byte, collections ...string) *rwsetutil.NsRwSet {
-	fmt.Println("===sampleReadOnlyNsRwSet=")
+	logger.Info("===sampleReadOnlyNsRwSet=")
 	nsRwSet := &rwsetutil.NsRwSet{NameSpace: ns,
 		KvRwSet: sampleKvRwSet(),
 	}
@@ -200,7 +200,7 @@ func sampleReadOnlyNsRwSet(ns string, hash []byte, collections ...string) *rwset
 }
 
 func sampleKvRwSet() *kvrwset.KVRWSet {
-	fmt.Println("===sampleKvRwSet=")
+	logger.Info("===sampleKvRwSet=")
 	rqi1 := &kvrwset.RangeQueryInfo{StartKey: "k0", EndKey: "k9", ItrExhausted: true}
 	rqi1.SetRawReads([]*kvrwset.KVRead{
 		{Key: "k1", Version: &kvrwset.Version{BlockNum: 1, TxNum: 1}},
@@ -217,7 +217,7 @@ func sampleKvRwSet() *kvrwset.KVRWSet {
 }
 
 func sampleCollHashedRwSet(collectionName string, hash []byte, hasWrites bool) *rwsetutil.CollHashedRwSet {
-	fmt.Println("===sampleCollHashedRwSet=")
+	logger.Info("===sampleCollHashedRwSet=")
 	collHashedRwSet := &rwsetutil.CollHashedRwSet{
 		CollectionName: collectionName,
 		HashedRwSet: &kvrwset.HashedRWSet{
@@ -238,7 +238,7 @@ func sampleCollHashedRwSet(collectionName string, hash []byte, hasWrites bool) *
 }
 
 func extractCollectionConfig(configPackage *common.CollectionConfigPackage, collectionName string) *common.CollectionConfig {
-	fmt.Println("===extractCollectionConfig=")
+	logger.Info("===extractCollectionConfig=")
 	for _, config := range configPackage.Config {
 		switch cconf := config.Payload.(type) {
 		case *common.CollectionConfig_StaticCollectionConfig:
@@ -257,7 +257,7 @@ type pvtDataFactory struct {
 }
 
 func (df *pvtDataFactory) addRWSet() *pvtDataFactory {
-	fmt.Println("===pvtDataFactory===addRWSet===")
+	logger.Info("===pvtDataFactory===addRWSet===")
 	seqInBlock := uint64(len(df.data))
 	df.data = append(df.data, &ledger.TxPvtData{
 		SeqInBlock: seqInBlock,
@@ -267,7 +267,7 @@ func (df *pvtDataFactory) addRWSet() *pvtDataFactory {
 }
 
 func (df *pvtDataFactory) addNSRWSet(namespace string, collections ...string) *pvtDataFactory {
-	fmt.Println("===pvtDataFactory===addNSRWSet===")
+	logger.Info("===pvtDataFactory===addNSRWSet===")
 	nsrws := &rwset.NsPvtReadWriteSet{
 		Namespace: namespace,
 	}
@@ -282,7 +282,7 @@ func (df *pvtDataFactory) addNSRWSet(namespace string, collections ...string) *p
 }
 
 func (df *pvtDataFactory) create() []*ledger.TxPvtData {
-	fmt.Println("===pvtDataFactory===create===")
+	logger.Info("===pvtDataFactory===create===")
 	defer func() {
 		df.data = nil
 	}()
@@ -295,13 +295,13 @@ type digestsAndSourceFactory struct {
 }
 
 func (f *digestsAndSourceFactory) mapDigest(dig *privdatacommon.DigKey) *digestsAndSourceFactory {
-	fmt.Println("===digestsAndSourceFactory===mapDigest===")
+	logger.Info("===digestsAndSourceFactory===mapDigest===")
 	f.lastDig = dig
 	return f
 }
 
 func (f *digestsAndSourceFactory) toSources(peers ...string) *digestsAndSourceFactory {
-	fmt.Println("===digestsAndSourceFactory===toSources===")
+	logger.Info("===digestsAndSourceFactory===toSources===")
 	if f.d2s == nil {
 		f.d2s = make(dig2sources)
 	}
@@ -316,6 +316,6 @@ func (f *digestsAndSourceFactory) toSources(peers ...string) *digestsAndSourceFa
 }
 
 func (f *digestsAndSourceFactory) create() dig2sources {
-	fmt.Println("===digestsAndSourceFactory===create===")
+	logger.Info("===digestsAndSourceFactory===create===")
 	return f.d2s
 }

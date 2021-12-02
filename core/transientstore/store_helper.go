@@ -9,7 +9,6 @@ package transientstore
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"path/filepath"
 
 	"github.com/hyperledger/fabric/common/ledger/util"
@@ -29,7 +28,7 @@ var (
 // createCompositeKeyForPvtRWSet creates a key for storing private write set
 // in the transient store. The structure of the key is <prwsetPrefix>~txid~uuid~blockHeight.
 func createCompositeKeyForPvtRWSet(txid string, uuid string, blockHeight uint64) []byte {
-	fmt.Println("=createCompositeKeyForPvtRWSet==")
+	logger.Info("=createCompositeKeyForPvtRWSet==")
 	var compositeKey []byte
 	compositeKey = append(compositeKey, prwsetPrefix)
 	compositeKey = append(compositeKey, compositeKeySep)
@@ -42,7 +41,7 @@ func createCompositeKeyForPvtRWSet(txid string, uuid string, blockHeight uint64)
 // txid such that purge based on txid can be achieved. The structure
 // of the key is <purgeIndexByTxidPrefix>~txid~uuid~blockHeight.
 func createCompositeKeyForPurgeIndexByTxid(txid string, uuid string, blockHeight uint64) []byte {
-	fmt.Println("=createCompositeKeyForPurgeIndexByTxid==")
+	logger.Info("=createCompositeKeyForPurgeIndexByTxid==")
 	var compositeKey []byte
 	compositeKey = append(compositeKey, purgeIndexByTxidPrefix)
 	compositeKey = append(compositeKey, compositeKeySep)
@@ -53,7 +52,7 @@ func createCompositeKeyForPurgeIndexByTxid(txid string, uuid string, blockHeight
 
 // createCompositeKeyWithoutPrefixForTxid creates a composite key of structure txid~uuid~blockHeight.
 func createCompositeKeyWithoutPrefixForTxid(txid string, uuid string, blockHeight uint64) []byte {
-	fmt.Println("=createCompositeKeyWithoutPrefixForTxid==")
+	logger.Info("=createCompositeKeyWithoutPrefixForTxid==")
 	var compositeKey []byte
 	compositeKey = append(compositeKey, []byte(txid)...)
 	compositeKey = append(compositeKey, compositeKeySep)
@@ -68,7 +67,7 @@ func createCompositeKeyWithoutPrefixForTxid(txid string, uuid string, blockHeigh
 // received at block height such that purge based on block height can be achieved. The structure
 // of the key is <purgeIndexByHeightPrefix>~blockHeight~txid~uuid.
 func createCompositeKeyForPurgeIndexByHeight(blockHeight uint64, txid string, uuid string) []byte {
-	fmt.Println("=createCompositeKeyForPurgeIndexByHeight==")
+	logger.Info("=createCompositeKeyForPurgeIndexByHeight==")
 	var compositeKey []byte
 	compositeKey = append(compositeKey, purgeIndexByHeightPrefix)
 	compositeKey = append(compositeKey, compositeKeySep)
@@ -84,21 +83,21 @@ func createCompositeKeyForPurgeIndexByHeight(blockHeight uint64, txid string, uu
 // splitCompositeKeyOfPvtRWSet splits the compositeKey (<prwsetPrefix>~txid~uuid~blockHeight)
 // into uuid and blockHeight.
 func splitCompositeKeyOfPvtRWSet(compositeKey []byte) (uuid string, blockHeight uint64) {
-	fmt.Println("=splitCompositeKeyOfPvtRWSet==")
+	logger.Info("=splitCompositeKeyOfPvtRWSet==")
 	return splitCompositeKeyWithoutPrefixForTxid(compositeKey[2:])
 }
 
 // splitCompositeKeyOfPurgeIndexByTxid splits the compositeKey (<purgeIndexByTxidPrefix>~txid~uuid~blockHeight)
 // into uuid and blockHeight.
 func splitCompositeKeyOfPurgeIndexByTxid(compositeKey []byte) (uuid string, blockHeight uint64) {
-	fmt.Println("=splitCompositeKeyOfPurgeIndexByTxid==")
+	logger.Info("=splitCompositeKeyOfPurgeIndexByTxid==")
 	return splitCompositeKeyWithoutPrefixForTxid(compositeKey[2:])
 }
 
 // splitCompositeKeyOfPurgeIndexByHeight splits the compositeKey (<purgeIndexByHeightPrefix>~blockHeight~txid~uuid)
 // into txid, uuid and blockHeight.
 func splitCompositeKeyOfPurgeIndexByHeight(compositeKey []byte) (txid string, uuid string, blockHeight uint64) {
-	fmt.Println("=splitCompositeKeyOfPurgeIndexByHeight==")
+	logger.Info("=splitCompositeKeyOfPurgeIndexByHeight==")
 	var n int
 	blockHeight, n = util.DecodeOrderPreservingVarUint64(compositeKey[2:])
 	splits := bytes.Split(compositeKey[n+3:], []byte{compositeKeySep})
@@ -110,7 +109,7 @@ func splitCompositeKeyOfPurgeIndexByHeight(compositeKey []byte) (txid string, uu
 // splitCompositeKeyWithoutPrefixForTxid splits the composite key txid~uuid~blockHeight into
 // uuid and blockHeight
 func splitCompositeKeyWithoutPrefixForTxid(compositeKey []byte) (uuid string, blockHeight uint64) {
-	fmt.Println("=splitCompositeKeyWithoutPrefixForTxid==")
+	logger.Info("=splitCompositeKeyWithoutPrefixForTxid==")
 	// skip txid as all functions which requires split of composite key already has it
 	firstSepIndex := bytes.IndexByte(compositeKey, compositeKeySep)
 	secondSepIndex := firstSepIndex + bytes.IndexByte(compositeKey[firstSepIndex+1:], compositeKeySep) + 1
@@ -121,7 +120,7 @@ func splitCompositeKeyWithoutPrefixForTxid(compositeKey []byte) (uuid string, bl
 
 // createTxidRangeStartKey returns a startKey to do a range query on transient store using txid
 func createTxidRangeStartKey(txid string) []byte {
-	fmt.Println("=createTxidRangeStartKey==")
+	logger.Info("=createTxidRangeStartKey==")
 	var startKey []byte
 	startKey = append(startKey, prwsetPrefix)
 	startKey = append(startKey, compositeKeySep)
@@ -132,7 +131,7 @@ func createTxidRangeStartKey(txid string) []byte {
 
 // createTxidRangeEndKey returns a endKey to do a range query on transient store using txid
 func createTxidRangeEndKey(txid string) []byte {
-	fmt.Println("=createTxidRangeEndKey==")
+	logger.Info("=createTxidRangeEndKey==")
 	var endKey []byte
 	endKey = append(endKey, prwsetPrefix)
 	endKey = append(endKey, compositeKeySep)
@@ -146,7 +145,7 @@ func createTxidRangeEndKey(txid string) []byte {
 // createPurgeIndexByHeightRangeStartKey returns a startKey to do a range query on index stored in transient store
 // using blockHeight
 func createPurgeIndexByHeightRangeStartKey(blockHeight uint64) []byte {
-	fmt.Println("=createPurgeIndexByHeightRangeStartKey==")
+	logger.Info("=createPurgeIndexByHeightRangeStartKey==")
 	var startKey []byte
 	startKey = append(startKey, purgeIndexByHeightPrefix)
 	startKey = append(startKey, compositeKeySep)
@@ -158,7 +157,7 @@ func createPurgeIndexByHeightRangeStartKey(blockHeight uint64) []byte {
 // createPurgeIndexByHeightRangeEndKey returns a endKey to do a range query on index stored in transient store
 // using blockHeight
 func createPurgeIndexByHeightRangeEndKey(blockHeight uint64) []byte {
-	fmt.Println("=createPurgeIndexByHeightRangeEndKey==")
+	logger.Info("=createPurgeIndexByHeightRangeEndKey==")
 	var endKey []byte
 	endKey = append(endKey, purgeIndexByHeightPrefix)
 	endKey = append(endKey, compositeKeySep)
@@ -170,7 +169,7 @@ func createPurgeIndexByHeightRangeEndKey(blockHeight uint64) []byte {
 // createPurgeIndexByTxidRangeStartKey returns a startKey to do a range query on index stored in transient store
 // using txid
 func createPurgeIndexByTxidRangeStartKey(txid string) []byte {
-	fmt.Println("=createPurgeIndexByTxidRangeStartKey==")
+	logger.Info("=createPurgeIndexByTxidRangeStartKey==")
 	var startKey []byte
 	startKey = append(startKey, purgeIndexByTxidPrefix)
 	startKey = append(startKey, compositeKeySep)
@@ -182,7 +181,7 @@ func createPurgeIndexByTxidRangeStartKey(txid string) []byte {
 // createPurgeIndexByTxidRangeEndKey returns a endKey to do a range query on index stored in transient store
 // using txid
 func createPurgeIndexByTxidRangeEndKey(txid string) []byte {
-	fmt.Println("=createPurgeIndexByTxidRangeEndKey==")
+	logger.Info("=createPurgeIndexByTxidRangeEndKey==")
 	var endKey []byte
 	endKey = append(endKey, purgeIndexByTxidPrefix)
 	endKey = append(endKey, compositeKeySep)
@@ -195,7 +194,7 @@ func createPurgeIndexByTxidRangeEndKey(txid string) []byte {
 
 // GetTransientStorePath returns the filesystem path for temporarily storing the private rwset
 func GetTransientStorePath() string {
-	fmt.Println("=GetTransientStorePath==")
+	logger.Info("=GetTransientStorePath==")
 	sysPath := config.GetPath("peer.fileSystemPath")
 	return filepath.Join(sysPath, "transientStore")
 }
@@ -203,7 +202,7 @@ func GetTransientStorePath() string {
 // trimPvtWSet returns a `TxPvtReadWriteSet` that retains only list of 'ns/collections' supplied in the filter
 // A nil filter does not filter any results and returns the original `pvtWSet` as is
 func trimPvtWSet(pvtWSet *rwset.TxPvtReadWriteSet, filter ledger.PvtNsCollFilter) *rwset.TxPvtReadWriteSet {
-	fmt.Println("=trimPvtWSet==")
+	logger.Info("=trimPvtWSet==")
 	if filter == nil {
 		return pvtWSet
 	}
@@ -238,7 +237,7 @@ func trimPvtWSet(pvtWSet *rwset.TxPvtReadWriteSet, filter ledger.PvtNsCollFilter
 func trimPvtCollectionConfigs(configs map[string]*common.CollectionConfigPackage,
 	filter ledger.PvtNsCollFilter) (map[string]*common.CollectionConfigPackage, error) {
 
-	fmt.Println("=trimPvtCollectionConfigs==")
+	logger.Info("=trimPvtCollectionConfigs==")
 	if filter == nil {
 		return configs, nil
 	}

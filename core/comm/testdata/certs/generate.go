@@ -121,7 +121,7 @@ func genCertificateECDSA(name string, template, parent *x509.Certificate, pub *e
 
 //generate an EC certificate appropriate for use by a TLS server
 func genServerCertificateECDSA(name string, signKey *ecdsa.PrivateKey, signCert *x509.Certificate) error {
-	fmt.Println(name)
+	logger.Info(name)
 	key, err := genKeyECDSA(name)
 	template, err := x509Template()
 
@@ -152,7 +152,7 @@ func genServerCertificateECDSA(name string, signKey *ecdsa.PrivateKey, signCert 
 
 //generate an EC certificate appropriate for use by a TLS server
 func genClientCertificateECDSA(name string, signKey *ecdsa.PrivateKey, signCert *x509.Certificate) error {
-	fmt.Println(name)
+	logger.Info(name)
 	key, err := genKeyECDSA(name)
 	template, err := x509Template()
 
@@ -214,7 +214,7 @@ func genCertificateAuthorityECDSA(name string) (*ecdsa.PrivateKey, *x509.Certifi
 func genIntermediateCertificateAuthorityECDSA(name string, signKey *ecdsa.PrivateKey,
 	signCert *x509.Certificate) (*ecdsa.PrivateKey, *x509.Certificate, error) {
 
-	fmt.Println(name)
+	logger.Info(name)
 	key, err := genKeyECDSA(name)
 	template, err := x509Template()
 

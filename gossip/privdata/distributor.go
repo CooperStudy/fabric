@@ -70,7 +70,7 @@ type policyAccessFactory struct {
 }
 
 func (p *policyAccessFactory) AccessPolicy(config *common.CollectionConfig, chainID string) (privdata.CollectionAccessPolicy, error) {
-	fmt.Println("====policyAccessFactory==AccessPolicy===")
+	logger.Info("====policyAccessFactory==AccessPolicy===")
 	colAP := &privdata.SimpleCollection{}
 	switch cconf := config.Payload.(type) {
 	case *common.CollectionConfig_StaticCollectionConfig:
@@ -86,7 +86,7 @@ func (p *policyAccessFactory) AccessPolicy(config *common.CollectionConfig, chai
 
 // NewCollectionAccessFactory
 func NewCollectionAccessFactory(factory IdentityDeserializerFactory) CollectionAccessFactory {
-	fmt.Println("====NewCollectionAccessFactory==")
+	logger.Info("====NewCollectionAccessFactory==")
 	return &policyAccessFactory{
 		IdentityDeserializerFactory: factory,
 	}
@@ -95,7 +95,7 @@ func NewCollectionAccessFactory(factory IdentityDeserializerFactory) CollectionA
 // NewDistributor a constructor for private data distributor capable to send
 // private read write sets for underlying collection
 func NewDistributor(chainID string, gossip gossipAdapter, factory CollectionAccessFactory) PvtDataDistributor {
-	fmt.Println("====NewDistributor==")
+	logger.Info("====NewDistributor==")
 	return &distributorImpl{
 		chainID:                 chainID,
 		gossipAdapter:           gossip,
@@ -105,7 +105,7 @@ func NewDistributor(chainID string, gossip gossipAdapter, factory CollectionAcce
 
 // Distribute broadcast reliably private data read write set based on policies
 func (d *distributorImpl) Distribute(txID string, privData *transientstore.TxPvtReadWriteSetWithConfigInfo, blkHt uint64) error {
-	fmt.Println("====distributorImpl==Distribute==")
+	logger.Info("====distributorImpl==Distribute==")
 	disseminationPlan, err := d.computeDisseminationPlan(txID, privData, blkHt)
 	if err != nil {
 		return errors.WithStack(err)
@@ -122,7 +122,7 @@ func (d *distributorImpl) computeDisseminationPlan(txID string,
 	privDataWithConfig *transientstore.TxPvtReadWriteSetWithConfigInfo,
 	blkHt uint64) ([]*dissemination, error) {
 
-	fmt.Println("====distributorImpl==computeDisseminationPlan==")
+	logger.Info("====distributorImpl==computeDisseminationPlan==")
 
 	privData := privDataWithConfig.PvtRwset
 	var disseminationPlan []*dissemination
@@ -171,7 +171,7 @@ func (d *distributorImpl) computeDisseminationPlan(txID string,
 
 func (d *distributorImpl) getCollectionConfig(config *common.CollectionConfigPackage, collection *rwset.CollectionPvtReadWriteSet) (*common.CollectionConfig, error) {
 
-	fmt.Println("====distributorImpl==getCollectionConfig==")
+	logger.Info("====distributorImpl==getCollectionConfig==")
 	for _, c := range config.Config {
 		if staticConfig := c.GetStaticCollectionConfig(); staticConfig != nil {
 			if staticConfig.Name == collection.CollectionName {
@@ -183,7 +183,7 @@ func (d *distributorImpl) getCollectionConfig(config *common.CollectionConfigPac
 }
 
 func (d *distributorImpl) disseminationPlanForMsg(colAP privdata.CollectionAccessPolicy, colFilter privdata.Filter, pvtDataMsg *proto.SignedGossipMessage) ([]*dissemination, error) {
-	fmt.Println("====distributorImpl==disseminationPlanForMsg==")
+	logger.Info("====distributorImpl==disseminationPlanForMsg==")
 	var disseminationPlan []*dissemination
 	routingFilter, err := d.gossipAdapter.PeerFilter(gossipCommon.ChainID(d.chainID), func(signature api.PeerSignature) bool {
 		return colFilter(common.SignedData{
@@ -216,7 +216,7 @@ func (d *distributorImpl) disseminationPlanForMsg(colAP privdata.CollectionAcces
 
 func (d *distributorImpl) disseminate(disseminationPlan []*dissemination) error {
 
-	fmt.Println("====distributorImpl==disseminate==")
+	logger.Info("====distributorImpl==disseminate==")
 	var failures uint32
 	var wg sync.WaitGroup
 	wg.Add(len(disseminationPlan))
@@ -246,7 +246,7 @@ func (d *distributorImpl) createPrivateDataMessage(txID, namespace string,
 	ccp *common.CollectionConfigPackage,
 	blkHt uint64) (*proto.SignedGossipMessage, error) {
 
-	fmt.Println("====distributorImpl==createPrivateDataMessage==")
+	logger.Info("====distributorImpl==createPrivateDataMessage==")
 	msg := &proto.GossipMessage{
 		Channel: []byte(d.chainID),
 		Nonce:   util.RandomUInt64(),

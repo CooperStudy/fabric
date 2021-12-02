@@ -20,7 +20,7 @@ import (
 // the provided logger name. The logger that is returned will be named the same
 // as the logger.
 func NewZapLogger(core zapcore.Core, options ...zap.Option) *zap.Logger {
-	//fmt.Println("===NewZapLogger=========")
+	//logger.Info("===NewZapLogger=========")
 	return zap.New(
 		core,
 		append([]zap.Option{
@@ -32,7 +32,7 @@ func NewZapLogger(core zapcore.Core, options ...zap.Option) *zap.Logger {
 
 // NewGRPCLogger creates a grpc.Logger that delegates to a zap.Logger.
 func NewGRPCLogger(l *zap.Logger) *zapgrpc.Logger {
-	//fmt.Println("===NewGRPCLogger=========")
+	//logger.Info("===NewGRPCLogger=========")
 	l = l.WithOptions(
 		zap.AddCaller(),
 		zap.AddCallerSkip(3),
@@ -42,7 +42,7 @@ func NewGRPCLogger(l *zap.Logger) *zapgrpc.Logger {
 
 // NewFabricLogger creates a logger that delegates to the zap.SugaredLogger.
 func NewFabricLogger(l *zap.Logger, options ...zap.Option) *FabricLogger {
-	//fmt.Println("===NewFabricLogger=========")
+	//logger.Info("===NewFabricLogger=========")
 	return &FabricLogger{
 		s: l.WithOptions(append(options, zap.AddCallerSkip(1))...).Sugar(),
 	}
@@ -93,27 +93,27 @@ func (f *FabricLogger) Sync() error                     { return f.s.Sync() }
 func (f *FabricLogger) Zap() *zap.Logger                { return f.s.Desugar() }
 
 func (f *FabricLogger) IsEnabledFor(level zapcore.Level) bool {
-	//fmt.Println("===FabricLogger====IsEnabledFor=====")
+	//logger.Info("===FabricLogger====IsEnabledFor=====")
 	return f.s.Desugar().Core().Enabled(level)
 }
 
 func (f *FabricLogger) With(args ...interface{}) *FabricLogger {
-	//fmt.Println("===FabricLogger====With=====")
+	//logger.Info("===FabricLogger====With=====")
 	return &FabricLogger{s: f.s.With(args...)}
 }
 
 func (f *FabricLogger) WithOptions(opts ...zap.Option) *FabricLogger {
-//	fmt.Println("===FabricLogger====WithOptions=====")
+//	logger.Info("===FabricLogger====WithOptions=====")
 	l := f.s.Desugar().WithOptions(opts...)
 	return &FabricLogger{s: l.Sugar()}
 }
 
 func formatArgs(args []interface{}) string {
-	//fmt.Println("===formatArgs====")
-	//fmt.Println("=========args=========",args)//[=======GetDefault=================defaultBCCSP 0xc000014b40]
+	//logger.Info("===formatArgs====")
+	//logger.Info("=========args=========",args)//[=======GetDefault=================defaultBCCSP 0xc000014b40]
 	//[Sending IDENTITY_MSG hello to peer1.org1.example.com:7051]
 	s:= strings.TrimSuffix(fmt.Sprintln(args...), "\n")
-	//fmt.Println("========s=========",s)//Sleeping 25s //Sending IDENTITY_MSG hello to peer1.org1.example.com:7051
+	//logger.Info("========s=========",s)//Sleeping 25s //Sending IDENTITY_MSG hello to peer1.org1.example.com:7051
 	// [Entering, Sending to peer1.org1.example.com:7051 , msg: GossipMessage: tag:EMPTY hello:<nonce:276265988097776331 msg_type:IDENTITY_MSG > , Envelope: 16 bytes, Signature: 0 bytes]
 	//Created with config TLS: true, auth cache disabled
 	//========s========= =======GetDefault=================defaultBCCSP &{0x17db2d8 map[*bccsp.ECDSAP256KeyGenOpts:0xc0002dd6a0 *bccsp.ECDSAP384KeyGenOpts:0xc0002dd6b0 *bccsp.AES192KeyGenOpts:0xc000458f98 *bccsp.RSAKeyGenOpts:0xc000458fb8 *bccsp.RSA2048KeyGenOpts:0xc000458fd8 *bccsp.RSA4096KeyGenOpts:0xc000458ff8 *bccsp.ECDSAKeyGenOpts:0xc0002dd690 *bccsp.AESKeyGenOpts:0xc000458f78 *bccsp.AES256KeyGenOpts:0xc000458f88 *bccsp.AES128KeyGenOpts:0xc000458fa8 *bccsp.RSA1024KeyGenOpts:0xc000458fc8 *bccsp.RSA3072KeyGenOpts:0xc000458fe8] map[*sw.ecdsaPrivateKey:0x17db2d8 *sw.ecdsaPublicKey:0x17db2d8 *sw.aesPrivateKey:0xc0002e4460] map[*bccsp.ECDSAPrivateKeyImportOpts:0x17db2d8 *bccsp.ECDSAGoPublicKeyImportOpts:0x17db2d8 *bccsp.RSAGoPublicKeyImportOpts:0x17db2d8 *bccsp.X509PublicKeyImportOpts:0xc0002e4468 *bccsp.AES256ImportKeyOpts:0x17db2d8 *bccsp.HMACImportKeyOpts:0x17db2d8 *bccsp.ECDSAPKIXPublicKeyImportOpts:0x17db2d8] map[*sw.aesPrivateKey:0x17db2d8] map[*sw.aesPrivateKey:0x17db2d8] map[*sw.ecdsaPrivateKey:0x17db2d8 *sw.rsaPrivateKey:0x17db2d8] map[*sw.ecdsaPrivateKey:0x17db2d8 *sw.ecdsaPublicKey:0x17db2d8 *sw.rsaPrivateKey:0x17db2d8 *sw.rsaPublicKey:0x17db2d8] map[*bccsp.SHA384Opts:0xc0002e4438 *bccsp.SHA3_256Opts:0xc0002e4440 *bccsp.SHA3_384Opts:0xc0002e4448 *bccsp.SHAOpts:0xc0002e4428 *bccsp.SHA256Opts:0xc0002e4430]}

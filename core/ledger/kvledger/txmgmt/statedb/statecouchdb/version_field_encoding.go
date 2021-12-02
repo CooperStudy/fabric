@@ -17,7 +17,7 @@ import (
 )
 
 func encodeVersionAndMetadata(version *version.Height, metadata []byte) (string, error) {
-	fmt.Println("===encodeVersionAndMetadata==")
+	logger.Info("===encodeVersionAndMetadata==")
 	msg := &msgs.VersionFieldProto{
 		VersionBytes: version.ToBytes(),
 		Metadata:     metadata,
@@ -32,7 +32,7 @@ func encodeVersionAndMetadata(version *version.Height, metadata []byte) (string,
 }
 
 func decodeVersionAndMetadata(encodedstr string) (*version.Height, []byte, error) {
-	fmt.Println("===decodeVersionAndMetadata==")
+	logger.Info("===decodeVersionAndMetadata==")
 	if oldFormatEncoding(encodedstr) {
 		return decodeVersionOldFormat(encodedstr), nil, nil
 	}
@@ -53,7 +53,7 @@ func decodeVersionAndMetadata(encodedstr string) (*version.Height, []byte, error
 // this funtion for test so as to make sure that we can decode old format and support mixed formats present
 // in a statedb. This function should be used only in tests to generate the encoding in old format
 func encodeVersionOldFormat(version *version.Height) string {
-	fmt.Println("===encodeVersionOldFormat==")
+	logger.Info("===encodeVersionOldFormat==")
 	return fmt.Sprintf("%v:%v", version.BlockNum, version.TxNum)
 }
 
@@ -64,7 +64,7 @@ func encodeVersionOldFormat(version *version.Height) string {
 // for all decodings - which is expected to detect the encoded format and direct the call
 // to this function for decoding the versions encoded in the old format
 func decodeVersionOldFormat(encodedVersion string) *version.Height {
-	fmt.Println("===decodeVersionOldFormat==")
+	logger.Info("===decodeVersionOldFormat==")
 	versionArray := strings.Split(fmt.Sprintf("%s", encodedVersion), ":")
 	// convert the blockNum from String to unsigned int
 	blockNum, _ := strconv.ParseUint(versionArray[0], 10, 64)
@@ -74,6 +74,6 @@ func decodeVersionOldFormat(encodedVersion string) *version.Height {
 }
 
 func oldFormatEncoding(encodedstr string) bool {
-	fmt.Println("===oldFormatEncoding==")
+	logger.Info("===oldFormatEncoding==")
 	return []byte(encodedstr)[0] != byte(0)
 }

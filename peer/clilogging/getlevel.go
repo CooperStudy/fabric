@@ -15,7 +15,7 @@ import (
 )
 
 func getLevelCmd(cf *LoggingCmdFactory) *cobra.Command {
-	fmt.Println("====getLevelCmd====")
+	logger.Info("====getLevelCmd====")
 	var loggingGetLevelCmd = &cobra.Command{
 		Use:   "getlevel <logger>",
 		Short: "Returns the logging level of the requested logger.",
@@ -28,7 +28,7 @@ func getLevelCmd(cf *LoggingCmdFactory) *cobra.Command {
 }
 
 func getLevel(cf *LoggingCmdFactory, cmd *cobra.Command, args []string) (err error) {
-	fmt.Println("====getLevel====")
+	logger.Info("====getLevel====")
 	err = checkLoggingCmdParams(cmd, args)
 	if err == nil {
 		// Parsing of the command line is done so silence cmd usage

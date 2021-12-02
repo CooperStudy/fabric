@@ -47,7 +47,7 @@ type subscription struct {
 // to the subscription, or an error if the
 // subscription's TTL passed
 func (s *subscription) Listen() (interface{}, error) {
-	//fmt.Println("===subscription==Listen==")
+	//logger.Info("===subscription==Listen==")
 	select {
 	case <-time.After(s.ttl):
 		return nil, errors.New("timed out")
@@ -59,7 +59,7 @@ func (s *subscription) Listen() (interface{}, error) {
 // NewPubSub creates a new PubSub with an empty
 // set of subscriptions
 func NewPubSub() *PubSub {
-	//fmt.Println("===NewPubSub==")
+	//logger.Info("===NewPubSub==")
 	return &PubSub{
 		subscriptions: make(map[string]*Set),
 	}
@@ -67,7 +67,7 @@ func NewPubSub() *PubSub {
 
 // Publish publishes an item to all subscribers on the topic
 func (ps *PubSub) Publish(topic string, item interface{}) error {
-	//fmt.Println("===PubSub==Publish==")
+	//logger.Info("===PubSub==Publish==")
 	ps.RLock()
 	defer ps.RUnlock()
 	s, subscribed := ps.subscriptions[topic]
@@ -87,7 +87,7 @@ func (ps *PubSub) Publish(topic string, item interface{}) error {
 
 // Subscribe returns a subscription to a topic that expires when given TTL passes
 func (ps *PubSub) Subscribe(topic string, ttl time.Duration) Subscription {
-	//fmt.Println("===PubSub==Subscribe==")
+	//logger.Info("===PubSub==Subscribe==")
 	sub := &subscription{
 		top: topic,
 		ttl: ttl,
@@ -115,7 +115,7 @@ func (ps *PubSub) Subscribe(topic string, ttl time.Duration) Subscription {
 }
 
 func (ps *PubSub) unSubscribe(sub *subscription) {
-	//fmt.Println("===PubSub==unSubscribe==")
+	//logger.Info("===PubSub==unSubscribe==")
 	ps.Lock()
 	defer ps.Unlock()
 	ps.subscriptions[sub.top].Remove(sub)

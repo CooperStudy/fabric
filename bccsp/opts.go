@@ -16,8 +16,6 @@ limitations under the License.
 
 package bccsp
 
-import "fmt"
-
 const (
 	// ECDSA Elliptic Curve Digital Signature Algorithm (key gen, import, sign, verify),
 	// at default security level.
@@ -93,14 +91,14 @@ type ECDSAKeyGenOpts struct {
 
 // Algorithm returns the key generation algorithm identifier (to be used).
 func (opts *ECDSAKeyGenOpts) Algorithm() string {
-	fmt.Println("===ECDSAKeyGenOpts==Algorithm===")
+	//logger.Info("===ECDSAKeyGenOpts==Algorithm===")
 	return ECDSA
 }
 
 // Ephemeral returns true if the key to generate has to be ephemeral,
 // false otherwise.
 func (opts *ECDSAKeyGenOpts) Ephemeral() bool {
-	fmt.Println("===ECDSAKeyGenOpts==Ephemeral===")
+	//logger.Info("===ECDSAKeyGenOpts==Ephemeral===")
 	return opts.Temporary
 }
 
@@ -111,14 +109,14 @@ type ECDSAPKIXPublicKeyImportOpts struct {
 
 // Algorithm returns the key importation algorithm identifier (to be used).
 func (opts *ECDSAPKIXPublicKeyImportOpts) Algorithm() string {
-	fmt.Println("===ECDSAPKIXPublicKeyImportOpts==Algorithm===")
+	//logger.Info("===ECDSAPKIXPublicKeyImportOpts==Algorithm===")
 	return ECDSA
 }
 
 // Ephemeral returns true if the key to generate has to be ephemeral,
 // false otherwise.
 func (opts *ECDSAPKIXPublicKeyImportOpts) Ephemeral() bool {
-	fmt.Println("===ECDSAPKIXPublicKeyImportOpts==Ephemeral===")
+	//logger.Info("===ECDSAPKIXPublicKeyImportOpts==Ephemeral===")
 	return opts.Temporary
 }
 
@@ -130,14 +128,14 @@ type ECDSAPrivateKeyImportOpts struct {
 
 // Algorithm returns the key importation algorithm identifier (to be used).
 func (opts *ECDSAPrivateKeyImportOpts) Algorithm() string {
-	fmt.Println("===ECDSAPrivateKeyImportOpts==Algorithm===")
+	//logger.Info("===ECDSAPrivateKeyImportOpts==Algorithm===")
 	return ECDSA
 }
 
 // Ephemeral returns true if the key to generate has to be ephemeral,
 // false otherwise.
 func (opts *ECDSAPrivateKeyImportOpts) Ephemeral() bool {
-	fmt.Println("===ECDSAPrivateKeyImportOpts==Ephemeral===")
+	//logger.Info("===ECDSAPrivateKeyImportOpts==Ephemeral===")
 	return opts.Temporary
 }
 
@@ -148,14 +146,14 @@ type ECDSAGoPublicKeyImportOpts struct {
 
 // Algorithm returns the key importation algorithm identifier (to be used).
 func (opts *ECDSAGoPublicKeyImportOpts) Algorithm() string {
-	fmt.Println("===ECDSAGoPublicKeyImportOpts==Algorithm===")
+	//logger.Info("===ECDSAGoPublicKeyImportOpts==Algorithm===")
 	return ECDSA
 }
 
 // Ephemeral returns true if the key to generate has to be ephemeral,
 // false otherwise.
 func (opts *ECDSAGoPublicKeyImportOpts) Ephemeral() bool {
-	fmt.Println("===ECDSAGoPublicKeyImportOpts==Ephemeral===")
+	//logger.Info("===ECDSAGoPublicKeyImportOpts==Ephemeral===")
 	return opts.Temporary
 }
 
@@ -167,20 +165,20 @@ type ECDSAReRandKeyOpts struct {
 
 // Algorithm returns the key derivation algorithm identifier (to be used).
 func (opts *ECDSAReRandKeyOpts) Algorithm() string {
-	fmt.Println("===ECDSAReRandKeyOpts==Algorithm===")
+	//logger.Info("===ECDSAReRandKeyOpts==Algorithm===")
 	return ECDSAReRand
 }
 
 // Ephemeral returns true if the key to generate has to be ephemeral,
 // false otherwise.
 func (opts *ECDSAReRandKeyOpts) Ephemeral() bool {
-	fmt.Println("===ECDSAReRandKeyOpts==Ephemeral===")
+	//logger.Info("===ECDSAReRandKeyOpts==Ephemeral===")
 	return opts.Temporary
 }
 
 // ExpansionValue returns the re-randomization factor
 func (opts *ECDSAReRandKeyOpts) ExpansionValue() []byte {
-	fmt.Println("===ECDSAReRandKeyOpts==ExpansionValue===")
+	//logger.Info("===ECDSAReRandKeyOpts==ExpansionValue===")
 	return opts.Expansion
 }
 
@@ -191,14 +189,14 @@ type AESKeyGenOpts struct {
 
 // Algorithm returns the key generation algorithm identifier (to be used).
 func (opts *AESKeyGenOpts) Algorithm() string {
-	fmt.Println("===AESKeyGenOpts==Algorithm===")
+	//logger.Info("===AESKeyGenOpts==Algorithm===")
 	return AES
 }
 
 // Ephemeral returns true if the key to generate has to be ephemeral,
 // false otherwise.
 func (opts *AESKeyGenOpts) Ephemeral() bool {
-	fmt.Println("===AESKeyGenOpts==Ephemeral===")
+	//logger.Info("===AESKeyGenOpts==Ephemeral===")
 	return opts.Temporary
 }
 
@@ -211,20 +209,20 @@ type HMACTruncated256AESDeriveKeyOpts struct {
 
 // Algorithm returns the key derivation algorithm identifier (to be used).
 func (opts *HMACTruncated256AESDeriveKeyOpts) Algorithm() string {
-	fmt.Println("===HMACTruncated256AESDeriveKeyOpts==Algorithm===")
+	//logger.Info("===HMACTruncated256AESDeriveKeyOpts==Algorithm===")
 	return HMACTruncated256
 }
 
 // Ephemeral returns true if the key to generate has to be ephemeral,
 // false otherwise.
 func (opts *HMACTruncated256AESDeriveKeyOpts) Ephemeral() bool {
-	fmt.Println("===HMACTruncated256AESDeriveKeyOpts==Ephemeral===")
+	//logger.Info("===HMACTruncated256AESDeriveKeyOpts==Ephemeral===")
 	return opts.Temporary
 }
 
 // Argument returns the argument to be passed to the HMAC
 func (opts *HMACTruncated256AESDeriveKeyOpts) Argument() []byte {
-	fmt.Println("===HMACTruncated256AESDeriveKeyOpts==Argument===")
+	//logger.Info("===HMACTruncated256AESDeriveKeyOpts==Argument===")
 	return opts.Arg
 }
 
@@ -236,20 +234,20 @@ type HMACDeriveKeyOpts struct {
 
 // Algorithm returns the key derivation algorithm identifier (to be used).
 func (opts *HMACDeriveKeyOpts) Algorithm() string {
-	fmt.Println("===HMACDeriveKeyOpts==Algorithm===")
+	//logger.Info("===HMACDeriveKeyOpts==Algorithm===")
 	return HMAC
 }
 
 // Ephemeral returns true if the key to generate has to be ephemeral,
 // false otherwise.
 func (opts *HMACDeriveKeyOpts) Ephemeral() bool {
-	fmt.Println("===HMACDeriveKeyOpts==Ephemeral===")
+	//logger.Info("===HMACDeriveKeyOpts==Ephemeral===")
 	return opts.Temporary
 }
 
 // Argument returns the argument to be passed to the HMAC
 func (opts *HMACDeriveKeyOpts) Argument() []byte {
-	fmt.Println("===HMACDeriveKeyOpts==Argument===")
+	//logger.Info("===HMACDeriveKeyOpts==Argument===")
 	return opts.Arg
 }
 
@@ -260,14 +258,14 @@ type AES256ImportKeyOpts struct {
 
 // Algorithm returns the key importation algorithm identifier (to be used).
 func (opts *AES256ImportKeyOpts) Algorithm() string {
-	fmt.Println("===AES256ImportKeyOpts==Algorithm===")
+	//logger.Info("===AES256ImportKeyOpts==Algorithm===")
 	return AES
 }
 
 // Ephemeral returns true if the key generated has to be ephemeral,
 // false otherwise.
 func (opts *AES256ImportKeyOpts) Ephemeral() bool {
-	fmt.Println("===AES256ImportKeyOpts==Ephemeral===")
+	//logger.Info("===AES256ImportKeyOpts==Ephemeral===")
 	return opts.Temporary
 }
 
@@ -278,14 +276,14 @@ type HMACImportKeyOpts struct {
 
 // Algorithm returns the key importation algorithm identifier (to be used).
 func (opts *HMACImportKeyOpts) Algorithm() string {
-	fmt.Println("===HMACImportKeyOpts==Algorithm===")
+	//logger.Info("===HMACImportKeyOpts==Algorithm===")
 	return HMAC
 }
 
 // Ephemeral returns true if the key generated has to be ephemeral,
 // false otherwise.
 func (opts *HMACImportKeyOpts) Ephemeral() bool {
-	fmt.Println("===HMACImportKeyOpts==Ephemeral===")
+	//logger.Info("===HMACImportKeyOpts==Ephemeral===")
 	return opts.Temporary
 }
 
@@ -295,7 +293,7 @@ type SHAOpts struct {
 
 // Algorithm returns the hash algorithm identifier (to be used).
 func (opts *SHAOpts) Algorithm() string {
-	fmt.Println("===SHAOpts==Algorithm===")
+	//logger.Info("===SHAOpts==Algorithm===")
 	return SHA
 }
 
@@ -306,14 +304,14 @@ type RSAKeyGenOpts struct {
 
 // Algorithm returns the key generation algorithm identifier (to be used).
 func (opts *RSAKeyGenOpts) Algorithm() string {
-	fmt.Println("===RSAKeyGenOpts==Algorithm===")
+	//logger.Info("===RSAKeyGenOpts==Algorithm===")
 	return RSA
 }
 
 // Ephemeral returns true if the key to generate has to be ephemeral,
 // false otherwise.
 func (opts *RSAKeyGenOpts) Ephemeral() bool {
-	fmt.Println("===RSAKeyGenOpts==Ephemeral===")
+	//logger.Info("===RSAKeyGenOpts==Ephemeral===")
 	return opts.Temporary
 }
 
@@ -324,14 +322,14 @@ type RSAGoPublicKeyImportOpts struct {
 
 // Algorithm returns the key importation algorithm identifier (to be used).
 func (opts *RSAGoPublicKeyImportOpts) Algorithm() string {
-	fmt.Println("===RSAGoPublicKeyImportOpts==Algorithm===")
+	//logger.Info("===RSAGoPublicKeyImportOpts==Algorithm===")
 	return RSA
 }
 
 // Ephemeral returns true if the key to generate has to be ephemeral,
 // false otherwise.
 func (opts *RSAGoPublicKeyImportOpts) Ephemeral() bool {
-	fmt.Println("===RSAGoPublicKeyImportOpts==Ephemeral===")
+	//logger.Info("===RSAGoPublicKeyImportOpts==Ephemeral===")
 	return opts.Temporary
 }
 
@@ -342,13 +340,13 @@ type X509PublicKeyImportOpts struct {
 
 // Algorithm returns the key importation algorithm identifier (to be used).
 func (opts *X509PublicKeyImportOpts) Algorithm() string {
-	fmt.Println("===X509PublicKeyImportOpts==Algorithm===")
+	//logger.Info("===X509PublicKeyImportOpts==Algorithm===")
 	return X509Certificate
 }
 
 // Ephemeral returns true if the key to generate has to be ephemeral,
 // false otherwise.
 func (opts *X509PublicKeyImportOpts) Ephemeral() bool {
-	fmt.Println("===X509PublicKeyImportOpts==Ephemeral===")
+	//logger.Info("===X509PublicKeyImportOpts==Ephemeral===")
 	return opts.Temporary
 }

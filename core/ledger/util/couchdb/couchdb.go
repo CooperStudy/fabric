@@ -226,7 +226,7 @@ type DatabaseSecurity struct {
 // closeResponseBody discards the body and then closes it to enable returning it to
 // connection pool
 func closeResponseBody(resp *http.Response) {
-	fmt.Println("=======closeResponseBody========")
+	logger.Info("=======closeResponseBody========")
 	if resp != nil {
 		io.Copy(ioutil.Discard, resp.Body) // discard whatever is remaining of body
 		resp.Body.Close()
@@ -237,7 +237,7 @@ func closeResponseBody(resp *http.Response) {
 func CreateConnectionDefinition(couchDBAddress, username, password string, maxRetries,
 
 	maxRetriesOnStartup int, requestTimeout time.Duration, createGlobalChangesDB bool) (*CouchConnectionDef, error) {
-	fmt.Println("=======CreateConnectionDefinition========")
+	logger.Info("=======CreateConnectionDefinition========")
 	logger.Debugf("Entering CreateConnectionDefinition()")
 
 	connectURL := &url.URL{
@@ -263,7 +263,7 @@ func CreateConnectionDefinition(couchDBAddress, username, password string, maxRe
 
 //CreateDatabaseIfNotExist method provides function to create database
 func (dbclient *CouchDatabase) CreateDatabaseIfNotExist() error {
-	fmt.Println("====CouchDatabase===CreateDatabaseIfNotExist========")
+	logger.Info("====CouchDatabase===CreateDatabaseIfNotExist========")
 	logger.Debugf("[%s] Entering CreateDatabaseIfNotExist()", dbclient.DBName)
 
 	dbInfo, couchDBReturn, err := dbclient.GetDatabaseInfo()
@@ -344,7 +344,7 @@ func (dbclient *CouchDatabase) CreateDatabaseIfNotExist() error {
 
 //applyDatabaseSecurity
 func (dbclient *CouchDatabase) applyDatabasePermissions() error {
-	fmt.Println("====CouchDatabase===applyDatabasePermissions========")
+	logger.Info("====CouchDatabase===applyDatabasePermissions========")
 	//If the username and password are not set, then skip applying permissions
 	if dbclient.CouchInstance.conf.Username == "" && dbclient.CouchInstance.conf.Password == "" {
 		return nil
@@ -365,7 +365,7 @@ func (dbclient *CouchDatabase) applyDatabasePermissions() error {
 
 //GetDatabaseInfo method provides function to retrieve database information
 func (dbclient *CouchDatabase) GetDatabaseInfo() (*DBInfo, *DBReturn, error) {
-	fmt.Println("====CouchDatabase===GetDatabaseInfo========")
+	logger.Info("====CouchDatabase===GetDatabaseInfo========")
 	connectURL, err := url.Parse(dbclient.CouchInstance.conf.URL)
 	if err != nil {
 		logger.Errorf("URL parse error: %s", err)
@@ -396,7 +396,7 @@ func (dbclient *CouchDatabase) GetDatabaseInfo() (*DBInfo, *DBReturn, error) {
 
 //VerifyCouchConfig method provides function to verify the connection information
 func (couchInstance *CouchInstance) VerifyCouchConfig() (*ConnectionInfo, *DBReturn, error) {
-	fmt.Println("====CouchDatabase===VerifyCouchConfig========")
+	logger.Info("====CouchDatabase===VerifyCouchConfig========")
 	logger.Debugf("Entering VerifyCouchConfig()")
 	defer logger.Debugf("Exiting VerifyCouchConfig()")
 
@@ -442,7 +442,7 @@ func (couchInstance *CouchInstance) VerifyCouchConfig() (*ConnectionInfo, *DBRet
 
 //DropDatabase provides method to drop an existing database
 func (dbclient *CouchDatabase) DropDatabase() (*DBOperationResponse, error) {
-	fmt.Println("====CouchDatabase===DropDatabase========")
+	logger.Info("====CouchDatabase===DropDatabase========")
 	dbName := dbclient.DBName
 
 	logger.Debugf("[%s] Entering DropDatabase()", dbName)
@@ -486,7 +486,7 @@ func (dbclient *CouchDatabase) DropDatabase() (*DBOperationResponse, error) {
 
 // EnsureFullCommit calls _ensure_full_commit for explicit fsync
 func (dbclient *CouchDatabase) EnsureFullCommit() (*DBOperationResponse, error) {
-	fmt.Println("====CouchDatabase===EnsureFullCommit========")
+	logger.Info("====CouchDatabase===EnsureFullCommit========")
 	dbName := dbclient.DBName
 
 	logger.Debugf("[%s] Entering EnsureFullCommit()", dbName)
@@ -541,7 +541,7 @@ func (dbclient *CouchDatabase) EnsureFullCommit() (*DBOperationResponse, error) 
 
 //SaveDoc method provides a function to save a document, id and byte array
 func (dbclient *CouchDatabase) SaveDoc(id string, rev string, couchDoc *CouchDoc) (string, error) {
-	fmt.Println("====CouchDatabase===SaveDoc========")
+	logger.Info("====CouchDatabase===SaveDoc========")
 	dbName := dbclient.DBName
 
 
@@ -625,7 +625,7 @@ func (dbclient *CouchDatabase) SaveDoc(id string, rev string, couchDoc *CouchDoc
 
 //getDocumentRevision will return the revision if the document exists, otherwise it will return ""
 func (dbclient *CouchDatabase) getDocumentRevision(id string) string {
-	fmt.Println("====CouchDatabase===getDocumentRevision========")
+	logger.Info("====CouchDatabase===getDocumentRevision========")
 	var rev = ""
 
 	//See if the document already exists, we need the rev for saves and deletes
@@ -638,7 +638,7 @@ func (dbclient *CouchDatabase) getDocumentRevision(id string) string {
 }
 
 func createAttachmentPart(couchDoc *CouchDoc, defaultBoundary string) (bytes.Buffer, string, error) {
-	fmt.Println("===createAttachmentPart========")
+	logger.Info("===createAttachmentPart========")
 	//Create a buffer for writing the result
 	writeBuffer := new(bytes.Buffer)
 
@@ -717,7 +717,7 @@ func createAttachmentPart(couchDoc *CouchDoc, defaultBoundary string) (bytes.Buf
 }
 
 func getRevisionHeader(resp *http.Response) (string, error) {
-	fmt.Println("===getRevisionHeader========")
+	logger.Info("===getRevisionHeader========")
 	if resp == nil {
 		return "", errors.New("no response received from CouchDB")
 	}
@@ -737,7 +737,7 @@ func getRevisionHeader(resp *http.Response) (string, error) {
 //ReadDoc method provides function to retrieve a document and its revision
 //from the database by id
 func (dbclient *CouchDatabase) ReadDoc(id string) (*CouchDoc, string, error) {
-	fmt.Println("===CouchDatabase====ReadDoc====")
+	logger.Info("===CouchDatabase====ReadDoc====")
 	var couchDoc CouchDoc
 	attachments := []*AttachmentInfo{}
 	dbName := dbclient.DBName
@@ -872,7 +872,7 @@ func (dbclient *CouchDatabase) ReadDoc(id string) (*CouchDoc, string, error) {
 //This function provides a limit option to specify the max number of entries and is supplied by config.
 //Skip is reserved for possible future future use.
 func (dbclient *CouchDatabase) ReadDocRange(startKey, endKey string, limit int32) ([]*QueryResult, string, error) {
-	fmt.Println("===CouchDatabase====ReadDocRange====")
+	logger.Info("===CouchDatabase====ReadDocRange====")
 	dbName := dbclient.DBName
 	logger.Debugf("[%s] Entering ReadDocRange()  startKey=%s, endKey=%s", dbName, startKey, endKey)
 
@@ -996,7 +996,7 @@ func (dbclient *CouchDatabase) ReadDocRange(startKey, endKey string, limit int32
 
 //DeleteDoc method provides function to delete a document from the database by id
 func (dbclient *CouchDatabase) DeleteDoc(id, rev string) error {
-	fmt.Println("===CouchDatabase====DeleteDoc====")
+	logger.Info("===CouchDatabase====DeleteDoc====")
 	dbName := dbclient.DBName
 
 	logger.Debugf("[%s] Entering DeleteDoc()  id=%s", dbName, id)
@@ -1033,7 +1033,7 @@ func (dbclient *CouchDatabase) DeleteDoc(id, rev string) error {
 
 //QueryDocuments method provides function for processing a query
 func (dbclient *CouchDatabase) QueryDocuments(query string) ([]*QueryResult, string, error) {
-	fmt.Println("===CouchDatabase====QueryDocuments====")
+	logger.Info("===CouchDatabase====QueryDocuments====")
 	dbName := dbclient.DBName
 
 	logger.Debugf("[%s] Entering QueryDocuments()  query=%s", dbName, query)
@@ -1118,7 +1118,7 @@ func (dbclient *CouchDatabase) QueryDocuments(query string) ([]*QueryResult, str
 
 // ListIndex method lists the defined indexes for a database
 func (dbclient *CouchDatabase) ListIndex() ([]*IndexResult, error) {
-	fmt.Println("===CouchDatabase====ListIndex====")
+	logger.Info("===CouchDatabase====ListIndex====")
 	//IndexDefinition contains the definition for a couchdb index
 	type indexDefinition struct {
 		DesignDocument string          `json:"ddoc"`
@@ -1190,7 +1190,7 @@ func (dbclient *CouchDatabase) ListIndex() ([]*IndexResult, error) {
 
 // CreateIndex method provides a function creating an index
 func (dbclient *CouchDatabase) CreateIndex(indexdefinition string) (*CreateIndexResponse, error) {
-	fmt.Println("===CouchDatabase====CreateIndex====")
+	logger.Info("===CouchDatabase====CreateIndex====")
 	dbName := dbclient.DBName
 
 	logger.Debugf("[%s] Entering CreateIndex()  indexdefinition=%s", dbName, indexdefinition)
@@ -1250,7 +1250,7 @@ func (dbclient *CouchDatabase) CreateIndex(indexdefinition string) (*CreateIndex
 
 // DeleteIndex method provides a function deleting an index
 func (dbclient *CouchDatabase) DeleteIndex(designdoc, indexname string) error {
-	fmt.Println("===CouchDatabase====DeleteIndex====")
+	logger.Info("===CouchDatabase====DeleteIndex====")
 	dbName := dbclient.DBName
 
 	logger.Debugf("[%s] Entering DeleteIndex()  designdoc=%s  indexname=%s", dbName, designdoc, indexname)
@@ -1276,7 +1276,7 @@ func (dbclient *CouchDatabase) DeleteIndex(designdoc, indexname string) error {
 
 //WarmIndex method provides a function for warming a single index
 func (dbclient *CouchDatabase) WarmIndex(designdoc, indexname string) error {
-	fmt.Println("===CouchDatabase====WarmIndex====")
+	logger.Info("===CouchDatabase====WarmIndex====")
 	dbName := dbclient.DBName
 
 	logger.Debugf("[%s] Entering WarmIndex()  designdoc=%s  indexname=%s", dbName, designdoc, indexname)
@@ -1307,7 +1307,7 @@ func (dbclient *CouchDatabase) WarmIndex(designdoc, indexname string) error {
 
 //runWarmIndexAllIndexes is a wrapper for WarmIndexAllIndexes to catch and report any errors
 func (dbclient *CouchDatabase) runWarmIndexAllIndexes() {
-	fmt.Println("===CouchDatabase====runWarmIndexAllIndexes====")
+	logger.Info("===CouchDatabase====runWarmIndexAllIndexes====")
 	err := dbclient.WarmIndexAllIndexes()
 	if err != nil {
 		logger.Errorf("Error detected during WarmIndexAllIndexes(): %+v", err)
@@ -1317,7 +1317,7 @@ func (dbclient *CouchDatabase) runWarmIndexAllIndexes() {
 
 //WarmIndexAllIndexes method provides a function for warming all indexes for a database
 func (dbclient *CouchDatabase) WarmIndexAllIndexes() error {
-	fmt.Println("===CouchDatabase====WarmIndexAllIndexes====")
+	logger.Info("===CouchDatabase====WarmIndexAllIndexes====")
 	logger.Debugf("[%s] Entering WarmIndexAllIndexes()", dbclient.DBName)
 
 	//Retrieve all indexes
@@ -1344,7 +1344,7 @@ func (dbclient *CouchDatabase) WarmIndexAllIndexes() error {
 
 //GetDatabaseSecurity method provides function to retrieve the security config for a database
 func (dbclient *CouchDatabase) GetDatabaseSecurity() (*DatabaseSecurity, error) {
-	fmt.Println("===CouchDatabase====GetDatabaseSecurity====")
+	logger.Info("===CouchDatabase====GetDatabaseSecurity====")
 	dbName := dbclient.DBName
 
 	logger.Debugf("[%s] Entering GetDatabaseSecurity()", dbName)
@@ -1386,7 +1386,7 @@ func (dbclient *CouchDatabase) GetDatabaseSecurity() (*DatabaseSecurity, error) 
 
 //ApplyDatabaseSecurity method provides function to update the security config for a database
 func (dbclient *CouchDatabase) ApplyDatabaseSecurity(databaseSecurity *DatabaseSecurity) error {
-	fmt.Println("===CouchDatabase====ApplyDatabaseSecurity====")
+	logger.Info("===CouchDatabase====ApplyDatabaseSecurity====")
 	dbName := dbclient.DBName
 
 	logger.Debugf("[%s] Entering ApplyDatabaseSecurity()", dbName)
@@ -1437,7 +1437,7 @@ func (dbclient *CouchDatabase) ApplyDatabaseSecurity(databaseSecurity *DatabaseS
 //BatchRetrieveDocumentMetadata - batch method to retrieve document metadata for  a set of keys,
 // including ID, couchdb revision number, and ledger version
 func (dbclient *CouchDatabase) BatchRetrieveDocumentMetadata(keys []string) ([]*DocMetadata, error) {
-	fmt.Println("===CouchDatabase====BatchRetrieveDocumentMetadata====")
+	logger.Info("===CouchDatabase====BatchRetrieveDocumentMetadata====")
 	logger.Debugf("[%s] Entering BatchRetrieveDocumentMetadata()  keys=%s", dbclient.DBName, keys)
 
 	batchRetrieveURL, err := url.Parse(dbclient.CouchInstance.conf.URL)
@@ -1508,7 +1508,7 @@ func (dbclient *CouchDatabase) BatchRetrieveDocumentMetadata(keys []string) ([]*
 
 //BatchUpdateDocuments - batch method to batch update documents
 func (dbclient *CouchDatabase) BatchUpdateDocuments(documents []*CouchDoc) ([]*BatchUpdateResponse, error) {
-	fmt.Println("===CouchDatabase====BatchUpdateDocuments====")
+	logger.Info("===CouchDatabase====BatchUpdateDocuments====")
 	dbName := dbclient.DBName
 
 	if logger.IsEnabledFor(zapcore.DebugLevel) {
@@ -1612,7 +1612,7 @@ func (dbclient *CouchDatabase) BatchUpdateDocuments(documents []*CouchDoc) ([]*B
 func (dbclient *CouchDatabase) handleRequestWithRevisionRetry(id, method, dbName, functionName string, connectURL *url.URL, data []byte, rev string,
 
 	multipartBoundary string, maxRetries int, keepConnectionOpen bool, queryParms *url.Values) (*http.Response, *DBReturn, error) {
-	fmt.Println("===CouchDatabase====handleRequestWithRevisionRetry====")
+	logger.Info("===CouchDatabase====handleRequestWithRevisionRetry====")
 	//Initialize a flag for the revision conflict
 	revisionConflictDetected := false
 	var resp *http.Response
@@ -1652,7 +1652,7 @@ func (dbclient *CouchDatabase) handleRequest(method, functionName string, connec
 
 	maxRetries int, keepConnectionOpen bool, queryParms *url.Values, pathElements ...string) (*http.Response, *DBReturn, error) {
 
-	fmt.Println("===CouchDatabase====handleRequest====")
+	logger.Info("===CouchDatabase====handleRequest====")
 	return dbclient.CouchInstance.handleRequest(
 		method, dbclient.DBName, functionName, connectURL, data, rev, multipartBoundary,
 		maxRetries, keepConnectionOpen, queryParms, pathElements...,
@@ -1666,7 +1666,7 @@ func (dbclient *CouchDatabase) handleRequest(method, functionName string, connec
 func (couchInstance *CouchInstance) handleRequest(method, dbName, functionName string, connectURL *url.URL, data []byte, rev string,
 	multipartBoundary string, maxRetries int, keepConnectionOpen bool, queryParms *url.Values, pathElements ...string) (*http.Response, *DBReturn, error) {
 
-	fmt.Println("===CouchInstance====handleRequest====")
+	logger.Info("===CouchInstance====handleRequest====")
 	logger.Debugf("Entering handleRequest()  method=%s  url=%v  dbName=%s", method, connectURL, dbName)
 
 	//create the return objects for couchDB
@@ -1862,13 +1862,13 @@ func (couchInstance *CouchInstance) handleRequest(method, dbName, functionName s
 }
 
 func (ci *CouchInstance) recordMetric(startTime time.Time, dbName, api string, couchDBReturn *DBReturn) {
-	fmt.Println("===CouchInstance====recordMetric====")
+	logger.Info("===CouchInstance====recordMetric====")
 	ci.stats.observeProcessingTime(startTime, dbName, api, strconv.Itoa(couchDBReturn.StatusCode))
 }
 
 //invalidCouchDBResponse checks to make sure either a valid response or error is returned
 func invalidCouchDBReturn(resp *http.Response, errResp error) bool {
-	fmt.Println("==invalidCouchDBReturn====")
+	logger.Info("==invalidCouchDBReturn====")
 	if resp == nil && errResp == nil {
 		return true
 	}
@@ -1877,7 +1877,7 @@ func invalidCouchDBReturn(resp *http.Response, errResp error) bool {
 
 //IsJSON tests a string to determine if a valid JSON
 func IsJSON(s string) bool {
-	fmt.Println("==IsJSON====")
+	logger.Info("==IsJSON====")
 	var js map[string]interface{}
 	return json.Unmarshal([]byte(s), &js) == nil
 }
@@ -1887,7 +1887,7 @@ func IsJSON(s string) bool {
 // '+' is replaced by %2B, otherwise path encoding will ignore it, while CouchDB will unencode the plus as a space
 // Note that all other URL special characters have been tested successfully without need for special handling
 func encodePathElement(str string) string {
-	fmt.Println("==encodePathElement====")
+	logger.Info("==encodePathElement====")
 	u := &url.URL{}
 	u.Path = str
 	encodedStr := u.EscapedPath() // url encode using golang url path encoding rules
@@ -1898,7 +1898,7 @@ func encodePathElement(str string) string {
 }
 
 func encodeForJSON(str string) (string, error) {
-	fmt.Println("==encodeForJSON====")
+	logger.Info("==encodeForJSON====")
 	buf := &bytes.Buffer{}
 	encoder := json.NewEncoder(buf)
 	if err := encoder.Encode(str); err != nil {
@@ -1912,7 +1912,7 @@ func encodeForJSON(str string) (string, error) {
 // printDocumentIds is a convenience method to print readable log entries for arrays of pointers
 // to couch document IDs
 func printDocumentIds(documentPointers []*CouchDoc) (string, error) {
-	fmt.Println("==printDocumentIds====")
+	logger.Info("==printDocumentIds====")
 	documentIds := []string{}
 
 	for _, documentPointer := range documentPointers {

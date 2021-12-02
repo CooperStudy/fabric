@@ -17,7 +17,7 @@ import (
 
 // NewInMemoryKeyStore instantiates an ephemeral in-memory keystore
 func NewInMemoryKeyStore() bccsp.KeyStore {
-	fmt.Println("==NewInMemoryKeyStore==")
+	logger.Info("==NewInMemoryKeyStore==")
 	eks := &inmemoryKeyStore{}
 	eks.keys = make(map[string]bccsp.Key)
 	return eks
@@ -31,13 +31,13 @@ type inmemoryKeyStore struct {
 
 // ReadOnly returns false - the key store is not read-only
 func (ks *inmemoryKeyStore) ReadOnly() bool {
-	fmt.Println("==inmemoryKeyStore=ReadOnly=")
+	logger.Info("==inmemoryKeyStore=ReadOnly=")
 	return false
 }
 
 // GetKey returns a key object whose SKI is the one passed.
 func (ks *inmemoryKeyStore) GetKey(ski []byte) (bccsp.Key, error) {
-	fmt.Println("==inmemoryKeyStore=GetKey=")
+	logger.Info("==inmemoryKeyStore=GetKey=")
 	if len(ski) == 0 {
 		return nil, errors.New("ski is nil or empty")
 	}
@@ -54,7 +54,7 @@ func (ks *inmemoryKeyStore) GetKey(ski []byte) (bccsp.Key, error) {
 
 // StoreKey stores the key k in this KeyStore.
 func (ks *inmemoryKeyStore) StoreKey(k bccsp.Key) error {
-	fmt.Println("==inmemoryKeyStore=StoreKey=")
+	logger.Info("==inmemoryKeyStore=StoreKey=")
 	if k == nil {
 		return errors.New("key is nil")
 	}

@@ -34,7 +34,7 @@ type ccInfoCacheImpl struct {
 
 // NewCCInfoCache returns a new cache on top of the supplied CCInfoProvider instance
 func NewCCInfoCache(cs CCCacheSupport) *ccInfoCacheImpl {
-	fmt.Println("==NewCCInfoCache===")
+	logger.Info("==NewCCInfoCache===")
 	return &ccInfoCacheImpl{
 		cache:        make(map[string]*ChaincodeData),
 		cacheSupport: cs,
@@ -42,7 +42,7 @@ func NewCCInfoCache(cs CCCacheSupport) *ccInfoCacheImpl {
 }
 
 func (c *ccInfoCacheImpl) GetChaincodeData(ccname string, ccversion string) (*ChaincodeData, error) {
-	fmt.Println("==ccInfoCacheImpl==GetChaincodeData=")
+	logger.Info("==ccInfoCacheImpl==GetChaincodeData=")
 
 	// c.cache is guaranteed to be non-nil
 

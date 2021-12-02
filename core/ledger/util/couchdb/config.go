@@ -37,7 +37,7 @@ type CouchDBDef struct {
 //GetCouchDBDefinition exposes the useCouchDB variable
 func GetCouchDBDefinition() *CouchDBDef {
 
-	fmt.Println("=======GetCouchDBDefinition========")
+	logger.Info("=======GetCouchDBDefinition========")
 	couchDBAddress := viper.GetString("ledger.state.couchDBConfig.couchDBAddress")
 	username := viper.GetString("ledger.state.couchDBConfig.username")
 	password := viper.GetString("ledger.state.couchDBConfig.password")

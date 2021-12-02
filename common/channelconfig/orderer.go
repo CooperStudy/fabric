@@ -61,7 +61,7 @@ type OrdererConfig struct {
 
 // NewOrdererConfig creates a new instance of the orderer config
 func NewOrdererConfig(ordererGroup *cb.ConfigGroup, mspConfig *MSPConfigHandler) (*OrdererConfig, error) {
-	fmt.Println("====NewOrdererConfig==")
+	logger.Info("====NewOrdererConfig==")
 	oc := &OrdererConfig{
 		protos: &OrdererProtos{},
 		orgs:   make(map[string]Org),
@@ -86,25 +86,25 @@ func NewOrdererConfig(ordererGroup *cb.ConfigGroup, mspConfig *MSPConfigHandler)
 
 // ConsensusType returns the configured consensus type
 func (oc *OrdererConfig) ConsensusType() string {
-	fmt.Println("==OrdererConfig==ConsensusType==")
+	logger.Info("==OrdererConfig==ConsensusType==")
 	return oc.protos.ConsensusType.Type
 }
 
 // ConsensusMetadata returns the metadata associated with the consensus type.
 func (oc *OrdererConfig) ConsensusMetadata() []byte {
-	fmt.Println("==OrdererConfig==ConsensusMetadata==")
+	logger.Info("==OrdererConfig==ConsensusMetadata==")
 	return oc.protos.ConsensusType.Metadata
 }
 
 // BatchSize returns the maximum number of messages to include in a block
 func (oc *OrdererConfig) BatchSize() *ab.BatchSize {
-	fmt.Println("==OrdererConfig==BatchSize==")
+	logger.Info("==OrdererConfig==BatchSize==")
 	return oc.protos.BatchSize
 }
 
 // BatchTimeout returns the amount of time to wait before creating a batch
 func (oc *OrdererConfig) BatchTimeout() time.Duration {
-	fmt.Println("==OrdererConfig==BatchTimeout==")
+	logger.Info("==OrdererConfig==BatchTimeout==")
 	return oc.batchTimeout
 }
 
@@ -112,30 +112,30 @@ func (oc *OrdererConfig) BatchTimeout() time.Duration {
 // Kafka brokers, i.e. this is not necessarily the entire set of Kafka brokers
 // used for ordering
 func (oc *OrdererConfig) KafkaBrokers() []string {
-	fmt.Println("==OrdererConfig==KafkaBrokers==")
+	logger.Info("==OrdererConfig==KafkaBrokers==")
 	return oc.protos.KafkaBrokers.Brokers
 }
 
 // MaxChannelsCount returns the maximum count of channels this orderer supports
 func (oc *OrdererConfig) MaxChannelsCount() uint64 {
-	fmt.Println("==OrdererConfig==MaxChannelsCount==")
+	logger.Info("==OrdererConfig==MaxChannelsCount==")
 	return oc.protos.ChannelRestrictions.MaxCount
 }
 
 // Organizations returns a map of the orgs in the channel
 func (oc *OrdererConfig) Organizations() map[string]Org {
-	fmt.Println("==OrdererConfig==Organizations==")
+	logger.Info("==OrdererConfig==Organizations==")
 	return oc.orgs
 }
 
 // Capabilities returns the capabilities the ordering network has for this channel
 func (oc *OrdererConfig) Capabilities() OrdererCapabilities {
-	fmt.Println("==OrdererConfig==Capabilities==")
+	logger.Info("==OrdererConfig==Capabilities==")
 	return capabilities.NewOrdererProvider(oc.protos.Capabilities.Capabilities)
 }
 
 func (oc *OrdererConfig) Validate() error {
-	fmt.Println("==OrdererConfig==Validate==")
+	logger.Info("==OrdererConfig==Validate==")
 	for _, validator := range []func() error{
 		oc.validateBatchSize,
 		oc.validateBatchTimeout,
@@ -150,7 +150,7 @@ func (oc *OrdererConfig) Validate() error {
 }
 
 func (oc *OrdererConfig) validateBatchSize() error {
-	fmt.Println("==OrdererConfig==validateBatchSize==")
+	logger.Info("==OrdererConfig==validateBatchSize==")
 	if oc.protos.BatchSize.MaxMessageCount == 0 {
 		return fmt.Errorf("Attempted to set the batch size max message count to an invalid value: 0")
 	}
@@ -167,7 +167,7 @@ func (oc *OrdererConfig) validateBatchSize() error {
 }
 
 func (oc *OrdererConfig) validateBatchTimeout() error {
-	fmt.Println("==OrdererConfig==validateBatchTimeout==")
+	logger.Info("==OrdererConfig==validateBatchTimeout==")
 	var err error
 	oc.batchTimeout, err = time.ParseDuration(oc.protos.BatchTimeout.Timeout)
 	if err != nil {
@@ -180,7 +180,7 @@ func (oc *OrdererConfig) validateBatchTimeout() error {
 }
 
 func (oc *OrdererConfig) validateKafkaBrokers() error {
-	fmt.Println("==OrdererConfig==validateKafkaBrokers==")
+	logger.Info("==OrdererConfig==validateKafkaBrokers==")
 	for _, broker := range oc.protos.KafkaBrokers.Brokers {
 		if !brokerEntrySeemsValid(broker) {
 			return fmt.Errorf("Invalid broker entry: %s", broker)
@@ -191,7 +191,7 @@ func (oc *OrdererConfig) validateKafkaBrokers() error {
 
 // This does just a barebones sanity check.
 func brokerEntrySeemsValid(broker string) bool {
-	fmt.Println("==brokerEntrySeemsValid==")
+	logger.Info("==brokerEntrySeemsValid==")
 	if !strings.Contains(broker, ":") {
 		return false
 	}

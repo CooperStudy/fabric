@@ -9,7 +9,6 @@ package election
 import (
 	"bytes"
 	"encoding/hex"
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -103,7 +102,7 @@ type LeaderElectionService interface {
 type peerID []byte
 
 func (p peerID) String() string {
-	//fmt.Println("====peerID====String==")
+	//logger.Info("====peerID====String==")
 	if p == nil {
 		return "<nil>"
 	}
@@ -131,7 +130,7 @@ func noopCallback(_ bool) {
 
 // NewLeaderElectionService returns a new LeaderElectionService
 func NewLeaderElectionService(adapter LeaderElectionAdapter, id string, callback leadershipCallback) LeaderElectionService {
-	//fmt.Println("====NewLeaderElectionService==")
+	//logger.Info("====NewLeaderElectionService==")
 	if len(id) == 0 {
 		panic("Empty id")
 	}
@@ -173,7 +172,7 @@ type leaderElectionSvcImpl struct {
 }
 
 func (le *leaderElectionSvcImpl) start() {
-	//fmt.Println("====leaderElectionSvcImpl==start==")
+	//logger.Info("====leaderElectionSvcImpl==start==")
 	le.stopWG.Add(2)
 	go le.handleMessages()
 	le.waitForMembershipStabilization(getStartupGracePeriod())
@@ -181,7 +180,7 @@ func (le *leaderElectionSvcImpl) start() {
 }
 
 func (le *leaderElectionSvcImpl) handleMessages() {
-	//fmt.Println("====leaderElectionSvcImpl==handleMessages==")
+	//logger.Info("====leaderElectionSvcImpl==handleMessages==")
 	le.logger.Debug(le.id, ": Entering")
 	defer le.logger.Debug(le.id, ": Exiting")
 	defer le.stopWG.Done()
@@ -202,7 +201,7 @@ func (le *leaderElectionSvcImpl) handleMessages() {
 }
 
 func (le *leaderElectionSvcImpl) handleMessage(msg Msg) {
-	//fmt.Println("====leaderElectionSvcImpl==handleMessage==")
+	//logger.Info("====leaderElectionSvcImpl==handleMessage==")
 	msgType := "proposal"
 	if msg.IsDeclaration() {
 		msgType = "declaration"
@@ -230,7 +229,7 @@ func (le *leaderElectionSvcImpl) handleMessage(msg Msg) {
 // waitForInterrupt sleeps until the interrupt channel is triggered
 // or given timeout expires
 func (le *leaderElectionSvcImpl) waitForInterrupt(timeout time.Duration) {
-	//fmt.Println("====leaderElectionSvcImpl==waitForInterrupt==")
+	//logger.Info("====leaderElectionSvcImpl==waitForInterrupt==")
 	le.logger.Debug(le.id, ": Entering")
 	defer le.logger.Debug(le.id, ": Exiting")
 	le.Lock()
@@ -254,7 +253,7 @@ func (le *leaderElectionSvcImpl) waitForInterrupt(timeout time.Duration) {
 }
 
 func (le *leaderElectionSvcImpl) run() {
-	//fmt.Println("====leaderElectionSvcImpl==run==")
+	//logger.Info("====leaderElectionSvcImpl==run==")
 	defer le.stopWG.Done()
 	for !le.shouldStop() {
 		if !le.isLeaderExists() {
@@ -277,7 +276,7 @@ func (le *leaderElectionSvcImpl) run() {
 }
 
 func (le *leaderElectionSvcImpl) leaderElection() {
-	//fmt.Println("====leaderElectionSvcImpl==leaderElection==")
+	//logger.Info("====leaderElectionSvcImpl==leaderElection==")
 	le.logger.Debug(le.id, ": Entering")
 	defer le.logger.Debug(le.id, ": Exiting")
 	// If we're yielding to other peers, do not participate
@@ -316,7 +315,7 @@ func (le *leaderElectionSvcImpl) leaderElection() {
 
 // propose sends a leadership proposal message to remote peers
 func (le *leaderElectionSvcImpl) propose() {
-	//fmt.Println("====leaderElectionSvcImpl==propose==")
+	//logger.Info("====leaderElectionSvcImpl==propose==")
 	le.logger.Debug(le.id, ": Entering")
 	le.logger.Debug(le.id, ": Exiting")
 	leadershipProposal := le.adapter.CreateMessage(false)
@@ -324,7 +323,7 @@ func (le *leaderElectionSvcImpl) propose() {
 }
 
 func (le *leaderElectionSvcImpl) follower() {
-	//fmt.Println("====leaderElectionSvcImpl==follower==")
+	//logger.Info("====leaderElectionSvcImpl==follower==")
 	le.logger.Debug(le.id, ": Entering")
 	defer le.logger.Debug(le.id, ": Exiting")
 
@@ -338,7 +337,7 @@ func (le *leaderElectionSvcImpl) follower() {
 }
 
 func (le *leaderElectionSvcImpl) leader() {
-	//fmt.Println("====leaderElectionSvcImpl==leader==")
+	//logger.Info("====leaderElectionSvcImpl==leader==")
 	leaderDeclaration := le.adapter.CreateMessage(true)
 	le.adapter.Gossip(leaderDeclaration)
 	le.waitForInterrupt(getLeadershipDeclarationInterval())
@@ -347,7 +346,7 @@ func (le *leaderElectionSvcImpl) leader() {
 // waitForMembershipStabilization waits for membership view to stabilize
 // or until a time limit expires, or until a peer declares itself as a leader
 func (le *leaderElectionSvcImpl) waitForMembershipStabilization(timeLimit time.Duration) {
-	//fmt.Println("====leaderElectionSvcImpl==waitForMembershipStabilization==")
+	//logger.Info("====leaderElectionSvcImpl==waitForMembershipStabilization==")
 	le.logger.Debug(le.id, ": Entering")
 	defer le.logger.Debug(le.id, ": Exiting, peers found", len(le.adapter.Peers()))
 	endTime := time.Now().Add(timeLimit)
@@ -365,7 +364,7 @@ func (le *leaderElectionSvcImpl) waitForMembershipStabilization(timeLimit time.D
 // drainInterruptChannel clears the interruptChannel
 // if needed
 func (le *leaderElectionSvcImpl) drainInterruptChannel() {
-	//fmt.Println("====leaderElectionSvcImpl==drainInterruptChannel==")
+	//logger.Info("====leaderElectionSvcImpl==drainInterruptChannel==")
 	if len(le.interruptChan) == 1 {
 		<-le.interruptChan
 	}
@@ -373,7 +372,7 @@ func (le *leaderElectionSvcImpl) drainInterruptChannel() {
 
 // isAlive returns whether peer of given id is considered alive
 func (le *leaderElectionSvcImpl) isAlive(id peerID) bool {
-	//fmt.Println("====leaderElectionSvcImpl==isAlive==")
+	//logger.Info("====leaderElectionSvcImpl==isAlive==")
 	for _, p := range le.adapter.Peers() {
 		if bytes.Equal(p.ID(), id) {
 			return true
@@ -383,44 +382,44 @@ func (le *leaderElectionSvcImpl) isAlive(id peerID) bool {
 }
 
 func (le *leaderElectionSvcImpl) isLeaderExists() bool {
-	//fmt.Println("====leaderElectionSvcImpl==isLeaderExists==")
+	//logger.Info("====leaderElectionSvcImpl==isLeaderExists==")
 	return atomic.LoadInt32(&le.leaderExists) == int32(1)
 }
 
 // IsLeader returns whether this peer is a leader
 func (le *leaderElectionSvcImpl) IsLeader() bool {
-	//fmt.Println("====leaderElectionSvcImpl==IsLeader==")
+	//logger.Info("====leaderElectionSvcImpl==IsLeader==")
 	isLeader := atomic.LoadInt32(&le.isLeader) == int32(1)
 	le.logger.Debug(le.id, ": Returning", isLeader)
 	return isLeader
 }
 
 func (le *leaderElectionSvcImpl) beLeader() {
-	//fmt.Println("====leaderElectionSvcImpl==beLeader==")
+	//logger.Info("====leaderElectionSvcImpl==beLeader==")
 	le.logger.Info(le.id, ": Becoming a leader")//6f24a285101adea8c6350decbca2c731f07978a32a5ca876c3f2cca7b5b3e090
 	atomic.StoreInt32(&le.isLeader, int32(1))
 	le.callback(true)
 }
 
 func (le *leaderElectionSvcImpl) stopBeingLeader() {
-	//fmt.Println("====leaderElectionSvcImpl==stopBeingLeader==")
+	//logger.Info("====leaderElectionSvcImpl==stopBeingLeader==")
 	le.logger.Info(le.id, "Stopped being a leader")
 	atomic.StoreInt32(&le.isLeader, int32(0))
 	le.callback(false)
 }
 
 func (le *leaderElectionSvcImpl) shouldStop() bool {
-	//fmt.Println("====leaderElectionSvcImpl==shouldStop==")
+	//logger.Info("====leaderElectionSvcImpl==shouldStop==")
 	return atomic.LoadInt32(&le.toDie) == int32(1)
 }
 
 func (le *leaderElectionSvcImpl) isYielding() bool {
-	//fmt.Println("====leaderElectionSvcImpl==isYielding==")
+	//logger.Info("====leaderElectionSvcImpl==isYielding==")
 	return atomic.LoadInt32(&le.yield) == int32(1)
 }
 
 func (le *leaderElectionSvcImpl) stopYielding() {
-	//fmt.Println("====leaderElectionSvcImpl==stopYielding==")
+	//logger.Info("====leaderElectionSvcImpl==stopYielding==")
 	le.logger.Debug("Stopped yielding")
 	le.Lock()
 	defer le.Unlock()
@@ -431,7 +430,7 @@ func (le *leaderElectionSvcImpl) stopYielding() {
 // Yield relinquishes the leadership until a new leader is elected,
 // or a timeout expires
 func (le *leaderElectionSvcImpl) Yield() {
-	//fmt.Println("====leaderElectionSvcImpl==Yield==")
+	//logger.Info("====leaderElectionSvcImpl==Yield==")
 	le.Lock()
 	defer le.Unlock()
 	if !le.IsLeader() || le.isYielding() {
@@ -451,7 +450,7 @@ func (le *leaderElectionSvcImpl) Yield() {
 
 // Stop stops the LeaderElectionService
 func (le *leaderElectionSvcImpl) Stop() {
-	//fmt.Println("====leaderElectionSvcImpl==Stop==")
+	//logger.Info("====leaderElectionSvcImpl==Stop==")
 	le.logger.Debug(le.id, ": Entering")
 	defer le.logger.Debug(le.id, ": Exiting")
 	atomic.StoreInt32(&le.toDie, int32(1))
@@ -463,72 +462,64 @@ func (le *leaderElectionSvcImpl) Stop() {
 // the period of time to wait until election algorithm will start
 func SetStartupGracePeriod(t time.Duration) {
 	viper.Set("peer.gossip.election.startupGracePeriod", t)
-	fmt.Println("==========peer.gossip.election.startupGracePeriod===============",t)
 }
 
 // SetMembershipSampleInterval setups/initializes the frequency the
 // membership view should be checked
 func SetMembershipSampleInterval(t time.Duration) {
 	viper.Set("peer.gossip.election.membershipSampleInterval", t)
-	fmt.Println("==========peer.gossip.election.membershipSampleInterval===============",t)
 }
 
 // SetLeaderAliveThreshold configures leader election alive threshold
 func SetLeaderAliveThreshold(t time.Duration) {
-	fmt.Println("====SetLeaderAliveThreshold=")
 	viper.Set("peer.gossip.election.leaderAliveThreshold", t)
-	fmt.Println("==========peer.gossip.election.leaderAliveThreshold================",t)
 }
 
 // SetLeaderElectionDuration configures expected leadership election duration,
 // interval to wait until leader election will be completed
 func SetLeaderElectionDuration(t time.Duration) {
-	fmt.Println("====SetLeaderElectionDuration=")
 	viper.Set("peer.gossip.election.leaderElectionDuration", t)
-	fmt.Println("==========peer.gossip.election.leaderElectionDuration================",t)
 
 
 }
 
 func getStartupGracePeriod() time.Duration {
-	fmt.Println("====getStartupGracePeriod=")
 	a := util.GetDurationOrDefault("peer.gossip.election.startupGracePeriod", time.Second*15)
-	fmt.Println("==========peer.gossip.election.startupGracePeriod================",a)
 	return a
 }
 
 func getMembershipSampleInterval() time.Duration {
-	fmt.Println("====getMembershipSampleInterval=")
+	//logger.Info("====getMembershipSampleInterval=")
 	a := util.GetDurationOrDefault("peer.gossip.election.membershipSampleInterval", time.Second)
-	fmt.Println("==========peer.gossip.election.membershipSampleInterval=================",a)
+	//logger.Info("==========peer.gossip.election.membershipSampleInterval=================",a)
 	return a
 }
 
 func getLeaderAliveThreshold() time.Duration {
-	//fmt.Println("====getLeaderAliveThreshold=")
+	//logger.Info("====getLeaderAliveThreshold=")
 	a := util.GetDurationOrDefault("peer.gossip.election.leaderAliveThreshold", time.Second*10)
-	//fmt.Println("==========peer.gossip.election.leaderAliveThreshold=================",a)//10s
+	//logger.Info("==========peer.gossip.election.leaderAliveThreshold=================",a)//10s
 	return a
 }
 
 func getLeadershipDeclarationInterval() time.Duration {
-	//fmt.Println("====getLeadershipDeclarationInterval=")
+	//logger.Info("====getLeadershipDeclarationInterval=")
 	a:= time.Duration(getLeaderAliveThreshold() / 2)
-	//fmt.Println("==========getLeadershipDeclarationInterval=================",a)
+	//logger.Info("==========getLeadershipDeclarationInterval=================",a)
 	return a
 }
 
 func getLeaderElectionDuration() time.Duration {
-	fmt.Println("====getLeaderElectionDuration=")
+	//logger.Info("====getLeaderElectionDuration=")
 	a:= util.GetDurationOrDefault("peer.gossip.election.leaderElectionDuration", time.Second*5)
-	fmt.Println("================peer.gossip.election.leaderElectionDuration================",a)
+	//logger.Info("================peer.gossip.election.leaderElectionDuration================",a)
 	return a
 }
 
 // GetMsgExpirationTimeout return leadership message expiration timeout
 func GetMsgExpirationTimeout() time.Duration {
-	fmt.Println("====GetMsgExpirationTimeout=")
+	//logger.Info("====GetMsgExpirationTimeout=")
 	a := getLeaderAliveThreshold() * 10
-	fmt.Println("==========a=============",a)
+	//logger.Info("==========a=============",a)
 	return a
 }

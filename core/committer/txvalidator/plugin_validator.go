@@ -80,7 +80,7 @@ type PluginValidator struct {
 
 // NewPluginValidator creates a new PluginValidator
 func NewPluginValidator(pm PluginMapper, qec QueryExecutorCreator, deserializer msp.IdentityDeserializer, capabilities Capabilities) *PluginValidator {
-	fmt.Println("=====NewPluginValidator==")
+	logger.Info("=====NewPluginValidator==")
 	return &PluginValidator{
 		capabilities:         capabilities,
 		pluginChannelMapping: make(map[PluginName]*pluginsByChannel),
@@ -91,7 +91,7 @@ func NewPluginValidator(pm PluginMapper, qec QueryExecutorCreator, deserializer 
 }
 
 func (pv *PluginValidator) ValidateWithPlugin(ctx *Context) error {
-	fmt.Println("=====PluginValidator==ValidateWithPlugin==")
+	logger.Info("=====PluginValidator==ValidateWithPlugin==")
 	plugin, err := pv.getOrCreatePlugin(ctx)
 	if err != nil {
 		return &validation.ExecutionFailureError{
@@ -108,7 +108,7 @@ func (pv *PluginValidator) ValidateWithPlugin(ctx *Context) error {
 }
 
 func (pv *PluginValidator) getOrCreatePlugin(ctx *Context) (validation.Plugin, error) {
-	fmt.Println("=====PluginValidator==getOrCreatePlugin==")
+	logger.Info("=====PluginValidator==getOrCreatePlugin==")
 	pluginFactory := pv.PluginFactoryByName(PluginName(ctx.VSCCName))
 	if pluginFactory == nil {
 		return nil, errors.Errorf("plugin with name %s wasn't found", ctx.VSCCName)
@@ -120,7 +120,7 @@ func (pv *PluginValidator) getOrCreatePlugin(ctx *Context) (validation.Plugin, e
 }
 
 func (pv *PluginValidator) getOrCreatePluginChannelMapping(plugin PluginName, pf validation.PluginFactory) *pluginsByChannel {
-	fmt.Println("=====PluginValidator==getOrCreatePluginChannelMapping==")
+	logger.Info("=====PluginValidator==getOrCreatePluginChannelMapping==")
 	pv.Lock()
 	defer pv.Unlock()
 	endorserChannelMapping, exists := pv.pluginChannelMapping[PluginName(plugin)]
@@ -146,7 +146,7 @@ type pluginsByChannel struct {
 }
 
 func (pbc *pluginsByChannel) createPluginIfAbsent(channel string) (validation.Plugin, error) {
-	fmt.Println("=====pluginsByChannel==createPluginIfAbsent==")
+	logger.Info("=====pluginsByChannel==createPluginIfAbsent==")
 	pbc.RLock()
 	plugin, exists := pbc.channels2Plugins[channel]
 	pbc.RUnlock()
@@ -171,7 +171,7 @@ func (pbc *pluginsByChannel) createPluginIfAbsent(channel string) (validation.Pl
 }
 
 func (pbc *pluginsByChannel) initPlugin(plugin validation.Plugin, channel string) (validation.Plugin, error) {
-	fmt.Println("=====pluginsByChannel==initPlugin==")
+	logger.Info("=====pluginsByChannel==initPlugin==")
 	pe := &PolicyEvaluator{IdentityDeserializer: pbc.pv.IdentityDeserializer}
 	sf := &StateFetcherImpl{QueryExecutorCreator: pbc.pv}
 	if err := plugin.Init(pe, sf, pbc.pv.capabilities); err != nil {
@@ -186,7 +186,7 @@ type PolicyEvaluator struct {
 
 // Evaluate takes a set of SignedData and evaluates whether this set of signatures satisfies the policy
 func (id *PolicyEvaluator) Evaluate(policyBytes []byte, signatureSet []*common.SignedData) error {
-	fmt.Println("=====PolicyEvaluator==Evaluate==")
+	logger.Info("=====PolicyEvaluator==Evaluate==")
 	pp := cauthdsl.NewPolicyProvider(id.IdentityDeserializer)
 	policy, _, err := pp.NewPolicy(policyBytes)
 	if err != nil {
@@ -197,7 +197,7 @@ func (id *PolicyEvaluator) Evaluate(policyBytes []byte, signatureSet []*common.S
 
 // DeserializeIdentity unmarshals the given identity to msp.Identity
 func (id *PolicyEvaluator) DeserializeIdentity(serializedIdentity []byte) (Identity, error) {
-	fmt.Println("=====PolicyEvaluator==DeserializeIdentity==")
+	logger.Info("=====PolicyEvaluator==DeserializeIdentity==")
 	mspIdentity, err := id.IdentityDeserializer.DeserializeIdentity(serializedIdentity)
 	if err != nil {
 		return nil, err
@@ -210,7 +210,7 @@ type identity struct {
 }
 
 func (i *identity) GetIdentityIdentifier() *IdentityIdentifier {
-	fmt.Println("=====identity==GetIdentityIdentifier==")
+	logger.Info("=====identity==GetIdentityIdentifier==")
 	identifier := i.Identity.GetIdentifier()
 	return &IdentityIdentifier{
 		Id:    identifier.Id,
@@ -223,7 +223,7 @@ type StateFetcherImpl struct {
 }
 
 func (sf *StateFetcherImpl) FetchState() (State, error) {
-	fmt.Println("=====StateFetcherImpl==FetchState==")
+	logger.Info("=====StateFetcherImpl==FetchState==")
 	qe, err := sf.NewQueryExecutor()
 	if err != nil {
 		return nil, err
@@ -236,7 +236,7 @@ type StateImpl struct {
 }
 
 func (s *StateImpl) GetStateRangeScanIterator(namespace string, startKey string, endKey string) (ResultsIterator, error) {
-	fmt.Println("=====StateImpl==GetStateRangeScanIterator==")
+	logger.Info("=====StateImpl==GetStateRangeScanIterator==")
 	it, err := s.QueryExecutor.GetStateRangeScanIterator(namespace, startKey, endKey)
 	if err != nil {
 		return nil, err
@@ -249,7 +249,7 @@ type ResultsIteratorImpl struct {
 }
 
 func (it *ResultsIteratorImpl) Next() (QueryResult, error) {
-	fmt.Println("=====ResultsIteratorImpl==Next==")
+	logger.Info("=====ResultsIteratorImpl==Next==")
 	return it.ResultsIterator.Next()
 }
 
@@ -258,6 +258,6 @@ type SerializedPolicy []byte
 
 // Bytes returns te bytes of the SerializedPolicy
 func (sp SerializedPolicy) Bytes() []byte {
-	fmt.Println("=====SerializedPolicy==Bytes==")
+	logger.Info("=====SerializedPolicy==Bytes==")
 	return sp
 }

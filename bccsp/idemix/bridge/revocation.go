@@ -22,13 +22,13 @@ type Revocation struct {
 
 // NewKey generate a new revocation key-pair.
 func (*Revocation) NewKey() (*ecdsa.PrivateKey, error) {
-	fmt.Println("==Revocation==NewKey=======")
+	logger.Info("==Revocation==NewKey=======")
 	return cryptolib.GenerateLongTermRevocationKey()
 }
 
 // Sign generates a new CRI with the respect to the passed unrevoked handles, epoch, and revocation algorithm.
 func (*Revocation) Sign(key *ecdsa.PrivateKey, unrevokedHandles [][]byte, epoch int, alg bccsp.RevocationAlgorithm) (res []byte, err error) {
-	fmt.Println("==Revocation==Sign=======")
+	logger.Info("==Revocation==Sign=======")
 	defer func() {
 		if r := recover(); r != nil {
 			res = nil
@@ -51,7 +51,7 @@ func (*Revocation) Sign(key *ecdsa.PrivateKey, unrevokedHandles [][]byte, epoch 
 // Verify checks that the passed serialised CRI (criRaw) is valid with the respect to the passed revocation public key,
 // epoch, and revocation algorithm.
 func (*Revocation) Verify(pk *ecdsa.PublicKey, criRaw []byte, epoch int, alg bccsp.RevocationAlgorithm) (err error) {
-	fmt.Println("==Revocation==Verify=======")
+	logger.Info("==Revocation==Verify=======")
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.Errorf("failure [%s]", r)

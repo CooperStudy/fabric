@@ -30,7 +30,7 @@ type BundleSource struct {
 // BundleSource.  Note, these callbacks are called immediately before this function
 // returns.
 func NewBundleSource(bundle *Bundle, callbacks ...func(*Bundle)) *BundleSource {
-	fmt.Println("=====NewBundleSource========")
+	logger.Info("=====NewBundleSource========")
 	bs := &BundleSource{
 		callbacks: callbacks,
 	}
@@ -40,7 +40,7 @@ func NewBundleSource(bundle *Bundle, callbacks ...func(*Bundle)) *BundleSource {
 
 // Update sets a new bundle as the bundle source and calls any registered callbacks
 func (bs *BundleSource) Update(newBundle *Bundle) {
-	fmt.Println("===BundleSource==Update========")
+	logger.Info("===BundleSource==Update========")
 	bs.bundle.Store(newBundle)
 	for _, callback := range bs.callbacks {
 		callback(newBundle)
@@ -56,57 +56,57 @@ func (bs *BundleSource) Update(newBundle *Bundle) {
 // which require consistency between the Bundle calls, the caller should first retrieve
 // a StableBundle, then operate on it.
 func (bs *BundleSource) StableBundle() *Bundle {
-	fmt.Println("===BundleSource==StableBundle========")
+	logger.Info("===BundleSource==StableBundle========")
 	return bs.bundle.Load().(*Bundle)
 }
 
 // PolicyManager returns the policy manager constructed for this config
 func (bs *BundleSource) PolicyManager() policies.Manager {
-	fmt.Println("===BundleSource==PolicyManager========")
+	logger.Info("===BundleSource==PolicyManager========")
 	return bs.StableBundle().policyManager
 }
 
 // MSPManager returns the MSP manager constructed for this config
 func (bs *BundleSource) MSPManager() msp.MSPManager {
-	fmt.Println("===BundleSource==MSPManager========")
+	logger.Info("===BundleSource==MSPManager========")
 	return bs.StableBundle().mspManager
 }
 
 // ChannelConfig returns the config.Channel for the chain
 func (bs *BundleSource) ChannelConfig() Channel {
-	fmt.Println("===BundleSource==ChannelConfig========")
+	logger.Info("===BundleSource==ChannelConfig========")
 	return bs.StableBundle().ChannelConfig()
 }
 
 // OrdererConfig returns the config.Orderer for the channel
 // and whether the Orderer config exists
 func (bs *BundleSource) OrdererConfig() (Orderer, bool) {
-	fmt.Println("===BundleSource==OrdererConfig========")
+	logger.Info("===BundleSource==OrdererConfig========")
 	return bs.StableBundle().OrdererConfig()
 }
 
 // ConsortiumsConfig() returns the config.Consortiums for the channel
 // and whether the consortiums config exists
 func (bs *BundleSource) ConsortiumsConfig() (Consortiums, bool) {
-	fmt.Println("===BundleSource==ConsortiumsConfig========")
+	logger.Info("===BundleSource==ConsortiumsConfig========")
 	return bs.StableBundle().ConsortiumsConfig()
 }
 
 // ApplicationConfig returns the Application config for the channel
 // and whether the Application config exists
 func (bs *BundleSource) ApplicationConfig() (Application, bool) {
-	fmt.Println("===BundleSource==ApplicationConfig========")
+	logger.Info("===BundleSource==ApplicationConfig========")
 	return bs.StableBundle().ApplicationConfig()
 }
 
 // ConfigtxValidator returns the configtx.Validator for the channel
 func (bs *BundleSource) ConfigtxValidator() configtx.Validator {
-	fmt.Println("===BundleSource==ConfigtxValidator========")
+	logger.Info("===BundleSource==ConfigtxValidator========")
 	return bs.StableBundle().ConfigtxValidator()
 }
 
 // ValidateNew passes through to the current bundle
 func (bs *BundleSource) ValidateNew(resources Resources) error {
-	fmt.Println("===BundleSource==ValidateNew========")
+	logger.Info("===BundleSource==ValidateNew========")
 	return bs.StableBundle().ValidateNew(resources)
 }

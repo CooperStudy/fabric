@@ -23,7 +23,7 @@ type Namer struct {
 }
 
 func NewCounterNamer(c metrics.CounterOpts) *Namer {
-	fmt.Println("==NewCounterNamer==")
+	logger.Info("==NewCounterNamer==")
 	return &Namer{
 		namespace:  c.Namespace,
 		subsystem:  c.Subsystem,
@@ -34,7 +34,7 @@ func NewCounterNamer(c metrics.CounterOpts) *Namer {
 }
 
 func NewGaugeNamer(g metrics.GaugeOpts) *Namer {
-	fmt.Println("==NewGaugeNamer==")
+	logger.Info("==NewGaugeNamer==")
 	return &Namer{
 		namespace:  g.Namespace,
 		subsystem:  g.Subsystem,
@@ -45,7 +45,7 @@ func NewGaugeNamer(g metrics.GaugeOpts) *Namer {
 }
 
 func NewHistogramNamer(h metrics.HistogramOpts) *Namer {
-	fmt.Println("==NewHistogramNamer==")
+	logger.Info("==NewHistogramNamer==")
 	return &Namer{
 		namespace:  h.Namespace,
 		subsystem:  h.Subsystem,
@@ -56,14 +56,14 @@ func NewHistogramNamer(h metrics.HistogramOpts) *Namer {
 }
 
 func (n *Namer) validateKey(name string) {
-	fmt.Println("==Namer==validateKey==")
+	logger.Info("==Namer==validateKey==")
 	if _, ok := n.labelNames[name]; !ok {
 		panic("invalid label name: " + name)
 	}
 }
 
 func (n *Namer) FullyQualifiedName() string {
-	fmt.Println("==Namer==FullyQualifiedName==")
+	logger.Info("==Namer==FullyQualifiedName==")
 	switch {
 	case n.namespace != "" && n.subsystem != "":
 		return strings.Join([]string{n.namespace, n.subsystem, n.name}, ".")
@@ -77,7 +77,7 @@ func (n *Namer) FullyQualifiedName() string {
 }
 
 func (n *Namer) labelsToMap(labelValues []string) map[string]string {
-	fmt.Println("==Namer==labelsToMap==")
+	logger.Info("==Namer==labelsToMap==")
 	labels := map[string]string{}
 	for i := 0; i < len(labelValues); i += 2 {
 		key := labelValues[i]
@@ -95,7 +95,7 @@ var formatRegexp = regexp.MustCompile(`%{([#?[:alnum:]_]+)}`)
 var invalidLabelValueRegexp = regexp.MustCompile(`[.|:\s]`)
 
 func (n *Namer) Format(labelValues ...string) string {
-	fmt.Println("==Namer==Format==")
+	logger.Info("==Namer==Format==")
 	labels := n.labelsToMap(labelValues)
 
 	cursor := 0
@@ -143,7 +143,7 @@ func (n *Namer) Format(labelValues ...string) string {
 }
 
 func sliceToSet(set []string) map[string]struct{} {
-	fmt.Println("==sliceToSet==")
+	logger.Info("==sliceToSet==")
 	labelSet := map[string]struct{}{}
 	for _, s := range set {
 		labelSet[s] = struct{}{}

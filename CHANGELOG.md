@@ -4954,7 +4954,7 @@ Wed Jun  7 08:49:09 EDT 2017
 * [711f439](https://github.com/hyperledger/fabric/commit/711f439) Printout cli result in CLI BDD tests
 * [db497af](https://github.com/hyperledger/fabric/commit/db497af) Fixes [FAB-209](https://jira.hyperledger.org/browse/FAB-209) by adding security properties to the yaml examples
 * [dc53adf](https://github.com/hyperledger/fabric/commit/dc53adf) Change out of sequence numbers message to warning
-* [a916941](https://github.com/hyperledger/fabric/commit/a916941) Use log.Errof instead of fmt.Println in db.go
+* [a916941](https://github.com/hyperledger/fabric/commit/a916941) Use log.Errof instead of logger.Info in db.go
 * [97ed71f](https://github.com/hyperledger/fabric/commit/97ed71f) Java shim/chaincode project reorg, separate java docker env
 * [930f3a6](https://github.com/hyperledger/fabric/commit/930f3a6) Recompile proto files
 * [843dae1](https://github.com/hyperledger/fabric/commit/843dae1) change Info to Infof

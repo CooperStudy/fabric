@@ -37,7 +37,7 @@ func cleanup(database string) error {
 	couchInstance, err := CreateCouchInstance(couchDBDef.URL, couchDBDef.Username, couchDBDef.Password,
 		couchDBDef.MaxRetries, couchDBDef.MaxRetriesOnStartup, couchDBDef.RequestTimeout, couchDBDef.CreateGlobalChangesDB, &disabled.Provider{})
 	if err != nil {
-		fmt.Println("Unexpected error", err)
+		logger.Info("Unexpected error", err)
 		return err
 	}
 	db := CouchDatabase{CouchInstance: couchInstance, DBName: database}

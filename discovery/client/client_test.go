@@ -368,7 +368,7 @@ func createDiscoveryService(sup *mockSupport) discovery.DiscoveryServer {
 }
 
 func TestClient(t *testing.T) {
-	fmt.Println("====start====")
+	logger.Info("====start====")
 	filepath.Join("testdata", "client", "cert.pem")  //testdata/client/cert.pem
 	clientCert := loadFileOrPanic(filepath.Join("testdata", "client", "cert.pem"))
 	clientKey := loadFileOrPanic(filepath.Join("testdata", "client", "key.pem"))
@@ -382,18 +382,18 @@ func TestClient(t *testing.T) {
 	go server.Start()
 	_, portStr, _ := net.SplitHostPort(server.Address())
 	port, _ := strconv.ParseInt(portStr, 10, 64)
-	fmt.Println("port",port)
+	logger.Info("port",port)
 
 	//time.Sleep(1000*time.Second)
-	fmt.Println("clientTLSCert.Certificate[0]",clientTLSCert.Certificate)
+	logger.Info("clientTLSCert.Certificate[0]",clientTLSCert.Certificate)
 	//clientTLSCert.Certificate[0] [[48 130 2 58 48 130 1 225 160 3 2 1 2 2 16 55 120 200 180 152 185 106 98 102 228 58 128 125 14 142 192 48 10 6 8 42 134 72 206 61 4 3 2 48 118 49 11 48 9 6 3 85 4 6 19 2 85 83 49 19 48 17 6 3 85 4 8 19 10 67 97 108 105 102 111 114 110 105 97 49 22 48 20 6 3 85 4 7 19 13 83 97 110 32 70 114 97 110 99 105 115 99 111 49 25 48 23 6 3 85 4 10 19 16 111 114 103 49 46 101 120 97 109 112 108 101 46 99 111 109 49 31 48 29 6 3 85 4 3 19 22 116 108 115 99 97 46 111 114 103 49 46 101 120 97 109 112 108 101 46 99 111 109 48 30 23 13 49 56 48 49 48 52 48 56 53 49 49 52 90 23 13 50 56 48 49 48 50 48 56 53 49 49 52 90 48 91 49 11 48 9 6 3 85 4 6 19 2 85 83 49 19 48 17 6 3 85 4 8 19 10 67 97 108 105 102 111 114 110 105 97 49 22 48 20 6 3 85 4 7 19 13 83 97 110 32 70 114 97 110 99 105 115 99 111 49 31 48 29 6 3 85 4 3 12 22 85 115 101 114 49 64 111 114 103 49 46 101 120 97 109 112 108 101 46 99 111 109 48 89 48 19 6 7 42 134 72 206 61 2 1 6 8 42 134 72 206 61 3 1 7 3 66 0 4 118 71 117 206 168 151 69 175 118 74 211 27 245 83 174 227 62 218 102 91 234 131 207 116 231 101 167 50 74 186 110 8 255 54 183 17 136 208 211 185 122 98 239 203 100 73 145 66 233 77 78 166 163 1 81 154 156 209 109 162 127 251 67 71 163 108 48 106 48 14 6 3 85 29 15 1 1 255 4 4 3 2 5 160 48 29 6 3 85 29 37 4 22 48 20 6 8 43 6 1 5 5 7 3 1 6 8 43 6 1 5 5 7 3 2 48 12 6 3 85 29 19 1 1 255 4 2 48 0 48 43 6 3 85 29 35 4 36 48 34 128 32 220 110 180 70 36 144 118 46 15 50 205 0 40 49 11 202 18 18 25 121 63 36 242 56 128 247 251 165 20 142 220 127 48 10 6 8 42 134 72 206 61 4 3 2 3 71 0 48 68 2 32 58 231 153 32 168 106 104 18 222 221 131 157 206 253 128 18 119 208 188 6 219 85 136 15 180 221 179 151 91 193 211 54 2 32 6 209 213 49 158 214 198 175 184 121 203 151 23 105 93 14 221 97 106 23 249 208 217 139 79 53 207 173 167 140 124 207]]
-	fmt.Println("clientTLSCert.Certificate[0]",len(clientTLSCert.Certificate))
+	logger.Info("clientTLSCert.Certificate[0]",len(clientTLSCert.Certificate))
 
 
 	connect := createConnector(t, clientTLSCert, int(port))
 	//
 	signer := func(msg []byte) ([]byte, error) {
-		fmt.Println("=discovery client client_test==signer===")
+		logger.Info("=discovery client client_test==signer===")
 		return msg, nil
 	}
 
@@ -403,13 +403,13 @@ func TestClient(t *testing.T) {
 		ClientTlsCertHash: util.ComputeSHA256(clientTLSCert.Certificate[0]),
 	}
 	cl := NewClient(connect, signer, signerCacheSize)//初始化操作
-	fmt.Println("cl",cl)
+	logger.Info("cl",cl)
 	sup.On("PeersOfChannel").Return(channelPeersWithoutChaincodes).Times(2)
 	req := NewRequest()
 	req.OfChannel("mychannel").AddPeersQuery().AddConfigQuery().AddLocalPeersQuery().AddEndorsersQuery(interest("mycc"))
 	r, err := cl.Send(ctx, req, authInfo)
 	assert.NoError(t, err)
-	fmt.Println("r",r)
+	logger.Info("r",r)
 
 	//t.Run("Channel mismatch", func(t *testing.T) {
 	//	// Check behavior for channels that we didn't query for.
@@ -830,8 +830,8 @@ func (pe *principalEvaluator) SatisfiesPrincipal(channel string, identity []byte
 	p := &msp.MSPRole{}
 	proto.Unmarshal(principal.Principal, p)
 
-	fmt.Println("=====sID.Mspid=======",sID.Mspid)
-	fmt.Println("===========p.MspIdentifier==========",p.MspIdentifier)
+	logger.Info("=====sID.Mspid=======",sID.Mspid)
+	logger.Info("===========p.MspIdentifier==========",p.MspIdentifier)
 	if sID.Mspid == p.MspIdentifier {
 		return nil
 	}
@@ -843,9 +843,9 @@ type policyFetcher struct {
 }
 
 func (pf *policyFetcher) PolicyByChaincode(channel string, cc string) policies.InquireablePolicy {
-	fmt.Println("=policyFetcher========PolicyByChaincode=======")
+	logger.Info("=policyFetcher========PolicyByChaincode=======")
 	b := pf.Called(cc).Get(0).(policies.InquireablePolicy)
-	fmt.Println("==============b",b)//&{[] [[A B] [C] [A D]]}
+	logger.Info("==============b",b)//&{[] [[A B] [C] [A D]]}
 	return b
 }
 
@@ -861,20 +861,20 @@ type inquireablePolicy struct {
 }
 
 func (ip *inquireablePolicy) appendPrincipal(orgName string) {
-	fmt.Println("===inquireablePolicy=====appendPrincipal=========orgName",orgName)//A
+	logger.Info("===inquireablePolicy=====appendPrincipal=========orgName",orgName)//A
 	ip.principals = append(ip.principals, &msp.MSPPrincipal{
 		PrincipalClassification: msp.MSPPrincipal_ROLE,
 		Principal:               utils.MarshalOrPanic(&msp.MSPRole{Role: msp.MSPRole_MEMBER, MspIdentifier: orgName})})
-	fmt.Println("======ip.principals===========",ip.principals)// [principal:"\n\001A"  principal:"\n\001B" ] [principal:"\n\001C" ] [principal:"\n\001A"  principal:"\n\001D" ]
+	logger.Info("======ip.principals===========",ip.principals)// [principal:"\n\001A"  principal:"\n\001B" ] [principal:"\n\001C" ] [principal:"\n\001A"  principal:"\n\001D" ]
 }
 
 func (ip *inquireablePolicy) SatisfiedBy() []policies.PrincipalSet {
-	fmt.Println("=====inquireablePolicy=============SatisfiedBy===============")
+	logger.Info("=====inquireablePolicy=============SatisfiedBy===============")
 	var res []policies.PrincipalSet
 	for _, orgs := range ip.orgCombinations {
-		fmt.Println("=====orgs=======",orgs)
+		logger.Info("=====orgs=======",orgs)
 		for _, org := range orgs {
-			fmt.Println("=====org",org)
+			logger.Info("=====org",org)
 			ip.appendPrincipal(org)
 		}
 		res = append(res, ip.principals)
@@ -984,9 +984,9 @@ func (ms *mockSupport) PeersOfChannel(gossipcommon.ChainID) gdisc.Members {
 }
 
 func (ms *mockSupport) Peers() gdisc.Members {
-	fmt.Println("=======mockSupport======Peers============")
+	logger.Info("=======mockSupport======Peers============")
 	a := ms.Called().Get(0).(gdisc.Members)
-	fmt.Println("========a==================",a)
+	logger.Info("========a==================",a)
 	//[Endpoint: p0, InternalEndpoint: p0, PKI-ID: 7030, Metadata:  Endpoint: p1, InternalEndpoint: p1, PKI-ID: 7031, Metadata:  Endpoint: p2, InternalEndpoint: p2, PKI-ID: 7032, Metadata:  Endpoint: p3, InternalEndpoint: p3, PKI-ID: 7033, Metadata:  Endpoint: p4, InternalEndpoint: p4, PKI-ID: 7034, Metadata:  Endpoint: p5, InternalEndpoint: p5, PKI-ID: 7035, Metadata:  Endpoint: p6, InternalEndpoint: p6, PKI-ID: 7036, Metadata:  Endpoint: p7, InternalEndpoint: p7, PKI-ID: 7037, Metadata:  Endpoint: p8, InternalEndpoint: p8, PKI-ID: 7038, Metadata:  Endpoint: p9, InternalEndpoint: p9, PKI-ID: 7039, Metadata:  Endpoint: p10, InternalEndpoint: p10, PKI-ID: 703130, Metadata:  Endpoint: p11, InternalEndpoint: p11, PKI-ID: 703131, Metadata:  Endpoint: p12, InternalEndpoint: p12, PKI-ID: 703132, Metadata:  Endpoint: p13, InternalEndpoint: p13, PKI-ID: 703133, Metadata:  Endpoint: p14, InternalEndpoint: p14, PKI-ID: 703134, Metadata:  Endpoint: p15, InternalEndpoint: p15, PKI-ID: 703135, Metadata: ]
 	return a
 }

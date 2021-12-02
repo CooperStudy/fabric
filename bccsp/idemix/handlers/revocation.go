@@ -28,14 +28,14 @@ type revocationSecretKey struct {
 }
 
 func NewRevocationSecretKey(sk *ecdsa.PrivateKey, exportable bool) *revocationSecretKey {
-	fmt.Println("=NewRevocationSecretKey==============")
+	logger.Info("=NewRevocationSecretKey==============")
 	return &revocationSecretKey{privKey: sk, exportable: exportable}
 }
 
 // Bytes converts this key to its byte representation,
 // if this operation is allowed.
 func (k *revocationSecretKey) Bytes() ([]byte, error) {
-	fmt.Println("=revocationSecretKey=====Bytes=========")
+	logger.Info("=revocationSecretKey=====Bytes=========")
 	if k.exportable {
 		return k.privKey.D.Bytes(), nil
 	}
@@ -45,7 +45,7 @@ func (k *revocationSecretKey) Bytes() ([]byte, error) {
 
 // SKI returns the subject key identifier of this key.
 func (k *revocationSecretKey) SKI() []byte {
-	fmt.Println("=revocationSecretKey=====SKI=========")
+	logger.Info("=revocationSecretKey=====SKI=========")
 	// Marshall the public key
 	raw := elliptic.Marshal(k.privKey.Curve, k.privKey.PublicKey.X, k.privKey.PublicKey.Y)
 
@@ -58,21 +58,21 @@ func (k *revocationSecretKey) SKI() []byte {
 // Symmetric returns true if this key is a symmetric key,
 // false if this key is asymmetric
 func (k *revocationSecretKey) Symmetric() bool {
-	fmt.Println("=revocationSecretKey=====Symmetric=========")
+	logger.Info("=revocationSecretKey=====Symmetric=========")
 	return false
 }
 
 // Private returns true if this key is a private key,
 // false otherwise.
 func (k *revocationSecretKey) Private() bool {
-	fmt.Println("=revocationSecretKey=====Private=========")
+	logger.Info("=revocationSecretKey=====Private=========")
 	return true
 }
 
 // PublicKey returns the corresponding public key part of an asymmetric public/private key pair.
 // This method returns an error in symmetric key schemes.
 func (k *revocationSecretKey) PublicKey() (bccsp.Key, error) {
-	fmt.Println("=revocationSecretKey=====PublicKey=========")
+	logger.Info("=revocationSecretKey=====PublicKey=========")
 	return &revocationPublicKey{&k.privKey.PublicKey}, nil
 }
 
@@ -81,14 +81,14 @@ type revocationPublicKey struct {
 }
 
 func NewRevocationPublicKey(pubKey *ecdsa.PublicKey) *revocationPublicKey {
-	fmt.Println("=NewRevocationPublicKey=========")
+	logger.Info("=NewRevocationPublicKey=========")
 	return &revocationPublicKey{pubKey: pubKey}
 }
 
 // Bytes converts this key to its byte representation,
 // if this operation is allowed.
 func (k *revocationPublicKey) Bytes() (raw []byte, err error) {
-	fmt.Println("=revocationPublicKey==Bytes=======")
+	logger.Info("=revocationPublicKey==Bytes=======")
 	raw, err = x509.MarshalPKIXPublicKey(k.pubKey)
 	if err != nil {
 		return nil, fmt.Errorf("Failed marshalling key [%s]", err)
@@ -99,7 +99,7 @@ func (k *revocationPublicKey) Bytes() (raw []byte, err error) {
 // SKI returns the subject key identifier of this key.
 func (k *revocationPublicKey) SKI() []byte {
 	// Marshall the public key
-	fmt.Println("=revocationPublicKey==SKI=======")
+	logger.Info("=revocationPublicKey==SKI=======")
 	raw := elliptic.Marshal(k.pubKey.Curve, k.pubKey.X, k.pubKey.Y)
 
 	// Hash it
@@ -111,21 +111,21 @@ func (k *revocationPublicKey) SKI() []byte {
 // Symmetric returns true if this key is a symmetric key,
 // false if this key is asymmetric
 func (k *revocationPublicKey) Symmetric() bool {
-	fmt.Println("=revocationPublicKey==Symmetric=======")
+	logger.Info("=revocationPublicKey==Symmetric=======")
 	return false
 }
 
 // Private returns true if this key is a private key,
 // false otherwise.
 func (k *revocationPublicKey) Private() bool {
-	fmt.Println("=revocationPublicKey==Private=======")
+	logger.Info("=revocationPublicKey==Private=======")
 	return false
 }
 
 // PublicKey returns the corresponding public key part of an asymmetric public/private key pair.
 // This method returns an error in symmetric key schemes.
 func (k *revocationPublicKey) PublicKey() (bccsp.Key, error) {
-	fmt.Println("=revocationPublicKey==PublicKey=======")
+	logger.Info("=revocationPublicKey==PublicKey=======")
 	return k, nil
 }
 
@@ -139,7 +139,7 @@ type RevocationKeyGen struct {
 }
 
 func (g *RevocationKeyGen) KeyGen(opts bccsp.KeyGenOpts) (bccsp.Key, error) {
-	fmt.Println("=RevocationKeyGen==KeyGen=======")
+	logger.Info("=RevocationKeyGen==KeyGen=======")
 	// Create a new key pair
 	key, err := g.Revocation.NewKey()
 	if err != nil {
@@ -154,7 +154,7 @@ type RevocationPublicKeyImporter struct {
 }
 
 func (i *RevocationPublicKeyImporter) KeyImport(raw interface{}, opts bccsp.KeyImportOpts) (k bccsp.Key, err error) {
-	fmt.Println("===RevocationPublicKeyImporter==KeyImport=======")
+	logger.Info("===RevocationPublicKeyImporter==KeyImport=======")
 	der, ok := raw.([]byte)
 	if !ok {
 		return nil, errors.New("invalid raw, expected byte array")
@@ -185,7 +185,7 @@ type CriSigner struct {
 }
 
 func (s *CriSigner) Sign(k bccsp.Key, digest []byte, opts bccsp.SignerOpts) ([]byte, error) {
-	fmt.Println("===CriSigner==Sign=======")
+	logger.Info("===CriSigner==Sign=======")
 	revocationSecretKey, ok := k.(*revocationSecretKey)
 	if !ok {
 		return nil, errors.New("invalid key, expected *revocationSecretKey")
@@ -208,7 +208,7 @@ type CriVerifier struct {
 }
 
 func (v *CriVerifier) Verify(k bccsp.Key, signature, digest []byte, opts bccsp.SignerOpts) (bool, error) {
-	fmt.Println("===CriSigner==Verify=======")
+	logger.Info("===CriSigner==Verify=======")
 	revocationPublicKey, ok := k.(*revocationPublicKey)
 	if !ok {
 		return false, errors.New("invalid key, expected *revocationPublicKey")

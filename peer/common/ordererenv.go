@@ -28,7 +28,7 @@ var (
 
 // SetOrdererEnv adds orderer-specific settings to the global Viper environment
 func SetOrdererEnv(cmd *cobra.Command, args []string) {
-	fmt.Println("==SetOrdererEnv===")
+	logger.Info("==SetOrdererEnv===")
 	// read in the legacy logging level settings and, if set,
 	// notify users of the FABRIC_LOGGING_SPEC env variable
 	var loggingLevel string

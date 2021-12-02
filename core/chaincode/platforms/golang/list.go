@@ -95,7 +95,7 @@ func list(env Env, template, pkg string) ([]string, error) {
 }
 
 func listDeps(env Env, pkg string) ([]string, error) {
-	fmt.Println("=====listDeps==========")
+	logger.Info("=====listDeps==========")
 	return list(env, "{{ join .Deps \"\\n\"}}", pkg)
 }
 

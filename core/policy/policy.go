@@ -19,6 +19,7 @@ package policy
 import (
 	"errors"
 	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 
 	"github.com/hyperledger/fabric/common/policies"
 	"github.com/hyperledger/fabric/msp"
@@ -27,7 +28,7 @@ import (
 	pb "github.com/hyperledger/fabric/protos/peer"
 	"github.com/hyperledger/fabric/protos/utils"
 )
-
+var logger = flogging.MustGetLogger("core.policy")
 // PolicyChecker offers methods to check a signed proposal against a specific policy
 // defined in a channel or not.
 type PolicyChecker interface {
@@ -54,14 +55,14 @@ type policyChecker struct {
 
 // NewPolicyChecker creates a new instance of PolicyChecker
 func NewPolicyChecker(channelPolicyManagerGetter policies.ChannelPolicyManagerGetter, localMSP msp.IdentityDeserializer, principalGetter mgmt.MSPPrincipalGetter) PolicyChecker {
-	fmt.Println("===NewPolicyChecker==")
+	logger.Info("===NewPolicyChecker==")
 	return &policyChecker{channelPolicyManagerGetter, localMSP, principalGetter}
 }
 
 // CheckPolicy checks that the passed signed proposal is valid with the respect to
 // passed policy on the passed channel.
 func (p *policyChecker) CheckPolicy(channelID, policyName string, signedProp *pb.SignedProposal) error {
-	fmt.Println("===policyChecker==CheckPolicy==")
+	logger.Info("===policyChecker==CheckPolicy==")
 	if channelID == "" {
 		return p.CheckPolicyNoChannel(policyName, signedProp)
 	}
@@ -108,8 +109,8 @@ func (p *policyChecker) CheckPolicy(channelID, policyName string, signedProp *pb
 // CheckPolicyNoChannel checks that the passed signed proposal is valid with the respect to
 // passed policy on the local MSP.
 func (p *policyChecker) CheckPolicyNoChannel(policyName string, signedProp *pb.SignedProposal) error {
-	fmt.Println("===policyChecker==CheckPolicyNoChannel==")
-	fmt.Println("=========policyName======",policyName)//Admins
+	logger.Info("===policyChecker==CheckPolicyNoChannel==")
+	logger.Info("=========policyName======",policyName)//Admins
 	if policyName == "" {
 		return errors.New("Invalid policy name during channelless check policy. Name must be different from nil.")
 	}
@@ -140,13 +141,13 @@ func (p *policyChecker) CheckPolicyNoChannel(policyName string, signedProp *pb.S
 	}
 
 	// Load MSPPrincipal for policy
-	fmt.Println("==============policyName==========",policyName)//Admins
+	logger.Info("==============policyName==========",policyName)//Admins
 	principal, err := p.principalGetter.Get(policyName)
 	if err != nil {
 		return fmt.Errorf("Failed getting local MSP principal during channelless check policy with policy [%s]: [%s]", policyName, err)
 	}
 
-	fmt.Println("=========principal======================",principal)
+	logger.Info("=========principal======================",principal)
 	//principal:"\n\007Org1MSP\020\001"
 	// Verify that proposal's creator satisfies the principal
 
@@ -164,7 +165,7 @@ func (p *policyChecker) CheckPolicyNoChannel(policyName string, signedProp *pb.S
 // CheckPolicyBySignedData checks that the passed signed data is valid with the respect to
 // passed policy on the passed channel.
 func (p *policyChecker) CheckPolicyBySignedData(channelID, policyName string, sd []*common.SignedData) error {
-	fmt.Println("===policyChecker==CheckPolicyBySignedData==")
+	logger.Info("===policyChecker==CheckPolicyBySignedData==")
 	if channelID == "" {
 		return errors.New("Invalid channel ID name during check policy on signed data. Name must be different from nil.")
 	}
@@ -206,7 +207,7 @@ type PolicyCheckerFactory interface {
 // RegisterPolicyCheckerFactory is to be called once to set
 // the factory that will be used to obtain instances of PolicyChecker
 func RegisterPolicyCheckerFactory(f PolicyCheckerFactory) {
-	fmt.Println("===RegisterPolicyCheckerFactory==")
+	logger.Info("===RegisterPolicyCheckerFactory==")
 	pcFactory = f
 }
 
@@ -214,7 +215,7 @@ func RegisterPolicyCheckerFactory(f PolicyCheckerFactory) {
 // the actual implementation is controlled by the factory that
 // is registered via RegisterPolicyCheckerFactory
 func GetPolicyChecker() PolicyChecker {
-	fmt.Println("===GetPolicyChecker==")
+	logger.Info("===GetPolicyChecker==")
 	if pcFactory == nil {
 		panic("The factory must be set first via RegisterPolicyCheckerFactory")
 	}

@@ -23,6 +23,6 @@ import (
 
 // DERToX509Certificate converts der to x509
 func DERToX509Certificate(asn1Data []byte) (*x509.Certificate, error) {
-	fmt.Println("===DERToX509Certificate======")
+	logger.Info("===DERToX509Certificate======")
 	return x509.ParseCertificate(asn1Data)
 }

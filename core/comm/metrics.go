@@ -28,7 +28,7 @@ var (
 )
 
 func NewServerStatsHandler(p metrics.Provider) *ServerStatsHandler {
-	fmt.Println("=====NewServerStatsHandler==")
+	logger.Info("=====NewServerStatsHandler==")
 	return &ServerStatsHandler{
 		OpenConnCounter:   p.NewCounter(openConnCounterOpts),
 		ClosedConnCounter: p.NewCounter(closedConnCounterOpts),

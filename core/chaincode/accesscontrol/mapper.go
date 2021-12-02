@@ -8,7 +8,6 @@ package accesscontrol
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -31,7 +30,7 @@ type certMapper struct {
 }
 
 func newCertMapper(keyGen KeyGenFunc) *certMapper {
-	fmt.Println("===newCertMapper====")
+	logger.Info("===newCertMapper====")
 	return &certMapper{
 		keyGen: keyGen,
 		m:      make(map[certHash]string),
@@ -39,14 +38,14 @@ func newCertMapper(keyGen KeyGenFunc) *certMapper {
 }
 
 func (r *certMapper) lookup(h certHash) string {
-	fmt.Println("===certMapper==lookup==")
+	logger.Info("===certMapper==lookup==")
 	r.RLock()
 	defer r.RUnlock()
 	return r.m[h]
 }
 
 func (r *certMapper) register(hash certHash, name string) {
-	fmt.Println("===certMapper==register==")
+	logger.Info("===certMapper==register==")
 	r.Lock()
 	defer r.Unlock()
 	r.m[hash] = name
@@ -56,14 +55,14 @@ func (r *certMapper) register(hash certHash, name string) {
 }
 
 func (r *certMapper) purge(hash certHash) {
-	fmt.Println("===certMapper==purge==")
+	logger.Info("===certMapper==purge==")
 	r.Lock()
 	defer r.Unlock()
 	delete(r.m, hash)
 }
 
 func (r *certMapper) genCert(name string) (*tlsgen.CertKeyPair, error) {
-	fmt.Println("===certMapper==genCert==")
+	logger.Info("===certMapper==genCert==")
 	keyPair, err := r.keyGen()
 	if err != nil {
 		return nil, err
@@ -75,7 +74,7 @@ func (r *certMapper) genCert(name string) (*tlsgen.CertKeyPair, error) {
 
 // ExtractCertificateHash extracts the hash of the certificate from the stream
 func extractCertificateHashFromContext(ctx context.Context) []byte {
-	fmt.Println("===extractCertificateHashFromContext==")
+	logger.Info("===extractCertificateHashFromContext==")
 	pr, extracted := peer.FromContext(ctx)
 	if !extracted {
 		return nil

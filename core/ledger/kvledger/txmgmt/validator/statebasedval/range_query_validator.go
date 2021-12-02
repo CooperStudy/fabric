@@ -18,8 +18,6 @@ package statebasedval
 
 import (
 	"bytes"
-	"fmt"
-
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwsetutil"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/version"
@@ -37,7 +35,6 @@ type rangeQueryResultsValidator struct {
 }
 
 func (v *rangeQueryResultsValidator) init(rqInfo *kvrwset.RangeQueryInfo, itr statedb.ResultsIterator) error {
-	fmt.Println("==rangeQueryResultsValidator=init==")
 	v.rqInfo = rqInfo
 	v.itr = itr
 	return nil
@@ -47,7 +44,6 @@ func (v *rangeQueryResultsValidator) init(rqInfo *kvrwset.RangeQueryInfo, itr st
 // and the iterator (latest view of the `committed state` i.e., db + updates). At first mismatch between the results
 // from the two sources (the range-query-info and the iterator), the validate returns false.
 func (v *rangeQueryResultsValidator) validate() (bool, error) {
-	fmt.Println("==rangeQueryResultsValidator=validate==")
 	rqResults := v.rqInfo.GetRawReads().GetKvReads()
 	itr := v.itr
 	var result statedb.QueryResult
@@ -94,7 +90,7 @@ type rangeQueryHashValidator struct {
 }
 
 func (v *rangeQueryHashValidator) init(rqInfo *kvrwset.RangeQueryInfo, itr statedb.ResultsIterator) error {
-	fmt.Println("==rangeQueryHashValidator=init==")
+	logger.Info("==rangeQueryHashValidator=init==")
 	v.rqInfo = rqInfo
 	v.itr = itr
 	var err error
@@ -111,7 +107,7 @@ func (v *rangeQueryHashValidator) init(rqInfo *kvrwset.RangeQueryInfo, itr state
 // This function returns false on first mismatch between the nodes of the two merkle trees
 // at the desired level (the maxLevel of the merkle tree in range-query-info).
 func (v *rangeQueryHashValidator) validate() (bool, error) {
-	fmt.Println("==rangeQueryHashValidator=validate==")
+	logger.Info("==rangeQueryHashValidator=validate==")
 	itr := v.itr
 	lastMatchedIndex := -1
 	inMerkle := v.rqInfo.GetReadsMerkleHashes()
@@ -158,6 +154,6 @@ func (v *rangeQueryHashValidator) validate() (bool, error) {
 }
 
 func convertToVersionHeight(v *kvrwset.Version) *version.Height {
-	fmt.Println("==convertToVersionHeight==")
+	logger.Info("==convertToVersionHeight==")
 	return version.NewHeight(v.BlockNum, v.TxNum)
 }

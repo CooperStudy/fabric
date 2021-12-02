@@ -24,7 +24,7 @@ import (
 // GenerateCertificatesOrPanic generates a a random pair of public and private keys
 // and return TLS certificate
 func GenerateCertificatesOrPanic() tls.Certificate {
-	//fmt.Println("==GenerateCertificatesOrPanic==")
+	//logger.Info("==GenerateCertificatesOrPanic==")
 	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		panic(err)
@@ -59,7 +59,7 @@ func GenerateCertificatesOrPanic() tls.Certificate {
 }
 
 func certHashFromRawCert(rawCert []byte) []byte {
-	//fmt.Println("==certHashFromRawCert==")
+	//logger.Info("==certHashFromRawCert==")
 	if len(rawCert) == 0 {
 		return nil
 	}
@@ -68,7 +68,7 @@ func certHashFromRawCert(rawCert []byte) []byte {
 
 // ExtractCertificateHash extracts the hash of the certificate from the stream
 func extractCertificateHashFromContext(ctx context.Context) []byte {
-	//fmt.Println("==extractCertificateHashFromContext==")
+	//logger.Info("==extractCertificateHashFromContext==")
 	pr, extracted := peer.FromContext(ctx)
 	if !extracted {
 		return nil

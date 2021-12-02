@@ -50,20 +50,20 @@ type StandardConfigValue struct {
 
 // Key is the key this value should be stored in the *cb.ConfigGroup.Values map.
 func (scv *StandardConfigValue) Key() string {
-	fmt.Println("==StandardConfigValue==Key=")
+	logger.Info("==StandardConfigValue==Key=")
 	return scv.key
 }
 
 // Value is the message which should be marshaled to opaque bytes for the *cb.ConfigValue.value.
 func (scv *StandardConfigValue) Value() proto.Message {
-	fmt.Println("==StandardConfigValue==Value=")
+	logger.Info("==StandardConfigValue==Value=")
 	return scv.value
 }
 
 // ConsortiumValue returns the config definition for the consortium name.
 // It is a value for the channel group.
 func ConsortiumValue(name string) *StandardConfigValue {
-	fmt.Println("==SConsortiumValue=")
+	logger.Info("==SConsortiumValue=")
 	return &StandardConfigValue{
 		key: ConsortiumKey,
 		value: &cb.Consortium{
@@ -75,7 +75,7 @@ func ConsortiumValue(name string) *StandardConfigValue {
 // HashingAlgorithm returns the only currently valid hashing algorithm.
 // It is a value for the /Channel group.
 func HashingAlgorithmValue() *StandardConfigValue {
-	fmt.Println("==HashingAlgorithmValue===")
+	logger.Info("==HashingAlgorithmValue===")
 	return &StandardConfigValue{
 		key: HashingAlgorithmKey,
 		value: &cb.HashingAlgorithm{
@@ -87,7 +87,7 @@ func HashingAlgorithmValue() *StandardConfigValue {
 // BlockDataHashingStructureValue returns the only currently valid block data hashing structure.
 // It is a value for the /Channel group.
 func BlockDataHashingStructureValue() *StandardConfigValue {
-	fmt.Println("==BlockDataHashingStructureValue===")
+	logger.Info("==BlockDataHashingStructureValue===")
 	return &StandardConfigValue{
 		key: BlockDataHashingStructureKey,
 		value: &cb.BlockDataHashingStructure{
@@ -99,7 +99,7 @@ func BlockDataHashingStructureValue() *StandardConfigValue {
 // OrdererAddressesValue returns the a config definition for the orderer addresses.
 // It is a value for the /Channel group.
 func OrdererAddressesValue(addresses []string) *StandardConfigValue {
-	fmt.Println("==OrdererAddressesValue===")
+	logger.Info("==OrdererAddressesValue===")
 	return &StandardConfigValue{
 		key: OrdererAddressesKey,
 		value: &cb.OrdererAddresses{
@@ -111,7 +111,7 @@ func OrdererAddressesValue(addresses []string) *StandardConfigValue {
 // ConsensusTypeValue returns the config definition for the orderer consensus type.
 // It is a value for the /Channel/Orderer group.
 func ConsensusTypeValue(consensusType string, consensusMetadata []byte) *StandardConfigValue {
-	fmt.Println("==ConsensusTypeValue===")
+	logger.Info("==ConsensusTypeValue===")
 	return &StandardConfigValue{
 		key: ConsensusTypeKey,
 		value: &ab.ConsensusType{
@@ -124,7 +124,7 @@ func ConsensusTypeValue(consensusType string, consensusMetadata []byte) *Standar
 // BatchSizeValue returns the config definition for the orderer batch size.
 // It is a value for the /Channel/Orderer group.
 func BatchSizeValue(maxMessages, absoluteMaxBytes, preferredMaxBytes uint32) *StandardConfigValue {
-	fmt.Println("==BatchSizeValue===")
+	logger.Info("==BatchSizeValue===")
 	return &StandardConfigValue{
 		key: BatchSizeKey,
 		value: &ab.BatchSize{
@@ -138,7 +138,7 @@ func BatchSizeValue(maxMessages, absoluteMaxBytes, preferredMaxBytes uint32) *St
 // BatchTimeoutValue returns the config definition for the orderer batch timeout.
 // It is a value for the /Channel/Orderer group.
 func BatchTimeoutValue(timeout string) *StandardConfigValue {
-	fmt.Println("==BatchTimeoutValue===")
+	logger.Info("==BatchTimeoutValue===")
 	return &StandardConfigValue{
 		key: BatchTimeoutKey,
 		value: &ab.BatchTimeout{
@@ -150,7 +150,7 @@ func BatchTimeoutValue(timeout string) *StandardConfigValue {
 // ChannelRestrictionsValue returns the config definition for the orderer channel restrictions.
 // It is a value for the /Channel/Orderer group.
 func ChannelRestrictionsValue(maxChannelCount uint64) *StandardConfigValue {
-	fmt.Println("==ChannelRestrictionsValue===")
+	logger.Info("==ChannelRestrictionsValue===")
 	return &StandardConfigValue{
 		key: ChannelRestrictionsKey,
 		value: &ab.ChannelRestrictions{
@@ -162,7 +162,7 @@ func ChannelRestrictionsValue(maxChannelCount uint64) *StandardConfigValue {
 // KafkaBrokersValue returns the config definition for the addresses of the ordering service's Kafka brokers.
 // It is a value for the /Channel/Orderer group.
 func KafkaBrokersValue(brokers []string) *StandardConfigValue {
-	fmt.Println("==KafkaBrokersValue===")
+	logger.Info("==KafkaBrokersValue===")
 	return &StandardConfigValue{
 		key: KafkaBrokersKey,
 		value: &ab.KafkaBrokers{
@@ -174,7 +174,7 @@ func KafkaBrokersValue(brokers []string) *StandardConfigValue {
 // MSPValue returns the config definition for an MSP.
 // It is a value for the /Channel/Orderer/*, /Channel/Application/*, and /Channel/Consortiums/*/*/* groups.
 func MSPValue(mspDef *mspprotos.MSPConfig) *StandardConfigValue {
-	fmt.Println("==MSPValue===")
+	logger.Info("==MSPValue===")
 	return &StandardConfigValue{
 		key:   MSPKey,
 		value: mspDef,
@@ -184,7 +184,7 @@ func MSPValue(mspDef *mspprotos.MSPConfig) *StandardConfigValue {
 // CapabilitiesValue returns the config definition for a a set of capabilities.
 // It is a value for the /Channel/Orderer, Channel/Application/, and /Channel groups.
 func CapabilitiesValue(capabilities map[string]bool) *StandardConfigValue {
-	fmt.Println("==CapabilitiesValue===")
+	logger.Info("==CapabilitiesValue===")
 	c := &cb.Capabilities{
 		Capabilities: make(map[string]*cb.Capability),
 	}
@@ -205,7 +205,7 @@ func CapabilitiesValue(capabilities map[string]bool) *StandardConfigValue {
 // AnchorPeersValue returns the config definition for an org's anchor peers.
 // It is a value for the /Channel/Application/*.
 func AnchorPeersValue(anchorPeers []*pb.AnchorPeer) *StandardConfigValue {
-	fmt.Println("==AnchorPeersValue===")
+	logger.Info("==AnchorPeersValue===")
 	return &StandardConfigValue{
 		key:   AnchorPeersKey,
 		value: &pb.AnchorPeers{AnchorPeers: anchorPeers},
@@ -215,7 +215,7 @@ func AnchorPeersValue(anchorPeers []*pb.AnchorPeer) *StandardConfigValue {
 // ChannelCreationPolicyValue returns the config definition for a consortium's channel creation policy
 // It is a value for the /Channel/Consortiums/*/*.
 func ChannelCreationPolicyValue(policy *cb.Policy) *StandardConfigValue {
-	fmt.Println("==ChannelCreationPolicyValue===")
+	logger.Info("==ChannelCreationPolicyValue===")
 	return &StandardConfigValue{
 		key:   ChannelCreationPolicyKey,
 		value: policy,
@@ -225,7 +225,7 @@ func ChannelCreationPolicyValue(policy *cb.Policy) *StandardConfigValue {
 // ACLsValues returns the config definition for an applications resources based ACL definitions.
 // It is a value for the /Channel/Application/.
 func ACLValues(acls map[string]string) *StandardConfigValue {
-	fmt.Println("==ACLValues===")
+	logger.Info("==ACLValues===")
 	a := &pb.ACLs{
 		Acls: make(map[string]*pb.APIResource),
 	}

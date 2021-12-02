@@ -34,14 +34,14 @@ type blocksItr struct {
 }
 
 func newBlockItr(mgr *blockfileMgr, startBlockNum uint64) *blocksItr {
-	fmt.Println("===newBlockItr==")
+	logger.Info("===newBlockItr==")
 	mgr.cpInfoCond.L.Lock()
 	defer mgr.cpInfoCond.L.Unlock()
 	return &blocksItr{mgr, mgr.cpInfo.lastBlockNumber, startBlockNum, nil, false, &sync.Mutex{}}
 }
 
 func (itr *blocksItr) waitForBlock(blockNum uint64) uint64 {
-	fmt.Println("==blocksItr=waitForBlock==")
+	logger.Info("==blocksItr=waitForBlock==")
 	itr.mgr.cpInfoCond.L.Lock()
 	defer itr.mgr.cpInfoCond.L.Unlock()
 	for itr.mgr.cpInfo.lastBlockNumber < blockNum && !itr.shouldClose() {
@@ -54,7 +54,7 @@ func (itr *blocksItr) waitForBlock(blockNum uint64) uint64 {
 }
 
 func (itr *blocksItr) initStream() error {
-	fmt.Println("==blocksItr=initStream==")
+	logger.Info("==blocksItr=initStream==")
 	var lp *fileLocPointer
 	var err error
 	if lp, err = itr.mgr.index.getBlockLocByBlockNum(itr.blockNumToRetrieve); err != nil {
@@ -67,7 +67,7 @@ func (itr *blocksItr) initStream() error {
 }
 
 func (itr *blocksItr) shouldClose() bool {
-	fmt.Println("==blocksItr=shouldClose==")
+	logger.Info("==blocksItr=shouldClose==")
 	itr.closeMarkerLock.Lock()
 	defer itr.closeMarkerLock.Unlock()
 	return itr.closeMarker
@@ -75,7 +75,7 @@ func (itr *blocksItr) shouldClose() bool {
 
 // Next moves the cursor to next block and returns true iff the iterator is not exhausted
 func (itr *blocksItr) Next() (ledger.QueryResult, error) {
-	fmt.Println("==blocksItr=Next==")
+	logger.Info("==blocksItr=Next==")
 	if itr.maxBlockNumAvailable < itr.blockNumToRetrieve {
 		itr.maxBlockNumAvailable = itr.waitForBlock(itr.blockNumToRetrieve)
 	}
@@ -100,7 +100,7 @@ func (itr *blocksItr) Next() (ledger.QueryResult, error) {
 
 // Close releases any resources held by the iterator
 func (itr *blocksItr) Close() {
-	fmt.Println("==blocksItr=Close==")
+	logger.Info("==blocksItr=Close==")
 	itr.mgr.cpInfoCond.L.Lock()
 	defer itr.mgr.cpInfoCond.L.Unlock()
 	itr.closeMarkerLock.Lock()

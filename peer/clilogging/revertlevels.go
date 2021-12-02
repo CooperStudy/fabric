@@ -27,7 +27,7 @@ func revertLevelsCmd(cf *LoggingCmdFactory) *cobra.Command {
 }
 
 func revertLevels(cf *LoggingCmdFactory, cmd *cobra.Command, args []string) (err error) {
-	fmt.Println("====revertLevels====")
+	logger.Info("====revertLevels====")
 	err = checkLoggingCmdParams(cmd, args)
 	if err == nil {
 		// Parsing of the command line is done so silence cmd usage

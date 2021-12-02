@@ -26,7 +26,7 @@ type ConfigBlockGetter struct {
 }
 
 func (fake *ConfigBlockGetter) GetCurrConfigBlock(channel string) *common.Block {
-	fmt.Println("=======ConfigBlockGetter======GetCurrConfigBlock============")
+	logger.Info("=======ConfigBlockGetter======GetCurrConfigBlock============")
 	fake.getCurrConfigBlockMutex.Lock()
 	ret, specificReturn := fake.getCurrConfigBlockReturnsOnCall[len(fake.getCurrConfigBlockArgsForCall)]
 	fake.getCurrConfigBlockArgsForCall = append(fake.getCurrConfigBlockArgsForCall, struct {

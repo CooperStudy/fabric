@@ -926,9 +926,9 @@ func (d *gossipDiscoveryImpl) learnNewMembers(aliveMembers []*proto.SignedGossip
 }
 
 func (d *gossipDiscoveryImpl) GetMembership() []NetworkMember {
-	//fmt.Println("=========gossipDiscoveryImpl=======GetMembership========")
+	//logger.Info("=========gossipDiscoveryImpl=======GetMembership========")
 	if d.toDie() {
-		//fmt.Println("=========d.toDie======")
+		//logger.Info("=========d.toDie======")
 		return []NetworkMember{}
 	}
 	d.lock.RLock()
@@ -937,15 +937,15 @@ func (d *gossipDiscoveryImpl) GetMembership() []NetworkMember {
 	response := []NetworkMember{}
 	for _, m := range d.aliveMembership.ToSlice() {
 		member := m.GetAliveMsg()
-		//fmt.Println("========member======",member)
-		//fmt.Println("========PKIid======",member.Membership.PkiId)
-		//fmt.Println("========Endpoint======",member.Membership.Endpoint)
-		//fmt.Println("========Metadata======",member.Membership.Metadata)
-		//fmt.Println("========InternalEndpoint======",member.Membership.Metadata)
-		//fmt.Println("===========d.id2Member========",d.id2Member)
-		//fmt.Println("===========key========",string(m.GetAliveMsg().Membership.PkiId))
-		//fmt.Println("===========InternalEndpoint========",d.id2Member[string(m.GetAliveMsg().Membership.PkiId)].InternalEndpoint)
-		//fmt.Println("===================Envelope=================", m.Envelope)
+		//logger.Info("========member======",member)
+		//logger.Info("========PKIid======",member.Membership.PkiId)
+		//logger.Info("========Endpoint======",member.Membership.Endpoint)
+		//logger.Info("========Metadata======",member.Membership.Metadata)
+		//logger.Info("========InternalEndpoint======",member.Membership.Metadata)
+		//logger.Info("===========d.id2Member========",d.id2Member)
+		//logger.Info("===========key========",string(m.GetAliveMsg().Membership.PkiId))
+		//logger.Info("===========InternalEndpoint========",d.id2Member[string(m.GetAliveMsg().Membership.PkiId)].InternalEndpoint)
+		//logger.Info("===================Envelope=================", m.Envelope)
 		response = append(response, NetworkMember{
 			PKIid:            member.Membership.PkiId,
 			Endpoint:         member.Membership.Endpoint,
@@ -976,12 +976,12 @@ func (d *gossipDiscoveryImpl) UpdateEndpoint(endpoint string) {
 }
 
 func (d *gossipDiscoveryImpl) Self() NetworkMember {
-	//fmt.Println("--------gossipDiscoveryImpl-----Self--------------")
+	//logger.Info("--------gossipDiscoveryImpl-----Self--------------")
 	var env *proto.Envelope
 	msg, _ := d.aliveMsgAndInternalEndpoint()
 	sMsg, err := msg.NoopSign()
 	if err != nil {
-		fmt.Println("ailed creating SignedGossipMessage:", err)
+		logger.Info("ailed creating SignedGossipMessage:", err)
 	} else {
 		env = sMsg.Envelope
 	}

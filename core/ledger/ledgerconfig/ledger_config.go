@@ -45,62 +45,62 @@ var confCollElgProcDbBatchesInterval = &conf{"ledger.pvtdataStore.collElgProcDbB
 // GetRootPath returns the filesystem path.
 // All ledger related contents are expected to be stored under this path
 func GetRootPath() string {
-	fmt.Println("=====GetRootPath========")
+	logger.Info("=====GetRootPath========")
 	sysPath := config.GetPath(confPeerFileSystemPath)
 	return filepath.Join(sysPath, confLedgersData)
 }
 
 // GetLedgerProviderPath returns the filesystem path for storing ledger ledgerProvider contents
 func GetLedgerProviderPath() string {
-	fmt.Println("=====GetLedgerProviderPath========")
+	logger.Info("=====GetLedgerProviderPath========")
 	return filepath.Join(GetRootPath(), confLedgerProvider)
 }
 
 // GetStateLevelDBPath returns the filesystem path that is used to maintain the state level db
 func GetStateLevelDBPath() string {
-	fmt.Println("=====GetStateLevelDBPath========")
+	logger.Info("=====GetStateLevelDBPath========")
 	return filepath.Join(GetRootPath(), confStateleveldb)
 }
 
 // GetHistoryLevelDBPath returns the filesystem path that is used to maintain the history level db
 func GetHistoryLevelDBPath() string {
-	fmt.Println("=====GetHistoryLevelDBPath========")
+	logger.Info("=====GetHistoryLevelDBPath========")
 	return filepath.Join(GetRootPath(), confHistoryLeveldb)
 }
 
 // GetBlockStorePath returns the filesystem path that is used for the chain block stores
 func GetBlockStorePath() string {
-	fmt.Println("=====GetBlockStorePath========")
+	logger.Info("=====GetBlockStorePath========")
 	return filepath.Join(GetRootPath(), confChains)
 }
 
 // GetPvtdataStorePath returns the filesystem path that is used for permanent storage of private write-sets
 func GetPvtdataStorePath() string {
-	fmt.Println("=====GetPvtdataStorePath========")
+	logger.Info("=====GetPvtdataStorePath========")
 	return filepath.Join(GetRootPath(), confPvtdataStore)
 }
 
 // GetInternalBookkeeperPath returns the filesystem path that is used for bookkeeping the internal stuff by by KVledger (such as expiration time for pvt)
 func GetInternalBookkeeperPath() string {
-	fmt.Println("=====GetInternalBookkeeperPath========")
+	logger.Info("=====GetInternalBookkeeperPath========")
 	return filepath.Join(GetRootPath(), confBookkeeper)
 }
 
 // GetConfigHistoryPath returns the filesystem path that is used for maintaining history of chaincodes collection configurations
 func GetConfigHistoryPath() string {
-	fmt.Println("=====GetConfigHistoryPath========")
+	logger.Info("=====GetConfigHistoryPath========")
 	return filepath.Join(GetRootPath(), confConfigHistory)
 }
 
 // GetMaxBlockfileSize returns maximum size of the block file
 func GetMaxBlockfileSize() int {
-	fmt.Println("=====GetMaxBlockfileSize========")
+	logger.Info("=====GetMaxBlockfileSize========")
 	return 64 * 1024 * 1024
 }
 
 // GetTotalQueryLimit exposes the totalLimit variable
 func GetTotalQueryLimit() int {
-	fmt.Println("=====GetTotalQueryLimit========")
+	logger.Info("=====GetTotalQueryLimit========")
 	totalQueryLimit := viper.GetInt(confTotalQueryLimit)
 	// if queryLimit was unset, default to 10000
 	if !viper.IsSet(confTotalQueryLimit) {
@@ -111,7 +111,7 @@ func GetTotalQueryLimit() int {
 
 // GetInternalQueryLimit exposes the queryLimit variable
 func GetInternalQueryLimit() int {
-	fmt.Println("=====GetInternalQueryLimit========")
+	logger.Info("=====GetInternalQueryLimit========")
 	internalQueryLimit := viper.GetInt(confInternalQueryLimit)
 	// if queryLimit was unset, default to 1000
 	if !viper.IsSet(confInternalQueryLimit) {
@@ -122,7 +122,7 @@ func GetInternalQueryLimit() int {
 
 //GetMaxBatchUpdateSize exposes the maxBatchUpdateSize variable
 func GetMaxBatchUpdateSize() int {
-	fmt.Println("=====GetMaxBatchUpdateSize========")
+	logger.Info("=====GetMaxBatchUpdateSize========")
 	maxBatchUpdateSize := viper.GetInt(confMaxBatchSize)
 	// if maxBatchUpdateSize was unset, default to 500
 	if !viper.IsSet(confMaxBatchSize) {
@@ -134,7 +134,7 @@ func GetMaxBatchUpdateSize() int {
 // GetPvtdataStorePurgeInterval returns the interval in the terms of number of blocks
 // when the purge for the expired data would be performed
 func GetPvtdataStorePurgeInterval() uint64 {
-	fmt.Println("=====GetPvtdataStorePurgeInterval========")
+	logger.Info("=====GetPvtdataStorePurgeInterval========")
 	purgeInterval := viper.GetInt("ledger.pvtdataStore.purgeInterval")
 	if purgeInterval <= 0 {
 		purgeInterval = 100
@@ -145,7 +145,7 @@ func GetPvtdataStorePurgeInterval() uint64 {
 // GetPvtdataStoreCollElgProcMaxDbBatchSize returns the maximum db batch size for converting
 // the ineligible missing data entries to eligible missing data entries
 func GetPvtdataStoreCollElgProcMaxDbBatchSize() int {
-	fmt.Println("=====GetPvtdataStoreCollElgProcMaxDbBatchSize========")
+	logger.Info("=====GetPvtdataStoreCollElgProcMaxDbBatchSize========")
 	collElgProcMaxDbBatchSize := viper.GetInt(confCollElgProcMaxDbBatchSize.Name)
 	if collElgProcMaxDbBatchSize <= 0 {
 		collElgProcMaxDbBatchSize = confCollElgProcMaxDbBatchSize.DefaultVal
@@ -156,7 +156,7 @@ func GetPvtdataStoreCollElgProcMaxDbBatchSize() int {
 // GetPvtdataStoreCollElgProcDbBatchesInterval returns the minimum duration (in milliseconds) between writing
 // two consecutive db batches for converting the ineligible missing data entries to eligible missing data entries
 func GetPvtdataStoreCollElgProcDbBatchesInterval() int {
-	fmt.Println("=====GetPvtdataStoreCollElgProcDbBatchesInterval========")
+	logger.Info("=====GetPvtdataStoreCollElgProcDbBatchesInterval========")
 	collElgProcDbBatchesInterval := viper.GetInt(confCollElgProcDbBatchesInterval.Name)
 	if collElgProcDbBatchesInterval <= 0 {
 		collElgProcDbBatchesInterval = confCollElgProcDbBatchesInterval.DefaultVal
@@ -166,14 +166,14 @@ func GetPvtdataStoreCollElgProcDbBatchesInterval() int {
 
 //IsHistoryDBEnabled exposes the historyDatabase variable
 func IsHistoryDBEnabled() bool {
-	fmt.Println("=====IsHistoryDBEnabled========")
+	logger.Info("=====IsHistoryDBEnabled========")
 	return viper.GetBool(confEnableHistoryDatabase)
 }
 
 // IsQueryReadsHashingEnabled enables or disables computing of hash
 // of range query results for phantom item validation
 func IsQueryReadsHashingEnabled() bool {
-	fmt.Println("=====IsQueryReadsHashingEnabled========")
+	logger.Info("=====IsQueryReadsHashingEnabled========")
 	return true
 }
 
@@ -181,13 +181,13 @@ func IsQueryReadsHashingEnabled() bool {
 // of range query results for phantom item validation
 // For more details - see description in kvledger/txmgmt/rwset/query_results_helper.go
 func GetMaxDegreeQueryReadsHashing() uint32 {
-	fmt.Println("=====GetMaxDegreeQueryReadsHashing========")
+	logger.Info("=====GetMaxDegreeQueryReadsHashing========")
 	return 50
 }
 
 //IsAutoWarmIndexesEnabled exposes the autoWarmIndexes variable
 func IsAutoWarmIndexesEnabled() bool {
-	fmt.Println("=====IsAutoWarmIndexesEnabled========")
+	logger.Info("=====IsAutoWarmIndexesEnabled========")
 	//Return the value set in core.yaml, if not set, the return true
 	if viper.IsSet(confAutoWarmIndexes) {
 		return viper.GetBool(confAutoWarmIndexes)
@@ -198,7 +198,7 @@ func IsAutoWarmIndexesEnabled() bool {
 
 //GetWarmIndexesAfterNBlocks exposes the warmIndexesAfterNBlocks variable
 func GetWarmIndexesAfterNBlocks() int {
-	fmt.Println("=====GetWarmIndexesAfterNBlocks========")
+	logger.Info("=====GetWarmIndexesAfterNBlocks========")
 	warmAfterNBlocks := viper.GetInt(confWarmIndexesAfterNBlocks)
 	// if warmIndexesAfterNBlocks was unset, default to 1
 	if !viper.IsSet(confWarmIndexesAfterNBlocks) {

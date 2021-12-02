@@ -29,7 +29,7 @@ import (
 )
 
 func getMsgType(r *http.Request) (proto.Message, error) {
-	fmt.Println("========getMsgType========")
+	logger.Info("========getMsgType========")
 	vars := mux.Vars(r)
 	msgName := vars["msgName"] // Will not arrive is unset
 
@@ -41,7 +41,7 @@ func getMsgType(r *http.Request) (proto.Message, error) {
 }
 
 func Decode(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("========Decode========")
+	logger.Info("========Decode========")
 	msg, err := getMsgType(r)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
@@ -77,7 +77,7 @@ func Decode(w http.ResponseWriter, r *http.Request) {
 }
 
 func Encode(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("========Encode========")
+	logger.Info("========Encode========")
 	msg, err := getMsgType(r)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)

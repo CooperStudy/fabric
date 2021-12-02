@@ -42,11 +42,11 @@ var Policy_PolicyType_value = map[string]int32{
 }
 
 func (x Policy_PolicyType) String() string {
-	fmt.Println("===Policy_PolicyType==String==")
+	logger.Info("===Policy_PolicyType==String==")
 	return proto.EnumName(Policy_PolicyType_name, int32(x))
 }
 func (Policy_PolicyType) EnumDescriptor() ([]byte, []int) {
-	fmt.Println("===Policy_PolicyType==EnumDescriptor==")
+	logger.Info("===Policy_PolicyType==EnumDescriptor==")
 	return fileDescriptor_policies_0e89ed70e7bf49a8, []int{0, 0}
 }
 
@@ -111,7 +111,7 @@ func (m *Policy) XXX_DiscardUnknown() {
 var xxx_messageInfo_Policy proto.InternalMessageInfo
 
 func (m *Policy) GetType() int32 {
-	fmt.Println("===Policy==GetType==")
+	logger.Info("===Policy==GetType==")
 	if m != nil {
 		return m.Type
 	}
@@ -119,7 +119,7 @@ func (m *Policy) GetType() int32 {
 }
 
 func (m *Policy) GetValue() []byte {
-	fmt.Println("===Policy==GetValue==")
+	logger.Info("===Policy==GetValue==")
 	if m != nil {
 		return m.Value
 	}
@@ -161,7 +161,7 @@ func (m *SignaturePolicyEnvelope) XXX_DiscardUnknown() {
 var xxx_messageInfo_SignaturePolicyEnvelope proto.InternalMessageInfo
 
 func (m *SignaturePolicyEnvelope) GetVersion() int32 {
-	fmt.Println("===SignaturePolicyEnvelope==GetVersion==")
+	logger.Info("===SignaturePolicyEnvelope==GetVersion==")
 	if m != nil {
 		return m.Version
 	}
@@ -169,7 +169,7 @@ func (m *SignaturePolicyEnvelope) GetVersion() int32 {
 }
 
 func (m *SignaturePolicyEnvelope) GetRule() *SignaturePolicy {
-	fmt.Println("===SignaturePolicyEnvelope==GetRule==")
+	logger.Info("===SignaturePolicyEnvelope==GetRule==")
 	if m != nil {
 		return m.Rule
 	}
@@ -177,7 +177,7 @@ func (m *SignaturePolicyEnvelope) GetRule() *SignaturePolicy {
 }
 
 func (m *SignaturePolicyEnvelope) GetIdentities() []*msp.MSPPrincipal {
-	fmt.Println("===SignaturePolicyEnvelope==GetIdentities==")
+	logger.Info("===SignaturePolicyEnvelope==GetIdentities==")
 	if m != nil {
 		return m.Identities
 	}
@@ -201,7 +201,7 @@ type SignaturePolicy struct {
 }
 
 func (m *SignaturePolicy) Reset()         { *m = SignaturePolicy{} }
-func (m *SignaturePolicy) String() string {  fmt.Println("11111 ");return proto.CompactTextString(m) }
+func (m *SignaturePolicy) String() string {  logger.Info("11111 ");return proto.CompactTextString(m) }
 func (*SignaturePolicy) ProtoMessage()    {}
 func (*SignaturePolicy) Descriptor() ([]byte, []int) {
 	return fileDescriptor_policies_0e89ed70e7bf49a8, []int{2}
@@ -241,7 +241,7 @@ func (*SignaturePolicy_SignedBy) isSignaturePolicy_Type() {}
 func (*SignaturePolicy_NOutOf_) isSignaturePolicy_Type() {}
 
 func (m *SignaturePolicy) GetType() isSignaturePolicy_Type {
-	fmt.Println("===SignaturePolicy==GetType==")
+	logger.Info("===SignaturePolicy==GetType==")
 	if m != nil {
 		return m.Type
 	}
@@ -249,7 +249,7 @@ func (m *SignaturePolicy) GetType() isSignaturePolicy_Type {
 }
 
 func (m *SignaturePolicy) GetSignedBy() int32 {
-	fmt.Println("===SignaturePolicy==GetSignedBy==")
+	logger.Info("===SignaturePolicy==GetSignedBy==")
 	if x, ok := m.GetType().(*SignaturePolicy_SignedBy); ok {
 		return x.SignedBy
 	}
@@ -257,7 +257,7 @@ func (m *SignaturePolicy) GetSignedBy() int32 {
 }
 
 func (m *SignaturePolicy) GetNOutOf() *SignaturePolicy_NOutOf {
-	fmt.Println("===SignaturePolicy==GetNOutOf==")
+	logger.Info("===SignaturePolicy==GetNOutOf==")
 	if x, ok := m.GetType().(*SignaturePolicy_NOutOf_); ok {
 		return x.NOutOf
 	}
@@ -273,7 +273,7 @@ func (*SignaturePolicy) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffe
 }
 
 func _SignaturePolicy_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	fmt.Println("===_SignaturePolicy_OneofMarshaler==")
+	logger.Info("===_SignaturePolicy_OneofMarshaler==")
 	m := msg.(*SignaturePolicy)
 	// Type
 	switch x := m.Type.(type) {
@@ -293,7 +293,7 @@ func _SignaturePolicy_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
 }
 
 func _SignaturePolicy_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	fmt.Println("==========_SignaturePolicy_OneofUnmarshaler==============")
+	logger.Info("==========_SignaturePolicy_OneofUnmarshaler==============")
 	m := msg.(*SignaturePolicy)
 	switch tag {
 	case 1: // Type.signed_by
@@ -317,7 +317,7 @@ func _SignaturePolicy_OneofUnmarshaler(msg proto.Message, tag, wire int, b *prot
 }
 
 func _SignaturePolicy_OneofSizer(msg proto.Message) (n int) {
-	fmt.Println("==========_SignaturePolicy_OneofSizer==============")
+	logger.Info("==========_SignaturePolicy_OneofSizer==============")
 	m := msg.(*SignaturePolicy)
 	// Type
 	switch x := m.Type.(type) {
@@ -369,7 +369,7 @@ func (m *SignaturePolicy_NOutOf) XXX_DiscardUnknown() {
 var xxx_messageInfo_SignaturePolicy_NOutOf proto.InternalMessageInfo
 
 func (m *SignaturePolicy_NOutOf) GetN() int32 {
-	fmt.Println("==========SignaturePolicy_NOutOf===GetN===========")
+	logger.Info("==========SignaturePolicy_NOutOf===GetN===========")
 	if m != nil {
 		return m.N
 	}
@@ -377,7 +377,7 @@ func (m *SignaturePolicy_NOutOf) GetN() int32 {
 }
 
 func (m *SignaturePolicy_NOutOf) GetRules() []*SignaturePolicy {
-	fmt.Println("==========SignaturePolicy_NOutOf===GetRules===========")
+	logger.Info("==========SignaturePolicy_NOutOf===GetRules===========")
 	if m != nil {
 		return m.Rules
 	}
@@ -425,7 +425,7 @@ func (m *ImplicitMetaPolicy) XXX_DiscardUnknown() {
 var xxx_messageInfo_ImplicitMetaPolicy proto.InternalMessageInfo
 
 func (m *ImplicitMetaPolicy) GetSubPolicy() string {
-	fmt.Println("==========ImplicitMetaPolicy===GetSubPolicy===========")
+	logger.Info("==========ImplicitMetaPolicy===GetSubPolicy===========")
 	if m != nil {
 		return m.SubPolicy
 	}
@@ -433,7 +433,7 @@ func (m *ImplicitMetaPolicy) GetSubPolicy() string {
 }
 
 func (m *ImplicitMetaPolicy) GetRule() ImplicitMetaPolicy_Rule {
-	fmt.Println("==========ImplicitMetaPolicy===GetRule===========")
+	logger.Info("==========ImplicitMetaPolicy===GetRule===========")
 	if m != nil {
 		return m.Rule
 	}

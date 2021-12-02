@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package ccmetadata
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -106,7 +105,7 @@ func TestBadFilePaths(t *testing.T) {
 	fileBytes := []byte(`{"index":{"fields":["data.docType","data.owner"]},"name":"indexOwner","type":"json"}`)
 
 	err := ValidateMetadataFile(fileName, fileBytes)
-	fmt.Println(err)
+	logger.Info(err)
 	assert.Error(t, err, "Should have received an error for bad META-INF directory")
 
 	// Test bad path length
@@ -114,7 +113,7 @@ func TestBadFilePaths(t *testing.T) {
 	fileBytes = []byte(`{"index":{"fields":["data.docType","data.owner"]},"name":"indexOwner","type":"json"}`)
 
 	err = ValidateMetadataFile(fileName, fileBytes)
-	fmt.Println(err)
+	logger.Info(err)
 	assert.Error(t, err, "Should have received an error for bad length")
 
 	// Test invalid database name
@@ -122,7 +121,7 @@ func TestBadFilePaths(t *testing.T) {
 	fileBytes = []byte(`{"index":{"fields":["data.docType","data.owner"]},"name":"indexOwner","type":"json"}`)
 
 	err = ValidateMetadataFile(fileName, fileBytes)
-	fmt.Println(err)
+	logger.Info(err)
 	assert.Error(t, err, "Should have received an error for invalid database")
 
 	// Test invalid indexes directory name
@@ -130,7 +129,7 @@ func TestBadFilePaths(t *testing.T) {
 	fileBytes = []byte(`{"index":{"fields":["data.docType","data.owner"]},"name":"indexOwner","type":"json"}`)
 
 	err = ValidateMetadataFile(fileName, fileBytes)
-	fmt.Println(err)
+	logger.Info(err)
 	assert.Error(t, err, "Should have received an error for invalid indexes directory")
 
 	// Test invalid collections directory name
@@ -138,7 +137,7 @@ func TestBadFilePaths(t *testing.T) {
 	fileBytes = []byte(`{"index":{"fields":["data.docType","data.owner"]},"name":"indexOwner","type":"json"}`)
 
 	err = ValidateMetadataFile(fileName, fileBytes)
-	fmt.Println(err)
+	logger.Info(err)
 	assert.Error(t, err, "Should have received an error for invalid collections directory")
 
 	// Test valid collections name
@@ -146,7 +145,7 @@ func TestBadFilePaths(t *testing.T) {
 	fileBytes = []byte(`{"index":{"fields":["data.docType","data.owner"]},"name":"indexOwner","type":"json"}`)
 
 	err = ValidateMetadataFile(fileName, fileBytes)
-	fmt.Println(err)
+	logger.Info(err)
 	assert.NoError(t, err, "Error should not have been thrown for a valid collection name")
 
 	// Test invalid collections name
@@ -154,7 +153,7 @@ func TestBadFilePaths(t *testing.T) {
 	fileBytes = []byte(`{"index":{"fields":["data.docType","data.owner"]},"name":"indexOwner","type":"json"}`)
 
 	err = ValidateMetadataFile(fileName, fileBytes)
-	fmt.Println(err)
+	logger.Info(err)
 	assert.Error(t, err, "Should have received an error for an invalid collection name")
 
 	// Test invalid collections name
@@ -162,7 +161,7 @@ func TestBadFilePaths(t *testing.T) {
 	fileBytes = []byte(`{"index":{"fields":["data.docType","data.owner"]},"name":"indexOwner","type":"json"}`)
 
 	err = ValidateMetadataFile(fileName, fileBytes)
-	fmt.Println(err)
+	logger.Info(err)
 	assert.Error(t, err, "Should have received an error for an invalid file name")
 
 }

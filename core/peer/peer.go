@@ -85,14 +85,14 @@ type storeProvider struct {
 }
 
 func (sp *storeProvider) StoreForChannel(channel string) transientstore.Store {
-	fmt.Println("====storeProvider===StoreForChannel======")
+	logger.Info("====storeProvider===StoreForChannel======")
 	sp.RLock()
 	defer sp.RUnlock()
 	return sp.stores[channel]
 }
 
 func (sp *storeProvider) OpenStore(ledgerID string) (transientstore.Store, error) {
-	fmt.Println("====storeProvider===OpenStore======")
+	logger.Info("====storeProvider===OpenStore======")
 	sp.Lock()
 	defer sp.Unlock()
 	if sp.StoreProvider == nil {
@@ -106,7 +106,7 @@ func (sp *storeProvider) OpenStore(ledgerID string) (transientstore.Store, error
 }
 
 func (cs *chainSupport) Apply(configtx *common.ConfigEnvelope) error {
-	fmt.Println("====storeProvider===Apply======")
+	logger.Info("====storeProvider===Apply======")
 	err := cs.ConfigtxValidator().Validate(configtx)
 	if err != nil {
 		return err
@@ -134,7 +134,7 @@ func (cs *chainSupport) Apply(configtx *common.ConfigEnvelope) error {
 }
 
 func capabilitiesSupportedOrPanic(res channelconfig.Resources) {
-	fmt.Println("===capabilitiesSupportedOrPanic======")
+	logger.Info("===capabilitiesSupportedOrPanic======")
 	ac, ok := res.ApplicationConfig()
 	if !ok {
 		peerLogger.Panicf("[channel %s] does not have application config so is incompatible", res.ConfigtxValidator().ChainID())
@@ -150,25 +150,25 @@ func capabilitiesSupportedOrPanic(res channelconfig.Resources) {
 }
 
 func (cs *chainSupport) Ledger() ledger.PeerLedger {
-	fmt.Println("===chainSupport===Ledger===")
+	logger.Info("===chainSupport===Ledger===")
 	return cs.ledger
 }
 
 func (cs *chainSupport) GetMSPIDs(cid string) []string {
-	fmt.Println("===chainSupport===GetMSPIDs===")
+	logger.Info("===chainSupport===GetMSPIDs===")
 	return GetMSPIDs(cid)
 }
 
 // Sequence passes through to the underlying configtx.Validator
 func (cs *chainSupport) Sequence() uint64 {
-	fmt.Println("===chainSupport===Sequence===")
+	logger.Info("===chainSupport===Sequence===")
 	sb := cs.bundleSource.StableBundle()
 	return sb.ConfigtxValidator().Sequence()
 }
 
 // Reader returns an iterator to read from the ledger
 func (cs *chainSupport) Reader() blockledger.Reader {
-	fmt.Println("===chainSupport===Reader===")
+	logger.Info("===chainSupport===Reader===")
 	return fileledger.NewFileLedger(fileLedgerBlockStore{cs.ledger})
 }
 
@@ -177,7 +177,7 @@ func (cs *chainSupport) Reader() blockledger.Reader {
 // the peer does not have any error conditions that lead to
 // this function signaling that an error has occurred.
 func (cs *chainSupport) Errored() <-chan struct{} {
-	fmt.Println("===chainSupport===Errored===")
+	logger.Info("===chainSupport===Errored===")
 	return nil
 }
 
@@ -201,7 +201,7 @@ var pluginMapper txvalidator.PluginMapper
 var mockMSPIDGetter func(string) []string
 
 func MockSetMSPIDGetter(mspIDGetter func(string) []string) {
-	fmt.Println("===MockSetMSPIDGetter===")
+	logger.Info("===MockSetMSPIDGetter===")
 	mockMSPIDGetter = mspIDGetter
 }
 
@@ -217,7 +217,7 @@ func Initialize(init func(string), ccp ccprovider.ChaincodeProvider, sccp sysccp
 	pm txvalidator.PluginMapper, pr *platforms.Registry, deployedCCInfoProvider ledger.DeployedChaincodeInfoProvider,
 	membershipProvider ledger.MembershipInfoProvider, metricsProvider metrics.Provider) {
 
-	fmt.Println("===Initialize===")
+	logger.Info("===Initialize===")
 
 	nWorkers := viper.GetInt("peer.validatorPoolSize")
 	if nWorkers <= 0 {
@@ -266,7 +266,7 @@ func Initialize(init func(string), ccp ccprovider.ChaincodeProvider, sccp sysccp
 
 // InitChain takes care to initialize chain after peer joined, for example deploys system CCs
 func InitChain(cid string) {
-	fmt.Println("===InitChain===")
+	logger.Info("===InitChain===")
 	if chainInitializer != nil {
 		// Initialize chaincode, namely deploy system CC
 		peerLogger.Debugf("Initializing channel %s", cid)
@@ -275,7 +275,7 @@ func InitChain(cid string) {
 }
 
 func getCurrConfigBlockFromLedger(ledger ledger.PeerLedger) (*common.Block, error) {
-	fmt.Println("===getCurrConfigBlockFromLedger===")
+	logger.Info("===getCurrConfigBlockFromLedger===")
 	peerLogger.Debugf("Getting config block")
 
 	// get last block.  Last block number is Height-1
@@ -306,7 +306,7 @@ func getCurrConfigBlockFromLedger(ledger ledger.PeerLedger) (*common.Block, erro
 
 // createChain creates a new chain object and insert it into the chains
 func createChain(cid string, ledger ledger.PeerLedger, cb *common.Block, ccp ccprovider.ChaincodeProvider, sccp sysccprovider.SystemChaincodeProvider, pm txvalidator.PluginMapper) error {
-	fmt.Println("===createChain===")
+	logger.Info("===createChain===")
 	chanConf, err := retrievePersistedChannelConfig(ledger)
 	if err != nil {
 		return err
@@ -444,7 +444,7 @@ func createChain(cid string, ledger ledger.PeerLedger, cb *common.Block, ccp ccp
 
 // CreateChainFromBlock creates a new chain from config block
 func CreateChainFromBlock(cb *common.Block, ccp ccprovider.ChaincodeProvider, sccp sysccprovider.SystemChaincodeProvider) error {
-	fmt.Println("===CreateChainFromBlock===")
+	logger.Info("===CreateChainFromBlock===")
 	cid, err := utils.GetChainIDFromBlock(cb)
 	if err != nil {
 		return err
@@ -461,7 +461,7 @@ func CreateChainFromBlock(cb *common.Block, ccp ccprovider.ChaincodeProvider, sc
 // GetLedger returns the ledger of the chain with chain ID. Note that this
 // call returns nil if chain cid has not been created.
 func GetLedger(cid string) ledger.PeerLedger {
-	fmt.Println("===GetLedger===")
+	logger.Info("===GetLedger===")
 	chains.RLock()
 	defer chains.RUnlock()
 	if c, ok := chains.list[cid]; ok {
@@ -473,7 +473,7 @@ func GetLedger(cid string) ledger.PeerLedger {
 // GetStableChannelConfig returns the stable channel configuration of the chain with channel ID.
 // Note that this call returns nil if chain cid has not been created.
 func GetStableChannelConfig(cid string) channelconfig.Resources {
-	fmt.Println("===GetStableChannelConfig===")
+	logger.Info("===GetStableChannelConfig===")
 	chains.RLock()
 	defer chains.RUnlock()
 	if c, ok := chains.list[cid]; ok {
@@ -485,11 +485,11 @@ func GetStableChannelConfig(cid string) channelconfig.Resources {
 // GetChannelConfig returns the channel configuration of the chain with channel ID. Note that this
 // call returns nil if chain cid has not been created.
 func GetChannelConfig(cid string) channelconfig.Resources {
-	fmt.Println("=========fabric core peer peer.go======GetChannelConfig=============")
+	logger.Info("=========fabric core peer peer.go======GetChannelConfig=============")
 	chains.RLock()
 	defer chains.RUnlock()
-	//fmt.Println("=========cid",cid) mychannel
-	//fmt.Println("======chains.list=======",chains.list) //map[mychannel:0xc002483dc0]
+	//logger.Info("=========cid",cid) mychannel
+	//logger.Info("======chains.list=======",chains.list) //map[mychannel:0xc002483dc0]
 	if c, ok := chains.list[cid]; ok {
 		return c.cs
 	}
@@ -499,7 +499,7 @@ func GetChannelConfig(cid string) channelconfig.Resources {
 // GetPolicyManager returns the policy manager of the chain with chain ID. Note that this
 // call returns nil if chain cid has not been created.
 func GetPolicyManager(cid string) policies.Manager {
-	fmt.Println("===GetPolicyManager===")
+	logger.Info("===GetPolicyManager===")
 	chains.RLock()
 	defer chains.RUnlock()
 	if c, ok := chains.list[cid]; ok {
@@ -511,7 +511,7 @@ func GetPolicyManager(cid string) policies.Manager {
 // GetCurrConfigBlock returns the cached config block of the specified chain.
 // Note that this call returns nil if chain cid has not been created.
 func GetCurrConfigBlock(cid string) *common.Block {
-	fmt.Println("===GetCurrConfigBlock===")
+	logger.Info("===GetCurrConfigBlock===")
 	chains.RLock()
 	defer chains.RUnlock()
 	if c, ok := chains.list[cid]; ok {
@@ -522,7 +522,7 @@ func GetCurrConfigBlock(cid string) *common.Block {
 
 // updates the trusted roots for the peer based on updates to channels
 func updateTrustedRoots(cm channelconfig.Resources) {
-	fmt.Println("===updateTrustedRoots===")
+	logger.Info("===updateTrustedRoots===")
 	// this is triggered on per channel basis so first update the roots for the channel
 	peerLogger.Infof("Updating trusted root authorities for channel %s", cm.ConfigtxValidator().ChainID())
 	var serverConfig comm.ServerConfig
@@ -564,7 +564,7 @@ func updateTrustedRoots(cm channelconfig.Resources) {
 // populates the appRootCAs and orderRootCAs maps by getting the
 // root and intermediate certs for all msps associated with the MSPManager
 func buildTrustedRootsForChain(cm channelconfig.Resources) {
-	fmt.Println("===buildTrustedRootsForChain===")
+	logger.Info("===buildTrustedRootsForChain===")
 	credSupport.Lock()
 	defer credSupport.Unlock()
 
@@ -574,7 +574,7 @@ func buildTrustedRootsForChain(cm channelconfig.Resources) {
 	ordOrgMSPs := make(map[string]struct{})
 
 	if ac, ok := cm.ApplicationConfig(); ok {
-		fmt.Println("==========ac",ac)
+		logger.Info("==========ac",ac)
 		//loop through app orgs and build map of MSPIDs
 		for _, appOrg := range ac.Organizations() {
 			appOrgMSPs[appOrg.MSPID()] = struct{}{}
@@ -582,7 +582,7 @@ func buildTrustedRootsForChain(cm channelconfig.Resources) {
 	}
 
 	if ac, ok := cm.OrdererConfig(); ok {
-		fmt.Println("======ac",ac)
+		logger.Info("======ac",ac)
 		//loop through orderer orgs and build map of MSPIDs
 		for _, ordOrg := range ac.Organizations() {
 			ordOrgMSPs[ordOrg.MSPID()] = struct{}{}
@@ -632,7 +632,7 @@ func buildTrustedRootsForChain(cm channelconfig.Resources) {
 
 // GetMSPIDs returns the ID of each application MSP defined on this chain
 func GetMSPIDs(cid string) []string {
-	fmt.Println("===GetMSPIDs===")
+	logger.Info("===GetMSPIDs===")
 	chains.RLock()
 	defer chains.RUnlock()
 
@@ -665,7 +665,7 @@ func GetMSPIDs(cid string) []string {
 
 // SetCurrConfigBlock sets the current config block of the specified channel
 func SetCurrConfigBlock(block *common.Block, cid string) error {
-	fmt.Println("===SetCurrConfigBlock===")
+	logger.Info("===SetCurrConfigBlock===")
 	chains.Lock()
 	defer chains.Unlock()
 	if c, ok := chains.list[cid]; ok {
@@ -677,7 +677,7 @@ func SetCurrConfigBlock(block *common.Block, cid string) error {
 
 // GetLocalIP returns the non loopback local IP of the host
 func GetLocalIP() string {
-	fmt.Println("===GetLocalIP===")
+	logger.Info("===GetLocalIP===")
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		return ""
@@ -696,7 +696,7 @@ func GetLocalIP() string {
 // GetChannelsInfo returns an array with information about all channels for
 // this peer
 func GetChannelsInfo() []*pb.ChannelInfo {
-	fmt.Println("===GetChannelsInfo===")
+	logger.Info("===GetChannelsInfo===")
 	// array to store metadata for all channels
 	var channelInfoArray []*pb.ChannelInfo
 
@@ -714,14 +714,14 @@ func GetChannelsInfo() []*pb.ChannelInfo {
 
 // NewChannelPolicyManagerGetter returns a new instance of ChannelPolicyManagerGetter
 func NewChannelPolicyManagerGetter() policies.ChannelPolicyManagerGetter {
-	fmt.Println("===NewChannelPolicyManagerGetter===")
+	logger.Info("===NewChannelPolicyManagerGetter===")
 	return &channelPolicyManagerGetter{}
 }
 
 type channelPolicyManagerGetter struct{}
 
 func (c *channelPolicyManagerGetter) Manager(channelID string) (policies.Manager, bool) {
-	fmt.Println("===channelPolicyManagerGetter===Manager==")
+	logger.Info("===channelPolicyManagerGetter===Manager==")
 	policyManager := GetPolicyManager(channelID)
 	return policyManager, policyManager != nil
 }
@@ -729,7 +729,7 @@ func (c *channelPolicyManagerGetter) Manager(channelID string) (policies.Manager
 // NewPeerServer creates an instance of comm.GRPCServer
 // This server is used for peer communications
 func NewPeerServer(listenAddress string, serverConfig comm.ServerConfig) (*comm.GRPCServer, error) {
-	fmt.Println("===NewPeerServer==")
+	logger.Info("===NewPeerServer==")
 	var err error
 	peerServer, err = comm.NewGRPCServer(listenAddress, serverConfig)
 	if err != nil {
@@ -753,12 +753,12 @@ type CollectionSupport struct {
 }
 
 func (cs *CollectionSupport) GetQueryExecutorForLedger(cid string) (ledger.QueryExecutor, error) {
-	fmt.Println("===CollectionSupport==GetQueryExecutorForLedger===")
+	logger.Info("===CollectionSupport==GetQueryExecutorForLedger===")
 	return cs.NewQueryExecutor()
 }
 
 func (*CollectionSupport) GetIdentityDeserializer(chainID string) msp.IdentityDeserializer {
-	fmt.Println("===CollectionSupport==GetIdentityDeserializer===")
+	logger.Info("===CollectionSupport==GetIdentityDeserializer===")
 	return mspmgmt.GetManagerForChain(chainID)
 }
 
@@ -771,7 +771,7 @@ type DeliverChainManager struct {
 }
 
 func (DeliverChainManager) GetChain(chainID string) deliver.Chain {
-	fmt.Println("===DeliverChainManager==GetChain===")
+	logger.Info("===DeliverChainManager==GetChain===")
 	channel, ok := chains.list[chainID]
 	if !ok {
 		return nil
@@ -786,18 +786,18 @@ type fileLedgerBlockStore struct {
 }
 
 func (flbs fileLedgerBlockStore) AddBlock(*common.Block) error {
-	fmt.Println("===fileLedgerBlockStore==AddBlock===")
+	logger.Info("===fileLedgerBlockStore==AddBlock===")
 	return nil
 }
 
 func (flbs fileLedgerBlockStore) RetrieveBlocks(startBlockNumber uint64) (commonledger.ResultsIterator, error) {
-	fmt.Println("===fileLedgerBlockStore==RetrieveBlocks===")
+	logger.Info("===fileLedgerBlockStore==RetrieveBlocks===")
 	return flbs.GetBlocksIterator(startBlockNumber)
 }
 
 // NewConfigSupport returns
 func NewConfigSupport() cc.Manager {
-	fmt.Println("===NewConfigSupport===")
+	logger.Info("===NewConfigSupport===")
 	return &configSupport{}
 }
 
@@ -809,7 +809,7 @@ type configSupport struct {
 // ConfigProto method of the returned object can be used to get the
 // proto representing the channel configuration.
 func (*configSupport) GetChannelConfig(channel string) cc.Config {
-	fmt.Println("===configSupport===GetChannelConfig==")
+	logger.Info("===configSupport===GetChannelConfig==")
 	chains.RLock()
 	defer chains.RUnlock()
 	chain := chains.list[channel]

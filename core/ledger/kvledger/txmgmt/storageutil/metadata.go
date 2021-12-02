@@ -14,14 +14,12 @@ import (
 
 // SerializeMetadata serializes metadata entries for stroing in statedb
 func SerializeMetadata(metadataEntries []*kvrwset.KVMetadataEntry) ([]byte, error) {
-	fmt.Println("===SerializeMetadata===")
 	metadata := &kvrwset.KVMetadataWrite{Entries: metadataEntries}
 	return proto.Marshal(metadata)
 }
 
 // DeserializeMetadata deserializes metadata bytes from statedb
 func DeserializeMetadata(metadataBytes []byte) (map[string][]byte, error) {
-	fmt.Println("===DeserializeMetadata===")
 	if metadataBytes == nil {
 		return nil, nil
 	}

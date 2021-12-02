@@ -24,7 +24,7 @@ import (
 
 // LoadPrivateKey loads a private key from file in keystorePath
 func LoadPrivateKey(keystorePath string) (bccsp.Key, crypto.Signer, error) {
-	fmt.Println("====LoadPrivateKey=========")
+	logger.Info("====LoadPrivateKey=========")
 	var err error
 	var priv bccsp.Key
 	var s crypto.Signer
@@ -85,7 +85,7 @@ func GeneratePrivateKey(keystorePath string) (bccsp.Key,
 	crypto.Signer, error) {
 
 
-	fmt.Println("====GeneratePrivateKey=========")
+	logger.Info("====GeneratePrivateKey=========")
 	var err error
 	var priv bccsp.Key
 	var s crypto.Signer
@@ -114,7 +114,7 @@ func GeneratePrivateKey(keystorePath string) (bccsp.Key,
 }
 
 func GetECPublicKey(priv bccsp.Key) (*ecdsa.PublicKey, error) {
-	fmt.Println("====GetECPublicKey=========")
+	logger.Info("====GetECPublicKey=========")
 	// get the public key
 	pubKey, err := priv.PublicKey()
 	if err != nil {

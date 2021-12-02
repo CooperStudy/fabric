@@ -17,22 +17,22 @@ limitations under the License.
 package policyprovider
 
 import (
-	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/core/peer"
 	"github.com/hyperledger/fabric/core/policy"
 	"github.com/hyperledger/fabric/msp/mgmt"
 )
-
+var logger = flogging.MustGetLogger("core.policyprovider")
 // init is called when this package is loaded. This implementation registers the factory
 func init() {
-	fmt.Println("===init==")
+	logger.Info("===init==")
 	policy.RegisterPolicyCheckerFactory(&defaultFactory{})
 }
 
 type defaultFactory struct{}
 
 func (f *defaultFactory) NewPolicyChecker() policy.PolicyChecker {
-	fmt.Println("===defaultFactory==NewPolicyChecker===")
+	logger.Info("===defaultFactory==NewPolicyChecker===")
 	return policy.NewPolicyChecker(
 		peer.NewChannelPolicyManagerGetter(),
 		mgmt.GetLocalMSP(),
@@ -42,6 +42,6 @@ func (f *defaultFactory) NewPolicyChecker() policy.PolicyChecker {
 
 // GetPolicyChecker returns instances of PolicyChecker;
 func GetPolicyChecker() policy.PolicyChecker {
-	fmt.Println("===GetPolicyChecker===")
+	logger.Info("===GetPolicyChecker===")
 	return policy.GetPolicyChecker()
 }

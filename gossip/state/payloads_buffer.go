@@ -55,7 +55,7 @@ type PayloadsBufferImpl struct {
 
 // NewPayloadsBuffer is factory function to create new payloads buffer
 func NewPayloadsBuffer(next uint64) PayloadsBuffer {
-	fmt.Println("===NewPayloadsBuffer==")
+	logger.Info("===NewPayloadsBuffer==")
 	return &PayloadsBufferImpl{
 		buf:       make(map[uint64]*proto.Payload),
 		readyChan: make(chan struct{}, 1),
@@ -68,7 +68,7 @@ func NewPayloadsBuffer(next uint64) PayloadsBuffer {
 // next block has arrived and one could safely pop out
 // next sequence of blocks
 func (b *PayloadsBufferImpl) Ready() chan struct{} {
-	fmt.Println("===PayloadsBufferImpl==Ready==")
+	logger.Info("===PayloadsBufferImpl==Ready==")
 	return b.readyChan
 }
 
@@ -77,7 +77,7 @@ func (b *PayloadsBufferImpl) Ready() chan struct{} {
 // thrown away.
 // TODO return bool to indicate if payload was added or not, so that caller can log result.
 func (b *PayloadsBufferImpl) Push(payload *proto.Payload) {
-	fmt.Println("===PayloadsBufferImpl==Push==")
+	logger.Info("===PayloadsBufferImpl==Push==")
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
 
@@ -98,7 +98,7 @@ func (b *PayloadsBufferImpl) Push(payload *proto.Payload) {
 
 // Next function provides the number of the next expected block
 func (b *PayloadsBufferImpl) Next() uint64 {
-	fmt.Println("===PayloadsBufferImpl==Next==")
+	logger.Info("===PayloadsBufferImpl==Next==")
 	// Atomically read the value of the top sequence number
 	return atomic.LoadUint64(&b.next)
 }
@@ -106,7 +106,7 @@ func (b *PayloadsBufferImpl) Next() uint64 {
 // Pop function extracts the payload according to the next expected block
 // number, if no next block arrived yet, function returns nil.
 func (b *PayloadsBufferImpl) Pop() *proto.Payload {
-	fmt.Println("===PayloadsBufferImpl==Pop==")
+	logger.Info("===PayloadsBufferImpl==Pop==")
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
 
@@ -129,7 +129,7 @@ func (b *PayloadsBufferImpl) Pop() *proto.Payload {
 // payload has been poped up and there are still awaiting
 // notifications in the channel
 func (b *PayloadsBufferImpl) drainReadChannel() {
-	fmt.Println("===PayloadsBufferImpl==drainReadChannel==")
+	logger.Info("===PayloadsBufferImpl==drainReadChannel==")
 	if len(b.buf) == 0 {
 		for {
 			if len(b.readyChan) > 0 {
@@ -143,7 +143,7 @@ func (b *PayloadsBufferImpl) drainReadChannel() {
 
 // Size returns current number of payloads stored within buffer
 func (b *PayloadsBufferImpl) Size() int {
-	fmt.Println("===PayloadsBufferImpl==Size==")
+	logger.Info("===PayloadsBufferImpl==Size==")
 	b.mutex.RLock()
 	defer b.mutex.RUnlock()
 	return len(b.buf)
@@ -151,6 +151,6 @@ func (b *PayloadsBufferImpl) Size() int {
 
 // Close cleanups resources and channels in maintained
 func (b *PayloadsBufferImpl) Close() {
-	fmt.Println("===PayloadsBufferImpl==Close==")
+	logger.Info("===PayloadsBufferImpl==Close==")
 	close(b.readyChan)
 }

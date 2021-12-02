@@ -22,7 +22,7 @@ import (
 
 // GetPayloads gets the underlying payload objects in a TransactionAction
 func GetPayloads(txActions *peer.TransactionAction) (*peer.ChaincodeActionPayload, *peer.ChaincodeAction, error) {
-	fmt.Println("===========GetPayloads========")
+	logger.Info("===========GetPayloads========")
 	// TODO: pass in the tx type (in what follows we're assuming the
 	// type is ENDORSER_TRANSACTION)
 	ccPayload, err := GetChaincodeActionPayload(txActions.Payload)
@@ -51,7 +51,7 @@ func GetPayloads(txActions *peer.TransactionAction) (*peer.ChaincodeActionPayloa
 
 // GetEnvelopeFromBlock gets an envelope from a block's Data field.
 func GetEnvelopeFromBlock(data []byte) (*common.Envelope, error) {
-	fmt.Println("===========GetEnvelopeFromBlock========")
+	logger.Info("===========GetEnvelopeFromBlock========")
 	// Block always begins with an envelope
 	var err error
 	env := &common.Envelope{}
@@ -65,7 +65,7 @@ func GetEnvelopeFromBlock(data []byte) (*common.Envelope, error) {
 // CreateSignedEnvelope creates a signed envelope of the desired type, with
 // marshaled dataMsg and signs it
 func CreateSignedEnvelope(txType common.HeaderType, channelID string, signer crypto.LocalSigner, dataMsg proto.Message, msgVersion int32, epoch uint64,orgName,orgPki string) (*common.Envelope, error) {
-	fmt.Println("===========CreateSignedEnvelope========")
+	logger.Info("===========CreateSignedEnvelope========")
 	return CreateSignedEnvelopeWithTLSBinding(txType, channelID, signer, dataMsg, msgVersion, epoch, nil,orgName,orgPki)
 }
 
@@ -73,7 +73,7 @@ func CreateSignedEnvelope(txType common.HeaderType, channelID string, signer cry
 // type, with marshaled dataMsg and signs it. It also includes a TLS cert hash
 // into the channel header
 func CreateSignedEnvelopeWithTLSBinding(txType common.HeaderType, channelID string, signer crypto.LocalSigner, dataMsg proto.Message, msgVersion int32, epoch uint64, tlsCertHash []byte,orgName,orgPki string) (*common.Envelope, error) {
-	fmt.Println("===========CreateSignedEnvelopeWithTLSBinding========")
+	logger.Info("===========CreateSignedEnvelopeWithTLSBinding========")
 	payloadChannelHeader := MakeChannelHeader(txType, msgVersion, channelID, epoch,orgName,orgPki)
 	payloadChannelHeader.TlsCertHash = tlsCertHash
 	var err error
@@ -119,7 +119,7 @@ func CreateSignedEnvelopeWithTLSBinding(txType common.HeaderType, channelID stri
 // collected enough endorsements for a proposal to create a transaction and
 // submit it to peers for ordering
 func CreateSignedTx(proposal *peer.Proposal, signer msp.SigningIdentity, resps ...*peer.ProposalResponse) (*common.Envelope, error) {
-	fmt.Println("===========func CreateSignedTx(proposal *peer.Proposal, signer msp.SigningIdentity, resps ...*peer.ProposalResponse) (*common.Envelope, error)========")
+	logger.Info("===========func CreateSignedTx(proposal *peer.Proposal, signer msp.SigningIdentity, resps ...*peer.ProposalResponse) (*common.Envelope, error)========")
 	if len(resps) == 0 {
 		return nil, errors.New("at least one proposal response is required")
 	}
@@ -227,7 +227,7 @@ func CreateSignedTx(proposal *peer.Proposal, signer msp.SigningIdentity, resps .
 
 // CreateProposalResponse creates a proposal response.
 func CreateProposalResponse(hdrbytes []byte, payl []byte, response *peer.Response, results []byte, events []byte, ccid *peer.ChaincodeID, visibility []byte, signingEndorser msp.SigningIdentity) (*peer.ProposalResponse, error) {
-	fmt.Println("===========CreateProposalResponse========")
+	logger.Info("===========CreateProposalResponse========")
 	hdr, err := GetHeader(hdrbytes)
 	if err != nil {
 		return nil, err
@@ -281,7 +281,7 @@ func CreateProposalResponse(hdrbytes []byte, payl []byte, response *peer.Respons
 // chaincode failure (chaincode response status >= shim.ERRORTHRESHOLD)
 func CreateProposalResponseFailure(hdrbytes []byte, payl []byte, response *peer.Response, results []byte, events []byte, ccid *peer.ChaincodeID, visibility []byte) (*peer.ProposalResponse, error) {
 
-	fmt.Println("===========CreateProposalResponseFailure========")
+	logger.Info("===========CreateProposalResponseFailure========")
 	hdr, err := GetHeader(hdrbytes)
 	if err != nil {
 		return nil, err
@@ -311,7 +311,7 @@ func CreateProposalResponseFailure(hdrbytes []byte, payl []byte, response *peer.
 // GetSignedProposal returns a signed proposal given a Proposal message and a
 // signing identity
 func GetSignedProposal(prop *peer.Proposal, signer msp.SigningIdentity) (*peer.SignedProposal, error) {
-	fmt.Println("===========func GetSignedProposal(prop *peer.Proposal, signer msp.SigningIdentity) (*peer.SignedProposal, error)========")
+	logger.Info("===========func GetSignedProposal(prop *peer.Proposal, signer msp.SigningIdentity) (*peer.SignedProposal, error)========")
 	// check for nil argument
 	if prop == nil || signer == nil {
 		return nil, errors.New("nil arguments")
@@ -334,7 +334,7 @@ func GetSignedProposal(prop *peer.Proposal, signer msp.SigningIdentity) (*peer.S
 // passed arguments
 func MockSignedEndorserProposalOrPanic(chainID string, cs *peer.ChaincodeSpec, creator, signature []byte) (*peer.SignedProposal, *peer.Proposal) {
 
-	fmt.Println("===========GetSignedProposal========")
+	logger.Info("===========GetSignedProposal========")
 	prop, _, err := CreateChaincodeProposal(
 		common.HeaderType_ENDORSER_TRANSACTION,
 		chainID,
@@ -354,7 +354,7 @@ func MockSignedEndorserProposalOrPanic(chainID string, cs *peer.ChaincodeSpec, c
 
 func MockSignedEndorserProposal2OrPanic(chainID string, cs *peer.ChaincodeSpec, signer msp.SigningIdentity) (*peer.SignedProposal, *peer.Proposal) {
 
-	fmt.Println("===========MockSignedEndorserProposal2OrPanic========")
+	logger.Info("===========MockSignedEndorserProposal2OrPanic========")
 	serializedSigner, err := signer.Serialize()
 	if err != nil {
 		panic(err)
@@ -382,7 +382,7 @@ func MockSignedEndorserProposal2OrPanic(chainID string, cs *peer.ChaincodeSpec, 
 func GetBytesProposalPayloadForTx(payload *peer.ChaincodeProposalPayload, visibility []byte) ([]byte, error) {
 
 
-	fmt.Println("===========GetBytesProposalPayloadForTx========")
+	logger.Info("===========GetBytesProposalPayloadForTx========")
 	// check for nil argument
 	if payload == nil {
 		return nil, errors.New("nil arguments")
@@ -413,7 +413,7 @@ func GetBytesProposalPayloadForTx(payload *peer.ChaincodeProposalPayload, visibi
 // we have to get in ccPropPayl
 func GetProposalHash2(header *common.Header, ccPropPayl []byte) ([]byte, error) {
 
-	fmt.Println("===========GetProposalHash2========")
+	logger.Info("===========GetProposalHash2========")
 	// check for nil argument
 	if header == nil ||
 		header.ChannelHeader == nil ||
@@ -439,7 +439,7 @@ func GetProposalHash2(header *common.Header, ccPropPayl []byte) ([]byte, error) 
 // chaincode proposal payload according to the rules of visibility
 func GetProposalHash1(header *common.Header, ccPropPayl []byte, visibility []byte) ([]byte, error) {
 
-	fmt.Println("===========GetProposalHash1========")
+	logger.Info("===========GetProposalHash1========")
 	// check for nil argument
 	if header == nil ||
 		header.ChannelHeader == nil ||

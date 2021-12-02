@@ -35,7 +35,7 @@ func (bc *broadcastClient) broadcast(env *cb.Envelope) error {
 		return err
 	}
 
-	fmt.Println("Status:", resp)
+	logger.Info("Status:", resp)
 	return nil
 }
 
@@ -59,7 +59,7 @@ func init() {
 	var err error
 	conf, err = localconfig.Load()
 	if err != nil {
-		fmt.Println("failed to load config:", err)
+		logger.Info("failed to load config:", err)
 		os.Exit(1)
 	}
 
@@ -88,13 +88,13 @@ func main() {
 		_ = conn.Close()
 	}()
 	if err != nil {
-		fmt.Println("Error connecting:", err)
+		logger.Info("Error connecting:", err)
 		return
 	}
 
 	client, err := ab.NewAtomicBroadcastClient(conn).Broadcast(context.TODO())
 	if err != nil {
-		fmt.Println("Error connecting:", err)
+		logger.Info("Error connecting:", err)
 		return
 	}
 
@@ -103,8 +103,8 @@ func main() {
 	switch cmd.name {
 	case "newChain":
 		env := newChainRequest(cmd.args.consensusType, cmd.args.creationPolicy, cmd.args.chainID)
-		fmt.Println("Requesting the creation of chain", cmd.args.chainID)
-		fmt.Println(bc.broadcast(env))
+		logger.Info("Requesting the creation of chain", cmd.args.chainID)
+		logger.Info(bc.broadcast(env))
 	default:
 		panic("Invalid command given")
 	}

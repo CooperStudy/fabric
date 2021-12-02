@@ -55,7 +55,7 @@ func joinCmd(cf *ChannelCmdFactory) *cobra.Command {
 type GBFileNotFoundErr string
 
 func (e GBFileNotFoundErr) Error() string {
-	fmt.Println("=====GBFileNotFoundErr====Error=======")
+	logger.Info("=====GBFileNotFoundErr====Error=======")
 	return fmt.Sprintf("genesis block file not found %s", string(e))
 }
 
@@ -63,7 +63,7 @@ func (e GBFileNotFoundErr) Error() string {
 type ProposalFailedErr string
 
 func (e ProposalFailedErr) Error() string {
-	fmt.Println("=====ProposalFailedErr====Error=======")
+	logger.Info("=====ProposalFailedErr====Error=======")
 	return fmt.Sprintf("proposal failed (err: %s)", string(e))
 }
 

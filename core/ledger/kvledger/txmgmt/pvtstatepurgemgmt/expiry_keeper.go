@@ -67,7 +67,7 @@ type expKeeper struct {
 // at the time of the commit of the block number 45 and the second entry was created at the time of the commit of the block number 40, however
 // both are expiring with the commit of block number 50.
 func (ek *expKeeper) updateBookkeeping(toTrack []*expiryInfo, toClear []*expiryInfoKey) error {
-	fmt.Println("==expKeeper===updateBookkeeping==")
+	logger.Info("==expKeeper===updateBookkeeping==")
 	updateBatch := leveldbhelper.NewUpdateBatch()
 	for _, expinfo := range toTrack {
 		k, v, err := encodeKV(expinfo)
@@ -83,7 +83,7 @@ func (ek *expKeeper) updateBookkeeping(toTrack []*expiryInfo, toClear []*expiryI
 }
 
 func (ek *expKeeper) retrieve(expiringAtBlkNum uint64) ([]*expiryInfo, error) {
-	fmt.Println("==expKeeper===retrieve==")
+	logger.Info("==expKeeper===retrieve==")
 	startKey := encodeExpiryInfoKey(&expiryInfoKey{expiryBlk: expiringAtBlkNum, committingBlk: 0})
 	endKey := encodeExpiryInfoKey(&expiryInfoKey{expiryBlk: expiringAtBlkNum + 1, committingBlk: 0})
 	itr := ek.db.GetIterator(startKey, endKey)
@@ -101,7 +101,7 @@ func (ek *expKeeper) retrieve(expiringAtBlkNum uint64) ([]*expiryInfo, error) {
 }
 
 func (ek *expKeeper) retrieveByExpiryKey(expiryKey *expiryInfoKey) (*expiryInfo, error) {
-	fmt.Println("==expKeeper===retrieveByExpiryKey==")
+	logger.Info("==expKeeper===retrieveByExpiryKey==")
 	key := encodeExpiryInfoKey(expiryKey)
 	value, err := ek.db.Get(key)
 	if err != nil {
@@ -111,25 +111,25 @@ func (ek *expKeeper) retrieveByExpiryKey(expiryKey *expiryInfoKey) (*expiryInfo,
 }
 
 func encodeKV(expinfo *expiryInfo) (key []byte, value []byte, err error) {
-	fmt.Println("==encodeKV==")
+	logger.Info("==encodeKV==")
 	key = encodeExpiryInfoKey(expinfo.expiryInfoKey)
 	value, err = encodeExpiryInfoValue(expinfo.pvtdataKeys)
 	return
 }
 
 func encodeExpiryInfoKey(expinfoKey *expiryInfoKey) []byte {
-	fmt.Println("==encodeExpiryInfoKey==")
+	logger.Info("==encodeExpiryInfoKey==")
 	key := append([]byte{expiryPrefix}, util.EncodeOrderPreservingVarUint64(expinfoKey.expiryBlk)...)
 	return append(key, util.EncodeOrderPreservingVarUint64(expinfoKey.committingBlk)...)
 }
 
 func encodeExpiryInfoValue(pvtdataKeys *PvtdataKeys) ([]byte, error) {
-	fmt.Println("==encodeExpiryInfoValue==")
+	logger.Info("==encodeExpiryInfoValue==")
 	return proto.Marshal(pvtdataKeys)
 }
 
 func decodeExpiryInfo(key []byte, value []byte) (*expiryInfo, error) {
-	fmt.Println("==decodeExpiryInfo==")
+	logger.Info("==decodeExpiryInfo==")
 	expiryBlk, n := util.DecodeOrderPreservingVarUint64(key[1:])
 	committingBlk, _ := util.DecodeOrderPreservingVarUint64(key[n+1:])
 	pvtdataKeys := &PvtdataKeys{}

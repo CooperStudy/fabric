@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package auth
 
 import (
-	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/protos/peer"
 )
 
@@ -18,11 +18,11 @@ type Filter interface {
 	// Init initializes the Filter with the next EndorserServer
 	Init(next peer.EndorserServer)
 }
-
+var logger = flogging.MustGetLogger("core.handlers.auth")
 // ChainFilters chains the given auth filters in the order provided.
 // the last filter always forwards to the endorser
 func ChainFilters(endorser peer.EndorserServer, filters ...Filter) peer.EndorserServer {
-	fmt.Println("====ChainFilters=")
+	logger.Info("====ChainFilters=")
 	if len(filters) == 0 {
 		return endorser
 	}

@@ -28,7 +28,7 @@ type subNsMetadataRetriever nsMetadataRetriever
 
 // retrievedMetadata retrievs the metadata for a collection of `namespace-keys` combination
 func (vdb *VersionedDB) retrieveMetadata(nsKeysMap map[string][]string) (map[string][]*couchdb.DocMetadata, error) {
-	fmt.Println("=======VersionedDB===retrieveMetadata=")
+	logger.Info("=======VersionedDB===retrieveMetadata=")
 	// consturct one batch per namespace
 	nsMetadataRetrievers := []batch{}
 	for ns, keys := range nsKeysMap {
@@ -52,7 +52,7 @@ func (vdb *VersionedDB) retrieveMetadata(nsKeysMap map[string][]string) (map[str
 
 // retrieveNsMetadata retrieves metadata for a given namespace
 func retrieveNsMetadata(db *couchdb.CouchDatabase, keys []string) ([]*couchdb.DocMetadata, error) {
-	fmt.Println("=======retrieveNsMetadata=")
+	logger.Info("=======retrieveNsMetadata=")
 	// consturct one batch per group of keys based on maxBacthSize
 	maxBacthSize := ledgerconfig.GetMaxBatchUpdateSize()
 	batches := []batch{}
@@ -78,7 +78,7 @@ func retrieveNsMetadata(db *couchdb.CouchDatabase, keys []string) ([]*couchdb.Do
 }
 
 func (r *nsMetadataRetriever) execute() error {
-	fmt.Println("=======nsMetadataRetriever===execute==")
+	logger.Info("=======nsMetadataRetriever===execute==")
 	var err error
 	if r.executionResult, err = retrieveNsMetadata(r.db, r.keys); err != nil {
 		return err
@@ -87,12 +87,12 @@ func (r *nsMetadataRetriever) execute() error {
 }
 
 func (r *nsMetadataRetriever) String() string {
-	fmt.Println("=======nsMetadataRetriever===String==")
+	logger.Info("=======nsMetadataRetriever===String==")
 	return fmt.Sprintf("nsMetadataRetriever:ns=%s, num keys=%d", r.ns, len(r.keys))
 }
 
 func (b *subNsMetadataRetriever) execute() error {
-	fmt.Println("=======subNsMetadataRetriever===execute==")
+	logger.Info("=======subNsMetadataRetriever===execute==")
 	var err error
 	if b.executionResult, err = b.db.BatchRetrieveDocumentMetadata(b.keys); err != nil {
 		return err
@@ -101,12 +101,12 @@ func (b *subNsMetadataRetriever) execute() error {
 }
 
 func (b *subNsMetadataRetriever) String() string {
-	fmt.Println("=======subNsMetadataRetriever===String==")
+	logger.Info("=======subNsMetadataRetriever===String==")
 	return fmt.Sprintf("subNsMetadataRetriever:ns=%s, num keys=%d", b.ns, len(b.keys))
 }
 
 func minimum(a, b int) int {
-	fmt.Println("=======minimum==")
+	logger.Info("=======minimum==")
 	if a < b {
 		return a
 	}

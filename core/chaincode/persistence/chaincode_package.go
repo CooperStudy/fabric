@@ -11,7 +11,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 
@@ -49,7 +48,7 @@ type ChaincodePackageParser struct{}
 // Parse parses a set of bytes as a chaincode package
 // and returns the parsed package as a struct
 func (ccpp ChaincodePackageParser) Parse(source []byte) (*ChaincodePackage, error) {
-	fmt.Println("======ChaincodePackageParser======Parse=============")
+	logger.Info("======ChaincodePackageParser======Parse=============")
 	gzReader, err := gzip.NewReader(bytes.NewBuffer(source))
 	if err != nil {
 		return nil, errors.Wrapf(err, "error reading as gzip stream")

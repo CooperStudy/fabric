@@ -26,7 +26,7 @@ type MemoizeSigner struct {
 // NewMemoizeSigner creates a new MemoizeSigner that signs
 // message with the given sign function
 func NewMemoizeSigner(signFunc Signer, maxEntries uint) *MemoizeSigner {
-	fmt.Println("====NewMemoizeSigner==")
+	logger.Info("====NewMemoizeSigner==")
 	return &MemoizeSigner{
 		maxEntries: maxEntries,
 		memory:     make(map[string][]byte),
@@ -37,11 +37,11 @@ func NewMemoizeSigner(signFunc Signer, maxEntries uint) *MemoizeSigner {
 // Signer signs a message and returns the signature and nil,
 // or nil and error on failure
 func (ms *MemoizeSigner) Sign(msg []byte) ([]byte, error) {
-	fmt.Println("====MemoizeSigner==Sign==")
-	fmt.Println("====msg====",msg)
+	logger.Info("====MemoizeSigner==Sign==")
+	logger.Info("====msg====",msg)
 	sig, isInMemory := ms.lookup(msg)
-	fmt.Println("===sig===",sig)//[]
-	fmt.Println("===isInMemory===",isInMemory)//false
+	logger.Info("===sig===",sig)//[]
+	logger.Info("===isInMemory===",isInMemory)//false
 	if isInMemory {
 		return sig, nil
 	}
@@ -56,33 +56,33 @@ func (ms *MemoizeSigner) Sign(msg []byte) ([]byte, error) {
 // lookup looks up the given message in memory and returns
 // the signature, if the message is in memory
 func (ms *MemoizeSigner) lookup(msg []byte) ([]byte, bool) {
-	fmt.Println("====MemoizeSigner==lookup==")
+	logger.Info("====MemoizeSigner==lookup==")
 	ms.RLock()
 	defer ms.RUnlock()
-	fmt.Println("=========msg=",msg)//=========msg= [10 39 10 3 1 2 3 18
+	logger.Info("=========msg=",msg)//=========msg= [10 39 10 3 1 2 3 18
 	a := msgDigest(msg)
-	fmt.Println("=========a=",a)//a369a57fa4d2f3cd5a0636b58cac5f8054b14db5964b07136e3585e95cf8cce7
+	logger.Info("=========a=",a)//a369a57fa4d2f3cd5a0636b58cac5f8054b14db5964b07136e3585e95cf8cce7
 	sig, exists := ms.memory[a]
-	fmt.Println("==========sig=",sig)//[]
-	fmt.Println("==========exists=",exists)//false
+	logger.Info("==========sig=",sig)//[]
+	logger.Info("==========exists=",exists)//false
 
 	return sig, exists
 }
 
 func (ms *MemoizeSigner) memorize(msg, signature []byte) {
-	fmt.Println("====MemoizeSigner==memorize==")
-	fmt.Println("======msg",ms)
-	fmt.Println("========signature",signature)
-	fmt.Println("=======ms.maxEntries",ms.maxEntries)
+	logger.Info("====MemoizeSigner==memorize==")
+	logger.Info("======msg",ms)
+	logger.Info("========signature",signature)
+	logger.Info("=======ms.maxEntries",ms.maxEntries)
 	if ms.maxEntries == 0 {
 		return
 	}
 	ms.RLock()
 
 	shouldShrink := len(ms.memory) >= (int)(ms.maxEntries)
-	fmt.Println("=========len(ms.memory)=====",len(ms.memory))
-	fmt.Println("=========(int)(ms.maxEntries)=====",(int)(ms.maxEntries))
-	fmt.Println("===========shouldShrink=========",shouldShrink)
+	logger.Info("=========len(ms.memory)=====",len(ms.memory))
+	logger.Info("=========(int)(ms.maxEntries)=====",(int)(ms.maxEntries))
+	logger.Info("===========shouldShrink=========",shouldShrink)
 	ms.RUnlock()
 
 	if shouldShrink {
@@ -97,11 +97,11 @@ func (ms *MemoizeSigner) memorize(msg, signature []byte) {
 // evict evicts random messages from memory
 // until its size is smaller than maxEntries
 func (ms *MemoizeSigner) shrinkMemory() {
-	fmt.Println("====MemoizeSigner==shrinkMemory==")
+	logger.Info("====MemoizeSigner==shrinkMemory==")
 	ms.Lock()
 	defer ms.Unlock()
-	fmt.Println("===len(ms.memory)==",len(ms.memory))
-	fmt.Println("===(int)(ms.maxEntries)==",(int)(ms.maxEntries))
+	logger.Info("===len(ms.memory)==",len(ms.memory))
+	logger.Info("===(int)(ms.maxEntries)==",(int)(ms.maxEntries))
 	for len(ms.memory) > (int)(ms.maxEntries) {
 		ms.evictFromMemory()
 	}
@@ -109,11 +109,11 @@ func (ms *MemoizeSigner) shrinkMemory() {
 
 // evictFromMemory evicts a random message from memory
 func (ms *MemoizeSigner) evictFromMemory() {
-	fmt.Println("====MemoizeSigner==evictFromMemory==")
+	logger.Info("====MemoizeSigner==evictFromMemory==")
 	for dig := range ms.memory {
-		fmt.Println("===========dig",dig)
-		fmt.Println("====ms.memory==",ms.memory)
-		fmt.Println("=====dig===",dig)
+		logger.Info("===========dig",dig)
+		logger.Info("====ms.memory==",ms.memory)
+		logger.Info("=====dig===",dig)
 		delete(ms.memory, dig)
 		return
 	}
@@ -121,10 +121,10 @@ func (ms *MemoizeSigner) evictFromMemory() {
 
 // msgDigest returns a digest of a given message
 func msgDigest(msg []byte) string {
-	fmt.Println("====msgDigest==")
-	fmt.Println("====msg====",msg)//====msg==== [10 39 10 ]
-	fmt.Println("======util.ComputeSHA256(msg)=====",util.ComputeSHA256(msg))//[163 105 165 127 164 210 243
+	logger.Info("====msgDigest==")
+	logger.Info("====msg====",msg)//====msg==== [10 39 10 ]
+	logger.Info("======util.ComputeSHA256(msg)=====",util.ComputeSHA256(msg))//[163 105 165 127 164 210 243
 	a:= hex.EncodeToString(util.ComputeSHA256(msg))
-	fmt.Println("=============a===========",a)//a369a57fa4d2f3cd5a0636b58cac5f8054b14db5964b07136e3585e95cf8cce7
+	logger.Info("=============a===========",a)//a369a57fa4d2f3cd5a0636b58cac5f8054b14db5964b07136e3585e95cf8cce7
 	return a
 }

@@ -155,16 +155,16 @@ var logger = util.GetLogger(util.StateLogger, "")
 // NewGossipStateProvider creates state provider with coordinator instance
 // to orchestrate arrival of private rwsets and blocks before committing them into the ledger.
 func NewGossipStateProvider(chainID string, services *ServicesMediator, ledger ledgerResources) GossipStateProvider {
-    //fmt.Println("===========NewGossipStateProvider=====================")
+    //logger.Info("===========NewGossipStateProvider=====================")
 	gossipChan, _ := services.Accept(func(message interface{}) bool {
-		//fmt.Println("===NewGossipStateProvider==")
+		//logger.Info("===NewGossipStateProvider==")
 		// Get only data messages
 		return message.(*proto.GossipMessage).IsDataMsg() &&
 			bytes.Equal(message.(*proto.GossipMessage).Channel, []byte(chainID))
 	}, false)
 
 	remoteStateMsgFilter := func(message interface{}) bool {
-		//fmt.Println("========remoteStateMsgFilter=========")
+		//logger.Info("========remoteStateMsgFilter=========")
 		receivedMsg := message.(proto.ReceivedMessage)
 		msg := receivedMsg.GetGossipMessage()
 		if !(msg.IsRemoteStateMessage() || msg.GetPrivateData() != nil) {
@@ -251,7 +251,7 @@ func NewGossipStateProvider(chainID string, services *ServicesMediator, ledger l
 
 func (s *GossipStateProviderImpl) listen() {
 
-	fmt.Println("===GossipStateProviderImpl==listen==")
+	logger.Info("===GossipStateProviderImpl==listen==")
 	defer s.done.Done()
 
 	for {
@@ -271,7 +271,7 @@ func (s *GossipStateProviderImpl) listen() {
 }
 func (s *GossipStateProviderImpl) dispatch(msg proto.ReceivedMessage) {
 
-	fmt.Println("===GossipStateProviderImpl==dispatch==")
+	logger.Info("===GossipStateProviderImpl==dispatch==")
 	// Check type of the message
 	if msg.GetGossipMessage().IsRemoteStateMessage() {
 		logger.Debug("Handling direct state transfer message")
@@ -285,7 +285,7 @@ func (s *GossipStateProviderImpl) dispatch(msg proto.ReceivedMessage) {
 
 }
 func (s *GossipStateProviderImpl) privateDataMessage(msg proto.ReceivedMessage) {
-	fmt.Println("===GossipStateProviderImpl==privateDataMessage==")
+	logger.Info("===GossipStateProviderImpl==privateDataMessage==")
 	if !bytes.Equal(msg.GetGossipMessage().Channel, []byte(s.chainID)) {
 		logger.Warning("Received state transfer request for channel",
 			string(msg.GetGossipMessage().Channel), "while expecting channel", s.chainID, "skipping request...")
@@ -337,7 +337,7 @@ func (s *GossipStateProviderImpl) privateDataMessage(msg proto.ReceivedMessage) 
 }
 
 func (s *GossipStateProviderImpl) directMessage(msg proto.ReceivedMessage) {
-	fmt.Println("===GossipStateProviderImpl==directMessage==")
+	logger.Info("===GossipStateProviderImpl==directMessage==")
 	logger.Debug("[ENTER] -> directMessage")
 	defer logger.Debug("[EXIT] ->  directMessage")
 
@@ -371,7 +371,7 @@ func (s *GossipStateProviderImpl) directMessage(msg proto.ReceivedMessage) {
 }
 
 func (s *GossipStateProviderImpl) processStateRequests() {
-	fmt.Println("===GossipStateProviderImpl==processStateRequests==")
+	logger.Info("===GossipStateProviderImpl==processStateRequests==")
 	defer s.done.Done()
 
 	for {
@@ -388,7 +388,7 @@ func (s *GossipStateProviderImpl) processStateRequests() {
 // handleStateRequest handles state request message, validate batch size, reads current leader state to
 // obtain required blocks, builds response message and send it back
 func (s *GossipStateProviderImpl) handleStateRequest(msg proto.ReceivedMessage) {
-	fmt.Println("===GossipStateProviderImpl==handleStateRequest==")
+	logger.Info("===GossipStateProviderImpl==handleStateRequest==")
 	if msg == nil {
 		return
 	}
@@ -474,7 +474,7 @@ func (s *GossipStateProviderImpl) handleStateRequest(msg proto.ReceivedMessage) 
 }
 
 func (s *GossipStateProviderImpl) handleStateResponse(msg proto.ReceivedMessage) (uint64, error) {
-	fmt.Println("===GossipStateProviderImpl==handleStateResponse==")
+	logger.Info("===GossipStateProviderImpl==handleStateResponse==")
 	max := uint64(0)
 	// Send signal that response for given nonce has been received
 	response := msg.GetGossipMessage().GetStateResponse()
@@ -503,7 +503,7 @@ func (s *GossipStateProviderImpl) handleStateResponse(msg proto.ReceivedMessage)
 
 // Stop function sends halting signal to all go routines
 func (s *GossipStateProviderImpl) Stop() {
-	fmt.Println("===GossipStateProviderImpl==Stop==")
+	logger.Info("===GossipStateProviderImpl==Stop==")
 	// Make sure stop won't be executed twice
 	// and stop channel won't be used again
 	s.once.Do(func() {
@@ -520,7 +520,7 @@ func (s *GossipStateProviderImpl) Stop() {
 
 // queueNewMessage makes new message notification/handler
 func (s *GossipStateProviderImpl) queueNewMessage(msg *proto.GossipMessage) {
-	fmt.Println("===GossipStateProviderImpl==queueNewMessage==")
+	logger.Info("===GossipStateProviderImpl==queueNewMessage==")
 	if !bytes.Equal(msg.Channel, []byte(s.chainID)) {
 		logger.Warning("Received enqueue for channel",
 			string(msg.Channel), "while expecting channel", s.chainID, "ignoring enqueue")
@@ -540,7 +540,7 @@ func (s *GossipStateProviderImpl) queueNewMessage(msg *proto.GossipMessage) {
 }
 
 func (s *GossipStateProviderImpl) deliverPayloads() {
-	fmt.Println("===GossipStateProviderImpl==deliverPayloads==")
+	logger.Info("===GossipStateProviderImpl==deliverPayloads==")
 	defer s.done.Done()
 
 	for {
@@ -588,7 +588,7 @@ func (s *GossipStateProviderImpl) deliverPayloads() {
 }
 
 func (s *GossipStateProviderImpl) antiEntropy() {
-	fmt.Println("===GossipStateProviderImpl==antiEntropy==")
+	logger.Info("===GossipStateProviderImpl==antiEntropy==")
 	defer s.done.Done()
 	defer logger.Debug("State Provider stopped, stopping anti entropy procedure.")
 
@@ -621,7 +621,7 @@ func (s *GossipStateProviderImpl) antiEntropy() {
 // maxAvailableLedgerHeight iterates over all available peers and checks advertised meta state to
 // find maximum available ledger height across peers
 func (s *GossipStateProviderImpl) maxAvailableLedgerHeight() uint64 {
-	//fmt.Println("===GossipStateProviderImpl==maxAvailableLedgerHeight==")
+	//logger.Info("===GossipStateProviderImpl==maxAvailableLedgerHeight==")
 	max := uint64(0)
 	for _, p := range s.mediator.PeersOfChannel(common2.ChainID(s.chainID)) {
 		if p.Properties == nil {
@@ -639,7 +639,7 @@ func (s *GossipStateProviderImpl) maxAvailableLedgerHeight() uint64 {
 // requestBlocksInRange capable to acquire blocks with sequence
 // numbers in the range [start...end).
 func (s *GossipStateProviderImpl) requestBlocksInRange(start uint64, end uint64) {
-	fmt.Println("===GossipStateProviderImpl==requestBlocksInRange==")
+	logger.Info("===GossipStateProviderImpl==requestBlocksInRange==")
 	atomic.StoreInt32(&s.stateTransferActive, 1)
 	defer atomic.StoreInt32(&s.stateTransferActive, 0)
 
@@ -697,7 +697,7 @@ func (s *GossipStateProviderImpl) requestBlocksInRange(start uint64, end uint64)
 
 // stateRequestMessage generates state request message for given blocks in range [beginSeq...endSeq]
 func (s *GossipStateProviderImpl) stateRequestMessage(beginSeq uint64, endSeq uint64) *proto.GossipMessage {
-	fmt.Println("===GossipStateProviderImpl==stateRequestMessage==")
+	logger.Info("===GossipStateProviderImpl==stateRequestMessage==")
 	return &proto.GossipMessage{
 		Nonce:   util.RandomUInt64(),
 		Tag:     proto.GossipMessage_CHAN_OR_ORG,
@@ -714,7 +714,7 @@ func (s *GossipStateProviderImpl) stateRequestMessage(beginSeq uint64, endSeq ui
 // selectPeerToRequestFrom selects peer which has required blocks to ask missing blocks from
 func (s *GossipStateProviderImpl) selectPeerToRequestFrom(height uint64) (*comm.RemotePeer, error) {
 	// Filter peers which posses required range of missing blocks
-	fmt.Println("===GossipStateProviderImpl==selectPeerToRequestFrom==")
+	logger.Info("===GossipStateProviderImpl==selectPeerToRequestFrom==")
 	peers := s.filterPeers(s.hasRequiredHeight(height))
 
 	n := len(peers)
@@ -728,7 +728,7 @@ func (s *GossipStateProviderImpl) selectPeerToRequestFrom(height uint64) (*comm.
 
 // filterPeers returns list of peers which aligns the predicate provided
 func (s *GossipStateProviderImpl) filterPeers(predicate func(peer discovery.NetworkMember) bool) []*comm.RemotePeer {
-	fmt.Println("===GossipStateProviderImpl==filterPeers==")
+	logger.Info("===GossipStateProviderImpl==filterPeers==")
 	var peers []*comm.RemotePeer
 
 	for _, member := range s.mediator.PeersOfChannel(common2.ChainID(s.chainID)) {
@@ -743,7 +743,7 @@ func (s *GossipStateProviderImpl) filterPeers(predicate func(peer discovery.Netw
 // hasRequiredHeight returns predicate which is capable to filter peers with ledger height above than indicated
 // by provided input parameter
 func (s *GossipStateProviderImpl) hasRequiredHeight(height uint64) func(peer discovery.NetworkMember) bool {
-	fmt.Println("===GossipStateProviderImpl==hasRequiredHeight==")
+	logger.Info("===GossipStateProviderImpl==hasRequiredHeight==")
 	return func(peer discovery.NetworkMember) bool {
 		if peer.Properties != nil {
 			return peer.Properties.LedgerHeight >= height
@@ -755,7 +755,7 @@ func (s *GossipStateProviderImpl) hasRequiredHeight(height uint64) func(peer dis
 
 // AddPayload adds new payload into state.
 func (s *GossipStateProviderImpl) AddPayload(payload *proto.Payload) error {
-	fmt.Println("===GossipStateProviderImpl==AddPayload==")
+	logger.Info("===GossipStateProviderImpl==AddPayload==")
 	blockingMode := blocking
 	if viper.GetBool("peer.gossip.nonBlockingCommitMode") {
 		blockingMode = false
@@ -768,7 +768,7 @@ func (s *GossipStateProviderImpl) AddPayload(payload *proto.Payload) error {
 // the block is sent into the payloads buffer.
 // Else - it may drop the block, if the payload buffer is too full.
 func (s *GossipStateProviderImpl) addPayload(payload *proto.Payload, blockingMode bool) error {
-	fmt.Println("===GossipStateProviderImpl==addPayload==")
+	logger.Info("===GossipStateProviderImpl==addPayload==")
 	if payload == nil {
 		return errors.New("Given payload is nil")
 	}
@@ -791,7 +791,7 @@ func (s *GossipStateProviderImpl) addPayload(payload *proto.Payload, blockingMod
 }
 
 func (s *GossipStateProviderImpl) commitBlock(block *common.Block, pvtData util.PvtDataCollections) error {
-	fmt.Println("===GossipStateProviderImpl==commitBlock==")
+	logger.Info("===GossipStateProviderImpl==commitBlock==")
 	// Commit block with available private transactions
 	if err := s.ledger.StoreBlock(block, pvtData); err != nil {
 		logger.Errorf("Got error while committing(%+v)", errors.WithStack(err))
@@ -807,6 +807,6 @@ func (s *GossipStateProviderImpl) commitBlock(block *common.Block, pvtData util.
 }
 
 func min(a uint64, b uint64) uint64 {
-	fmt.Println("===min==")
+	logger.Info("===min==")
 	return b ^ ((a ^ b) & (-(uint64(a-b) >> 63)))
 }

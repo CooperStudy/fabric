@@ -2001,14 +2001,14 @@ func TestMain(m *testing.M) {
 	var err error
 	signer, err = mgmt.GetLocalMSP().GetDefaultSigningIdentity()
 	if err != nil {
-		fmt.Println("Could not get signer")
+		logger.Info("Could not get signer")
 		os.Exit(-1)
 		return
 	}
 
 	signerSerialized, err = signer.Serialize()
 	if err != nil {
-		fmt.Println("Could not serialize identity")
+		logger.Info("Could not serialize identity")
 		os.Exit(-1)
 		return
 	}

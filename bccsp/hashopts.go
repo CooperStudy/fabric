@@ -56,19 +56,19 @@ func (opts *SHA3_384Opts) Algorithm() string {
 
 // GetHashOpt returns the HashOpts corresponding to the passed hash function
 func GetHashOpt(hashFunction string) (HashOpts, error) {
-	//fmt.Println("===GetHashOpt=====")
+	//logger.Info("===GetHashOpt=====")
 	switch hashFunction {
 	case SHA256:
-		//fmt.Println("===SHA256=====")
+		//logger.Info("===SHA256=====")
 		return &SHA256Opts{}, nil
 	case SHA384:
-		//fmt.Println("===SHA384=====")
+		//logger.Info("===SHA384=====")
 		return &SHA384Opts{}, nil
 	case SHA3_256:
-		//fmt.Println("===SHA3_256=====")
+		//logger.Info("===SHA3_256=====")
 		return &SHA3_256Opts{}, nil
 	case SHA3_384:
-		//fmt.Println("===SHA3_384=====")
+		//logger.Info("===SHA3_384=====")
 		return &SHA3_384Opts{}, nil
 	}
 	return nil, fmt.Errorf("hash function not recognized [%s]", hashFunction)

@@ -59,7 +59,7 @@ var (
 // a stub function - it returns the same string as it's passed.
 // This will be evaluated by second/third passes to convert to a proto policy
 func outof(args ...interface{}) (interface{}, error) {
-	fmt.Println("==========outof:args=========",args)//[2 A.member B.member]  [A.member D.member]   [outof(2, 'A.member', 'B.member') C.member outof(2, 'A.member', 'D.member')]
+	logger.Info("==========outof:args=========",args)//[2 A.member B.member]  [A.member D.member]   [outof(2, 'A.member', 'B.member') C.member outof(2, 'A.member', 'D.member')]
 	toret := "outof("
 	if len(args) < 2 {
 		return nil, fmt.Errorf("Expected at least two arguments to NOutOf. Given %d", len(args))
@@ -67,43 +67,43 @@ func outof(args ...interface{}) (interface{}, error) {
 
 	arg0 := args[0]
 	// [1 outof(2, 'A.member', 'B.member') C.member outof(2, 'A.member', 'D.member')]
-	fmt.Println("=====arg0=====",arg0) //2 2  1
+	logger.Info("=====arg0=====",arg0) //2 2  1
 	// govaluate treats all numbers as float64 only. But and/or may pass int/string. Allowing int/string for flexibility of caller
 	if n, ok := arg0.(float64); ok {
-		fmt.Println("==float64==")
+		logger.Info("==float64==")
 		toret += strconv.Itoa(int(n))
 	} else if n, ok := arg0.(int); ok {
-		fmt.Println("==int==")//int
+		logger.Info("==int==")//int
 		toret += strconv.Itoa(n)
 		//
 	} else if n, ok := arg0.(string); ok {
-		fmt.Println("==string==")
+		logger.Info("==string==")
 		toret += n
 	} else {
-		fmt.Println("==else==")
+		logger.Info("==else==")
 		return nil, fmt.Errorf("Unexpected type %s", reflect.TypeOf(arg0))
 	}
 
-	fmt.Println("===================middle ======================regexp",regex)//^([[:alnum:].-]+)([.])(admin|member|client|peer)$
+	logger.Info("===================middle ======================regexp",regex)//^([[:alnum:].-]+)([.])(admin|member|client|peer)$
 	for _, arg := range args[1:] {
-		fmt.Println("====arg",arg)//A.member outof(2, 'A.member', 'B.member') C.member outof(2, 'A.member', 'D.member')
+		logger.Info("====arg",arg)//A.member outof(2, 'A.member', 'B.member') C.member outof(2, 'A.member', 'D.member')
 		toret += ", "
 		switch t := arg.(type) {
 		case string:
-			fmt.Println("====arg string=t=",t)//A.member B.member  outof(2, 'A.member', 'B.member') C.member outof(2, 'A.member', 'D.member')
+			logger.Info("====arg string=t=",t)//A.member B.member  outof(2, 'A.member', 'B.member') C.member outof(2, 'A.member', 'D.member')
 			if regex.MatchString(t) {
 				toret += "'" + t + "'"
-				fmt.Println("===toret1======",toret)//outof(2, 'A.member'  outof(2, 'A.member', 'B.member' outof(1, outof(2, 'A.member', 'B.member'), 'C.member'  outof(1, outof(2, 'A.member', 'B.member'), 'C.member', outof(2, 'A.member', 'D.member')
+				logger.Info("===toret1======",toret)//outof(2, 'A.member'  outof(2, 'A.member', 'B.member' outof(1, outof(2, 'A.member', 'B.member'), 'C.member'  outof(1, outof(2, 'A.member', 'B.member'), 'C.member', outof(2, 'A.member', 'D.member')
 			} else {
 				toret += t
-				fmt.Println("===toret2======",toret)//outof(1, outof(2, 'A.member', 'B.member')
+				logger.Info("===toret2======",toret)//outof(1, outof(2, 'A.member', 'B.member')
 			}
 		default:
 			return nil, fmt.Errorf("Unexpected type %s", reflect.TypeOf(arg))
 		}
 	}
 	s := toret + ")"
-	fmt.Println("=====s==",s)//outof(2, 'A.member', 'B.member')  outof(2, 'A.member', 'D.member') outof(1, outof(2, 'A.member', 'B.member'), 'C.member', outof(2, 'A.member', 'D.member'))
+	logger.Info("=====s==",s)//outof(2, 'A.member', 'B.member')  outof(2, 'A.member', 'D.member') outof(1, outof(2, 'A.member', 'B.member'), 'C.member', outof(2, 'A.member', 'D.member'))
 	return s, nil
 }
 
@@ -111,7 +111,7 @@ func and(args ...interface{}) (interface{}, error) {
 	/*
 		==policy== OR(AND('A.member', 'B.member'), 'C.member', AND('A.member', 'D.member'))
 	*/
-	fmt.Println("==========and:args======",args)
+	logger.Info("==========and:args======",args)
 
 
 	/*
@@ -209,7 +209,7 @@ func outofM(args ...interface{}) (interface{}, error) {
 		toret += ", "
 		switch t := arg.(type) {
 		case string:
-			fmt.Println("====arg string=t=",t)
+			logger.Info("====arg string=t=",t)
 			if regex.MatchString(t) {
 				toret += "'" + t + "'"
 				cauthdslLogger.Info("===toret1======",toret)//outof(1, 'masterOrg1MSP.peer'
@@ -227,7 +227,7 @@ func outofM(args ...interface{}) (interface{}, error) {
 }
 
 func or(args ...interface{}) (interface{}, error) {
-	fmt.Println("==========or:args=========",args)
+	logger.Info("==========or:args=========",args)
 	/*
 	==========or:args========= [outof(2, 'A.member', 'B.member') C.member outof(2, 'A.member', 'D.member')]
 	==========outof:args========= [1 outof(2, 'A.member', 'B.member') C.member outof(2, 'A.member', 'D.member')]
@@ -237,35 +237,35 @@ func or(args ...interface{}) (interface{}, error) {
 }
 
 func firstPass(args ...interface{}) (interface{}, error) {
-	fmt.Println("==========firstPass=========")
+	logger.Info("==========firstPass=========")
 	//outof(1, outof(2, 'A.member', 'B.member'), 'C.member', outof(2, 'A.member', 'D.member'))
 	toret := "outof(ID"
-	fmt.Println("===========1==",toret)//outof(ID
+	logger.Info("===========1==",toret)//outof(ID
 	for _, arg := range args {
-		fmt.Println("===========arg==",arg) //2 2 1  outof(ID, 2, 'A.member', 'B.member')
+		logger.Info("===========arg==",arg) //2 2 1  outof(ID, 2, 'A.member', 'B.member')
 		toret += ", "
 		switch t := arg.(type) {
 		case string:
 			if regex.MatchString(t) {
 
 				toret += "'" + t + "'"
-				fmt.Println("===========string==toret",toret) //outof(ID, 2   outof(ID, 2, 'A.member' outof(ID, 2, 'A.member', 'B.member'   outof(ID, 2, 'A.member', 'D.member'  outof(ID, 1, outof(ID, 2, 'A.member', 'B.member'), 'C.member'
+				logger.Info("===========string==toret",toret) //outof(ID, 2   outof(ID, 2, 'A.member' outof(ID, 2, 'A.member', 'B.member'   outof(ID, 2, 'A.member', 'D.member'  outof(ID, 1, outof(ID, 2, 'A.member', 'B.member'), 'C.member'
 			} else {
 				toret += t
-				fmt.Println("===========else==toret",toret)//outof(ID, 1, outof(ID, 2, 'A.member', 'B.member')   outof(ID, 1, outof(ID, 2, 'A.member', 'B.member'), 'C.member', outof(ID, 2, 'A.member', 'D.member')
+				logger.Info("===========else==toret",toret)//outof(ID, 1, outof(ID, 2, 'A.member', 'B.member')   outof(ID, 1, outof(ID, 2, 'A.member', 'B.member'), 'C.member', outof(ID, 2, 'A.member', 'D.member')
 			}
 		case float32:
 		case float64:
 			toret += strconv.Itoa(int(t))
-			fmt.Println("=======float32 or float64====toret",toret)
+			logger.Info("=======float32 or float64====toret",toret)
 		default:
-			fmt.Println("=======error================")
+			logger.Info("=======error================")
 			return nil, fmt.Errorf("Unexpected type %s", reflect.TypeOf(arg))
 		}
 	}
 
 	s := toret + ")"
-	fmt.Println("========s========",s)//outof(ID, 1, outof(ID, 2, 'A.member', 'B.member'), 'C.member', outof(ID, 2, 'A.member', 'D.member'))
+	logger.Info("========s========",s)//outof(ID, 1, outof(ID, 2, 'A.member', 'B.member'), 'C.member', outof(ID, 2, 'A.member', 'D.member'))
 	return s, nil
 }
 
@@ -287,7 +287,7 @@ func secondPass(args ...interface{}) (interface{}, error) {
 	case *context:
 
 		ctx = v
-		fmt.Println("=======*context=======")
+		logger.Info("=======*context=======")
 	default:
 		return nil, fmt.Errorf("Unrecognized type, expected the context, got %s", reflect.TypeOf(args[0]))
 	}
@@ -298,7 +298,7 @@ func secondPass(args ...interface{}) (interface{}, error) {
 	switch arg := args[1].(type) {
 	case float64:
 		t = int(arg)
-		fmt.Println("=======float64=======",t)
+		logger.Info("=======float64=======",t)
 		//=======float64======= 2
 	default:
 		return nil, fmt.Errorf("Unrecognized type, expected a number, got %s", reflect.TypeOf(args[1]))
@@ -307,7 +307,7 @@ func secondPass(args ...interface{}) (interface{}, error) {
 	/* get the n in the t out of n */
 	var n int = len(args) - 2
 
-	fmt.Println("=======n=======",n)
+	logger.Info("=======n=======",n)
 	//=======n======= 2
 	/* sanity check - t should be positive, permit equal to n+1, but disallow over n+1 */
 	if t < 0 || t > n+1 {
@@ -318,7 +318,7 @@ func secondPass(args ...interface{}) (interface{}, error) {
 
 	/* handle the rest of the arguments */
 	for _, principal := range args[2:] {
-		fmt.Println("===========principal==========",principal) //A.member B.member
+		logger.Info("===========principal==========",principal) //A.member B.member
 		//masterOrg1MSP.peer
 		switch t := principal.(type) {
 		/* if it's a string, we expect it to be formed as
@@ -337,23 +337,23 @@ func secondPass(args ...interface{}) (interface{}, error) {
 			var r msp.MSPRole_MSPRoleType
 			switch subm[0][3] {
 			case RoleMember:
-				fmt.Println("========RoleMember===")//========RoleMember===
+				logger.Info("========RoleMember===")//========RoleMember===
 				r = msp.MSPRole_MEMBER
 			case RoleAdmin:
-				fmt.Println("========RoleAdmin===")
+				logger.Info("========RoleAdmin===")
 				r = msp.MSPRole_ADMIN
 			case RoleClient:
-				fmt.Println("========RoleClient===")
+				logger.Info("========RoleClient===")
 				r = msp.MSPRole_CLIENT
 			case RolePeer:
-				fmt.Println("========RolePeer===")
+				logger.Info("========RolePeer===")
 				r = msp.MSPRole_PEER
 			default:
 				return nil, fmt.Errorf("Error parsing role %s", t)
 			}
 
-			fmt.Println("==========================r===",r)//MEMBER
-			fmt.Println("=========MspIdentifier======================",subm[0][1])//A  B
+			logger.Info("==========================r===",r)//MEMBER
+			logger.Info("=========MspIdentifier======================",subm[0][1])//A  B
 			/* build the principal we've been told */
 			p := &msp.MSPPrincipal{
 				PrincipalClassification: msp.MSPPrincipal_ROLE,
@@ -362,7 +362,7 @@ func secondPass(args ...interface{}) (interface{}, error) {
 
 			/* create a SignaturePolicy that requires a signature from
 			   the principal we've just built*/
-			fmt.Println("=======int32(ctx.IDNum)=================",int32(ctx.IDNum))//0 1
+			logger.Info("=======int32(ctx.IDNum)=================",int32(ctx.IDNum))//0 1
 			dapolicy := SignedBy(int32(ctx.IDNum))
 			policies = append(policies, dapolicy)
 
@@ -372,11 +372,11 @@ func secondPass(args ...interface{}) (interface{}, error) {
 			   smaller. For now it's fine though */
 			// TODO: deduplicate principals
 			ctx.IDNum++
-			fmt.Println("=======int32(ctx.IDNum)=================",int32(ctx.IDNum))//1 2
+			logger.Info("=======int32(ctx.IDNum)=================",int32(ctx.IDNum))//1 2
 		/* if we've already got a policy we're good, just append it */
 		case *common.SignaturePolicy:
 			policies = append(policies, t)
-			fmt.Println("====*common.SignaturePolicy=======",t)
+			logger.Info("====*common.SignaturePolicy=======",t)
 
 		default:
 			return nil, fmt.Errorf("Unrecognized type, expected a principal or a policy, got %s", reflect.TypeOf(principal))
@@ -392,7 +392,7 @@ type context struct {
 }
 
 func newContext() *context {
-	fmt.Println("==========newContext=========")
+	logger.Info("==========newContext=========")
 	return &context{IDNum: 0, principals: make([]*msp.MSPPrincipal, 0)}
 }
 

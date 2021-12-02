@@ -19,7 +19,7 @@ type SimpleChaincode struct {
 }
 
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
-	fmt.Println("ex02 Init")
+	logger.Info("ex02 Init")
 	_, args := stub.GetFunctionAndParameters()
 	var A, B string    // Entities
 	var Aval, Bval int // Asset holdings
@@ -57,8 +57,8 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 }
 
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
-	fmt.Println("================func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response =========================")
-	fmt.Println("ex02 Invoke")
+	logger.Info("================func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response =========================")
+	logger.Info("ex02 Invoke")
 	function, args := stub.GetFunctionAndParameters()
 	if function == "invoke" {
 		// Make payment of X units from A to B

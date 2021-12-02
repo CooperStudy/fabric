@@ -33,17 +33,17 @@ var (
 )
 
 func GetCurveHalfOrdersAt(c elliptic.Curve) *big.Int {
-//	fmt.Println("===GetCurveHalfOrdersAt======")
+//	logger.Info("===GetCurveHalfOrdersAt======")
 	return big.NewInt(0).Set(curveHalfOrders[c])
 }
 
 func MarshalECDSASignature(r, s *big.Int) ([]byte, error) {
-//	fmt.Println("===MarshalECDSASignature======")
+//	logger.Info("===MarshalECDSASignature======")
 	return asn1.Marshal(ECDSASignature{r, s})
 }
 
 func UnmarshalECDSASignature(raw []byte) (*big.Int, *big.Int, error) {
-	//fmt.Println("===UnmarshalECDSASignature======")
+	//logger.Info("===UnmarshalECDSASignature======")
 	// Unmarshal
 	sig := new(ECDSASignature)
 	_, err := asn1.Unmarshal(raw, sig)
@@ -70,7 +70,7 @@ func UnmarshalECDSASignature(raw []byte) (*big.Int, *big.Int, error) {
 }
 
 func SignatureToLowS(k *ecdsa.PublicKey, signature []byte) ([]byte, error) {
-	//fmt.Println("===SignatureToLowS======")
+	//logger.Info("===SignatureToLowS======")
 	r, s, err := UnmarshalECDSASignature(signature)
 	if err != nil {
 		return nil, err
@@ -90,28 +90,28 @@ func SignatureToLowS(k *ecdsa.PublicKey, signature []byte) ([]byte, error) {
 
 // IsLow checks that s is a low-S
 func IsLowS(k *ecdsa.PublicKey, s *big.Int) (bool, error) {
-	//fmt.Println("===IsLowS======")
+	//logger.Info("===IsLowS======")
 	halfOrder, ok := curveHalfOrders[k.Curve]
-	//fmt.Println("============k.Curve==========",k.Curve)
-	//fmt.Println("============ok==========",ok)
-	//fmt.Println("============halfOrder==========",halfOrder)
+	//logger.Info("============k.Curve==========",k.Curve)
+	//logger.Info("============ok==========",ok)
+	//logger.Info("============halfOrder==========",halfOrder)
 	if !ok {
 		return false, fmt.Errorf("curve not recognized [%s]", k.Curve)
 	}
 
-	//fmt.Println("======================s.Cmp(halfOrder)=============",s.Cmp(halfOrder))
+	//logger.Info("======================s.Cmp(halfOrder)=============",s.Cmp(halfOrder))
 	return s.Cmp(halfOrder) != 1, nil
 
 }
 
 func ToLowS(k *ecdsa.PublicKey, s *big.Int) (*big.Int, bool, error) {
-	//fmt.Println("===ToLowS======")
+	//logger.Info("===ToLowS======")
 	lowS, err := IsLowS(k, s)
 	if err != nil {
 		return nil, false, err
 	}
 
-	//fmt.Println("=======lowS=========",lowS)
+	//logger.Info("=======lowS=========",lowS)
 	if !lowS {
 		// Set s to N - s that will be then in the lower part of signature space
 		// less or equal to half order

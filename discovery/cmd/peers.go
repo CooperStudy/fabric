@@ -20,7 +20,7 @@ import (
 
 // NewPeerCmd creates a new PeerCmd with the given Stub and ResponseParser
 func NewPeerCmd(stub Stub, parser ResponseParser) *PeerCmd {
-	fmt.Println("====NewPeerCmd====")
+	logger.Info("====NewPeerCmd====")
 	return &PeerCmd{
 		stub:   stub,
 		parser: parser,
@@ -37,19 +37,19 @@ type PeerCmd struct {
 
 // SetServer sets the server of the PeerCmd
 func (pc *PeerCmd) SetServer(server *string) {
-	fmt.Println("====PeerCmd===SetServer===")
+	logger.Info("====PeerCmd===SetServer===")
 	pc.server = server
 }
 
 // SetChannel sets the channel of the PeerCmd
 func (pc *PeerCmd) SetChannel(channel *string) {
-	fmt.Println("====PeerCmd===SetChannel===")
+	logger.Info("====PeerCmd===SetChannel===")
 	pc.channel = channel
 }
 
 // Execute executes the command
 func (pc *PeerCmd) Execute(conf common.Config) error {
-	fmt.Println("====PeerCmd===Execute===")
+	logger.Info("====PeerCmd===Execute===")
 	channel := ""
 
 	if pc.channel != nil {
@@ -83,7 +83,7 @@ type PeerResponseParser struct {
 
 // ParseResponse parses the given response about the given channel
 func (parser *PeerResponseParser) ParseResponse(channel string, res ServiceResponse) error {
-	fmt.Println("====PeerResponseParser===ParseResponse===")
+	logger.Info("====PeerResponseParser===ParseResponse===")
 	var listPeers peerLister
 	if channel == "" {
 		listPeers = res.ForLocal()
@@ -102,7 +102,7 @@ func (parser *PeerResponseParser) ParseResponse(channel string, res ServiceRespo
 }
 
 func assemblePeers(peers []*discovery.Peer, withChannelState bool) interface{} {
-	fmt.Println("====assemblePeers====")
+	logger.Info("====assemblePeers====")
 	if withChannelState {
 		var peerSlices []channelPeer
 		for _, p := range peers {
@@ -140,12 +140,12 @@ type simpleChannelResponse struct {
 }
 
 func (scr *simpleChannelResponse) Peers() ([]*discovery.Peer, error) {
-	fmt.Println("====simpleChannelResponse==Peers==")
+	logger.Info("====simpleChannelResponse==Peers==")
 	return scr.ChannelResponse.Peers()
 }
 
 func rawPeerToChannelPeer(p *discovery.Peer) channelPeer {
-	fmt.Println("==rawPeerToChannelPeer==")
+	logger.Info("==rawPeerToChannelPeer==")
 	var ledgerHeight uint64
 	var ccs []string
 	if p.StateInfoMessage != nil && p.StateInfoMessage.GetStateInfo() != nil && p.StateInfoMessage.GetStateInfo().Properties != nil {
@@ -174,7 +174,7 @@ func rawPeerToChannelPeer(p *discovery.Peer) channelPeer {
 }
 
 func rawPeerToLocalPeer(p *discovery.Peer) localPeer {
-	fmt.Println("==rawPeerToLocalPeer==")
+	logger.Info("==rawPeerToLocalPeer==")
 	var endpoint string
 	if p.AliveMessage != nil && p.AliveMessage.GetAliveMsg() != nil && p.AliveMessage.GetAliveMsg().Membership != nil {
 		endpoint = p.AliveMessage.GetAliveMsg().Membership.Endpoint

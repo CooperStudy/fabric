@@ -27,7 +27,7 @@ type ElementMessage struct {
 }
 
 func Check(config *cb.Config) (*Messages, error) {
-	fmt.Println("========Check========")
+	logger.Info("========Check========")
 	result := &Messages{}
 
 	bundle, err := newchannelconfig.NewBundle("sanitycheck", config)
@@ -62,7 +62,7 @@ func Check(config *cb.Config) (*Messages, error) {
 }
 
 func checkPolicyPrincipals(group *cb.ConfigGroup, basePath string, mspMap map[string]struct{}) (warnings []*ElementMessage, errors []*ElementMessage) {
-	fmt.Println("========checkPolicyPrincipals========")
+	logger.Info("========checkPolicyPrincipals========")
 	for policyName, configPolicy := range group.Policies {
 		appendError := func(err string) {
 			errors = append(errors, &ElementMessage{

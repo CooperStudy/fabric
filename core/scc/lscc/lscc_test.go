@@ -849,7 +849,7 @@ func TestPutChaincodeCollectionData(t *testing.T) {
 	scc.Support = &lscc.MockSupport{}
 
 	if res := stub.MockInit("1", nil); res.Status != shim.OK {
-		fmt.Println("Init failed", string(res.Message))
+		logger.Info("Init failed", string(res.Message))
 		t.FailNow()
 	}
 

@@ -26,12 +26,12 @@ const (
 )
 
 func (c Color) Normal() string {
-	//fmt.Println("====Color==Normal====")
+	//logger.Info("====Color==Normal====")
 	return fmt.Sprintf("\x1b[%dm", c)
 }
 
 func (c Color) Bold() string {
-	//fmt.Println("====Color==Bold====")
+	//logger.Info("====Color==Bold====")
 	if c == ColorNone {
 		return c.Normal()
 	}
@@ -39,6 +39,6 @@ func (c Color) Bold() string {
 }
 
 func ResetColor() string {
-	//fmt.Println("====ResetColor====")
+	//logger.Info("====ResetColor====")
 	return ColorNone.Normal()
 }

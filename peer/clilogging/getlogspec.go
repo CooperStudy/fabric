@@ -15,7 +15,7 @@ import (
 )
 
 func getLogSpecCmd(cf *LoggingCmdFactory) *cobra.Command {
-	fmt.Println("====getLogSpecCmd====")
+	logger.Info("====getLogSpecCmd====")
 	var loggingGetLogSpecCmd = &cobra.Command{
 		Use:   "getlogspec",
 		Short: "Returns the active log spec.",
@@ -29,7 +29,7 @@ func getLogSpecCmd(cf *LoggingCmdFactory) *cobra.Command {
 }
 
 func getLogSpec(cf *LoggingCmdFactory, cmd *cobra.Command, args []string) (err error) {
-	fmt.Println("====getLogSpec====")
+	logger.Info("====getLogSpec====")
 	err = checkLoggingCmdParams(cmd, args)
 	if err == nil {
 		// Parsing of the command line is done so silence cmd usage

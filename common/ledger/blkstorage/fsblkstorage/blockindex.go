@@ -58,7 +58,7 @@ type blockIndex struct {
 }
 
 func newBlockIndex(indexConfig *blkstorage.IndexConfig, db *leveldbhelper.DBHandle) (*blockIndex, error) {
-	fmt.Println("====newBlockIndex=====")
+	logger.Info("====newBlockIndex=====")
 	indexItems := indexConfig.AttrsToIndex
 	logger.Infof("newBlockIndex() - indexItems:[%s]", indexItems)
 	indexItemsMap := make(map[blkstorage.IndexableAttr]bool)
@@ -89,7 +89,7 @@ func (index *blockIndex) getLastBlockIndexed() (uint64, error) {
 }
 
 func (index *blockIndex) indexBlock(blockIdxInfo *blockIdxInfo) error {
-	fmt.Println("====blockIndex===indexBlock==")
+	logger.Info("====blockIndex===indexBlock==")
 	// do not index anything
 	if len(index.indexItemsMap) == 0 {
 		logger.Debug("Not indexing block... as nothing to index")
@@ -178,7 +178,7 @@ func (index *blockIndex) indexBlock(blockIdxInfo *blockIdxInfo) error {
 }
 
 func (index *blockIndex) markDuplicateTxids(blockIdxInfo *blockIdxInfo) error {
-	fmt.Println("====blockIndex===markDuplicateTxids==")
+	logger.Info("====blockIndex===markDuplicateTxids==")
 	uniqueTxids := make(map[string]bool)
 	for _, txIdxInfo := range blockIdxInfo.txOffsets {
 		txid := txIdxInfo.txID
@@ -201,7 +201,7 @@ func (index *blockIndex) markDuplicateTxids(blockIdxInfo *blockIdxInfo) error {
 }
 
 func (index *blockIndex) getBlockLocByHash(blockHash []byte) (*fileLocPointer, error) {
-	fmt.Println("====blockIndex===getBlockLocByHash==")
+	logger.Info("====blockIndex===getBlockLocByHash==")
 	if _, ok := index.indexItemsMap[blkstorage.IndexableAttrBlockHash]; !ok {
 		return nil, blkstorage.ErrAttrNotIndexed
 	}
@@ -218,7 +218,7 @@ func (index *blockIndex) getBlockLocByHash(blockHash []byte) (*fileLocPointer, e
 }
 
 func (index *blockIndex) getBlockLocByBlockNum(blockNum uint64) (*fileLocPointer, error) {
-	fmt.Println("====blockIndex===getBlockLocByBlockNum==")
+	logger.Info("====blockIndex===getBlockLocByBlockNum==")
 	if _, ok := index.indexItemsMap[blkstorage.IndexableAttrBlockNum]; !ok {
 		return nil, blkstorage.ErrAttrNotIndexed
 	}
@@ -235,7 +235,7 @@ func (index *blockIndex) getBlockLocByBlockNum(blockNum uint64) (*fileLocPointer
 }
 
 func (index *blockIndex) getTxLoc(txID string) (*fileLocPointer, error) {
-	fmt.Println("====blockIndex===getTxLoc==")
+	logger.Info("====blockIndex===getTxLoc==")
 	if _, ok := index.indexItemsMap[blkstorage.IndexableAttrTxID]; !ok {
 		return nil, blkstorage.ErrAttrNotIndexed
 	}
@@ -252,7 +252,7 @@ func (index *blockIndex) getTxLoc(txID string) (*fileLocPointer, error) {
 }
 
 func (index *blockIndex) getBlockLocByTxID(txID string) (*fileLocPointer, error) {
-	fmt.Println("====blockIndex===getBlockLocByTxID==")
+	logger.Info("====blockIndex===getBlockLocByTxID==")
 	if _, ok := index.indexItemsMap[blkstorage.IndexableAttrBlockTxID]; !ok {
 		return nil, blkstorage.ErrAttrNotIndexed
 	}
@@ -269,7 +269,7 @@ func (index *blockIndex) getBlockLocByTxID(txID string) (*fileLocPointer, error)
 }
 
 func (index *blockIndex) getTXLocByBlockNumTranNum(blockNum uint64, tranNum uint64) (*fileLocPointer, error) {
-	fmt.Println("====blockIndex===getTXLocByBlockNumTranNum==")
+	logger.Info("====blockIndex===getTXLocByBlockNumTranNum==")
 	if _, ok := index.indexItemsMap[blkstorage.IndexableAttrBlockNumTranNum]; !ok {
 		return nil, blkstorage.ErrAttrNotIndexed
 	}
@@ -286,7 +286,7 @@ func (index *blockIndex) getTXLocByBlockNumTranNum(blockNum uint64, tranNum uint
 }
 
 func (index *blockIndex) getTxValidationCodeByTxID(txID string) (peer.TxValidationCode, error) {
-	fmt.Println("====blockIndex===getTxValidationCodeByTxID==")
+	logger.Info("====blockIndex===getTxValidationCodeByTxID==")
 	if _, ok := index.indexItemsMap[blkstorage.IndexableAttrTxValidationCode]; !ok {
 		return peer.TxValidationCode(-1), blkstorage.ErrAttrNotIndexed
 	}
@@ -307,33 +307,33 @@ func (index *blockIndex) getTxValidationCodeByTxID(txID string) (peer.TxValidati
 }
 
 func constructBlockNumKey(blockNum uint64) []byte {
-	fmt.Println("====constructBlockNumKey===")
+	logger.Info("====constructBlockNumKey===")
 	blkNumBytes := util.EncodeOrderPreservingVarUint64(blockNum)
 	return append([]byte{blockNumIdxKeyPrefix}, blkNumBytes...)
 }
 
 func constructBlockHashKey(blockHash []byte) []byte {
-	fmt.Println("====constructBlockHashKey===")
+	logger.Info("====constructBlockHashKey===")
 	return append([]byte{blockHashIdxKeyPrefix}, blockHash...)
 }
 
 func constructTxIDKey(txID string) []byte {
-	fmt.Println("====constructTxIDKey===")
+	logger.Info("====constructTxIDKey===")
 	return append([]byte{txIDIdxKeyPrefix}, []byte(txID)...)
 }
 
 func constructBlockTxIDKey(txID string) []byte {
-	fmt.Println("====constructBlockTxIDKey===")
+	logger.Info("====constructBlockTxIDKey===")
 	return append([]byte{blockTxIDIdxKeyPrefix}, []byte(txID)...)
 }
 
 func constructTxValidationCodeIDKey(txID string) []byte {
-	fmt.Println("====constructTxValidationCodeIDKey===")
+	logger.Info("====constructTxValidationCodeIDKey===")
 	return append([]byte{txValidationResultIdxKeyPrefix}, []byte(txID)...)
 }
 
 func constructBlockNumTranNumKey(blockNum uint64, txNum uint64) []byte {
-	fmt.Println("====constructBlockNumTranNumKey===")
+	logger.Info("====constructBlockNumTranNumKey===")
 	blkNumBytes := util.EncodeOrderPreservingVarUint64(blockNum)
 	tranNumBytes := util.EncodeOrderPreservingVarUint64(txNum)
 	key := append(blkNumBytes, tranNumBytes...)
@@ -341,12 +341,12 @@ func constructBlockNumTranNumKey(blockNum uint64, txNum uint64) []byte {
 }
 
 func encodeBlockNum(blockNum uint64) []byte {
-	fmt.Println("====encodeBlockNum===")
+	logger.Info("====encodeBlockNum===")
 	return proto.EncodeVarint(blockNum)
 }
 
 func decodeBlockNum(blockNumBytes []byte) uint64 {
-	fmt.Println("====decodeBlockNum===")
+	logger.Info("====decodeBlockNum===")
 	blockNum, _ := proto.DecodeVarint(blockNumBytes)
 	return blockNum
 }
@@ -357,7 +357,7 @@ type locPointer struct {
 }
 
 func (lp *locPointer) String() string {
-	fmt.Println("====locPointer==String=")
+	logger.Info("====locPointer==String=")
 	return fmt.Sprintf("offset=%d, bytesLength=%d",
 		lp.offset, lp.bytesLength)
 }
@@ -369,7 +369,7 @@ type fileLocPointer struct {
 }
 
 func newFileLocationPointer(fileSuffixNum int, beginningOffset int, relativeLP *locPointer) *fileLocPointer {
-	fmt.Println("====newFileLocationPointer=")
+	logger.Info("====newFileLocationPointer=")
 	flp := &fileLocPointer{fileSuffixNum: fileSuffixNum}
 	flp.offset = beginningOffset + relativeLP.offset
 	flp.bytesLength = relativeLP.bytesLength
@@ -377,7 +377,7 @@ func newFileLocationPointer(fileSuffixNum int, beginningOffset int, relativeLP *
 }
 
 func (flp *fileLocPointer) marshal() ([]byte, error) {
-	fmt.Println("===fileLocPointer=marshal=")
+	logger.Info("===fileLocPointer=marshal=")
 	buffer := proto.NewBuffer([]byte{})
 	e := buffer.EncodeVarint(uint64(flp.fileSuffixNum))
 	if e != nil {
@@ -395,7 +395,7 @@ func (flp *fileLocPointer) marshal() ([]byte, error) {
 }
 
 func (flp *fileLocPointer) unmarshal(b []byte) error {
-	fmt.Println("===fileLocPointer=unmarshal=")
+	logger.Info("===fileLocPointer=unmarshal=")
 	buffer := proto.NewBuffer(b)
 	i, e := buffer.DecodeVarint()
 	if e != nil {
@@ -417,12 +417,12 @@ func (flp *fileLocPointer) unmarshal(b []byte) error {
 }
 
 func (flp *fileLocPointer) String() string {
-	fmt.Println("===fileLocPointer=String=")
+	logger.Info("===fileLocPointer=String=")
 	return fmt.Sprintf("fileSuffixNum=%d, %s", flp.fileSuffixNum, flp.locPointer.String())
 }
 
 func (blockIdxInfo *blockIdxInfo) String() string {
-	fmt.Println("===blockIdxInfo=String=")
+	logger.Info("===blockIdxInfo=String=")
 	var buffer bytes.Buffer
 	for _, txOffset := range blockIdxInfo.txOffsets {
 		buffer.WriteString("txId=")

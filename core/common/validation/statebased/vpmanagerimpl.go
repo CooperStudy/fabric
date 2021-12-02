@@ -19,8 +19,6 @@ import (
 
 var logger = flogging.MustGetLogger("vscc")
 
-/**********************************************************************************************************/
-/**********************************************************************************************************/
 
 type ledgerKeyID struct {
 	cc   string
@@ -29,7 +27,7 @@ type ledgerKeyID struct {
 }
 
 func newLedgerKeyID(cc, coll, key string) *ledgerKeyID {
-	fmt.Println("==newLedgerKeyID===")
+	logger.Info("==newLedgerKeyID===")
 	return &ledgerKeyID{cc, coll, key}
 }
 
@@ -51,7 +49,7 @@ type txDependency struct {
 }
 
 func newTxDependency() *txDependency {
-	fmt.Println("==newTxDependency===")
+	logger.Info("==newTxDependency===")
 	txd := &txDependency{
 		depInserted:         make(chan struct{}),
 		validationResultMap: make(map[string]error),
@@ -64,7 +62,7 @@ func newTxDependency() *txDependency {
 // have been inserted. The function returns as soon as
 // d.depInserted has been closed by signalDepInserted
 func (d *txDependency) waitForDepInserted() {
-	fmt.Println("==txDependency===waitForDepInserted==")
+	logger.Info("==txDependency===waitForDepInserted==")
 	<-d.depInserted
 }
 
@@ -73,7 +71,7 @@ func (d *txDependency) waitForDepInserted() {
 // closes d.depInserted, causing all callers of waitForDepInserted to
 // return. This function can only be called once on this object
 func (d *txDependency) signalDepInserted() {
-	fmt.Println("==txDependency===signalDepInserted==")
+	logger.Info("==txDependency===signalDepInserted==")
 	close(d.depInserted)
 
 }
@@ -82,7 +80,7 @@ func (d *txDependency) signalDepInserted() {
 // for namespace `ns` - possibly waiting for the corresponding call
 // to signalValidationResult to finish first.
 func (d *txDependency) waitForAndRetrieveValidationResult(ns string) error {
-	fmt.Println("==txDependency===waitForAndRetrieveValidationResult==")
+	logger.Info("==txDependency===waitForAndRetrieveValidationResult==")
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
@@ -104,7 +102,7 @@ func (d *txDependency) waitForAndRetrieveValidationResult(ns string) error {
 // are cached into a map. We also broadcast a conditional variable
 // to wake up possible callers of waitForAndRetrieveValidationResult
 func (d *txDependency) signalValidationResult(ns string, err error) {
-	fmt.Println("==txDependency===signalValidationResult==")
+	logger.Info("==txDependency===signalValidationResult==")
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
@@ -127,7 +125,7 @@ type validationContext struct {
 }
 
 func (c *validationContext) forBlock(newHeight uint64) *validationContext {
-	fmt.Println("==validationContext===forBlock==")
+	logger.Info("==validationContext===forBlock==")
 	c.mutex.RLock()
 	curHeight := c.blockHeight
 	c.mutex.RUnlock()
@@ -153,7 +151,7 @@ func (c *validationContext) forBlock(newHeight uint64) *validationContext {
 }
 
 func (c *validationContext) addDependency(kid *ledgerKeyID, txnum uint64, dep *txDependency) {
-	fmt.Println("==validationContext===addDependency==")
+	logger.Info("==validationContext===addDependency==")
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
@@ -167,7 +165,7 @@ func (c *validationContext) addDependency(kid *ledgerKeyID, txnum uint64, dep *t
 }
 
 func (c *validationContext) dependenciesForTxnum(kid *ledgerKeyID, txnum uint64) []*txDependency {
-	fmt.Println("==validationContext===dependenciesForTxnum==")
+	logger.Info("==validationContext===dependenciesForTxnum==")
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 
@@ -187,7 +185,7 @@ func (c *validationContext) dependenciesForTxnum(kid *ledgerKeyID, txnum uint64)
 }
 
 func (c *validationContext) getOrCreateDependencyByTxnum(txnum uint64) *txDependency {
-	fmt.Println("==validationContext===getOrCreateDependencyByTxnum==")
+	logger.Info("==validationContext===getOrCreateDependencyByTxnum==")
 	c.mutex.RLock()
 	dep, ok := c.depsByTxnumMap[txnum]
 	c.mutex.RUnlock()
@@ -255,7 +253,7 @@ type KeyLevelValidationParameterManagerImpl struct {
 // because we want to inspect all namespaces for which this transaction
 // modifies metadata.
 func (m *KeyLevelValidationParameterManagerImpl) ExtractValidationParameterDependency(blockNum, txNum uint64, rwsetBytes []byte) {
-	fmt.Println("==KeyLevelValidationParameterManagerImpl===ExtractValidationParameterDependency==")
+	logger.Info("==KeyLevelValidationParameterManagerImpl===ExtractValidationParameterDependency==")
 	vCtx := m.validationCtx.forBlock(blockNum)
 
 	// this object represents the dependency that transaction (blockNum, txNum) introduces
@@ -294,7 +292,7 @@ func (m *KeyLevelValidationParameterManagerImpl) ExtractValidationParameterDepen
 // GetValidationParameterForKey implements the method of
 // the same name of the KeyLevelValidationParameterManager interface
 func (m *KeyLevelValidationParameterManagerImpl) GetValidationParameterForKey(cc, coll, key string, blockNum, txNum uint64) ([]byte, error) {
-	fmt.Println("==KeyLevelValidationParameterManagerImpl===GetValidationParameterForKey==")
+	logger.Info("==KeyLevelValidationParameterManagerImpl===GetValidationParameterForKey==")
 	vCtx := m.validationCtx.forBlock(blockNum)
 
 	// wait until all txes before us have introduced dependencies
@@ -347,7 +345,7 @@ func (m *KeyLevelValidationParameterManagerImpl) GetValidationParameterForKey(cc
 // this function receives a namespace argument so that it records
 // the validation result for this transaction and for this chaincode.
 func (m *KeyLevelValidationParameterManagerImpl) SetTxValidationResult(ns string, blockNum, txNum uint64, err error) {
-	fmt.Println("==KeyLevelValidationParameterManagerImpl===SetTxValidationResult==")
+	logger.Info("==KeyLevelValidationParameterManagerImpl===SetTxValidationResult==")
 	vCtx := m.validationCtx.forBlock(blockNum)
 
 	// this object represents the dependency that the transaction of our caller introduces

@@ -41,7 +41,7 @@ func TestGetType(t *testing.T) {
 			PeerQuery: &PeerMembershipQuery{},
 		},
 	}
-	fmt.Println("q.GetType()",q.GetType())  //2
+	logger.Info("q.GetType()",q.GetType())  //2
 	assert.Equal(t, PeerMembershipQueryType, q.GetType())
 	q = &Query{
 		Query: &Query_ConfigQuery{

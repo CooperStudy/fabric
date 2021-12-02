@@ -60,7 +60,7 @@ type PrincipalSets []PrincipalSet
 
 // ContainingOnly returns PrincipalSets that contain only principals of the given predicate
 func (psSets PrincipalSets) ContainingOnly(f func(*msp.MSPPrincipal) bool) PrincipalSets {
-	fmt.Println("===PrincipalSets==ContainingOnly===")
+	logger.Info("===PrincipalSets==ContainingOnly===")
 	var res PrincipalSets
 	for _, set := range psSets {
 		if !set.ContainingOnly(f) {
@@ -74,7 +74,7 @@ func (psSets PrincipalSets) ContainingOnly(f func(*msp.MSPPrincipal) bool) Princ
 // ContainingOnly returns whether the given PrincipalSet contains only Principals
 // that satisfy the given predicate
 func (ps PrincipalSet) ContainingOnly(f func(*msp.MSPPrincipal) bool) bool {
-	fmt.Println("===PrincipalSet==ContainingOnly===")
+	logger.Info("===PrincipalSet==ContainingOnly===")
 	for _, principal := range ps {
 		if !f(principal) {
 			return false
@@ -88,7 +88,7 @@ func (ps PrincipalSet) ContainingOnly(f func(*msp.MSPPrincipal) bool) bool {
 UniqueSet 返回由 PrincipalSet 诱导的直方图
  */
 func (ps PrincipalSet) UniqueSet() map[*msp.MSPPrincipal]int {
-	fmt.Println("===PrincipalSet==UniqueSet===")
+	logger.Info("===PrincipalSet==UniqueSet===")
 	// Create a histogram that holds the MSPPrincipals and counts them
 	// 创建一个包含 MSPPrincipals 并对其进行计数的直方图
 	histogram := make(map[struct {
@@ -97,9 +97,9 @@ func (ps PrincipalSet) UniqueSet() map[*msp.MSPPrincipal]int {
 	}]int)
 	// Now, populate the histogram
 	for _, principal := range ps {
-		fmt.Println("==principal=====",principal) //principal:"\n\001A"  principal:"\n\001B"
-		fmt.Println("=============cls: int32(principal.PrincipalClassification),=================",int32(principal.PrincipalClassification))// 0
-		fmt.Println("=============principal: string(principal.Principal),=================",string(principal.Principal))//A B
+		logger.Info("==principal=====",principal) //principal:"\n\001A"  principal:"\n\001B"
+		logger.Info("=============cls: int32(principal.PrincipalClassification),=================",int32(principal.PrincipalClassification))// 0
+		logger.Info("=============principal: string(principal.Principal),=================",string(principal.Principal))//A B
 		key := struct {
 			cls       int32
 			principal string
@@ -108,7 +108,7 @@ func (ps PrincipalSet) UniqueSet() map[*msp.MSPPrincipal]int {
 			principal: string(principal.Principal),
 		}
 		histogram[key]++
-		fmt.Println("=======histogram[key]=============",histogram)
+		logger.Info("=======histogram[key]=============",histogram)
 		/*
 		map[{0 A}:1] map[{0 B}:1] map[{0 C}:1]
 		 */
@@ -116,13 +116,13 @@ func (ps PrincipalSet) UniqueSet() map[*msp.MSPPrincipal]int {
 	// Finally, convert to a histogram of MSPPrincipal pointers
 	res := make(map[*msp.MSPPrincipal]int)
 	for principal, count := range histogram {
-		fmt.Println("====principal======",principal) //{0 A}
-		fmt.Println("=========count============",count)//1
+		logger.Info("====principal======",principal) //{0 A}
+		logger.Info("=========count============",count)//1
 		a := msp.MSPPrincipal{
 			PrincipalClassification: msp.MSPPrincipal_Classification(principal.cls),
 			Principal:               []byte(principal.principal),
 		}
-		fmt.Println("====res =======msp.MSPPrincipal=============",a,"==========count=============",count)
+		logger.Info("====res =======msp.MSPPrincipal=============",a,"==========count=============",count)
 		/*
 		{ROLE [10 1 65] {} [] 0}
 		count 1
@@ -183,7 +183,7 @@ type ManagerImpl struct {
 
 // NewManagerImpl creates a new ManagerImpl with the given CryptoHelper
 func NewManagerImpl(path string, providers map[int32]Provider, root *cb.ConfigGroup) (*ManagerImpl, error) {
-	fmt.Println("===NewManagerImpl=====")
+	logger.Info("===NewManagerImpl=====")
 	var err error
 	_, ok := providers[int32(cb.Policy_IMPLICIT_META)]
 	if ok {
@@ -248,13 +248,13 @@ func NewManagerImpl(path string, providers map[int32]Provider, root *cb.ConfigGr
 type rejectPolicy string
 
 func (rp rejectPolicy) Evaluate(signedData []*cb.SignedData) error {
-	fmt.Println("===rejectPolicy==Evaluate===")
+	logger.Info("===rejectPolicy==Evaluate===")
 	return fmt.Errorf("No such policy: '%s'", rp)
 }
 
 // Manager returns the sub-policy manager for a given path and whether it exists
 func (pm *ManagerImpl) Manager(path []string) (Manager, bool) {
-	fmt.Println("===ManagerImpl==Manager===")
+	logger.Info("===ManagerImpl==Manager===")
 	logger.Debugf("Manager %s looking up path %v", pm.path, path)
 	for manager := range pm.managers {
 		logger.Debugf("Manager %s has managers %s", pm.path, manager)
@@ -277,7 +277,7 @@ type policyLogger struct {
 }
 
 func (pl *policyLogger) Evaluate(signatureSet []*cb.SignedData) error {
-	fmt.Println("===policyLogger==Evaluate===")
+	logger.Info("===policyLogger==Evaluate===")
 	if logger.IsEnabledFor(zapcore.DebugLevel) {
 		logger.Infof("== Evaluating %T Policy %s ==", pl.policy, pl.policyName)// /Channel/Application/Readers
 		defer logger.Infof("== Done Evaluating %T Policy %s", pl.policy, pl.policyName)
@@ -296,8 +296,8 @@ func (pl *policyLogger) Evaluate(signatureSet []*cb.SignedData) error {
 
 // GetPolicy returns a policy and true if it was the policy requested, or false if it is the default reject policy
 func (pm *ManagerImpl) GetPolicy(id string) (Policy, bool) {
-	fmt.Println("===ManagerImpl==GetPolicy===")
-	fmt.Println("=======id======",id)
+	logger.Info("===ManagerImpl==GetPolicy===")
+	logger.Info("=======id======",id)
 	//ChannelCreationPolicy
 
 	//Writers
@@ -321,7 +321,7 @@ func (pm *ManagerImpl) GetPolicy(id string) (Policy, bool) {
 		relpath = id
 	}
 
-	fmt.Println("=========relpath=========",relpath)
+	logger.Info("=========relpath=========",relpath)
 	//ChannelCreationPolicy
 
 	//Readers
@@ -335,7 +335,7 @@ func (pm *ManagerImpl) GetPolicy(id string) (Policy, bool) {
 		return rejectPolicy(relpath), false
 	}
 
-	fmt.Println("==========policyName================",PathSeparator + pm.path + PathSeparator + relpath)
+	logger.Info("==========policyName================",PathSeparator + pm.path + PathSeparator + relpath)
     // /Channel/Application/Org1MSP/Readers
     // /Channel/Application/Org1MSP/Writers
     // /Channel/Orderer/OrdererOrg/Admins

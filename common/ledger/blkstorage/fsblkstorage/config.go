@@ -38,7 +38,7 @@ type Conf struct {
 // NewConf constructs new `Conf`.
 // blockStorageDir is the top level folder under which `FsBlockStore` manages its data
 func NewConf(blockStorageDir string, maxBlockfileSize int) *Conf {
-	fmt.Println("==NewConf=")
+	logger.Info("==NewConf=")
 	if maxBlockfileSize <= 0 {
 		maxBlockfileSize = defaultMaxBlockfileSize
 	}
@@ -46,16 +46,16 @@ func NewConf(blockStorageDir string, maxBlockfileSize int) *Conf {
 }
 
 func (conf *Conf) getIndexDir() string {
-	fmt.Println("==Conf=====getIndexDir====")
+	logger.Info("==Conf=====getIndexDir====")
 	return filepath.Join(conf.blockStorageDir, IndexDir)
 }
 
 func (conf *Conf) getChainsDir() string {
-	fmt.Println("==Conf=====getChainsDir====")
+	logger.Info("==Conf=====getChainsDir====")
 	return filepath.Join(conf.blockStorageDir, ChainsDir)
 }
 
 func (conf *Conf) getLedgerBlockDir(ledgerid string) string {
-	fmt.Println("==Conf=====getLedgerBlockDir====")
+	logger.Info("==Conf=====getLedgerBlockDir====")
 	return filepath.Join(conf.getChainsDir(), ledgerid)
 }

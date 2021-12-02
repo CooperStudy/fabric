@@ -31,7 +31,7 @@ const installDesc = "Package the specified chaincode into a deployment spec and 
 
 // installCmd returns the cobra command for Chaincode Deploy
 func installCmd(cf *ChaincodeCmdFactory) *cobra.Command {
-	fmt.Println("========installCmd================")
+	logger.Info("========installCmd================")
 	chaincodeInstallCmd = &cobra.Command{
 		Use:       "install",
 		Short:     fmt.Sprint(installDesc),
@@ -62,7 +62,7 @@ func installCmd(cf *ChaincodeCmdFactory) *cobra.Command {
 
 //install the depspec to "peer.address"
 func install(msg proto.Message, cf *ChaincodeCmdFactory) error {
-	fmt.Println("========install================")
+	logger.Info("========install================")
 	creator, err := cf.Signer.Serialize()
 	if err != nil {
 		return fmt.Errorf("Error serializing identity for %s: %s", cf.Signer.GetIdentifier(), err)
@@ -99,7 +99,7 @@ func install(msg proto.Message, cf *ChaincodeCmdFactory) error {
 
 //genChaincodeDeploymentSpec creates ChaincodeDeploymentSpec as the package to install
 func genChaincodeDeploymentSpec(cmd *cobra.Command, chaincodeName, chaincodeVersion string) (*pb.ChaincodeDeploymentSpec, error) {
-	fmt.Println("========genChaincodeDeploymentSpec================")
+	logger.Info("========genChaincodeDeploymentSpec================")
 	if existed, _ := ccprovider.ChaincodePackageExists(chaincodeName, chaincodeVersion); existed {
 		return nil, fmt.Errorf("chaincode %s:%s already exists", chaincodeName, chaincodeVersion)
 	}
@@ -119,7 +119,7 @@ func genChaincodeDeploymentSpec(cmd *cobra.Command, chaincodeName, chaincodeVers
 
 //getPackageFromFile get the chaincode package from file and the extracted ChaincodeDeploymentSpec
 func getPackageFromFile(ccpackfile string) (proto.Message, *pb.ChaincodeDeploymentSpec, error) {
-	fmt.Println("========getPackageFromFile================")
+	logger.Info("========getPackageFromFile================")
 	b, err := ioutil.ReadFile(ccpackfile)
 	if err != nil {
 		return nil, nil, err
@@ -161,7 +161,7 @@ func getPackageFromFile(ccpackfile string) (proto.Message, *pb.ChaincodeDeployme
 
 // chaincodeInstall installs the chaincode. If remoteinstall, does it via a lscc call
 func chaincodeInstall(cmd *cobra.Command, ccpackfile string, cf *ChaincodeCmdFactory) error {
-	fmt.Println("========chaincodeInstall================")
+	logger.Info("========chaincodeInstall================")
 	// Parsing of the command line is done so silence cmd usage
 	cmd.SilenceUsage = true
 

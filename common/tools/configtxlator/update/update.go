@@ -25,7 +25,7 @@ import (
 )
 
 func computePoliciesMapUpdate(original, updated map[string]*cb.ConfigPolicy) (readSet, writeSet, sameSet map[string]*cb.ConfigPolicy, updatedMembers bool) {
-	fmt.Println("========computePoliciesMapUpdate========")
+	logger.Info("========computePoliciesMapUpdate========")
 	readSet = make(map[string]*cb.ConfigPolicy)
 	writeSet = make(map[string]*cb.ConfigPolicy)
 
@@ -71,7 +71,7 @@ func computePoliciesMapUpdate(original, updated map[string]*cb.ConfigPolicy) (re
 }
 
 func computeValuesMapUpdate(original, updated map[string]*cb.ConfigValue) (readSet, writeSet, sameSet map[string]*cb.ConfigValue, updatedMembers bool) {
-	fmt.Println("========computeValuesMapUpdate========")
+	logger.Info("========computeValuesMapUpdate========")
 	readSet = make(map[string]*cb.ConfigValue)
 	writeSet = make(map[string]*cb.ConfigValue)
 
@@ -117,7 +117,7 @@ func computeValuesMapUpdate(original, updated map[string]*cb.ConfigValue) (readS
 }
 
 func computeGroupsMapUpdate(original, updated map[string]*cb.ConfigGroup) (readSet, writeSet, sameSet map[string]*cb.ConfigGroup, updatedMembers bool) {
-	fmt.Println("========computeGroupsMapUpdate========")
+	logger.Info("========computeGroupsMapUpdate========")
 	readSet = make(map[string]*cb.ConfigGroup)
 	writeSet = make(map[string]*cb.ConfigGroup)
 
@@ -163,7 +163,7 @@ func computeGroupsMapUpdate(original, updated map[string]*cb.ConfigGroup) (readS
 }
 
 func computeGroupUpdate(original, updated *cb.ConfigGroup) (readSet, writeSet *cb.ConfigGroup, updatedGroup bool) {
-	fmt.Println("========computeGroupUpdate========")
+	logger.Info("========computeGroupUpdate========")
 	readSetPolicies, writeSetPolicies, sameSetPolicies, policiesMembersUpdated := computePoliciesMapUpdate(original.Policies, updated.Policies)
 	readSetValues, writeSetValues, sameSetValues, valuesMembersUpdated := computeValuesMapUpdate(original.Values, updated.Values)
 	readSetGroups, writeSetGroups, sameSetGroups, groupsMembersUpdated := computeGroupsMapUpdate(original.Groups, updated.Groups)
@@ -228,7 +228,7 @@ func computeGroupUpdate(original, updated *cb.ConfigGroup) (readSet, writeSet *c
 }
 
 func Compute(original, updated *cb.Config) (*cb.ConfigUpdate, error) {
-	fmt.Println("==========Compute===========")
+	logger.Info("==========Compute===========")
 	if original.ChannelGroup == nil {
 		return nil, fmt.Errorf("no channel group included for original config")
 	}

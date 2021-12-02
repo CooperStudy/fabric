@@ -93,7 +93,7 @@ type ErrIllegalCall struct {
 }
 
 func (err *ErrIllegalCall) Error() string {
-	fmt.Println("======ErrIllegalCall==Error===")
+	logger.Info("======ErrIllegalCall==Error===")
 	return err.msg
 }
 
@@ -103,7 +103,7 @@ type ErrIllegalArgs struct {
 }
 
 func (err *ErrIllegalArgs) Error() string {
-	fmt.Println("======ErrIllegalArgs==Error===")
+	logger.Info("======ErrIllegalArgs==Error===")
 	return err.msg
 }
 
@@ -113,6 +113,6 @@ type ErrOutOfRange struct {
 }
 
 func (err *ErrOutOfRange) Error() string {
-	fmt.Println("======ErrOutOfRange==Error===")
+	logger.Info("======ErrOutOfRange==Error===")
 	return err.msg
 }

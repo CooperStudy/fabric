@@ -17,7 +17,7 @@ import (
 // encode value encodes the versioned value. starting in v1.3 the encoding begins with a nil
 // byte and includes metadata.
 func encodeValue(v *statedb.VersionedValue) ([]byte, error) {
-	fmt.Println("==encodeValue====")
+	logger.Info("==encodeValue====")
 	vvMsg := &msgs.VersionedValueProto{
 		VersionBytes: v.Version.ToBytes(),
 		Value:        v.Value,
@@ -34,7 +34,7 @@ func encodeValue(v *statedb.VersionedValue) ([]byte, error) {
 // decodeValue decodes the statedb value bytes using either the old (pre-v1.3) encoding
 // or the new (v1.3 and later) encoding that supports metadata.
 func decodeValue(encodedValue []byte) (*statedb.VersionedValue, error) {
-	fmt.Println("==decodeValue====")
+	logger.Info("==decodeValue====")
 	if oldFormatEncoding(encodedValue) {
 		val, ver := decodeValueOldFormat(encodedValue)
 		return &statedb.VersionedValue{Version: ver, Value: val, Metadata: nil}, nil
@@ -59,7 +59,7 @@ func decodeValue(encodedValue []byte) (*statedb.VersionedValue, error) {
 // this funtion for test so as to make sure that we can decode old format and support mixed formats present
 // in a statedb. This function should be used only in tests to generate the encoding in old format
 func encodeValueOldFormat(value []byte, version *version.Height) []byte {
-	fmt.Println("==encodeValueOldFormat====")
+	logger.Info("==encodeValueOldFormat====")
 	encodedValue := version.ToBytes()
 	if value != nil {
 		encodedValue = append(encodedValue, value...)
@@ -74,7 +74,7 @@ func encodeValueOldFormat(value []byte, version *version.Height) []byte {
 // for all decodings - which is expected to detect the encoded format and direct the call
 // to this function for decoding the values encoded in the old format
 func decodeValueOldFormat(encodedValue []byte) ([]byte, *version.Height) {
-	fmt.Println("==decodeValueOldFormat====")
+	logger.Info("==decodeValueOldFormat====")
 	height, n := version.NewHeightFromBytes(encodedValue)
 	value := encodedValue[n:]
 	return value, height
@@ -83,7 +83,7 @@ func decodeValueOldFormat(encodedValue []byte) ([]byte, *version.Height) {
 // oldFormatEncoding checks whether the value is encoded using the old (pre-v1.3) format
 // or new format (v1.3 and later for encoding metadata).
 func oldFormatEncoding(encodedValue []byte) bool {
-	fmt.Println("==oldFormatEncoding====")
+	logger.Info("==oldFormatEncoding====")
 	return encodedValue[0] != byte(0) ||
 		(encodedValue[0]|encodedValue[1]) == byte(0) // this check covers a corner case
 	// where the old formatted value happens to start with a nil byte. In this corner case,

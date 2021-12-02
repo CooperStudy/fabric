@@ -8,7 +8,7 @@ package grpcmetrics
 
 import (
 	"context"
-	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"strings"
 	"time"
 
@@ -16,6 +16,7 @@ import (
 	"google.golang.org/grpc"
 )
 
+var grpcmetricsLogger = flogging.MustGetLogger("common.grpcmetrics")
 type UnaryMetrics struct {
 	RequestDuration   metrics.Histogram
 	RequestsReceived  metrics.Counter
@@ -23,7 +24,7 @@ type UnaryMetrics struct {
 }
 
 func UnaryServerInterceptor(um *UnaryMetrics) grpc.UnaryServerInterceptor {
-	fmt.Println("===UnaryServerInterceptor======")
+	grpcmetricsLogger.Info("===UnaryServerInterceptor======")
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		service, method := serviceMethod(info.FullMethod)
 		um.RequestsReceived.With("service", service, "method", method).Add(1)
@@ -50,7 +51,7 @@ type StreamMetrics struct {
 }
 
 func StreamServerInterceptor(sm *StreamMetrics) grpc.StreamServerInterceptor {
-	fmt.Println("===StreamServerInterceptor======")
+	grpcmetricsLogger.Info("===StreamServerInterceptor======")
 	return func(svc interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		sm := sm
 		service, method := serviceMethod(info.FullMethod)
@@ -76,14 +77,14 @@ func StreamServerInterceptor(sm *StreamMetrics) grpc.StreamServerInterceptor {
 }
 
 func serviceMethod(fullMethod string) (service, method string) {
-	fmt.Println("===serviceMethod======")
-	//fmt.Println("============fullMethod===========",fullMethod)//protos.Endorser/ProcessProposal
+	grpcmetricsLogger.Info("===serviceMethod======")
+	//logger.Info("============fullMethod===========",fullMethod)//protos.Endorser/ProcessProposal
 	normalizedMethod := strings.Replace(fullMethod, ".", "_", -1)
 	parts := strings.SplitN(normalizedMethod, "/", -1)
 	if len(parts) != 3 {
 		return "unknown", "unknown"
 	}
-	fmt.Println("==========parts[1], parts[2]====================",parts[1], parts[2])//protos_Endorser ProcessProposal
+	grpcmetricsLogger.Info("==========parts[1], parts[2]====================",parts[1], parts[2])//protos_Endorser ProcessProposal
 	return parts[1], parts[2]
 }
 
@@ -94,13 +95,13 @@ type serverStream struct {
 }
 
 func (ss *serverStream) SendMsg(msg interface{}) error {
-//	fmt.Println("===serverStream===SendMsg===")
+//	logger.Info("===serverStream===SendMsg===")
 	ss.messagesSent.Add(1)
 	return ss.ServerStream.SendMsg(msg)
 }
 
 func (ss *serverStream) RecvMsg(msg interface{}) error {
-	//fmt.Println("===serverStream===RecvMsg===")
+	//logger.Info("===serverStream===RecvMsg===")
 	err := ss.ServerStream.RecvMsg(msg)
 	if err == nil {
 		ss.messagesReceived.Add(1)

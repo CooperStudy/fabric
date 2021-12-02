@@ -65,7 +65,7 @@ type NoOpReconciler struct {
 }
 
 func (*NoOpReconciler) Start() {
-	fmt.Println("===NoOpReconciler==Start==")
+	logger.Info("===NoOpReconciler==Start==")
 	// do nothing
 	logger.Debug("Private data reconciliation has been disabled")
 }
@@ -83,7 +83,7 @@ type ReconcilerConfig struct {
 
 // this func reads reconciler configuration values from core.yaml and returns ReconcilerConfig
 func GetReconcilerConfig() *ReconcilerConfig {
-	//fmt.Println("===GetReconcilerConfig====")
+	//logger.Info("===GetReconcilerConfig====")
 	reconcileSleepInterval := viper.GetDuration(reconcileSleepIntervalConfigKey)
 	if reconcileSleepInterval == 0 {
 		logger.Warning("Configuration key", reconcileSleepIntervalConfigKey, "isn't set, defaulting to", reconcileSleepIntervalDefault)
@@ -100,7 +100,7 @@ func GetReconcilerConfig() *ReconcilerConfig {
 
 // NewReconciler creates a new instance of reconciler
 func NewReconciler(c committer.Committer, fetcher ReconciliationFetcher, config *ReconcilerConfig) *Reconciler {
-	//fmt.Println("===NewReconciler====")
+	//logger.Info("===NewReconciler====")
 	logger.Debug("Private data reconciliation is enabled")
 	return &Reconciler{
 		config:                config,
@@ -111,21 +111,21 @@ func NewReconciler(c committer.Committer, fetcher ReconciliationFetcher, config 
 }
 
 func (r *Reconciler) Stop() {
-	//fmt.Println("===Reconciler===Stop=")
+	//logger.Info("===Reconciler===Stop=")
 	r.stopOnce.Do(func() {
 		close(r.stopChan)
 	})
 }
 
 func (r *Reconciler) Start() {
-	//fmt.Println("===Reconciler===Start=")
+	//logger.Info("===Reconciler===Start=")
 	r.startOnce.Do(func() {
 		go r.run()
 	})
 }
 
 func (r *Reconciler) run() {
-	//fmt.Println("===Reconciler===run=")
+	//logger.Info("===Reconciler===run=")
 	for {
 		select {
 		case <-r.stopChan:
@@ -142,7 +142,7 @@ func (r *Reconciler) run() {
 
 // returns the number of items that were reconciled , minBlock, maxBlock (blocks range) and an error
 func (r *Reconciler) reconcile() error {
-	//fmt.Println("===Reconciler===reconcile=")
+	//logger.Info("===Reconciler===reconcile=")
 	missingPvtDataTracker, err := r.GetMissingPvtDataTracker()
 	if err != nil {
 		logger.Error("reconciliation error when trying to get missingPvtDataTracker:", err)
@@ -206,7 +206,7 @@ type collectionConfigKey struct {
 }
 
 func (r *Reconciler) getDig2CollectionConfig(missingPvtDataInfo ledger.MissingPvtDataInfo) (privdatacommon.Dig2CollectionConfig, uint64, uint64) {
-	//fmt.Println("===Reconciler===getDig2CollectionConfig=")
+	//logger.Info("===Reconciler===getDig2CollectionConfig=")
 	var minBlock, maxBlock uint64
 	minBlock = math.MaxUint64
 	maxBlock = 0
@@ -248,7 +248,7 @@ func (r *Reconciler) getDig2CollectionConfig(missingPvtDataInfo ledger.MissingPv
 }
 
 func (r *Reconciler) getMostRecentCollectionConfig(chaincodeName string, collectionName string, blockNum uint64) (*common.StaticCollectionConfig, error) {
-	//fmt.Println("===Reconciler===getMostRecentCollectionConfig=")
+	//logger.Info("===Reconciler===getMostRecentCollectionConfig=")
 	configHistoryRetriever, err := r.GetConfigHistoryRetriever()
 	if err != nil {
 		return nil, errors.Wrap(err, "configHistoryRetriever is not available")
@@ -275,7 +275,7 @@ func (r *Reconciler) getMostRecentCollectionConfig(chaincodeName string, collect
 }
 
 func (r *Reconciler) preparePvtDataToCommit(elements []*gossip2.PvtDataElement) []*ledger.BlockPvtData {
-	//fmt.Println("===Reconciler===preparePvtDataToCommit=")
+	//logger.Info("===Reconciler===preparePvtDataToCommit=")
 	rwSetByBlockByKeys := r.groupRwsetByBlock(elements)
 
 	// populate the private RWSets passed to the ledger
@@ -300,7 +300,7 @@ func (r *Reconciler) preparePvtDataToCommit(elements []*gossip2.PvtDataElement) 
 }
 
 func (r *Reconciler) logMismatched(pvtdataMismatched []*ledger.PvtdataHashMismatch) {
-	//fmt.Println("===Reconciler===logMismatched=")
+	//logger.Info("===Reconciler===logMismatched=")
 	if len(pvtdataMismatched) > 0 {
 		for _, hashMismatch := range pvtdataMismatched {
 			logger.Warningf("failed to reconcile pvtdata chaincode %s, collection %s, block num %d, tx num %d due to hash mismatch",
@@ -311,7 +311,7 @@ func (r *Reconciler) logMismatched(pvtdataMismatched []*ledger.PvtdataHashMismat
 
 // return a mapping from block num to rwsetByKeys
 func (r *Reconciler) groupRwsetByBlock(elements []*gossip2.PvtDataElement) map[uint64]rwsetByKeys {
-	//fmt.Println("===Reconciler===groupRwsetByBlock=")
+	//logger.Info("===Reconciler===groupRwsetByBlock=")
 	rwSetByBlockByKeys := make(map[uint64]rwsetByKeys) // map from block num to rwsetByKeys
 
 	// Iterate over data fetched from peers

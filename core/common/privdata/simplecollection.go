@@ -32,32 +32,32 @@ type SimpleCollectionPersistenceConfigs struct {
 
 // CollectionID returns the collection's ID
 func (sc *SimpleCollection) CollectionID() string {
-	fmt.Println("==SimpleCollection==CollectionID==")
+	logger.Info("==SimpleCollection==CollectionID==")
 	return sc.name
 }
 
 // MemberOrgs returns the MSP IDs that are part of this collection
 func (sc *SimpleCollection) MemberOrgs() []string {
-	fmt.Println("==SimpleCollection==MemberOrgs==")
+	logger.Info("==SimpleCollection==MemberOrgs==")
 	return sc.memberOrgs
 }
 
 // RequiredPeerCount returns the minimum number of peers
 // required to send private data to
 func (sc *SimpleCollection) RequiredPeerCount() int {
-	fmt.Println("==SimpleCollection==RequiredPeerCount==")
+	logger.Info("==SimpleCollection==RequiredPeerCount==")
 	return int(sc.conf.RequiredPeerCount)
 }
 
 func (sc *SimpleCollection) MaximumPeerCount() int {
-	fmt.Println("==SimpleCollection==MaximumPeerCount==")
+	logger.Info("==SimpleCollection==MaximumPeerCount==")
 	return int(sc.conf.MaximumPeerCount)
 }
 
 // AccessFilter returns the member filter function that evaluates signed data
 // against the member access policy of this collection
 func (sc *SimpleCollection) AccessFilter() Filter {
-	fmt.Println("==SimpleCollection==AccessFilter==")
+	logger.Info("==SimpleCollection==AccessFilter==")
 	return func(sd common.SignedData) bool {
 		if err := sc.accessPolicy.Evaluate([]*common.SignedData{&sd}); err != nil {
 			return false
@@ -67,14 +67,14 @@ func (sc *SimpleCollection) AccessFilter() Filter {
 }
 
 func (sc *SimpleCollection) IsMemberOnlyRead() bool {
-	fmt.Println("==SimpleCollection==IsMemberOnlyRead==")
+	logger.Info("==SimpleCollection==IsMemberOnlyRead==")
 	return sc.conf.MemberOnlyRead
 }
 
 // Setup configures a simple collection object based on a given
 // StaticCollectionConfig proto that has all the necessary information
 func (sc *SimpleCollection) Setup(collectionConfig *common.StaticCollectionConfig, deserializer msp.IdentityDeserializer) error {
-	fmt.Println("==SimpleCollection==Setup==")
+	logger.Info("==SimpleCollection==Setup==")
 	if collectionConfig == nil {
 		return errors.New("Nil config passed to collection setup")
 	}
@@ -131,7 +131,7 @@ func (sc *SimpleCollection) Setup(collectionConfig *common.StaticCollectionConfi
 // Setup configures a simple collection object based on a given
 // StaticCollectionConfig proto that has all the necessary information
 func (sc *SimpleCollection) setupAccessPolicy(collectionPolicyConfig *common.CollectionPolicyConfig, deserializer msp.IdentityDeserializer) error {
-	fmt.Println("==SimpleCollection==setupAccessPolicy==")
+	logger.Info("==SimpleCollection==setupAccessPolicy==")
 	var err error
 	sc.accessPolicy, err = getPolicy(collectionPolicyConfig, deserializer)
 	return err
@@ -139,6 +139,6 @@ func (sc *SimpleCollection) setupAccessPolicy(collectionPolicyConfig *common.Col
 
 // BlockToLive return collection's block to live configuration
 func (s *SimpleCollectionPersistenceConfigs) BlockToLive() uint64 {
-	fmt.Println("==SimpleCollectionPersistenceConfigs==BlockToLive==")
+	logger.Info("==SimpleCollectionPersistenceConfigs==BlockToLive==")
 	return s.blockToLive
 }

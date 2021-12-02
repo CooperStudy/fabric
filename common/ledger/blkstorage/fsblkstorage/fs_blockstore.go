@@ -35,25 +35,25 @@ type fsBlockStore struct {
 // NewFsBlockStore constructs a `FsBlockStore`
 func newFsBlockStore(id string, conf *Conf, indexConfig *blkstorage.IndexConfig,
 	dbHandle *leveldbhelper.DBHandle) *fsBlockStore {
-	fmt.Println("======newFsBlockStore==============")
+	logger.Info("======newFsBlockStore==============")
 	return &fsBlockStore{id, conf, newBlockfileMgr(id, conf, indexConfig, dbHandle)}
 }
 
 // AddBlock adds a new block
 func (store *fsBlockStore) AddBlock(block *common.Block) error {
-	fmt.Println("=====fsBlockStore=AddBlock==============")
+	logger.Info("=====fsBlockStore=AddBlock==============")
 	return store.fileMgr.addBlock(block)
 }
 
 // GetBlockchainInfo returns the current info about blockchain
 func (store *fsBlockStore) GetBlockchainInfo() (*common.BlockchainInfo, error) {
-	//fmt.Println("=====fsBlockStore=GetBlockchainInfo==============")
+	//logger.Info("=====fsBlockStore=GetBlockchainInfo==============")
 	return store.fileMgr.getBlockchainInfo(), nil
 }
 
 // RetrieveBlocks returns an iterator that can be used for iterating over a range of blocks
 func (store *fsBlockStore) RetrieveBlocks(startNum uint64) (ledger.ResultsIterator, error) {
-	fmt.Println("=====fsBlockStore=GetBlockchainInfo======RetrieveBlocks========")
+	logger.Info("=====fsBlockStore=GetBlockchainInfo======RetrieveBlocks========")
 	var itr *blocksItr
 	var err error
 	if itr, err = store.fileMgr.retrieveBlocks(startNum); err != nil {
@@ -64,41 +64,41 @@ func (store *fsBlockStore) RetrieveBlocks(startNum uint64) (ledger.ResultsIterat
 
 // RetrieveBlockByHash returns the block for given block-hash
 func (store *fsBlockStore) RetrieveBlockByHash(blockHash []byte) (*common.Block, error) {
-	fmt.Println("=====fsBlockStore=RetrieveBlockByHash========")
+	logger.Info("=====fsBlockStore=RetrieveBlockByHash========")
 	return store.fileMgr.retrieveBlockByHash(blockHash)
 }
 
 // RetrieveBlockByNumber returns the block at a given blockchain height
 func (store *fsBlockStore) RetrieveBlockByNumber(blockNum uint64) (*common.Block, error) {
-	fmt.Println("=====fsBlockStore=RetrieveBlockByNumber========")
+	logger.Info("=====fsBlockStore=RetrieveBlockByNumber========")
 	return store.fileMgr.retrieveBlockByNumber(blockNum)
 }
 
 // RetrieveTxByID returns a transaction for given transaction id
 func (store *fsBlockStore) RetrieveTxByID(txID string) (*common.Envelope, error) {
-	fmt.Println("=====fsBlockStore=RetrieveTxByID========")
+	logger.Info("=====fsBlockStore=RetrieveTxByID========")
 	return store.fileMgr.retrieveTransactionByID(txID)
 }
 
 // RetrieveTxByID returns a transaction for given transaction id
 func (store *fsBlockStore) RetrieveTxByBlockNumTranNum(blockNum uint64, tranNum uint64) (*common.Envelope, error) {
-	fmt.Println("=====fsBlockStore=RetrieveTxByBlockNumTranNum========")
+	logger.Info("=====fsBlockStore=RetrieveTxByBlockNumTranNum========")
 	return store.fileMgr.retrieveTransactionByBlockNumTranNum(blockNum, tranNum)
 }
 
 func (store *fsBlockStore) RetrieveBlockByTxID(txID string) (*common.Block, error) {
-	fmt.Println("=====fsBlockStore=RetrieveBlockByTxID========")
+	logger.Info("=====fsBlockStore=RetrieveBlockByTxID========")
 	return store.fileMgr.retrieveBlockByTxID(txID)
 }
 
 func (store *fsBlockStore) RetrieveTxValidationCodeByTxID(txID string) (peer.TxValidationCode, error) {
-	fmt.Println("=====fsBlockStore=RetrieveTxValidationCodeByTxID========")
+	logger.Info("=====fsBlockStore=RetrieveTxValidationCodeByTxID========")
 	return store.fileMgr.retrieveTxValidationCodeByTxID(txID)
 }
 
 // Shutdown shuts down the block store
 func (store *fsBlockStore) Shutdown() {
-	fmt.Println("=====fsBlockStore=Shutdown========")
+	logger.Info("=====fsBlockStore=Shutdown========")
 	logger.Debugf("closing fs blockStore:%s", store.id)
 	store.fileMgr.close()
 }

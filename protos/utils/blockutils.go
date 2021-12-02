@@ -16,7 +16,7 @@ import (
 // GetChainIDFromBlockBytes returns chain ID given byte array which represents
 // the block
 func GetChainIDFromBlockBytes(bytes []byte) (string, error) {
-	fmt.Println("===========GetChainIDFromBlockBytes========")
+	logger.Info("===========GetChainIDFromBlockBytes========")
 	block, err := GetBlockFromBlockBytes(bytes)
 	if err != nil {
 		return "", err
@@ -27,7 +27,7 @@ func GetChainIDFromBlockBytes(bytes []byte) (string, error) {
 
 // GetChainIDFromBlock returns chain ID in the block
 func GetChainIDFromBlock(block *cb.Block) (string, error) {
-	fmt.Println("===========GetChainIDFromBlock========")
+	logger.Info("===========GetChainIDFromBlock========")
 	if block == nil || block.Data == nil || block.Data.Data == nil || len(block.Data.Data) == 0 {
 		return "", errors.Errorf("failed to retrieve channel id - block is empty")
 	}
@@ -54,7 +54,7 @@ func GetChainIDFromBlock(block *cb.Block) (string, error) {
 
 // GetMetadataFromBlock retrieves metadata at the specified index.
 func GetMetadataFromBlock(block *cb.Block, index cb.BlockMetadataIndex) (*cb.Metadata, error) {
-	fmt.Println("===========GetMetadataFromBlock========")
+	logger.Info("===========GetMetadataFromBlock========")
 	md := &cb.Metadata{}
 	err := proto.Unmarshal(block.Metadata.Metadata[index], md)
 	if err != nil {
@@ -66,7 +66,7 @@ func GetMetadataFromBlock(block *cb.Block, index cb.BlockMetadataIndex) (*cb.Met
 // GetMetadataFromBlockOrPanic retrieves metadata at the specified index, or
 // panics on error
 func GetMetadataFromBlockOrPanic(block *cb.Block, index cb.BlockMetadataIndex) *cb.Metadata {
-	fmt.Println("===========GetMetadataFromBlockOrPanic========")
+	logger.Info("===========GetMetadataFromBlockOrPanic========")
 	md, err := GetMetadataFromBlock(block, index)
 	if err != nil {
 		panic(err)
@@ -77,7 +77,7 @@ func GetMetadataFromBlockOrPanic(block *cb.Block, index cb.BlockMetadataIndex) *
 // GetLastConfigIndexFromBlock retrieves the index of the last config block as
 // encoded in the block metadata
 func GetLastConfigIndexFromBlock(block *cb.Block) (uint64, error) {
-	fmt.Println("===========GetLastConfigIndexFromBlock========")
+	logger.Info("===========GetLastConfigIndexFromBlock========")
 	md, err := GetMetadataFromBlock(block, cb.BlockMetadataIndex_LAST_CONFIG)
 	if err != nil {
 		return 0, err
@@ -93,7 +93,7 @@ func GetLastConfigIndexFromBlock(block *cb.Block) (uint64, error) {
 // GetLastConfigIndexFromBlockOrPanic retrieves the index of the last config
 // block as encoded in the block metadata, or panics on error
 func GetLastConfigIndexFromBlockOrPanic(block *cb.Block) uint64 {
-	fmt.Println("===========GetLastConfigIndexFromBlockOrPanic========")
+	logger.Info("===========GetLastConfigIndexFromBlockOrPanic========")
 	index, err := GetLastConfigIndexFromBlock(block)
 	if err != nil {
 		panic(err)
@@ -103,7 +103,7 @@ func GetLastConfigIndexFromBlockOrPanic(block *cb.Block) uint64 {
 
 // GetBlockFromBlockBytes marshals the bytes into Block
 func GetBlockFromBlockBytes(blockBytes []byte) (*cb.Block, error) {
-	fmt.Println("===========GetBlockFromBlockBytes========")
+	logger.Info("===========GetBlockFromBlockBytes========")
 	block := &cb.Block{}
 	err := proto.Unmarshal(blockBytes, block)
 	if err != nil {
@@ -114,7 +114,7 @@ func GetBlockFromBlockBytes(blockBytes []byte) (*cb.Block, error) {
 
 // CopyBlockMetadata copies metadata from one block into another
 func CopyBlockMetadata(src *cb.Block, dst *cb.Block) {
-	fmt.Println("===========CopyBlockMetadata========")
+	logger.Info("===========CopyBlockMetadata========")
 	dst.Metadata = src.Metadata
 	// Once copied initialize with rest of the
 	// required metadata positions.
@@ -123,7 +123,7 @@ func CopyBlockMetadata(src *cb.Block, dst *cb.Block) {
 
 // InitBlockMetadata copies metadata from one block into another
 func InitBlockMetadata(block *cb.Block) {
-	fmt.Println("===========InitBlockMetadata========")
+	logger.Info("===========InitBlockMetadata========")
 	if block.Metadata == nil {
 		block.Metadata = &cb.BlockMetadata{Metadata: [][]byte{{}, {}, {}}}
 	} else if len(block.Metadata.Metadata) < int(cb.BlockMetadataIndex_TRANSACTIONS_FILTER+1) {

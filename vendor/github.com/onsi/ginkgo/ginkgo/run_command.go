@@ -54,14 +54,14 @@ func (r *SpecRunner) RunSpecs(args []string, additionalArgs []string) {
 
 	suites, skippedPackages := findSuites(args, r.commandFlags.Recurse, r.commandFlags.SkipPackage, true)
 	if len(skippedPackages) > 0 {
-		fmt.Println("Will skip:")
+		logger.Info("Will skip:")
 		for _, skippedPackage := range skippedPackages {
-			fmt.Println("  " + skippedPackage)
+			logger.Info("  " + skippedPackage)
 		}
 	}
 
 	if len(skippedPackages) > 0 && len(suites) == 0 {
-		fmt.Println("All tests skipped!  Exiting...")
+		logger.Info("All tests skipped!  Exiting...")
 		os.Exit(0)
 	}
 
@@ -113,7 +113,7 @@ func (r *SpecRunner) RunSpecs(args []string, additionalArgs []string) {
 			// If coverprofile is set, combine coverages
 			if r.getCoverprofile() != "" {
 				if err := r.combineCoverprofiles(runners); err != nil {
-					fmt.Println(err.Error())
+					logger.Info(err.Error())
 					os.Exit(1)
 				}
 			} else {
@@ -161,7 +161,7 @@ func (r *SpecRunner) combineCoverprofiles(runners []*testrunner.TestRunner) erro
 		return fmt.Errorf("Unable to create combined profile, outputdir does not exist: %s", r.getOutputDir())
 	}
 
-	fmt.Println("path is " + path)
+	logger.Info("path is " + path)
 
 	combined, err := os.OpenFile(filepath.Join(path, r.getCoverprofile()),
 		os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0666)
@@ -187,7 +187,7 @@ func (r *SpecRunner) combineCoverprofiles(runners []*testrunner.TestRunner) erro
 		}
 	}
 
-	fmt.Println("All profiles combined")
+	logger.Info("All profiles combined")
 	return nil
 }
 

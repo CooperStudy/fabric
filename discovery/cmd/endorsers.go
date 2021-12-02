@@ -42,31 +42,31 @@ type EndorsersCmd struct {
 
 // SetCollections sets the collections to be the given collections
 func (pc *EndorsersCmd) SetCollections(collections *map[string]string) {
-	fmt.Println("====EndorsersCmd==SetCollections==")
+	logger.Info("====EndorsersCmd==SetCollections==")
 	pc.collections = collections
 }
 
 // SetChaincodes sets the chaincodes to be the given chaincodes
 func (pc *EndorsersCmd) SetChaincodes(chaincodes *[]string) {
-	fmt.Println("====EndorsersCmd==SetChaincodes==")
+	logger.Info("====EndorsersCmd==SetChaincodes==")
 	pc.chaincodes = chaincodes
 }
 
 // SetServer sets the server
 func (pc *EndorsersCmd) SetServer(server *string) {
-	fmt.Println("====EndorsersCmd==SetServer==")
+	logger.Info("====EndorsersCmd==SetServer==")
 	pc.server = server
 }
 
 // SetChannel sets the channel
 func (pc *EndorsersCmd) SetChannel(channel *string) {
-	fmt.Println("====EndorsersCmd==SetChannel==")
+	logger.Info("====EndorsersCmd==SetChannel==")
 	pc.channel = channel
 }
 
 // Execute executes the command
 func (pc *EndorsersCmd) Execute(conf common.Config) error {
-	fmt.Println("====EndorsersCmd==Execute==")
+	logger.Info("====EndorsersCmd==Execute==")
 	if pc.channel == nil || *pc.channel == "" {
 		return errors.New("no channel specified")
 	}
@@ -116,7 +116,7 @@ type EndorserResponseParser struct {
 
 // ParseResponse parses the given response for the given channel
 func (parser *EndorserResponseParser) ParseResponse(channel string, res ServiceResponse) error {
-	fmt.Println("====EndorserResponseParser==ParseResponse==")
+	logger.Info("====EndorserResponseParser==ParseResponse==")
 	rawResponse := res.Raw()
 	if len(rawResponse.Results) == 0 {
 		return errors.New("empty results")
@@ -142,7 +142,7 @@ type chaincodesAndCollections struct {
 }
 
 func (ec *chaincodesAndCollections) existsInChaincodes(chaincodeName string) bool {
-	fmt.Println("====chaincodesAndCollections==existsInChaincodes==")
+	logger.Info("====chaincodesAndCollections==existsInChaincodes==")
 	for _, cc := range *ec.Chaincodes {
 		if chaincodeName == cc {
 			return true
@@ -152,7 +152,7 @@ func (ec *chaincodesAndCollections) existsInChaincodes(chaincodeName string) boo
 }
 
 func (ec *chaincodesAndCollections) parseInput() (map[string][]string, error) {
-	fmt.Println("====chaincodesAndCollections==parseInput==")
+	logger.Info("====chaincodesAndCollections==parseInput==")
 	var emptyChaincodes []string
 	if ec.Chaincodes == nil {
 		ec.Chaincodes = &emptyChaincodes
@@ -178,7 +178,7 @@ func (ec *chaincodesAndCollections) parseInput() (map[string][]string, error) {
 }
 
 func parseEndorsementDescriptors(descriptors []*EndorsementDescriptor) []endorsermentDescriptor {
-	fmt.Println("====parseEndorsementDescriptors====")
+	logger.Info("====parseEndorsementDescriptors====")
 	var res []endorsermentDescriptor
 	for _, desc := range descriptors {
 		endorsersByGroups := make(map[string][]endorser)
@@ -210,7 +210,7 @@ type endorsermentDescriptor struct {
 }
 
 func endorserFromRaw(p *Peer) endorser {
-	fmt.Println("====endorserFromRaw====")
+	logger.Info("====endorserFromRaw====")
 	sId := &msp.SerializedIdentity{}
 	proto.Unmarshal(p.Identity, sId)
 	return endorser{
@@ -222,7 +222,7 @@ func endorserFromRaw(p *Peer) endorser {
 }
 
 func endpointFromEnvelope(env *gossip.Envelope) string {
-	fmt.Println("====endpointFromEnvelope====")
+	logger.Info("====endpointFromEnvelope====")
 	if env == nil {
 		return ""
 	}
@@ -240,7 +240,7 @@ func endpointFromEnvelope(env *gossip.Envelope) string {
 }
 
 func ledgerHeightFromEnvelope(env *gossip.Envelope) uint64 {
-	fmt.Println("====ledgerHeightFromEnvelope====")
+	logger.Info("====ledgerHeightFromEnvelope====")
 	if env == nil {
 		return 0
 	}

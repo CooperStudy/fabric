@@ -108,7 +108,7 @@ type PullEngine struct {
 // NewPullEngineWithFilter creates an instance of a PullEngine with a certain sleep time
 // between pull initiations, and uses the given filters when sending digests and responses
 func NewPullEngineWithFilter(participant PullAdapter, sleepTime time.Duration, df DigestFilter) *PullEngine {
-	//fmt.Println("====NewPullEngineWithFilter=")
+	//logger.Info("====NewPullEngineWithFilter=")
 	engine := &PullEngine{
 		PullAdapter:        participant,
 		stopFlag:           int32(0),
@@ -128,7 +128,7 @@ func NewPullEngineWithFilter(participant PullAdapter, sleepTime time.Duration, d
 
 	go func() {
 		for !engine.toDie() {
-			//fmt.Println("======sleepTime========",sleepTime)//4s
+			//logger.Info("======sleepTime========",sleepTime)//4s
 			time.Sleep(sleepTime)
 			if engine.toDie() {
 				return
@@ -143,7 +143,7 @@ func NewPullEngineWithFilter(participant PullAdapter, sleepTime time.Duration, d
 // NewPullEngine creates an instance of a PullEngine with a certain sleep time
 // between pull initiations
 func NewPullEngine(participant PullAdapter, sleepTime time.Duration) *PullEngine {
-	//fmt.Println("====NewPullEngine=")
+	//logger.Info("====NewPullEngine=")
 	acceptAllFilter := func(_ interface{}) func(string) bool {
 		return func(_ string) bool {
 			return true
@@ -153,43 +153,43 @@ func NewPullEngine(participant PullAdapter, sleepTime time.Duration) *PullEngine
 }
 
 func (engine *PullEngine) toDie() bool {
-	//fmt.Println("====PullEngine===toDie==")
+	//logger.Info("====PullEngine===toDie==")
 	return atomic.LoadInt32(&(engine.stopFlag)) == int32(1)
 }
 
 func (engine *PullEngine) acceptResponses() {
-	//fmt.Println("====PullEngine===acceptResponses==")
+	//logger.Info("====PullEngine===acceptResponses==")
 	atomic.StoreInt32(&(engine.acceptingResponses), int32(1))
 }
 
 func (engine *PullEngine) isAcceptingResponses() bool {
-	//fmt.Println("====PullEngine===isAcceptingResponses==")
+	//logger.Info("====PullEngine===isAcceptingResponses==")
 	return atomic.LoadInt32(&(engine.acceptingResponses)) == int32(1)
 }
 
 func (engine *PullEngine) acceptDigests() {
-	//fmt.Println("====PullEngine===acceptDigests==")
+	//logger.Info("====PullEngine===acceptDigests==")
 	atomic.StoreInt32(&(engine.acceptingDigests), int32(1))
 }
 
 func (engine *PullEngine) isAcceptingDigests() bool {
-	//fmt.Println("====PullEngine===isAcceptingDigests==")
+	//logger.Info("====PullEngine===isAcceptingDigests==")
 	return atomic.LoadInt32(&(engine.acceptingDigests)) == int32(1)
 }
 
 func (engine *PullEngine) ignoreDigests() {
-	//fmt.Println("====PullEngine===ignoreDigests==")
+	//logger.Info("====PullEngine===ignoreDigests==")
 	atomic.StoreInt32(&(engine.acceptingDigests), int32(0))
 }
 
 // Stop stops the engine
 func (engine *PullEngine) Stop() {
-	//fmt.Println("====PullEngine===Stop==")
+	//logger.Info("====PullEngine===Stop==")
 	atomic.StoreInt32(&(engine.stopFlag), int32(1))
 }
 
 func (engine *PullEngine) initiatePull() {
-	//fmt.Println("====PullEngine===initiatePull==")
+	//logger.Info("====PullEngine===initiatePull==")
 	engine.lock.Lock()
 	defer engine.lock.Unlock()
 
@@ -208,7 +208,7 @@ func (engine *PullEngine) initiatePull() {
 }
 
 func (engine *PullEngine) processIncomingDigests() {
-	//fmt.Println("====PullEngine===processIncomingDigests==")
+	//logger.Info("====PullEngine===processIncomingDigests==")
 	engine.ignoreDigests()
 
 	engine.lock.Lock()
@@ -235,7 +235,7 @@ func (engine *PullEngine) processIncomingDigests() {
 }
 
 func (engine *PullEngine) endPull() {
-	//fmt.Println("====PullEngine===endPull==")
+	//logger.Info("====PullEngine===endPull==")
 	engine.lock.Lock()
 	defer engine.lock.Unlock()
 
@@ -249,7 +249,7 @@ func (engine *PullEngine) endPull() {
 
 // OnDigest notifies the engine that a digest has arrived
 func (engine *PullEngine) OnDigest(digest []string, nonce uint64, context interface{}) {
-	//fmt.Println("====PullEngine===OnDigest==")
+	//logger.Info("====PullEngine===OnDigest==")
 	if !engine.isAcceptingDigests() || !engine.outgoingNONCES.Exists(nonce) {
 		return
 	}
@@ -272,7 +272,7 @@ func (engine *PullEngine) OnDigest(digest []string, nonce uint64, context interf
 
 // Add adds items to the state
 func (engine *PullEngine) Add(seqs ...string) {
-	//fmt.Println("====PullEngine===Add==")
+	//logger.Info("====PullEngine===Add==")
 	for _, seq := range seqs {
 		engine.state.Add(seq)
 	}
@@ -280,7 +280,7 @@ func (engine *PullEngine) Add(seqs ...string) {
 
 // Remove removes items from the state
 func (engine *PullEngine) Remove(seqs ...string) {
-	//fmt.Println("====PullEngine===Remove==")
+	//logger.Info("====PullEngine===Remove==")
 	for _, seq := range seqs {
 		engine.state.Remove(seq)
 	}
@@ -288,7 +288,7 @@ func (engine *PullEngine) Remove(seqs ...string) {
 
 // OnHello notifies the engine a hello has arrived
 func (engine *PullEngine) OnHello(nonce uint64, context interface{}) {
-	//fmt.Println("====PullEngine===OnHello==")
+	//logger.Info("====PullEngine===OnHello==")
 	engine.incomingNONCES.Add(nonce)
 
 	time.AfterFunc(engine.requestWaitTime, func() {
@@ -313,7 +313,7 @@ func (engine *PullEngine) OnHello(nonce uint64, context interface{}) {
 
 // OnReq notifies the engine a request has arrived
 func (engine *PullEngine) OnReq(items []string, nonce uint64, context interface{}) {
-	//fmt.Println("====PullEngine===OnReq==")
+	//logger.Info("====PullEngine===OnReq==")
 	if !engine.incomingNONCES.Exists(nonce) {
 		return
 	}
@@ -337,7 +337,7 @@ func (engine *PullEngine) OnReq(items []string, nonce uint64, context interface{
 
 // OnRes notifies the engine a response has arrived
 func (engine *PullEngine) OnRes(items []string, nonce uint64) {
-	//fmt.Println("====PullEngine===OnRes==")
+	//logger.Info("====PullEngine===OnRes==")
 	if !engine.outgoingNONCES.Exists(nonce) || !engine.isAcceptingResponses() {
 		return
 	}
@@ -346,7 +346,7 @@ func (engine *PullEngine) OnRes(items []string, nonce uint64) {
 }
 
 func (engine *PullEngine) newNONCE() uint64 {
-	//fmt.Println("====PullEngine===newNONCE==")
+	//logger.Info("====PullEngine===newNONCE==")
 	n := uint64(0)
 	for {
 		n = util.RandomUInt64()

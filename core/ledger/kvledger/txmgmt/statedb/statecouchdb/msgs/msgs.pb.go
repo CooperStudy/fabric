@@ -51,7 +51,7 @@ func (m *VersionFieldProto) XXX_DiscardUnknown() {
 var xxx_messageInfo_VersionFieldProto proto.InternalMessageInfo
 
 func (m *VersionFieldProto) GetVersionBytes() []byte {
-	fmt.Println("==VersionFieldProto==GetVersionBytes==")
+	logger.Info("==VersionFieldProto==GetVersionBytes==")
 	if m != nil {
 		return m.VersionBytes
 	}
@@ -59,7 +59,7 @@ func (m *VersionFieldProto) GetVersionBytes() []byte {
 }
 
 func (m *VersionFieldProto) GetMetadata() []byte {
-	fmt.Println("==VersionFieldProto==GetMetadata==")
+	logger.Info("==VersionFieldProto==GetMetadata==")
 	if m != nil {
 		return m.Metadata
 	}
@@ -67,12 +67,12 @@ func (m *VersionFieldProto) GetMetadata() []byte {
 }
 
 func init() {
-	fmt.Println("==init1==")
+	logger.Info("==init1==")
 	proto.RegisterType((*VersionFieldProto)(nil), "msgs.VersionFieldProto")
 }
 
 func init() {
-	fmt.Println("==init2==")
+	logger.Info("==init2==")
 	proto.RegisterFile("msgs.proto", fileDescriptor_msgs_41c2b9a37861a33d)
 }
 

@@ -24,7 +24,7 @@ type NymSignatureScheme struct {
 // Sign produces a signature over the passed digest. It takes in input, the user secret key (sk),
 // the pseudonym public key (Nym) and secret key (RNym), and the issuer public key (ipk).
 func (n *NymSignatureScheme) Sign(sk handlers.Big, Nym handlers.Ecp, RNym handlers.Big, ipk handlers.IssuerPublicKey, digest []byte) (res []byte, err error) {
-	fmt.Println("====NymSignatureScheme====Sign=======")
+	logger.Info("====NymSignatureScheme====Sign=======")
 	defer func() {
 		if r := recover(); r != nil {
 			res = nil
@@ -66,7 +66,7 @@ func (n *NymSignatureScheme) Sign(sk handlers.Big, Nym handlers.Ecp, RNym handle
 // Verify checks that the passed signatures is valid with the respect to the passed digest, issuer public key,
 // and pseudonym public key.
 func (*NymSignatureScheme) Verify(ipk handlers.IssuerPublicKey, Nym handlers.Ecp, signature, digest []byte) (err error) {
-	fmt.Println("====NymSignatureScheme====Verify=======")
+	logger.Info("====NymSignatureScheme====Verify=======")
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.Errorf("failure [%s]", r)

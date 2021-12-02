@@ -17,7 +17,7 @@ limitations under the License.
 package version
 
 import (
-	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/common/ledger/util"
 )
 
@@ -26,16 +26,16 @@ type Height struct {
 	BlockNum uint64
 	TxNum    uint64
 }
-
+var logger = flogging.MustGetLogger("core.ledger.kvledger.txmgmt.version")
 // NewHeight constructs a new instance of Height
 func NewHeight(blockNum, txNum uint64) *Height {
-	fmt.Println("======NewHeight======")
+	logger.Info("======NewHeight======")
 	return &Height{blockNum, txNum}
 }
 
 // NewHeightFromBytes constructs a new instance of Height from serialized bytes
 func NewHeightFromBytes(b []byte) (*Height, int) {
-	fmt.Println("======NewHeightFromBytes======")
+	logger.Info("======NewHeightFromBytes======")
 	blockNum, n1 := util.DecodeOrderPreservingVarUint64(b)
 
 	txNum, n2 := util.DecodeOrderPreservingVarUint64(b[n1:])
@@ -44,7 +44,7 @@ func NewHeightFromBytes(b []byte) (*Height, int) {
 
 // ToBytes serializes the Height
 func (h *Height) ToBytes() []byte {
-	fmt.Println("===Height===ToBytes======")
+	logger.Info("===Height===ToBytes======")
 	blockNumBytes := util.EncodeOrderPreservingVarUint64(h.BlockNum)
 	txNumBytes := util.EncodeOrderPreservingVarUint64(h.TxNum)
 	return append(blockNumBytes, txNumBytes...)
@@ -53,7 +53,7 @@ func (h *Height) ToBytes() []byte {
 // Compare return a -1, zero, or +1 based on whether this height is
 // less than, equals to, or greater than the specified height respectively.
 func (h *Height) Compare(h1 *Height) int {
-	fmt.Println("===Height===Compare======")
+	logger.Info("===Height===Compare======")
 	res := 0
 	switch {
 	case h.BlockNum != h1.BlockNum:
@@ -73,7 +73,7 @@ func (h *Height) Compare(h1 *Height) int {
 
 // AreSame returns true if both the heights are either nil or equal
 func AreSame(h1 *Height, h2 *Height) bool {
-	fmt.Println("===AreSame=====")
+	logger.Info("===AreSame=====")
 	if h1 == nil {
 		return h2 == nil
 	}

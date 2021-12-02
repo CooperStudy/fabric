@@ -25,7 +25,7 @@ type VMProvider interface {
 type Builder interface {
 	Build() (io.Reader, error)
 }
-
+var logger = flogging.MustGetLogger("core.container.controller")
 //VM is an abstract virtual image for supporting arbitrary virual machines
 type VM interface {
 	Start(ccid ccintf.CCID, args []string, env []string, filesToUpload map[string][]byte, builder Builder) error
@@ -52,7 +52,7 @@ var vmLogger = flogging.MustGetLogger("container")
 
 // NewVMController creates a new instance of VMController
 func NewVMController(vmProviders map[string]VMProvider) *VMController {
-	fmt.Println("==NewVMController==")
+	logger.Info("==NewVMController==")
 	return &VMController{
 		containerLocks: make(map[string]*refCountedLock),
 		vmProviders:    vmProviders,
@@ -60,7 +60,7 @@ func NewVMController(vmProviders map[string]VMProvider) *VMController {
 }
 
 func (vmc *VMController) newVM(typ string) VM {
-	fmt.Println("==VMController==newVM==")
+	logger.Info("==VMController==newVM==")
 	v, ok := vmc.vmProviders[typ]
 	if !ok {
 		vmLogger.Panicf("Programming error: unsupported VM type: %s", typ)
@@ -69,7 +69,7 @@ func (vmc *VMController) newVM(typ string) VM {
 }
 
 func (vmc *VMController) lockContainer(id string) {
-	fmt.Println("==VMController==lockContainer==")
+	logger.Info("==VMController==lockContainer==")
 	//get the container lock under global lock
 	vmc.Lock()
 	var refLck *refCountedLock
@@ -88,7 +88,7 @@ func (vmc *VMController) lockContainer(id string) {
 }
 
 func (vmc *VMController) unlockContainer(id string) {
-	fmt.Println("==VMController==unlockContainer==")
+	logger.Info("==VMController==unlockContainer==")
 	vmc.Lock()
 	if refLck, ok := vmc.containerLocks[id]; ok {
 		if refLck.refCount <= 0 {
@@ -141,7 +141,7 @@ type PlatformBuilder struct {
 
 // Build a tar stream based on the CDS
 func (b *PlatformBuilder) Build() (io.Reader, error) {
-	fmt.Println("==PlatformBuilder==Build==")
+	logger.Info("==PlatformBuilder==Build==")
 	return b.PlatformRegistry.GenerateDockerBuild(
 		b.Type,
 		b.Path,
@@ -152,12 +152,12 @@ func (b *PlatformBuilder) Build() (io.Reader, error) {
 }
 
 func (si StartContainerReq) Do(v VM) error {
-	fmt.Println("==StartContainerReq==Do==")
+	logger.Info("==StartContainerReq==Do==")
 	return v.Start(si.CCID, si.Args, si.Env, si.FilesToUpload, si.Builder)
 }
 
 func (si StartContainerReq) GetCCID() ccintf.CCID {
-	fmt.Println("==StartContainerReq==GetCCID==")
+	logger.Info("==StartContainerReq==GetCCID==")
 	return si.CCID
 }
 
@@ -172,18 +172,18 @@ type StopContainerReq struct {
 }
 
 func (si StopContainerReq) Do(v VM) error {
-	fmt.Println("==StopContainerReq==Do==")
+	logger.Info("==StopContainerReq==Do==")
 	return v.Stop(si.CCID, si.Timeout, si.Dontkill, si.Dontremove)
 }
 
 func (si StopContainerReq) GetCCID() ccintf.CCID {
-	fmt.Println("==StopContainerReq==GetCCID==")
+	logger.Info("==StopContainerReq==GetCCID==")
 	return si.CCID
 }
 
 func (vmc *VMController) Process(vmtype string, req VMCReq) error {
-	fmt.Println("==VMController==Process==")
-	fmt.Println("==vmtype==",vmtype)//DOCKER
+	logger.Info("==VMController==Process==")
+	logger.Info("==vmtype==",vmtype)//DOCKER
 	v := vmc.newVM(vmtype)
 	ccid := req.GetCCID()
 	id := ccid.GetName()

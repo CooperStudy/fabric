@@ -1135,18 +1135,18 @@ func TestMain(m *testing.M) {
 
 	id, err := localMsp.GetIdentifier()
 	if err != nil {
-		fmt.Println("Failed obtaining identifier for localMSP")
+		logger.Info("Failed obtaining identifier for localMSP")
 		os.Exit(-1)
 	}
 
 	msps, err := mspMgr.GetMSPs()
 	if err != nil {
-		fmt.Println("Failed obtaining MSPs from MSP manager")
+		logger.Info("Failed obtaining MSPs from MSP manager")
 		os.Exit(-1)
 	}
 
 	if msps[id] == nil {
-		fmt.Println("Couldn't find localMSP in MSP manager")
+		logger.Info("Couldn't find localMSP in MSP manager")
 		os.Exit(-1)
 	}
 

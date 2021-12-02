@@ -10,7 +10,7 @@ import (
 	"github.com/hyperledger/fabric/common/flogging"
 )
 
-var aclLogger = flogging.MustGetLogger("aclmgmt")
+var logger = flogging.MustGetLogger("aclmgmt")
 
 type ACLProvider interface {
 	//CheckACL checks the ACL for the resource for the channel using the

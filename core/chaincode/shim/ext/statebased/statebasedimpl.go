@@ -26,7 +26,7 @@ type stateEP struct {
 // NewStateEP constructs a state-based endorsement policy from a given
 // serialized EP byte array. If the byte array is empty, a new EP is created.
 func NewStateEP(policy []byte) (KeyEndorsementPolicy, error) {
-	fmt.Println("=====NewStateEP==========")
+	logger.Info("=====NewStateEP==========")
 	s := &stateEP{orgs: make(map[string]mb.MSPRole_MSPRoleType)}
 	if policy != nil {
 		spe := &cb.SignaturePolicyEnvelope{}
@@ -44,7 +44,7 @@ func NewStateEP(policy []byte) (KeyEndorsementPolicy, error) {
 
 // Policy returns the endorsement policy as bytes
 func (s *stateEP) Policy() ([]byte, error) {
-	fmt.Println("=====stateEP=====Policy=====")
+	logger.Info("=====stateEP=====Policy=====")
 	spe := s.policyFromMSPIDs()
 	spBytes, err := proto.Marshal(spe)
 	if err != nil {
@@ -55,7 +55,7 @@ func (s *stateEP) Policy() ([]byte, error) {
 
 // AddOrgs adds the specified channel orgs to the existing key-level EP
 func (s *stateEP) AddOrgs(role RoleType, neworgs ...string) error {
-	fmt.Println("=====stateEP=====AddOrgs=====")
+	logger.Info("=====stateEP=====AddOrgs=====")
 	var mspRole mb.MSPRole_MSPRoleType
 	switch role {
 	case RoleTypeMember:
@@ -76,7 +76,7 @@ func (s *stateEP) AddOrgs(role RoleType, neworgs ...string) error {
 
 // DelOrgs delete the specified channel orgs from the existing key-level EP
 func (s *stateEP) DelOrgs(delorgs ...string) {
-	fmt.Println("=====stateEP=====DelOrgs=====")
+	logger.Info("=====stateEP=====DelOrgs=====")
 	for _, delorg := range delorgs {
 		delete(s.orgs, delorg)
 	}
@@ -84,7 +84,7 @@ func (s *stateEP) DelOrgs(delorgs ...string) {
 
 // ListOrgs returns an array of channel orgs that are required to endorse chnages
 func (s *stateEP) ListOrgs() []string {
-	fmt.Println("=====stateEP=====ListOrgs=====")
+	logger.Info("=====stateEP=====ListOrgs=====")
 	orgNames := make([]string, 0, len(s.orgs))
 	for mspid := range s.orgs {
 		orgNames = append(orgNames, mspid)
@@ -93,7 +93,7 @@ func (s *stateEP) ListOrgs() []string {
 }
 
 func (s *stateEP) setMSPIDsFromSP(sp *cb.SignaturePolicyEnvelope) error {
-	fmt.Println("=====stateEP=====setMSPIDsFromSP=====")
+	logger.Info("=====stateEP=====setMSPIDsFromSP=====")
 	// iterate over the identities in this envelope
 	for _, identity := range sp.Identities {
 		// this imlementation only supports the ROLE type
@@ -110,7 +110,7 @@ func (s *stateEP) setMSPIDsFromSP(sp *cb.SignaturePolicyEnvelope) error {
 }
 
 func (s *stateEP) policyFromMSPIDs() *cb.SignaturePolicyEnvelope {
-	fmt.Println("=====stateEP=====policyFromMSPIDs=====")
+	logger.Info("=====stateEP=====policyFromMSPIDs=====")
 	mspids := s.ListOrgs()
 	sort.Strings(mspids)
 	principals := make([]*mb.MSPPrincipal, len(mspids))

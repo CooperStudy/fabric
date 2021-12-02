@@ -17,7 +17,6 @@ limitations under the License.
 package util
 
 import (
-	"fmt"
 	"reflect"
 	"sort"
 
@@ -26,7 +25,7 @@ import (
 
 // GetSortedKeys returns the keys of the map in a sorted order. This function assumes that the keys are string
 func GetSortedKeys(m interface{}) []string {
-	fmt.Println("==GetSortedKeys==")
+	logger.Info("==GetSortedKeys==")
 	mapVal := reflect.ValueOf(m)
 	keyVals := mapVal.MapKeys()
 	keys := []string{}
@@ -41,7 +40,7 @@ func GetSortedKeys(m interface{}) []string {
 // This function assumes that the mapPtr is a pointer to a map and listPtr is is a pointer to a list. Further type of keys of the
 // map are assumed to be string and the types of the values of the maps and the list are same
 func GetValuesBySortedKeys(mapPtr interface{}, listPtr interface{}) {
-	fmt.Println("==GetValuesBySortedKeys==")
+	logger.Info("==GetValuesBySortedKeys==")
 	mapVal := reflect.ValueOf(mapPtr).Elem()
 	keyVals := mapVal.MapKeys()
 	if len(keyVals) == 0 {
@@ -67,33 +66,33 @@ type key struct {
 type keys []*key
 
 func newKey(v reflect.Value) *key {
-	fmt.Println("==newKey==")
+	logger.Info("==newKey==")
 	return &key{v, v.String()}
 }
 
 func (keys keys) Len() int {
-	fmt.Println("==keys==Len=")
+	logger.Info("==keys==Len=")
 	return len(keys)
 }
 
 func (keys keys) Swap(i, j int) {
-	fmt.Println("==keys==Swap=")
+	logger.Info("==keys==Swap=")
 	keys[i], keys[j] = keys[j], keys[i]
 }
 
 func (keys keys) Less(i, j int) bool {
-	fmt.Println("==keys==Less=")
+	logger.Info("==keys==Less=")
 	return keys[i].str < keys[j].str
 }
 
 // ComputeStringHash computes the hash of the given string
 func ComputeStringHash(input string) []byte {
-	fmt.Println("==ComputeStringHash==")
+	logger.Info("==ComputeStringHash==")
 	return ComputeHash([]byte(input))
 }
 
 // ComputeHash computes the hash of the given bytes
 func ComputeHash(input []byte) []byte {
-	fmt.Println("==ComputeHash==")
+	logger.Info("==ComputeHash==")
 	return util.ComputeSHA256(input)
 }

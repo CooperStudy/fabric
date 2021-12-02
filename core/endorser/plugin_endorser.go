@@ -48,8 +48,8 @@ type MapBasedPluginMapper map[string]endorsement.PluginFactory
 
 // PluginFactoryByName returns a plugin factory for the given plugin name, or nil if not found
 func (m MapBasedPluginMapper) PluginFactoryByName(name PluginName) endorsement.PluginFactory {
-	endorserLogger.Info("==MapBasedPluginMapper==PluginFactoryByName==")
-	fmt.Println("=======PluginName=====",string(name))//escc
+	logger.Info("==MapBasedPluginMapper==PluginFactoryByName==")
+	logger.Info("=======PluginName=====",string(name))//escc
 	return m[string(name)]
 }
 
@@ -69,7 +69,7 @@ type Context struct {
 
 // String returns a text representation of this context
 func (c Context) String() string {
-	fmt.Println("==Context==String==")
+	logger.Info("==Context==String==")
 	return fmt.Sprintf("{plugin: %s, channel: %s, tx: %s, chaincode: %s}", c.PluginName, c.Channel, c.TxID, c.ChaincodeID.Name)
 }
 
@@ -84,7 +84,7 @@ type PluginSupport struct {
 
 // NewPluginEndorser endorses with using a plugin
 func NewPluginEndorser(ps *PluginSupport) *PluginEndorser {
-	fmt.Println("==NewPluginEndorser==")
+	logger.Info("==NewPluginEndorser==")
 	return &PluginEndorser{
 		SigningIdentityFetcher:  ps.SigningIdentityFetcher,
 		PluginMapper:            ps.PluginMapper,
@@ -105,7 +105,7 @@ type pluginsByChannel struct {
 }
 
 func (pbc *pluginsByChannel) createPluginIfAbsent(channel string) (endorsement.Plugin, error) {
-	fmt.Println("==pluginsByChannel==createPluginIfAbsent==")
+	logger.Info("==pluginsByChannel==createPluginIfAbsent==")
 	pbc.RLock()
 	plugin, exists := pbc.channels2Plugins[channel]
 	pbc.RUnlock()
@@ -130,10 +130,10 @@ func (pbc *pluginsByChannel) createPluginIfAbsent(channel string) (endorsement.P
 }
 
 func (pbc *pluginsByChannel) initPlugin(plugin endorsement.Plugin, channel string) (endorsement.Plugin, error) {
-	endorserLogger.Info("==pluginsByChannel==initPlugin==")
+	logger.Info("==pluginsByChannel==initPlugin==")
 	var dependencies []endorsement.Dependency
 	var err error
-	fmt.Println("==========channel==========",channel)//mychannel
+	logger.Info("==========channel==========",channel)//mychannel
 	// If this is a channel endorsement, add the channel state as a dependency
 	if channel != "" {
 		//获取到mychannel的账本查询器
@@ -168,8 +168,8 @@ type PluginEndorser struct {
 
 // EndorseWithPlugin endorses the response with a plugin
 func (pe *PluginEndorser) EndorseWithPlugin(ctx Context) (*pb.ProposalResponse, error) {
-	endorserLogger.Info("==func (pe *PluginEndorser) EndorseWithPlugin(ctx Context) (*pb.ProposalResponse, error) ==")
-	endorserLogger.Info("Entering endorsement for", ctx)
+	logger.Info("==func (pe *PluginEndorser) EndorseWithPlugin(ctx Context) (*pb.ProposalResponse, error) ==")
+	logger.Info("Entering endorsement for", ctx)
 
 	/*
 	 Entering endorsement for {plugin: escc, channel: mychannel, tx: d2e9b1ce7a52b90c8757440d7533bc98bb37181850568b035711623719c31080, chaincode: lscc}
@@ -179,26 +179,26 @@ func (pe *PluginEndorser) EndorseWithPlugin(ctx Context) (*pb.ProposalResponse, 
 	}
 
 	if ctx.Response.Status >= shim.ERRORTHRESHOLD {
-		fmt.Println("=========ctx.Response.Status >= shim.ERRORTHRESHOLD========================")
+		logger.Info("=========ctx.Response.Status >= shim.ERRORTHRESHOLD========================")
 		return &pb.ProposalResponse{Response: ctx.Response}, nil
 	}
 	a := PluginName(ctx.PluginName)
-	endorserLogger.Infof("================PluginName:%v=====",a)
+	logger.Infof("================PluginName:%v=====",a)
 	plugin, err := pe.getOrCreatePlugin(a, ctx.Channel)
 	if err != nil {
-		endorserLogger.Warning("Endorsement with plugin for", ctx, " failed:", err)
+		logger.Warning("Endorsement with plugin for", ctx, " failed:", err)
 		return nil, errors.Errorf("plugin with name %s could not be used: %v", ctx.PluginName, err)
 	}
 
 	prpBytes, err := proposalResponsePayloadFromContext(ctx)
 	if err != nil {
-		endorserLogger.Warning("Endorsement with plugin for", ctx, " failed:", err)
+		logger.Warning("Endorsement with plugin for", ctx, " failed:", err)
 		return nil, errors.Wrap(err, "failed assembling proposal response payload")
 	}
 
 	endorsement, prpBytes, err := plugin.Endorse(prpBytes, ctx.SignedProposal)
 	if err != nil {
-		endorserLogger.Warning("Endorsement with plugin for", ctx, " failed:", err)
+		logger.Warning("Endorsement with plugin for", ctx, " failed:", err)
 		return nil, errors.WithStack(err)
 	}
 
@@ -208,13 +208,13 @@ func (pe *PluginEndorser) EndorseWithPlugin(ctx Context) (*pb.ProposalResponse, 
 		Payload:     prpBytes,
 		Response:    ctx.Response,
 	}
-	endorserLogger.Debug("Exiting", ctx)
+	logger.Debug("Exiting", ctx)
 	return resp, nil
 }
 
 // getAndStorePlugin returns a plugin instance for the given plugin name and channel
 func (pe *PluginEndorser) getOrCreatePlugin(plugin PluginName, channel string) (endorsement.Plugin, error) {
-	endorserLogger.Info("==PluginEndorser==getOrCreatePlugin==")
+	logger.Info("==PluginEndorser==getOrCreatePlugin==")
 	pluginFactory := pe.PluginFactoryByName(plugin)
 	if pluginFactory == nil {
 		return nil, errors.Errorf("plugin with name %s wasn't found", plugin)
@@ -225,7 +225,7 @@ func (pe *PluginEndorser) getOrCreatePlugin(plugin PluginName, channel string) (
 }
 
 func (pe *PluginEndorser) getOrCreatePluginChannelMapping(plugin PluginName, pf endorsement.PluginFactory) *pluginsByChannel {
-	fmt.Println("==PluginEndorser==getOrCreatePluginChannelMapping==")
+	logger.Info("==PluginEndorser==getOrCreatePluginChannelMapping==")
 	pe.Lock()
 	defer pe.Unlock()
 	endorserChannelMapping, exists := pe.pluginChannelMapping[PluginName(plugin)]
@@ -241,22 +241,22 @@ func (pe *PluginEndorser) getOrCreatePluginChannelMapping(plugin PluginName, pf 
 }
 
 func proposalResponsePayloadFromContext(ctx Context) ([]byte, error) {
-	endorserLogger.Info("==proposalResponsePayloadFromContext==")
+	logger.Info("==proposalResponsePayloadFromContext==")
 	hdr, err := putils.GetHeader(ctx.Proposal.Header)
 	if err != nil {
-		endorserLogger.Warning("Failed parsing header", err)
+		logger.Warning("Failed parsing header", err)
 		return nil, errors.Wrap(err, "failed parsing header")
 	}
 
 	pHashBytes, err := putils.GetProposalHash1(hdr, ctx.Proposal.Payload, ctx.Visibility)
 	if err != nil {
-		endorserLogger.Warning("Failed computing proposal hash", err)
+		logger.Warning("Failed computing proposal hash", err)
 		return nil, errors.Wrap(err, "could not compute proposal hash")
 	}
 
 	prpBytes, err := putils.GetBytesProposalResponsePayload(pHashBytes, ctx.Response, ctx.SimRes, ctx.Event, ctx.ChaincodeID)
 	if err != nil {
-		endorserLogger.Warning("Failed marshaling the proposal response payload to bytes", err)
+		logger.Warning("Failed marshaling the proposal response payload to bytes", err)
 		return nil, errors.New("failure while marshaling the ProposalResponsePayload")
 	}
 	return prpBytes, nil

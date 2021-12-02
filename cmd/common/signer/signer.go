@@ -12,7 +12,7 @@ import (
 	"crypto/x509"
 	"encoding/asn1"
 	"encoding/pem"
-	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"io/ioutil"
 	"math/big"
 
@@ -30,7 +30,7 @@ type Config struct {
 	IdentityPath string
 	KeyPath      string
 }
-
+var logger = flogging.MustGetLogger("cmd.common.signer")
 // Signer signs messages.
 // TODO: Ideally we'd use an MSP to be agnostic, but since it's impossible to
 // initialize an MSP without a CA cert that signs the signing identity,
@@ -42,7 +42,7 @@ type Signer struct {
 
 // NewSigner creates a new Signer out of the given configuration
 func NewSigner(conf Config) (*Signer, error) {
-	fmt.Println("=NewSigner===")
+	logger.Info("=NewSigner===")
 	sId, err := serializeIdentity(conf.IdentityPath, conf.MSPID)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -58,7 +58,7 @@ func NewSigner(conf Config) (*Signer, error) {
 }
 
 func serializeIdentity(clientCert string, mspID string) ([]byte, error) {
-	fmt.Println("=serializeIdentity===")
+	logger.Info("=serializeIdentity===")
 	b, err := ioutil.ReadFile(clientCert)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -71,13 +71,13 @@ func serializeIdentity(clientCert string, mspID string) ([]byte, error) {
 }
 
 func (si *Signer) Sign(msg []byte) ([]byte, error) {
-	fmt.Println("===Signer===Sign===")
+	logger.Info("===Signer===Sign===")
 	digest := util.ComputeSHA256(msg)
 	return signECDSA(si.key, digest)
 }
 
 func loadPrivateKey(file string) (*ecdsa.PrivateKey, error) {
-	fmt.Println("===loadPrivateKey======")
+	logger.Info("===loadPrivateKey======")
 	b, err := ioutil.ReadFile(file)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -94,15 +94,15 @@ func loadPrivateKey(file string) (*ecdsa.PrivateKey, error) {
 }
 
 func signECDSA(k *ecdsa.PrivateKey, digest []byte) (signature []byte, err error) {
-	fmt.Println("===signECDSA======")
+	logger.Info("===signECDSA======")
 	r, s, err := ecdsa.Sign(rand.Reader, k, digest)
-	fmt.Println("===============r,s=====")
+	logger.Info("===============r,s=====")
 	if err != nil {
 		return nil, err
 	}
 
 	s, _, err = utils.ToLowS(&k.PublicKey, s)
-	fmt.Println("=================")
+	logger.Info("=================")
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +111,7 @@ func signECDSA(k *ecdsa.PrivateKey, digest []byte) (signature []byte, err error)
 }
 
 func marshalECDSASignature(r, s *big.Int) ([]byte, error) {
-	fmt.Println("=====marshalECDSASignature======")
+	logger.Info("=====marshalECDSASignature======")
 	return asn1.Marshal(ECDSASignature{r, s})
 }
 

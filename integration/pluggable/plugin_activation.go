@@ -24,7 +24,7 @@ const (
 // the file of the peer's id in it exists - it indicates that the endorsement plugin was activated
 // for that peer
 func EndorsementPluginActivationFolder() string {
-	fmt.Println("=====EndorsementPluginActivationFolder==========")
+	logger.Info("=====EndorsementPluginActivationFolder==========")
 	return os.Getenv(EndorsementPluginEnvVar)
 }
 
@@ -32,7 +32,7 @@ func EndorsementPluginActivationFolder() string {
 // that if the file of the peer's id in it exists - it indicates that the endorsement plugin was activated
 // for that peer
 func SetEndorsementPluginActivationFolder(path string) {
-	fmt.Println("=====SetEndorsementPluginActivationFolder==========")
+	logger.Info("=====SetEndorsementPluginActivationFolder==========")
 	os.Setenv(EndorsementPluginEnvVar, path)
 }
 
@@ -40,7 +40,7 @@ func SetEndorsementPluginActivationFolder(path string) {
 // the file of the peer's id in it exists - it indicates that the validation plugin was activated
 // for that peer
 func ValidationPluginActivationFolder() string {
-	fmt.Println("=====ValidationPluginActivationFolder==========")
+	logger.Info("=====ValidationPluginActivationFolder==========")
 	return os.Getenv(ValidationPluginEnvVar)
 }
 
@@ -48,12 +48,12 @@ func ValidationPluginActivationFolder() string {
 // that if the file of the peer's id in it exists - it indicates that the validation plugin was activated
 // for that peer
 func SetValidationPluginActivationFolder(path string) {
-	fmt.Println("=====SetValidationPluginActivationFolder==========")
+	logger.Info("=====SetValidationPluginActivationFolder==========")
 	os.Setenv(ValidationPluginEnvVar, path)
 }
 
 func markPluginActivation(dir string) {
-	fmt.Println("=====markPluginActivation==========")
+	logger.Info("=====markPluginActivation==========")
 	fileName := filepath.Join(dir, viper.GetString("peer.id"))
 	_, err := os.Create(fileName)
 	if err != nil {
@@ -64,33 +64,33 @@ func markPluginActivation(dir string) {
 // PublishEndorsementPluginActivation makes it known that the endorsement plugin
 // was activated for the peer that is invoking this function
 func PublishEndorsementPluginActivation() {
-	fmt.Println("=====PublishEndorsementPluginActivation==========")
+	logger.Info("=====PublishEndorsementPluginActivation==========")
 	markPluginActivation(EndorsementPluginActivationFolder())
 }
 
 // PublishValidationPluginActivation makes it known that the validation plugin
 // was activated for the peer that is invoking this function
 func PublishValidationPluginActivation() {
-	fmt.Println("=====PublishValidationPluginActivation==========")
+	logger.Info("=====PublishValidationPluginActivation==========")
 	markPluginActivation(ValidationPluginActivationFolder())
 }
 
 // CountEndorsementPluginActivations returns the number of peers that activated
 // the endorsement plugin
 func CountEndorsementPluginActivations() int {
-	fmt.Println("=====CountEndorsementPluginActivations==========")
+	logger.Info("=====CountEndorsementPluginActivations==========")
 	return listDir(EndorsementPluginActivationFolder())
 }
 
 // CountValidationPluginActivations returns the number of peers that activated
 // the validation plugin
 func CountValidationPluginActivations() int {
-	fmt.Println("=====CountValidationPluginActivations==========")
+	logger.Info("=====CountValidationPluginActivations==========")
 	return listDir(ValidationPluginActivationFolder())
 }
 
 func listDir(d string) int {
-	fmt.Println("=====listDir==========")
+	logger.Info("=====listDir==========")
 	dir, err := ioutil.ReadDir(d)
 	if err != nil {
 		panic(fmt.Sprintf("failed listing directory %s: %v", d, err))

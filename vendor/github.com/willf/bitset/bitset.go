@@ -28,7 +28,7 @@ Example use:
 		b.Clear(1000)
 	}
 	if B.Intersection(bitset.New(100).Set(10)).Count() > 1 {
-		fmt.Println("Intersection works.")
+		logger.Info("Intersection works.")
 	}
 
 As an alternative to BitSets, one should check out the 'big' package,

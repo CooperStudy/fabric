@@ -30,7 +30,7 @@ const list_cmdname = "list"
 
 // installCmd returns the cobra command for Chaincode Deploy
 func listCmd(cf *ChaincodeCmdFactory) *cobra.Command {
-	fmt.Println("========listCmd================")
+	logger.Info("========listCmd================")
 	chaincodeListCmd = &cobra.Command{
 		Use:   "list",
 		Short: "Get the instantiated chaincodes on a channel or installed chaincodes on a peer.",
@@ -54,7 +54,7 @@ func listCmd(cf *ChaincodeCmdFactory) *cobra.Command {
 }
 
 func getChaincodes(cmd *cobra.Command, cf *ChaincodeCmdFactory) error {
-	fmt.Println("========getChaincodes================")
+	logger.Info("========getChaincodes================")
 	if getInstantiatedChaincodes && channelID == "" {
 		return errors.New("The required parameter 'channelID' is empty. Rerun the command with -C flag")
 	}
@@ -114,7 +114,7 @@ func getChaincodes(cmd *cobra.Command, cf *ChaincodeCmdFactory) error {
 	}
 
 	if getInstalledChaincodes {
-		fmt.Println("Get installed chaincodes on peer:")
+		logger.Info("Get installed chaincodes on peer:")
 	} else {
 		fmt.Printf("Get instantiated chaincodes on channel %s:\n", channelID)
 	}
@@ -129,7 +129,7 @@ type ccInfo struct {
 }
 
 func (cci ccInfo) String() string {
-	fmt.Println("========ccInfo=====String===========")
+	logger.Info("========ccInfo=====String===========")
 	b := bytes.Buffer{}
 	md := reflect.ValueOf(*cci.ChaincodeInfo)
 	md2 := reflect.Indirect(reflect.ValueOf(*cci.ChaincodeInfo)).Type()
@@ -153,6 +153,6 @@ func (cci ccInfo) String() string {
 }
 
 func isBytes(v reflect.Value) bool {
-	fmt.Println("========isBytes==========")
+	logger.Info("========isBytes==========")
 	return v.Kind() == reflect.Slice && v.Type().Elem().Kind() == reflect.Uint8
 }

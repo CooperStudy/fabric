@@ -24,7 +24,7 @@ type inquireableSignaturePolicy struct {
 // NewInquireableSignaturePolicy creates a signature policy that can be inquired,
 // from a policy and a signature policy.
 func NewInquireableSignaturePolicy(sigPol *common.SignaturePolicyEnvelope) policies.InquireablePolicy {
-	fmt.Println("======NewInquireableSignaturePolicy=====")
+	logger.Info("======NewInquireableSignaturePolicy=====")
 	return &inquireableSignaturePolicy{
 		sigPol: sigPol,
 	}
@@ -33,7 +33,7 @@ func NewInquireableSignaturePolicy(sigPol *common.SignaturePolicyEnvelope) polic
 // SatisfiedBy returns a slice of PrincipalSets that each of them
 // satisfies the policy.
 func (isp *inquireableSignaturePolicy) SatisfiedBy() []policies.PrincipalSet {
-	fmt.Println("===inquireableSignaturePolicy===SatisfiedBy=====")
+	logger.Info("===inquireableSignaturePolicy===SatisfiedBy=====")
 	rootId := fmt.Sprintf("%d", 0)
 	root := graph.NewTreeVertex(rootId, isp.sigPol.Rule)
 	computePolicyTree(root)
@@ -49,7 +49,7 @@ func (isp *inquireableSignaturePolicy) SatisfiedBy() []policies.PrincipalSet {
 }
 
 func principalsOfTree(tree *graph.Tree, principals policies.PrincipalSet) policies.PrincipalSet {
-	fmt.Println("===principalsOfTree=====")
+	logger.Info("===principalsOfTree=====")
 	var principalSet policies.PrincipalSet
 	i := tree.BFS()
 	for {
@@ -63,7 +63,7 @@ func principalsOfTree(tree *graph.Tree, principals policies.PrincipalSet) polici
 		pol := v.Data.(*common.SignaturePolicy)
 		switch principalIndex := pol.Type.(type) {
 		case *common.SignaturePolicy_SignedBy:
-			fmt.Println("==============*common.SignaturePolicy_SignedBy===============")
+			logger.Info("==============*common.SignaturePolicy_SignedBy===============")
 			if len(principals) <= int(principalIndex.SignedBy) {
 				logger.Warning("Failed computing principalsOfTree, index out of bounds")
 				return nil
@@ -71,7 +71,7 @@ func principalsOfTree(tree *graph.Tree, principals policies.PrincipalSet) polici
 			principal := principals[principalIndex.SignedBy]
 			principalSet = append(principalSet, principal)
 		default:
-			fmt.Println("=========default===================")
+			logger.Info("=========default===================")
 			// Leaf vertex is not of type SignedBy
 			logger.Info("Leaf vertex", v.Id, "is of type", pol.GetType())
 			return nil
@@ -81,7 +81,7 @@ func principalsOfTree(tree *graph.Tree, principals policies.PrincipalSet) polici
 }
 
 func computePolicyTree(v *graph.TreeVertex) {
-	fmt.Println("===computePolicyTree=====")
+	logger.Info("===computePolicyTree=====")
 	sigPol := v.Data.(*common.SignaturePolicy)
 	if p := sigPol.GetNOutOf(); p != nil {
 		v.Threshold = int(p.N)

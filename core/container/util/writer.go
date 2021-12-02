@@ -22,7 +22,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var vmLogger = flogging.MustGetLogger("container")
+var logger = flogging.MustGetLogger("container")
 
 // These filetypes are excluded while creating the tar package sent to Docker
 // Generated .class and other temporary files can be excluded
@@ -34,7 +34,7 @@ var javaExcludeFileTypes = map[string]bool{
 // This utility is used for node js chaincode packaging, but not golang chaincode.
 // Golang chaincode has more sophisticated file packaging, as implemented in golang/platform.go.
 func WriteFolderToTarPackage(tw *tar.Writer, srcPath string, excludeDirs []string, includeFileTypeMap map[string]bool, excludeFileTypeMap map[string]bool) error {
-	fmt.Println("==WriteFolderToTarPackage==")
+	logger.Info("==WriteFolderToTarPackage==")
 	fileCount := 0
 	rootDirectory := srcPath
 
@@ -43,7 +43,7 @@ func WriteFolderToTarPackage(tw *tar.Writer, srcPath string, excludeDirs []strin
 		rootDirectory = rootDirectory[:len(rootDirectory)-1]
 	}
 
-	vmLogger.Debugf("rootDirectory = %s", rootDirectory)
+	logger.Debugf("rootDirectory = %s", rootDirectory)
 
 	//append "/" if necessary
 	updatedExcludeDirs := make([]string, 0)
@@ -105,7 +105,7 @@ func WriteFolderToTarPackage(tw *tar.Writer, srcPath string, excludeDirs []strin
 			// Hidden files are not supported as metadata, therefore ignore them.
 			// User often doesn't know that hidden files are there, and may not be able to delete them, therefore warn user rather than error out.
 			if strings.HasPrefix(filename, ".") {
-				vmLogger.Warningf("Ignoring hidden file in metadata directory: %s", packagepath)
+				logger.Warningf("Ignoring hidden file in metadata directory: %s", packagepath)
 				return nil
 			}
 
@@ -135,7 +135,7 @@ func WriteFolderToTarPackage(tw *tar.Writer, srcPath string, excludeDirs []strin
 	}
 
 	if err := filepath.Walk(rootDirectory, walkFn); err != nil {
-		vmLogger.Infof("Error walking rootDirectory: %s", err)
+		logger.Infof("Error walking rootDirectory: %s", err)
 		return err
 	}
 	// return error if no files were found
@@ -147,12 +147,12 @@ func WriteFolderToTarPackage(tw *tar.Writer, srcPath string, excludeDirs []strin
 
 //Package Java project to tar file from the source path
 func WriteJavaProjectToPackage(tw *tar.Writer, srcPath string) error {
-	fmt.Println("==WriteJavaProjectToPackage==")
-	vmLogger.Debugf("Packaging Java project from path %s", srcPath)
+	logger.Info("==WriteJavaProjectToPackage==")
+	logger.Debugf("Packaging Java project from path %s", srcPath)
 
 	if err := WriteFolderToTarPackage(tw, srcPath, []string{"target", "build", "out"}, nil, javaExcludeFileTypes); err != nil {
 
-		vmLogger.Errorf("Error writing folder to tar package %s", err)
+		logger.Errorf("Error writing folder to tar package %s", err)
 		return err
 	}
 	// Write the tar file out
@@ -165,8 +165,8 @@ func WriteJavaProjectToPackage(tw *tar.Writer, srcPath string) error {
 
 //WriteFileToPackage writes a file to the tarball
 func WriteFileToPackage(localpath string, packagepath string, tw *tar.Writer) error {
-	vmLogger.Info("===func WriteFileToPackage(localpath string, packagepath string, tw *tar.Writer) error==")
-	vmLogger.Info("Writing file to tarball:", packagepath)
+	logger.Info("===func WriteFileToPackage(localpath string, packagepath string, tw *tar.Writer) error==")
+	logger.Info("Writing file to tarball:", packagepath)
 	fd, err := os.Open(localpath)
 	if err != nil {
 		return fmt.Errorf("%s: %s", localpath, err)
@@ -180,15 +180,15 @@ func WriteFileToPackage(localpath string, packagepath string, tw *tar.Writer) er
 
 //WriteStreamToPackage writes bytes (from a file reader) to the tarball
 func WriteStreamToPackage(is io.Reader, localpath string, packagepath string, tw *tar.Writer) error {
-	vmLogger.Info("==func WriteStreamToPackage(is io.Reader, localpath string, packagepath string, tw *tar.Writer) error==")
+	logger.Info("==func WriteStreamToPackage(is io.Reader, localpath string, packagepath string, tw *tar.Writer) error==")
 
 	info, err := os.Stat(localpath)
-	vmLogger.Infof("=====%v, %v := os.Stat(%v)====",info,err,localpath)
+	logger.Infof("=====%v, %v := os.Stat(%v)====",info,err,localpath)
 	if err != nil {
 		return fmt.Errorf("%s: %s", localpath, err)
 	}
 	header, err := tar.FileInfoHeader(info, localpath)
-	vmLogger.Infof("=====%v, %v := tar.FileInfoHeader(%v, %v)====",header,err,info,localpath)
+	logger.Infof("=====%v, %v := tar.FileInfoHeader(%v, %v)====",header,err,info,localpath)
 	if err != nil {
 		return fmt.Errorf("Error getting FileInfoHeader: %s", err)
 	}
@@ -215,11 +215,11 @@ func WriteStreamToPackage(is io.Reader, localpath string, packagepath string, tw
 }
 
 func WriteBytesToPackage(name string, payload []byte, tw *tar.Writer) error {
-	vmLogger.Info("====func WriteBytesToPackage(name string, payload []byte, tw *tar.Writer) error====")
+	logger.Info("====func WriteBytesToPackage(name string, payload []byte, tw *tar.Writer) error====")
 	//Make headers identical by using zero time
 	var zeroTime time.Time
 	a := &tar.Header{Name: name, Size: int64(len(payload)), ModTime: zeroTime, AccessTime: zeroTime, ChangeTime: zeroTime}
-	vmLogger.Infof("============&tar.Header{Name: %v, Size:%v), ModTime: %v, AccessTime: %v, ChangeTime: %v}===",name,int64(len(payload)),zeroTime,zeroTime,zeroTime)
+	logger.Infof("============&tar.Header{Name: %v, Size:%v), ModTime: %v, AccessTime: %v, ChangeTime: %v}===",name,int64(len(payload)),zeroTime,zeroTime,zeroTime)
 	tw.WriteHeader(a)
 	tw.Write(payload)
 

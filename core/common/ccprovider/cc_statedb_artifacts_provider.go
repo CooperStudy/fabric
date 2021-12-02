@@ -37,7 +37,7 @@ type TarFileEntry struct {
 // 此函数旨在在链代码实例化/升级期间使用，以便可以创建 statementb 工件。
  */
 func ExtractStatedbArtifactsForChaincode(ccname, ccversion string, pr *platforms.Registry) (installed bool, statedbArtifactsTar []byte, err error) {
-	fmt.Println("==ExtractStatedbArtifactsForChaincode===")
+	logger.Info("==ExtractStatedbArtifactsForChaincode===")
 	ccpackage, err := GetChaincodeFromFS(ccname, ccversion)
 	if err != nil {
 		// TODO for now, we assume that an error indicates that the chaincode is not installed on the peer.
@@ -58,7 +58,7 @@ func ExtractStatedbArtifactsForChaincode(ccname, ccversion string, pr *platforms
 // state db artifacts 应该包含 state db 特定的 artifacts，例如在 couchdb 的情况下的索引规范。
 // 在链码实例化/升级（从上面）和安装期间调用此函数，以便可以创建 statementb 工件。
 func ExtractStatedbArtifactsFromCCPackage(ccpackage CCPackage, pr *platforms.Registry) (statedbArtifactsTar []byte, err error) {
-	fmt.Println("==ExtractStatedbArtifactsFromCCPackage===")
+	logger.Info("==ExtractStatedbArtifactsFromCCPackage===")
 	cds := ccpackage.GetDepSpec()
 	metaprov, err := pr.GetMetadataProvider(cds.CCType(), cds.Bytes())
 	if err != nil {
@@ -77,7 +77,7 @@ func ExtractStatedbArtifactsFromCCPackage(ccpackage CCPackage, pr *platforms.Reg
 // An empty string will have the effect of returning all statedb metadata.  This is useful in validating an
 // archive in the future with multiple database types
 func ExtractFileEntries(tarBytes []byte, databaseType string) (map[string][]*TarFileEntry, error) {
-	fmt.Println("==ExtractFileEntries===")
+	logger.Info("==ExtractFileEntries===")
 	indexArtifacts := map[string][]*TarFileEntry{}
 	tarReader := tar.NewReader(bytes.NewReader(tarBytes))
 	for {

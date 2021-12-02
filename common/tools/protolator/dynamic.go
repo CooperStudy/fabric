@@ -24,7 +24,7 @@ import (
 )
 
 func dynamicFrom(dynamicMsg func(underlying proto.Message) (proto.Message, error), value interface{}, destType reflect.Type) (reflect.Value, error) {
-	fmt.Println("====dynamicFrom========")
+	logger.Info("====dynamicFrom========")
 	tree := value.(map[string]interface{}) // Safe, already checked
 	uMsg := reflect.New(destType.Elem())
 	nMsg, err := dynamicMsg(uMsg.Interface().(proto.Message)) // Safe, already checked
@@ -38,7 +38,7 @@ func dynamicFrom(dynamicMsg func(underlying proto.Message) (proto.Message, error
 }
 
 func dynamicTo(dynamicMsg func(underlying proto.Message) (proto.Message, error), value reflect.Value) (interface{}, error) {
-	fmt.Println("====dynamicTo========")
+	logger.Info("====dynamicTo========")
 	nMsg, err := dynamicMsg(value.Interface().(proto.Message)) // Safe, already checked
 	if err != nil {
 		return nil, err
@@ -49,7 +49,7 @@ func dynamicTo(dynamicMsg func(underlying proto.Message) (proto.Message, error),
 type dynamicFieldFactory struct{}
 
 func (dff dynamicFieldFactory) Handles(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) bool {
-	fmt.Println("====dynamicFieldFactory====Handles====")
+	logger.Info("====dynamicFieldFactory====Handles====")
 	dynamicProto, ok := msg.(DynamicFieldProto)
 	if !ok {
 		return false
@@ -59,7 +59,7 @@ func (dff dynamicFieldFactory) Handles(msg proto.Message, fieldName string, fiel
 }
 
 func (dff dynamicFieldFactory) NewProtoField(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) (protoField, error) {
-	fmt.Println("====dynamicFieldFactory====NewProtoField====")
+	logger.Info("====dynamicFieldFactory====NewProtoField====")
 	dynamicProto, _ := msg.(DynamicFieldProto) // Type checked in Handles
 
 	return &plainField{
@@ -86,7 +86,7 @@ func (dff dynamicFieldFactory) NewProtoField(msg proto.Message, fieldName string
 type dynamicMapFieldFactory struct{}
 
 func (dmff dynamicMapFieldFactory) Handles(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) bool {
-	fmt.Println("====dynamicMapFieldFactory====Handles====")
+	logger.Info("====dynamicMapFieldFactory====Handles====")
 	dynamicProto, ok := msg.(DynamicMapFieldProto)
 	if !ok {
 		return false
@@ -96,7 +96,7 @@ func (dmff dynamicMapFieldFactory) Handles(msg proto.Message, fieldName string, 
 }
 
 func (dmff dynamicMapFieldFactory) NewProtoField(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) (protoField, error) {
-	fmt.Println("====dynamicMapFieldFactory====NewProtoField====")
+	logger.Info("====dynamicMapFieldFactory====NewProtoField====")
 	dynamicProto := msg.(DynamicMapFieldProto) // Type checked by Handles
 
 	return &mapField{
@@ -123,7 +123,7 @@ func (dmff dynamicMapFieldFactory) NewProtoField(msg proto.Message, fieldName st
 type dynamicSliceFieldFactory struct{}
 
 func (dmff dynamicSliceFieldFactory) Handles(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) bool {
-	fmt.Println("====dynamicMapFieldFactory====Handles====")
+	logger.Info("====dynamicMapFieldFactory====Handles====")
 	dynamicProto, ok := msg.(DynamicSliceFieldProto)
 	if !ok {
 		return false
@@ -133,7 +133,7 @@ func (dmff dynamicSliceFieldFactory) Handles(msg proto.Message, fieldName string
 }
 
 func (dmff dynamicSliceFieldFactory) NewProtoField(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) (protoField, error) {
-	fmt.Println("====dynamicMapFieldFactory====NewProtoField====")
+	logger.Info("====dynamicMapFieldFactory====NewProtoField====")
 	dynamicProto := msg.(DynamicSliceFieldProto) // Type checked by Handles
 
 	return &sliceField{

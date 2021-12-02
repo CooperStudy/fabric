@@ -50,7 +50,7 @@ type CollHashedRwSet struct {
 
 // GetPvtDataHash returns the PvtRwSetHash for a given namespace and collection
 func (txRwSet *TxRwSet) GetPvtDataHash(ns, coll string) []byte {
-	fmt.Println("===TxRwSet=GetPvtDataHash==")
+	logger.Info("===TxRwSet=GetPvtDataHash==")
 	// we could build and use a map to reduce the number of lookup
 	// in the future call. However, we decided to defer such optimization
 	// due to the following assumptions (mainly to avoid additioan LOC).
@@ -66,7 +66,7 @@ func (txRwSet *TxRwSet) GetPvtDataHash(ns, coll string) []byte {
 }
 
 func (nsRwSet *NsRwSet) getPvtDataHash(coll string) []byte {
-	fmt.Println("===NsRwSet=getPvtDataHash==")
+	logger.Info("===NsRwSet=getPvtDataHash==")
 	for _, collHashedRwSet := range nsRwSet.CollHashedRwSets {
 		if collHashedRwSet.CollectionName != coll {
 			continue
@@ -104,7 +104,7 @@ type CollPvtRwSet struct {
 
 // ToProtoBytes constructs TxReadWriteSet proto message and serializes using protobuf Marshal
 func (txRwSet *TxRwSet) ToProtoBytes() ([]byte, error) {
-	fmt.Println("===TxRwSet=ToProtoBytes==")
+	logger.Info("===TxRwSet=ToProtoBytes==")
 	var protoMsg *rwset.TxReadWriteSet
 	var err error
 	if protoMsg, err = txRwSet.toProtoMsg(); err != nil {
@@ -115,7 +115,7 @@ func (txRwSet *TxRwSet) ToProtoBytes() ([]byte, error) {
 
 // FromProtoBytes deserializes protobytes into TxReadWriteSet proto message and populates 'TxRwSet'
 func (txRwSet *TxRwSet) FromProtoBytes(protoBytes []byte) error {
-	fmt.Println("===TxRwSet=FromProtoBytes==")
+	logger.Info("===TxRwSet=FromProtoBytes==")
 	protoMsg := &rwset.TxReadWriteSet{}
 	var err error
 	var txRwSetTemp *TxRwSet
@@ -131,7 +131,7 @@ func (txRwSet *TxRwSet) FromProtoBytes(protoBytes []byte) error {
 
 // ToProtoBytes constructs 'TxPvtReadWriteSet' proto message and serializes using protobuf Marshal
 func (txPvtRwSet *TxPvtRwSet) ToProtoBytes() ([]byte, error) {
-	fmt.Println("===TxPvtRwSet=ToProtoBytes==")
+	logger.Info("===TxPvtRwSet=ToProtoBytes==")
 	var protoMsg *rwset.TxPvtReadWriteSet
 	var err error
 	if protoMsg, err = txPvtRwSet.toProtoMsg(); err != nil {
@@ -142,7 +142,7 @@ func (txPvtRwSet *TxPvtRwSet) ToProtoBytes() ([]byte, error) {
 
 // FromProtoBytes deserializes protobytes into 'TxPvtReadWriteSet' proto message and populates 'TxPvtRwSet'
 func (txPvtRwSet *TxPvtRwSet) FromProtoBytes(protoBytes []byte) error {
-	fmt.Println("===TxPvtRwSet=FromProtoBytes==")
+	logger.Info("===TxPvtRwSet=FromProtoBytes==")
 	protoMsg := &rwset.TxPvtReadWriteSet{}
 	var err error
 	var txPvtRwSetTemp *TxPvtRwSet
@@ -157,7 +157,7 @@ func (txPvtRwSet *TxPvtRwSet) FromProtoBytes(protoBytes []byte) error {
 }
 
 func (txRwSet *TxRwSet) toProtoMsg() (*rwset.TxReadWriteSet, error) {
-	fmt.Println("===TxPvtRwSet=toProtoMsg==")
+	logger.Info("===TxPvtRwSet=toProtoMsg==")
 	protoMsg := &rwset.TxReadWriteSet{DataModel: rwset.TxReadWriteSet_KV}
 	var nsRwSetProtoMsg *rwset.NsReadWriteSet
 	var err error
@@ -171,7 +171,7 @@ func (txRwSet *TxRwSet) toProtoMsg() (*rwset.TxReadWriteSet, error) {
 }
 
 func TxRwSetFromProtoMsg(protoMsg *rwset.TxReadWriteSet) (*TxRwSet, error) {
-	fmt.Println("===TxRwSetFromProtoMsg==")
+	logger.Info("===TxRwSetFromProtoMsg==")
 	txRwSet := &TxRwSet{}
 	var nsRwSet *NsRwSet
 	var err error
@@ -185,7 +185,7 @@ func TxRwSetFromProtoMsg(protoMsg *rwset.TxReadWriteSet) (*TxRwSet, error) {
 }
 
 func (nsRwSet *NsRwSet) toProtoMsg() (*rwset.NsReadWriteSet, error) {
-	fmt.Println("===NsRwSet=toProtoMsg==")
+	logger.Info("===NsRwSet=toProtoMsg==")
 	var err error
 	protoMsg := &rwset.NsReadWriteSet{Namespace: nsRwSet.NameSpace}
 	if protoMsg.Rwset, err = proto.Marshal(nsRwSet.KvRwSet); err != nil {
@@ -203,7 +203,7 @@ func (nsRwSet *NsRwSet) toProtoMsg() (*rwset.NsReadWriteSet, error) {
 }
 
 func nsRwSetFromProtoMsg(protoMsg *rwset.NsReadWriteSet) (*NsRwSet, error) {
-	fmt.Println("==nsRwSetFromProtoMsg==")
+	logger.Info("==nsRwSetFromProtoMsg==")
 	nsRwSet := &NsRwSet{NameSpace: protoMsg.Namespace, KvRwSet: &kvrwset.KVRWSet{}}
 	if err := proto.Unmarshal(protoMsg.Rwset, nsRwSet.KvRwSet); err != nil {
 		return nil, err
@@ -220,7 +220,7 @@ func nsRwSetFromProtoMsg(protoMsg *rwset.NsReadWriteSet) (*NsRwSet, error) {
 }
 
 func (collHashedRwSet *CollHashedRwSet) toProtoMsg() (*rwset.CollectionHashedReadWriteSet, error) {
-	fmt.Println("==CollHashedRwSet==toProtoMsg==")
+	logger.Info("==CollHashedRwSet==toProtoMsg==")
 	var err error
 	protoMsg := &rwset.CollectionHashedReadWriteSet{
 		CollectionName: collHashedRwSet.CollectionName,
@@ -233,7 +233,7 @@ func (collHashedRwSet *CollHashedRwSet) toProtoMsg() (*rwset.CollectionHashedRea
 }
 
 func collHashedRwSetFromProtoMsg(protoMsg *rwset.CollectionHashedReadWriteSet) (*CollHashedRwSet, error) {
-	fmt.Println("==collHashedRwSetFromProtoMsg==")
+	logger.Info("==collHashedRwSetFromProtoMsg==")
 	colHashedRwSet := &CollHashedRwSet{
 		CollectionName: protoMsg.CollectionName,
 		PvtRwSetHash:   protoMsg.PvtRwsetHash,
@@ -246,7 +246,7 @@ func collHashedRwSetFromProtoMsg(protoMsg *rwset.CollectionHashedReadWriteSet) (
 }
 
 func (txRwSet *TxRwSet) NumCollections() int {
-	fmt.Println("==TxRwSet==NumCollections==")
+	logger.Info("==TxRwSet==NumCollections==")
 	if txRwSet == nil {
 		return 0
 	}
@@ -264,7 +264,7 @@ func (txRwSet *TxRwSet) NumCollections() int {
 ///////////////////////////////////////////////////////////////////////////////
 
 func (txPvtRwSet *TxPvtRwSet) toProtoMsg() (*rwset.TxPvtReadWriteSet, error) {
-	fmt.Println("==TxPvtRwSet==toProtoMsg==")
+	logger.Info("==TxPvtRwSet==toProtoMsg==")
 	protoMsg := &rwset.TxPvtReadWriteSet{DataModel: rwset.TxReadWriteSet_KV}
 	var nsProtoMsg *rwset.NsPvtReadWriteSet
 	var err error
@@ -278,7 +278,7 @@ func (txPvtRwSet *TxPvtRwSet) toProtoMsg() (*rwset.TxPvtReadWriteSet, error) {
 }
 
 func TxPvtRwSetFromProtoMsg(protoMsg *rwset.TxPvtReadWriteSet) (*TxPvtRwSet, error) {
-	fmt.Println("==TxPvtRwSetFromProtoMsg==")
+	logger.Info("==TxPvtRwSetFromProtoMsg==")
 	txPvtRwset := &TxPvtRwSet{}
 	var nsPvtRwSet *NsPvtRwSet
 	var err error
@@ -292,7 +292,7 @@ func TxPvtRwSetFromProtoMsg(protoMsg *rwset.TxPvtReadWriteSet) (*TxPvtRwSet, err
 }
 
 func (nsPvtRwSet *NsPvtRwSet) toProtoMsg() (*rwset.NsPvtReadWriteSet, error) {
-	fmt.Println("==NsPvtRwSet==toProtoMsg==")
+	logger.Info("==NsPvtRwSet==toProtoMsg==")
 	protoMsg := &rwset.NsPvtReadWriteSet{Namespace: nsPvtRwSet.NameSpace}
 	var err error
 	var collPvtRwSetProtoMsg *rwset.CollectionPvtReadWriteSet
@@ -306,7 +306,7 @@ func (nsPvtRwSet *NsPvtRwSet) toProtoMsg() (*rwset.NsPvtReadWriteSet, error) {
 }
 
 func nsPvtRwSetFromProtoMsg(protoMsg *rwset.NsPvtReadWriteSet) (*NsPvtRwSet, error) {
-	fmt.Println("==nsPvtRwSetFromProtoMsg==")
+	logger.Info("==nsPvtRwSetFromProtoMsg==")
 	nsPvtRwSet := &NsPvtRwSet{NameSpace: protoMsg.Namespace}
 	for _, collPvtRwSetProtoMsg := range protoMsg.CollectionPvtRwset {
 		var err error
@@ -320,7 +320,7 @@ func nsPvtRwSetFromProtoMsg(protoMsg *rwset.NsPvtReadWriteSet) (*NsPvtRwSet, err
 }
 
 func (collPvtRwSet *CollPvtRwSet) toProtoMsg() (*rwset.CollectionPvtReadWriteSet, error) {
-	fmt.Println("==CollPvtRwSet==toProtoMsg==")
+	logger.Info("==CollPvtRwSet==toProtoMsg==")
 	var err error
 	protoMsg := &rwset.CollectionPvtReadWriteSet{CollectionName: collPvtRwSet.CollectionName}
 	if protoMsg.Rwset, err = proto.Marshal(collPvtRwSet.KvRwSet); err != nil {
@@ -330,7 +330,7 @@ func (collPvtRwSet *CollPvtRwSet) toProtoMsg() (*rwset.CollectionPvtReadWriteSet
 }
 
 func collPvtRwSetFromProtoMsg(protoMsg *rwset.CollectionPvtReadWriteSet) (*CollPvtRwSet, error) {
-	fmt.Println("==collPvtRwSetFromProtoMsg==")
+	logger.Info("==collPvtRwSetFromProtoMsg==")
 	collPvtRwSet := &CollPvtRwSet{CollectionName: protoMsg.CollectionName, KvRwSet: &kvrwset.KVRWSet{}}
 	if err := proto.Unmarshal(protoMsg.Rwset, collPvtRwSet.KvRwSet); err != nil {
 		return nil, err
@@ -340,13 +340,13 @@ func collPvtRwSetFromProtoMsg(protoMsg *rwset.CollectionPvtReadWriteSet) (*CollP
 
 // NewKVRead helps constructing proto message kvrwset.KVRead
 func NewKVRead(key string, version *version.Height) *kvrwset.KVRead {
-	fmt.Println("==NewKVRead==")
+	logger.Info("==NewKVRead==")
 	return &kvrwset.KVRead{Key: key, Version: newProtoVersion(version)}
 }
 
 // NewVersion helps converting proto message kvrwset.Version to version.Height
 func NewVersion(protoVersion *kvrwset.Version) *version.Height {
-	fmt.Println("==NewVersion==")
+	logger.Info("==NewVersion==")
 	if protoVersion == nil {
 		return nil
 	}
@@ -354,7 +354,7 @@ func NewVersion(protoVersion *kvrwset.Version) *version.Height {
 }
 
 func newProtoVersion(height *version.Height) *kvrwset.Version {
-	fmt.Println("==newProtoVersion==")
+	logger.Info("==newProtoVersion==")
 	if height == nil {
 		return nil
 	}
@@ -362,17 +362,17 @@ func newProtoVersion(height *version.Height) *kvrwset.Version {
 }
 
 func newKVWrite(key string, value []byte) *kvrwset.KVWrite {
-	fmt.Println("==newKVWrite==")
+	logger.Info("==newKVWrite==")
 	return &kvrwset.KVWrite{Key: key, IsDelete: value == nil, Value: value}
 }
 
 func newPvtKVReadHash(key string, version *version.Height) *kvrwset.KVReadHash {
-	fmt.Println("==newPvtKVReadHash==")
+	logger.Info("==newPvtKVReadHash==")
 	return &kvrwset.KVReadHash{KeyHash: util.ComputeStringHash(key), Version: newProtoVersion(version)}
 }
 
 func newPvtKVWriteAndHash(key string, value []byte) (*kvrwset.KVWrite, *kvrwset.KVWriteHash) {
-	fmt.Println("==newPvtKVWriteAndHash==")
+	logger.Info("==newPvtKVWriteAndHash==")
 	kvWrite := newKVWrite(key, value)
 	var keyHash, valueHash []byte
 	keyHash = util.ComputeStringHash(key)

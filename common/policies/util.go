@@ -29,18 +29,18 @@ type StandardConfigPolicy struct {
 
 // Key is the key this value should be stored in the *cb.ConfigGroup.Values map.
 func (scv *StandardConfigPolicy) Key() string {
-	fmt.Println("===StandardConfigPolicy==Key===")
+	logger.Info("===StandardConfigPolicy==Key===")
 	return scv.key
 }
 
 // Value is the *cb.Policy which should be stored as the *cb.ConfigPolicy.Policy.
 func (scv *StandardConfigPolicy) Value() *cb.Policy {
-	fmt.Println("===StandardConfigPolicy==Value===")
+	logger.Info("===StandardConfigPolicy==Value===")
 	return scv.value
 }
 
 func makeImplicitMetaPolicy(subPolicyName string, rule cb.ImplicitMetaPolicy_Rule) *cb.Policy {
-	fmt.Println("===makeImplicitMetaPolicy===")
+	logger.Info("===makeImplicitMetaPolicy===")
 	return &cb.Policy{
 		Type: int32(cb.Policy_IMPLICIT_META),
 		Value: utils.MarshalOrPanic(&cb.ImplicitMetaPolicy{
@@ -52,7 +52,7 @@ func makeImplicitMetaPolicy(subPolicyName string, rule cb.ImplicitMetaPolicy_Rul
 
 // ImplicitMetaAllPolicy defines an implicit meta policy whose sub_policy and key is policyname with rule ALL.
 func ImplicitMetaAllPolicy(policyName string) *StandardConfigPolicy {
-	fmt.Println("===ImplicitMetaAllPolicy===")
+	logger.Info("===ImplicitMetaAllPolicy===")
 	return &StandardConfigPolicy{
 		key:   policyName,
 		value: makeImplicitMetaPolicy(policyName, cb.ImplicitMetaPolicy_ALL),
@@ -61,7 +61,7 @@ func ImplicitMetaAllPolicy(policyName string) *StandardConfigPolicy {
 
 // ImplicitMetaAnyPolicy defines an implicit meta policy whose sub_policy and key is policyname with rule ANY.
 func ImplicitMetaAnyPolicy(policyName string) *StandardConfigPolicy {
-	fmt.Println("===ImplicitMetaAnyPolicy===")
+	logger.Info("===ImplicitMetaAnyPolicy===")
 	return &StandardConfigPolicy{
 		key:   policyName,
 		value: makeImplicitMetaPolicy(policyName, cb.ImplicitMetaPolicy_ANY),
@@ -70,7 +70,7 @@ func ImplicitMetaAnyPolicy(policyName string) *StandardConfigPolicy {
 
 // ImplicitMetaMajorityPolicy defines an implicit meta policy whose sub_policy and key is policyname with rule MAJORITY.
 func ImplicitMetaMajorityPolicy(policyName string) *StandardConfigPolicy {
-	fmt.Println("===ImplicitMetaMajorityPolicy===")
+	logger.Info("===ImplicitMetaMajorityPolicy===")
 	return &StandardConfigPolicy{
 		key:   policyName,
 		value: makeImplicitMetaPolicy(policyName, cb.ImplicitMetaPolicy_MAJORITY),
@@ -79,7 +79,7 @@ func ImplicitMetaMajorityPolicy(policyName string) *StandardConfigPolicy {
 
 // ImplicitMetaMajorityPolicy defines a policy with key policyName and the given signature policy.
 func SignaturePolicy(policyName string, sigPolicy *cb.SignaturePolicyEnvelope) *StandardConfigPolicy {
-	fmt.Println("===SignaturePolicy===")
+	logger.Info("===SignaturePolicy===")
 	return &StandardConfigPolicy{
 		key: policyName,
 		value: &cb.Policy{

@@ -47,7 +47,7 @@ func defaultCDSFactory(spec *pb.ChaincodeSpec) (*pb.ChaincodeDeploymentSpec, err
 
 // deployCmd returns the cobra command for Chaincode Deploy
 func packageCmd(cf *ChaincodeCmdFactory, cdsFact ccDepSpecFactory) *cobra.Command {
-	fmt.Println("========packageCmd==========")
+	logger.Info("========packageCmd==========")
 	chaincodePackageCmd = &cobra.Command{
 		Use:       "package",
 		Short:     packageDesc,
@@ -81,7 +81,7 @@ func packageCmd(cf *ChaincodeCmdFactory, cdsFact ccDepSpecFactory) *cobra.Comman
 }
 
 func getInstantiationPolicy(policy string) (*pcommon.SignaturePolicyEnvelope, error) {
-	fmt.Println("========getInstantiationPolicy==========")
+	logger.Info("========getInstantiationPolicy==========")
 	p, err := cauthdsl.FromString(policy)
 	if err != nil {
 		return nil, fmt.Errorf("Invalid policy %s, err %s", policy, err)
@@ -92,7 +92,7 @@ func getInstantiationPolicy(policy string) (*pcommon.SignaturePolicyEnvelope, er
 //getChaincodeInstallPackage returns either a raw ChaincodeDeploymentSpec or
 //a Envelope with ChaincodeDeploymentSpec and (optional) signature
 func getChaincodeInstallPackage(cds *pb.ChaincodeDeploymentSpec, cf *ChaincodeCmdFactory) ([]byte, error) {
-	fmt.Println("========getChaincodeInstallPackage==========")
+	logger.Info("========getChaincodeInstallPackage==========")
 	//this can be raw ChaincodeDeploymentSpec or Envelope with signatures
 	var objToWrite proto.Message
 
@@ -151,7 +151,7 @@ func getChaincodeInstallPackage(cds *pb.ChaincodeDeploymentSpec, cf *ChaincodeCm
 // (hash) is printed to STDOUT for use by subsequent chaincode-related CLI
 // commands.
 func chaincodePackage(cmd *cobra.Command, args []string, cdsFact ccDepSpecFactory, cf *ChaincodeCmdFactory) error {
-	fmt.Println("========chaincodePackage==========")
+	logger.Info("========chaincodePackage==========")
 	if cdsFact == nil {
 		return fmt.Errorf("Error chaincode deployment spec factory not specified")
 	}

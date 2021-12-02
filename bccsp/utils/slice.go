@@ -20,7 +20,7 @@ import "fmt"
 
 // Clone clones the passed slice
 func Clone(src []byte) []byte {
-	fmt.Println("===Clone======")
+	logger.Info("===Clone======")
 	clone := make([]byte, len(src))
 	copy(clone, src)
 

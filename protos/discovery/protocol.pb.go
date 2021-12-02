@@ -63,7 +63,7 @@ func (m *SignedRequest) XXX_DiscardUnknown() {
 var xxx_messageInfo_SignedRequest proto.InternalMessageInfo
 
 func (m *SignedRequest) GetPayload() []byte {
-	fmt.Println("==========SignedRequest===GetPayload===========")
+	logger.Info("==========SignedRequest===GetPayload===========")
 	if m != nil {
 		return m.Payload
 	}
@@ -71,7 +71,7 @@ func (m *SignedRequest) GetPayload() []byte {
 }
 
 func (m *SignedRequest) GetSignature() []byte {
-	fmt.Println("==========SignedRequest===GetSignature===========")
+	logger.Info("==========SignedRequest===GetSignature===========")
 	if m != nil {
 		return m.Signature
 	}
@@ -116,7 +116,7 @@ func (m *Request) XXX_DiscardUnknown() {
 var xxx_messageInfo_Request proto.InternalMessageInfo
 
 func (m *Request) GetAuthentication() *AuthInfo {
-	fmt.Println("==========Request===GetAuthentication===========")
+	logger.Info("==========Request===GetAuthentication===========")
 	if m != nil {
 		return m.Authentication
 	}
@@ -124,7 +124,7 @@ func (m *Request) GetAuthentication() *AuthInfo {
 }
 
 func (m *Request) GetQueries() []*Query {
-	fmt.Println("==========Request===GetQueries===========")
+	logger.Info("==========Request===GetQueries===========")
 	if m != nil {
 		return m.Queries
 	}
@@ -164,9 +164,9 @@ func (m *Response) XXX_DiscardUnknown() {
 var xxx_messageInfo_Response proto.InternalMessageInfo
 
 func (m *Response) GetResults() []*QueryResult {
-	fmt.Println("==========Response===GetResults===========")
+	logger.Info("==========Response===GetResults===========")
 	if m != nil {
-		fmt.Println("=======m.Results===========",m.Results)
+		logger.Info("=======m.Results===========",m.Results)
 		return m.Results
 	}
 	return nil
@@ -217,7 +217,7 @@ func (m *AuthInfo) XXX_DiscardUnknown() {
 var xxx_messageInfo_AuthInfo proto.InternalMessageInfo
 
 func (m *AuthInfo) GetClientIdentity() []byte {
-	fmt.Println("==========AuthInfo===GetClientIdentity===========")
+	logger.Info("==========AuthInfo===GetClientIdentity===========")
 	if m != nil {
 		return m.ClientIdentity
 	}
@@ -225,7 +225,7 @@ func (m *AuthInfo) GetClientIdentity() []byte {
 }
 
 func (m *AuthInfo) GetClientTlsCertHash() []byte {
-	fmt.Println("==========AuthInfo===GetClientTlsCertHash===========")
+	logger.Info("==========AuthInfo===GetClientTlsCertHash===========")
 	if m != nil {
 		return m.ClientTlsCertHash
 	}
@@ -306,7 +306,7 @@ func (*Query_CcQuery) isQuery_Query() {}
 func (*Query_LocalPeers) isQuery_Query() {}
 
 func (m *Query) GetQuery() isQuery_Query {
-	fmt.Println("==========Query===isQuery_Query===========")
+	logger.Info("==========Query===isQuery_Query===========")
 	if m != nil {
 		return m.Query
 	}
@@ -314,7 +314,7 @@ func (m *Query) GetQuery() isQuery_Query {
 }
 
 func (m *Query) GetConfigQuery() *ConfigQuery {
-	fmt.Println("==========Query===GetConfigQuery===========")
+	logger.Info("==========Query===GetConfigQuery===========")
 	if x, ok := m.GetQuery().(*Query_ConfigQuery); ok {
 		return x.ConfigQuery
 	}
@@ -322,7 +322,7 @@ func (m *Query) GetConfigQuery() *ConfigQuery {
 }
 
 func (m *Query) GetPeerQuery() *PeerMembershipQuery {
-	fmt.Println("==========Query===GetPeerQuery===========")
+	logger.Info("==========Query===GetPeerQuery===========")
 	if x, ok := m.GetQuery().(*Query_PeerQuery); ok {
 		return x.PeerQuery
 	}
@@ -330,7 +330,7 @@ func (m *Query) GetPeerQuery() *PeerMembershipQuery {
 }
 
 func (m *Query) GetCcQuery() *ChaincodeQuery {
-	fmt.Println("==========Query===GetCcQuery===========")
+	logger.Info("==========Query===GetCcQuery===========")
 	if x, ok := m.GetQuery().(*Query_CcQuery); ok {
 		return x.CcQuery
 	}
@@ -338,7 +338,7 @@ func (m *Query) GetCcQuery() *ChaincodeQuery {
 }
 
 func (m *Query) GetLocalPeers() *LocalPeerQuery {
-	fmt.Println("==========Query===GetLocalPeers===========")
+	logger.Info("==========Query===GetLocalPeers===========")
 	if x, ok := m.GetQuery().(*Query_LocalPeers); ok {
 		return x.LocalPeers
 	}
@@ -526,7 +526,7 @@ func (*QueryResult_CcQueryRes) isQueryResult_Result() {}
 func (*QueryResult_Members) isQueryResult_Result() {}
 
 func (m *QueryResult) GetResult() isQueryResult_Result {
-	fmt.Println("==========QueryResult===GetResult===========")
+	logger.Info("==========QueryResult===GetResult===========")
 	if m != nil {
 		return m.Result
 	}
@@ -534,42 +534,42 @@ func (m *QueryResult) GetResult() isQueryResult_Result {
 }
 
 func (m *QueryResult) GetError() *Error {
-	fmt.Println("==========QueryResult===GetError===========")
+	logger.Info("==========QueryResult===GetError===========")
 	if x, ok := m.GetResult().(*QueryResult_Error); ok {
-		fmt.Println("==========x",x)
-		fmt.Println("==========ok",ok)
+		logger.Info("==========x",x)
+		logger.Info("==========ok",ok)
 		return x.Error
 	}
 	return nil
 }
 
 func (m *QueryResult) GetConfigResult() *ConfigResult {
-	fmt.Println("==========QueryResult===GetConfigResult===========")
+	logger.Info("==========QueryResult===GetConfigResult===========")
 	if x, ok := m.GetResult().(*QueryResult_ConfigResult); ok {
-		fmt.Println("==========x",x)
+		logger.Info("==========x",x)
 		//&{msps:<key:"A" value:<> > msps:<key:"B" value:<> > msps:<key:"C" value:<> > msps:<key:"D" value:<> > orderers:<key:"A" value:<> > orderers:<key:"B" value:<> > }
-		fmt.Println("==========ok",ok)
+		logger.Info("==========ok",ok)
 		return x.ConfigResult
 	}
 	return nil
 }
 
 func (m *QueryResult) GetCcQueryRes() *ChaincodeQueryResult {
-	fmt.Println("==========QueryResult===GetCcQueryRes===========")
+	logger.Info("==========QueryResult===GetCcQueryRes===========")
 	if x, ok := m.GetResult().(*QueryResult_CcQueryRes); ok {
-		fmt.Println("==========x",x)
-		fmt.Println("==========ok",ok)
+		logger.Info("==========x",x)
+		logger.Info("==========ok",ok)
 		return x.CcQueryRes
 	}
 	return nil
 }
 
 func (m *QueryResult) GetMembers() *PeerMembershipResult {
-	fmt.Println("==========QueryResult===GetMembers===========")
+	logger.Info("==========QueryResult===GetMembers===========")
 	if x, ok := m.GetResult().(*QueryResult_Members); ok {
-		fmt.Println("=================x",x)
+		logger.Info("=================x",x)
 		// &{peers_by_org:<key:"A" value:<peers:<state_info:<payload:"z\020\022\014\010\220\376\261\234\204\225\345\333\026\020\005*\000" > membership_info:<payload:"*\022\n\004\n\002p0\022\n\010\203\237\301\234\204\225\345\333\026" > identity:"\n\001A\022\002p0" > peers:<state_info:<payload:"z\020\022\014\010\273\352\262\234\204\225\345\333\026\020\005*\000" > membership_info:<payload:"*\024\n\004\n\002p1\022\014\010\370\305\303\234\204\225\345\333\026\020\001" > identity:"\n\001A\022\002p1" > > > peers_by_org:<key:"B" value:<peers:<state_info:<payload:"z\020\022\014\010\331\334\263\234\204\225\345\333\026\020\005*\000" > membership_info:<payload:"*\024\n\004\n\002p2\022\014\010\302\377\303\234\204\225\345\333\026\020\002" > identity:"\n\001B\022\002p2" > peers:<state_info:<payload:"z\020\022\014\010\232\224\264\234\204\225\345\333\026\020\005*\000" > membership_info:<payload:"*\024\n\004\n\002p3\022\014\010\367\257\304\234\204\225\345\333\026\020\003" > identity:"\n\001B\022\002p3" > > > peers_by_org:<key:"C" value:<peers:<state_info:<payload:"z\020\022\014\010\214\340\264\234\204\225\345\333\026\020\005*\000" > membership_info:<payload:"*\024\n\004\n\002p4\022\014\010\376\345\304\234\204\225\345\333\026\020\004" > identity:"\n\001C\022\002p4" > peers:<state_info:<payload:"z\020\022\014\010\204\223\265\234\204\225\345\333\026\020\005*\000" > membership_info:<payload:"*\024\n\004\n\002p5\022\014\010\342\226\305\234\204\225\345\333\026\020\005" > identity:"\n\001C\022\002p5" > > > peers_by_org:<key:"D" value:<peers:<state_info:<payload:"z\020\022\014\010\211\373\267\234\204\225\345\333\026\020\005*\000" > membership_info:<payload:"*\024\n\004\n\002p6\022\014\010\213\312\305\234\204\225\345\333\026\020\006" > identity:"\n\001D\022\002p6" > peers:<state_info:<payload:"z\020\022\014\010\356\240\271\234\204\225\345\333\026\020\005*\000" > membership_info:<payload:"*\024\n\004\n\002p7\022\014\010\224\222\306\234\204\225\345\333\026\020\007" > identity:"\n\001D\022\002p7" > > > }
-		fmt.Println("=================ok",ok)
+		logger.Info("=================ok",ok)
 		return x.Members
 	}
 	return nil
@@ -753,18 +753,18 @@ func (m *ConfigResult) XXX_DiscardUnknown() {
 var xxx_messageInfo_ConfigResult proto.InternalMessageInfo
 
 func (m *ConfigResult) GetMsps() map[string]*msp.FabricMSPConfig {
-	fmt.Println("==========ConfigResult===GetMsps===========")
+	logger.Info("==========ConfigResult===GetMsps===========")
 	if m != nil {
-		fmt.Println("======m.Msps======",m.Msps)
+		logger.Info("======m.Msps======",m.Msps)
 		return m.Msps
 	}
 	return nil
 }
 
 func (m *ConfigResult) GetOrderers() map[string]*Endpoints {
-	fmt.Println("==========ConfigResult===GetOrderers===========")
+	logger.Info("==========ConfigResult===GetOrderers===========")
 	if m != nil {
-		fmt.Println("======m.Msps======",m.Msps)
+		logger.Info("======m.Msps======",m.Msps)
 		return m.Orderers
 	}
 	return nil
@@ -808,7 +808,7 @@ var xxx_messageInfo_PeerMembershipQuery proto.InternalMessageInfo
 
 func (m *PeerMembershipQuery) GetFilter() *ChaincodeInterest {
 	if m != nil {
-		fmt.Println("======m.Filter======",m.Filter)
+		logger.Info("======m.Filter======",m.Filter)
 		return m.Filter
 	}
 	return nil
@@ -847,9 +847,9 @@ func (m *PeerMembershipResult) XXX_DiscardUnknown() {
 var xxx_messageInfo_PeerMembershipResult proto.InternalMessageInfo
 
 func (m *PeerMembershipResult) GetPeersByOrg() map[string]*Peers {
-	fmt.Println("==========PeerMembershipResult===GetPeersByOrg===========")
+	logger.Info("==========PeerMembershipResult===GetPeersByOrg===========")
 	if m != nil {
-		fmt.Println("======m.PeersByOrg======",m.PeersByOrg)
+		logger.Info("======m.PeersByOrg======",m.PeersByOrg)
 		return m.PeersByOrg
 	}
 	return nil
@@ -891,9 +891,9 @@ func (m *ChaincodeQuery) XXX_DiscardUnknown() {
 var xxx_messageInfo_ChaincodeQuery proto.InternalMessageInfo
 
 func (m *ChaincodeQuery) GetInterests() []*ChaincodeInterest {
-	fmt.Println("==========ChaincodeQuery===GetInterests===========")
+	logger.Info("==========ChaincodeQuery===GetInterests===========")
 	if m != nil {
-		fmt.Println("======m.Interests======",m.Interests)
+		logger.Info("======m.Interests======",m.Interests)
 		return m.Interests
 	}
 	return nil
@@ -934,9 +934,9 @@ func (m *ChaincodeInterest) XXX_DiscardUnknown() {
 var xxx_messageInfo_ChaincodeInterest proto.InternalMessageInfo
 
 func (m *ChaincodeInterest) GetChaincodes() []*ChaincodeCall {
-	fmt.Println("==========ChaincodeInterest===GetChaincodes===========")
+	logger.Info("==========ChaincodeInterest===GetChaincodes===========")
 	if m != nil {
-		fmt.Println("=====m.Chaincodes======",m.Chaincodes)
+		logger.Info("=====m.Chaincodes======",m.Chaincodes)
 		return m.Chaincodes
 	}
 	return nil
@@ -977,18 +977,18 @@ func (m *ChaincodeCall) XXX_DiscardUnknown() {
 var xxx_messageInfo_ChaincodeCall proto.InternalMessageInfo
 
 func (m *ChaincodeCall) GetName() string {
-	fmt.Println("==========ChaincodeCall===GetName===========")
+	logger.Info("==========ChaincodeCall===GetName===========")
 	if m != nil {
-		fmt.Println("=====m.Name======",m.Name)
+		logger.Info("=====m.Name======",m.Name)
 		return m.Name
 	}
 	return ""
 }
 
 func (m *ChaincodeCall) GetCollectionNames() []string {
-	fmt.Println("==========ChaincodeCall===GetCollectionNames===========")
+	logger.Info("==========ChaincodeCall===GetCollectionNames===========")
 	if m != nil {
-		fmt.Println("====m.CollectionNames======",m.CollectionNames)
+		logger.Info("====m.CollectionNames======",m.CollectionNames)
 		return m.CollectionNames
 	}
 	return nil
@@ -1028,9 +1028,9 @@ func (m *ChaincodeQueryResult) XXX_DiscardUnknown() {
 var xxx_messageInfo_ChaincodeQueryResult proto.InternalMessageInfo
 
 func (m *ChaincodeQueryResult) GetContent() []*EndorsementDescriptor {
-	fmt.Println("==========ChaincodeQueryResult===GetContent===========")
+	logger.Info("==========ChaincodeQueryResult===GetContent===========")
 	if m != nil {
-		fmt.Println("====m.Content======",m.Content)
+		logger.Info("====m.Content======",m.Content)
 		return m.Content
 	}
 	return nil
@@ -1117,27 +1117,27 @@ func (m *EndorsementDescriptor) XXX_DiscardUnknown() {
 var xxx_messageInfo_EndorsementDescriptor proto.InternalMessageInfo
 
 func (m *EndorsementDescriptor) GetChaincode() string {
-	fmt.Println("====EndorsementDescriptor=====GetChaincode===")
+	logger.Info("====EndorsementDescriptor=====GetChaincode===")
 	if m != nil {
-		fmt.Println("====m.Chaincode======",m.Chaincode)
+		logger.Info("====m.Chaincode======",m.Chaincode)
 		return m.Chaincode
 	}
 	return ""
 }
 
 func (m *EndorsementDescriptor) GetEndorsersByGroups() map[string]*Peers {
-	fmt.Println("==========EndorsementDescriptor===GetEndorsersByGroups===========")
+	logger.Info("==========EndorsementDescriptor===GetEndorsersByGroups===========")
 	if m != nil {
-		fmt.Println("====m.EndorsersByGroups=====",m.EndorsersByGroups)
+		logger.Info("====m.EndorsersByGroups=====",m.EndorsersByGroups)
 		return m.EndorsersByGroups
 	}
 	return nil
 }
 
 func (m *EndorsementDescriptor) GetLayouts() []*Layout {
-	fmt.Println("==========EndorsementDescriptor===GetLayouts===========")
+	logger.Info("==========EndorsementDescriptor===GetLayouts===========")
 	if m != nil {
-		fmt.Println("====Layouts=====",m.Layouts)
+		logger.Info("====Layouts=====",m.Layouts)
 		return m.Layouts
 	}
 	return nil
@@ -1179,7 +1179,7 @@ func (m *Layout) XXX_DiscardUnknown() {
 var xxx_messageInfo_Layout proto.InternalMessageInfo
 
 func (m *Layout) GetQuantitiesByGroup() map[string]uint32 {
-	fmt.Println("==========Layout===GetQuantitiesByGroup===========")
+	logger.Info("==========Layout===GetQuantitiesByGroup===========")
 	if m != nil {
 		return m.QuantitiesByGroup
 	}
@@ -1219,9 +1219,9 @@ func (m *Peers) XXX_DiscardUnknown() {
 var xxx_messageInfo_Peers proto.InternalMessageInfo
 
 func (m *Peers) GetPeers() []*Peer {
-	fmt.Println("==========Peers===GetPeers===========")
+	logger.Info("==========Peers===GetPeers===========")
 	if m != nil {
-		fmt.Println("====m.Peers=====",m.Peers)
+		logger.Info("====m.Peers=====",m.Peers)
 		return m.Peers
 	}
 	return nil
@@ -1266,27 +1266,27 @@ func (m *Peer) XXX_DiscardUnknown() {
 var xxx_messageInfo_Peer proto.InternalMessageInfo
 
 func (m *Peer) GetStateInfo() *gossip.Envelope {
-	fmt.Println("==========Peer===GetStateInfo===========")
+	logger.Info("==========Peer===GetStateInfo===========")
 	if m != nil {
-		fmt.Println("====m.StateInfo=====",m.StateInfo)
+		logger.Info("====m.StateInfo=====",m.StateInfo)
 		return m.StateInfo
 	}
 	return nil
 }
 
 func (m *Peer) GetMembershipInfo() *gossip.Envelope {
-	fmt.Println("==========Peer===GetMembershipInfo===========")
+	logger.Info("==========Peer===GetMembershipInfo===========")
 	if m != nil {
-		fmt.Println("====m.MembershipInfo=====",m.MembershipInfo)
+		logger.Info("====m.MembershipInfo=====",m.MembershipInfo)
 		return m.MembershipInfo
 	}
 	return nil
 }
 
 func (m *Peer) GetIdentity() []byte {
-	fmt.Println("==========Peer===GetIdentity===========")
+	logger.Info("==========Peer===GetIdentity===========")
 	if m != nil {
-		fmt.Println("====m.Identity=====",m.Identity)
+		logger.Info("====m.Identity=====",m.Identity)
 		return m.Identity
 	}
 	return nil
@@ -1325,9 +1325,9 @@ func (m *Error) XXX_DiscardUnknown() {
 var xxx_messageInfo_Error proto.InternalMessageInfo
 
 func (m *Error) GetContent() string {
-	fmt.Println("==========Error===GetContent===========")
+	logger.Info("==========Error===GetContent===========")
 	if m != nil {
-		fmt.Println("====m.Content=====",m.Content)
+		logger.Info("====m.Content=====",m.Content)
 		return m.Content
 	}
 	return ""
@@ -1366,9 +1366,9 @@ func (m *Endpoints) XXX_DiscardUnknown() {
 var xxx_messageInfo_Endpoints proto.InternalMessageInfo
 
 func (m *Endpoints) GetEndpoint() []*Endpoint {
-	fmt.Println("==========Endpoints===GetEndpoint===========")
+	logger.Info("==========Endpoints===GetEndpoint===========")
 	if m != nil {
-		fmt.Println("====m.Endpoint=====",m.Endpoint)
+		logger.Info("====m.Endpoint=====",m.Endpoint)
 		return m.Endpoint
 	}
 	return nil
@@ -1408,18 +1408,18 @@ func (m *Endpoint) XXX_DiscardUnknown() {
 var xxx_messageInfo_Endpoint proto.InternalMessageInfo
 
 func (m *Endpoint) GetHost() string {
-	fmt.Println("==========Endpoint===GetHost===========")
+	logger.Info("==========Endpoint===GetHost===========")
 	if m != nil {
-		fmt.Println("====m.Host====",m.Host)
+		logger.Info("====m.Host====",m.Host)
 		return m.Host
 	}
 	return ""
 }
 
 func (m *Endpoint) GetPort() uint32 {
-	fmt.Println("==========Endpoint===GetPort===========")
+	logger.Info("==========Endpoint===GetPort===========")
 	if m != nil {
-		fmt.Println("====m.Port====",m.Port)
+		logger.Info("====m.Port====",m.Port)
 		return m.Port
 	}
 	return 0
@@ -1476,18 +1476,18 @@ type discoveryClient struct {
 }
 
 func NewDiscoveryClient(cc *grpc.ClientConn) DiscoveryClient {
-	fmt.Println("============NewDiscoveryClient================cc",cc)
+	logger.Info("============NewDiscoveryClient================cc",cc)
 	return &discoveryClient{cc}
 }
 
 func (c *discoveryClient) Discover(ctx context.Context, in *SignedRequest, opts ...grpc.CallOption) (*Response, error) {
-	fmt.Println("==========discoveryClient===Discover===========")
+	logger.Info("==========discoveryClient===Discover===========")
 	out := new(Response)
-	//fmt.Println("===ctx===",ctx)
-	//fmt.Println("===/discovery.Discovery/Discover===")
-	//fmt.Println("===in===",*in)
-	//fmt.Println("===out===",*out)
-	//fmt.Println("===opts===",opts)
+	//logger.Info("===ctx===",ctx)
+	//logger.Info("===/discovery.Discovery/Discover===")
+	//logger.Info("===in===",*in)
+	//logger.Info("===out===",*out)
+	//logger.Info("===opts===",opts)
 	err := c.cc.Invoke(ctx, "/discovery.Discovery/Discover", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -1502,14 +1502,14 @@ type DiscoveryServer interface {
 }
 
 func RegisterDiscoveryServer(s *grpc.Server, srv DiscoveryServer) {
-	fmt.Println("============RegisterDiscoveryServer=========")
-	fmt.Println("============_Discovery_serviceDesc=========",_Discovery_serviceDesc)
+	logger.Info("============RegisterDiscoveryServer=========")
+	logger.Info("============_Discovery_serviceDesc=========",_Discovery_serviceDesc)
 
 	s.RegisterService(&_Discovery_serviceDesc, srv)
 }
 
 func _Discovery_Discover_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	fmt.Println("===========_Discovery_Discover_Handler========================")
+	logger.Info("===========_Discovery_Discover_Handler========================")
 	in := new(SignedRequest)
 	if err := dec(in); err != nil {
 		return nil, err

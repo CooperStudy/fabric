@@ -78,7 +78,7 @@ type ChannelConfig struct {
 
 // NewChannelConfig creates a new ChannelConfig
 func NewChannelConfig(channelGroup *cb.ConfigGroup) (*ChannelConfig, error) {
-	fmt.Println("=====NewChannelConfig========")
+	logger.Info("=====NewChannelConfig========")
 	cc := &ChannelConfig{
 		protos: &ChannelProtos{},
 	}
@@ -96,16 +96,16 @@ func NewChannelConfig(channelGroup *cb.ConfigGroup) (*ChannelConfig, error) {
 
 	var err error
 	for groupName, group := range channelGroup.Groups {
-		fmt.Println("======groupName===========",groupName)
+		logger.Info("======groupName===========",groupName)
 		switch groupName {
 		case ApplicationGroupKey:
-			fmt.Println("======ApplicationGroupKey===========")
+			logger.Info("======ApplicationGroupKey===========")
 			cc.appConfig, err = NewApplicationConfig(group, mspConfigHandler)
 		case OrdererGroupKey:
-			fmt.Println("======OrdererGroupKey===========")
+			logger.Info("======OrdererGroupKey===========")
 			cc.ordererConfig, err = NewOrdererConfig(group, mspConfigHandler)
 		case ConsortiumsGroupKey:
-			fmt.Println("======ConsortiumsGroupKey===========")
+			logger.Info("======ConsortiumsGroupKey===========")
 			cc.consortiumsConfig, err = NewConsortiumsConfig(group, mspConfigHandler)
 		default:
 			return nil, fmt.Errorf("Disallowed channel group: %s", group)
@@ -124,63 +124,63 @@ func NewChannelConfig(channelGroup *cb.ConfigGroup) (*ChannelConfig, error) {
 
 // MSPManager returns the MSP manager for this config
 func (cc *ChannelConfig) MSPManager() msp.MSPManager {
-	fmt.Println("=====ChannelConfig=====MSPManager===")
+	logger.Info("=====ChannelConfig=====MSPManager===")
 	return cc.mspManager
 }
 
 // OrdererConfig returns the orderer config associated with this channel
 func (cc *ChannelConfig) OrdererConfig() *OrdererConfig {
-	fmt.Println("=====ChannelConfig=====OrdererConfig===")
+	logger.Info("=====ChannelConfig=====OrdererConfig===")
 	return cc.ordererConfig
 }
 
 // ApplicationConfig returns the application config associated with this channel
 func (cc *ChannelConfig) ApplicationConfig() *ApplicationConfig {
-	fmt.Println("=====ChannelConfig=====ApplicationConfig===")
+	logger.Info("=====ChannelConfig=====ApplicationConfig===")
 	return cc.appConfig
 }
 
 // ConsortiumsConfig returns the consortium config associated with this channel if it exists
 func (cc *ChannelConfig) ConsortiumsConfig() *ConsortiumsConfig {
-	fmt.Println("=====ChannelConfig=====ConsortiumsConfig===")
+	logger.Info("=====ChannelConfig=====ConsortiumsConfig===")
 	return cc.consortiumsConfig
 }
 
 // HashingAlgorithm returns a function pointer to the chain hashing algorihtm
 func (cc *ChannelConfig) HashingAlgorithm() func(input []byte) []byte {
-	fmt.Println("=====ChannelConfig=====HashingAlgorithm===")
+	logger.Info("=====ChannelConfig=====HashingAlgorithm===")
 	return cc.hashingAlgorithm
 }
 
 // BlockDataHashingStructure returns the width to use when forming the block data hashing structure
 func (cc *ChannelConfig) BlockDataHashingStructureWidth() uint32 {
-	fmt.Println("=====ChannelConfig=====BlockDataHashingStructureWidth===")
+	logger.Info("=====ChannelConfig=====BlockDataHashingStructureWidth===")
 	return cc.protos.BlockDataHashingStructure.Width
 }
 
 // OrdererAddresses returns the list of valid orderer addresses to connect to to invoke Broadcast/Deliver
 func (cc *ChannelConfig) OrdererAddresses() []string {
-	fmt.Println("=====ChannelConfig=====OrdererAddresses===")
+	logger.Info("=====ChannelConfig=====OrdererAddresses===")
 	a:= cc.protos.OrdererAddresses.Addresses
-	fmt.Println("=============OrdererAddresses================",a)
+	logger.Info("=============OrdererAddresses================",a)
 	return a
 }
 
 // ConsortiumName returns the name of the consortium this channel was created under
 func (cc *ChannelConfig) ConsortiumName() string {
-	fmt.Println("=====ChannelConfig=====ConsortiumName===")
+	logger.Info("=====ChannelConfig=====ConsortiumName===")
 	return cc.protos.Consortium.Name
 }
 
 // Capabilities returns information about the available capabilities for this channel
 func (cc *ChannelConfig) Capabilities() ChannelCapabilities {
-	fmt.Println("=====ChannelConfig=====Capabilities===")
+	logger.Info("=====ChannelConfig=====Capabilities===")
 	return capabilities.NewChannelProvider(cc.protos.Capabilities.Capabilities)
 }
 
 // Validate inspects the generated configuration protos and ensures that the values are correct
 func (cc *ChannelConfig) Validate() error {
-	fmt.Println("=====ChannelConfig=====Validate===")
+	logger.Info("=====ChannelConfig=====Validate===")
 	for _, validator := range []func() error{
 		cc.validateHashingAlgorithm,
 		cc.validateBlockDataHashingStructure,
@@ -195,7 +195,7 @@ func (cc *ChannelConfig) Validate() error {
 }
 
 func (cc *ChannelConfig) validateHashingAlgorithm() error {
-	fmt.Println("=====ChannelConfig=====validateHashingAlgorithm===")
+	logger.Info("=====ChannelConfig=====validateHashingAlgorithm===")
 	switch cc.protos.HashingAlgorithm.Name {
 	case bccsp.SHA256:
 		cc.hashingAlgorithm = util.ComputeSHA256
@@ -209,7 +209,7 @@ func (cc *ChannelConfig) validateHashingAlgorithm() error {
 }
 
 func (cc *ChannelConfig) validateBlockDataHashingStructure() error {
-	fmt.Println("=====ChannelConfig=====validateBlockDataHashingStructure===")
+	logger.Info("=====ChannelConfig=====validateBlockDataHashingStructure===")
 	if cc.protos.BlockDataHashingStructure.Width != math.MaxUint32 {
 		return fmt.Errorf("BlockDataHashStructure width only supported at MaxUint32 in this version")
 	}
@@ -217,7 +217,7 @@ func (cc *ChannelConfig) validateBlockDataHashingStructure() error {
 }
 
 func (cc *ChannelConfig) validateOrdererAddresses() error {
-	fmt.Println("=====ChannelConfig=====validateOrdererAddresses===")
+	logger.Info("=====ChannelConfig=====validateOrdererAddresses===")
 	if len(cc.protos.OrdererAddresses.Addresses) == 0 {
 		return fmt.Errorf("Must set some OrdererAddresses")
 	}

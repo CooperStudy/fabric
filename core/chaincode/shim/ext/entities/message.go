@@ -8,8 +8,6 @@ package entities
 
 import (
 	"encoding/json"
-	"fmt"
-
 	"github.com/pkg/errors"
 )
 
@@ -29,7 +27,7 @@ type SignedMessage struct {
 
 // Sign signs the SignedMessage and stores the signature in the Sig field
 func (m *SignedMessage) Sign(signer Signer) error {
-	fmt.Println("========SignedMessage======Sign==========")
+	logger.Info("========SignedMessage======Sign==========")
 	if signer == nil {
 		return errors.New("nil signer")
 	}
@@ -50,7 +48,7 @@ func (m *SignedMessage) Sign(signer Signer) error {
 
 // Verify verifies the signature over Payload stored in Sig
 func (m *SignedMessage) Verify(verifier Signer) (bool, error) {
-	fmt.Println("========SignedMessage======Verify==========")
+	logger.Info("========SignedMessage======Verify==========")
 	if verifier == nil {
 		return false, errors.New("nil verifier")
 	}
@@ -71,12 +69,12 @@ func (m *SignedMessage) Verify(verifier Signer) (bool, error) {
 
 // ToBytes serializes the intance to bytes
 func (m *SignedMessage) ToBytes() ([]byte, error) {
-	fmt.Println("========SignedMessage======ToBytes==========")
+	logger.Info("========SignedMessage======ToBytes==========")
 	return json.Marshal(m)
 }
 
 // FromBytes populates the instance from the supplied byte array
 func (m *SignedMessage) FromBytes(d []byte) error {
-	fmt.Println("========SignedMessage======FromBytes==========")
+	logger.Info("========SignedMessage======FromBytes==========")
 	return json.Unmarshal(d, m)
 }

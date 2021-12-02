@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package queryutil
 
 import (
-	"fmt"
 	"github.com/hyperledger/fabric/common/flogging"
 	commonledger "github.com/hyperledger/fabric/common/ledger"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb"
@@ -32,7 +31,7 @@ type QECombiner struct {
 
 // GetState implements function in the interface ledger.SimpleQueryExecutor
 func (c *QECombiner) GetState(namespace string, key string) ([]byte, error) {
-	fmt.Println("==QECombiner====GetState====")
+	logger.Info("==QECombiner====GetState====")
 	var vv *statedb.VersionedValue
 	var val []byte
 	var err error
@@ -52,7 +51,7 @@ func (c *QECombiner) GetState(namespace string, key string) ([]byte, error) {
 
 // GetStateRangeScanIterator implements function in the interface ledger.SimpleQueryExecutor
 func (c *QECombiner) GetStateRangeScanIterator(namespace string, startKey string, endKey string) (commonledger.ResultsIterator, error) {
-	fmt.Println("==QECombiner====GetStateRangeScanIterator====")
+	logger.Info("==QECombiner====GetStateRangeScanIterator====")
 	var itrs []statedb.ResultsIterator
 	for _, qe := range c.QueryExecuters {
 		itr, err := qe.GetStateRangeScanIterator(namespace, startKey, endKey)
@@ -78,12 +77,12 @@ type UpdateBatchBackedQueryExecuter struct {
 
 // GetState implements function in interface 'queryExecuter'
 func (qe *UpdateBatchBackedQueryExecuter) GetState(ns, key string) (*statedb.VersionedValue, error) {
-	fmt.Println("==UpdateBatchBackedQueryExecuter====GetState====")
+	logger.Info("==UpdateBatchBackedQueryExecuter====GetState====")
 	return qe.UpdateBatch.Get(ns, key), nil
 }
 
 // GetStateRangeScanIterator implements function in interface 'queryExecuter'
 func (qe *UpdateBatchBackedQueryExecuter) GetStateRangeScanIterator(namespace, startKey, endKey string) (statedb.ResultsIterator, error) {
-	fmt.Println("==UpdateBatchBackedQueryExecuter====GetStateRangeScanIterator====")
+	logger.Info("==UpdateBatchBackedQueryExecuter====GetStateRangeScanIterator====")
 	return qe.UpdateBatch.GetRangeScanIterator(namespace, startKey, endKey), nil
 }

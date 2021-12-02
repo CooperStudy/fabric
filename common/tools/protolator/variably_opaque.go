@@ -26,7 +26,7 @@ import (
 type variablyOpaqueFieldFactory struct{}
 
 func (soff variablyOpaqueFieldFactory) Handles(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) bool {
-	fmt.Println("===variablyOpaqueFieldFactory========Handles=============")
+	logger.Info("===variablyOpaqueFieldFactory========Handles=============")
 	opaqueProto, ok := msg.(VariablyOpaqueFieldProto)
 	if !ok {
 		return false
@@ -36,7 +36,7 @@ func (soff variablyOpaqueFieldFactory) Handles(msg proto.Message, fieldName stri
 }
 
 func (soff variablyOpaqueFieldFactory) NewProtoField(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) (protoField, error) {
-	fmt.Println("===variablyOpaqueFieldFactory========NewProtoField=============")
+	logger.Info("===variablyOpaqueFieldFactory========NewProtoField=============")
 	opaqueProto := msg.(VariablyOpaqueFieldProto) // Type checked in Handles
 
 	return &plainField{
@@ -59,7 +59,7 @@ func (soff variablyOpaqueFieldFactory) NewProtoField(msg proto.Message, fieldNam
 type variablyOpaqueMapFieldFactory struct{}
 
 func (soff variablyOpaqueMapFieldFactory) Handles(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) bool {
-	fmt.Println("===variablyOpaqueMapFieldFactory========Handles=============")
+	logger.Info("===variablyOpaqueMapFieldFactory========Handles=============")
 	opaqueProto, ok := msg.(VariablyOpaqueMapFieldProto)
 	if !ok {
 		return false
@@ -69,7 +69,7 @@ func (soff variablyOpaqueMapFieldFactory) Handles(msg proto.Message, fieldName s
 }
 
 func (soff variablyOpaqueMapFieldFactory) NewProtoField(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) (protoField, error) {
-	fmt.Println("===variablyOpaqueMapFieldFactory========NewProtoField=============")
+	logger.Info("===variablyOpaqueMapFieldFactory========NewProtoField=============")
 	opaqueProto := msg.(VariablyOpaqueMapFieldProto) // Type checked in Handles
 
 	return &mapField{
@@ -96,7 +96,7 @@ func (soff variablyOpaqueMapFieldFactory) NewProtoField(msg proto.Message, field
 type variablyOpaqueSliceFieldFactory struct{}
 
 func (soff variablyOpaqueSliceFieldFactory) Handles(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) bool {
-	fmt.Println("===variablyOpaqueSliceFieldFactory========Handles=============")
+	logger.Info("===variablyOpaqueSliceFieldFactory========Handles=============")
 	opaqueProto, ok := msg.(VariablyOpaqueSliceFieldProto)
 	if !ok {
 		return false
@@ -106,7 +106,7 @@ func (soff variablyOpaqueSliceFieldFactory) Handles(msg proto.Message, fieldName
 }
 
 func (soff variablyOpaqueSliceFieldFactory) NewProtoField(msg proto.Message, fieldName string, fieldType reflect.Type, fieldValue reflect.Value) (protoField, error) {
-	fmt.Println("===variablyOpaqueSliceFieldFactory========NewProtoField=============")
+	logger.Info("===variablyOpaqueSliceFieldFactory========NewProtoField=============")
 	opaqueProto := msg.(VariablyOpaqueSliceFieldProto) // Type checked in Handles
 
 	return &sliceField{

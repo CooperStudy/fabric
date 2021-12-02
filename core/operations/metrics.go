@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package operations
 
 import (
-	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"sync"
 
 	"github.com/hyperledger/fabric/common/metrics"
@@ -25,9 +25,9 @@ var (
 	gaugeLock        sync.Mutex
 	promVersionGauge metrics.Gauge
 )
-
+var logger = flogging.MustGetLogger("core.operations")
 func versionGauge(provider metrics.Provider) metrics.Gauge {
-	fmt.Println("====versionGauge===")
+	logger.Info("====versionGauge===")
 	switch provider.(type) {
 	case *prometheus.Provider:
 		gaugeLock.Lock()

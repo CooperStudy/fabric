@@ -16,12 +16,10 @@ import (
 	"strings"
 
 	"github.com/hyperledger/fabric/common/chaincode"
-	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/common/util"
 	"github.com/pkg/errors"
 )
 
-var logger = flogging.MustGetLogger("chaincode.persistence")
 
 // IOReadWriter defines the interface needed for reading, writing, removing, and
 // checking for existence of a specified file
@@ -39,34 +37,34 @@ type FilesystemIO struct {
 
 // WriteFile writes a file to the filesystem
 func (f *FilesystemIO) WriteFile(filename string, data []byte, perm os.FileMode) error {
-	fmt.Println("======FilesystemIO======WriteFile=============")
+	logger.Info("======FilesystemIO======WriteFile=============")
 	return ioutil.WriteFile(filename, data, perm)
 }
 
 // Stat checks for existence of the file on the filesystem
 func (f *FilesystemIO) Stat(name string) (os.FileInfo, error) {
-	fmt.Println("======FilesystemIO======Stat=============")
+	logger.Info("======FilesystemIO======Stat=============")
 	return os.Stat(name)
 }
 
 // Remove removes a file from the filesystem - used for rolling back an in-flight
 // Save operation upon a failure
 func (f *FilesystemIO) Remove(name string) error {
-	fmt.Println("======FilesystemIO======Remove=============")
+	logger.Info("======FilesystemIO======Remove=============")
 	return os.Remove(name)
 }
 
 // ReadFile reads a file from the filesystem
 func (f *FilesystemIO) ReadFile(filename string) ([]byte, error) {
-	fmt.Println("======FilesystemIO======ReadFile=============")
+	logger.Info("======FilesystemIO======ReadFile=============")
 	return ioutil.ReadFile(filename)
 }
 
 // ReadDir reads a directory from the filesystem
 func (f *FilesystemIO) ReadDir(dirname string) ([]os.FileInfo, error) {
-	fmt.Println("======FilesystemIO======ReadDir=============")
+	logger.Info("======FilesystemIO======ReadDir=============")
 	a, err := ioutil.ReadDir(dirname)
-	fmt.Println("=============dirname",dirname)///var/hyperledger/production/chaincodes
+	logger.Info("=============dirname",dirname)///var/hyperledger/production/chaincodes
 	return a,err
 }
 
@@ -79,7 +77,7 @@ type Store struct {
 // Save persists chaincode install package bytes with the given name
 // and version
 func (s *Store) Save(name, version string, ccInstallPkg []byte) ([]byte, error) {
-	fmt.Println("======Store======Save=============")
+	logger.Info("======Store======Save=============")
 	metadataJSON, err := toJSON(name, version)
 	if err != nil {
 		return nil, err
@@ -118,11 +116,11 @@ func (s *Store) Save(name, version string, ccInstallPkg []byte) ([]byte, error) 
 // Load loads a persisted chaincode install package bytes with the given hash
 // and also returns the name and version
 func (s *Store) Load(hash []byte) (ccInstallPkg []byte, name, version string, err error) {
-	fmt.Println("====func (s *Store) Load(hash []byte) (ccInstallPkg []byte, name, version string, err error)===")
+	logger.Info("====func (s *Store) Load(hash []byte) (ccInstallPkg []byte, name, version string, err error)===")
 	hashString := hex.EncodeToString(hash)
-	fmt.Println("=====hashString=========")
+	logger.Info("=====hashString=========")
 	ccInstallPkgPath := filepath.Join(s.Path, hashString+".bin")
-	fmt.Println("=======ccInstallPkgPath=====",ccInstallPkgPath)
+	logger.Info("=======ccInstallPkgPath=====",ccInstallPkgPath)
 	ccInstallPkg, err = s.ReadWriter.ReadFile(ccInstallPkgPath)
 	if err != nil {
 		err = errors.Wrapf(err, "error reading chaincode install package at %s", ccInstallPkgPath)
@@ -130,7 +128,7 @@ func (s *Store) Load(hash []byte) (ccInstallPkg []byte, name, version string, er
 	}
 
 	metadataPath := filepath.Join(s.Path, hashString+".json")
-	fmt.Println("===============metadataPath===========",metadataPath)
+	logger.Info("===============metadataPath===========",metadataPath)
 	name, version, err = s.LoadMetadata(metadataPath)
 	if err != nil {
 		return nil, "", "", err
@@ -141,7 +139,7 @@ func (s *Store) Load(hash []byte) (ccInstallPkg []byte, name, version string, er
 
 // LoadMetadata loads the chaincode metadata stored at the specified path
 func (s *Store) LoadMetadata(path string) (name, version string, err error) {
-	fmt.Println("======Store======LoadMetadata=============")
+	logger.Info("======Store======LoadMetadata=============")
 	metadataBytes, err := s.ReadWriter.ReadFile(path)
 	if err != nil {
 		err = errors.Wrapf(err, "error reading metadata at %s", path)
@@ -165,14 +163,14 @@ type CodePackageNotFoundErr struct {
 }
 
 func (e *CodePackageNotFoundErr) Error() string {
-	fmt.Println("======CodePackageNotFoundErr======Error=============")
+	logger.Info("======CodePackageNotFoundErr======Error=============")
 	return fmt.Sprintf("chaincode install package not found with name '%s', version '%s'", e.Name, e.Version)
 }
 
 // RetrieveHash retrieves the hash of a chaincode install package given the
 // name and version of the chaincode
 func (s *Store) RetrieveHash(name string, version string) ([]byte, error) {
-	fmt.Println("======Store======RetrieveHash=============")
+	logger.Info("======Store======RetrieveHash=============")
 	installedChaincodes, err := s.ListInstalledChaincodes()
 	if err != nil {
 		return nil, errors.WithMessage(err, "error getting installed chaincodes")
@@ -195,7 +193,7 @@ func (s *Store) RetrieveHash(name string, version string) ([]byte, error) {
 // ListInstalledChaincodes returns an array with information about the
 // chaincodes installed in the persistence store
 func (s *Store) ListInstalledChaincodes() ([]chaincode.InstalledChaincode, error) {
-	fmt.Println("======Store======ListInstalledChaincodes=============")
+	logger.Info("======Store======ListInstalledChaincodes=============")
 	files, err := s.ReadWriter.ReadDir(s.Path)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error reading chaincode directory at %s", s.Path)
@@ -231,7 +229,7 @@ func (s *Store) ListInstalledChaincodes() ([]chaincode.InstalledChaincode, error
 // GetChaincodeInstallPath returns the path where chaincodes
 // are installed
 func (s *Store) GetChaincodeInstallPath() string {
-	fmt.Println("======Store======GetChaincodeInstallPath=============")
+	logger.Info("======Store======GetChaincodeInstallPath=============")
 	return s.Path
 }
 
@@ -242,7 +240,7 @@ type ChaincodeMetadata struct {
 }
 
 func toJSON(name, version string) ([]byte, error) {
-	fmt.Println("=====toJSON============")
+	logger.Info("=====toJSON============")
 	metadata := &ChaincodeMetadata{
 		Name:    name,
 		Version: version,

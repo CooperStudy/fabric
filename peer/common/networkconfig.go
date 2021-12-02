@@ -157,7 +157,7 @@ type TLSKeyPair struct {
 // GetConfig unmarshals the provided connection profile into a network
 // configuration struct
 func GetConfig(fileName string) (*NetworkConfig, error) {
-	fmt.Println("===GetConfig===")
+	logger.Info("===GetConfig===")
 	if fileName == "" {
 		return nil, errors.New("filename cannot be empty")
 	}

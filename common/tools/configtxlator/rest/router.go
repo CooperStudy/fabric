@@ -22,7 +22,7 @@ import (
 )
 
 func NewRouter() *mux.Router {
-	fmt.Println("========NewRouter========")
+	logger.Info("========NewRouter========")
 	router := mux.NewRouter().StrictSlash(true)
 	router.
 		HandleFunc("/protolator/encode/{msgName}", Encode).

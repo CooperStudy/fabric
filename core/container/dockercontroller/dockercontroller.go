@@ -34,6 +34,7 @@ import (
 // ContainerType is the string which the docker container type
 // is registered with the container.VMController
 const ContainerType = "DOCKER"
+var logger = flogging.MustGetLogger("core.container.dockercontroller")
 
 var (
 	dockerLogger = flogging.MustGetLogger("dockercontroller")
@@ -93,7 +94,7 @@ type Provider struct {
 
 // NewProvider creates a new instance of Provider
 func NewProvider(peerID, networkID string, metricsProvider metrics.Provider) *Provider {
-	fmt.Println("==NewProvider=")
+	logger.Info("==NewProvider=")
 	return &Provider{
 		PeerID:       peerID,
 		NetworkID:    networkID,
@@ -103,13 +104,13 @@ func NewProvider(peerID, networkID string, metricsProvider metrics.Provider) *Pr
 
 // NewVM creates a new DockerVM instance
 func (p *Provider) NewVM() container.VM {
-	fmt.Println("==NewVM=")
+	logger.Info("==NewVM=")
 	return NewDockerVM(p.PeerID, p.NetworkID, p.BuildMetrics)
 }
 
 // NewDockerVM returns a new DockerVM instance
 func NewDockerVM(peerID, networkID string, buildMetrics *BuildMetrics) *DockerVM {
-	fmt.Println("==NewDockerVM=")
+	logger.Info("==NewDockerVM=")
 	return &DockerVM{
 		PeerID:       peerID,
 		NetworkID:    networkID,
@@ -119,37 +120,37 @@ func NewDockerVM(peerID, networkID string, buildMetrics *BuildMetrics) *DockerVM
 }
 
 func getDockerClient() (dockerClient, error) {
-	fmt.Println("==getDockerClient=")
+	logger.Info("==getDockerClient=")
 	return cutil.NewDockerClient()
 }
 
 func getDockerHostConfig() *docker.HostConfig {
-	fmt.Println("==getDockerHostConfig=")
+	logger.Info("==getDockerHostConfig=")
 	if hostConfig != nil {
 		return hostConfig
 	}
 
 	dockerKey := func(key string) string {
 		a := "vm.docker.hostConfig." + key
-		fmt.Println("====dockerKey=========",a)//vm.docker.hostConfig.LogConfig
+		logger.Info("====dockerKey=========",a)//vm.docker.hostConfig.LogConfig
 		return a
 	}
 
 	getInt64 := func(key string) int64 {
 		a:= int64(viper.GetInt(dockerKey(key)))
-		fmt.Println("===========a",a)
+		logger.Info("===========a",a)
 		return a
 	}
 
 	var logConfig docker.LogConfig
 	err := viper.UnmarshalKey(dockerKey("LogConfig"), &logConfig)
-	fmt.Println("====logConfig===",logConfig)
+	logger.Info("====logConfig===",logConfig)
 	//{json-file map[max-file:5 max-size:50m]}
 	if err != nil {
 		dockerLogger.Warningf("load docker HostConfig.LogConfig failed, error: %s", err.Error())
 	}
 	networkMode := viper.GetString(dockerKey("NetworkMode"))
-	fmt.Println("====networkMode===",networkMode)
+	logger.Info("====networkMode===",networkMode)
 	//net_byfn
 	if networkMode == "" {
 		networkMode = "host"
@@ -184,7 +185,7 @@ func getDockerHostConfig() *docker.HostConfig {
 		CPUPeriod:        getInt64("CpuPeriod"),
 		BlkioWeight:      getInt64("BlkioWeight"),
 	}
-	fmt.Println("===========a==============",a)
+	logger.Info("===========a==============",a)
 	/*
 	====dockerKey========= vm.docker.hostConfig.LogConfig
 	====logConfig=== {json-file map[max-file:5 max-size:50m]}
@@ -208,7 +209,7 @@ func getDockerHostConfig() *docker.HostConfig {
 }
 
 func (vm *DockerVM) createContainer(client dockerClient, imageID, containerID string, args, env []string, attachStdout bool) error {
-	fmt.Println("====DockerVM=createContainer===")
+	logger.Info("====DockerVM=createContainer===")
 	logger := dockerLogger.With("imageID", imageID, "containerID", containerID)
 	logger.Debugw("create container")
 	_, err := client.CreateContainer(docker.CreateContainerOptions{
@@ -230,7 +231,7 @@ func (vm *DockerVM) createContainer(client dockerClient, imageID, containerID st
 }
 
 func (vm *DockerVM) deployImage(client dockerClient, ccid ccintf.CCID, reader io.Reader) error {
-	fmt.Println("==DockerVM=deployImage==")
+	logger.Info("==DockerVM=deployImage==")
 	/*
 	 */
 	id, err := vm.GetVMNameForDocker(ccid)
@@ -266,11 +267,11 @@ func (vm *DockerVM) deployImage(client dockerClient, ccid ccintf.CCID, reader io
 
 // Start starts a container using a previously created docker image
 func (vm *DockerVM) Start(ccid ccintf.CCID, args, env []string, filesToUpload map[string][]byte, builder container.Builder) error {
-	fmt.Println("==DockerVM=Start==")
+	logger.Info("==DockerVM=Start==")
 	imageName, err := vm.GetVMNameForDocker(ccid)
-	fmt.Println("========ccid",ccid)
+	logger.Info("========ccid",ccid)
 	//{acb 0}
-	fmt.Println("=====imageName=====",imageName)
+	logger.Info("=====imageName=====",imageName)
 	//dev-peer0.org1.example.com-acb-0-f63fb0c65ab6ac412c7a180d1dc49db516c04c88486360ea39069602b9a9ba81
 	if err != nil {
 		return err
@@ -359,7 +360,7 @@ func (vm *DockerVM) Start(ccid ccintf.CCID, args, env []string, filesToUpload ma
 
 // streamOutput mirrors output from the named container to a fabric logger.
 func streamOutput(logger *flogging.FabricLogger, client dockerClient, containerName string, containerLogger *flogging.FabricLogger) {
-	fmt.Println("==streamOutput==")
+	logger.Info("==streamOutput==")
 	// Launch a few go routines to manage output streams from the container.
 	// They will be automatically destroyed when the container exits
 	attached := make(chan struct{})
@@ -420,7 +421,7 @@ func streamOutput(logger *flogging.FabricLogger, client dockerClient, containerN
 
 // Stop stops a running chaincode
 func (vm *DockerVM) Stop(ccid ccintf.CCID, timeout uint, dontkill bool, dontremove bool) error {
-	fmt.Println("==DockerVM==Stop==")
+	logger.Info("==DockerVM==Stop==")
 	client, err := vm.getClientFnc()
 
 	if err != nil {
@@ -435,7 +436,7 @@ func (vm *DockerVM) Stop(ccid ccintf.CCID, timeout uint, dontkill bool, dontremo
 // HealthCheck checks if the DockerVM is able to communicate with the Docker
 // daemon.
 func (vm *DockerVM) HealthCheck(ctx context.Context) error {
-	fmt.Println("==DockerVM==HealthCheck==")
+	logger.Info("==DockerVM==HealthCheck==")
 	client, err := vm.getClientFnc()
 	if err != nil {
 		return errors.Wrap(err, "failed to connect to Docker daemon")
@@ -447,7 +448,7 @@ func (vm *DockerVM) HealthCheck(ctx context.Context) error {
 }
 
 func (vm *DockerVM) stopInternal(client dockerClient, id string, timeout uint, dontkill, dontremove bool) error {
-	fmt.Println("==DockerVM==stopInternal==")
+	logger.Info("==DockerVM==stopInternal==")
 	logger := dockerLogger.With("id", id)
 
 	logger.Debugw("stopping container")
@@ -473,7 +474,7 @@ func (vm *DockerVM) stopInternal(client dockerClient, id string, timeout uint, d
 // function parameter to allow different formatting based on the desired use of
 // the name.
 func (vm *DockerVM) GetVMName(ccid ccintf.CCID) string {
-	fmt.Println("==DockerVM==GetVMName==")
+	logger.Info("==DockerVM==GetVMName==")
 	// replace any invalid characters with "-" (either in network id, peer id, or in the
 	// entire name returned by any format function)
 	return vmRegExp.ReplaceAllString(vm.preFormatImageName(ccid), "-")
@@ -490,17 +491,17 @@ func (vm *DockerVM) GetVMName(ccid ccintf.CCID) string {
 // 提供的镜像名称，然后将其附加到小写的镜像名称以确保
 // 唯一性。
 func (vm *DockerVM) GetVMNameForDocker(ccid ccintf.CCID) (string, error) {
-	fmt.Println("==DockerVM==GetVMNameForDocker==")
+	logger.Info("==DockerVM==GetVMNameForDocker==")
 	name := vm.preFormatImageName(ccid)
-	fmt.Println("=======name======",name)
+	logger.Info("=======name======",name)
 	hash := hex.EncodeToString(util.ComputeSHA256([]byte(name)))
-	fmt.Println("=====hash=====",hash)
+	logger.Info("=====hash=====",hash)
 	//f63fb0c65ab6ac412c7a180d1dc49db516c04c88486360ea39069602b9a9ba81
 	saniName := vmRegExp.ReplaceAllString(name, "-")
-	fmt.Println("====saniName======",saniName)
+	logger.Info("====saniName======",saniName)
 	//dev-peer0.org1.example.com-acb-0
 	imageName := strings.ToLower(fmt.Sprintf("%s-%s", saniName, hash))
-	fmt.Println("=====imageName=======",imageName)
+	logger.Info("=====imageName=======",imageName)
 //dev-peer0.org1.example.com-acb-0-f63fb0c65ab6ac412c7a180d1dc49db516c04c88486360ea39069602b9a9ba81
 	// Check that name complies with Docker's repository naming rules
 	if !imageRegExp.MatchString(imageName) {
@@ -512,7 +513,7 @@ func (vm *DockerVM) GetVMNameForDocker(ccid ccintf.CCID) (string, error) {
 }
 
 func (vm *DockerVM) preFormatImageName(ccid ccintf.CCID) string {
-	fmt.Println("==DockerVM==preFormatImageName==")
+	logger.Info("==DockerVM==preFormatImageName==")
 	name := ccid.GetName()
 
 	if vm.NetworkID != "" && vm.PeerID != "" {

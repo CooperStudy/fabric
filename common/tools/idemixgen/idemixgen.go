@@ -52,7 +52,7 @@ var (
 )
 
 func main() {
-	fmt.Println("====main========")
+	logger.Info("====main========")
 	app.HelpFlag.Short('h')
 
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
@@ -110,13 +110,13 @@ func main() {
 }
 
 func printVersion() {
-	fmt.Println("====printVersion========")
-	fmt.Println(metadata.GetVersionInfo())
+	logger.Info("====printVersion========")
+	logger.Info(metadata.GetVersionInfo())
 }
 
 // writeFile writes bytes to a file and panics in case of an error
 func writeFile(path string, contents []byte) {
-	fmt.Println("====writeFile========")
+	logger.Info("====writeFile========")
 	handleError(ioutil.WriteFile(path, contents, 0640))
 }
 
@@ -166,7 +166,7 @@ func checkDirectoryNotExists(path string, errorMessage string) {
 
 func handleError(err error) {
 	if err != nil {
-		fmt.Println(err)
+		logger.Info(err)
 		os.Exit(1)
 	}
 }

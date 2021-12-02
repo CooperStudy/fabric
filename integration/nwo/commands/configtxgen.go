@@ -6,7 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 
 package commands
 
-import "fmt"
+import "github.com/hyperledger/fabric/common/flogging"
 
 type OutputBlock struct {
 	ChannelID   string
@@ -14,14 +14,14 @@ type OutputBlock struct {
 	ConfigPath  string
 	OutputBlock string
 }
-
+var logger = flogging.MustGetLogger("integration.nwo.commands")
 func (o OutputBlock) SessionName() string {
-	fmt.Println("=============OutputBlock=====SessionName==============")
+	logger.Info("=============OutputBlock=====SessionName==============")
 	return "configtxgen-output-block"
 }
 
 func (o OutputBlock) Args() []string {
-	fmt.Println("=============OutputBlock=====Args==============")
+	logger.Info("=============OutputBlock=====Args==============")
 	return []string{
 		"-channelID", o.ChannelID,
 		"-profile", o.Profile,
@@ -38,12 +38,12 @@ type CreateChannelTx struct {
 }
 
 func (c CreateChannelTx) SessionName() string {
-	fmt.Println("=============CreateChannelTx=====SessionName==============")
+	logger.Info("=============CreateChannelTx=====SessionName==============")
 	return "configtxgen-create-channel-tx"
 }
 
 func (c CreateChannelTx) Args() []string {
-	fmt.Println("=============CreateChannelTx=====Args==============")
+	logger.Info("=============CreateChannelTx=====Args==============")
 	return []string{
 		"-channelID", c.ChannelID,
 		"-profile", c.Profile,
@@ -61,12 +61,12 @@ type OutputAnchorPeersUpdate struct {
 }
 
 func (o OutputAnchorPeersUpdate) SessionName() string {
-	fmt.Println("=============OutputAnchorPeersUpdate=====SessionName==============")
+	logger.Info("=============OutputAnchorPeersUpdate=====SessionName==============")
 	return "configtxgen-output-anchor-peers-update"
 }
 
 func (o OutputAnchorPeersUpdate) Args() []string {
-	fmt.Println("=============OutputAnchorPeersUpdate=====Args==============")
+	logger.Info("=============OutputAnchorPeersUpdate=====Args==============")
 	return []string{
 		"-channelID", o.ChannelID,
 		"-profile", o.Profile,

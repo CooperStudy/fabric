@@ -49,7 +49,7 @@ var peerEndpointError error
 // computed constants as package variables. Routines which were previously
 // global have been embedded here to preserve the original abstraction.
 func CacheConfiguration() (err error) {
-	fmt.Println("====CacheConfiguration=")
+	logger.Info("====CacheConfiguration=")
 	// getLocalAddress returns the address:port the local peer is operating on.  Affected by env:peer.addressAutoDetect
 	getLocalAddress := func() (string, error) {
 		peerAddress := viper.GetString("peer.address")
@@ -102,7 +102,7 @@ func CacheConfiguration() (err error) {
 
 // cacheConfiguration logs an error if error checks have failed.
 func cacheConfiguration() {
-	fmt.Println("====cacheConfiguration=")
+	logger.Info("====cacheConfiguration=")
 	if err := CacheConfiguration(); err != nil {
 		peerLogger.Errorf("Execution continues after CacheConfiguration() failure : %s", err)
 	}
@@ -112,7 +112,7 @@ func cacheConfiguration() {
 
 // GetLocalAddress returns the peer.address property
 func GetLocalAddress() (string, error) {
-	fmt.Println("====GetLocalAddress=")
+	logger.Info("====GetLocalAddress=")
 	if !configurationCached {
 		cacheConfiguration()
 	}
@@ -121,7 +121,7 @@ func GetLocalAddress() (string, error) {
 
 // GetPeerEndpoint returns peerEndpoint from cached configuration
 func GetPeerEndpoint() (*pb.PeerEndpoint, error) {
-	fmt.Println("====GetPeerEndpoint=")
+	logger.Info("====GetPeerEndpoint=")
 	if !configurationCached {
 		cacheConfiguration()
 	}
@@ -130,7 +130,7 @@ func GetPeerEndpoint() (*pb.PeerEndpoint, error) {
 
 // GetServerConfig returns the gRPC server configuration for the peer
 func GetServerConfig() (comm.ServerConfig, error) {
-	fmt.Println("====GetServerConfig=")
+	logger.Info("====GetServerConfig=")
 	secureOptions := &comm.SecureOptions{
 		UseTLS: viper.GetBool("peer.tls.enabled"),
 	}
@@ -182,7 +182,7 @@ func GetServerConfig() (comm.ServerConfig, error) {
 // GetClientCertificate returns the TLS certificate to use for gRPC client
 // connections
 func GetClientCertificate() (tls.Certificate, error) {
-	fmt.Println("====GetClientCertificate=")
+	logger.Info("====GetClientCertificate=")
 	cert := tls.Certificate{}
 
 	keyPath := viper.GetString("peer.tls.clientKey.file")

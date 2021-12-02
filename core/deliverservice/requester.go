@@ -17,7 +17,6 @@ limitations under the License.
 package deliverclient
 
 import (
-	"fmt"
 	"math"
 
 	"github.com/hyperledger/fabric/common/localmsp"
@@ -36,7 +35,7 @@ type blocksRequester struct {
 }
 
 func (b *blocksRequester) RequestBlocks(ledgerInfoProvider blocksprovider.LedgerInfo) error {
-	fmt.Println("==blocksRequester==RequestBlocks==")
+	logger.Info("==blocksRequester==RequestBlocks==")
 	height, err := ledgerInfoProvider.LedgerHeight()
 	if err != nil {
 		logger.Errorf("Can't get ledger height for channel %s from committer [%s]", b.chainID, err)
@@ -59,7 +58,7 @@ func (b *blocksRequester) RequestBlocks(ledgerInfoProvider blocksprovider.Ledger
 }
 
 func (b *blocksRequester) getTLSCertHash() []byte {
-	fmt.Println("==blocksRequester==getTLSCertHash==")
+	logger.Info("==blocksRequester==getTLSCertHash==")
 	if b.tls {
 		return util.ComputeSHA256(comm.GetCredentialSupport().GetClientCertificate().Certificate[0])
 	}
@@ -67,7 +66,7 @@ func (b *blocksRequester) getTLSCertHash() []byte {
 }
 
 func (b *blocksRequester) seekOldest() error {
-	fmt.Println("==blocksRequester==seekOldest==")
+	logger.Info("==blocksRequester==seekOldest==")
 	seekInfo := &orderer.SeekInfo{
 		Start:    &orderer.SeekPosition{Type: &orderer.SeekPosition_Oldest{Oldest: &orderer.SeekOldest{}}},
 		Stop:     &orderer.SeekPosition{Type: &orderer.SeekPosition_Specified{Specified: &orderer.SeekSpecified{Number: math.MaxUint64}}},
@@ -86,7 +85,7 @@ func (b *blocksRequester) seekOldest() error {
 }
 
 func (b *blocksRequester) seekLatestFromCommitter(height uint64) error {
-	fmt.Println("==blocksRequester==seekLatestFromCommitter==")
+	logger.Info("==blocksRequester==seekLatestFromCommitter==")
 	seekInfo := &orderer.SeekInfo{
 		Start:    &orderer.SeekPosition{Type: &orderer.SeekPosition_Specified{Specified: &orderer.SeekSpecified{Number: height}}},
 		Stop:     &orderer.SeekPosition{Type: &orderer.SeekPosition_Specified{Specified: &orderer.SeekSpecified{Number: math.MaxUint64}}},

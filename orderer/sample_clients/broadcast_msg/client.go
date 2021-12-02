@@ -54,14 +54,14 @@ func (s *broadcastClient) getAck() error {
 func main() {
 	conf, err := localconfig.Load()
 	if err != nil {
-		fmt.Println("failed to load config:", err)
+		logger.Info("failed to load config:", err)
 		os.Exit(1)
 	}
 
 	// Load local MSP
 	err = mspmgmt.LoadLocalMsp(conf.General.LocalMSPDir, conf.General.BCCSP, conf.General.LocalMSPID)
 	if err != nil { // Handle errors reading the config file
-		fmt.Println("Failed to initialize local MSP:", err)
+		logger.Info("Failed to initialize local MSP:", err)
 		os.Exit(0)
 	}
 
@@ -86,14 +86,14 @@ func main() {
 		_ = conn.Close()
 	}()
 	if err != nil {
-		fmt.Println("Error connecting:", err)
+		logger.Info("Error connecting:", err)
 		return
 	}
 
 	msgsPerGo := messages / goroutines
 	roundMsgs := msgsPerGo * goroutines
 	if roundMsgs != messages {
-		fmt.Println("Rounding messages to", roundMsgs)
+		logger.Info("Rounding messages to", roundMsgs)
 	}
 	bar = pb.New64(int64(roundMsgs))
 	bar.ShowPercent = true
@@ -108,7 +108,7 @@ func main() {
 		go func(i uint64, pb *pb.ProgressBar) {
 			client, err := ab.NewAtomicBroadcastClient(conn).Broadcast(context.TODO())
 			if err != nil {
-				fmt.Println("Error connecting:", err)
+				logger.Info("Error connecting:", err)
 				return
 			}
 

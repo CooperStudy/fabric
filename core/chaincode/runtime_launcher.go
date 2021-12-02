@@ -37,14 +37,14 @@ type RuntimeLauncher struct {
 }
 
 func (r *RuntimeLauncher) Launch(ccci *ccprovider.ChaincodeContainerInfo) error {
-	fmt.Println("============================1.func (r *RuntimeLauncher) Launch(ccci *ccprovider.ChaincodeContainerInfo) error==================================")
+	logger.Info("============================1.func (r *RuntimeLauncher) Launch(ccci *ccprovider.ChaincodeContainerInfo) error==================================")
 	var startFailCh chan error
 	var timeoutCh <-chan time.Time
 
 	startTime := time.Now()
 	cname := ccci.Name + ":" + ccci.Version
 	launchState, started := r.Registry.Launching(cname)
-	fmt.Println("=========started============",started)
+	logger.Info("=========started============",started)
 	if !started {
 		startFailCh = make(chan error, 1)
 		timeoutCh = time.NewTimer(r.StartupTimeout).C

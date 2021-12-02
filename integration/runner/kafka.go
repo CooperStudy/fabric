@@ -59,7 +59,7 @@ type Kafka struct {
 
 // Run runs a Kafka container. It implements the ifrit.Runner interface
 func (k *Kafka) Run(sigCh <-chan os.Signal, ready chan<- struct{}) error {
-	fmt.Println("===Kafka==Run==")
+	logger.Info("===Kafka==Run==")
 	if k.Image == "" {
 		k.Image = KafkaDefaultImage
 	}
@@ -205,7 +205,7 @@ func (k *Kafka) Run(sigCh <-chan os.Signal, ready chan<- struct{}) error {
 }
 
 func (k *Kafka) buildEnv() []string {
-	fmt.Println("===Kafka==buildEnv==")
+	logger.Info("===Kafka==buildEnv==")
 	env := []string{
 		"KAFKA_LOG_RETENTION_MS=-1",
 		//"KAFKA_AUTO_CREATE_TOPICS_ENABLE=false",
@@ -226,7 +226,7 @@ func (k *Kafka) buildEnv() []string {
 }
 
 func (k *Kafka) ready(ctx context.Context, addr string) <-chan struct{} {
-	fmt.Println("===Kafka==ready==")
+	logger.Info("===Kafka==ready==")
 	readyCh := make(chan struct{})
 	go func() {
 		ticker := time.NewTicker(100 * time.Millisecond)
@@ -252,7 +252,7 @@ func (k *Kafka) ready(ctx context.Context, addr string) <-chan struct{} {
 }
 
 func (k *Kafka) wait() <-chan error {
-	fmt.Println("===Kafka==wait==")
+	logger.Info("===Kafka==wait==")
 	exitCh := make(chan error)
 	go func() {
 		exitCode, err := k.Client.WaitContainer(k.ContainerID)
@@ -266,7 +266,7 @@ func (k *Kafka) wait() <-chan error {
 }
 
 func (k *Kafka) streamLogs(ctx context.Context) error {
-	fmt.Println("===Kafka==streamLogs==")
+	logger.Info("===Kafka==streamLogs==")
 	if k.ErrorStream == nil && k.OutputStream == nil {
 		return nil
 	}
@@ -285,7 +285,7 @@ func (k *Kafka) streamLogs(ctx context.Context) error {
 
 // Start starts the Kafka container using an ifrit runner
 func (k *Kafka) Start() error {
-	fmt.Println("===Kafka==Start==")
+	logger.Info("===Kafka==Start==")
 	p := ifrit.Invoke(k)
 
 	select {
@@ -298,7 +298,7 @@ func (k *Kafka) Start() error {
 
 // Stop stops and removes the Kafka container
 func (k *Kafka) Stop() error {
-	fmt.Println("===Kafka==Stop==")
+	logger.Info("===Kafka==Stop==")
 	k.mutex.Lock()
 	if k.stopped {
 		k.mutex.Unlock()

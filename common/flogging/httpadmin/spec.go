@@ -42,7 +42,7 @@ type SpecHandler struct {
 }
 
 func (h *SpecHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-	fmt.Println("==SpecHandler====ServeHTTP=========")
+	logger.Info("==SpecHandler====ServeHTTP=========")
 	switch req.Method {
 	case http.MethodPut:
 		var logSpec LogSpec

@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package mgmt
 
 import (
-	"fmt"
 	"reflect"
 	"sync"
 
@@ -21,7 +20,7 @@ import (
 
 // LoadLocalMspWithType loads the local MSP with the specified type from the specified directory
 func LoadLocalMspWithType(dir string, bccspConfig *factory.FactoryOpts, mspID, mspType string) error {
-	fmt.Println("=====LoadLocalMspWithType==")
+	mspLogger.Info("=====LoadLocalMspWithType==")
 	if mspID == "" {
 		return errors.New("the local MSP must have an ID")
 	}
@@ -36,7 +35,7 @@ func LoadLocalMspWithType(dir string, bccspConfig *factory.FactoryOpts, mspID, m
 
 // LoadLocalMsp loads the local MSP from the specified directory
 func LoadLocalMsp(dir string, bccspConfig *factory.FactoryOpts, mspID string) error {
-	fmt.Println("=====LoadLocalMsp==")
+	mspLogger.Info("=====LoadLocalMsp==")
 	if mspID == "" {
 		return errors.New("the local MSP must have an ID")
 	}
@@ -69,7 +68,7 @@ type mspMgmtMgr struct {
 }
 
 func (mgr *mspMgmtMgr) DeserializeIdentity(serializedIdentity []byte) (msp.Identity, error) {
-	fmt.Println("=====mspMgmtMgr==DeserializeIdentity==")
+	mspLogger.Info("=====mspMgmtMgr==DeserializeIdentity==")
 	if !mgr.up {
 		return nil, errors.New("channel doesn't exist")
 	}
@@ -77,7 +76,7 @@ func (mgr *mspMgmtMgr) DeserializeIdentity(serializedIdentity []byte) (msp.Ident
 }
 
 func (mgr *mspMgmtMgr) Setup(msps []msp.MSP) error {
-	fmt.Println("=====mspMgmtMgr==Setup==")
+	mspLogger.Info("=====mspMgmtMgr==Setup==")
 	err := mgr.MSPManager.Setup(msps)
 	if err == nil {
 		mgr.up = true
@@ -113,7 +112,7 @@ func GetManagerForChain(chainID string) msp.MSPManager {
 
 // GetManagers returns all the managers registered
 func GetDeserializers() map[string]msp.IdentityDeserializer {
-	fmt.Println("====GetDeserializers==")
+	mspLogger.Info("====GetDeserializers==")
 	m.Lock()
 	defer m.Unlock()
 
@@ -130,7 +129,7 @@ func GetDeserializers() map[string]msp.IdentityDeserializer {
 // parsing to the channelconfig.Resources interface, while preserving the problematic singleton
 // nature of the MSP manager
 func XXXSetMSPManager(chainID string, manager msp.MSPManager) {
-	fmt.Println("====XXXSetMSPManager==")
+	mspLogger.Info("====XXXSetMSPManager==")
 	m.Lock()
 	defer m.Unlock()
 
@@ -139,7 +138,7 @@ func XXXSetMSPManager(chainID string, manager msp.MSPManager) {
 
 // GetLocalMSP returns the local msp (and creates it if it doesn't exist)
 func GetLocalMSP() msp.MSP {
-	//fmt.Println("====GetLocalMSP==")
+	//mspLogger.Info("====GetLocalMSP==")
 	m.Lock()
 	defer m.Unlock()
 
@@ -153,10 +152,10 @@ func GetLocalMSP() msp.MSP {
 }
 
 func loadLocaMSP() msp.MSP {
-	fmt.Println("====loadLocaMSP==")
+	mspLogger.Info("====loadLocaMSP==")
 	// determine the type of MSP (by default, we'll use bccspMSP)
 	mspType := viper.GetString("peer.localMspType")
-	//fmt.Println("======================mspType=====================",mspType)
+	//mspLogger.Info("======================mspType=====================",mspType)
 	if mspType == "" {
 		mspType = msp.ProviderTypeToString(msp.FABRIC)
 	}
@@ -165,10 +164,10 @@ func loadLocaMSP() msp.MSP {
 		msp.ProviderTypeToString(msp.FABRIC): &msp.BCCSPNewOpts{NewBaseOpts: msp.NewBaseOpts{Version: msp.MSPv1_0}},
 		msp.ProviderTypeToString(msp.IDEMIX): &msp.IdemixNewOpts{NewBaseOpts: msp.NewBaseOpts{Version: msp.MSPv1_1}},
 	}
-	//fmt.Println("===========mspOpts==============",mspOpts)
+	//mspLogger.Info("===========mspOpts==============",mspOpts)
 	newOpts, found := mspOpts[mspType]
-	//fmt.Println("============newOpts=======",newOpts)
-	//fmt.Println("============found=======",found)
+	//mspLogger.Info("============newOpts=======",newOpts)
+	//mspLogger.Info("============found=======",found)
 	if !found {
 		mspLogger.Panicf("msp type " + mspType + " unknown")
 	}
@@ -179,13 +178,13 @@ func loadLocaMSP() msp.MSP {
 	}
 	switch mspType {
 	case msp.ProviderTypeToString(msp.FABRIC):
-		//fmt.Println("===========msp.ProviderTypeToString(msp.FABRIC)===========")
+		//mspLogger.Info("===========msp.ProviderTypeToString(msp.FABRIC)===========")
 		mspInst, err = cache.New(mspInst)
 		if err != nil {
 			mspLogger.Fatalf("Failed to initialize local MSP, received err %+v", err)
 		}
 	case msp.ProviderTypeToString(msp.IDEMIX):
-		//fmt.Println("===========msp.ProviderTypeToString(msp.IDEMIX)==========")
+		//mspLogger.Info("===========msp.ProviderTypeToString(msp.IDEMIX)==========")
 		// Do nothing
 	default:
 		panic("msp type " + mspType + " unknown")
@@ -198,7 +197,7 @@ func loadLocaMSP() msp.MSP {
 
 // GetIdentityDeserializer returns the IdentityDeserializer for the given chain
 func GetIdentityDeserializer(chainID string) msp.IdentityDeserializer {
-	fmt.Println("====GetIdentityDeserializer==")
+	mspLogger.Info("====GetIdentityDeserializer==")
 	if chainID == "" {
 		return GetLocalMSP()
 	}
@@ -209,7 +208,7 @@ func GetIdentityDeserializer(chainID string) msp.IdentityDeserializer {
 // GetLocalSigningIdentityOrPanic returns the local signing identity or panic in case
 // or error
 func GetLocalSigningIdentityOrPanic() msp.SigningIdentity {
-	fmt.Println("====GetLocalSigningIdentityOrPanic==")
+	mspLogger.Info("====GetLocalSigningIdentityOrPanic==")
 	id, err := GetLocalMSP().GetDefaultSigningIdentity()
 	if err != nil {
 		mspLogger.Panicf("Failed getting local signing identity [%+v]", err)

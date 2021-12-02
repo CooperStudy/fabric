@@ -14,12 +14,12 @@ import (
 )
 
 func (e *Envelope) StaticallyOpaqueFields() []string {
-	fmt.Println("===Envelope=============StaticallyOpaqueFields=======")
+	logger.Info("===Envelope=============StaticallyOpaqueFields=======")
 	return []string{"payload"}
 }
 
 func (e *Envelope) StaticallyOpaqueFieldProto(name string) (proto.Message, error) {
-	fmt.Println("===Envelope=============StaticallyOpaqueFieldProto=======")
+	logger.Info("===Envelope=============StaticallyOpaqueFieldProto=======")
 	if name != e.StaticallyOpaqueFields()[0] {
 		return nil, fmt.Errorf("not a marshaled field: %s", name)
 	}
@@ -27,7 +27,7 @@ func (e *Envelope) StaticallyOpaqueFieldProto(name string) (proto.Message, error
 }
 
 func (p *Payload) VariablyOpaqueFields() []string {
-	fmt.Println("===Payload=============VariablyOpaqueFields=======")
+	logger.Info("===Payload=============VariablyOpaqueFields=======")
 	return []string{"data"}
 }
 
@@ -39,7 +39,7 @@ var PayloadDataMap = map[int32]proto.Message{
 }
 
 func (p *Payload) VariablyOpaqueFieldProto(name string) (proto.Message, error) {
-	fmt.Println("===Payload=============VariablyOpaqueFieldProto=======")
+	logger.Info("===Payload=============VariablyOpaqueFieldProto=======")
 	if name != p.VariablyOpaqueFields()[0] {
 		return nil, fmt.Errorf("not a marshaled field: %s", name)
 	}
@@ -58,12 +58,12 @@ func (p *Payload) VariablyOpaqueFieldProto(name string) (proto.Message, error) {
 }
 
 func (h *Header) StaticallyOpaqueFields() []string {
-	fmt.Println("===Header=============StaticallyOpaqueFields=======")
+	logger.Info("===Header=============StaticallyOpaqueFields=======")
 	return []string{"channel_header", "signature_header"}
 }
 
 func (h *Header) StaticallyOpaqueFieldProto(name string) (proto.Message, error) {
-	fmt.Println("===Header=============StaticallyOpaqueFieldProto=======")
+	logger.Info("===Header=============StaticallyOpaqueFieldProto=======")
 	switch name {
 	case h.StaticallyOpaqueFields()[0]: // channel_header
 		return &ChannelHeader{}, nil
@@ -75,12 +75,12 @@ func (h *Header) StaticallyOpaqueFieldProto(name string) (proto.Message, error) 
 }
 
 func (sh *SignatureHeader) StaticallyOpaqueFields() []string {
-	fmt.Println("===SignatureHeader=============StaticallyOpaqueFields=======")
+	logger.Info("===SignatureHeader=============StaticallyOpaqueFields=======")
 	return []string{"creator"}
 }
 
 func (sh *SignatureHeader) StaticallyOpaqueFieldProto(name string) (proto.Message, error) {
-	fmt.Println("===SignatureHeader=============StaticallyOpaqueFieldProto=======")
+	logger.Info("===SignatureHeader=============StaticallyOpaqueFieldProto=======")
 	switch name {
 	case sh.StaticallyOpaqueFields()[0]: // channel_header
 		return &msp.SerializedIdentity{}, nil
@@ -90,12 +90,12 @@ func (sh *SignatureHeader) StaticallyOpaqueFieldProto(name string) (proto.Messag
 }
 
 func (bd *BlockData) StaticallyOpaqueSliceFields() []string {
-	fmt.Println("===BlockData=============StaticallyOpaqueSliceFields=======")
+	logger.Info("===BlockData=============StaticallyOpaqueSliceFields=======")
 	return []string{"data"}
 }
 
 func (bd *BlockData) StaticallyOpaqueSliceFieldProto(fieldName string, index int) (proto.Message, error) {
-	fmt.Println("===BlockData=============StaticallyOpaqueSliceFieldProto=======")
+	logger.Info("===BlockData=============StaticallyOpaqueSliceFieldProto=======")
 	if fieldName != bd.StaticallyOpaqueSliceFields()[0] {
 		return nil, fmt.Errorf("not an opaque slice field: %s", fieldName)
 	}

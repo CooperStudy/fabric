@@ -478,7 +478,7 @@ func TestRWSetTooBig(t *testing.T) {
 
 	r := stublccc.MockInit("1", [][]byte{})
 	if r.Status != shim.OK {
-		fmt.Println("Init failed", string(r.Message))
+		logger.Info("Init failed", string(r.Message))
 		t.FailNow()
 	}
 
@@ -950,7 +950,7 @@ func TestValidateDeployWithCollection(t *testing.T) {
 
 	r := stublccc.MockInit("1", [][]byte{})
 	if r.Status != shim.OK {
-		fmt.Println("Init failed", string(r.Message))
+		logger.Info("Init failed", string(r.Message))
 		t.FailNow()
 	}
 
@@ -1043,7 +1043,7 @@ func TestValidateDeployWithCollection(t *testing.T) {
 
 	r = stublccc.MockInit("1", [][]byte{})
 	if r.Status != shim.OK {
-		fmt.Println("Init failed", string(r.Message))
+		logger.Info("Init failed", string(r.Message))
 		t.FailNow()
 	}
 
@@ -1315,7 +1315,7 @@ func validateUpgradeWithCollection(t *testing.T, ccver string, V1_2Validation bo
 
 	r := stublccc.MockInit("1", [][]byte{})
 	if r.Status != shim.OK {
-		fmt.Println("Init failed", string(r.Message))
+		logger.Info("Init failed", string(r.Message))
 		t.FailNow()
 	}
 

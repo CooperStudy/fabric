@@ -16,7 +16,7 @@ import (
 
 // DeserializeGroup deserializes the value for all values in a config group
 func DeserializeProtoValuesFromGroup(group *cb.ConfigGroup, protosStructs ...interface{}) error {
-	fmt.Println("==DeserializeProtoValuesFromGroup==")
+	logger.Info("==DeserializeProtoValuesFromGroup==")
 	sv, err := NewStandardValues(protosStructs...)
 	if err != nil {
 		logger.Panicf("This is a compile time bug only, the proto structures are somehow invalid: %s", err)
@@ -40,7 +40,7 @@ type StandardValues struct {
 // messages and build a lookup map from structure field name to proto message instance
 // This is a useful way to easily implement the Values interface
 func NewStandardValues(protosStructs ...interface{}) (*StandardValues, error) {
-	fmt.Println("==NewStandardValues==")
+	logger.Info("==NewStandardValues==")
 	sv := &StandardValues{
 		lookup: make(map[string]proto.Message),
 	}
@@ -59,7 +59,7 @@ func NewStandardValues(protosStructs ...interface{}) (*StandardValues, error) {
 // to populate the backing message structure, and returns a referenced to the retained deserialized
 // message (or an error, either because the key did not exist, or there was an an error unmarshaling
 func (sv *StandardValues) Deserialize(key string, value []byte) (proto.Message, error) {
-	fmt.Println("==StandardValues=Deserialize=")
+	logger.Info("==StandardValues=Deserialize=")
 	msg, ok := sv.lookup[key]
 	if !ok {
 		return nil, fmt.Errorf("Unexpected key %s", key)
@@ -74,7 +74,7 @@ func (sv *StandardValues) Deserialize(key string, value []byte) (proto.Message, 
 }
 
 func (sv *StandardValues) initializeProtosStruct(objValue reflect.Value) error {
-	fmt.Println("==StandardValues=initializeProtosStruct=")
+	logger.Info("==StandardValues=initializeProtosStruct=")
 	objType := objValue.Type()
 	if objType.Kind() != reflect.Ptr {
 		return fmt.Errorf("Non pointer type")

@@ -37,16 +37,16 @@ type marblePrivateDetails struct {
 // Init initializes chaincode
 // ===========================
 func (t *MarblesPrivateChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
-	fmt.Println("========MarblesPrivateChaincode=====Init=========")
+	logger.Info("========MarblesPrivateChaincode=====Init=========")
 	return shim.Success(nil)
 }
 
 // Invoke - Our entry point for Invocations
 // ========================================
 func (t *MarblesPrivateChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
-	fmt.Println("========MarblesPrivateChaincode=====Invoke=========")
+	logger.Info("========MarblesPrivateChaincode=====Invoke=========")
 	function, args := stub.GetFunctionAndParameters()
-	fmt.Println("invoke is running " + function)
+	logger.Info("invoke is running " + function)
 
 	// Handle different functions
 	switch function {
@@ -64,7 +64,7 @@ func (t *MarblesPrivateChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Re
 		return t.delete(stub, args)
 	default:
 		//error
-		fmt.Println("invoke did not find func: " + function)
+		logger.Info("invoke did not find func: " + function)
 		return shim.Error("Received unknown function invocation")
 	}
 }
@@ -73,7 +73,7 @@ func (t *MarblesPrivateChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Re
 // initMarble - create a new marble, store into chaincode state
 // ============================================================
 func (t *MarblesPrivateChaincode) initMarble(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	fmt.Println("========MarblesPrivateChaincode=====initMarble=========")
+	logger.Info("========MarblesPrivateChaincode=====initMarble=========")
 	var err error
 
 	//  0-name  1-color  2-size  3-owner  4-price
@@ -83,7 +83,7 @@ func (t *MarblesPrivateChaincode) initMarble(stub shim.ChaincodeStubInterface, a
 	}
 
 	// ==== Input sanitation ====
-	fmt.Println("- start init marble")
+	logger.Info("- start init marble")
 	if len(args[0]) == 0 {
 		return shim.Error("1st argument must be a non-empty string")
 	}
@@ -116,7 +116,7 @@ func (t *MarblesPrivateChaincode) initMarble(stub shim.ChaincodeStubInterface, a
 	if err != nil {
 		return shim.Error("Failed to get marble: " + err.Error())
 	} else if marbleAsBytes != nil {
-		fmt.Println("This marble already exists: " + marbleName)
+		logger.Info("This marble already exists: " + marbleName)
 		return shim.Error("This marble already exists: " + marbleName)
 	}
 
@@ -150,7 +150,7 @@ func (t *MarblesPrivateChaincode) initMarble(stub shim.ChaincodeStubInterface, a
 	}
 
 	// ==== Marble saved. Return success ====
-	fmt.Println("- end init marble")
+	logger.Info("- end init marble")
 	return shim.Success(nil)
 }
 
@@ -158,7 +158,7 @@ func (t *MarblesPrivateChaincode) initMarble(stub shim.ChaincodeStubInterface, a
 // readMarble - read a marble from chaincode state
 // ===============================================
 func (t *MarblesPrivateChaincode) readMarble(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	fmt.Println("========MarblesPrivateChaincode=====readMarble=========")
+	logger.Info("========MarblesPrivateChaincode=====readMarble=========")
 	var name, jsonResp string
 	var err error
 
@@ -183,7 +183,7 @@ func (t *MarblesPrivateChaincode) readMarble(stub shim.ChaincodeStubInterface, a
 // readMarblereadMarblePrivateDetails - read a marble private details from chaincode state
 // ===============================================
 func (t *MarblesPrivateChaincode) readMarblePrivateDetails(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	fmt.Println("========MarblesPrivateChaincode=====readMarblePrivateDetails=========")
+	logger.Info("========MarblesPrivateChaincode=====readMarblePrivateDetails=========")
 	var name, jsonResp string
 	var err error
 
@@ -208,7 +208,7 @@ func (t *MarblesPrivateChaincode) readMarblePrivateDetails(stub shim.ChaincodeSt
 // delete - remove a marble key/value pair from state
 // ==================================================
 func (t *MarblesPrivateChaincode) delete(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	fmt.Println("========MarblesPrivateChaincode=====delete=========")
+	logger.Info("========MarblesPrivateChaincode=====delete=========")
 	var jsonResp string
 	var marbleJSON marble
 	if len(args) != 1 {

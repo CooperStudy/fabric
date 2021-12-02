@@ -31,16 +31,16 @@ import (
 	"github.com/pkg/errors"
 )
 
-var putilsLogger = flogging.MustGetLogger("protoutils")
+var validationLogger = flogging.MustGetLogger("core.common.validation")
 
 // validateChaincodeProposalMessage checks the validity of a Proposal message of type CHAINCODE
 func validateChaincodeProposalMessage(prop *pb.Proposal, hdr *common.Header) (*pb.ChaincodeHeaderExtension, error) {
-	fmt.Println("==validateChaincodeProposalMessage=====")
+	validationLogger.Info("==validateChaincodeProposalMessage=====")
 	if prop == nil || hdr == nil {
 		return nil, errors.New("nil arguments")
 	}
 
-	putilsLogger.Debugf("validateChaincodeProposalMessage starts for proposal %p, header %p", prop, hdr)
+	validationLogger.Debugf("validateChaincodeProposalMessage starts for proposal %p, header %p", prop, hdr)
 
 	// 4) based on the header type (assuming it's CHAINCODE), look at the extensions
 	chaincodeHdrExt, err := utils.GetChaincodeHeaderExtension(hdr)
@@ -52,7 +52,7 @@ func validateChaincodeProposalMessage(prop *pb.Proposal, hdr *common.Header) (*p
 		return nil, errors.New("ChaincodeHeaderExtension.ChaincodeId is nil")
 	}
 
-	putilsLogger.Debugf("validateChaincodeProposalMessage info: header extension references chaincode %s", chaincodeHdrExt.ChaincodeId)
+	validationLogger.Debugf("validateChaincodeProposalMessage info: header extension references chaincode %s", chaincodeHdrExt.ChaincodeId)
 
 	//    - ensure that the chaincodeID is correct (?)
 	// TODO: should we even do this? If so, using which interface?
@@ -76,12 +76,12 @@ func validateChaincodeProposalMessage(prop *pb.Proposal, hdr *common.Header) (*p
 // this function returns Header and ChaincodeHeaderExtension messages since they
 // have been unmarshalled and validated
 func ValidateProposalMessage(signedProp *pb.SignedProposal) (*pb.Proposal, *common.Header, *pb.ChaincodeHeaderExtension, error) {
-	fmt.Println("==ValidateProposalMessage=====")
+	validationLogger.Info("==ValidateProposalMessage=====")
 	if signedProp == nil {
 		return nil, nil, nil, errors.New("nil arguments")
 	}
 
-	putilsLogger.Debugf("ValidateProposalMessage starts for signed proposal %p", signedProp)
+	validationLogger.Debugf("ValidateProposalMessage starts for signed proposal %p", signedProp)
 
 	// extract the Proposal message from signedProp
 	prop, err := utils.GetProposal(signedProp.ProposalBytes)
@@ -106,13 +106,13 @@ func ValidateProposalMessage(signedProp *pb.SignedProposal) (*pb.Proposal, *comm
 	if err != nil {
 		// log the exact message on the peer but return a generic error message to
 		// avoid malicious users scanning for channels
-		putilsLogger.Warningf("channel [%s]: %s", chdr.ChannelId, err)
+		validationLogger.Warningf("channel [%s]: %s", chdr.ChannelId, err)
 		sId := &msp.SerializedIdentity{}
 		err := proto.Unmarshal(shdr.Creator, sId)
 		if err != nil {
 			// log the error here as well but still only return the generic error
 			err = errors.Wrap(err, "could not deserialize a SerializedIdentity")
-			putilsLogger.Warningf("channel [%s]: %s", chdr.ChannelId, err)
+			validationLogger.Warningf("channel [%s]: %s", chdr.ChannelId, err)
 		}
 		return nil, nil, nil, errors.Errorf("access denied: channel [%s] creator org [%s]", chdr.ChannelId, sId.Mspid)
 	}
@@ -155,9 +155,9 @@ func ValidateProposalMessage(signedProp *pb.SignedProposal) (*pb.Proposal, *comm
 // is a valid cert and the signature is valid
 //   checkSignatureFromCreator(shdr.Creator,        signedProp.Signature, signedProp.ProposalBytes, chdr.ChannelId)
 func checkSignatureFromCreator(creatorBytes []byte, sig []byte,            msg []byte,              ChainID string) error {
-	fmt.Println("==checkSignatureFromCreator=====")
+	validationLogger.Info("==checkSignatureFromCreator=====")
 
-	putilsLogger.Debugf("begin")
+	validationLogger.Debugf("begin")
 
 	// check for nil argument
 	if creatorBytes == nil || sig == nil || msg == nil {
@@ -175,7 +175,7 @@ func checkSignatureFromCreator(creatorBytes []byte, sig []byte,            msg [
 		return errors.WithMessage(err, "MSP error")
 	}
 
-	putilsLogger.Infof("creator is %s", creator.GetIdentifier())
+	validationLogger.Infof("creator is %s", creator.GetIdentifier())
 
 	// ensure that creator is a valid certificate
 	err = creator.Validate()
@@ -183,7 +183,7 @@ func checkSignatureFromCreator(creatorBytes []byte, sig []byte,            msg [
 		return errors.WithMessage(err, "creator certificate is not valid")
 	}
 
-	putilsLogger.Debugf("creator is valid")
+	validationLogger.Debugf("creator is valid")
 
 	// validate the signature
 	err = creator.Verify(msg, sig)
@@ -191,14 +191,14 @@ func checkSignatureFromCreator(creatorBytes []byte, sig []byte,            msg [
 		return errors.WithMessage(err, "creator's signature over the proposal is not valid")
 	}
 
-	putilsLogger.Debugf("exits successfully")
+	validationLogger.Debugf("exits successfully")
 
 	return nil
 }
 
 // checks for a valid SignatureHeader
 func validateSignatureHeader(sHdr *common.SignatureHeader) error {
-	fmt.Println("==validateSignatureHeader=====")
+	validationLogger.Info("==validateSignatureHeader=====")
 	// check for nil argument
 	if sHdr == nil {
 		return errors.New("nil SignatureHeader provided")
@@ -220,7 +220,7 @@ var CreatorName string
 
 // checks for a valid ChannelHeader
 func validateChannelHeader(cHdr *common.ChannelHeader) error {
-	fmt.Println("==validateChannelHeader=====")
+	validationLogger.Info("==validateChannelHeader=====")
 	// check for nil argument
 	if cHdr == nil {
 		return errors.New("nil ChannelHeader provided")
@@ -234,7 +234,7 @@ func validateChannelHeader(cHdr *common.ChannelHeader) error {
 		return errors.Errorf("invalid header type %s", common.HeaderType(cHdr.Type))
 	}
 
-	putilsLogger.Debugf("validateChannelHeader info: header type %d", common.HeaderType(cHdr.Type))
+	validationLogger.Debugf("validateChannelHeader info: header type %d", common.HeaderType(cHdr.Type))
 
 	// TODO: validate chainID in cHdr.ChainID
 
@@ -253,7 +253,7 @@ func validateChannelHeader(cHdr *common.ChannelHeader) error {
 
 // checks for a valid Header
 func validateCommonHeader(hdr *common.Header) (*common.ChannelHeader, *common.SignatureHeader, error) {
-	fmt.Println("==validateCommonHeader=====")
+	validationLogger.Info("==validateCommonHeader=====")
 	if hdr == nil {
 		return nil, nil, errors.New("nil header")
 	}
@@ -270,7 +270,7 @@ func validateCommonHeader(hdr *common.Header) (*common.ChannelHeader, *common.Si
 
 	cc := &msp.SerializedIdentity{}
 	err = proto.Unmarshal(shdr.Creator,cc)
-	putilsLogger.Infof("============获取创建者.Name:%v==========",cc.Mspid)//Org1MSP
+	validationLogger.Infof("============获取创建者.Name:%v==========",cc.Mspid)//Org1MSP
 	utils.CreatorName = cc.Mspid
 
 	err = validateChannelHeader(chdr)
@@ -289,8 +289,8 @@ func validateCommonHeader(hdr *common.Header) (*common.ChannelHeader, *common.Si
 // validateConfigTransaction validates the payload of a
 // transaction assuming its type is CONFIG
 func validateConfigTransaction(data []byte, hdr *common.Header) error {
-	fmt.Println("==validateConfigTransaction=====")
-	putilsLogger.Debugf("validateConfigTransaction starts for data %p, header %s", data, hdr)
+	validationLogger.Info("==validateConfigTransaction=====")
+	validationLogger.Debugf("validateConfigTransaction starts for data %p, header %s", data, hdr)
 
 	// check for nil argument
 	if data == nil || hdr == nil {
@@ -305,8 +305,8 @@ func validateConfigTransaction(data []byte, hdr *common.Header) error {
 // validateEndorserTransaction validates the payload of a
 // transaction assuming its type is ENDORSER_TRANSACTION
 func validateEndorserTransaction(data []byte, hdr *common.Header) error {
-	fmt.Println("==validateEndorserTransaction=====")
-	putilsLogger.Debugf("validateEndorserTransaction starts for data %p, header %s", data, hdr)
+	validationLogger.Info("==validateEndorserTransaction=====")
+	validationLogger.Debugf("validateEndorserTransaction starts for data %p, header %s", data, hdr)
 
 	// check for nil argument
 	if data == nil || hdr == nil {
@@ -333,7 +333,7 @@ func validateEndorserTransaction(data []byte, hdr *common.Header) error {
 		return errors.Errorf("only one action per transaction is supported, tx contains %d", len(tx.Actions))
 	}
 
-	putilsLogger.Debugf("validateEndorserTransaction info: there are %d actions", len(tx.Actions))
+	validationLogger.Debugf("validateEndorserTransaction info: there are %d actions", len(tx.Actions))
 
 	for _, act := range tx.Actions {
 		// check for nil argument
@@ -354,7 +354,7 @@ func validateEndorserTransaction(data []byte, hdr *common.Header) error {
 			return err
 		}
 
-		putilsLogger.Debugf("validateEndorserTransaction info: signature header is valid")
+		validationLogger.Debugf("validateEndorserTransaction info: signature header is valid")
 
 		// if the type is ENDORSER_TRANSACTION we unmarshal a ChaincodeActionPayload
 		ccActionPayload, err := utils.GetChaincodeActionPayload(act.Payload)
@@ -389,35 +389,35 @@ func validateEndorserTransaction(data []byte, hdr *common.Header) error {
 
 // ValidateTransaction checks that the transaction envelope is properly formed
 func ValidateTransaction(e *common.Envelope, c channelconfig.ApplicationCapabilities) (*common.Payload, pb.TxValidationCode) {
-	fmt.Println("==ValidateTransaction=====")
-	putilsLogger.Debugf("ValidateTransactionEnvelope starts for envelope %p", e)
+	validationLogger.Info("==ValidateTransaction=====")
+	validationLogger.Debugf("ValidateTransactionEnvelope starts for envelope %p", e)
 
 	// check for nil argument
 	if e == nil {
-		putilsLogger.Errorf("Error: nil envelope")
+		fmt.Errorf("Error: nil envelope")
 		return nil, pb.TxValidationCode_NIL_ENVELOPE
 	}
 
 	// get the payload from the envelope
 	payload, err := utils.GetPayload(e)
 	if err != nil {
-		putilsLogger.Errorf("GetPayload returns err %s", err)
+		validationLogger.Errorf("GetPayload returns err %s", err)
 		return nil, pb.TxValidationCode_BAD_PAYLOAD
 	}
 
-	putilsLogger.Debugf("Header is %s", payload.Header)
+	validationLogger.Debugf("Header is %s", payload.Header)
 
 	// validate the header
 	chdr, shdr, err := validateCommonHeader(payload.Header)
 	if err != nil {
-		putilsLogger.Errorf("validateCommonHeader returns err %s", err)
+		validationLogger.Errorf("validateCommonHeader returns err %s", err)
 		return nil, pb.TxValidationCode_BAD_COMMON_HEADER
 	}
 
 	// validate the signature in the envelope
 	err = checkSignatureFromCreator(shdr.Creator, e.Signature, e.Payload, chdr.ChannelId)
 	if err != nil {
-		putilsLogger.Errorf("checkSignatureFromCreator returns err %s", err)
+		validationLogger.Errorf("checkSignatureFromCreator returns err %s", err)
 		return nil, pb.TxValidationCode_BAD_CREATOR_SIGNATURE
 	}
 
@@ -435,15 +435,15 @@ func ValidateTransaction(e *common.Envelope, c channelconfig.ApplicationCapabili
 			shdr.Creator)
 
 		if err != nil {
-			putilsLogger.Errorf("CheckTxID returns err %s", err)
+			validationLogger.Errorf("CheckTxID returns err %s", err)
 			return nil, pb.TxValidationCode_BAD_PROPOSAL_TXID
 		}
 
 		err = validateEndorserTransaction(payload.Data, payload.Header)
-		putilsLogger.Debugf("ValidateTransactionEnvelope returns err %s", err)
+		validationLogger.Debugf("ValidateTransactionEnvelope returns err %s", err)
 
 		if err != nil {
-			putilsLogger.Errorf("validateEndorserTransaction returns err %s", err)
+			validationLogger.Errorf("validateEndorserTransaction returns err %s", err)
 			return payload, pb.TxValidationCode_INVALID_ENDORSER_TRANSACTION
 		} else {
 			return payload, pb.TxValidationCode_VALID
@@ -455,7 +455,7 @@ func ValidateTransaction(e *common.Envelope, c channelconfig.ApplicationCapabili
 		err = validateConfigTransaction(payload.Data, payload.Header)
 
 		if err != nil {
-			putilsLogger.Errorf("validateConfigTransaction returns err %s", err)
+			validationLogger.Errorf("validateConfigTransaction returns err %s", err)
 			return payload, pb.TxValidationCode_INVALID_CONFIG_TRANSACTION
 		} else {
 			return payload, pb.TxValidationCode_VALID
@@ -470,7 +470,7 @@ func ValidateTransaction(e *common.Envelope, c channelconfig.ApplicationCapabili
 			shdr.Creator)
 
 		if err != nil {
-			putilsLogger.Errorf("CheckTxID returns err %s", err)
+			validationLogger.Errorf("CheckTxID returns err %s", err)
 			return nil, pb.TxValidationCode_BAD_PROPOSAL_TXID
 		}
 

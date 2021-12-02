@@ -9,7 +9,6 @@ package operations
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -73,7 +72,7 @@ type System struct {
 }
 
 func NewSystem(o Options) *System {
-	fmt.Println("====NewSystem===")
+	logger.Info("====NewSystem===")
 	logger := o.Logger
 	if logger == nil {
 		logger = flogging.MustGetLogger("operations.runner")
@@ -93,7 +92,7 @@ func NewSystem(o Options) *System {
 }
 
 func (s *System) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
-	fmt.Println("====System==Run=")
+	logger.Info("====System==Run=")
 	err := s.Start()
 	if err != nil {
 		return err
@@ -108,7 +107,7 @@ func (s *System) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 }
 
 func (s *System) Start() error {
-	fmt.Println("====System==Start=")
+	logger.Info("====System==Start=")
 	err := s.startMetricsTickers()
 	if err != nil {
 		return err
@@ -128,7 +127,7 @@ func (s *System) Start() error {
 }
 
 func (s *System) Stop() error {
-	fmt.Println("====System==Stop=")
+	logger.Info("====System==Stop=")
 	if s.collectorTicker != nil {
 		s.collectorTicker.Stop()
 		s.collectorTicker = nil
@@ -144,12 +143,12 @@ func (s *System) Stop() error {
 }
 
 func (s *System) RegisterChecker(component string, checker healthz.HealthChecker) error {
-	fmt.Println("====System==RegisterChecker=")
+	logger.Info("====System==RegisterChecker=")
 	return s.healthHandler.RegisterChecker(component, checker)
 }
 
 func (s *System) initializeServer() {
-	fmt.Println("====System==initializeServer=")
+	logger.Info("====System==initializeServer=")
 	s.mux = http.NewServeMux()
 	s.httpServer = &http.Server{
 		Addr:         s.options.ListenAddress,
@@ -160,7 +159,7 @@ func (s *System) initializeServer() {
 }
 
 func (s *System) handlerChain(h http.Handler, secure bool) http.Handler {
-	fmt.Println("====System==handlerChain=")
+	logger.Info("====System==handlerChain=")
 	if secure {
 		return middleware.NewChain(middleware.RequireCert(), middleware.WithRequestID(util.GenerateUUID)).Handler(h)
 	}
@@ -168,7 +167,7 @@ func (s *System) handlerChain(h http.Handler, secure bool) http.Handler {
 }
 
 func (s *System) initializeMetricsProvider() error {
-	fmt.Println("====System==initializeMetricsProvider=")
+	logger.Info("====System==initializeMetricsProvider=")
 	m := s.options.Metrics
 	providerType := m.Provider
 	switch providerType {
@@ -202,18 +201,18 @@ func (s *System) initializeMetricsProvider() error {
 }
 
 func (s *System) initializeLoggingHandler() {
-	fmt.Println("====System==initializeLoggingHandler=")
+	logger.Info("====System==initializeLoggingHandler=")
 	s.mux.Handle("/logspec", s.handlerChain(httpadmin.NewSpecHandler(), s.options.TLS.Enabled))
 }
 
 func (s *System) initializeHealthCheckHandler() {
-	fmt.Println("====System==initializeHealthCheckHandler=")
+	logger.Info("====System==initializeHealthCheckHandler=")
 	s.healthHandler = healthz.NewHealthHandler()
 	s.mux.Handle("/healthz", s.handlerChain(s.healthHandler, false))
 }
 
 func (s *System) startMetricsTickers() error {
-	fmt.Println("====System==startMetricsTickers=")
+	logger.Info("====System==startMetricsTickers=")
 	m := s.options.Metrics
 	if s.statsd != nil {
 		network := m.Statsd.Network
@@ -239,7 +238,7 @@ func (s *System) startMetricsTickers() error {
 }
 
 func (s *System) listen() (net.Listener, error) {
-	fmt.Println("====System==listen=")
+	logger.Info("====System==listen=")
 	listener, err := net.Listen("tcp", s.options.ListenAddress)
 	if err != nil {
 		return nil, err
@@ -255,12 +254,12 @@ func (s *System) listen() (net.Listener, error) {
 }
 
 func (s *System) Addr() string {
-	fmt.Println("====System==Addr=")
+	logger.Info("====System==Addr=")
 	return s.addr
 }
 
 func (s *System) Log(keyvals ...interface{}) error {
-	fmt.Println("====System==Log=")
+	logger.Info("====System==Log=")
 	s.logger.Warn(keyvals...)
 	return nil
 }

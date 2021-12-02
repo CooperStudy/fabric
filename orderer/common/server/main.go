@@ -67,12 +67,12 @@ var (
 
 // Main is the entry point of orderer process
 func Main() {
-	fmt.Println("==main==")
+	logger.Info("==main==")
 	fullCmd := kingpin.MustParse(app.Parse(os.Args[1:]))
 
 	// "version" command
 	if fullCmd == version.FullCommand() {
-		fmt.Println(metadata.GetVersionInfo())
+		logger.Info(metadata.GetVersionInfo())
 		return
 	}
 

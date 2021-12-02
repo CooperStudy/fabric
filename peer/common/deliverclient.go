@@ -43,7 +43,7 @@ type DeliverClient struct {
 }
 
 func (d *DeliverClient) seekSpecified(blockNumber uint64) error {
-	fmt.Println("====DeliverClient==seekSpecified==")
+	logger.Info("====DeliverClient==seekSpecified==")
 	seekPosition := &ab.SeekPosition{
 		Type: &ab.SeekPosition_Specified{
 			Specified: &ab.SeekSpecified{
@@ -56,19 +56,19 @@ func (d *DeliverClient) seekSpecified(blockNumber uint64) error {
 }
 
 func (d *DeliverClient) seekOldest() error {
-	fmt.Println("====DeliverClient==seekOldest==")
+	logger.Info("====DeliverClient==seekOldest==")
 	env := seekHelper(d.ChannelID, seekOldest, d.TLSCertHash)
 	return d.Service.Send(env)
 }
 
 func (d *DeliverClient) seekNewest() error {
-	fmt.Println("====DeliverClient==seekNewest==")
+	logger.Info("====DeliverClient==seekNewest==")
 	env := seekHelper(d.ChannelID, seekNewest, d.TLSCertHash)
 	return d.Service.Send(env)
 }
 
 func (d *DeliverClient) readBlock() (*cb.Block, error) {
-	fmt.Println("====DeliverClient==readBlock==")
+	logger.Info("====DeliverClient==readBlock==")
 	msg, err := d.Service.Recv()
 	if err != nil {
 		return nil, errors.Wrap(err, "error receiving")
@@ -89,7 +89,7 @@ func (d *DeliverClient) readBlock() (*cb.Block, error) {
 // GetSpecifiedBlock gets the specified block from a peer/orderer's deliver
 // service
 func (d *DeliverClient) GetSpecifiedBlock(num uint64) (*cb.Block, error) {
-	fmt.Println("====DeliverClient==GetSpecifiedBlock==")
+	logger.Info("====DeliverClient==GetSpecifiedBlock==")
 	err := d.seekSpecified(num)
 	if err != nil {
 		return nil, errors.WithMessage(err, "error getting specified block")
@@ -100,7 +100,7 @@ func (d *DeliverClient) GetSpecifiedBlock(num uint64) (*cb.Block, error) {
 
 // GetOldestBlock gets the oldest block from a peer/orderer's deliver service
 func (d *DeliverClient) GetOldestBlock() (*cb.Block, error) {
-	fmt.Println("====DeliverClient==GetOldestBlock==")
+	logger.Info("====DeliverClient==GetOldestBlock==")
 	err := d.seekOldest()
 	if err != nil {
 		return nil, errors.WithMessage(err, "error getting oldest block")
@@ -111,7 +111,7 @@ func (d *DeliverClient) GetOldestBlock() (*cb.Block, error) {
 
 // GetNewestBlock gets the newest block from a peer/orderer's deliver service
 func (d *DeliverClient) GetNewestBlock() (*cb.Block, error) {
-	fmt.Println("====DeliverClient==GetNewestBlock==")
+	logger.Info("====DeliverClient==GetNewestBlock==")
 	err := d.seekNewest()
 	if err != nil {
 		return nil, errors.WithMessage(err, "error getting newest block")
@@ -122,12 +122,12 @@ func (d *DeliverClient) GetNewestBlock() (*cb.Block, error) {
 
 // Close closes a deliver client's connection
 func (d *DeliverClient) Close() error {
-	fmt.Println("====DeliverClient==Close==")
+	logger.Info("====DeliverClient==Close==")
 	return d.Service.CloseSend()
 }
 
 func seekHelper(channelID string, position *ab.SeekPosition, tlsCertHash []byte) *cb.Envelope {
-	fmt.Println("===seekHelper==")
+	logger.Info("===seekHelper==")
 	seekInfo := &ab.SeekInfo{
 		Start:    position,
 		Stop:     position,
@@ -159,7 +159,7 @@ type ordererDeliverService struct {
 
 // NewDeliverClientForOrderer creates a new DeliverClient from an OrdererClient
 func NewDeliverClientForOrderer(channelID string) (*DeliverClient, error) {
-	fmt.Println("===NewDeliverClientForOrderer==")
+	logger.Info("===NewDeliverClientForOrderer==")
 	var tlsCertHash []byte
 	oc, err := NewOrdererClientFromEnv()
 	if err != nil {
@@ -215,7 +215,7 @@ func NewDeliverClientForPeer(channelID string) (*DeliverClient, error) {
 }
 
 func (p *peerDeliverService) Recv() (*ab.DeliverResponse, error) {
-	fmt.Println("===peerDeliverService==Recv==")
+	logger.Info("===peerDeliverService==Recv==")
 	pbResp, err := p.Deliver_DeliverClient.Recv()
 	if err != nil {
 		return nil, errors.Wrap(err, "error receiving from peer deliver service")

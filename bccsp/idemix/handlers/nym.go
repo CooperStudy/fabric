@@ -26,7 +26,7 @@ type nymSecretKey struct {
 }
 
 func computeSKI(serialise func() ([]byte, error)) ([]byte, error) {
-	fmt.Println("====computeSKI===============")
+	logger.Info("====computeSKI===============")
 
 	raw, err := serialise()
 	if err != nil {
@@ -40,7 +40,7 @@ func computeSKI(serialise func() ([]byte, error)) ([]byte, error) {
 }
 
 func NewNymSecretKey(sk Big, pk Ecp, exportable bool) (*nymSecretKey, error) {
-	fmt.Println("====NewNymSecretKey===============")
+	logger.Info("====NewNymSecretKey===============")
 	ski, err := computeSKI(sk.Bytes)
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func NewNymSecretKey(sk Big, pk Ecp, exportable bool) (*nymSecretKey, error) {
 }
 
 func (k *nymSecretKey) Bytes() ([]byte, error) {
-	fmt.Println("==nymSecretKey==Bytes===============")
+	logger.Info("==nymSecretKey==Bytes===============")
 	if k.exportable {
 		return k.sk.Bytes()
 	}
@@ -59,24 +59,24 @@ func (k *nymSecretKey) Bytes() ([]byte, error) {
 }
 
 func (k *nymSecretKey) SKI() []byte {
-	fmt.Println("==nymSecretKey==SKI===============")
+	logger.Info("==nymSecretKey==SKI===============")
 	c := make([]byte, len(k.ski))
 	copy(c, k.ski)
 	return c
 }
 
 func (*nymSecretKey) Symmetric() bool {
-	fmt.Println("==nymSecretKey==Symmetric===============")
+	logger.Info("==nymSecretKey==Symmetric===============")
 	return false
 }
 
 func (*nymSecretKey) Private() bool {
-	fmt.Println("==nymSecretKey==Private===============")
+	logger.Info("==nymSecretKey==Private===============")
 	return true
 }
 
 func (k *nymSecretKey) PublicKey() (bccsp.Key, error) {
-	fmt.Println("==nymSecretKey==PublicKey===============")
+	logger.Info("==nymSecretKey==PublicKey===============")
 	ski, err := computeSKI(k.pk.Bytes)
 	if err != nil {
 		return nil, err
@@ -92,34 +92,34 @@ type nymPublicKey struct {
 }
 
 func NewNymPublicKey(pk Ecp) *nymPublicKey {
-	fmt.Println("==NewNymPublicKey===============")
+	logger.Info("==NewNymPublicKey===============")
 	return &nymPublicKey{pk: pk}
 }
 
 func (k *nymPublicKey) Bytes() ([]byte, error) {
-	fmt.Println("=nymPublicKey=Bytes===============")
+	logger.Info("=nymPublicKey=Bytes===============")
 	return k.pk.Bytes()
 }
 
 func (k *nymPublicKey) SKI() []byte {
-	fmt.Println("=nymPublicKey=SKI===============")
+	logger.Info("=nymPublicKey=SKI===============")
 	c := make([]byte, len(k.ski))
 	copy(c, k.ski)
 	return c
 }
 
 func (*nymPublicKey) Symmetric() bool {
-	fmt.Println("=nymPublicKey=Symmetric===============")
+	logger.Info("=nymPublicKey=Symmetric===============")
 	return false
 }
 
 func (*nymPublicKey) Private() bool {
-	fmt.Println("=nymPublicKey=Private===============")
+	logger.Info("=nymPublicKey=Private===============")
 	return false
 }
 
 func (k *nymPublicKey) PublicKey() (bccsp.Key, error) {
-	fmt.Println("=nymPublicKey=PublicKey===============")
+	logger.Info("=nymPublicKey=PublicKey===============")
 	return k, nil
 }
 
@@ -133,7 +133,7 @@ type NymKeyDerivation struct {
 }
 
 func (kd *NymKeyDerivation) KeyDeriv(k bccsp.Key, opts bccsp.KeyDerivOpts) (dk bccsp.Key, err error) {
-	fmt.Println("=NymKeyDerivation=KeyDeriv===============")
+	logger.Info("=NymKeyDerivation=KeyDeriv===============")
 	userSecretKey, ok := k.(*userSecretKey)
 	if !ok {
 		return nil, errors.New("invalid key, expected *userSecretKey")
@@ -165,7 +165,7 @@ type NymPublicKeyImporter struct {
 }
 
 func (i *NymPublicKeyImporter) KeyImport(raw interface{}, opts bccsp.KeyImportOpts) (k bccsp.Key, err error) {
-	fmt.Println("=NymKeyDerivation=KeyImport===============")
+	logger.Info("=NymKeyDerivation=KeyImport===============")
 	bytes, ok := raw.([]byte)
 	if !ok {
 		return nil, errors.New("invalid raw, expected byte array")

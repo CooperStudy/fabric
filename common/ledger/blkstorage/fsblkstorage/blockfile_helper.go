@@ -22,7 +22,7 @@ import (
 // if the last file contains no block or only a partially written block (potentially because of a crash while writing block to the file),
 // this scans the second last file (if any)
 func constructCheckpointInfoFromBlockFiles(rootDir string) (*checkpointInfo, error) {
-	fmt.Println("===constructCheckpointInfoFromBlockFiles==")
+	logger.Info("===constructCheckpointInfoFromBlockFiles==")
 	logger.Debugf("Retrieving checkpoint info from block files")
 	var lastFileNum int
 	var numBlocksInFile int
@@ -80,7 +80,7 @@ func constructCheckpointInfoFromBlockFiles(rootDir string) (*checkpointInfo, err
 }
 
 func retrieveLastFileSuffix(rootDir string) (int, error) {
-	fmt.Println("===retrieveLastFileSuffix==")
+	logger.Info("===retrieveLastFileSuffix==")
 	logger.Debugf("retrieveLastFileSuffix()")
 	biggestFileNum := -1
 	filesInfo, err := ioutil.ReadDir(rootDir)
@@ -107,12 +107,12 @@ func retrieveLastFileSuffix(rootDir string) (int, error) {
 }
 
 func isBlockFileName(name string) bool {
-	fmt.Println("===isBlockFileName==")
+	logger.Info("===isBlockFileName==")
 	return strings.HasPrefix(name, blockfilePrefix)
 }
 
 func getFileInfoOrPanic(rootDir string, fileNum int) os.FileInfo {
-	fmt.Println("===getFileInfoOrPanic==")
+	logger.Info("===getFileInfoOrPanic==")
 	filePath := deriveBlockfilePath(rootDir, fileNum)
 	fileInfo, err := os.Lstat(filePath)
 	if err != nil {

@@ -23,12 +23,12 @@ import (
 )
 
 func (mp *MSPPrincipal) VariablyOpaqueFields() []string {
-	fmt.Println("===MSPPrincipal=====VariablyOpaqueFields==")
+	logger.Info("===MSPPrincipal=====VariablyOpaqueFields==")
 	return []string{"principal"}
 }
 
 func (mp *MSPPrincipal) VariablyOpaqueFieldProto(name string) (proto.Message, error) {
-	fmt.Println("===MSPPrincipal=====VariablyOpaqueFieldProto==")
+	logger.Info("===MSPPrincipal=====VariablyOpaqueFieldProto==")
 	if name != mp.VariablyOpaqueFields()[0] {
 		return nil, fmt.Errorf("not a marshaled field: %s", name)
 	}

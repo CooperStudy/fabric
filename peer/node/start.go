@@ -121,7 +121,7 @@ var nodeStartCmd = &cobra.Command{
 }
 
 func serve(args []string) error {
-	fmt.Println("===serve======")
+	logger.Info("===serve======")
 	// currently the peer only works with the standard MSP
 	// because in certain scenarios the MSP has to make sure
 	// that from a single credential you only have a single 'identity'.
@@ -257,7 +257,9 @@ func serve(args []string) error {
 
 	logger.Debugf("Running peer")
 
-	// Start the Admin server
+
+
+
 	startAdminServer(listenAddr, peerServer.Server(), metricsProvider)
 
 	privDataDist := func(channel string, txID string, privateData *transientstore.TxPvtReadWriteSetWithConfigInfo, blkHt uint64) error {
@@ -399,7 +401,7 @@ func serve(args []string) error {
 }
 
 func handleSignals(handlers map[os.Signal]func()) {
-	fmt.Println("===handleSignals======")
+	logger.Info("===handleSignals======")
 	var signals []os.Signal
 	for sig := range handlers {
 		signals = append(signals, sig)
@@ -415,7 +417,7 @@ func handleSignals(handlers map[os.Signal]func()) {
 }
 
 func localPolicy(policyObject proto.Message) policies.Policy {
-	fmt.Println("===localPolicy======")
+	logger.Info("===localPolicy======")
 	localMSP := mgmt.GetLocalMSP()
 	pp := cauthdsl.NewPolicyProvider(localMSP)
 	policy, _, err := pp.NewPolicy(utils.MarshalOrPanic(policyObject))
@@ -426,7 +428,7 @@ func localPolicy(policyObject proto.Message) policies.Policy {
 }
 
 func createSelfSignedData() common2.SignedData {
-	fmt.Println("===createSelfSignedData======")
+	logger.Info("===createSelfSignedData======")
 	sId := mgmt.GetLocalSigningIdentityOrPanic()
 	msg := make([]byte, 32)
 	sig, err := sId.Sign(msg)
@@ -445,7 +447,7 @@ func createSelfSignedData() common2.SignedData {
 }
 
 func registerDiscoveryService(peerServer *comm.GRPCServer, polMgr policies.ChannelPolicyManagerGetter, lc *cc.Lifecycle) {
-	fmt.Println("===registerDiscoveryService======")
+	logger.Info("===registerDiscoveryService======")
 	mspID := viper.GetString("peer.localMspId")
 	localAccessPolicy := localPolicy(cauthdsl.SignedByAnyAdmin([]string{mspID}))
 	if viper.GetBool("peer.discovery.orgMembersAllowedAccess") {
@@ -471,7 +473,7 @@ func registerDiscoveryService(peerServer *comm.GRPCServer, polMgr policies.Chann
 //create a CC listener using peer.chaincodeListenAddress (and if that's not set use peer.peerAddress)
 func createChaincodeServer(ca tlsgen.CA, peerHostname string) (srv *comm.GRPCServer, ccEndpoint string, err error) {
 
-	fmt.Println("===createChaincodeServer======")
+	logger.Info("===createChaincodeServer======")
 	// before potentially setting chaincodeListenAddress, compute chaincode endpoint at first
 	ccEndpoint, err = computeChaincodeEndpoint(peerHostname)
 	if err != nil {
@@ -554,7 +556,7 @@ func createChaincodeServer(ca tlsgen.CA, peerHostname string) (srv *comm.GRPCSer
 // Case C: else use peer address if not "0.0.0.0" (or "::")
 // Case D: else return error
 func computeChaincodeEndpoint(peerHostname string) (ccEndpoint string, err error) {
-	fmt.Println("===computeChaincodeEndpoint======")
+	logger.Info("===computeChaincodeEndpoint======")
 	logger.Infof("Entering computeChaincodeEndpoint with peerHostname: %s", peerHostname)
 	// set this to the host/ip the chaincode will resolve to. It could be
 	// the same address as the peer (such as in the sample docker env using
@@ -631,7 +633,7 @@ func registerChaincodeSupport(
 	lifecycleSCC *lifecycle.SCC,
 	ops *operations.System,
 ) (*chaincode.ChaincodeSupport, ccprovider.ChaincodeProvider, *scc.Provider) {
-	fmt.Println("===registerChaincodeSupport======")
+	logger.Info("===registerChaincodeSupport======")
 
 	//get user mode
 	userRunsCC := chaincode.IsDevMode()
@@ -710,7 +712,7 @@ func startChaincodeServer(
 	pr *platforms.Registry,
 	ops *operations.System,
 ) (*chaincode.ChaincodeSupport, ccprovider.ChaincodeProvider, *scc.Provider, *persistence.PackageProvider) {
-	fmt.Println("===startChaincodeServer======")
+	logger.Info("===startChaincodeServer======")
 	// Setup chaincode path
 	chaincodeInstallPath := ccprovider.GetChaincodeInstallPathFromViper()
 	ccprovider.SetChaincodesPath(chaincodeInstallPath)
@@ -758,7 +760,7 @@ func startChaincodeServer(
 }
 
 func adminHasSeparateListener(peerListenAddr string, adminListenAddress string) bool {
-	fmt.Println("===adminHasSeparateListener======")
+	logger.Info("===adminHasSeparateListener======")
 
 	// By default, admin listens on the same port as the peer data service
 	if adminListenAddress == "" {
@@ -779,7 +781,7 @@ func adminHasSeparateListener(peerListenAddr string, adminListenAddress string) 
 }
 
 func startAdminServer(peerListenAddr string, peerServer *grpc.Server, metricsProvider metrics.Provider) {
-	fmt.Println("===startAdminServer======")
+	logger.Info("===startAdminServer======")
 	adminListenAddress := viper.GetString("peer.adminService.listenAddress")
 	separateLsnrForAdmin := adminHasSeparateListener(peerListenAddr, adminListenAddress)
 	mspID := viper.GetString("peer.localMspId")
@@ -818,7 +820,7 @@ func startAdminServer(peerListenAddr string, peerServer *grpc.Server, metricsPro
 
 // secureDialOpts is the callback function for secure dial options for gossip service
 func secureDialOpts() []grpc.DialOption {
-	fmt.Println("===secureDialOpts======")
+	logger.Info("===secureDialOpts======")
 	var dialOpts []grpc.DialOption
 	// set max send/recv msg sizes
 	dialOpts = append(
@@ -850,7 +852,7 @@ func secureDialOpts() []grpc.DialOption {
 // 3. Init the security advisor;
 // 4. Init gossip related struct.
 func initGossipService(policyMgr policies.ChannelPolicyManagerGetter, peerServer *comm.GRPCServer, serializedIdentity []byte, peerAddr string) error {
-	fmt.Println("===initGossipService======")
+	logger.Info("===initGossipService======")
 	var certs *gossipcommon.TLSCertificates
 	if peerServer.TLSEnabled() {
 		serverCert := peerServer.ServerCertificate()
@@ -884,7 +886,7 @@ func initGossipService(policyMgr policies.ChannelPolicyManagerGetter, peerServer
 }
 
 func newOperationsSystem() *operations.System {
-	fmt.Println("===newOperationsSystem======")
+	logger.Info("===newOperationsSystem======")
 	return operations.NewSystem(operations.Options{
 		Logger:        flogging.MustGetLogger("peer.operations"),
 		ListenAddress: viper.GetString("operations.listenAddress"),
@@ -909,7 +911,7 @@ func newOperationsSystem() *operations.System {
 }
 
 func registerProverService(peerServer *comm.GRPCServer, aclProvider aclmgmt.ACLProvider, signingIdentity msp.SigningIdentity) error {
-	fmt.Println("===registerProverService======")
+	logger.Info("===registerProverService======")
 	policyChecker := &server.PolicyBasedAccessControl{
 		ACLProvider: aclProvider,
 		ACLResources: &server.ACLResources{

@@ -148,7 +148,7 @@ func (t *TestRunner) CompileTo(path string) error {
 	}
 
 	if len(output) > 0 {
-		fmt.Println(string(output))
+		logger.Info(string(output))
 	}
 
 	if fileExists(path) == false {
@@ -358,10 +358,10 @@ func (t *TestRunner) runParallelGinkgoSuite() RunResult {
 
 	select {
 	case <-result:
-		fmt.Println("")
+		logger.Info("")
 	case <-time.After(time.Second):
 		//the aggregator never got back to us!  something must have gone wrong
-		fmt.Println(`
+		logger.Info(`
 	 -------------------------------------------------------------------
 	|                                                                   |
 	|  Ginkgo timed out waiting for all parallel nodes to report back!  |

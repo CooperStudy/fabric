@@ -18,7 +18,7 @@ type treePermutations struct {
 
 // newTreePermutation creates a new treePermutations object with a given root vertex
 func newTreePermutation(root *TreeVertex) *treePermutations {
-	fmt.Println("====newTreePermutation===========")
+	logger.Info("====newTreePermutation===========")
 	return &treePermutations{
 		descendantPermutations: make(map[*TreeVertex][][]*TreeVertex),
 		originalRoot:           root,
@@ -29,7 +29,7 @@ func newTreePermutation(root *TreeVertex) *treePermutations {
 // permute returns Trees that their vertices and edges all exist in the original tree who's vertex
 // is the 'originalRoot' field of the treePermutations
 func (tp *treePermutations) permute() []*Tree {
-	fmt.Println("====treePermutations====permute=======")
+	logger.Info("====treePermutations====permute=======")
 	tp.computeDescendantPermutations()
 
 	it := newBFSIterator(tp.originalRoot)
@@ -88,7 +88,7 @@ func (tp *treePermutations) permute() []*Tree {
 // computeDescendantPermutations computes all possible combinations of sub-trees
 // for all vertices, based on the thresholds.
 func (tp *treePermutations) computeDescendantPermutations() {
-	fmt.Println("====treePermutations====computeDescendantPermutations=======")
+	logger.Info("====treePermutations====computeDescendantPermutations=======")
 	it := newBFSIterator(tp.originalRoot)
 	for {
 		v := it.Next()
@@ -111,11 +111,11 @@ func (tp *treePermutations) computeDescendantPermutations() {
 
 // selectDescendants returns a subset of descendants according to given indices
 func (v *TreeVertex) selectDescendants(indices []int) []*TreeVertex {
-	fmt.Println("====TreeVertex====selectDescendants=======")
+	logger.Info("====TreeVertex====selectDescendants=======")
 	r := make([]*TreeVertex, len(indices))
 	i := 0
 	for _, index := range indices {
-		fmt.Println("========index",index)
+		logger.Info("========index",index)
 		r[i] = v.Descendants[index]
 		i++
 	}

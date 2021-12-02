@@ -48,13 +48,13 @@ type SignerSupport interface {
 
 // NewSignatureHeaderCreator creates new signature headers
 func NewSignatureHeaderCreator(ss SignerSupport) *SignatureHeaderCreator {
-	fmt.Println("======NewSignatureHeaderCreator===========")
+	logger.Info("======NewSignatureHeaderCreator===========")
 	return &SignatureHeaderCreator{ss}
 }
 
 // NewSignatureHeader creates a SignatureHeader with the correct signing identity and a valid nonce
 func (bs *SignatureHeaderCreator) NewSignatureHeader() (*cb.SignatureHeader, error) {
-	fmt.Println("======SignatureHeaderCreator=====NewSignatureHeader======")
+	logger.Info("======SignatureHeaderCreator=====NewSignatureHeader======")
 	creator, err := bs.Serialize()
 	if err != nil {
 		return nil, err

@@ -17,7 +17,6 @@ limitations under the License.
 package validator
 
 import (
-	"fmt"
 	"github.com/hyperledger/fabric/core/ledger"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/privacyenabledstate"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/txmgr"
@@ -37,6 +36,5 @@ type ErrPvtdataHashMissmatch struct {
 }
 
 func (e *ErrPvtdataHashMissmatch) Error() string {
-	fmt.Println("======ErrPvtdataHashMissmatch===Error=======")
 	return e.Msg
 }

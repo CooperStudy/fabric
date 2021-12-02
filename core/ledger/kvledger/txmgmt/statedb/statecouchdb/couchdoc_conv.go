@@ -34,14 +34,14 @@ type keyValue struct {
 type jsonValue map[string]interface{}
 
 func tryCastingToJSON(b []byte) (isJSON bool, val jsonValue) {
-	fmt.Println("=======tryCastingToJSON======")
+	logger.Info("=======tryCastingToJSON======")
 	var jsonVal map[string]interface{}
 	err := json.Unmarshal(b, &jsonVal)
 	return err == nil, jsonValue(jsonVal)
 }
 
 func castToJSON(b []byte) (jsonValue, error) {
-	fmt.Println("=======castToJSON======")
+	logger.Info("=======castToJSON======")
 	var jsonVal map[string]interface{}
 	err := json.Unmarshal(b, &jsonVal)
 	err = errors.Wrap(err, "error unmarshalling json data")
@@ -49,7 +49,7 @@ func castToJSON(b []byte) (jsonValue, error) {
 }
 
 func (v jsonValue) checkReservedFieldsNotPresent() error {
-	fmt.Println("=======checkReservedFieldsNotPresent======")
+	logger.Info("=======checkReservedFieldsNotPresent======")
 	for fieldName := range v {
 		if fieldName == versionField || strings.HasPrefix(fieldName, "_") {
 			return errors.Errorf("field [%s] is not valid for the CouchDB state database", fieldName)
@@ -59,19 +59,19 @@ func (v jsonValue) checkReservedFieldsNotPresent() error {
 }
 
 func (v jsonValue) removeRevField() {
-	fmt.Println("=======removeRevField======")
+	logger.Info("=======removeRevField======")
 	delete(v, revField)
 }
 
 func (v jsonValue) toBytes() ([]byte, error) {
-	fmt.Println("=======jsonValue==toBytes====")
+	logger.Info("=======jsonValue==toBytes====")
 	jsonBytes, err := json.Marshal(v)
 	err = errors.Wrap(err, "error marshalling json data")
 	return jsonBytes, err
 }
 
 func couchDocToKeyValue(doc *couchdb.CouchDoc) (*keyValue, error) {
-	fmt.Println("=======couchDocToKeyValue====")
+	logger.Info("=======couchDocToKeyValue====")
 	// initialize the return value
 	var returnValue []byte
 	var err error
@@ -120,7 +120,7 @@ func couchDocToKeyValue(doc *couchdb.CouchDoc) (*keyValue, error) {
 }
 
 func keyValToCouchDoc(kv *keyValue, revision string) (*couchdb.CouchDoc, error) {
-	fmt.Println("=======keyValToCouchDoc====")
+	logger.Info("=======keyValToCouchDoc====")
 	type kvType int32
 	const (
 		kvTypeDelete = iota
@@ -185,7 +185,7 @@ type couchSavepointData struct {
 }
 
 func encodeSavepoint(height *version.Height) (*couchdb.CouchDoc, error) {
-	fmt.Println("=======encodeSavepoint====")
+	logger.Info("=======encodeSavepoint====")
 	var err error
 	var savepointDoc couchSavepointData
 	// construct savepoint document
@@ -201,7 +201,7 @@ func encodeSavepoint(height *version.Height) (*couchdb.CouchDoc, error) {
 }
 
 func decodeSavepoint(couchDoc *couchdb.CouchDoc) (*version.Height, error) {
-	fmt.Println("=======decodeSavepoint====")
+	logger.Info("=======decodeSavepoint====")
 	savepointDoc := &couchSavepointData{}
 	if err := json.Unmarshal(couchDoc.JSONValue, &savepointDoc); err != nil {
 		err = errors.Wrap(err, "failed to unmarshal savepoint data")
@@ -212,7 +212,7 @@ func decodeSavepoint(couchDoc *couchdb.CouchDoc) (*version.Height, error) {
 }
 
 func validateValue(value []byte) error {
-	fmt.Println("=======validateValue====")
+	logger.Info("=======validateValue====")
 	isJSON, jsonVal := tryCastingToJSON(value)
 	if !isJSON {
 		return nil
@@ -221,7 +221,7 @@ func validateValue(value []byte) error {
 }
 
 func validateKey(key string) error {
-	fmt.Println("=======validateKey====")
+	logger.Info("=======validateKey====")
 	if !utf8.ValidString(key) {
 		return errors.Errorf("invalid key [%x], must be a UTF-8 string", key)
 	}
@@ -236,7 +236,7 @@ func validateKey(key string) error {
 
 // removeJSONRevision removes the "_rev" if this is a JSON
 func removeJSONRevision(jsonValue *[]byte) error {
-	fmt.Println("=======removeJSONRevision====")
+	logger.Info("=======removeJSONRevision====")
 	jsonVal, err := castToJSON(*jsonValue)
 	if err != nil {
 		logger.Errorf("Failed to unmarshal couchdb JSON data: %+v", err)

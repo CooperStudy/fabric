@@ -55,7 +55,7 @@ const (
 )
 
 func addValue(cg *cb.ConfigGroup, value channelconfig.ConfigValue, modPolicy string) {
-	fmt.Println("===================addValue============")
+	logger.Info("===================addValue============")
 	cg.Values[value.Key()] = &cb.ConfigValue{
 		Value:     utils.MarshalOrPanic(value.Value()),
 		ModPolicy: modPolicy,
@@ -63,8 +63,8 @@ func addValue(cg *cb.ConfigGroup, value channelconfig.ConfigValue, modPolicy str
 }
 
 func addPolicy(cg *cb.ConfigGroup, policy policies.ConfigPolicy, modPolicy string) {
-	fmt.Println("===================addPolicy============")
-	fmt.Println("===addPolicy=")
+	logger.Info("===================addPolicy============")
+	logger.Info("===addPolicy=")
 	cg.Policies[policy.Key()] = &cb.ConfigPolicy{
 		Policy:    policy.Value(),
 		ModPolicy: modPolicy,
@@ -111,7 +111,7 @@ func addPolicies(cg *cb.ConfigGroup, policyMap map[string]*genesisconfig.Policy,
 
 // addImplicitMetaPolicyDefaults adds the Readers/Writers/Admins policies, with Any/Any/Majority rules respectively.
 func addImplicitMetaPolicyDefaults(cg *cb.ConfigGroup) {
-	fmt.Println("===addImplicitMetaPolicyDefaults=")
+	logger.Info("===addImplicitMetaPolicyDefaults=")
 	addPolicy(cg, policies.ImplicitMetaMajorityPolicy(channelconfig.AdminsPolicyKey), channelconfig.AdminsPolicyKey)
 	addPolicy(cg, policies.ImplicitMetaAnyPolicy(channelconfig.ReadersPolicyKey), channelconfig.AdminsPolicyKey)
 	addPolicy(cg, policies.ImplicitMetaAnyPolicy(channelconfig.WritersPolicyKey), channelconfig.AdminsPolicyKey)
@@ -121,7 +121,7 @@ func addImplicitMetaPolicyDefaults(cg *cb.ConfigGroup) {
 // If devMode is set to true, the Admins policy will accept arbitrary user certs for admin functions, otherwise it requires the cert satisfies
 // the admin role principal.
 func addSignaturePolicyDefaults(cg *cb.ConfigGroup, mspID string, devMode bool) {
-	fmt.Println("===addSignaturePolicyDefaults=")
+	logger.Info("===addSignaturePolicyDefaults=")
 	if devMode {
 		logger.Warningf("Specifying AdminPrincipal is deprecated and will be removed in a future release, override the admin principal with explicit policies.")
 		addPolicy(cg, policies.SignaturePolicy(channelconfig.AdminsPolicyKey, cauthdsl.SignedByMspMember(mspID)), channelconfig.AdminsPolicyKey)
@@ -138,7 +138,7 @@ func addSignaturePolicyDefaults(cg *cb.ConfigGroup, mspID string, devMode bool) 
 // configuration.  All mod_policy values are set to "Admins" for this group, with the exception of the OrdererAddresses
 // value which is set to "/Channel/Orderer/Admins".
 func NewChannelGroup(conf *genesisconfig.Profile) (*cb.ConfigGroup, error) {
-	fmt.Println("===NewChannelGroup=")
+	logger.Info("===NewChannelGroup=")
 	if conf.Orderer == nil {
 		return nil, errors.New("missing orderer config section")
 	}
@@ -193,7 +193,7 @@ func NewChannelGroup(conf *genesisconfig.Profile) (*cb.ConfigGroup, error) {
 // about how large blocks should be, how frequently they should be emitted, etc. as well as the organizations of the ordering network.
 // It sets the mod_policy of all elements to "Admins".  This group is always present in any channel configuration.
 func NewOrdererGroup(conf *genesisconfig.Orderer) (*cb.ConfigGroup, error) {
-	fmt.Println("===NewOrdererGroup=")
+	logger.Info("===NewOrdererGroup=")
 	ordererGroup := cb.NewConfigGroup()
 	if len(conf.Policies) == 0 {
 		logger.Warningf("Default policy emission is deprecated, please include policy specifications for the orderer group in configtx.yaml")
@@ -251,7 +251,7 @@ func NewOrdererGroup(conf *genesisconfig.Orderer) (*cb.ConfigGroup, error) {
 // NewOrdererOrgGroup returns an orderer org component of the channel configuration.  It defines the crypto material for the
 // organization (its MSP).  It sets the mod_policy of all elements to "Admins".
 func NewOrdererOrgGroup(conf *genesisconfig.Organization) (*cb.ConfigGroup, error) {
-	fmt.Println("===NewOrdererOrgGroup=")
+	logger.Info("===NewOrdererOrgGroup=")
 	mspConfig, err := msp.GetVerifyingMspConfig(conf.MSPDir, conf.ID, conf.MSPType)
 	if err != nil {
 		return nil, errors.Wrapf(err, "1 - Error loading MSP configuration for org: %s", conf.Name)
@@ -324,7 +324,7 @@ func NewApplicationGroup(conf *genesisconfig.Application) (*cb.ConfigGroup, erro
 // NewApplicationOrgGroup returns an application org component of the channel configuration.  It defines the crypto material for the organization
 // (its MSP) as well as its anchor peers for use by the gossip network.  It sets the mod_policy of all elements to "Admins".
 func NewApplicationOrgGroup(conf *genesisconfig.Organization) (*cb.ConfigGroup, error) {
-	fmt.Println("===func NewApplicationOrgGroup(conf *genesisconfig.Organization) (*cb.ConfigGroup, error)==")
+	logger.Info("===func NewApplicationOrgGroup(conf *genesisconfig.Organization) (*cb.ConfigGroup, error)==")
 	logger.Info("=====mspConfig, err := msp.GetVerifyingMspConfig(conf.MSPDir, conf.ID, conf.MSPType)========")
 	logger.Info("=====conf.MSPDir=====",conf.MSPDir)
 	logger.Info("=====conf.ID=====",conf.ID)
@@ -364,7 +364,7 @@ func NewApplicationOrgGroup(conf *genesisconfig.Organization) (*cb.ConfigGroup, 
 // NewConsortiumsGroup returns the consortiums component of the channel configuration.  This element is only defined for the ordering system channel.
 // It sets the mod_policy for all elements to "/Channel/Orderer/Admins".
 func NewConsortiumsGroup(conf map[string]*genesisconfig.Consortium) (*cb.ConfigGroup, error) {
-	fmt.Println("===NewConsortiumsGroup=")
+	logger.Info("===NewConsortiumsGroup=")
 	consortiumsGroup := cb.NewConfigGroup()
 	// This policy is not referenced anywhere, it is only used as part of the implicit meta policy rule at the channel level, so this setting
 	// effectively degrades control of the ordering system channel to the ordering admins
@@ -386,7 +386,7 @@ func NewConsortiumsGroup(conf map[string]*genesisconfig.Consortium) (*cb.ConfigG
 // creation, as well as the channel creation policy the orderer checks at channel creation time to authorize the action.  It sets the mod_policy of all
 // elements to "/Channel/Orderer/Admins".
 func NewConsortiumGroup(conf *genesisconfig.Consortium) (*cb.ConfigGroup, error) {
-	fmt.Println("===NewConsortiumGroup=")
+	logger.Info("===NewConsortiumGroup=")
 	consortiumGroup := cb.NewConfigGroup()
 
 	for _, org := range conf.Organizations {
@@ -407,7 +407,7 @@ func NewConsortiumGroup(conf *genesisconfig.Consortium) (*cb.ConfigGroup, error)
 // NewChannelCreateConfigUpdate generates a ConfigUpdate which can be sent to the orderer to create a new channel.  Optionally, the channel group of the
 // ordering system channel may be passed in, and the resulting ConfigUpdate will extract the appropriate versions from this file.
 func NewChannelCreateConfigUpdate(channelID string, conf *genesisconfig.Profile) (*cb.ConfigUpdate, error) {
-	fmt.Println("=====func NewChannelCreateConfigUpdate(channelID string, conf *genesisconfig.Profile) (*cb.ConfigUpdate, error) =")
+	logger.Info("=====func NewChannelCreateConfigUpdate(channelID string, conf *genesisconfig.Profile) (*cb.ConfigUpdate, error) =")
 	if conf.Application == nil {
 		return nil, errors.New("cannot define a new channel with no Application section")
 	}
@@ -455,7 +455,7 @@ func NewChannelCreateConfigUpdate(channelID string, conf *genesisconfig.Profile)
 
 // MakeChannelCreationTransaction is a handy utility function for creating transactions for channel creation
 func MakeChannelCreationTransaction(channelID string, signer crypto.LocalSigner, conf *genesisconfig.Profile,orgName,orgPki string) (*cb.Envelope, error) {
-	fmt.Println("======func MakeChannelCreationTransaction(channelID string, signer crypto.LocalSigner, conf *genesisconfig.Profile) (*cb.Envelope, error)==========")
+	logger.Info("======func MakeChannelCreationTransaction(channelID string, signer crypto.LocalSigner, conf *genesisconfig.Profile) (*cb.Envelope, error)==========")
 	newChannelConfigUpdate, err := NewChannelCreateConfigUpdate(channelID, conf)
 	if err != nil {
 		return nil, errors.Wrap(err, "config update generation failure")
@@ -492,7 +492,7 @@ type Bootstrapper struct {
 
 // New creates a new Bootstrapper for generating genesis blocks
 func New(config *genesisconfig.Profile) *Bootstrapper {
-	fmt.Println("===New=")
+	logger.Info("===New=")
 	channelGroup, err := NewChannelGroup(config)
 	if err != nil {
 		logger.Panicf("Error creating channel group: %s", err)
@@ -504,7 +504,7 @@ func New(config *genesisconfig.Profile) *Bootstrapper {
 
 // GenesisBlock produces a genesis block for the default test chain id
 func (bs *Bootstrapper) GenesisBlock() *cb.Block {
-	fmt.Println("===Bootstrapper=====GenesisBlock=======")
+	logger.Info("===Bootstrapper=====GenesisBlock=======")
 	block, err := genesis.NewFactoryImpl(bs.channelGroup).Block(genesisconfig.TestChainID)
 	if err != nil {
 		logger.Panicf("Error creating genesis block from channel group: %s", err)
@@ -514,7 +514,7 @@ func (bs *Bootstrapper) GenesisBlock() *cb.Block {
 
 // GenesisBlockForChannel produces a genesis block for a given channel ID
 func (bs *Bootstrapper) GenesisBlockForChannel(channelID string) *cb.Block {
-	fmt.Println("===Bootstrapper=====GenesisBlockForChannel=======")
+	logger.Info("===Bootstrapper=====GenesisBlockForChannel=======")
 	block, err := genesis.NewFactoryImpl(bs.channelGroup).Block(channelID)
 	if err != nil {
 		logger.Panicf("Error creating genesis block from channel group: %s", err)

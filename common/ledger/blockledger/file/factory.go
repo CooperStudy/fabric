@@ -33,16 +33,16 @@ type fileLedgerFactory struct {
 
 // GetOrCreate gets an existing ledger (if it exists) or creates it if it does not
 func (flf *fileLedgerFactory) GetOrCreate(chainID string) (blockledger.ReadWriter, error) {
-	fmt.Println("=========fileLedgerFactory=======GetOrCreate=======")
+	logger.Info("=========fileLedgerFactory=======GetOrCreate=======")
 	flf.mutex.Lock()
 	defer flf.mutex.Unlock()
 
 	key := chainID
 	// check cache
 	ledger, ok := flf.ledgers[key]
-	fmt.Println("==========ok=======",ok)
+	logger.Info("==========ok=======",ok)
 	if ok {
-		fmt.Println("======if ledge exist,return ledger========")
+		logger.Info("======if ledge exist,return ledger========")
 		return ledger, nil
 	}
 	// open fresh
@@ -51,16 +51,16 @@ func (flf *fileLedgerFactory) GetOrCreate(chainID string) (blockledger.ReadWrite
 		return nil, err
 	}
 	ledger = NewFileLedger(blockStore)
-	fmt.Println("=====flf.ledgers[key] = ledger==============",key)
+	logger.Info("=====flf.ledgers[key] = ledger==============",key)
 	flf.ledgers[key] = ledger
 	return ledger, nil
 }
 
 // ChainIDs returns the chain IDs the factory is aware of
 func (flf *fileLedgerFactory) ChainIDs() []string {
-	fmt.Println("=========fileLedgerFactory=======ChainIDs=======")
+	logger.Info("=========fileLedgerFactory=======ChainIDs=======")
 	chainIDs, err := flf.blkstorageProvider.List()
-	fmt.Println("=====chainIDs========",chainIDs)
+	logger.Info("=====chainIDs========",chainIDs)
 	if err != nil {
 		logger.Panic(err)
 	}
@@ -69,13 +69,13 @@ func (flf *fileLedgerFactory) ChainIDs() []string {
 
 // Close releases all resources acquired by the factory
 func (flf *fileLedgerFactory) Close() {
-	fmt.Println("=========fileLedgerFactory=======Close=======")
+	logger.Info("=========fileLedgerFactory=======Close=======")
 	flf.blkstorageProvider.Close()
 }
 
 // New creates a new ledger factory
 func New(directory string) blockledger.Factory {
-	fmt.Println("=========New======")
+	logger.Info("=========New======")
 	return &fileLedgerFactory{
 		blkstorageProvider: fsblkstorage.NewProvider(
 			fsblkstorage.NewConf(directory, -1),

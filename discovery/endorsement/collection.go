@@ -16,7 +16,7 @@ import (
 )
 
 func principalsFromCollectionConfig(configBytes []byte) (principalSetsByCollectionName, error) {
-	fmt.Println("==principalsFromCollectionConfig==")
+	logger.Info("==principalsFromCollectionConfig==")
 	principalSetsByCollections := make(principalSetsByCollectionName)
 	if len(configBytes) == 0 {
 		return principalSetsByCollections, nil
@@ -54,7 +54,7 @@ type principalSetsByCollectionName map[string]policies.PrincipalSet
 // toIdentityFilter converts this principalSetsByCollectionName mapping to a filter
 // which accepts or rejects identities of peers.
 func (psbc principalSetsByCollectionName) toIdentityFilter(channel string, evaluator principalEvaluator, cc *ChaincodeCall) (identityFilter, error) {
-	fmt.Println("==principalSetsByCollectionName==toIdentityFilter==")
+	logger.Info("==principalSetsByCollectionName==toIdentityFilter==")
 	var principalSets policies.PrincipalSets
 	for _, col := range cc.CollectionNames {
 		// Each collection we're interested in should exist in the principalSetsByCollectionName mapping.
@@ -71,7 +71,7 @@ func (psbc principalSetsByCollectionName) toIdentityFilter(channel string, evalu
 
 // filterForPrincipalSets creates a filter of peer identities out of the given PrincipalSets
 func filterForPrincipalSets(channel string, evaluator principalEvaluator, sets policies.PrincipalSets) identityFilter {
-	fmt.Println("==filterForPrincipalSets====")
+	logger.Info("==filterForPrincipalSets====")
 	return func(identity api.PeerIdentityType) bool {
 		// Iterate over all principal sets and ensure each principal set
 		// authorizes the identity.
@@ -86,7 +86,7 @@ func filterForPrincipalSets(channel string, evaluator principalEvaluator, sets p
 
 // isIdentityAuthorizedByPrincipalSet returns whether the given identity satisfies some principal out of the given PrincipalSet
 func isIdentityAuthorizedByPrincipalSet(channel string, evaluator principalEvaluator, principalSet policies.PrincipalSet, identity api.PeerIdentityType) bool {
-	fmt.Println("==isIdentityAuthorizedByPrincipalSet====")
+	logger.Info("==isIdentityAuthorizedByPrincipalSet====")
 	// We look for a principal which authorizes the identity
 	// among all principals in the principalSet
 	for _, principal := range principalSet {

@@ -18,13 +18,13 @@ type ComparablePrincipalSets []ComparablePrincipalSet
 
 // ToPrincipalSets converts this ComparablePrincipalSets to a PrincipalSets
 func (cps ComparablePrincipalSets) ToPrincipalSets() policies.PrincipalSets {
-	fmt.Println("===ComparablePrincipalSets===ToPrincipalSets==")
+	logger.Info("===ComparablePrincipalSets===ToPrincipalSets==")
 	var res policies.PrincipalSets
 	for _, cp := range cps {
-		fmt.Println("===cp====",cp) //[A.MEMBER, B.MEMBER] &{0xc000215080 <nil> 0xc000215300 A}  &{0xc000215100 <nil> 0xc000215380 B}
+		logger.Info("===cp====",cp) //[A.MEMBER, B.MEMBER] &{0xc000215080 <nil> 0xc000215300 A}  &{0xc000215100 <nil> 0xc000215380 B}
 		res = append(res, cp.ToPrincipalSet())
 	}
-	fmt.Println("====res=======",res)
+	logger.Info("====res=======",res)
 	return res
 }
 
@@ -37,7 +37,7 @@ func (cps ComparablePrincipalSets) ToPrincipalSets() policies.PrincipalSets {
 // Then, S = Merge(S1, S2) wields ComparablePrincipalSets
 // such that every ComparablePrincipalSet s in S, satisfies both EP1 and EP2.
 func Merge(s1, s2 ComparablePrincipalSets) ComparablePrincipalSets {
-	fmt.Println("===Merge===ComparablePrincipalSets==")
+	logger.Info("===Merge===ComparablePrincipalSets==")
 	var res ComparablePrincipalSets
 	setsIn1ToTheContainingSetsIn2 := computeContainedInMapping(s1, s2)
 	setsIn1ThatAreIn2 := s1.OfMapping(setsIn1ToTheContainingSetsIn2, s2)
@@ -78,7 +78,7 @@ func Merge(s1, s2 ComparablePrincipalSets) ComparablePrincipalSets {
 // of every possible pair of ComparablePrincipalSet such that the first element is in s1,
 // and the second element is in s2.
 func CartesianProduct(s1, s2 ComparablePrincipalSets) comparablePrincipalSetPairs {
-	fmt.Println("===CartesianProduct===comparablePrincipalSetPairs==")
+	logger.Info("===CartesianProduct===comparablePrincipalSetPairs==")
 	var res comparablePrincipalSetPairs
 	for _, x := range s1 {
 		var set comparablePrincipalSetPairs
@@ -104,7 +104,7 @@ type comparablePrincipalSetPair struct {
 // EnsurePlurality returns a ComparablePrincipalSet such that plurality requirements over
 // the contained ComparablePrincipalSet in the comparablePrincipalSetPair hold
 func (pair comparablePrincipalSetPair) MergeWithPlurality() ComparablePrincipalSet {
-	fmt.Println("===CartesianProduct===MergeWithPlurality==")
+	logger.Info("===CartesianProduct===MergeWithPlurality==")
 	var principalsToAdd []*ComparablePrincipal
 	used := make(map[int]struct{})
 	// Iterate over the contained set and for each principal
@@ -141,7 +141,7 @@ type comparablePrincipalSetPairs []comparablePrincipalSetPair
 // ToPrincipalSets converts the comparablePrincipalSetPairs to ComparablePrincipalSets
 // while taking into account plurality of each pair
 func (pairs comparablePrincipalSetPairs) ToMergedPrincipalSets() ComparablePrincipalSets {
-	fmt.Println("===comparablePrincipalSetPairs===ToMergedPrincipalSets==")
+	logger.Info("===comparablePrincipalSetPairs===ToMergedPrincipalSets==")
 	var res ComparablePrincipalSets
 	for _, pair := range pairs {
 		res = append(res, pair.MergeWithPlurality())
@@ -151,7 +151,7 @@ func (pairs comparablePrincipalSetPairs) ToMergedPrincipalSets() ComparablePrinc
 
 // OfMapping returns comparablePrincipalSetPairs comprising only of the indices found in the given keys
 func (cps ComparablePrincipalSets) OfMapping(mapping map[int][]int, sets2 ComparablePrincipalSets) comparablePrincipalSetPairs {
-	fmt.Println("===ComparablePrincipalSets===OfMapping==")
+	logger.Info("===ComparablePrincipalSets===OfMapping==")
 	var res []comparablePrincipalSetPair
 	for i, js := range mapping {
 		for _, j := range js {
@@ -167,7 +167,7 @@ func (cps ComparablePrincipalSets) OfMapping(mapping map[int][]int, sets2 Compar
 // Reduce returns the ComparablePrincipalSets in a form such that no element contains another element.
 // Every element that contains some other element is omitted from the result.
 func (cps ComparablePrincipalSets) Reduce() ComparablePrincipalSets {
-	fmt.Println("===ComparablePrincipalSets===Reduce==")
+	logger.Info("===ComparablePrincipalSets===Reduce==")
 	var res ComparablePrincipalSets
 	for i, s1 := range cps {
 		var isContaining bool
@@ -188,7 +188,7 @@ func (cps ComparablePrincipalSets) Reduce() ComparablePrincipalSets {
 
 // ExcludeIndices returns a ComparablePrincipalSets without the given indices found in the keys
 func (cps ComparablePrincipalSets) ExcludeIndices(mapping map[int][]int) ComparablePrincipalSets {
-	fmt.Println("===ComparablePrincipalSets===ExcludeIndices==")
+	logger.Info("===ComparablePrincipalSets===ExcludeIndices==")
 	var res ComparablePrincipalSets
 	for i, set := range cps {
 		if _, exists := mapping[i]; exists {
@@ -204,7 +204,7 @@ func (cps ComparablePrincipalSets) ExcludeIndices(mapping map[int][]int) Compara
 // there is a ComparablePrincipal x in X such that x.IsA(y).
 // From here it follows that every signature set that satisfies X, also satisfies y.
 func (cps ComparablePrincipalSet) Contains(s *ComparablePrincipal) bool {
-	fmt.Println("===ComparablePrincipalSet===Contains==")
+	logger.Info("===ComparablePrincipalSet===Contains==")
 	for _, cp := range cps {
 		if cp.IsA(s) {
 			return true
@@ -220,7 +220,7 @@ func (cps ComparablePrincipalSet) Contains(s *ComparablePrincipal) bool {
 // it also satisfies X, because for each x in X there is a y in Y such that there exists a signature of a corresponding
 // identity such that the identity satisfies y, and therefore satisfies x too.
 func (cps ComparablePrincipalSet) IsContainedIn(set ComparablePrincipalSet) bool {
-	fmt.Println("===ComparablePrincipalSet===IsContainedIn==")
+	logger.Info("===ComparablePrincipalSet===IsContainedIn==")
 	for _, cp := range cps {
 		if !set.Contains(cp) {
 			return false
@@ -233,7 +233,7 @@ func (cps ComparablePrincipalSet) IsContainedIn(set ComparablePrincipalSet) bool
 // to the indices in the second ComparablePrincipalSets that the corresponding ComparablePrincipalSets in
 // the first ComparablePrincipalSets are contained in the second ComparablePrincipalSets given.
 func computeContainedInMapping(s1, s2 []ComparablePrincipalSet) intMapping {
-	fmt.Println("===computeContainedInMapping==")
+	logger.Info("===computeContainedInMapping==")
 	mapping := make(map[int][]int)
 	for i, ps1 := range s1 {
 		for j, ps2 := range s2 {
@@ -250,7 +250,7 @@ func computeContainedInMapping(s1, s2 []ComparablePrincipalSet) intMapping {
 type intMapping map[int][]int
 
 func (im intMapping) invert() intMapping {
-	fmt.Println("===intMapping==invert==")
+	logger.Info("===intMapping==invert==")
 	res := make(intMapping)
 	for i, js := range im {
 		for _, j := range js {
@@ -262,7 +262,7 @@ func (im intMapping) invert() intMapping {
 
 // IsSubset returns whether this ComparablePrincipalSet is a subset of the given ComparablePrincipalSet
 func (cps ComparablePrincipalSet) IsSubset(sets ComparablePrincipalSet) bool {
-	fmt.Println("===ComparablePrincipalSet==IsSubset==")
+	logger.Info("===ComparablePrincipalSet==IsSubset==")
 	for _, p1 := range cps {
 		var found bool
 		for _, p2 := range sets {

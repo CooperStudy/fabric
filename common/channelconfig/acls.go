@@ -17,13 +17,13 @@ type aclsProvider struct {
 }
 
 func (ag *aclsProvider) PolicyRefForAPI(aclName string) string {
-	fmt.Println("==aclsProvider==PolicyRefForAPI=========")
+	logger.Info("==aclsProvider==PolicyRefForAPI=========")
 	return ag.aclPolicyRefs[aclName]
 }
 
 // this translates policies to absolute paths if needed
 func newAPIsProvider(acls map[string]*pb.APIResource) *aclsProvider {
-	fmt.Println("==newAPIsProvider=========")
+	logger.Info("==newAPIsProvider=========")
 	aclPolicyRefs := make(map[string]string)
 
 	for key, acl := range acls {

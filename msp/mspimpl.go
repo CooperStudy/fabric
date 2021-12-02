@@ -101,7 +101,7 @@ type bccspmsp struct {
 // generate identities and signing identities backed by
 // certificates and keypairs
 func newBccspMsp(version MSPVersion) (MSP, error) {
-	//fmt.Println("==newBccspMsp==")
+	//logger.Info("==newBccspMsp==")
 	mspLogger.Debugf("Creating BCCSP-based MSP instance")
 
 	bccsp := factory.GetDefault()
@@ -110,17 +110,17 @@ func newBccspMsp(version MSPVersion) (MSP, error) {
 	theMsp.bccsp = bccsp
 	switch version {
 	case MSPv1_0:
-		//fmt.Println("==MSPv1_0==")
+		//logger.Info("==MSPv1_0==")
 		theMsp.internalSetupFunc = theMsp.setupV1
 		theMsp.internalValidateIdentityOusFunc = theMsp.validateIdentityOUsV1
 		theMsp.internalSatisfiesPrincipalInternalFunc = theMsp.satisfiesPrincipalInternalPreV13
 	case MSPv1_1:
-		//fmt.Println("==MSPv1_1==")
+		//logger.Info("==MSPv1_1==")
 		theMsp.internalSetupFunc = theMsp.setupV11
 		theMsp.internalValidateIdentityOusFunc = theMsp.validateIdentityOUsV11
 		theMsp.internalSatisfiesPrincipalInternalFunc = theMsp.satisfiesPrincipalInternalPreV13
 	case MSPv1_3:
-		//fmt.Println("==MSPv1_3==")
+		//logger.Info("==MSPv1_3==")
 		theMsp.internalSetupFunc = theMsp.setupV11
 		theMsp.internalValidateIdentityOusFunc = theMsp.validateIdentityOUsV11
 		theMsp.internalSatisfiesPrincipalInternalFunc = theMsp.satisfiesPrincipalInternalV13
@@ -132,7 +132,7 @@ func newBccspMsp(version MSPVersion) (MSP, error) {
 }
 
 func (msp *bccspmsp) getCertFromPem(idBytes []byte) (*x509.Certificate, error) {
-	//fmt.Println("==getCertFromPem==")
+	//logger.Info("==getCertFromPem==")
 	if idBytes == nil {
 		return nil, errors.New("getCertFromPem error: nil idBytes")
 	}
@@ -154,7 +154,7 @@ func (msp *bccspmsp) getCertFromPem(idBytes []byte) (*x509.Certificate, error) {
 }
 
 func (msp *bccspmsp) getIdentityFromConf(idBytes []byte) (Identity, bccsp.Key, error) {
-	//fmt.Println("===bccspmsp==getIdentityFromConf==")
+	//logger.Info("===bccspmsp==getIdentityFromConf==")
 	// get a cert
 	cert, err := msp.getCertFromPem(idBytes)
 	if err != nil {
@@ -173,7 +173,7 @@ func (msp *bccspmsp) getIdentityFromConf(idBytes []byte) (Identity, bccsp.Key, e
 }
 
 func (msp *bccspmsp) getSigningIdentityFromConf(sidInfo *m.SigningIdentityInfo) (SigningIdentity, error) {
-	//fmt.Println("===bccspmsp==getSigningIdentityFromConf==")
+	//logger.Info("===bccspmsp==getSigningIdentityFromConf==")
 	if sidInfo == nil {
 		return nil, errors.New("getIdentityFromBytes error: nil sidInfo")
 	}
@@ -213,7 +213,7 @@ func (msp *bccspmsp) getSigningIdentityFromConf(sidInfo *m.SigningIdentityInfo) 
 // for this MSP, given an MSPConfig ref; it
 // returns nil in case of success or an error otherwise
 func (msp *bccspmsp) Setup(conf1 *m.MSPConfig) error {
-	//fmt.Println("===bccspmsp==Setup==")
+	//logger.Info("===bccspmsp==Setup==")
 	if conf1 == nil {
 		return errors.New("Setup error: nil conf reference")
 	}
@@ -235,38 +235,38 @@ func (msp *bccspmsp) Setup(conf1 *m.MSPConfig) error {
 
 // GetVersion returns the version of this MSP
 func (msp *bccspmsp) GetVersion() MSPVersion {
-	//fmt.Println("===bccspmsp==GetVersion==")
+	//logger.Info("===bccspmsp==GetVersion==")
 	return msp.version
 }
 
 // GetType returns the type for this MSP
 func (msp *bccspmsp) GetType() ProviderType {
-	//fmt.Println("===bccspmsp==GetType==")
+	//logger.Info("===bccspmsp==GetType==")
 	return FABRIC
 }
 
 // GetIdentifier returns the MSP identifier for this instance
 func (msp *bccspmsp) GetIdentifier() (string, error) {
-	//fmt.Println("===bccspmsp==GetIdentifier==")
+	//logger.Info("===bccspmsp==GetIdentifier==")
 	return msp.name, nil
 }
 
 // GetTLSRootCerts returns the root certificates for this MSP
 func (msp *bccspmsp) GetTLSRootCerts() [][]byte {
-	//fmt.Println("===bccspmsp==GetTLSRootCerts==")
+	//logger.Info("===bccspmsp==GetTLSRootCerts==")
 	return msp.tlsRootCerts
 }
 
 // GetTLSIntermediateCerts returns the intermediate root certificates for this MSP
 func (msp *bccspmsp) GetTLSIntermediateCerts() [][]byte {
-	//fmt.Println("===bccspmsp==GetTLSIntermediateCerts==")
+	//logger.Info("===bccspmsp==GetTLSIntermediateCerts==")
 	return msp.tlsIntermediateCerts
 }
 
 // GetDefaultSigningIdentity returns the
 // default signing identity for this MSP (if any)
 func (msp *bccspmsp) GetDefaultSigningIdentity() (SigningIdentity, error) {
-	//fmt.Println("===bccspmsp==GetDefaultSigningIdentity==")
+	//logger.Info("===bccspmsp==GetDefaultSigningIdentity==")
 	mspLogger.Debugf("Obtaining default signing identity")
 
 	if msp.signer == nil {
@@ -279,7 +279,7 @@ func (msp *bccspmsp) GetDefaultSigningIdentity() (SigningIdentity, error) {
 // GetSigningIdentity returns a specific signing
 // identity identified by the supplied identifier
 func (msp *bccspmsp) GetSigningIdentity(identifier *IdentityIdentifier) (SigningIdentity, error) {
-	//fmt.Println("===bccspmsp==GetSigningIdentity==")
+	//logger.Info("===bccspmsp==GetSigningIdentity==")
 	// TODO
 	return nil, errors.Errorf("no signing identity for %#v", identifier)
 }
@@ -290,7 +290,7 @@ func (msp *bccspmsp) GetSigningIdentity(identifier *IdentityIdentifier) (Signing
 // nil in case the identity is valid or an
 // error otherwise
 func (msp *bccspmsp) Validate(id Identity) error {
-	//fmt.Println("===bccspmsp==Validate==")
+	//logger.Info("===bccspmsp==Validate==")
 	mspLogger.Debugf("MSP %s validating identity", msp.name)
 
 	switch id := id.(type) {
@@ -309,7 +309,7 @@ func (msp *bccspmsp) Validate(id Identity) error {
 // This function does not check the certifiers identifier.
 // Appropriate validation needs to be enforced before.
 func (msp *bccspmsp) hasOURole(id Identity, mspRole m.MSPRole_MSPRoleType) error {
-	//fmt.Println("===bccspmsp==hasOURole==")
+	//logger.Info("===bccspmsp==hasOURole==")
 	// Check NodeOUs
 	if !msp.ouEnforcement {
 		return errors.New("NodeOUs not activated. Cannot tell apart identities.")
@@ -329,7 +329,7 @@ func (msp *bccspmsp) hasOURole(id Identity, mspRole m.MSPRole_MSPRoleType) error
 }
 
 func (msp *bccspmsp) hasOURoleInternal(id *identity, mspRole m.MSPRole_MSPRoleType) error {
-	//fmt.Println("===bccspmsp==hasOURoleInternal==")
+	//logger.Info("===bccspmsp==hasOURoleInternal==")
 	var nodeOUValue string
 	switch mspRole {
 	case m.MSPRole_CLIENT:
@@ -352,7 +352,7 @@ func (msp *bccspmsp) hasOURoleInternal(id *identity, mspRole m.MSPRole_MSPRoleTy
 // DeserializeIdentity returns an Identity given the byte-level
 // representation of a SerializedIdentity struct
 func (msp *bccspmsp) DeserializeIdentity(serializedID []byte) (Identity, error) {
-//	fmt.Println("===bccspmsp==DeserializeIdentity==")
+//	logger.Info("===bccspmsp==DeserializeIdentity==")
 	mspLogger.Debug("Obtaining identity")
 
 	// We first deserialize to a SerializedIdentity to get the MSP ID
@@ -371,7 +371,7 @@ func (msp *bccspmsp) DeserializeIdentity(serializedID []byte) (Identity, error) 
 
 // deserializeIdentityInternal returns an identity given its byte-level representation
 func (msp *bccspmsp) deserializeIdentityInternal(serializedIdentity []byte) (Identity, error) {
-	//fmt.Println("===bccspmsp==deserializeIdentityInternal==")
+	//logger.Info("===bccspmsp==deserializeIdentityInternal==")
 	// This MSP will always deserialize certs this way
 	bl, _ := pem.Decode(serializedIdentity)
 	if bl == nil {
@@ -399,7 +399,7 @@ func (msp *bccspmsp) deserializeIdentityInternal(serializedIdentity []byte) (Ide
 
 // SatisfiesPrincipal returns null if the identity matches the principal or an error otherwise
 func (msp *bccspmsp) SatisfiesPrincipal(id Identity, principal *m.MSPPrincipal) error {
-	//fmt.Println("===bccspmsp==SatisfiesPrincipal==")
+	//logger.Info("===bccspmsp==SatisfiesPrincipal==")
 	principals, err := collectPrincipals(principal, msp.GetVersion())
 	if err != nil {
 		return err
@@ -415,7 +415,7 @@ func (msp *bccspmsp) SatisfiesPrincipal(id Identity, principal *m.MSPPrincipal) 
 
 // collectPrincipals collects principals from combined principals into a single MSPPrincipal slice.
 func collectPrincipals(principal *m.MSPPrincipal, mspVersion MSPVersion) ([]*m.MSPPrincipal, error) {
-	//fmt.Println("===collectPrincipals==")
+	//logger.Info("===collectPrincipals==")
 	switch principal.PrincipalClassification {
 	case m.MSPPrincipal_COMBINED:
 		// Combined principals are not supported in MSP v1.0 or v1.1
@@ -453,7 +453,7 @@ func collectPrincipals(principal *m.MSPPrincipal, mspVersion MSPVersion) ([]*m.M
 // The function returns an error if one occurred.
 // The function implements the behavior of an MSP up to and including v1.1.
 func (msp *bccspmsp) satisfiesPrincipalInternalPreV13(id Identity, principal *m.MSPPrincipal) error {
-	//fmt.Println("===bccspmsp====satisfiesPrincipalInternalPreV13==")
+	//logger.Info("===bccspmsp====satisfiesPrincipalInternalPreV13==")
 	switch principal.PrincipalClassification {
 	// in this case, we have to check whether the
 	// identity has a role in the msp - member or admin
@@ -560,7 +560,7 @@ func (msp *bccspmsp) satisfiesPrincipalInternalPreV13(id Identity, principal *m.
 // The function implements the additional behavior expected of an MSP starting from v1.3.
 // For pre-v1.3 functionality, the function calls the satisfiesPrincipalInternalPreV13.
 func (msp *bccspmsp) satisfiesPrincipalInternalV13(id Identity, principal *m.MSPPrincipal) error {
-	//fmt.Println("===bccspmsp====satisfiesPrincipalInternalV13==")
+	//logger.Info("===bccspmsp====satisfiesPrincipalInternalV13==")
 	switch principal.PrincipalClassification {
 	case m.MSPPrincipal_COMBINED:
 		return errors.New("SatisfiesPrincipalInternal shall not be called with a CombinedPrincipal")
@@ -587,7 +587,7 @@ func (msp *bccspmsp) satisfiesPrincipalInternalV13(id Identity, principal *m.MSP
 
 // getCertificationChain returns the certification chain of the passed identity within this msp
 func (msp *bccspmsp) getCertificationChain(id Identity) ([]*x509.Certificate, error) {
-	//fmt.Println("===bccspmsp====getCertificationChain==")
+	//logger.Info("===bccspmsp====getCertificationChain==")
 	mspLogger.Debugf("MSP %s getting certification chain", msp.name)
 
 	switch id := id.(type) {
@@ -603,7 +603,7 @@ func (msp *bccspmsp) getCertificationChain(id Identity) ([]*x509.Certificate, er
 
 // getCertificationChainForBCCSPIdentity returns the certification chain of the passed bccsp identity within this msp
 func (msp *bccspmsp) getCertificationChainForBCCSPIdentity(id *identity) ([]*x509.Certificate, error) {
-	//fmt.Println("===bccspmsp====getCertificationChainForBCCSPIdentity==")
+	//logger.Info("===bccspmsp====getCertificationChainForBCCSPIdentity==")
 	if id == nil {
 		return nil, errors.New("Invalid bccsp identity. Must be different from nil.")
 	}
@@ -623,7 +623,7 @@ func (msp *bccspmsp) getCertificationChainForBCCSPIdentity(id *identity) ([]*x50
 }
 
 func (msp *bccspmsp) getUniqueValidationChain(cert *x509.Certificate, opts x509.VerifyOptions) ([]*x509.Certificate, error) {
-	//fmt.Println("===bccspmsp====getUniqueValidationChain==")
+	//logger.Info("===bccspmsp====getUniqueValidationChain==")
 	// ask golang to validate the cert for us based on the options that we've built at setup time
 	if msp.opts == nil {
 		return nil, errors.New("the supplied identity has no verify options")
@@ -644,7 +644,7 @@ func (msp *bccspmsp) getUniqueValidationChain(cert *x509.Certificate, opts x509.
 }
 
 func (msp *bccspmsp) getValidationChain(cert *x509.Certificate, isIntermediateChain bool) ([]*x509.Certificate, error) {
-	//fmt.Println("===bccspmsp====getValidationChain==")
+	//logger.Info("===bccspmsp====getValidationChain==")
 	validationChain, err := msp.getUniqueValidationChain(cert, msp.getValidityOptsForCert(cert))
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed getting validation chain")
@@ -670,7 +670,7 @@ func (msp *bccspmsp) getValidationChain(cert *x509.Certificate, isIntermediateCh
 // getCertificationChainIdentifier returns the certification chain identifier of the passed identity within this msp.
 // The identifier is computes as the SHA256 of the concatenation of the certificates in the chain.
 func (msp *bccspmsp) getCertificationChainIdentifier(id Identity) ([]byte, error) {
-	//fmt.Println("===bccspmsp====getCertificationChainIdentifier==")
+	//logger.Info("===bccspmsp====getCertificationChainIdentifier==")
 	chain, err := msp.getCertificationChain(id)
 	if err != nil {
 		return nil, errors.WithMessage(err, fmt.Sprintf("failed getting certification chain for [%v]", id))
@@ -682,7 +682,7 @@ func (msp *bccspmsp) getCertificationChainIdentifier(id Identity) ([]byte, error
 }
 
 func (msp *bccspmsp) getCertificationChainIdentifierFromChain(chain []*x509.Certificate) ([]byte, error) {
-	//fmt.Println("===bccspmsp====getCertificationChainIdentifierFromChain==")
+	//logger.Info("===bccspmsp====getCertificationChainIdentifierFromChain==")
 	// Hash the chain
 	// Use the hash of the identity's certificate as id in the IdentityIdentifier
 	hashOpt, err := bccsp.GetHashOpt(msp.cryptoConfig.IdentityIdentifierHashFunction)
@@ -704,7 +704,7 @@ func (msp *bccspmsp) getCertificationChainIdentifierFromChain(chain []*x509.Cert
 // do have signatures in Low-S. If this is not the case, the certificate
 // is regenerated to have a Low-S signature.
 func (msp *bccspmsp) sanitizeCert(cert *x509.Certificate) (*x509.Certificate, error) {
-	//fmt.Println("===bccspmsp====sanitizeCert==")
+	//logger.Info("===bccspmsp====sanitizeCert==")
 	if isECDSASignedCert(cert) {
 		// Lookup for a parent certificate to perform the sanitization
 		var parentCert *x509.Certificate
@@ -735,7 +735,7 @@ func (msp *bccspmsp) sanitizeCert(cert *x509.Certificate) (*x509.Certificate, er
 // In this MSP implementation, well formed means that the PEM has a Type which is either
 // the string 'CERTIFICATE' or the Type is missing altogether.
 func (msp *bccspmsp) IsWellFormed(identity *m.SerializedIdentity) error {
-	//fmt.Println("===bccspmsp====IsWellFormed==")
+	//logger.Info("===bccspmsp====IsWellFormed==")
 	bl, _ := pem.Decode(identity.IdBytes)
 	if bl == nil {
 		return errors.New("PEM decoding resulted in an empty block")

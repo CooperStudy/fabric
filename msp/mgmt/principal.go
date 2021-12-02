@@ -37,14 +37,14 @@ type MSPPrincipalGetter interface {
 }
 
 func NewLocalMSPPrincipalGetter() MSPPrincipalGetter {
-	fmt.Println("====NewLocalMSPPrincipalGetter==")
+	logger.Info("====NewLocalMSPPrincipalGetter==")
 	return &localMSPPrincipalGetter{}
 }
 
 type localMSPPrincipalGetter struct{}
 
 func (m *localMSPPrincipalGetter) Get(role string) (*msp.MSPPrincipal, error) {
-	fmt.Println("====localMSPPrincipalGetter=Get=")
+	logger.Info("====localMSPPrincipalGetter=Get=")
 	mspid, err := GetLocalMSP().GetIdentifier()
 	if err != nil {
 		return nil, errors.WithMessage(err, "could not extract local msp identifier")
@@ -52,7 +52,7 @@ func (m *localMSPPrincipalGetter) Get(role string) (*msp.MSPPrincipal, error) {
 
 	switch role {
 	case Admins:
-		fmt.Println("=============Admins======================",Admins)
+		logger.Info("=============Admins======================",Admins)
 		principalBytes, err := proto.Marshal(&msp.MSPRole{Role: msp.MSPRole_ADMIN, MspIdentifier: mspid})
 		if err != nil {
 			return nil, errors.Wrap(err, "marshalling failed")
@@ -62,7 +62,7 @@ func (m *localMSPPrincipalGetter) Get(role string) (*msp.MSPPrincipal, error) {
 			PrincipalClassification: msp.MSPPrincipal_ROLE,
 			Principal:               principalBytes}, nil
 	case Members:
-		fmt.Println("=============Members======================",Members)
+		logger.Info("=============Members======================",Members)
 		principalBytes, err := proto.Marshal(&msp.MSPRole{Role: msp.MSPRole_MEMBER, MspIdentifier: mspid})
 		if err != nil {
 			return nil, errors.Wrap(err, "marshalling failed")

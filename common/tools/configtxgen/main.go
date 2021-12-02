@@ -324,5 +324,5 @@ func main() {
 
 func printVersion() {
 	logger.Info("=========printVersion=========")
-	fmt.Println(metadata.GetVersionInfo())
+	logger.Info(metadata.GetVersionInfo())
 }

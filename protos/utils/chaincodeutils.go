@@ -16,7 +16,7 @@ import (
 // UnmarshalChaincodeDeploymentSpec unmarshals a ChaincodeDeploymentSpec from
 // the provided bytes
 func UnmarshalChaincodeDeploymentSpec(cdsBytes []byte) (*peer.ChaincodeDeploymentSpec, error) {
-	fmt.Println("===========UnmarshalChaincodeDeploymentSpec========")
+	logger.Info("===========UnmarshalChaincodeDeploymentSpec========")
 	cds := &peer.ChaincodeDeploymentSpec{}
 	err := proto.Unmarshal(cdsBytes, cds)
 	if err != nil {

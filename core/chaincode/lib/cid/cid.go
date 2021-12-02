@@ -24,17 +24,18 @@ import (
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/common/attrmgr"
 	"github.com/hyperledger/fabric/protos/msp"
 	"github.com/pkg/errors"
 )
-
+var   logger = flogging.MustGetLogger("core.chaincode.lib.cid")
 // GetID returns the ID associated with the invoking identity.  This ID
 // is guaranteed to be unique within the MSP.
 func GetID(stub ChaincodeStubInterface) (string, error) {
-	fmt.Println("===GetID====")
+	logger.Info("===GetID====")
 	c, err := New(stub)
 	if err != nil {
 		return "", err
@@ -45,7 +46,7 @@ func GetID(stub ChaincodeStubInterface) (string, error) {
 // GetMSPID returns the ID of the MSP associated with the identity that
 // submitted the transaction
 func GetMSPID(stub ChaincodeStubInterface) (string, error) {
-	fmt.Println("===GetMSPID====")
+	logger.Info("===GetMSPID====")
 	c, err := New(stub)
 	if err != nil {
 		return "", err
@@ -55,7 +56,7 @@ func GetMSPID(stub ChaincodeStubInterface) (string, error) {
 
 // GetAttributeValue returns value of the specified attribute
 func GetAttributeValue(stub ChaincodeStubInterface, attrName string) (value string, found bool, err error) {
-	fmt.Println("===GetAttributeValue====")
+	logger.Info("===GetAttributeValue====")
 	c, err := New(stub)
 	if err != nil {
 		return "", false, err
@@ -65,7 +66,7 @@ func GetAttributeValue(stub ChaincodeStubInterface, attrName string) (value stri
 
 // AssertAttributeValue checks to see if an attribute value equals the specified value
 func AssertAttributeValue(stub ChaincodeStubInterface, attrName, attrValue string) error {
-	fmt.Println("===AssertAttributeValue====")
+	logger.Info("===AssertAttributeValue====")
 	c, err := New(stub)
 	if err != nil {
 		return err
@@ -76,7 +77,7 @@ func AssertAttributeValue(stub ChaincodeStubInterface, attrName, attrValue strin
 // GetX509Certificate returns the X509 certificate associated with the client,
 // or nil if it was not identified by an X509 certificate.
 func GetX509Certificate(stub ChaincodeStubInterface) (*x509.Certificate, error) {
-	fmt.Println("===GetX509Certificate====")
+	logger.Info("===GetX509Certificate====")
 	c, err := New(stub)
 	if err != nil {
 		return nil, err
@@ -95,7 +96,7 @@ type clientIdentityImpl struct {
 
 // New returns an instance of ClientIdentity
 func New(stub ChaincodeStubInterface) (ClientIdentity, error) {
-	fmt.Println("===New====")
+	logger.Info("===New====")
 	c := &clientIdentityImpl{stub: stub}
 	err := c.init()
 	if err != nil {
@@ -106,7 +107,7 @@ func New(stub ChaincodeStubInterface) (ClientIdentity, error) {
 
 // GetID returns a unique ID associated with the invoking identity.
 func (c *clientIdentityImpl) GetID() (string, error) {
-	fmt.Println("===clientIdentityImpl==GetID==")
+	logger.Info("===clientIdentityImpl==GetID==")
 	// The leading "x509::" distinguishes this as an X509 certificate, and
 	// the subject and issuer DNs uniquely identify the X509 certificate.
 	// The resulting ID will remain the same if the certificate is renewed.
@@ -117,13 +118,13 @@ func (c *clientIdentityImpl) GetID() (string, error) {
 // GetMSPID returns the ID of the MSP associated with the identity that
 // submitted the transaction
 func (c *clientIdentityImpl) GetMSPID() (string, error) {
-	fmt.Println("===clientIdentityImpl==GetMSPID==")
+	logger.Info("===clientIdentityImpl==GetMSPID==")
 	return c.mspID, nil
 }
 
 // GetAttributeValue returns value of the specified attribute
 func (c *clientIdentityImpl) GetAttributeValue(attrName string) (value string, found bool, err error) {
-	fmt.Println("===clientIdentityImpl==GetAttributeValue==")
+	logger.Info("===clientIdentityImpl==GetAttributeValue==")
 	if c.attrs == nil {
 		return "", false, nil
 	}
@@ -132,7 +133,7 @@ func (c *clientIdentityImpl) GetAttributeValue(attrName string) (value string, f
 
 // AssertAttributeValue checks to see if an attribute value equals the specified value
 func (c *clientIdentityImpl) AssertAttributeValue(attrName, attrValue string) error {
-	fmt.Println("===clientIdentityImpl==AssertAttributeValue==")
+	logger.Info("===clientIdentityImpl==AssertAttributeValue==")
 	val, ok, err := c.GetAttributeValue(attrName)
 	if err != nil {
 		return err
@@ -149,13 +150,13 @@ func (c *clientIdentityImpl) AssertAttributeValue(attrName, attrValue string) er
 // GetX509Certificate returns the X509 certificate associated with the client,
 // or nil if it was not identified by an X509 certificate.
 func (c *clientIdentityImpl) GetX509Certificate() (*x509.Certificate, error) {
-	fmt.Println("===clientIdentityImpl==GetX509Certificate==")
+	logger.Info("===clientIdentityImpl==GetX509Certificate==")
 	return c.cert, nil
 }
 
 // Initialize the client
 func (c *clientIdentityImpl) init() error {
-	fmt.Println("===clientIdentityImpl==init==")
+	logger.Info("===clientIdentityImpl==init==")
 	signingID, err := c.getIdentity()
 	if err != nil {
 		return err
@@ -182,7 +183,7 @@ func (c *clientIdentityImpl) init() error {
 // Unmarshals the bytes returned by ChaincodeStubInterface.GetCreator method and
 // returns the resulting msp.SerializedIdentity object
 func (c *clientIdentityImpl) getIdentity() (*msp.SerializedIdentity, error) {
-	fmt.Println("===clientIdentityImpl==getIdentity==")
+	logger.Info("===clientIdentityImpl==getIdentity==")
 	sid := &msp.SerializedIdentity{}
 	creator, err := c.stub.GetCreator()
 	if err != nil || creator == nil {
@@ -200,7 +201,7 @@ func (c *clientIdentityImpl) getIdentity() (*msp.SerializedIdentity, error) {
 // https://go-review.googlesource.com/c/go/+/67270/1/src/crypto/x509/pkix/pkix.go#26
 // which returns a DN as defined by RFC 2253.
 func getDN(name *pkix.Name) string {
-	fmt.Println("=====getDN==")
+	logger.Info("=====getDN==")
 	r := name.ToRDNSequence()
 	s := ""
 	for i := 0; i < len(r); i++ {

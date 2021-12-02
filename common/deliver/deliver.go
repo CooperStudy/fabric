@@ -83,7 +83,7 @@ type InspectorFunc func(context.Context, proto.Message) error
 
 // Inspect calls inspector(ctx, p)
 func (inspector InspectorFunc) Inspect(ctx context.Context, p proto.Message) error {
-	fmt.Println("======InspectorFunc===Inspect===")
+	logger.Info("======InspectorFunc===Inspect===")
 	return inspector(ctx, p)
 }
 
@@ -127,7 +127,7 @@ type Server struct {
 
 // ExtractChannelHeaderCertHash extracts the TLS cert hash from a channel header.
 func ExtractChannelHeaderCertHash(msg proto.Message) []byte {
-	fmt.Println("======ExtractChannelHeaderCertHash===")
+	logger.Info("======ExtractChannelHeaderCertHash===")
 	chdr, isChannelHeader := msg.(*cb.ChannelHeader)
 	if !isChannelHeader || chdr == nil {
 		return nil
@@ -137,7 +137,7 @@ func ExtractChannelHeaderCertHash(msg proto.Message) []byte {
 
 // NewHandler creates an implementation of the Handler interface.
 func NewHandler(cm ChainManager, timeWindow time.Duration, mutualTLS bool, metrics *Metrics) *Handler {
-	fmt.Println("======NewHandler===")
+	logger.Info("======NewHandler===")
 	return &Handler{
 		ChainManager:     cm,
 		TimeWindow:       timeWindow,
@@ -148,7 +148,7 @@ func NewHandler(cm ChainManager, timeWindow time.Duration, mutualTLS bool, metri
 
 // Handle receives incoming deliver requests.
 func (h *Handler) Handle(ctx context.Context, srv *Server) error {
-	fmt.Println("====Handler==Handle===")
+	logger.Info("====Handler==Handle===")
 	addr := util.ExtractRemoteAddress(ctx)
 	logger.Debugf("Starting new deliver loop for %s", addr)
 	h.Metrics.StreamsOpened.Add(1)
@@ -156,7 +156,7 @@ func (h *Handler) Handle(ctx context.Context, srv *Server) error {
 	for {
 		logger.Debugf("Attempting to read seek info message from %s", addr)
 		envelope, err := srv.Recv()
-		fmt.Println("======srv.Recv=envelope===========")
+		logger.Info("======srv.Recv=envelope===========")
 		if err == io.EOF {
 			logger.Debugf("Received EOF from %s, hangup", addr)
 			return nil
@@ -167,7 +167,7 @@ func (h *Handler) Handle(ctx context.Context, srv *Server) error {
 		}
 
 		status, err := h.deliverBlocks(ctx, srv, envelope)
-		fmt.Println("======h.deliverBlocks==========")
+		logger.Info("======h.deliverBlocks==========")
 		if err != nil {
 			return err
 		}
@@ -186,7 +186,7 @@ func (h *Handler) Handle(ctx context.Context, srv *Server) error {
 }
 
 func isFiltered(srv *Server) bool {
-	fmt.Println("====isFiltered==")
+	logger.Info("====isFiltered==")
 	if filtered, ok := srv.ResponseSender.(Filtered); ok {
 		return filtered.IsFiltered()
 	}
@@ -194,9 +194,9 @@ func isFiltered(srv *Server) bool {
 }
 
 func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.Envelope) (status cb.Status, err error) {
-	fmt.Println("==Handler==deliverBlocks==")
+	logger.Info("==Handler==deliverBlocks==")
 	addr := util.ExtractRemoteAddress(ctx)
-	fmt.Println("=======addr============",addr)
+	logger.Info("=======addr============",addr)
 	payload, err := utils.UnmarshalPayload(envelope.Payload)
 	if err != nil {
 		logger.Warningf("Received an envelope from %s with no payload: %s", addr, err)
@@ -220,7 +220,7 @@ func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.E
 		return cb.Status_BAD_REQUEST, nil
 	}
 
-	fmt.Println("======chdr.ChannelId=============",chdr.ChannelId)
+	logger.Info("======chdr.ChannelId=============",chdr.ChannelId)
 	chain := h.ChainManager.GetChain(chdr.ChannelId)
 	if chain == nil {
 		// Note, we log this at DEBUG because SDKs will poll waiting for channels to be created
@@ -347,7 +347,7 @@ func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.E
 }
 
 func (h *Handler) validateChannelHeader(ctx context.Context, chdr *cb.ChannelHeader) error {
-	fmt.Println("==Handler==validateChannelHeader==")
+	logger.Info("==Handler==validateChannelHeader==")
 	if chdr.GetTimestamp() == nil {
 		err := errors.New("channel header in envelope must contain timestamp")
 		return err

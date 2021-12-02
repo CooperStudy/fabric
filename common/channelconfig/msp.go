@@ -28,7 +28,7 @@ type MSPConfigHandler struct {
 }
 
 func NewMSPConfigHandler(mspVersion msp.MSPVersion) *MSPConfigHandler {
-	fmt.Println("=====NewMSPConfigHandler====")
+	logger.Info("=====NewMSPConfigHandler====")
 	return &MSPConfigHandler{
 		version: mspVersion,
 		idMap:   make(map[string]*pendingMSPConfig),
@@ -37,7 +37,7 @@ func NewMSPConfigHandler(mspVersion msp.MSPVersion) *MSPConfigHandler {
 
 // ProposeValue called when an org defines an MSP
 func (bh *MSPConfigHandler) ProposeMSP(mspConfig *mspprotos.MSPConfig) (msp.MSP, error) {
-	fmt.Println("=====MSPConfigHandler==ProposeMSP==")
+	logger.Info("=====MSPConfigHandler==ProposeMSP==")
 	var theMsp msp.MSP
 	var err error
 
@@ -91,7 +91,7 @@ func (bh *MSPConfigHandler) ProposeMSP(mspConfig *mspprotos.MSPConfig) (msp.MSP,
 }
 
 func (bh *MSPConfigHandler) CreateMSPManager() (msp.MSPManager, error) {
-	fmt.Println("=====MSPConfigHandler==CreateMSPManager==")
+	logger.Info("=====MSPConfigHandler==CreateMSPManager==")
 	mspList := make([]msp.MSP, len(bh.idMap))
 	i := 0
 	for _, pendingMSP := range bh.idMap {

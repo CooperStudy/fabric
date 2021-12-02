@@ -20,7 +20,7 @@ import (
 
 // NewGossipMessageComparator creates a MessageReplacingPolicy given a maximum number of blocks to hold
 func NewGossipMessageComparator(dataBlockStorageSize int) common.MessageReplacingPolicy {
-	//fmt.Println("==========NewGossipMessageComparator==========")
+	//logger.Info("==========NewGossipMessageComparator==========")
 	return (&msgComparator{dataBlockStorageSize: dataBlockStorageSize}).getMsgReplacingPolicy()
 }
 
@@ -29,14 +29,14 @@ type msgComparator struct {
 }
 
 func (mc *msgComparator) getMsgReplacingPolicy() common.MessageReplacingPolicy {
-//	fmt.Println("==========msgComparator===getMsgReplacingPolicy=======")
+//	logger.Info("==========msgComparator===getMsgReplacingPolicy=======")
 	return func(this interface{}, that interface{}) common.InvalidationResult {
 		return mc.invalidationPolicy(this, that)
 	}
 }
 
 func (mc *msgComparator) invalidationPolicy(this interface{}, that interface{}) common.InvalidationResult {
-	//fmt.Println("==========msgComparator===invalidationPolicy=======")
+	//logger.Info("==========msgComparator===invalidationPolicy=======")
 	thisMsg := this.(*SignedGossipMessage)
 	thatMsg := that.(*SignedGossipMessage)
 
@@ -64,7 +64,7 @@ func (mc *msgComparator) invalidationPolicy(this interface{}, that interface{}) 
 }
 
 func (mc *msgComparator) stateInvalidationPolicy(thisStateMsg *StateInfo, thatStateMsg *StateInfo) common.InvalidationResult {
-	//fmt.Println("==========msgComparator===stateInvalidationPolicy=======")
+	//logger.Info("==========msgComparator===stateInvalidationPolicy=======")
 	if !bytes.Equal(thisStateMsg.PkiId, thatStateMsg.PkiId) {
 		return common.MessageNoAction
 	}
@@ -72,7 +72,7 @@ func (mc *msgComparator) stateInvalidationPolicy(thisStateMsg *StateInfo, thatSt
 }
 
 func (mc *msgComparator) identityInvalidationPolicy(thisIdentityMsg *PeerIdentity, thatIdentityMsg *PeerIdentity) common.InvalidationResult {
-	//fmt.Println("==========msgComparator===identityInvalidationPolicy=======")
+	//logger.Info("==========msgComparator===identityInvalidationPolicy=======")
 	if bytes.Equal(thisIdentityMsg.PkiId, thatIdentityMsg.PkiId) {
 		return common.MessageInvalidated
 	}
@@ -81,7 +81,7 @@ func (mc *msgComparator) identityInvalidationPolicy(thisIdentityMsg *PeerIdentit
 }
 
 func (mc *msgComparator) dataInvalidationPolicy(thisDataMsg *DataMessage, thatDataMsg *DataMessage) common.InvalidationResult {
-	//fmt.Println("==========msgComparator===dataInvalidationPolicy=======")
+	//logger.Info("==========msgComparator===dataInvalidationPolicy=======")
 	if thisDataMsg.Payload.SeqNum == thatDataMsg.Payload.SeqNum {
 		return common.MessageInvalidated
 	}
@@ -98,7 +98,7 @@ func (mc *msgComparator) dataInvalidationPolicy(thisDataMsg *DataMessage, thatDa
 }
 
 func aliveInvalidationPolicy(thisMsg *AliveMessage, thatMsg *AliveMessage) common.InvalidationResult {
-	//fmt.Println("==========aliveInvalidationPolicy======")
+	//logger.Info("==========aliveInvalidationPolicy======")
 	if !bytes.Equal(thisMsg.Membership.PkiId, thatMsg.Membership.PkiId) {
 		return common.MessageNoAction
 	}
@@ -107,7 +107,7 @@ func aliveInvalidationPolicy(thisMsg *AliveMessage, thatMsg *AliveMessage) commo
 }
 
 func leaderInvalidationPolicy(thisMsg *LeadershipMessage, thatMsg *LeadershipMessage) common.InvalidationResult {
-	//fmt.Println("==========leaderInvalidationPolicy======")
+	//logger.Info("==========leaderInvalidationPolicy======")
 	if !bytes.Equal(thisMsg.PkiId, thatMsg.PkiId) {
 		return common.MessageNoAction
 	}
@@ -116,7 +116,7 @@ func leaderInvalidationPolicy(thisMsg *LeadershipMessage, thatMsg *LeadershipMes
 }
 
 func compareTimestamps(thisTS *PeerTime, thatTS *PeerTime) common.InvalidationResult {
-	//fmt.Println("==========compareTimestamps======")
+	//logger.Info("==========compareTimestamps======")
 	if thisTS.IncNum == thatTS.IncNum {
 		if thisTS.SeqNum > thatTS.SeqNum {
 			return common.MessageInvalidates
@@ -132,46 +132,46 @@ func compareTimestamps(thisTS *PeerTime, thatTS *PeerTime) common.InvalidationRe
 
 // IsAliveMsg returns whether this GossipMessage is an AliveMessage
 func (m *GossipMessage) IsAliveMsg() bool {
-	//fmt.Println("==========GossipMessage==IsAliveMsg====")
+	//logger.Info("==========GossipMessage==IsAliveMsg====")
 	return m.GetAliveMsg() != nil
 }
 
 // IsDataMsg returns whether this GossipMessage is a data message
 func (m *GossipMessage) IsDataMsg() bool {
-//	fmt.Println("==========GossipMessage==IsDataMsg====")
-	//fmt.Println("====m.GetDataMsg()======",m.GetDataMsg())
+//	logger.Info("==========GossipMessage==IsDataMsg====")
+	//logger.Info("====m.GetDataMsg()======",m.GetDataMsg())
 	return m.GetDataMsg() != nil
 }
 
 // IsStateInfoPullRequestMsg returns whether this GossipMessage is a stateInfoPullRequest
 func (m *GossipMessage) IsStateInfoPullRequestMsg() bool {
-	//fmt.Println("==========GossipMessage==IsStateInfoPullRequestMsg====")
+	//logger.Info("==========GossipMessage==IsStateInfoPullRequestMsg====")
 	return m.GetStateInfoPullReq() != nil
 }
 
 // IsStateInfoSnapshot returns whether this GossipMessage is a stateInfo snapshot
 func (m *GossipMessage) IsStateInfoSnapshot() bool {
-	//fmt.Println("==========GossipMessage==IsStateInfoSnapshot====")
+	//logger.Info("==========GossipMessage==IsStateInfoSnapshot====")
 	return m.GetStateSnapshot() != nil
 }
 
 // IsStateInfoMsg returns whether this GossipMessage is a stateInfo message
 func (m *GossipMessage) IsStateInfoMsg() bool {
-	//fmt.Println("==========GossipMessage==IsStateInfoMsg====")
+	//logger.Info("==========GossipMessage==IsStateInfoMsg====")
 	return m.GetStateInfo() != nil
 }
 
 // IsPullMsg returns whether this GossipMessage is a message that belongs
 // to the pull mechanism
 func (m *GossipMessage) IsPullMsg() bool {
-	//fmt.Println("==========GossipMessage==IsPullMsg====")
+	//logger.Info("==========GossipMessage==IsPullMsg====")
 	return m.GetDataReq() != nil || m.GetDataUpdate() != nil ||
 		m.GetHello() != nil || m.GetDataDig() != nil
 }
 
 // IsRemoteStateMessage returns whether this GossipMessage is related to state synchronization
 func (m *GossipMessage) IsRemoteStateMessage() bool {
-	//fmt.Println("==========GossipMessage==IsRemoteStateMessage====")
+	//logger.Info("==========GossipMessage==IsRemoteStateMessage====")
 	return m.GetStateRequest() != nil || m.GetStateResponse() != nil
 }
 
@@ -179,7 +179,7 @@ func (m *GossipMessage) IsRemoteStateMessage() bool {
 // for example: Hello, Digest, etc.
 // If this isn't a pull message, PullMsgType_UNDEFINED is returned.
 func (m *GossipMessage) GetPullMsgType() PullMsgType {
-	//fmt.Println("==========GossipMessage==GetPullMsgType====")
+	//logger.Info("==========GossipMessage==GetPullMsgType====")
 	if helloMsg := m.GetHello(); helloMsg != nil {
 		return helloMsg.MsgType
 	}
@@ -202,66 +202,66 @@ func (m *GossipMessage) GetPullMsgType() PullMsgType {
 // IsChannelRestricted returns whether this GossipMessage should be routed
 // only in its channel
 func (m *GossipMessage) IsChannelRestricted() bool {
-	//fmt.Println("==========GossipMessage==IsChannelRestricted====")
+	//logger.Info("==========GossipMessage==IsChannelRestricted====")
 	return m.Tag == GossipMessage_CHAN_AND_ORG || m.Tag == GossipMessage_CHAN_ONLY || m.Tag == GossipMessage_CHAN_OR_ORG
 }
 
 // IsOrgRestricted returns whether this GossipMessage should be routed only
 // inside the organization
 func (m *GossipMessage) IsOrgRestricted() bool {
-	//fmt.Println("==========GossipMessage==IsOrgRestricted====")
+	//logger.Info("==========GossipMessage==IsOrgRestricted====")
 	return m.Tag == GossipMessage_CHAN_AND_ORG || m.Tag == GossipMessage_ORG_ONLY
 }
 
 // IsIdentityMsg returns whether this GossipMessage is an identity message
 func (m *GossipMessage) IsIdentityMsg() bool {
-	//fmt.Println("==========GossipMessage==IsIdentityMsg====")
+	//logger.Info("==========GossipMessage==IsIdentityMsg====")
 	return m.GetPeerIdentity() != nil
 }
 
 // IsDataReq returns whether this GossipMessage is a data request message
 func (m *GossipMessage) IsDataReq() bool {
-	//fmt.Println("==========GossipMessage==IsDataReq====")
+	//logger.Info("==========GossipMessage==IsDataReq====")
 	return m.GetDataReq() != nil
 }
 
 // IsPrivateDataMsg returns whether this message is related to private data
 func (m *GossipMessage) IsPrivateDataMsg() bool {
-	//fmt.Println("==========GossipMessage==IsPrivateDataMsg====")
-	//fmt.Println("============m.GetPrivateReq()============",m.GetPrivateReq())
-	//fmt.Println("============m.GetPrivateRes()============",m.GetPrivateRes())
-	//fmt.Println("============m.GetPrivateData()============",m.GetPrivateData())
+	//logger.Info("==========GossipMessage==IsPrivateDataMsg====")
+	//logger.Info("============m.GetPrivateReq()============",m.GetPrivateReq())
+	//logger.Info("============m.GetPrivateRes()============",m.GetPrivateRes())
+	//logger.Info("============m.GetPrivateData()============",m.GetPrivateData())
 	return m.GetPrivateReq() != nil || m.GetPrivateRes() != nil || m.GetPrivateData() != nil
 }
 
 // IsAck returns whether this GossipMessage is an acknowledgement
 func (m *GossipMessage) IsAck() bool {
-	//fmt.Println("==========GossipMessage==IsAck====")
-//	fmt.Println("=========m.GetAck() != nil============",m.GetAck() != nil)
+	//logger.Info("==========GossipMessage==IsAck====")
+//	logger.Info("=========m.GetAck() != nil============",m.GetAck() != nil)
 	return m.GetAck() != nil
 }
 
 // IsDataUpdate returns whether this GossipMessage is a data update message
 func (m *GossipMessage) IsDataUpdate() bool {
-	//fmt.Println("==========GossipMessage==IsDataUpdate====")
+	//logger.Info("==========GossipMessage==IsDataUpdate====")
 	return m.GetDataUpdate() != nil
 }
 
 // IsHelloMsg returns whether this GossipMessage is a hello message
 func (m *GossipMessage) IsHelloMsg() bool {
-	//fmt.Println("==========GossipMessage==IsHelloMsg====")
+	//logger.Info("==========GossipMessage==IsHelloMsg====")
 	return m.GetHello() != nil
 }
 
 // IsDigestMsg returns whether this GossipMessage is a digest message
 func (m *GossipMessage) IsDigestMsg() bool {
-	//fmt.Println("==========GossipMessage==IsDigestMsg====")
+	//logger.Info("==========GossipMessage==IsDigestMsg====")
 	return m.GetDataDig() != nil
 }
 
 // IsLeadershipMsg returns whether this GossipMessage is a leadership (leader election) message
 func (m *GossipMessage) IsLeadershipMsg() bool {
-	//fmt.Println("==========GossipMessage==IsLeadershipMsg====")
+	//logger.Info("==========GossipMessage==IsLeadershipMsg====")
 	return m.GetLeadershipMsg() != nil
 }
 
@@ -274,22 +274,22 @@ type IdentifierExtractor func(*SignedGossipMessage) string
 // IsTagLegal checks the GossipMessage tags and inner type
 // and returns an error if the tag doesn't match the type.
 func (m *GossipMessage) IsTagLegal() error {
-	//fmt.Println("==========GossipMessage==IsTagLegal====")
+	//logger.Info("==========GossipMessage==IsTagLegal====")
 	if m.Tag == GossipMessage_UNDEFINED {
-		//fmt.Println("========= m.Tag == GossipMessage_UNDEFINED ========")
+		//logger.Info("========= m.Tag == GossipMessage_UNDEFINED ========")
 		return fmt.Errorf("Undefined tag")
 	}
 	if m.IsDataMsg() {
-	//	fmt.Println("=========m.IsDataMsg()========",m.IsDataMsg())
+	//	logger.Info("=========m.IsDataMsg()========",m.IsDataMsg())
 		if m.Tag != GossipMessage_CHAN_AND_ORG {
-		//	fmt.Println("=========  m.Tag != GossipMessage_CHAN_AND_ORG  ========")
+		//	logger.Info("=========  m.Tag != GossipMessage_CHAN_AND_ORG  ========")
 			return fmt.Errorf("Tag should be %s", GossipMessage_Tag_name[int32(GossipMessage_CHAN_AND_ORG)])
 		}
 		return nil
 	}
 
 	if m.IsAliveMsg() || m.GetMemReq() != nil || m.GetMemRes() != nil {
-		//fmt.Println("=========m.IsAliveMsg() || m.GetMemReq() != nil || m.GetMemRes() != nil ========")
+		//logger.Info("=========m.IsAliveMsg() || m.GetMemReq() != nil || m.GetMemRes() != nil ========")
 		if m.Tag != GossipMessage_EMPTY {
 			return fmt.Errorf("Tag should be %s", GossipMessage_Tag_name[int32(GossipMessage_EMPTY)])
 		}
@@ -297,7 +297,7 @@ func (m *GossipMessage) IsTagLegal() error {
 	}
 
 	if m.IsIdentityMsg() {
-		//fmt.Println("========m.IsIdentityMsg=========")
+		//logger.Info("========m.IsIdentityMsg=========")
 		if m.Tag != GossipMessage_ORG_ONLY {
 			return fmt.Errorf("Tag should be %s", GossipMessage_Tag_name[int32(GossipMessage_ORG_ONLY)])
 		}
@@ -305,7 +305,7 @@ func (m *GossipMessage) IsTagLegal() error {
 	}
 
 	if m.IsPullMsg() {
-		//fmt.Println("====== m.IsPullMsg========")
+		//logger.Info("====== m.IsPullMsg========")
 		switch m.GetPullMsgType() {
 		case PullMsgType_BLOCK_MSG:
 			if m.Tag != GossipMessage_CHAN_AND_ORG {
@@ -323,7 +323,7 @@ func (m *GossipMessage) IsTagLegal() error {
 	}
 
 	if m.IsStateInfoMsg() || m.IsStateInfoPullRequestMsg() || m.IsStateInfoSnapshot() || m.IsRemoteStateMessage() {
-		//fmt.Println("====== m.IsStateInfoMsg() || m.IsStateInfoPullRequestMsg() || m.IsStateInfoSnapshot() || m.IsRemoteStateMessage() ========")
+		//logger.Info("====== m.IsStateInfoMsg() || m.IsStateInfoPullRequestMsg() || m.IsStateInfoSnapshot() || m.IsRemoteStateMessage() ========")
 		if m.Tag != GossipMessage_CHAN_OR_ORG {
 			return fmt.Errorf("Tag should be %s", GossipMessage_Tag_name[int32(GossipMessage_CHAN_OR_ORG)])
 		}
@@ -331,7 +331,7 @@ func (m *GossipMessage) IsTagLegal() error {
 	}
 
 	if m.IsLeadershipMsg() {
-		//fmt.Println("====== m.IsLeadershipMsg ========")
+		//logger.Info("====== m.IsLeadershipMsg ========")
 		if m.Tag != GossipMessage_CHAN_AND_ORG {
 			return fmt.Errorf("Tag should be %s", GossipMessage_Tag_name[int32(GossipMessage_CHAN_AND_ORG)])
 		}
@@ -389,7 +389,7 @@ type ConnectionInfo struct {
 
 // String returns a string representation of this ConnectionInfo
 func (c *ConnectionInfo) String() string {
-	//fmt.Println("==========ConnectionInfo==String====")
+	//logger.Info("==========ConnectionInfo==String====")
 	return fmt.Sprintf("%s %v", c.Endpoint, c.ID)
 }
 
@@ -405,19 +405,19 @@ type AuthInfo struct {
 // Returns an Envelope on success,
 // panics on failure.
 func (m *SignedGossipMessage) Sign(signer Signer) (*Envelope, error) {
-	//fmt.Println("==========SignedGossipMessage==Sign====")
+	//logger.Info("==========SignedGossipMessage==Sign====")
 	// If we have a secretEnvelope, don't override it.
 
 	// Back it up, and restore it later
 	var secretEnvelope *SecretEnvelope
-//	fmt.Println("======= m.Envelope==========", m.Envelope)
+//	logger.Info("======= m.Envelope==========", m.Envelope)
 	if m.Envelope != nil {
-	//	fmt.Println("=======secretEnvelope==========", secretEnvelope)
+	//	logger.Info("=======secretEnvelope==========", secretEnvelope)
 		secretEnvelope = m.Envelope.SecretEnvelope
 	}
 	m.Envelope = nil
 	payload, err := proto.Marshal(m.GossipMessage)
-	//fmt.Println("======payload=======",payload)
+	//logger.Info("======payload=======",payload)
 	if err != nil {
 		return nil, err
 	}
@@ -425,27 +425,27 @@ func (m *SignedGossipMessage) Sign(signer Signer) (*Envelope, error) {
 	if err != nil {
 		return nil, err
 	}
-	//fmt.Println("=====sig========",sig)
+	//logger.Info("=====sig========",sig)
 
 	e := &Envelope{
 		Payload:        payload,
 		Signature:      sig,
 		SecretEnvelope: secretEnvelope,
 	}
-	//fmt.Println("============Payload==============",payload)
-	//fmt.Println("============Signature==============",sig)
-	//fmt.Println("============SecretEnvelope==============",secretEnvelope)
+	//logger.Info("============Payload==============",payload)
+	//logger.Info("============Signature==============",sig)
+	//logger.Info("============SecretEnvelope==============",secretEnvelope)
 	m.Envelope = e
 	return e, nil
 }
 
 // NoopSign creates a SignedGossipMessage with a nil signature
 func (m *GossipMessage) NoopSign() (*SignedGossipMessage, error) {
-	//fmt.Println("==========GossipMessage==NoopSign====")
+	//logger.Info("==========GossipMessage==NoopSign====")
 	signer := func(msg []byte) ([]byte, error) {
-		//fmt.Println("========NoopSign======signer=========")
-		//fmt.Println("======msg=======",msg)
-		//fmt.Println("======return nil nil==================")
+		//logger.Info("========NoopSign======signer=========")
+		//logger.Info("======msg=======",msg)
+		//logger.Info("======return nil nil==================")
 		return nil, nil
 	}
 	sMsg := &SignedGossipMessage{
@@ -458,7 +458,7 @@ func (m *GossipMessage) NoopSign() (*SignedGossipMessage, error) {
 // Verify verifies a signed GossipMessage with a given Verifier.
 // Returns nil on success, error on failure.
 func (m *SignedGossipMessage) Verify(peerIdentity []byte, verify Verifier) error {
-	//fmt.Println("==========SignedGossipMessage==Verify====")
+	//logger.Info("==========SignedGossipMessage==Verify====")
 	if m.Envelope == nil {
 		return errors.New("Missing envelope")
 	}
@@ -489,7 +489,7 @@ func (m *SignedGossipMessage) Verify(peerIdentity []byte, verify Verifier) error
 // IsSigned returns whether the message
 // has a signature in the envelope.
 func (m *SignedGossipMessage) IsSigned() bool {
-	//fmt.Println("==========SignedGossipMessage==IsSigned====")
+	//logger.Info("==========SignedGossipMessage==IsSigned====")
 	return m.Envelope != nil && m.Envelope.Payload != nil && m.Envelope.Signature != nil
 }
 
@@ -497,7 +497,7 @@ func (m *SignedGossipMessage) IsSigned() bool {
 // SignedGossipMessage out of it.
 // Returns an error if un-marshaling fails.
 func (e *Envelope) ToGossipMessage() (*SignedGossipMessage, error) {
-	//fmt.Println("==========Envelope==ToGossipMessage====")
+	//logger.Info("==========Envelope==ToGossipMessage====")
 	if e == nil {
 		return nil, errors.New("nil envelope")
 	}
@@ -515,17 +515,17 @@ func (e *Envelope) ToGossipMessage() (*SignedGossipMessage, error) {
 // SignSecret signs the secret payload and creates
 // a secret envelope out of it.
 func (e *Envelope) SignSecret(signer Signer, secret *Secret) error {
-	//fmt.Println("==========Envelope==SignSecret====")
+	//logger.Info("==========Envelope==SignSecret====")
 	payload, err := proto.Marshal(secret)
 	if err != nil {
 		return err
 	}
-	//fmt.Println("======payload==============",payload)
+	//logger.Info("======payload==============",payload)
 	sig, err := signer(payload)
 	if err != nil {
 		return err
 	}
-	//fmt.Println("======sig==============",sig)
+	//logger.Info("======sig==============",sig)
 	e.SecretEnvelope = &SecretEnvelope{
 		Payload:   payload,
 		Signature: sig,
@@ -537,7 +537,7 @@ func (e *Envelope) SignSecret(signer Signer, secret *Secret) error {
 // in the secret envelope, or an empty string
 // if a failure occurs.
 func (s *SecretEnvelope) InternalEndpoint() string {
-	//fmt.Println("==========SecretEnvelope==InternalEndpoint====")
+	//logger.Info("==========SecretEnvelope==InternalEndpoint====")
 	secret := &Secret{}
 	if err := proto.Unmarshal(s.Payload, secret); err != nil {
 		return ""
@@ -553,86 +553,86 @@ type SignedGossipMessage struct {
 }
 
 func (p *Payload) toString() string {
-//	fmt.Println("==========Payload==toString====")
+//	logger.Info("==========Payload==toString====")
 	return fmt.Sprintf("Block message: {Data: %d bytes, seq: %d}", len(p.Data), p.SeqNum)
 }
 
 func (du *DataUpdate) toString() string {
-	//fmt.Println("==========DataUpdate==toString====")
+	//logger.Info("==========DataUpdate==toString====")
 	mType := PullMsgType_name[int32(du.MsgType)]
 	return fmt.Sprintf("Type: %s, items: %d, nonce: %d", mType, len(du.Data), du.Nonce)
 }
 
 func (mr *MembershipResponse) toString() string {
-	//fmt.Println("==========MembershipResponse==toString====")
+	//logger.Info("==========MembershipResponse==toString====")
 	return fmt.Sprintf("MembershipResponse with Alive: %d, Dead: %d", len(mr.Alive), len(mr.Dead))
 }
 
 func (sis *StateInfoSnapshot) toString() string {
-	//fmt.Println("==========StateInfoSnapshot==toString====")
+	//logger.Info("==========StateInfoSnapshot==toString====")
 	return fmt.Sprintf("StateInfoSnapshot with %d items", len(sis.Elements))
 }
 
 // String returns a string representation
 // of a SignedGossipMessage
 func (m *SignedGossipMessage) String() string {
-	//fmt.Println("==========SignedGossipMessage==String====")
+	//logger.Info("==========SignedGossipMessage==String====")
 	env := "No envelope"
 	if m.Envelope != nil {
-		//fmt.Println("========m.Envelope != nil========")
+		//logger.Info("========m.Envelope != nil========")
 		var secretEnv string
-		//fmt.Println("=======m.SecretEnvelope ========",m.SecretEnvelope)
+		//logger.Info("=======m.SecretEnvelope ========",m.SecretEnvelope)
 		if m.SecretEnvelope != nil {
 			pl := len(m.SecretEnvelope.Payload)
 			sl := len(m.SecretEnvelope.Signature)
 			secretEnv = fmt.Sprintf(" Secret payload: %d bytes, Secret Signature: %d bytes", pl, sl)
-			//fmt.Println("=================pl",pl)
-			//fmt.Println("=================sl",sl)
-			//fmt.Println("=================secretEnv",secretEnv)
+			//logger.Info("=================pl",pl)
+			//logger.Info("=================sl",sl)
+			//logger.Info("=================secretEnv",secretEnv)
 		}
 		env = fmt.Sprintf("%d bytes, Signature: %d bytes%s", len(m.Envelope.Payload), len(m.Envelope.Signature), secretEnv)
-		//fmt.Println("============env===============",env)
+		//logger.Info("============env===============",env)
 	}
 	gMsg := "No gossipMessage"
 	if m.GossipMessage != nil {
 		var isSimpleMsg bool
 		if m.GetStateResponse() != nil {
-			//fmt.Println("=========m.GetStateResponse() != nil====================")
+			//logger.Info("=========m.GetStateResponse() != nil====================")
 			gMsg = fmt.Sprintf("StateResponse with %d items", len(m.GetStateResponse().Payloads))
 		} else if m.IsDataMsg() && m.GetDataMsg().Payload != nil {
 			gMsg = m.GetDataMsg().Payload.toString()
-			//fmt.Println("========else if m.IsDataMsg() && m.GetDataMsg().Payload != nil===================")
+			//logger.Info("========else if m.IsDataMsg() && m.GetDataMsg().Payload != nil===================")
 		} else if m.IsDataUpdate() {
-			//fmt.Println("========m.IsDataUpdate()===================")
+			//logger.Info("========m.IsDataUpdate()===================")
 			update := m.GetDataUpdate()
 			gMsg = fmt.Sprintf("DataUpdate: %s", update.toString())
 		} else if m.GetMemRes() != nil {
-			//fmt.Println("========m.GetMemRes() != nil==================")
+			//logger.Info("========m.GetMemRes() != nil==================")
 			gMsg = m.GetMemRes().toString()
 		} else if m.IsStateInfoSnapshot() {
-			//fmt.Println("========m.IsStateInfoSnapshot()==================")
+			//logger.Info("========m.IsStateInfoSnapshot()==================")
 			gMsg = m.GetStateSnapshot().toString()
 		} else if m.GetPrivateRes() != nil {
-			//fmt.Println("========m.GetPrivateRes() != nil=================")
+			//logger.Info("========m.GetPrivateRes() != nil=================")
 			gMsg = m.GetPrivateRes().ToString()
 		} else {
-			//fmt.Println("========else=================")
+			//logger.Info("========else=================")
 			gMsg = m.GossipMessage.String()
 			isSimpleMsg = true
 		}
 		if !isSimpleMsg {
 			desc := fmt.Sprintf("Channel: %s, nonce: %d, tag: %s", string(m.Channel), m.Nonce, GossipMessage_Tag_name[int32(m.Tag)])
 			gMsg = fmt.Sprintf("%s %s", desc, gMsg)
-			//fmt.Println("===========desc========",desc)
+			//logger.Info("===========desc========",desc)
 		}
 	}
-	//fmt.Println("=========gMsg============",gMsg)
-	//fmt.Println("=========env============",env)
+	//logger.Info("=========gMsg============",gMsg)
+	//logger.Info("=========env============",env)
 	return fmt.Sprintf("GossipMessage: %v, Envelope: %s", gMsg, env)
 }
 
 func (dd *DataRequest) FormattedDigests() []string {
-	//fmt.Println("==========DataRequest==FormattedDigests====")
+	//logger.Info("==========DataRequest==FormattedDigests====")
 	if dd.MsgType == PullMsgType_IDENTITY_MSG {
 		return digestsToHex(dd.Digests)
 	}
@@ -641,7 +641,7 @@ func (dd *DataRequest) FormattedDigests() []string {
 }
 
 func (dd *DataDigest) FormattedDigests() []string {
-	//fmt.Println("==========DataDigest==FormattedDigests====")
+	//logger.Info("==========DataDigest==FormattedDigests====")
 	if dd.MsgType == PullMsgType_IDENTITY_MSG {
 		return digestsToHex(dd.Digests)
 	}
@@ -650,7 +650,7 @@ func (dd *DataDigest) FormattedDigests() []string {
 
 // Hash returns the SHA256 representation of the PvtDataDigest's bytes
 func (dig *PvtDataDigest) Hash() (string, error) {
-	fmt.Println("==========PvtDataDigest==Hash====")
+	logger.Info("==========PvtDataDigest==Hash====")
 	b, err := proto.Marshal(dig)
 	if err != nil {
 		return "", err
@@ -660,7 +660,7 @@ func (dig *PvtDataDigest) Hash() (string, error) {
 
 // ToString returns a string representation of this RemotePvtDataResponse
 func (res *RemotePvtDataResponse) ToString() string {
-	//fmt.Println("==========RemotePvtDataResponse==ToString====")
+	//logger.Info("==========RemotePvtDataResponse==ToString====")
 	a := make([]string, len(res.Elements))
 	for i, el := range res.Elements {
 		a[i] = fmt.Sprintf("%s with %d elements", el.Digest.String(), len(el.Payload))
@@ -669,7 +669,7 @@ func (res *RemotePvtDataResponse) ToString() string {
 }
 
 func digestsAsStrings(digests [][]byte) []string {
-	//fmt.Println("==========digestsAsStrings====")
+	//logger.Info("==========digestsAsStrings====")
 	a := make([]string, len(digests))
 	for i, dig := range digests {
 		a[i] = string(dig)
@@ -678,7 +678,7 @@ func digestsAsStrings(digests [][]byte) []string {
 }
 
 func digestsToHex(digests [][]byte) []string {
-	//fmt.Println("==========digestsToHex====")
+	//logger.Info("==========digestsToHex====")
 	a := make([]string, len(digests))
 	for i, dig := range digests {
 		a[i] = hex.EncodeToString(dig)
@@ -689,7 +689,7 @@ func digestsToHex(digests [][]byte) []string {
 // LedgerHeight returns the ledger height that is specified
 // in the StateInfo message
 func (msg *StateInfo) LedgerHeight() (uint64, error) {
-	//fmt.Println("==========StateInfo==LedgerHeight==")
+	//logger.Info("==========StateInfo==LedgerHeight==")
 	if msg.Properties != nil {
 		return msg.Properties.LedgerHeight, nil
 	}
@@ -698,7 +698,7 @@ func (msg *StateInfo) LedgerHeight() (uint64, error) {
 
 // Abs returns abs(a-b)
 func abs(a, b uint64) uint64 {
-	//fmt.Println("========abs==")
+	//logger.Info("========abs==")
 	if a > b {
 		return a - b
 	}

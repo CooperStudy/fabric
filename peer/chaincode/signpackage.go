@@ -27,7 +27,7 @@ import (
 
 // signpackageCmd returns the cobra command for signing a package
 func signpackageCmd(cf *ChaincodeCmdFactory) *cobra.Command {
-	fmt.Println("========signpackageCmd==========")
+	logger.Info("========signpackageCmd==========")
 	spCmd := &cobra.Command{
 		Use:       "signpackage",
 		Short:     "Sign the specified chaincode package",
@@ -45,7 +45,7 @@ func signpackageCmd(cf *ChaincodeCmdFactory) *cobra.Command {
 }
 
 func signpackage(cmd *cobra.Command, ipackageFile string, opackageFile string, cf *ChaincodeCmdFactory) error {
-	fmt.Println("========signpackage==========")
+	logger.Info("========signpackage==========")
 	// Parsing of the command line is done so silence cmd usage
 	cmd.SilenceUsage = true
 

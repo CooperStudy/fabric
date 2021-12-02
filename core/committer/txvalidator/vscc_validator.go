@@ -37,7 +37,7 @@ type VsccValidatorImpl struct {
 
 // newVSCCValidator creates new vscc validator
 func newVSCCValidator(chainID string, support Support, sccp sysccprovider.SystemChaincodeProvider, pluginValidator *PluginValidator) *VsccValidatorImpl {
-	fmt.Println("==newVSCCValidator==")
+	logger.Info("==newVSCCValidator==")
 	return &VsccValidatorImpl{
 		chainID:         chainID,
 		support:         support,
@@ -48,7 +48,7 @@ func newVSCCValidator(chainID string, support Support, sccp sysccprovider.System
 
 // VSCCValidateTx executes vscc validation for transaction
 func (v *VsccValidatorImpl) VSCCValidateTx(seq int, payload *common.Payload, envBytes []byte, block *common.Block) (error, peer.TxValidationCode) {
-	fmt.Println("==VsccValidatorImpl==VSCCValidateTx==")
+	logger.Info("==VsccValidatorImpl==VSCCValidateTx==")
 	chainID := v.chainID
 	logger.Debugf("[%s] VSCCValidateTx starts for bytes %p", chainID, envBytes)
 
@@ -262,7 +262,7 @@ func (v *VsccValidatorImpl) VSCCValidateTx(seq int, payload *common.Payload, env
 }
 
 func (v *VsccValidatorImpl) VSCCValidateTxForCC(ctx *Context) error {
-	fmt.Println("==VsccValidatorImpl==VSCCValidateTxForCC==")
+	logger.Info("==VsccValidatorImpl==VSCCValidateTxForCC==")
 	logger.Debug("Validating", ctx, "with plugin")
 	err := v.pluginValidator.ValidateWithPlugin(ctx)
 	if err == nil {
@@ -277,7 +277,7 @@ func (v *VsccValidatorImpl) VSCCValidateTxForCC(ctx *Context) error {
 }
 
 func (v *VsccValidatorImpl) getCDataForCC(chid, ccid string) (ccprovider.ChaincodeDefinition, error) {
-	fmt.Println("==VsccValidatorImpl==getCDataForCC==")
+	logger.Info("==VsccValidatorImpl==getCDataForCC==")
 	l := v.support.Ledger()
 	if l == nil {
 		return nil, errors.New("nil ledger instance")
@@ -319,7 +319,7 @@ func (v *VsccValidatorImpl) getCDataForCC(chid, ccid string) (ccprovider.Chainco
 
 // GetInfoForValidate gets the ChaincodeInstance(with latest version) of tx, vscc and policy from lscc
 func (v *VsccValidatorImpl) GetInfoForValidate(chdr *common.ChannelHeader, ccID string) (*sysccprovider.ChaincodeInstance, *sysccprovider.ChaincodeInstance, []byte, error) {
-	fmt.Println("==VsccValidatorImpl==GetInfoForValidate==")
+	logger.Info("==VsccValidatorImpl==GetInfoForValidate==")
 	cc := &sysccprovider.ChaincodeInstance{
 		ChainID:          chdr.ChannelId,
 		ChaincodeName:    ccID,
@@ -364,7 +364,7 @@ func (v *VsccValidatorImpl) GetInfoForValidate(chdr *common.ChannelHeader, ccID 
 // txWritesToNamespace returns true if the supplied NsRwSet
 // performs a ledger write
 func (v *VsccValidatorImpl) txWritesToNamespace(ns *rwsetutil.NsRwSet) bool {
-	fmt.Println("==VsccValidatorImpl==txWritesToNamespace==")
+	logger.Info("==VsccValidatorImpl==txWritesToNamespace==")
 	// check for public writes first
 	if ns.KvRwSet != nil && len(ns.KvRwSet.Writes) > 0 {
 		return true

@@ -36,7 +36,7 @@ type defaultACLProvider struct {
 }
 
 func NewDefaultACLProvider() ACLProvider {
-	fmt.Println("====NewDefaultACLProvider============")
+	logger.Info("====NewDefaultACLProvider============")
 	d := &defaultACLProvider{}
 	d.initialize()
 
@@ -44,7 +44,7 @@ func NewDefaultACLProvider() ACLProvider {
 }
 
 func (d *defaultACLProvider) initialize() {
-	fmt.Println("====defaultACLProvider=====initialize=======")
+	logger.Info("====defaultACLProvider=====initialize=======")
 	d.policyChecker = policy.NewPolicyChecker(
 		peer.NewChannelPolicyManagerGetter(),
 		mgmt.GetLocalMSP(),
@@ -103,7 +103,7 @@ func (d *defaultACLProvider) initialize() {
 
 //this should cover an exhaustive list of everything called from the peer
 func (d *defaultACLProvider) defaultPolicy(resName string, cprovider bool) string {
-	fmt.Println("====defaultACLProvider=====defaultPolicy=======")
+	logger.Info("====defaultACLProvider=====defaultPolicy=======")
 	var pol string
 	if cprovider {
 		pol = d.cResourcePolicyMap[resName]
@@ -115,10 +115,10 @@ func (d *defaultACLProvider) defaultPolicy(resName string, cprovider bool) strin
 
 //CheckACL provides default (v 1.0) behavior by mapping resources to their ACL for a channel
 func (d *defaultACLProvider) CheckACL(resName string, channelID string, idinfo interface{}) error {
-	fmt.Println("====defaultACLProvider=====CheckACL=======")
+	logger.Info("====defaultACLProvider=====CheckACL=======")
 	policy := d.defaultPolicy(resName, true)
 	if policy == "" {
-		aclLogger.Errorf("Unmapped policy for %s", resName)
+		logger.Errorf("Unmapped policy for %s", resName)
 		return fmt.Errorf("Unmapped policy for %s", resName)
 	}
 
@@ -134,7 +134,7 @@ func (d *defaultACLProvider) CheckACL(resName string, channelID string, idinfo i
 	case []*common.SignedData:
 		return d.policyChecker.CheckPolicyBySignedData(channelID, policy, typedData)
 	default:
-		aclLogger.Errorf("Unmapped id on checkACL %s", resName)
+		logger.Errorf("Unmapped id on checkACL %s", resName)
 		return fmt.Errorf("Unknown id on checkACL %s", resName)
 	}
 }

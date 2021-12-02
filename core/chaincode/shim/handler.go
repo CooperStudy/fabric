@@ -32,7 +32,7 @@ type PeerChaincodeStream interface {
 }
 
 func (handler *Handler) triggerNextState(msg *pb.ChaincodeMessage, errc chan error) {
-	fmt.Println("=====Handler===triggerNextState===================")
+	logger.Info("=====Handler===triggerNextState===================")
 	chaincodeLogger.Infof("[%s] send state message %s", shorttxid(msg.Txid), msg.Type)
 	handler.serialSendAsync(msg, errc)
 }
@@ -56,7 +56,7 @@ type Handler struct {
 }
 
 func shorttxid(txid string) string {
-	fmt.Println("=====shorttxid===================")
+	logger.Info("=====shorttxid===================")
 	if len(txid) < 8 {
 		return txid
 	}
@@ -65,7 +65,7 @@ func shorttxid(txid string) string {
 
 //serialSend serializes msgs so gRPC will be happy
 func (handler *Handler) serialSend(msg *pb.ChaincodeMessage) error {
-	fmt.Println("=====Handler========serialSend===========")
+	logger.Info("=====Handler========serialSend===========")
 	handler.serialLock.Lock()
 	defer handler.serialLock.Unlock()
 
@@ -80,8 +80,8 @@ func (handler *Handler) serialSend(msg *pb.ChaincodeMessage) error {
 //communication on supplied error channel. A typical use will be a non-blocking or
 //nil channel
 func (handler *Handler) serialSendAsync(msg *pb.ChaincodeMessage, errc chan error) {
-	fmt.Println("=====Handler========serialSendAsync===========")
-	fmt.Println("========msg======",msg)
+	logger.Info("=====Handler========serialSendAsync===========")
+	logger.Info("========msg======",msg)
 	go func() {
 		err := handler.serialSend(msg)
 		if errc != nil {
@@ -94,19 +94,19 @@ func (handler *Handler) serialSendAsync(msg *pb.ChaincodeMessage, errc chan erro
 //needed for CC-2-CC, it also allows users to concurrently send proposals
 //with the same TXID to a CC on two multiple channels
 func (handler *Handler) getTxCtxId(chainID string, txid string) string {
-	fmt.Println("=====Handler========getTxCtxId===========")
+	logger.Info("=====Handler========getTxCtxId===========")
 	return chainID + txid
 }
 
 func (handler *Handler) createChannel(channelID, txid string) (chan pb.ChaincodeMessage, error) {
-	fmt.Println("=====Handler========createChannel===========")
+	logger.Info("=====Handler========createChannel===========")
 	handler.Lock()
 	defer handler.Unlock()
 	if handler.responseChannel == nil {
 		return nil, errors.Errorf("[%s] cannot create response channel", shorttxid(txid))
 	}
 	txCtxID := handler.getTxCtxId(channelID, txid)
-	fmt.Println("=====txCtxID=========",txCtxID)
+	logger.Info("=====txCtxID=========",txCtxID)
 	if handler.responseChannel[txCtxID] != nil {
 		return nil, errors.Errorf("[%s] channel exists", shorttxid(txCtxID))
 	}
@@ -116,14 +116,14 @@ func (handler *Handler) createChannel(channelID, txid string) (chan pb.Chaincode
 }
 
 func (handler *Handler) sendChannel(msg *pb.ChaincodeMessage) error {
-	fmt.Println("=====Handler========sendChannel===========")
+	logger.Info("=====Handler========sendChannel===========")
 	handler.Lock()
 	defer handler.Unlock()
 	if handler.responseChannel == nil {
 		return errors.Errorf("[%s] Cannot send message response channel", shorttxid(msg.Txid))
 	}
 	txCtxID := handler.getTxCtxId(msg.ChannelId, msg.Txid)
-	fmt.Println("=========txCtxID=======",txCtxID)
+	logger.Info("=========txCtxID=======",txCtxID)
 	if handler.responseChannel[txCtxID] == nil {
 		return errors.Errorf("[%s] sendChannel does not exist", shorttxid(msg.Txid))
 	}
@@ -137,7 +137,7 @@ func (handler *Handler) sendChannel(msg *pb.ChaincodeMessage) error {
 
 //sends a message and selects
 func (handler *Handler) sendReceive(msg *pb.ChaincodeMessage, c chan pb.ChaincodeMessage) (pb.ChaincodeMessage, error) {
-	fmt.Println("=====Handler========sendReceive===========")
+	logger.Info("=====Handler========sendReceive===========")
 	errc := make(chan error, 1)
 	handler.serialSendAsync(msg, errc)
 
@@ -165,7 +165,7 @@ func (handler *Handler) sendReceive(msg *pb.ChaincodeMessage, c chan pb.Chaincod
 }
 
 func (handler *Handler) deleteChannel(channelID, txid string) {
-	fmt.Println("=====Handler========deleteChannel===========")
+	logger.Info("=====Handler========deleteChannel===========")
 	handler.Lock()
 	defer handler.Unlock()
 	if handler.responseChannel != nil {
@@ -176,7 +176,7 @@ func (handler *Handler) deleteChannel(channelID, txid string) {
 
 // NewChaincodeHandler returns a new instance of the shim side handler.
 func newChaincodeHandler(peerChatStream PeerChaincodeStream, chaincode Chaincode) *Handler {
-	fmt.Println("=====Handler========newChaincodeHandler===========")
+	logger.Info("=====Handler========newChaincodeHandler===========")
 	v := &Handler{
 		ChatStream: peerChatStream,
 		cc:         chaincode,
@@ -188,7 +188,7 @@ func newChaincodeHandler(peerChatStream PeerChaincodeStream, chaincode Chaincode
 
 // handleInit handles request to initialize chaincode.
 func (handler *Handler) handleInit(msg *pb.ChaincodeMessage, errc chan error) {
-	fmt.Println("=====Handler========handleInit===========")
+	logger.Info("=====Handler========handleInit===========")
 	// The defer followed by triggering a go routine dance is needed to ensure that the previous state transition
 	// is completed before the next one is triggered. The previous state transition is deemed complete only when
 	// the beforeInit function is exited. Interesting bug fix!!
@@ -215,7 +215,7 @@ func (handler *Handler) handleInit(msg *pb.ChaincodeMessage, errc chan error) {
 
 		unmarshalErr := proto.Unmarshal(msg.Payload, input)
 
-		fmt.Println("=======================input===================",input)
+		logger.Info("=======================input===================",input)
 		if nextStateMsg = errFunc(unmarshalErr, nil, nil, "[%s] Incorrect payload format. Sending %s", shorttxid(msg.Txid), pb.ChaincodeMessage_ERROR.String()); nextStateMsg != nil {
 			return
 		}
@@ -253,7 +253,7 @@ func (handler *Handler) handleInit(msg *pb.ChaincodeMessage, errc chan error) {
 
 // handleTransaction Handles request to execute a transaction.
 func (handler *Handler) handleTransaction(msg *pb.ChaincodeMessage, errc chan error) {
-	fmt.Println("=====Handler========handleTransaction===========")
+	logger.Info("=====Handler========handleTransaction===========")
 	// The defer followed by triggering a go routine dance is needed to ensure that the previous state transition
 	// is completed before the next one is triggered. The previous state transition is deemed complete only when
 	// the beforeInit function is exited. Interesting bug fix!!
@@ -277,7 +277,7 @@ func (handler *Handler) handleTransaction(msg *pb.ChaincodeMessage, errc chan er
 		// Get the function and args from Payload
 		input := &pb.ChaincodeInput{}
 		unmarshalErr := proto.Unmarshal(msg.Payload, input)
-		fmt.Println("=============input=============",input)
+		logger.Info("=============input=============",input)
 		if nextStateMsg = errFunc(unmarshalErr, nil, "[%s] Incorrect payload format. Sending %s", shorttxid(msg.Txid), pb.ChaincodeMessage_ERROR.String()); nextStateMsg != nil {
 			return
 		}
@@ -307,7 +307,7 @@ func (handler *Handler) handleTransaction(msg *pb.ChaincodeMessage, errc chan er
 // callPeerWithChaincodeMsg sends a chaincode message (for e.g., GetState along with the key) to the peer for a given txid
 // and receives the response.
 func (handler *Handler) callPeerWithChaincodeMsg(msg *pb.ChaincodeMessage, channelID, txid string) (pb.ChaincodeMessage, error) {
-	fmt.Println("=====Handler========callPeerWithChaincodeMsg===========")
+	logger.Info("=====Handler========callPeerWithChaincodeMsg===========")
 	// Create the channel on which to communicate the response from the peer
 	var respChan chan pb.ChaincodeMessage
 	var err error
@@ -323,16 +323,16 @@ func (handler *Handler) callPeerWithChaincodeMsg(msg *pb.ChaincodeMessage, chann
 // TODO: Implement a method to get multiple keys at a time [FAB-1244]
 // handleGetState communicates with the peer to fetch the requested state information from the ledger.
 func (handler *Handler) handleGetState(collection string, key string, channelId string, txid string) ([]byte, error) {
-	fmt.Println("=====Handler========handleGetState===========")
+	logger.Info("=====Handler========handleGetState===========")
 	// Construct payload for GET_STATE
 	payloadBytes, _ := proto.Marshal(&pb.GetState{Collection: collection, Key: key})
 
 	msg := &pb.ChaincodeMessage{Type: pb.ChaincodeMessage_GET_STATE, Payload: payloadBytes, Txid: txid, ChannelId: channelId}
 	chaincodeLogger.Infof("[%s] Sending %s", shorttxid(msg.Txid), pb.ChaincodeMessage_GET_STATE)
 
-	fmt.Println("=====================mgs",msg)
-	fmt.Println("=====================channelId",channelId)
-	fmt.Println("=====================txid",txid)
+	logger.Info("=====================mgs",msg)
+	logger.Info("=====================channelId",channelId)
+	logger.Info("=====================txid",txid)
 	responseMsg, err := handler.callPeerWithChaincodeMsg(msg, channelId, txid)
 	if err != nil {
 		return nil, errors.WithMessage(err, fmt.Sprintf("[%s] error sending GET_STATE", shorttxid(txid)))
@@ -355,7 +355,7 @@ func (handler *Handler) handleGetState(collection string, key string, channelId 
 }
 
 func (handler *Handler) handleGetStateMetadata(collection string, key string, channelID string, txID string) (map[string][]byte, error) {
-	fmt.Println("=====Handler========handleGetStateMetadata===========")
+	logger.Info("=====Handler========handleGetStateMetadata===========")
 	// Construct payload for GET_STATE_METADATA
 	payloadBytes, _ := proto.Marshal(&pb.GetStateMetadata{Collection: collection, Key: key})
 
@@ -397,7 +397,7 @@ func (handler *Handler) handleGetStateMetadata(collection string, key string, ch
 // TODO: Implement a method to set multiple keys at a time [FAB-1244]
 // handlePutState communicates with the peer to put state information into the ledger.
 func (handler *Handler) handlePutState(collection string, key string, value []byte, channelId string, txid string) error {
-	fmt.Println("=====Handler========handlePutState===========")
+	logger.Info("=====Handler========handlePutState===========")
 	// Construct payload for PUT_STATE
 	payloadBytes, _ := proto.Marshal(&pb.PutState{Collection: collection, Key: key, Value: value})
 
@@ -428,7 +428,7 @@ func (handler *Handler) handlePutState(collection string, key string, value []by
 }
 
 func (handler *Handler) handlePutStateMetadataEntry(collection string, key string, metakey string, metadata []byte, channelID string, txID string) error {
-	fmt.Println("=====Handler========handlePutStateMetadataEntry===========")
+	logger.Info("=====Handler========handlePutStateMetadataEntry===========")
 	// Construct payload for PUT_STATE_METADATA
 	md := &pb.StateMetadata{Metakey: metakey, Value: metadata}
 	payloadBytes, _ := proto.Marshal(&pb.PutStateMetadata{Collection: collection, Key: key, Metadata: md})
@@ -461,7 +461,7 @@ func (handler *Handler) handlePutStateMetadataEntry(collection string, key strin
 
 // handleDelState communicates with the peer to delete a key from the state in the ledger.
 func (handler *Handler) handleDelState(collection string, key string, channelId string, txid string) error {
-	fmt.Println("=====Handler========handleDelState===========")
+	logger.Info("=====Handler========handleDelState===========")
 	//payloadBytes, _ := proto.Marshal(&pb.GetState{Collection: collection, Key: key})
 	payloadBytes, _ := proto.Marshal(&pb.DelState{Collection: collection, Key: key})
 
@@ -492,7 +492,7 @@ func (handler *Handler) handleDelState(collection string, key string, channelId 
 
 func (handler *Handler) handleGetStateByRange(collection, startKey, endKey string, metadata []byte,
 	channelId string, txid string) (*pb.QueryResponse, error) {
-	fmt.Println("=====Handler========handleGetStateByRange===========")
+	logger.Info("=====Handler========handleGetStateByRange===========")
 	// Send GET_STATE_BY_RANGE message to peer chaincode support
 	//we constructed a valid object. No need to check for error
 	payloadBytes, _ := proto.Marshal(&pb.GetStateByRange{Collection: collection, StartKey: startKey, EndKey: endKey, Metadata: metadata})
@@ -530,7 +530,7 @@ func (handler *Handler) handleGetStateByRange(collection, startKey, endKey strin
 }
 
 func (handler *Handler) handleQueryStateNext(id, channelId, txid string) (*pb.QueryResponse, error) {
-	fmt.Println("=====Handler========handleQueryStateNext===========")
+	logger.Info("=====Handler========handleQueryStateNext===========")
 	// Create the channel on which to communicate the response from validating peer
 	var respChan chan pb.ChaincodeMessage
 	var err error
@@ -579,7 +579,7 @@ func (handler *Handler) handleQueryStateNext(id, channelId, txid string) (*pb.Qu
 }
 
 func (handler *Handler) handleQueryStateClose(id, channelId, txid string) (*pb.QueryResponse, error) {
-	fmt.Println("=====Handler========handleQueryStateClose===========")
+	logger.Info("=====Handler========handleQueryStateClose===========")
 	// Create the channel on which to communicate the response from validating peer
 	var respChan chan pb.ChaincodeMessage
 	var err error
@@ -630,7 +630,7 @@ func (handler *Handler) handleQueryStateClose(id, channelId, txid string) (*pb.Q
 func (handler *Handler) handleGetQueryResult(collection string, query string, metadata []byte,
 	channelId string, txid string) (*pb.QueryResponse, error) {
 
-	fmt.Println("=====Handler========handleGetQueryResult===========")
+	logger.Info("=====Handler========handleGetQueryResult===========")
 
 	// Send GET_QUERY_RESULT message to peer chaincode support
 	//we constructed a valid object. No need to check for error
@@ -668,7 +668,7 @@ func (handler *Handler) handleGetQueryResult(collection string, query string, me
 }
 
 func (handler *Handler) handleGetHistoryForKey(key string, channelId string, txid string) (*pb.QueryResponse, error) {
-	fmt.Println("=====Handler========handleGetHistoryForKey===========")
+	logger.Info("=====Handler========handleGetHistoryForKey===========")
 	// Create the channel on which to communicate the response from validating peer
 	var respChan chan pb.ChaincodeMessage
 	var err error
@@ -722,7 +722,7 @@ func (handler *Handler) createResponse(status int32, payload []byte) pb.Response
 
 // handleInvokeChaincode communicates with the peer to invoke another chaincode.
 func (handler *Handler) handleInvokeChaincode(chaincodeName string, args [][]byte, channelId string, txid string) pb.Response {
-	fmt.Println("=====Handler========handleInvokeChaincode===========")
+	logger.Info("=====Handler========handleInvokeChaincode===========")
 	//we constructed a valid object. No need to check for error
 	payloadBytes, _ := proto.Marshal(&pb.ChaincodeSpec{ChaincodeId: &pb.ChaincodeID{Name: chaincodeName}, Input: &pb.ChaincodeInput{Args: args}})
 
@@ -781,10 +781,10 @@ func (handler *Handler) handleInvokeChaincode(chaincodeName string, args [][]byt
 
 //handle ready state
 func (handler *Handler) handleReady(msg *pb.ChaincodeMessage, errc chan error) error {
-	fmt.Println("====func (handler *Handler) handleReady(msg *pb.ChaincodeMessage, errc chan error) error===========")
+	logger.Info("====func (handler *Handler) handleReady(msg *pb.ChaincodeMessage, errc chan error) error===========")
 	switch msg.Type {
 	case pb.ChaincodeMessage_RESPONSE:
-		fmt.Println("========pb.ChaincodeMessage_RESPONSE===============")
+		logger.Info("========pb.ChaincodeMessage_RESPONSE===============")
 		if err := handler.sendChannel(msg); err != nil {
 			chaincodeLogger.Errorf("[%s] error sending %s (state:%s): %s", shorttxid(msg.Txid), msg.Type, handler.state, err)
 			return err
@@ -793,7 +793,7 @@ func (handler *Handler) handleReady(msg *pb.ChaincodeMessage, errc chan error) e
 		return nil
 
 	case pb.ChaincodeMessage_ERROR:
-		fmt.Println("========pb.ChaincodeMessage_ERROR===============")
+		logger.Info("========pb.ChaincodeMessage_ERROR===============")
 		if err := handler.sendChannel(msg); err != nil {
 			chaincodeLogger.Errorf("[%s] error sending %s (state:%s): %s", shorttxid(msg.Txid), msg.Type, handler.state, err)
 		}
@@ -804,19 +804,19 @@ func (handler *Handler) handleReady(msg *pb.ChaincodeMessage, errc chan error) e
 		return nil
 
 	case pb.ChaincodeMessage_INIT:
-		fmt.Println("========pb.ChaincodeMessage_INIT=========")
+		logger.Info("========pb.ChaincodeMessage_INIT=========")
 		chaincodeLogger.Infof("[%s] Received %s, initializing chaincode", shorttxid(msg.Txid), msg.Type)
 		// Call the chaincode's Run function to initialize
 		handler.handleInit(msg, errc)
 		return nil
 
 	case pb.ChaincodeMessage_TRANSACTION:
-		fmt.Println("=======pb.ChaincodeMessage_TRANSACTION=========")
+		logger.Info("=======pb.ChaincodeMessage_TRANSACTION=========")
 		/*
 		1.安装链码
 		2.chushihualianma
 		 */
-		fmt.Println("=======pb.ChaincodeMessage_TRANSACTION=========")
+		logger.Info("=======pb.ChaincodeMessage_TRANSACTION=========")
 		chaincodeLogger.Infof("[%s] Received %s, invoking transaction on chaincode(state:%s)", shorttxid(msg.Txid), msg.Type, handler.state)
 		//[87407c4b] Received TRANSACTION, invoking transaction on chaincode(state:ready)
 		// Call the chaincode's Run function to invoke transaction
@@ -829,7 +829,7 @@ func (handler *Handler) handleReady(msg *pb.ChaincodeMessage, errc chan error) e
 
 //handle established state
 func (handler *Handler) handleEstablished(msg *pb.ChaincodeMessage, errc chan error) error {
-	fmt.Println("=====Handler========handleEstablished===========")
+	logger.Info("=====Handler========handleEstablished===========")
 	if msg.Type == pb.ChaincodeMessage_READY {
 		handler.state = ready
 		return nil
@@ -839,7 +839,7 @@ func (handler *Handler) handleEstablished(msg *pb.ChaincodeMessage, errc chan er
 
 //handle created state
 func (handler *Handler) handleCreated(msg *pb.ChaincodeMessage, errc chan error) error {
-	fmt.Println("=====Handler========handleCreated===========")
+	logger.Info("=====Handler========handleCreated===========")
 	if msg.Type == pb.ChaincodeMessage_REGISTERED {
 		handler.state = established
 		return nil
@@ -849,9 +849,9 @@ func (handler *Handler) handleCreated(msg *pb.ChaincodeMessage, errc chan error)
 
 // handleMessage message handles loop for shim side of chaincode/peer stream.
 func (handler *Handler) handleMessage(msg *pb.ChaincodeMessage, errc chan error) error {
-	fmt.Println("=====path:fabric/core/chaincode/shim==func (handler *Handler) handleMessage(msg *pb.ChaincodeMessage, errc chan error) error===========")
+	logger.Info("=====path:fabric/core/chaincode/shim==func (handler *Handler) handleMessage(msg *pb.ChaincodeMessage, errc chan error) error===========")
 	if msg.Type == pb.ChaincodeMessage_KEEPALIVE {
-		fmt.Println("======msg.Type == pb.ChaincodeMessage_KEEPALIVE ========================")
+		logger.Info("======msg.Type == pb.ChaincodeMessage_KEEPALIVE ========================")
 		chaincodeLogger.Infof("Sending KEEPALIVE response")
 		handler.serialSendAsync(msg, nil) // ignore errors, maybe next KEEPALIVE will work
 		return nil
@@ -863,13 +863,13 @@ func (handler *Handler) handleMessage(msg *pb.ChaincodeMessage, errc chan error)
 	switch handler.state {
 	case ready:
 		//invoke chaincode
-		fmt.Println("========ready============")
+		logger.Info("========ready============")
 		err = handler.handleReady(msg, errc)
 	case established:
-		fmt.Println("========established============")
+		logger.Info("========established============")
 		err = handler.handleEstablished(msg, errc)
 	case created:
-		fmt.Println("========created============")
+		logger.Info("========created============")
 		err = handler.handleCreated(msg, errc)
 	default:
 		err = errors.Errorf("[%s] Chaincode handler cannot handle message (%s) with payload size (%d) while in state: %s", msg.Txid, msg.Type, len(msg.Payload), handler.state)

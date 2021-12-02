@@ -22,17 +22,17 @@ import (
 )
 
 func (p *CertKeyPair) PrivKeyString() string {
-	fmt.Println("======CertKeyPair====PrivKeyString===========")
+	logger.Info("======CertKeyPair====PrivKeyString===========")
 	return base64.StdEncoding.EncodeToString(p.Key)
 }
 
 func (p *CertKeyPair) PubKeyString() string {
-	fmt.Println("======CertKeyPair====PubKeyString===========")
+	logger.Info("======CertKeyPair====PubKeyString===========")
 	return base64.StdEncoding.EncodeToString(p.Cert)
 }
 
 func newPrivKey() (*ecdsa.PrivateKey, []byte, error) {
-	fmt.Println("======newPrivKey===========")
+	logger.Info("======newPrivKey===========")
 	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return nil, nil, err
@@ -45,7 +45,7 @@ func newPrivKey() (*ecdsa.PrivateKey, []byte, error) {
 }
 
 func newCertTemplate() (x509.Certificate, error) {
-	fmt.Println("======newCertTemplate===========")
+	logger.Info("======newCertTemplate===========")
 	sn, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
 	if err != nil {
 		return x509.Certificate{}, err
@@ -60,7 +60,7 @@ func newCertTemplate() (x509.Certificate, error) {
 }
 
 func newCertKeyPair(isCA bool, isServer bool, host string, certSigner crypto.Signer, parent *x509.Certificate) (*CertKeyPair, error) {
-	fmt.Println("======newCertKeyPair===========")
+	logger.Info("======newCertKeyPair===========")
 	privateKey, privBytes, err := newPrivKey()
 	if err != nil {
 		return nil, err
@@ -116,13 +116,13 @@ func newCertKeyPair(isCA bool, isServer bool, host string, certSigner crypto.Sig
 }
 
 func encodePEM(keyType string, data []byte) []byte {
-	fmt.Println("======encodePEM===========")
+	logger.Info("======encodePEM===========")
 	return pem.EncodeToMemory(&pem.Block{Type: keyType, Bytes: data})
 }
 
 // CertKeyPairFromString converts the given strings in base64 encoding to a CertKeyPair
 func CertKeyPairFromString(privKey string, pubKey string) (*CertKeyPair, error) {
-	fmt.Println("======CertKeyPairFromString===========")
+	logger.Info("======CertKeyPairFromString===========")
 	priv, err := base64.StdEncoding.DecodeString(privKey)
 	if err != nil {
 		return nil, err

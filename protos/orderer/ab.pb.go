@@ -630,13 +630,13 @@ type atomicBroadcastBroadcastClient struct {
 }
 
 func (x *atomicBroadcastBroadcastClient) Send(m *common.Envelope) error {
-	fmt.Println("================================func (x *atomicBroadcastBroadcastClient) Send(m *common.Envelope) error=========================================")
-	fmt.Println("=======grpc===func (cs *clientStream) SendMsg(m interface{}) (err error)==========")
+	logger.Info("================================func (x *atomicBroadcastBroadcastClient) Send(m *common.Envelope) error=========================================")
+	logger.Info("=======grpc===func (cs *clientStream) SendMsg(m interface{}) (err error)==========")
 	return x.ClientStream.SendMsg(m)
 }
 
 func (x *atomicBroadcastBroadcastClient) Recv() (*BroadcastResponse, error) {
-	fmt.Println("========================= func (x *atomicBroadcastBroadcastClient) Recv() (*BroadcastResponse, error) ===========================================")
+	logger.Info("========================= func (x *atomicBroadcastBroadcastClient) Recv() (*BroadcastResponse, error) ===========================================")
 	m := new(BroadcastResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -728,12 +728,12 @@ type atomicBroadcastDeliverServer struct {
 }
 
 func (x *atomicBroadcastDeliverServer) Send(m *DeliverResponse) error {
-	fmt.Println("==============atomicBroadcastDeliverServer=======Send==============================")
+	logger.Info("==============atomicBroadcastDeliverServer=======Send==============================")
 	return x.ServerStream.SendMsg(m)
 }
 
 func (x *atomicBroadcastDeliverServer) Recv() (*common.Envelope, error) {
-	fmt.Println("==============atomicBroadcastDeliverServer=======Recv==============================")
+	logger.Info("==============atomicBroadcastDeliverServer=======Recv==============================")
 	m := new(common.Envelope)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err

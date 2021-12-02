@@ -37,7 +37,7 @@ type Column struct {
 // NewPrometheusTable creates a table that can be used to document Prometheus
 // metrics maintained by Fabric.
 func NewPrometheusTable(cells Cells) Table {
-	fmt.Println("=======NewPrometheusTable=========")
+	logger.Info("=======NewPrometheusTable=========")
 	return Table{
 		Cells: cells,
 		Columns: []Column{
@@ -52,7 +52,7 @@ func NewPrometheusTable(cells Cells) Table {
 // NewStatsdTable creates a table that can be used to document StatsD metrics
 // maintained by Fabric.
 func NewStatsdTable(cells Cells) Table {
-	fmt.Println("=======NewStatsdTable=========")
+	logger.Info("=======NewStatsdTable=========")
 	return Table{
 		Cells: cells,
 		Columns: []Column{
@@ -73,7 +73,7 @@ type Table struct {
 // Generate generates a restructured text formatted table from the cells and
 // columns contained in the table.
 func (t Table) Generate(w io.Writer) {
-	fmt.Println("==Table=====Generate=========")
+	logger.Info("==Table=====Generate=========")
 	fmt.Fprint(w, t.header())
 	for _, c := range t.Cells {
 		fmt.Fprint(w, t.formatCell(c))
@@ -85,7 +85,7 @@ func (t Table) rowSeparator() string    { return t.separator("-") }
 func (t Table) headerSeparator() string { return t.separator("=") }
 
 func (t Table) separator(delim string) string {
-	fmt.Println("==Table=====separator=========")
+	logger.Info("==Table=====separator=========")
 	var s string
 	for _, c := range t.Columns {
 		s += "+" + strings.Repeat(delim, c.Width)
@@ -94,7 +94,7 @@ func (t Table) separator(delim string) string {
 }
 
 func (t Table) header() string {
-	fmt.Println("==Table=====header=========")
+	logger.Info("==Table=====header=========")
 
 	var h string
 	h += t.rowSeparator()
@@ -107,7 +107,7 @@ func (t Table) header() string {
 }
 
 func (t Table) formatCell(cell Cell) string {
-	fmt.Println("==Table=====formatCell=========")
+	logger.Info("==Table=====formatCell=========")
 	contents := map[Field][]string{}
 	lineCount := 0
 
@@ -138,7 +138,7 @@ func (t Table) formatCell(cell Cell) string {
 }
 
 func wrapWidths(s string, width int) []string {
-	fmt.Println("==wrapWidths=======")
+	logger.Info("==wrapWidths=======")
 	var result []string
 	for _, s := range strings.Split(s, "\n") {
 		result = append(result, wrapWidth(s, width)...)
@@ -147,7 +147,7 @@ func wrapWidths(s string, width int) []string {
 }
 
 func wrapWidth(s string, width int) []string {
-	fmt.Println("==wrapWidth=======")
+	logger.Info("==wrapWidth=======")
 	words := strings.Fields(strings.TrimSpace(s))
 	if len(words) == 0 { // only white space
 		return []string{s}
@@ -169,7 +169,7 @@ func wrapWidth(s string, width int) []string {
 }
 
 func padLines(lines []string, w, h int) []string {
-	fmt.Println("==padLines=======")
+	logger.Info("==padLines=======")
 	for len(lines) < h {
 		lines = append(lines, "")
 	}
@@ -181,7 +181,7 @@ func padLines(lines []string, w, h int) []string {
 }
 
 func printWidth(s string, w int) string {
-	fmt.Println("==printWidth=======")
+	logger.Info("==printWidth=======")
 	s = strings.TrimSpace(s)
 	if len(s) < w {
 		return s + strings.Repeat(" ", w-len(s))
@@ -190,7 +190,7 @@ func printWidth(s string, w int) string {
 }
 
 func max(x, y int) int {
-	fmt.Println("==max=======")
+	logger.Info("==max=======")
 	if x > y {
 		return x
 	}
@@ -205,7 +205,7 @@ type Cell struct {
 }
 
 func (c Cell) Field(f Field) string {
-	fmt.Println("==Cell=====Field==")
+	logger.Info("==Cell=====Field==")
 	switch f {
 	case Name:
 		return c.Name()
@@ -228,7 +228,7 @@ func (c Cell) Description() string { return c.description }
 func (c Cell) Labels() string      { return strings.Join(c.labels, "\n") }
 
 func (c Cell) BucketFormat() string {
-	fmt.Println("==Cell=====BucketFormat==")
+	logger.Info("==Cell=====BucketFormat==")
 	var lvs []string
 	for _, label := range c.labels {
 		lvs = append(lvs, label, asBucketVar(label))
@@ -245,7 +245,7 @@ func (c Cells) Less(i, j int) bool { return c[i].Name() < c[j].Name() }
 func (c Cells) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
 
 func (c Cells) MaxLen(f Field) int {
-	fmt.Println("==Cells=====MaxLen==")
+	logger.Info("==Cells=====MaxLen==")
 	var maxlen int
 	for _, c := range c {
 		if l := len(c.Field(f)); l > maxlen {
@@ -258,7 +258,7 @@ func (c Cells) MaxLen(f Field) int {
 // NewCells transforms metrics options to cells that can be used for doc
 // generation.
 func NewCells(options []interface{}) (Cells, error) {
-	fmt.Println("==NewCells==")
+	logger.Info("==NewCells==")
 	var cells Cells
 	for _, o := range options {
 		switch m := o.(type) {
@@ -277,7 +277,7 @@ func NewCells(options []interface{}) (Cells, error) {
 }
 
 func counterCell(c metrics.CounterOpts) Cell {
-	fmt.Println("==counterCell==")
+	logger.Info("==counterCell==")
 	if c.StatsdFormat == "" {
 		c.StatsdFormat = "%{#fqname}"
 	}
@@ -290,7 +290,7 @@ func counterCell(c metrics.CounterOpts) Cell {
 }
 
 func gaugeCell(g metrics.GaugeOpts) Cell {
-	fmt.Println("==gaugeCell==")
+	logger.Info("==gaugeCell==")
 	if g.StatsdFormat == "" {
 		g.StatsdFormat = "%{#fqname}"
 	}
@@ -303,7 +303,7 @@ func gaugeCell(g metrics.GaugeOpts) Cell {
 }
 
 func histogramCell(h metrics.HistogramOpts) Cell {
-	fmt.Println("==histogramCell==")
+	logger.Info("==histogramCell==")
 	if h.StatsdFormat == "" {
 		h.StatsdFormat = "%{#fqname}"
 	}

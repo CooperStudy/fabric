@@ -45,20 +45,20 @@ type rwSetAssembler struct {
 // information about collections config available related
 // to private read-write set
 func (as *rwSetAssembler) AssemblePvtRWSet(privData *rwset.TxPvtReadWriteSet, txsim CollectionConfigRetriever) (*transientstore.TxPvtReadWriteSetWithConfigInfo, error) {
-	fmt.Println("==rwSetAssembler==AssemblePvtRWSet==")
+	logger.Info("==rwSetAssembler==AssemblePvtRWSet==")
 	txPvtRwSetWithConfig := &transientstore.TxPvtReadWriteSetWithConfigInfo{
 		PvtRwset:          privData,
 		CollectionConfigs: make(map[string]*common.CollectionConfigPackage),
 	}
 
 	for _, pvtRwset := range privData.NsPvtRwset {
-		fmt.Println("===========pvtRwset========",pvtRwset)
+		logger.Info("===========pvtRwset========",pvtRwset)
 		namespace := pvtRwset.Namespace
 		_, found := txPvtRwSetWithConfig.CollectionConfigs[namespace]
-		fmt.Println("=========found======",found)
+		logger.Info("=========found======",found)
 		if !found {
-			fmt.Println("=========!found======",!found)
-			fmt.Println("======namespace=",namespace)
+			logger.Info("=========!found======",!found)
+			logger.Info("======namespace=",namespace)
 			cb, err := txsim.GetState("lscc", privdata.BuildCollectionKVSKey(namespace))
 			if err != nil {
 				return nil, errors.WithMessage(err, fmt.Sprintf("error while retrieving collection config for chaincode %#v", namespace))
@@ -69,7 +69,7 @@ func (as *rwSetAssembler) AssemblePvtRWSet(privData *rwset.TxPvtReadWriteSet, tx
 
 			colCP := &common.CollectionConfigPackage{}
 			err = proto.Unmarshal(cb, colCP)
-			fmt.Println("=====colCP==========",colCP)
+			logger.Info("=====colCP==========",colCP)
 			if err != nil {
 				return nil, errors.Wrapf(err, "invalid configuration for collection criteria %#v", namespace)
 			}
@@ -77,14 +77,14 @@ func (as *rwSetAssembler) AssemblePvtRWSet(privData *rwset.TxPvtReadWriteSet, tx
 			txPvtRwSetWithConfig.CollectionConfigs[namespace] = colCP
 		}
 	}
-	fmt.Println("====================1.as.trimCollectionConfigs(txPvtRwSetWithConfig)====================")
+	logger.Info("====================1.as.trimCollectionConfigs(txPvtRwSetWithConfig)====================")
 	as.trimCollectionConfigs(txPvtRwSetWithConfig)
-	fmt.Println("====================2.as.trimCollectionConfigs(txPvtRwSetWithConfig)====================")
+	logger.Info("====================2.as.trimCollectionConfigs(txPvtRwSetWithConfig)====================")
 	return txPvtRwSetWithConfig, nil
 }
 
 func (as *rwSetAssembler) trimCollectionConfigs(pvtData *transientstore.TxPvtReadWriteSetWithConfigInfo) {
-	fmt.Println("==rwSetAssembler==trimCollectionConfigs==")
+	logger.Info("==rwSetAssembler==trimCollectionConfigs==")
 	flags := make(map[string]map[string]struct{})
 	for _, pvtRWset := range pvtData.PvtRwset.NsPvtRwset {
 		namespace := pvtRWset.Namespace

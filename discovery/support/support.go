@@ -28,7 +28,7 @@ func NewDiscoverySupport(
 	config discovery.ConfigSupport,
 	sequence discovery.ConfigSequenceSupport,
 ) *DiscoverySupport {
-	fmt.Println("=======NewDiscoverySupport====")
+	logger.Info("=======NewDiscoverySupport====")
 	return &DiscoverySupport{
 		AccessControlSupport:  access,
 		GossipSupport:         gossip,

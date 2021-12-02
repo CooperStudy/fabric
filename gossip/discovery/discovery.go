@@ -80,7 +80,7 @@ type NetworkMember struct {
 
 // String returns a string representation of the NetworkMember
 func (n NetworkMember) String() string {
-	//fmt.Println("=====NetworkMember========String====")
+	//logger.Info("=====NetworkMember========String====")
 	return fmt.Sprintf("Endpoint: %s, InternalEndpoint: %s, PKI-ID: %s, Metadata: %x", n.Endpoint, n.InternalEndpoint, n.PKIid, n.Metadata)
 }
 
@@ -88,14 +88,14 @@ func (n NetworkMember) String() string {
 // while preferring internal endpoint over the standard
 // endpoint
 func (n NetworkMember) PreferredEndpoint() string {
-//	fmt.Println("=======NetworkMember========PreferredEndpoint==")
-	//fmt.Println("===n====
+//	logger.Info("=======NetworkMember========PreferredEndpoint==")
+	//logger.Info("===n====
 	//Endpoint: peer1.org1.example.com:7051, InternalEndpoint: , PKI-ID: 500f76e570c22e91343ac9c28db55d6948faa44da710db6fa7971641d4ea285b, Metadata:
-	//fmt.Println("===n.InternalEndpoint====",n.InternalEndpoint)//peer1.org1.example.com:7051
+	//logger.Info("===n.InternalEndpoint====",n.InternalEndpoint)//peer1.org1.example.com:7051
 	if n.InternalEndpoint != "" {
 		return n.InternalEndpoint
 	}
-	//fmt.Println("===n.Endpoint====",n.Endpoint)
+	//logger.Info("===n.Endpoint====",n.Endpoint)
 	return n.Endpoint
 }
 
@@ -146,40 +146,40 @@ type Members []NetworkMember
 // ByID returns a mapping from the PKI-IDs (in string form)
 // to NetworkMember
 func (members Members) ByID() map[string]NetworkMember {
-	//fmt.Println("=====Members===ByID===========")
+	//logger.Info("=====Members===ByID===========")
 	res := make(map[string]NetworkMember, len(members))
 	for _, peer := range members {
-		//fmt.Println("====peer",peer)
+		//logger.Info("====peer",peer)
 		 a:= string(peer.PKIid)
-		 //fmt.Println("====peer.PKIid=======",peer.PKIid)
+		 //logger.Info("====peer.PKIid=======",peer.PKIid)
 		res[a] = peer
 	}
-	//fmt.Println("=====res====",res)
+	//logger.Info("=====res====",res)
 	return res
 }
 
 // Intersect returns the intersection of 2 Members
 func (members Members) Intersect(otherMembers Members) Members {
-	//fmt.Println("=====Members===Intersect===========")
+	//logger.Info("=====Members===Intersect===========")
 	var res Members
 	m := otherMembers.ByID()
-	//fmt.Println("========m===========",m)
+	//logger.Info("========m===========",m)
 	for _, member := range members {
-		//fmt.Println("========member=====",member)
-		//fmt.Println("========string(member.PKIid)=============",string(member.PKIid))
-		//fmt.Println("========m[string(member.PKIid)]============",m[string(member.PKIid)])
+		//logger.Info("========member=====",member)
+		//logger.Info("========string(member.PKIid)=============",string(member.PKIid))
+		//logger.Info("========m[string(member.PKIid)]============",m[string(member.PKIid)])
 		if _, exists := m[string(member.PKIid)]; exists {
-			//fmt.Println("=========exists========",exists)
+			//logger.Info("=========exists========",exists)
 			res = append(res, member)
 		}
 	}
-	//fmt.Println("=========res========",res)
+	//logger.Info("=========res========",res)
 	return res
 }
 
 // Filter returns only members that satisfy the given filter
 func (members Members) Filter(filter func(member NetworkMember) bool) Members {
-	//fmt.Println("=====Members===Filter===========")
+	//logger.Info("=====Members===Filter===========")
 	var res Members
 	for _, member := range members {
 		if filter(member) {
@@ -191,7 +191,7 @@ func (members Members) Filter(filter func(member NetworkMember) bool) Members {
 
 // Map invokes the given function to every NetworkMember among the Members
 func (members Members) Map(f func(member NetworkMember) NetworkMember) Members {
-	//fmt.Println("=====Members===Map===========")
+	//logger.Info("=====Members===Map===========")
 	var res Members
 	for _, m := range members {
 		res = append(res, f(m))
@@ -201,6 +201,6 @@ func (members Members) Map(f func(member NetworkMember) NetworkMember) Members {
 
 // HaveExternalEndpoints selects network members that have external endpoints
 func HasExternalEndpoint(member NetworkMember) bool {
-	//fmt.Println("====HasExternalEndpoint==========")
+	//logger.Info("====HasExternalEndpoint==========")
 	return member.Endpoint != ""
 }

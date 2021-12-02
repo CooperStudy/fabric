@@ -63,7 +63,7 @@ type purgeMgr struct {
 
 // InstantiatePurgeMgr instantiates a PurgeMgr.
 func InstantiatePurgeMgr(ledgerid string, db privacyenabledstate.DB, btlPolicy pvtdatapolicy.BTLPolicy, bookkeepingProvider bookkeeping.Provider) (PurgeMgr, error) {
-	fmt.Println("==InstantiatePurgeMgr==")
+	logger.Info("==InstantiatePurgeMgr==")
 	return &purgeMgr{
 		btlPolicy: btlPolicy,
 		db:        db,
@@ -75,7 +75,7 @@ func InstantiatePurgeMgr(ledgerid string, db privacyenabledstate.DB, btlPolicy p
 
 // PrepareForExpiringKeys implements function in the interface 'PurgeMgr'
 func (p *purgeMgr) PrepareForExpiringKeys(expiringAtBlk uint64) {
-	fmt.Println("==purgeMgr=====PrepareForExpiringKeys========")
+	logger.Info("==purgeMgr=====PrepareForExpiringKeys========")
 	p.waitGrp.Add(1)
 	go func() {
 		p.lock.Lock()
@@ -88,13 +88,13 @@ func (p *purgeMgr) PrepareForExpiringKeys(expiringAtBlk uint64) {
 
 // WaitForPrepareToFinish implements function in the interface 'PurgeMgr'
 func (p *purgeMgr) WaitForPrepareToFinish() {
-	fmt.Println("==purgeMgr=====WaitForPrepareToFinish========")
+	logger.Info("==purgeMgr=====WaitForPrepareToFinish========")
 	p.lock.Lock()
 	p.lock.Unlock()
 }
 
 func (p *purgeMgr) UpdateBookkeepingForPvtDataOfOldBlocks(pvtUpdates *privacyenabledstate.PvtUpdateBatch) error {
-	fmt.Println("==purgeMgr=====UpdateBookkeepingForPvtDataOfOldBlocks========")
+	logger.Info("==purgeMgr=====UpdateBookkeepingForPvtDataOfOldBlocks========")
 	builder := newExpiryScheduleBuilder(p.btlPolicy)
 	pvtUpdateCompositeKeyMap := pvtUpdates.ToCompositeKeyMap()
 	for k, vv := range pvtUpdateCompositeKeyMap {
@@ -125,7 +125,7 @@ func (p *purgeMgr) UpdateBookkeepingForPvtDataOfOldBlocks(pvtUpdates *privacyena
 }
 
 func (p *purgeMgr) addMissingPvtDataToWorkingSet(pvtKeys privacyenabledstate.PvtdataCompositeKeyMap) {
-	fmt.Println("==purgeMgr=====addMissingPvtDataToWorkingSet========")
+	logger.Info("==purgeMgr=====addMissingPvtDataToWorkingSet========")
 	if p.workingset == nil || len(p.workingset.toPurge) == 0 {
 		return
 	}
@@ -162,7 +162,7 @@ func (p *purgeMgr) addMissingPvtDataToWorkingSet(pvtKeys privacyenabledstate.Pvt
 func (p *purgeMgr) DeleteExpiredAndUpdateBookkeeping(
 	pvtUpdates *privacyenabledstate.PvtUpdateBatch,
 	hashedUpdates *privacyenabledstate.HashedUpdateBatch) error {
-	fmt.Println("==purgeMgr=====DeleteExpiredAndUpdateBookkeeping========")
+	logger.Info("==purgeMgr=====DeleteExpiredAndUpdateBookkeeping========")
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	if p.workingset.err != nil {
@@ -211,7 +211,7 @@ func (p *purgeMgr) DeleteExpiredAndUpdateBookkeeping(
 // however, that requires updating the expiry store by replaying the last block from blockchain in order to sustain a crash between
 // entries updates and block commit
 func (p *purgeMgr) BlockCommitDone() error {
-	fmt.Println("==purgeMgr=====BlockCommitDone========")
+	logger.Info("==purgeMgr=====BlockCommitDone========")
 	defer func() { p.workingset = nil }()
 	return p.expKeeper.updateBookkeeping(nil, p.workingset.toClearFromSchedule)
 }
@@ -219,7 +219,7 @@ func (p *purgeMgr) BlockCommitDone() error {
 // prepareWorkingsetFor returns a working set for a given expiring block 'expiringAtBlk'.
 // This working set contains the pvt data keys that will expire with the commit of block 'expiringAtBlk'.
 func (p *purgeMgr) prepareWorkingsetFor(expiringAtBlk uint64) *workingset {
-	fmt.Println("==purgeMgr=====prepareWorkingsetFor========")
+	logger.Info("==purgeMgr=====prepareWorkingsetFor========")
 	logger.Debugf("Preparing potential purge list working-set for expiringAtBlk [%d]", expiringAtBlk)
 	workingset := &workingset{expiringBlk: expiringAtBlk}
 	// Retrieve the keys from bookkeeper
@@ -286,7 +286,7 @@ func (p *purgeMgr) prepareWorkingsetFor(expiringAtBlk uint64) *workingset {
 }
 
 func (p *purgeMgr) preloadCommittedVersionsInCache(expInfoMap expiryInfoMap) {
-	fmt.Println("==purgeMgr=====preloadCommittedVersionsInCache========")
+	logger.Info("==purgeMgr=====preloadCommittedVersionsInCache========")
 	if !p.db.IsBulkOptimizable() {
 		return
 	}
@@ -298,7 +298,7 @@ func (p *purgeMgr) preloadCommittedVersionsInCache(expInfoMap expiryInfoMap) {
 }
 
 func transformToExpiryInfoMap(expiryInfo []*expiryInfo) expiryInfoMap {
-	fmt.Println("==transformToExpiryInfoMap========")
+	logger.Info("==transformToExpiryInfoMap========")
 	expinfoMap := make(expiryInfoMap)
 	for _, expinfo := range expiryInfo {
 		for ns, colls := range expinfo.pvtdataKeys.Map {
@@ -314,11 +314,11 @@ func transformToExpiryInfoMap(expiryInfo []*expiryInfo) expiryInfoMap {
 }
 
 func sameVersion(version *version.Height, blockNum uint64) bool {
-	fmt.Println("==sameVersion========")
+	logger.Info("==sameVersion========")
 	return version != nil && version.BlockNum == blockNum
 }
 
 func sameVersionFromVal(vv *statedb.VersionedValue, blockNum uint64) bool {
-	fmt.Println("==sameVersionFromVal========")
+	logger.Info("==sameVersionFromVal========")
 	return vv != nil && sameVersion(vv.Version, blockNum)
 }

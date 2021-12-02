@@ -50,7 +50,7 @@ func (m *ExpiryData) XXX_DiscardUnknown() {
 var xxx_messageInfo_ExpiryData proto.InternalMessageInfo
 
 func (m *ExpiryData) GetMap() map[string]*Collections {
-	fmt.Println("===ExpiryData=GetMap===")
+	logger.Info("===ExpiryData=GetMap===")
 	if m != nil {
 		return m.Map
 	}
@@ -94,7 +94,7 @@ func (m *Collections) XXX_DiscardUnknown() {
 var xxx_messageInfo_Collections proto.InternalMessageInfo
 
 func (m *Collections) GetMap() map[string]*TxNums {
-	fmt.Println("===Collections=GetMap===")
+	logger.Info("===Collections=GetMap===")
 	if m != nil {
 		return m.Map
 	}
@@ -102,7 +102,7 @@ func (m *Collections) GetMap() map[string]*TxNums {
 }
 
 func (m *Collections) GetMissingDataMap() map[string]bool {
-	fmt.Println("===Collections=GetMissingDataMap===")
+	logger.Info("===Collections=GetMissingDataMap===")
 	if m != nil {
 		return m.MissingDataMap
 	}
@@ -141,7 +141,7 @@ func (m *TxNums) XXX_DiscardUnknown() {
 var xxx_messageInfo_TxNums proto.InternalMessageInfo
 
 func (m *TxNums) GetList() []uint64 {
-	fmt.Println("===TxNums=GetList===")
+	logger.Info("===TxNums=GetList===")
 	if m != nil {
 		return m.List
 	}
@@ -180,7 +180,7 @@ func (m *CollElgInfo) XXX_DiscardUnknown() {
 var xxx_messageInfo_CollElgInfo proto.InternalMessageInfo
 
 func (m *CollElgInfo) GetNsCollMap() map[string]*CollNames {
-	fmt.Println("===CollElgInfo=GetNsCollMap===")
+	logger.Info("===CollElgInfo=GetNsCollMap===")
 	if m != nil {
 		return m.NsCollMap
 	}
@@ -219,7 +219,7 @@ func (m *CollNames) XXX_DiscardUnknown() {
 var xxx_messageInfo_CollNames proto.InternalMessageInfo
 
 func (m *CollNames) GetEntries() []string {
-	fmt.Println("===CollElgInfo=GetEntries===")
+	logger.Info("===CollElgInfo=GetEntries===")
 	if m != nil {
 		return m.Entries
 	}
@@ -227,7 +227,7 @@ func (m *CollNames) GetEntries() []string {
 }
 
 func init() {
-	fmt.Println("====init1===")
+	logger.Info("====init1===")
 	proto.RegisterType((*ExpiryData)(nil), "pvtdatastorage.ExpiryData")
 	proto.RegisterMapType((map[string]*Collections)(nil), "pvtdatastorage.ExpiryData.MapEntry")
 	proto.RegisterType((*Collections)(nil), "pvtdatastorage.Collections")
@@ -240,7 +240,7 @@ func init() {
 }
 
 func init() {
-	fmt.Println("====init2===")
+	logger.Info("====init2===")
 	proto.RegisterFile("persistent_msgs.proto", fileDescriptor_persistent_msgs_f79691cf3913ef09)
 }
 

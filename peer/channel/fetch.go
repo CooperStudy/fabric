@@ -37,7 +37,7 @@ func fetchCmd(cf *ChannelCmdFactory) *cobra.Command {
 }
 
 func fetch(cmd *cobra.Command, args []string, cf *ChannelCmdFactory) error {
-	fmt.Println("=====fetch============")
+	logger.Info("=====fetch============")
 	if len(args) == 0 {
 		return fmt.Errorf("fetch target required, oldest, newest, config, or a number")
 	}

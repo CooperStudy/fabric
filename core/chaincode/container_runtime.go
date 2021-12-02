@@ -45,7 +45,7 @@ type ContainerRuntime struct {
 
 // Start launches chaincode in a runtime environment.
 func (c *ContainerRuntime) Start(ccci *ccprovider.ChaincodeContainerInfo, codePackage []byte) error {
-	fmt.Println("====ContainerRuntime==Start==")
+	logger.Info("====ContainerRuntime==Start==")
 	cname := ccci.Name + ":" + ccci.Version
 
 	lc, err := c.LaunchConfig(cname, ccci.Type)
@@ -84,7 +84,7 @@ func (c *ContainerRuntime) Start(ccci *ccprovider.ChaincodeContainerInfo, codePa
 
 // Stop terminates chaincode and its container runtime environment.
 func (c *ContainerRuntime) Stop(ccci *ccprovider.ChaincodeContainerInfo) error {
-	fmt.Println("====ContainerRuntime==Stop==")
+	logger.Info("====ContainerRuntime==Stop==")
 	scr := container.StopContainerReq{
 		CCID: ccintf.CCID{
 			Name:    ccci.Name,
@@ -109,7 +109,7 @@ const (
 )
 
 func (c *ContainerRuntime) getTLSFiles(keyPair *accesscontrol.CertAndPrivKeyPair) map[string][]byte {
-	fmt.Println("====ContainerRuntime==getTLSFiles==")
+	logger.Info("====ContainerRuntime==getTLSFiles==")
 	if keyPair == nil {
 		return nil
 	}
@@ -130,7 +130,7 @@ type LaunchConfig struct {
 
 // LaunchConfig creates the LaunchConfig for chaincode running in a container.
 func (c *ContainerRuntime) LaunchConfig(cname string, ccType string) (*LaunchConfig, error) {
-	fmt.Println("====ContainerRuntime==LaunchConfig==")
+	logger.Info("====ContainerRuntime==LaunchConfig==")
 	var lc LaunchConfig
 
 	// common environment variables
@@ -139,14 +139,14 @@ func (c *ContainerRuntime) LaunchConfig(cname string, ccType string) (*LaunchCon
 	// language specific arguments
 	switch ccType {
 	case pb.ChaincodeSpec_GOLANG.String(), pb.ChaincodeSpec_CAR.String():
-		fmt.Println("=================case pb.ChaincodeSpec_GOLANG.String(), pb.ChaincodeSpec_CAR.String()===============================")
+		logger.Info("=================case pb.ChaincodeSpec_GOLANG.String(), pb.ChaincodeSpec_CAR.String()===============================")
 		lc.Args = []string{"chaincode", fmt.Sprintf("-peer.address=%s", c.PeerAddress)}
 	case pb.ChaincodeSpec_JAVA.String():
-		fmt.Println("==================case pb.ChaincodeSpec_GOLANG.String(), pb.ChaincodeSpec_CAR.String()====")
+		logger.Info("==================case pb.ChaincodeSpec_GOLANG.String(), pb.ChaincodeSpec_CAR.String()====")
 
 		lc.Args = []string{"/root/chaincode-java/start", "--peerAddress", c.PeerAddress}
 	case pb.ChaincodeSpec_NODE.String():
-		fmt.Println("=================case pb.ChaincodeSpec_NODE.String():====")
+		logger.Info("=================case pb.ChaincodeSpec_NODE.String():====")
 		lc.Args = []string{"/bin/sh", "-c", fmt.Sprintf("cd /usr/local/src; npm start -- --peer.address %s", c.PeerAddress)}
 	default:
 		return nil, errors.Errorf("unknown chaincodeType: %s", ccType)
@@ -154,7 +154,7 @@ func (c *ContainerRuntime) LaunchConfig(cname string, ccType string) (*LaunchCon
 
 	// Pass TLS options to chaincode
 	if c.CertGenerator != nil {
-		fmt.Println("================if c.CertGenerator != nil===============")
+		logger.Info("================if c.CertGenerator != nil===============")
 		certKeyPair, err := c.CertGenerator.Generate(cname)
 		if err != nil {
 			return nil, errors.WithMessage(err, fmt.Sprintf("failed to generate TLS certificates for %s", cname))
@@ -178,7 +178,7 @@ func (c *ContainerRuntime) LaunchConfig(cname string, ccType string) (*LaunchCon
 }
 
 func (lc *LaunchConfig) String() string {
-	fmt.Println("====LaunchConfig==String==")
+	logger.Info("====LaunchConfig==String==")
 	buf := &bytes.Buffer{}
 	if len(lc.Args) > 0 {
 		fmt.Fprintf(buf, "executable:%q,", lc.Args[0])

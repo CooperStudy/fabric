@@ -28,7 +28,7 @@ var mainCmd = &cobra.Command{
 	Use: "peer"}
 
 func main() {
-	fmt.Println("===main======")
+	logger.Info("===main======")
 	// For environment variables.
 	viper.SetEnvPrefix(common.CmdRoot)
 	viper.AutomaticEnv()

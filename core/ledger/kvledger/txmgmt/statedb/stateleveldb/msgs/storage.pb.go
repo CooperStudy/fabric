@@ -52,7 +52,7 @@ func (m *VersionedValueProto) XXX_DiscardUnknown() {
 var xxx_messageInfo_VersionedValueProto proto.InternalMessageInfo
 
 func (m *VersionedValueProto) GetVersionBytes() []byte {
-	fmt.Println("===VersionedValueProto==GetVersionBytes==")
+	logger.Info("===VersionedValueProto==GetVersionBytes==")
 	if m != nil {
 		return m.VersionBytes
 	}
@@ -60,7 +60,7 @@ func (m *VersionedValueProto) GetVersionBytes() []byte {
 }
 
 func (m *VersionedValueProto) GetValue() []byte {
-	fmt.Println("===VersionedValueProto==GetValue==")
+	logger.Info("===VersionedValueProto==GetValue==")
 	if m != nil {
 		return m.Value
 	}
@@ -68,7 +68,7 @@ func (m *VersionedValueProto) GetValue() []byte {
 }
 
 func (m *VersionedValueProto) GetMetadata() []byte {
-	fmt.Println("===VersionedValueProto==GetMetadata==")
+	logger.Info("===VersionedValueProto==GetMetadata==")
 	if m != nil {
 		return m.Metadata
 	}
@@ -76,12 +76,12 @@ func (m *VersionedValueProto) GetMetadata() []byte {
 }
 
 func init() {
-	fmt.Println("===init1==")
+	logger.Info("===init1==")
 	proto.RegisterType((*VersionedValueProto)(nil), "msgs.VersionedValueProto")
 }
 
 func init() {
-	fmt.Println("===init2==")
+	logger.Info("===init2==")
 	proto.RegisterFile("storage.proto", fileDescriptor_storage_8fef7a68096053f5)
 }
 
