@@ -26,7 +26,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var mcsLogger = flogging.MustGetLogger("peer.gossip.mcs")
+var logger = flogging.MustGetLogger("peer.gossip.mcs")
 
 // MSPMessageCryptoService implements the MessageCryptoService interface
 // using the peer MSPs (local and channel-related)
@@ -74,7 +74,7 @@ func (s *MSPMessageCryptoService) ValidateIdentity(peerIdentity api.PeerIdentity
 // This method does not validate peerIdentity.
 // This validation is supposed to be done appropriately during the execution flow.
 func (s *MSPMessageCryptoService) GetPKIidOfCert(peerIdentity api.PeerIdentityType) common.PKIidType {
-	//logger.Info("======MSPMessageCryptoService====GetPKIidOfCert=======")
+	logger.Info("======MSPMessageCryptoService====GetPKIidOfCert=======")
 	// Validate arguments
 	if len(peerIdentity) == 0 {
 		mcsLogger.Error("Invalid Peer Identity. It must be different from nil.")
@@ -111,7 +111,7 @@ func (s *MSPMessageCryptoService) GetPKIidOfCert(peerIdentity api.PeerIdentityTy
 // sequence number that the block's header contains.
 // else returns error
 func (s *MSPMessageCryptoService) VerifyBlock(chainID common.ChainID, seqNum uint64, signedBlock []byte) error {
-	logger.Info("======MSPMessageCryptoService====VerifyBlock=======")
+	//logger.Info("======MSPMessageCryptoService====VerifyBlock=======")
 	// - Convert signedBlock to common.Block.
 	block, err := utils.GetBlockFromBlockBytes(signedBlock)
 	if err != nil {

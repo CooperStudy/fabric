@@ -8,7 +8,6 @@ package cluster
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/hyperledger/fabric/protos/orderer"

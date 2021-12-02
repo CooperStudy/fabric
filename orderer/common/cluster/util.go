@@ -10,7 +10,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/pem"
-	"fmt"
 	"reflect"
 	"sync/atomic"
 

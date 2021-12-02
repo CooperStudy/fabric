@@ -8,7 +8,6 @@ package cluster
 
 import (
 	"context"
-	"fmt"
 	"io"
 
 	"github.com/hyperledger/fabric/common/flogging"

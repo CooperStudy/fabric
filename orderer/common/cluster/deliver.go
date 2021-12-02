@@ -8,7 +8,6 @@ package cluster
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"math/rand"
 	"reflect"
