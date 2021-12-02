@@ -6,7 +6,6 @@ SPDX-License-Identifier: Apache-2.0
 
 package errors
 
-import "fmt"
 
 // TxValidationError marks that the error is related to
 // validation of a transaction
@@ -34,13 +33,13 @@ type VSCCEndorsementPolicyError struct {
 }
 
 func (e *VSCCEndorsementPolicyError) IsValid() bool {
-	logger.Info("======VSCCEndorsementPolicyError==IsValid=")
+	//logger.Info("======VSCCEndorsementPolicyError==IsValid=")
 	return e.Err == nil
 }
 
 // Error returns reasons which lead to the failure
 func (e VSCCEndorsementPolicyError) Error() string {
-	logger.Info("======VSCCEndorsementPolicyError==Error=")
+	//logger.Info("======VSCCEndorsementPolicyError==Error=")
 	return e.Err.Error()
 }
 
@@ -53,11 +52,11 @@ type VSCCExecutionFailureError struct {
 
 // Error returns reasons which lead to the failure
 func (e VSCCExecutionFailureError) Error() string {
-	logger.Info("======VSCCExecutionFailureError==Error=")
+	//logger.Info("======VSCCExecutionFailureError==Error=")
 	return e.Err.Error()
 }
 
 func (e *VSCCExecutionFailureError) IsValid() bool {
-	logger.Info("======VSCCExecutionFailureError===IsValid==")
+	//logger.Info("======VSCCExecutionFailureError===IsValid==")
 	return e.Err == nil
 }

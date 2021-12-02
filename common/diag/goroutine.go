@@ -8,7 +8,6 @@ package diag
 
 import (
 	"bytes"
-	"fmt"
 	"runtime/pprof"
 )
 
@@ -16,9 +15,7 @@ type Logger interface {
 	Infof(template string, args ...interface{})
 	Errorf(template string, args ...interface{})
 }
-
 func CaptureGoRoutines() (string, error) {
-	logger.Info("======CaptureGoRoutines===")
 	var buf bytes.Buffer
 	err := pprof.Lookup("goroutine").WriteTo(&buf, 2)
 	if err != nil {
@@ -28,7 +25,6 @@ func CaptureGoRoutines() (string, error) {
 }
 
 func LogGoRoutines(logger Logger) {
-	logger.Info("======SLogGoRoutines===")
 	output, err := CaptureGoRoutines()
 	if err != nil {
 		logger.Errorf("failed to capture go routines: %s", err)

@@ -77,14 +77,14 @@ func (s *MSPMessageCryptoService) GetPKIidOfCert(peerIdentity api.PeerIdentityTy
 	logger.Info("======MSPMessageCryptoService====GetPKIidOfCert=======")
 	// Validate arguments
 	if len(peerIdentity) == 0 {
-		mcsLogger.Error("Invalid Peer Identity. It must be different from nil.")
+		logger.Error("Invalid Peer Identity. It must be different from nil.")
 
 		return nil
 	}
 
 	sid, err := s.deserializer.Deserialize(peerIdentity)
 	if err != nil {
-		mcsLogger.Errorf("Failed getting validated identity from peer identity [% x]: [%s]", peerIdentity, err)
+		logger.Errorf("Failed getting validated identity from peer identity [% x]: [%s]", peerIdentity, err)
 
 		return nil
 	}
@@ -99,7 +99,7 @@ func (s *MSPMessageCryptoService) GetPKIidOfCert(peerIdentity api.PeerIdentityTy
 	// Hash
 	digest, err := factory.GetDefault().Hash(raw, &bccsp.SHA256Opts{})
 	if err != nil {
-		mcsLogger.Errorf("Failed computing digest of serialized identity [% x]: [%s]", peerIdentity, err)
+		logger.Errorf("Failed computing digest of serialized identity [% x]: [%s]", peerIdentity, err)
 
 		return nil
 	}
@@ -161,12 +161,12 @@ func (s *MSPMessageCryptoService) VerifyBlock(chainID common.ChainID, seqNum uin
 		return fmt.Errorf("Could not acquire policy manager for channel %s", channelID)
 	}
 	// ok is true if it was the manager requested, or false if it is the default manager
-	mcsLogger.Debugf("Got policy manager for channel [%s] with flag [%t]", channelID, ok)
+	logger.Debugf("Got policy manager for channel [%s] with flag [%t]", channelID, ok)
 
 	// Get block validation policy
 	policy, ok := cpm.GetPolicy(policies.BlockValidation)
 	// ok is true if it was the policy requested, or false if it is the default policy
-	mcsLogger.Debugf("Got block validation policy for channel [%s] with flag [%t]", channelID, ok)
+	logger.Debugf("Got block validation policy for channel [%s] with flag [%t]", channelID, ok)
 
 	// - Prepare SignedData
 	signatureSet := []*pcommon.SignedData{}
@@ -203,7 +203,7 @@ func (s *MSPMessageCryptoService) Verify(peerIdentity api.PeerIdentityType, sign
 	//logger.Info("======MSPMessageCryptoService====Verify=======")
 	identity, chainID, err := s.getValidatedIdentity(peerIdentity)
 	if err != nil {
-		mcsLogger.Errorf("Failed getting validated identity from peer identity [%s]", err)
+		logger.Errorf("Failed getting validated identity from peer identity [%s]", err)
 
 		return err
 	}
@@ -238,11 +238,11 @@ func (s *MSPMessageCryptoService) VerifyByChannel(chainID common.ChainID, peerId
 	if cpm == nil {
 		return fmt.Errorf("Could not acquire policy manager for channel %s", string(chainID))
 	}
-	mcsLogger.Debugf("Got policy manager for channel [%s] with flag [%t]", string(chainID), flag)
+	logger.Debugf("Got policy manager for channel [%s] with flag [%t]", string(chainID), flag)
 
 	// Get channel reader policy
 	policy, flag := cpm.GetPolicy(policies.ChannelApplicationReaders)
-	mcsLogger.Debugf("Got reader policy for channel [%s] with flag [%t]", string(chainID), flag)
+	logger.Debugf("Got reader policy for channel [%s] with flag [%t]", string(chainID), flag)
 
 	return policy.Evaluate(
 		[]*pcommon.SignedData{{
@@ -273,7 +273,7 @@ func (s *MSPMessageCryptoService) getValidatedIdentity(peerIdentity api.PeerIden
 
 	sId, err := s.deserializer.Deserialize(peerIdentity)
 	if err != nil {
-		mcsLogger.Error("failed deserializing identity", err)
+		logger.Error("failed deserializing identity", err)
 		return nil, nil, err
 	}
 
@@ -315,7 +315,7 @@ func (s *MSPMessageCryptoService) getValidatedIdentity(peerIdentity api.PeerIden
 		// Deserialize identity
 		identity, err := mspManager.DeserializeIdentity([]byte(peerIdentity))
 		if err != nil {
-			mcsLogger.Debugf("Failed deserialization identity [% x] on [%s]: [%s]", peerIdentity, chainID, err)
+			logger.Debugf("Failed deserialization identity [% x] on [%s]: [%s]", peerIdentity, chainID, err)
 			continue
 		}
 
@@ -330,11 +330,11 @@ func (s *MSPMessageCryptoService) getValidatedIdentity(peerIdentity api.PeerIden
 		// This will be done by the caller function, if needed.
 
 		if err := identity.Validate(); err != nil {
-			mcsLogger.Debugf("Failed validating identity [% x] on [%s]: [%s]", peerIdentity, chainID, err)
+			logger.Debugf("Failed validating identity [% x] on [%s]: [%s]", peerIdentity, chainID, err)
 			continue
 		}
 
-		mcsLogger.Debugf("Validation succeeded [% x] on [%s]", peerIdentity, chainID)
+		logger.Debugf("Validation succeeded [% x] on [%s]", peerIdentity, chainID)
 
 		return identity, common.ChainID(chainID), nil
 	}

@@ -6,7 +6,9 @@ SPDX-License-Identifier: Apache-2.0
 
 package graph
 
-import "fmt"
+import "github.com/hyperledger/fabric/common/flogging"
+
+var logger = flogging.MustGetLogger("common.graph.choose")
 
 type orderedSet struct {
 	elements []interface{}

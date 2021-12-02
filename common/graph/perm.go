@@ -6,7 +6,6 @@ SPDX-License-Identifier: Apache-2.0
 
 package graph
 
-import "fmt"
 
 // treePermutations represents possible permutations
 // of a tree

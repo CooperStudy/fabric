@@ -17,7 +17,6 @@ limitations under the License.
 package util
 
 import (
-	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 )

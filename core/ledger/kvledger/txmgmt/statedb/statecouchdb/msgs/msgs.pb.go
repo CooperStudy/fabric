@@ -3,7 +3,10 @@
 
 package msgs // import "github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb/statecouchdb/msgs"
 
-import proto "github.com/golang/protobuf/proto"
+import (
+	proto "github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/flogging"
+)
 import fmt "fmt"
 import math "math"
 
@@ -49,7 +52,7 @@ func (m *VersionFieldProto) XXX_DiscardUnknown() {
 }
 
 var xxx_messageInfo_VersionFieldProto proto.InternalMessageInfo
-
+var logger = flogging.MustGetLogger("core.ledger.kvledger.statedb.statecouochdb.msgs")
 func (m *VersionFieldProto) GetVersionBytes() []byte {
 	logger.Info("==VersionFieldProto==GetVersionBytes==")
 	if m != nil {

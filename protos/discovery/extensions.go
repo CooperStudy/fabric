@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package discovery
 
 import (
-	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/common/flogging"
 )
@@ -53,7 +52,7 @@ func (sr *SignedRequest) ToRequest() (*Request, error) {
 // ConfigAt returns the ConfigResult at a given index in the Response,
 // or an Error if present.
 func (m *Response) ConfigAt(i int) (*ConfigResult, *Error) {
-	logger.Info("==========Response===ConfigAt===========")
+	discoveryLogger.Info("==========Response===ConfigAt===========")
 	r := m.Results[i]
 	return r.GetConfigResult(), r.GetError()
 }
@@ -61,7 +60,7 @@ func (m *Response) ConfigAt(i int) (*ConfigResult, *Error) {
 // MembershipAt returns the PeerMembershipResult at a given index in the Response,
 // or an Error if present.
 func (m *Response) MembershipAt(i int) (*PeerMembershipResult, *Error) {
-	logger.Info("==========Response===MembershipAt===========")
+	discoveryLogger.Info("==========Response===MembershipAt===========")
 	r := m.Results[i]
 	return r.GetMembers(), r.GetError()
 }
@@ -69,7 +68,7 @@ func (m *Response) MembershipAt(i int) (*PeerMembershipResult, *Error) {
 // EndorsersAt returns the PeerMembershipResult at a given index in the Response,
 // or an Error if present.
 func (m *Response) EndorsersAt(i int) (*ChaincodeQueryResult, *Error) {
-	logger.Info("==========Response===EndorsersAt===========")
+	discoveryLogger.Info("==========Response===EndorsersAt===========")
 	r := m.Results[i]
 	return r.GetCcQueryRes(), r.GetError()
 }

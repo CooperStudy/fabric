@@ -9,9 +9,9 @@ package tlsgen
 import (
 	"crypto"
 	"crypto/x509"
-	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 )
-
+var logger = flogging.MustGetLogger("common.crypto.tlsgen")
 // CertKeyPair denotes a TLS certificate and corresponding key,
 // both PEM encoded
 type CertKeyPair struct {

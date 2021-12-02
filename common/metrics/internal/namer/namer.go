@@ -8,6 +8,7 @@ package namer
 
 import (
 	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"regexp"
 	"strings"
 
@@ -32,7 +33,7 @@ func NewCounterNamer(c metrics.CounterOpts) *Namer {
 		labelNames: sliceToSet(c.LabelNames),
 	}
 }
-
+var logger = flogging.MustGetLogger("common.metrics.internal.namer")
 func NewGaugeNamer(g metrics.GaugeOpts) *Namer {
 	logger.Info("==NewGaugeNamer==")
 	return &Namer{

@@ -6,7 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 
 package graph
 
-import "fmt"
+
 
 // Iterator defines an iterator that can be used to traverse vertices
 // of a graph

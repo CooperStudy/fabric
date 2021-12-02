@@ -18,10 +18,12 @@ package msp
 
 import (
 	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 
 	"github.com/golang/protobuf/proto"
 )
 
+var logger = flogging.MustGetLogger("protos.msp")
 func (mp *MSPPrincipal) VariablyOpaqueFields() []string {
 	logger.Info("===MSPPrincipal=====VariablyOpaqueFields==")
 	return []string{"principal"}

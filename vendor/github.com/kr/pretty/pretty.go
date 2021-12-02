@@ -79,7 +79,7 @@ func Printf(format string, a ...interface{}) (n int, errno error) {
 // logger.Info(Formatter(x), Formatter(y)), but each operand is
 // formatted with "%# v".
 func Println(a ...interface{}) (n int, errno error) {
-	return logger.Info(wrap(a, true)...)
+	return fmt.Println(wrap(a, true)...)
 }
 
 // Sprint is a convenience wrapper for fmt.Sprintf.

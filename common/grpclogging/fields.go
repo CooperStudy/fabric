@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package grpclogging
 
 import (
-	"fmt"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/protobuf/jsonpb"
 	"go.uber.org/zap"
@@ -20,7 +19,6 @@ type protoMarshaler struct {
 }
 
 func (m *protoMarshaler) MarshalJSON() ([]byte, error) {
-	logger.Info("====protoMarshaler====MarshalJSON============")
 	out, err := m.Marshaler.MarshalToString(m.message)
 	if err != nil {
 		return nil, err
@@ -29,7 +27,6 @@ func (m *protoMarshaler) MarshalJSON() ([]byte, error) {
 }
 
 func ProtoMessage(key string, val interface{}) zapcore.Field {
-	logger.Info("====ProtoMessage============")
 	if pm, ok := val.(proto.Message); ok {
 		return zap.Reflect(key, &protoMarshaler{message: pm})
 	}
@@ -37,7 +34,6 @@ func ProtoMessage(key string, val interface{}) zapcore.Field {
 }
 
 func Error(err error) zapcore.Field {
-	logger.Info("===Error===========")
 	if err == nil {
 		return zap.Skip()
 	}

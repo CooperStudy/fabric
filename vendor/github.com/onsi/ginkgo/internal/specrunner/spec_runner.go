@@ -88,7 +88,7 @@ func (runner *SpecRunner) performDryRun() {
 			break
 		}
 		if err != nil {
-			logger.Info("failed to iterate over tests:\n" + err.Error())
+			fmt.Println("failed to iterate over tests:\n" + err.Error())
 			break
 		}
 
@@ -150,7 +150,7 @@ func (runner *SpecRunner) runSpecs() bool {
 			break
 		}
 		if err != nil {
-			logger.Info("failed to iterate over tests:\n" + err.Error())
+			fmt.Println("failed to iterate over tests:\n" + err.Error())
 			suiteFailed = true
 			break
 		}

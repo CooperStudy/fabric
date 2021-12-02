@@ -7,13 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package goruntime
 
 import (
-	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"runtime"
 	"time"
 
 	"github.com/hyperledger/fabric/common/metrics"
 )
-
+var logger = flogging.MustGetLogger("common.metrics.statsd.goruntime")
 type Collector struct {
 	CgoCalls       metrics.Gauge
 	GoRoutines     metrics.Gauge

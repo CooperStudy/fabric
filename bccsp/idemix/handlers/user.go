@@ -7,7 +7,6 @@ package handlers
 
 import (
 	"crypto/sha256"
-	"fmt"
 
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/pkg/errors"

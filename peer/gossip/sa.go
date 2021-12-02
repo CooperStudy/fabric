@@ -7,13 +7,10 @@ SPDX-License-Identifier: Apache-2.0
 package gossip
 
 import (
-	"fmt"
-	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/gossip/api"
 	"github.com/hyperledger/fabric/msp/mgmt"
 )
 
-var saLogger = flogging.MustGetLogger("peer.gossip.sa")
 
 // mspSecurityAdvisor implements the SecurityAdvisor interface
 // using peer's MSPs.
@@ -45,7 +42,7 @@ func (advisor *mspSecurityAdvisor) OrgByPeerIdentity(peerIdentity api.PeerIdenti
 	// Validate arguments
 	//logger.Info("========len(peerIdentity)====================",len(peerIdentity))
 	if len(peerIdentity) == 0 {
-		saLogger.Error("Invalid Peer Identity. It must be different from nil.")
+		logger.Error("Invalid Peer Identity. It must be different from nil.")
 
 		return nil
 	}
@@ -70,14 +67,14 @@ func (advisor *mspSecurityAdvisor) OrgByPeerIdentity(peerIdentity api.PeerIdenti
 		// Deserialize identity
 		identity, err := mspManager.DeserializeIdentity([]byte(peerIdentity))
 		if err != nil {
-			saLogger.Debugf("Failed deserialization identity [% x] on [%s]: [%s]", peerIdentity, chainID, err)
+			logger.Debugf("Failed deserialization identity [% x] on [%s]: [%s]", peerIdentity, chainID, err)
 			continue
 		}
 
 		return []byte(identity.GetMSPIdentifier())
 	}
 
-	saLogger.Warningf("Peer Identity [% x] cannot be desirialized. No MSP found able to do that.", peerIdentity)
+	logger.Warningf("Peer Identity [% x] cannot be desirialized. No MSP found able to do that.", peerIdentity)
 
 	return nil
 }

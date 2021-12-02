@@ -3,7 +3,10 @@
 
 package orderer // import "github.com/hyperledger/fabric/protos/orderer"
 
-import proto "github.com/golang/protobuf/proto"
+import (
+	proto "github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/flogging"
+)
 import fmt "fmt"
 import math "math"
 import common "github.com/hyperledger/fabric/protos/common"
@@ -30,7 +33,7 @@ const (
 	SeekInfo_BLOCK_UNTIL_READY SeekInfo_SeekBehavior = 0
 	SeekInfo_FAIL_IF_NOT_READY SeekInfo_SeekBehavior = 1
 )
-
+var logger = flogging.MustGetLogger("protos.orderer")
 var SeekInfo_SeekBehavior_name = map[int32]string{
 	0: "BLOCK_UNTIL_READY",
 	1: "FAIL_IF_NOT_READY",

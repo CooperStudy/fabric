@@ -18,9 +18,9 @@ package kvrwset
 
 import (
 	"bytes"
-	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 )
-
+var logger = flogging.MustGetLogger("protos.ledger.rwset.kvrwset")
 // SetRawReads sets the 'readsInfo' field to raw KVReads performed by the query
 func (rqi *RangeQueryInfo) SetRawReads(kvReads []*KVRead) {
 	logger.Info("===RangeQueryInfo=====SetRawReads==")

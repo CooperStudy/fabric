@@ -6,7 +6,6 @@ SPDX-License-Identifier: Apache-2.0
 package handlers
 
 import (
-	"fmt"
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/pkg/errors"
 )

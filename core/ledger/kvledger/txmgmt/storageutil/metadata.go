@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package storageutil
 
 import (
-	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/protos/ledger/rwset/kvrwset"
 )

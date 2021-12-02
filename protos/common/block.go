@@ -19,15 +19,16 @@ package common
 import (
 	"encoding/asn1"
 	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"math"
 
 	"github.com/hyperledger/fabric/common/util"
 )
 
-
+var logger = flogging.MustGetLogger("protos.common")
 // NewBlock construct a block with no data and no metadata.
 func NewBlock(seqNum uint64, previousHash []byte) *Block {
-	commonLogger.Info("============NewBlock===========")
+	logger.Info("============NewBlock===========")
 	block := &Block{}
 	block.Header = &BlockHeader{}
 	block.Header.Number = seqNum

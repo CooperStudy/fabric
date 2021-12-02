@@ -13,7 +13,6 @@ import (
 )
 
 func (txrws *TxReadWriteSet) DynamicSliceFields() []string {
-	logger.Info("===TxReadWriteSet=====DynamicSliceFields==")
 	if txrws.DataModel != TxReadWriteSet_KV {
 		// We only know how to handle TxReadWriteSet_KV types
 		return []string{}
@@ -23,7 +22,6 @@ func (txrws *TxReadWriteSet) DynamicSliceFields() []string {
 }
 
 func (txrws *TxReadWriteSet) DynamicSliceFieldProto(name string, index int, base proto.Message) (proto.Message, error) {
-	logger.Info("===TxReadWriteSet=====DynamicSliceFieldProto==")
 	if name != txrws.DynamicSliceFields()[0] {
 		return nil, fmt.Errorf("Not a dynamic field: %s", name)
 	}
@@ -45,17 +43,17 @@ type DynamicNsReadWriteSet struct {
 }
 
 func (dnrws *DynamicNsReadWriteSet) Underlying() proto.Message {
-	logger.Info("===DynamicNsReadWriteSet=====Underlying==")
+	//logger.Info("===DynamicNsReadWriteSet=====Underlying==")
 	return dnrws.NsReadWriteSet
 }
 
 func (dnrws *DynamicNsReadWriteSet) StaticallyOpaqueFields() []string {
-	logger.Info("===DynamicNsReadWriteSet=====StaticallyOpaqueFields==")
+	//logger.Info("===DynamicNsReadWriteSet=====StaticallyOpaqueFields==")
 	return []string{"rwset"}
 }
 
 func (dnrws *DynamicNsReadWriteSet) StaticallyOpaqueFieldProto(name string) (proto.Message, error) {
-	logger.Info("===DynamicNsReadWriteSet=====StaticallyOpaqueFieldProto==")
+	//logger.Info("===DynamicNsReadWriteSet=====StaticallyOpaqueFieldProto==")
 	switch name {
 	case "rwset":
 		switch dnrws.DataModel {
@@ -70,7 +68,7 @@ func (dnrws *DynamicNsReadWriteSet) StaticallyOpaqueFieldProto(name string) (pro
 }
 
 func (dnrws *DynamicNsReadWriteSet) DynamicSliceFields() []string {
-	logger.Info("===DynamicNsReadWriteSet=====DynamicSliceFields==")
+	//logger.Info("===DynamicNsReadWriteSet=====DynamicSliceFields==")
 	if dnrws.DataModel != TxReadWriteSet_KV {
 		// We only know how to handle TxReadWriteSet_KV types
 		return []string{}
@@ -80,7 +78,7 @@ func (dnrws *DynamicNsReadWriteSet) DynamicSliceFields() []string {
 }
 
 func (dnrws *DynamicNsReadWriteSet) DynamicSliceFieldProto(name string, index int, base proto.Message) (proto.Message, error) {
-	logger.Info("===DynamicNsReadWriteSet=====DynamicSliceFieldProto==")
+	//logger.Info("===DynamicNsReadWriteSet=====DynamicSliceFieldProto==")
 	if name != dnrws.DynamicSliceFields()[0] {
 		return nil, fmt.Errorf("Not a dynamic field: %s", name)
 	}
@@ -102,17 +100,17 @@ type DynamicCollectionHashedReadWriteSet struct {
 }
 
 func (dchrws *DynamicCollectionHashedReadWriteSet) Underlying() proto.Message {
-	logger.Info("===DynamicCollectionHashedReadWriteSet=====Underlying==")
+	//logger.Info("===DynamicCollectionHashedReadWriteSet=====Underlying==")
 	return dchrws.CollectionHashedReadWriteSet
 }
 
 func (dchrws *DynamicCollectionHashedReadWriteSet) StaticallyOpaqueFields() []string {
-	logger.Info("===DynamicCollectionHashedReadWriteSet=====StaticallyOpaqueFields==")
+	//logger.Info("===DynamicCollectionHashedReadWriteSet=====StaticallyOpaqueFields==")
 	return []string{"rwset"}
 }
 
 func (dchrws *DynamicCollectionHashedReadWriteSet) StaticallyOpaqueFieldProto(name string) (proto.Message, error) {
-	logger.Info("===DynamicCollectionHashedReadWriteSet=====StaticallyOpaqueFieldProto==")
+	//logger.Info("===DynamicCollectionHashedReadWriteSet=====StaticallyOpaqueFieldProto==")
 	switch name {
 	case "rwset":
 		switch dchrws.DataModel {
@@ -129,7 +127,7 @@ func (dchrws *DynamicCollectionHashedReadWriteSet) StaticallyOpaqueFieldProto(na
 // Remove removes the rwset for the given <ns, coll> tuple. If after this removal,
 // there are no more collection in the namespace <ns>, the whole namespace entry is removed
 func (p *TxPvtReadWriteSet) Remove(ns, coll string) {
-	logger.Info("===TxPvtReadWriteSet=====Remove==")
+	//logger.Info("===TxPvtReadWriteSet=====Remove==")
 	for i := 0; i < len(p.NsPvtRwset); i++ {
 		n := p.NsPvtRwset[i]
 		if n.Namespace != ns {
@@ -144,7 +142,7 @@ func (p *TxPvtReadWriteSet) Remove(ns, coll string) {
 }
 
 func (n *NsPvtReadWriteSet) remove(collName string) {
-	logger.Info("===NsPvtReadWriteSet=====remove==")
+	//logger.Info("===NsPvtReadWriteSet=====remove==")
 	for i := 0; i < len(n.CollectionPvtRwset); i++ {
 		c := n.CollectionPvtRwset[i]
 		if c.CollectionName != collName {

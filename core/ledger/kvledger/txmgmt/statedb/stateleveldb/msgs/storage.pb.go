@@ -3,7 +3,10 @@
 
 package msgs // import "github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb/stateleveldb/msgs"
 
-import proto "github.com/golang/protobuf/proto"
+import (
+	proto "github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/flogging"
+)
 import fmt "fmt"
 import math "math"
 
@@ -17,7 +20,7 @@ var _ = math.Inf
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
-
+var logger = flogging.MustGetLogger("core.ledger.kvledger.statedb.stateleveldb.msgs")
 type VersionedValueProto struct {
 	VersionBytes         []byte   `protobuf:"bytes,1,opt,name=version_bytes,json=versionBytes,proto3" json:"version_bytes,omitempty"`
 	Value                []byte   `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
