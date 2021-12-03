@@ -74,6 +74,10 @@ func CreateSignedEnvelope(txType common.HeaderType, channelID string, signer cry
 // into the channel header
 func CreateSignedEnvelopeWithTLSBinding(txType common.HeaderType, channelID string, signer crypto.LocalSigner, dataMsg proto.Message, msgVersion int32, epoch uint64, tlsCertHash []byte,orgName,orgPki string) (*common.Envelope, error) {
 	logger.Info("===========CreateSignedEnvelopeWithTLSBinding========")
+	/*
+	create Channel
+	 */
+	logger.Info("=======================payloadChannelHeader := MakeChannelHeader(txType:%v, msgVersion:%v, channelID:%v, epoch:%v,orgName:%v,orgPki:%v)==",txType,msgVersion,channelID,epoch,orgName,orgPki)
 	payloadChannelHeader := MakeChannelHeader(txType, msgVersion, channelID, epoch,orgName,orgPki)
 	payloadChannelHeader.TlsCertHash = tlsCertHash
 	var err error

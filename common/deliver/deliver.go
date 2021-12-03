@@ -147,15 +147,15 @@ func NewHandler(cm ChainManager, timeWindow time.Duration, mutualTLS bool, metri
 
 // Handle receives incoming deliver requests.
 func (h *Handler) Handle(ctx context.Context, srv *Server) error {
-	logger.Info("====Handler==Handle===")
+	logger.Info("====Handler==Handle======收到区块处理=========")
 	addr := util.ExtractRemoteAddress(ctx)
-	logger.Debugf("Starting new deliver loop for %s", addr)
+	logger.Infof("Starting new deliver loop for %s", addr)
 	h.Metrics.StreamsOpened.Add(1)
 	defer h.Metrics.StreamsClosed.Add(1)
 	for {
-		logger.Debugf("Attempting to read seek info message from %s", addr)
+		logger.Infof("Attempting to read seek info message from %s", addr)
 		envelope, err := srv.Recv()
-		logger.Info("======srv.Recv=envelope===========")
+		logger.Infof("======srv.Recv=envelope:%v===========",envelope.Payload,envelope.Signature)
 		if err == io.EOF {
 			logger.Debugf("Received EOF from %s, hangup", addr)
 			return nil
@@ -164,9 +164,9 @@ func (h *Handler) Handle(ctx context.Context, srv *Server) error {
 			logger.Warningf("Error reading from %s: %s", addr, err)
 			return err
 		}
-
+		logger.Info("=====deliverBlocks==========")
 		status, err := h.deliverBlocks(ctx, srv, envelope)
-		logger.Info("======h.deliverBlocks==========")
+
 		if err != nil {
 			return err
 		}
@@ -195,10 +195,10 @@ func isFiltered(srv *Server) bool {
 func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.Envelope) (status cb.Status, err error) {
 	logger.Info("==Handler==deliverBlocks==")
 	addr := util.ExtractRemoteAddress(ctx)
-	logger.Info("=======addr============",addr)
+	logger.Info("=======addr============",addr)//172.20.0.7:41574
 	payload, err := utils.UnmarshalPayload(envelope.Payload)
 	if err != nil {
-		logger.Warningf("Received an envelope from %s with no payload: %s", addr, err)
+		logger.Infof("Received an envelope from %s with no payload: %s", addr, err)
 		return cb.Status_BAD_REQUEST, nil
 	}
 
@@ -213,6 +213,8 @@ func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.E
 		return cb.Status_BAD_REQUEST, nil
 	}
 
+
+
 	err = h.validateChannelHeader(ctx, chdr)
 	if err != nil {
 		logger.Warningf("Rejecting deliver for %s due to envelope validation error: %s", addr, err)
@@ -220,7 +222,12 @@ func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.E
 	}
 
 	logger.Info("======chdr.ChannelId=============",chdr.ChannelId)
+	/*
+	1.query
+	mychannel
+	 */
 	chain := h.ChainManager.GetChain(chdr.ChannelId)
+	logger.Infof("===============%v := h.ChainManager.GetChain(%v)====================",chain,chdr.ChannelId)
 	if chain == nil {
 		// Note, we log this at DEBUG because SDKs will poll waiting for channels to be created
 		// So we would expect our log to be somewhat flooded with these
@@ -258,17 +265,24 @@ func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.E
 	}
 
 	seekInfo := &ab.SeekInfo{}
-	if err = proto.Unmarshal(payload.Data, seekInfo); err != nil {
-		logger.Warningf("[channel: %s] Received a signed deliver request from %s with malformed seekInfo payload: %s", chdr.ChannelId, addr, err)
+	err = proto.Unmarshal(payload.Data, seekInfo)
+	//createChannel
+	//logger.Info("==================seekInfo==============")
+	//logger.Info("==================seekInfo.Start==============",seekInfo.Start)//<>
+	//logger.Info("==================seekInfo.Stop==============",seekInfo.Stop)//<>
+	//logger.Info("==================seekInfo.Behavior==============",seekInfo.Behavior)//BLOCK_UNTIL_READY
+	if err != nil {
+		logger.Info("[channel: %s] Received a signed deliver request from %s with malformed seekInfo payload: %s", chdr.ChannelId, addr, err)
 		return cb.Status_BAD_REQUEST, nil
 	}
 
 	if seekInfo.Start == nil || seekInfo.Stop == nil {
 		logger.Warningf("[channel: %s] Received seekInfo message from %s with missing start or stop %v, %v", chdr.ChannelId, addr, seekInfo.Start, seekInfo.Stop)
+		// [channel: mychannel] Received seekInfo (0xc00058e240) start:<specified:<> > stop:<specified:<> >  from 172.19.0.7:51014
 		return cb.Status_BAD_REQUEST, nil
 	}
 
-	logger.Debugf("[channel: %s] Received seekInfo (%p) %v from %s", chdr.ChannelId, seekInfo, seekInfo, addr)
+	logger.Infof("[channel: %s] Received seekInfo (%p) %v from %s", chdr.ChannelId, seekInfo, seekInfo, addr)
 
 	cursor, number := chain.Reader().Iterator(seekInfo.Start)
 	defer cursor.Close()
@@ -288,6 +302,8 @@ func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.E
 
 	for {
 		if seekInfo.Behavior == ab.SeekInfo_FAIL_IF_NOT_READY {
+			logger.Info("=====number====",number)
+			logger.Info("=====chain.Reader().Height()-1 ====",chain.Reader().Height()-1 )
 			if number > chain.Reader().Height()-1 {
 				return cb.Status_NOT_FOUND, nil
 			}
@@ -328,7 +344,9 @@ func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.E
 
 		logger.Debugf("[channel: %s] Delivering block for (%p) for %s", chdr.ChannelId, seekInfo, addr)
 
-		if err := srv.SendBlockResponse(block); err != nil {
+		logger.Info("============err := srv.SendBlockResponse(block)=========================")
+		 err := srv.SendBlockResponse(block)
+		 if err != nil{
 			logger.Warningf("[channel: %s] Error sending to %s: %s", chdr.ChannelId, addr, err)
 			return cb.Status_INTERNAL_SERVER_ERROR, err
 		}

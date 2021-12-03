@@ -148,7 +148,7 @@ func (p *BlockPuller) setCancelStreamFunc(f func()) {
 }
 
 func (p *BlockPuller) pullBlocks(seq uint64, reConnected bool) error {
-	logger.Info("=========BlockPuller===pullBlocks==========")
+	logger.Info("=====order.common.cluster.deliver 150====BlockPuller===pullBlocks==========")
 	env, err := p.seekNextEnvelope(seq)
 	if err != nil {
 		p.Logger.Errorf("Failed creating seek envelope: %v", err)
@@ -195,6 +195,7 @@ func (p *BlockPuller) obtainStream(reConnected bool, env *common.Envelope, seq u
 	var err error
 	if reConnected {
 		p.Logger.Infof("Sending request for block %d to %s", seq, p.endpoint)
+		logger.Info("============stream, err = p.requestBlocks(p.endpoint, NewImpatientStream(p.conn, p.FetchTimeout), env)========================")
 		stream, err = p.requestBlocks(p.endpoint, NewImpatientStream(p.conn, p.FetchTimeout), env)
 		if err != nil {
 			return nil, err

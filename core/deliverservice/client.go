@@ -57,7 +57,7 @@ func NewBroadcastClient(prod comm.ConnectionProducer, clFactory clientFactory, o
 
 // Recv receives a message from the ordering service
 func (bc *broadcastClient) Recv() (*orderer.DeliverResponse, error) {
-	logger.Info("==broadcastClient==Recv===")
+	logger.Info("==func (bc *broadcastClient) Recv() (*orderer.DeliverResponse, error)===")
 	o, err := bc.try(func() (interface{}, error) {
 		if bc.shouldStop() {
 			return nil, errors.New("closing")

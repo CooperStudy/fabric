@@ -87,7 +87,9 @@ func NewOrdererConfig(ordererGroup *cb.ConfigGroup, mspConfig *MSPConfigHandler)
 // ConsensusType returns the configured consensus type
 func (oc *OrdererConfig) ConsensusType() string {
 	logger.Info("==OrdererConfig==ConsensusType==")
-	return oc.protos.ConsensusType.Type
+	a :=oc.protos.ConsensusType.Type
+	logger.Info("==================a",a)
+	return a
 }
 
 // ConsensusMetadata returns the metadata associated with the consensus type.

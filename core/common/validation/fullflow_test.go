@@ -33,7 +33,7 @@ import (
 	"github.com/hyperledger/fabric/protos/peer"
 	"github.com/hyperledger/fabric/protos/utils"
 	"github.com/stretchr/testify/assert"
-)_
+)
 
 func getProposal(channel string) (*peer.Proposal, error) {
 	cis := &peer.ChaincodeInvocationSpec{
@@ -490,7 +490,6 @@ func TestMain(m *testing.M) {
 
 	signerSerialized, err = signer.Serialize()
 	if err != nil {
-		logger.Info("Could not serialize identity")
 		os.Exit(-1)
 		return
 	}

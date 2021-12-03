@@ -33,6 +33,7 @@ const (
 	SeekInfo_BLOCK_UNTIL_READY SeekInfo_SeekBehavior = 0
 	SeekInfo_FAIL_IF_NOT_READY SeekInfo_SeekBehavior = 1
 )
+
 var logger = flogging.MustGetLogger("protos.orderer")
 var SeekInfo_SeekBehavior_name = map[int32]string{
 	0: "BLOCK_UNTIL_READY",
@@ -416,23 +417,32 @@ func (m *SeekInfo) XXX_DiscardUnknown() {
 var xxx_messageInfo_SeekInfo proto.InternalMessageInfo
 
 func (m *SeekInfo) GetStart() *SeekPosition {
+	logger.Info("===func (m *SeekInfo) GetStart() *SeekPosition======")
 	if m != nil {
+		logger.Info("====m.Start=======",m.Start)
 		return m.Start
 	}
+	logger.Info("====m.Start=======", nil)
 	return nil
 }
 
 func (m *SeekInfo) GetStop() *SeekPosition {
+	logger.Info("===func (m *SeekInfo) GetStop() *SeekPosition======")
 	if m != nil {
+		logger.Info("====m.Stop=======",m.Stop)
 		return m.Stop
 	}
+	logger.Info("====m.Stop=======",nil)
 	return nil
 }
 
 func (m *SeekInfo) GetBehavior() SeekInfo_SeekBehavior {
+	logger.Info("===func (m *SeekInfo) GetBehavior() SeekInfo_SeekBehavior======")
 	if m != nil {
+		logger.Info("================= m.Behavior===============", m.Behavior)
 		return m.Behavior
 	}
+	logger.Info("=====SeekInfo_BLOCK_UNTIL_READY====")
 	return SeekInfo_BLOCK_UNTIL_READY
 }
 
@@ -634,12 +644,18 @@ type atomicBroadcastBroadcastClient struct {
 
 func (x *atomicBroadcastBroadcastClient) Send(m *common.Envelope) error {
 	logger.Info("================================func (x *atomicBroadcastBroadcastClient) Send(m *common.Envelope) error=========================================")
-	logger.Info("=======grpc===func (cs *clientStream) SendMsg(m interface{}) (err error)==========")
+	//logger.Info("=======grpc===func (cs *clientStream) SendMsg(m interface{}) (err error)==========")
+	/*
+	1.createChannel
+	 */
 	return x.ClientStream.SendMsg(m)
 }
 
 func (x *atomicBroadcastBroadcastClient) Recv() (*BroadcastResponse, error) {
-	logger.Info("========================= func (x *atomicBroadcastBroadcastClient) Recv() (*BroadcastResponse, error) ===========================================")
+	//logger.Info("========================= func (x *atomicBroadcastBroadcastClient) Recv() (*BroadcastResponse, error) ===========================================")
+	/*
+	createChannel
+	 */
 	m := new(BroadcastResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -667,10 +683,15 @@ type atomicBroadcastDeliverClient struct {
 }
 
 func (x *atomicBroadcastDeliverClient) Send(m *common.Envelope) error {
+	//logger.Info("=============func (x *atomicBroadcastDeliverClient) Send(m *common.Envelope) error==============================")
 	return x.ClientStream.SendMsg(m)
 }
 
 func (x *atomicBroadcastDeliverClient) Recv() (*DeliverResponse, error) {
+	//logger.Info("===============func (x *atomicBroadcastDeliverClient) Recv() (*DeliverResponse, error) ==============================")
+	/*
+	createChannel
+	 */
 	m := new(DeliverResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -731,12 +752,14 @@ type atomicBroadcastDeliverServer struct {
 }
 
 func (x *atomicBroadcastDeliverServer) Send(m *DeliverResponse) error {
+	//CreateChannel
 	logger.Info("==============atomicBroadcastDeliverServer=======Send==============================")
 	return x.ServerStream.SendMsg(m)
 }
 
 func (x *atomicBroadcastDeliverServer) Recv() (*common.Envelope, error) {
-	logger.Info("==============atomicBroadcastDeliverServer=======Recv==============================")
+	//createChannel
+	//logger.Info("==============atomicBroadcastDeliverServer=======Recv==============================")
 	m := new(common.Envelope)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err

@@ -531,10 +531,12 @@ type deliverDeliverClient struct {
 }
 
 func (x *deliverDeliverClient) Send(m *common.Envelope) error {
+	logger.Info("===============func (x *deliverDeliverClient) Send(m *common.Envelope) error=======================")
 	return x.ClientStream.SendMsg(m)
 }
 
 func (x *deliverDeliverClient) Recv() (*DeliverResponse, error) {
+	logger.Info("================func (x *deliverDeliverClient) Recv() (*DeliverResponse, error)========================")
 	m := new(DeliverResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -607,10 +609,12 @@ type deliverDeliverServer struct {
 }
 
 func (x *deliverDeliverServer) Send(m *DeliverResponse) error {
+	logger.Info("==========================func (x *deliverDeliverServer) Send(m *DeliverResponse) error========================")
 	return x.ServerStream.SendMsg(m)
 }
 
 func (x *deliverDeliverServer) Recv() (*common.Envelope, error) {
+	logger.Info("========================func (x *deliverDeliverServer) Recv() (*common.Envelope, error)========================")
 	m := new(common.Envelope)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -633,10 +637,12 @@ type deliverDeliverFilteredServer struct {
 }
 
 func (x *deliverDeliverFilteredServer) Send(m *DeliverResponse) error {
+	logger.Info("===================func (x *deliverDeliverFilteredServer) Send(m *DeliverResponse) error=======================")
 	return x.ServerStream.SendMsg(m)
 }
 
 func (x *deliverDeliverFilteredServer) Recv() (*common.Envelope, error) {
+	logger.Info("===================func (x *deliverDeliverFilteredServer) Send(m *DeliverResponse) error=======================")
 	m := new(common.Envelope)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err

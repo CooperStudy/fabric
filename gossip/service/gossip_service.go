@@ -230,7 +230,7 @@ type DataStoreSupport struct {
 
 // InitializeChannel allocates the state provider and should be invoked once per channel per execution
 func (g *gossipServiceImpl) InitializeChannel(chainID string, endpoints []string, support Support) {
-	//logger.Info("===gossipServiceImpl==InitializeChannel==")
+	logger.Info("===================gossipServiceImpl==InitializeChannel=============================")
 	g.lock.Lock()
 	defer g.lock.Unlock()
 	// Initialize new state provider for given committer
@@ -301,10 +301,10 @@ func (g *gossipServiceImpl) InitializeChannel(chainID string, endpoints []string
 		}
 
 		if leaderElection {
-			logger.Debug("Delivery uses dynamic leader election mechanism, channel", chainID)
+			logger.Info("Delivery uses dynamic leader election mechanism, channel", chainID)
 			g.leaderElection[chainID] = g.newLeaderElectionComponent(chainID, g.onStatusChangeFactory(chainID, support.Committer))
 		} else if isStaticOrgLeader {
-			logger.Debug("This peer is configured to connect to ordering service for blocks delivery, channel", chainID)
+			logger.Info("This peer is configured to connect to ordering service for blocks delivery, channel", chainID)
 			g.deliveryService[chainID].StartDeliverForChannel(chainID, support.Committer, func() {})
 		} else {
 			logger.Debug("This peer is not configured to connect to ordering service for blocks delivery, channel", chainID)

@@ -126,14 +126,17 @@ func (b *blocksProviderImpl) DeliverBlocks() {
 	defer b.client.Close()
 	for !b.isDone() {
 		msg, err := b.client.Recv()
+		logger.Info("========msg============",msg)
+
 		if err != nil {
 			logger.Warningf("[%s] Receive error: %s", b.chainID, err.Error())
 			return
 		}
 		switch t := msg.Type.(type) {
 		case *orderer.DeliverResponse_Status:
+			logger.Info("=========case *orderer.DeliverResponse_Status========================")
 			if t.Status == common.Status_SUCCESS {
-				logger.Warningf("[%s] ERROR! Received success for a seek that should never complete", b.chainID)
+				logger.Infof("[%s] ERROR! Received success for a seek that should never complete", b.chainID)
 				return
 			}
 			if t.Status == common.Status_BAD_REQUEST || t.Status == common.Status_FORBIDDEN {
@@ -160,10 +163,12 @@ func (b *blocksProviderImpl) DeliverBlocks() {
 			}
 			continue
 		case *orderer.DeliverResponse_Block:
+			logger.Info("=========case *orderer.DeliverResponse_Block:========================")
 			errorStatusCounter = 0
 			statusCounter = 0
 			blockNum := t.Block.Header.Number
 
+			logger.Info("=============t.Block.Header.Number===================",t.Block.Header.Number)
 			marshaledBlock, err := proto.Marshal(t.Block)
 			if err != nil {
 				logger.Errorf("[%s] Error serializing block with sequence number %d, due to %s", b.chainID, blockNum, err)

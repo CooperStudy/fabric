@@ -108,7 +108,7 @@ func (ch *chain) Errored() <-chan struct{} {
 }
 
 func (ch *chain) main() {
-	logger.Info("=====chain====main===")
+	logger.Info("=====solo==chain====main===")
 	var timer <-chan time.Time
 	var err error
 
@@ -117,31 +117,62 @@ func (ch *chain) main() {
 		err = nil
 		select {
 		case msg := <-ch.sendChan:
+			//logger.Info("===========case msg := <-ch.sendChan==============")
+			//logger.Info("===========msg.configSeq==============")
+			//logger.Info("===========msg.configSeq==============",msg.configSeq)
+			//if msg.configMsg != nil{
+				//logger.Info("===========msg.configMsg.Payload:==============",msg.configMsg.Payload)
+				/*
+
+				*/
+			//}
+
+			//logger.Info("===========msg.normalMsg==============")
+			/*
+			create Channel
+			 */
+
+			//if msg.normalMsg != nil{
+			//	//logger.Info("===========msg.normalMsg.Payload==============",msg.normalMsg.Payload)
+			//}
 			if msg.configMsg == nil {
+				//logger.Info("==============msg.configMsg == nil============")
 				// NormalMsg
+				//logger.Infof("====msg.configSeq:%v====",msg.configSeq)//0
+				//logger.Infof("====seq:%v====",seq)//0
 				if msg.configSeq < seq {
+					logger.Infof("===_, err = ch.support.ProcessNormalMsg(%v)====",*msg.normalMsg)
 					_, err = ch.support.ProcessNormalMsg(msg.normalMsg)
 					if err != nil {
 						logger.Warningf("Discarding bad normal message: %s", err)
 						continue
 					}
 				}
+				logger.Info("==batches, pending := ch.support.BlockCutter().Ordered(msg.normalMsg)===")
 				batches, pending := ch.support.BlockCutter().Ordered(msg.normalMsg)
 
+				logger.Info("==========len(batches)=============",len(batches))
+				logger.Info("==========pending=============",pending)
 				for _, batch := range batches {
+					logger.Info("==============batch===========",batch)
 					block := ch.support.CreateNextBlock(batch)
 					ch.support.WriteBlock(block, nil)
 				}
 
 				switch {
 				case timer != nil && !pending:
+					logger.Info("=========case timer != nil && !pending:==============")
 					// Timer is already running but there are no messages pending, stop the timer
 					timer = nil
 				case timer == nil && pending:
+					logger.Info("=========case timer == nil && pending:==============")
 					// Timer is not already running and there are messages pending, so start it
-					timer = time.After(ch.support.SharedConfig().BatchTimeout())
+					a:= ch.support.SharedConfig().BatchTimeout()
+					logger.Infof("==BatchTimeout():%v=",a)
+					timer = time.After(a)
 					logger.Debugf("Just began %s batch timer", ch.support.SharedConfig().BatchTimeout().String())
 				default:
+					logger.Info("====default=============")
 					// Do nothing when:
 					// 1. Timer is already running and there are messages pending
 					// 2. Timer is not set and there are no messages pending
@@ -149,6 +180,8 @@ func (ch *chain) main() {
 
 			} else {
 				// ConfigMsg
+				logger.Infof("====msg.configSeq:%v====",msg.configSeq)//0
+				logger.Infof("====seq:%v====",seq)//0
 				if msg.configSeq < seq {
 					msg.configMsg, _, err = ch.support.ProcessConfigMsg(msg.configMsg)
 					if err != nil {
@@ -156,29 +189,39 @@ func (ch *chain) main() {
 						continue
 					}
 				}
+				logger.Info("==batch := ch.support.BlockCutter().Cut()=========")
+				/*
+				1.createChannel
+				 */
 				batch := ch.support.BlockCutter().Cut()
 				if batch != nil {
+					logger.Info("==========block := ch.support.CreateNextBlock(batch)======================")
 					block := ch.support.CreateNextBlock(batch)
+					logger.Info("=========ch.support.WriteBlock(block, nil)======================")
 					ch.support.WriteBlock(block, nil)
 				}
 
 				block := ch.support.CreateNextBlock([]*cb.Envelope{msg.configMsg})
+				logger.Info("==========solo====ch.support.WriteConfigBlock(block, nil)====")
 				ch.support.WriteConfigBlock(block, nil)
 				timer = nil
 			}
 		case <-timer:
+			logger.Info("===========case <-timer==============")
 			//clear the timer
 			timer = nil
 
 			batch := ch.support.BlockCutter().Cut()
+			logger.Info("==========len(batch)================",len(batch))
 			if len(batch) == 0 {
-				logger.Warningf("Batch timer expired with no pending requests, this might indicate a bug")
+				logger.Info("Batch timer expired with no pending requests, this might indicate a bug")
 				continue
 			}
 			logger.Debugf("Batch timer expired, creating block")
 			block := ch.support.CreateNextBlock(batch)
 			ch.support.WriteBlock(block, nil)
 		case <-ch.exitChan:
+			logger.Info("===========case <-ch.exitChan==============")
 			logger.Debugf("Exiting")
 			return
 		}

@@ -154,7 +154,7 @@ func (cs *ChainSupport) ConfigProto() *cb.Config {
 // Sequence passes through to the underlying configtx.Validator
 func (cs *ChainSupport) Sequence() uint64 {
 	logger.Info("==ChainSupport===Sequence==")
-	logger.Info("========cs.ConfigtxValidator().Sequence()=================",cs.ConfigtxValidator().Sequence())
+	logger.Info("========cs.ConfigtxValidator().Sequence()=================",cs.ConfigtxValidator().Sequence())//0
 	return cs.ConfigtxValidator().Sequence()
 }
 

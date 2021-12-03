@@ -247,7 +247,7 @@ func (r *Registrar) GetChain(chainID string) *ChainSupport {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
-	logger.Info("==========r.chains[chainID]===============",r.chains[chainID])
+	logger.Infof("==========r.chains[%v]:%v===============",chainID,r.chains[chainID])
 	return r.chains[chainID]
 }
 

@@ -21,7 +21,7 @@ import (
 // MarshalOrPanic serializes a protobuf message and panics if this
 // operation fails
 func MarshalOrPanic(pb proto.Message) []byte {
-	utilsLogger.Info("===========MarshalOrPanic========")
+	logger.Info("===========MarshalOrPanic========")
 	data, err := proto.Marshal(pb)
 	if err != nil {
 		panic(err)
@@ -31,14 +31,14 @@ func MarshalOrPanic(pb proto.Message) []byte {
 
 // Marshal serializes a protobuf message.
 func Marshal(pb proto.Message) ([]byte, error) {
-	utilsLogger.Info("===========Marshal========")
+	logger.Info("===========Marshal========")
 	return proto.Marshal(pb)
 }
 
 // CreateNonceOrPanic generates a nonce using the common/crypto package
 // and panics if this operation fails.
 func CreateNonceOrPanic() []byte {
-	utilsLogger.Info("===========CreateNonceOrPanic========")
+	logger.Info("===========CreateNonceOrPanic========")
 	nonce, err := CreateNonce()
 	if err != nil {
 		panic(err)
@@ -48,7 +48,7 @@ func CreateNonceOrPanic() []byte {
 
 // CreateNonce generates a nonce using the common/crypto package.
 func CreateNonce() ([]byte, error) {
-	utilsLogger.Info("===========CreateNonce========")
+	logger.Info("===========CreateNonce========")
 	nonce, err := crypto.GetRandomNonce()
 	return nonce, errors.WithMessage(err, "error generating random nonce")
 }
@@ -56,7 +56,7 @@ func CreateNonce() ([]byte, error) {
 // UnmarshalPayloadOrPanic unmarshals bytes to a Payload structure or panics
 // on error
 func UnmarshalPayloadOrPanic(encoded []byte) *cb.Payload {
-	utilsLogger.Info("===========UnmarshalPayloadOrPanic========")
+	logger.Info("===========UnmarshalPayloadOrPanic========")
 	payload, err := UnmarshalPayload(encoded)
 	if err != nil {
 		panic(err)
@@ -66,7 +66,7 @@ func UnmarshalPayloadOrPanic(encoded []byte) *cb.Payload {
 
 // UnmarshalPayload unmarshals bytes to a Payload structure
 func UnmarshalPayload(encoded []byte) (*cb.Payload, error) {
-	utilsLogger.Info("===========UnmarshalPayload========")
+	logger.Info("===========UnmarshalPayload========")
 	payload := &cb.Payload{}
 	err := proto.Unmarshal(encoded, payload)
 	return payload, errors.Wrap(err, "error unmarshaling Payload")
@@ -75,7 +75,7 @@ func UnmarshalPayload(encoded []byte) (*cb.Payload, error) {
 // UnmarshalEnvelopeOrPanic unmarshals bytes to an Envelope structure or panics
 // on error
 func UnmarshalEnvelopeOrPanic(encoded []byte) *cb.Envelope {
-	utilsLogger.Info("===========UnmarshalEnvelopeOrPanic========")
+	logger.Info("===========UnmarshalEnvelopeOrPanic========")
 	envelope, err := UnmarshalEnvelope(encoded)
 	if err != nil {
 		panic(err)
@@ -85,7 +85,7 @@ func UnmarshalEnvelopeOrPanic(encoded []byte) *cb.Envelope {
 
 // UnmarshalEnvelope unmarshals bytes to an Envelope structure
 func UnmarshalEnvelope(encoded []byte) (*cb.Envelope, error) {
-	utilsLogger.Info("===========UnmarshalEnvelope========")
+	logger.Info("===========UnmarshalEnvelope========")
 	envelope := &cb.Envelope{}
 	err := proto.Unmarshal(encoded, envelope)
 	return envelope, errors.Wrap(err, "error unmarshaling Envelope")
@@ -94,7 +94,7 @@ func UnmarshalEnvelope(encoded []byte) (*cb.Envelope, error) {
 // UnmarshalBlockOrPanic unmarshals bytes to an Block structure or panics
 // on error
 func UnmarshalBlockOrPanic(encoded []byte) *cb.Block {
-	utilsLogger.Info("===========UnmarshalBlockOrPanic========")
+	logger.Info("===========UnmarshalBlockOrPanic========")
 	block, err := UnmarshalBlock(encoded)
 	if err != nil {
 		panic(err)
@@ -104,7 +104,7 @@ func UnmarshalBlockOrPanic(encoded []byte) *cb.Block {
 
 // UnmarshalBlock unmarshals bytes to an Block structure
 func UnmarshalBlock(encoded []byte) (*cb.Block, error) {
-	utilsLogger.Info("===========UnmarshalBlock========")
+	logger.Info("===========UnmarshalBlock========")
 	block := &cb.Block{}
 	err := proto.Unmarshal(encoded, block)
 	return block, errors.Wrap(err, "error unmarshaling Block")
@@ -113,7 +113,7 @@ func UnmarshalBlock(encoded []byte) (*cb.Block, error) {
 // UnmarshalEnvelopeOfType unmarshals an envelope of the specified type,
 // including unmarshaling the payload data
 func UnmarshalEnvelopeOfType(envelope *cb.Envelope, headerType cb.HeaderType, message proto.Message) (*cb.ChannelHeader, error) {
-	utilsLogger.Info("===========UnmarshalEnvelopeOfType========")
+	logger.Info("===========UnmarshalEnvelopeOfType========")
 	payload, err := UnmarshalPayload(envelope.Payload)
 	if err != nil {
 		return nil, err
@@ -140,7 +140,7 @@ func UnmarshalEnvelopeOfType(envelope *cb.Envelope, headerType cb.HeaderType, me
 // ExtractEnvelopeOrPanic retrieves the requested envelope from a given block
 // and unmarshals it -- it panics if either of these operations fail
 func ExtractEnvelopeOrPanic(block *cb.Block, index int) *cb.Envelope {
-	utilsLogger.Info("===========ExtractEnvelopeOrPanic========")
+	logger.Info("===========ExtractEnvelopeOrPanic========")
 	envelope, err := ExtractEnvelope(block, index)
 	if err != nil {
 		panic(err)
@@ -151,12 +151,14 @@ func ExtractEnvelopeOrPanic(block *cb.Block, index int) *cb.Envelope {
 // ExtractEnvelope retrieves the requested envelope from a given block and
 // unmarshals it
 func ExtractEnvelope(block *cb.Block, index int) (*cb.Envelope, error) {
-	utilsLogger.Info("===========ExtractEnvelope========")
+	logger.Info("===========ExtractEnvelope========")
 	if block.Data == nil {
 		return nil, errors.New("block data is nil")
 	}
 
 	envelopeCount := len(block.Data.Data)
+	logger.Infof("=====区块中包含交易的数量envelopeCount:%v======",envelopeCount)//1
+	logger.Infof("=====区块中交易的索引index:%v======",index)//0
 	if index < 0 || index >= envelopeCount {
 		return nil, errors.New("envelope index out of bounds")
 	}
@@ -169,7 +171,7 @@ func ExtractEnvelope(block *cb.Block, index int) (*cb.Envelope, error) {
 // ExtractPayloadOrPanic retrieves the payload of a given envelope and
 // unmarshals it -- it panics if either of these operations fail
 func ExtractPayloadOrPanic(envelope *cb.Envelope) *cb.Payload {
-	utilsLogger.Info("===========ExtractPayloadOrPanic========")
+	logger.Info("===========ExtractPayloadOrPanic========")
 	payload, err := ExtractPayload(envelope)
 	if err != nil {
 		panic(err)
@@ -179,7 +181,7 @@ func ExtractPayloadOrPanic(envelope *cb.Envelope) *cb.Payload {
 
 // ExtractPayload retrieves the payload of a given envelope and unmarshals it.
 func ExtractPayload(envelope *cb.Envelope) (*cb.Payload, error) {
-	utilsLogger.Info("===========ExtractPayload========")
+	logger.Info("===========ExtractPayload========")
 	payload := &cb.Payload{}
 	err := proto.Unmarshal(envelope.Payload, payload)
 	err = errors.Wrap(err, "no payload in envelope")
@@ -188,7 +190,7 @@ func ExtractPayload(envelope *cb.Envelope) (*cb.Payload, error) {
 
 // MakeChannelHeader creates a ChannelHeader.
 func MakeChannelHeader(headerType cb.HeaderType, version int32, chainID string, epoch uint64,orgName string,orgPki string) *cb.ChannelHeader {
-	utilsLogger.Info("===========MakeChannelHeader========")
+	logger.Info("===========MakeChannelHeader========")
 	return &cb.ChannelHeader{
 		Type:    int32(headerType),
 		Version: version,
@@ -205,7 +207,7 @@ func MakeChannelHeader(headerType cb.HeaderType, version int32, chainID string, 
 
 // MakeSignatureHeader creates a SignatureHeader.
 func MakeSignatureHeader(serializedCreatorCertChain []byte, nonce []byte) *cb.SignatureHeader {
-	utilsLogger.Info("===========MakeSignatureHeader========")
+	logger.Info("===========MakeSignatureHeader========")
 	return &cb.SignatureHeader{
 		Creator: serializedCreatorCertChain,
 		Nonce:   nonce,
@@ -215,7 +217,7 @@ func MakeSignatureHeader(serializedCreatorCertChain []byte, nonce []byte) *cb.Si
 // SetTxID generates a transaction id based on the provided signature header
 // and sets the TxId field in the channel header
 func SetTxID(channelHeader *cb.ChannelHeader, signatureHeader *cb.SignatureHeader) error {
-	utilsLogger.Info("===========SetTxID========")
+	logger.Info("===========SetTxID========")
 	txid, err := ComputeTxID(
 		signatureHeader.Nonce,
 		signatureHeader.Creator,
@@ -229,7 +231,7 @@ func SetTxID(channelHeader *cb.ChannelHeader, signatureHeader *cb.SignatureHeade
 
 // MakePayloadHeader creates a Payload Header.
 func MakePayloadHeader(ch *cb.ChannelHeader, sh *cb.SignatureHeader) *cb.Header {
-	utilsLogger.Info("===========MakePayloadHeader========")
+	logger.Info("===========MakePayloadHeader========")
 	return &cb.Header{
 		ChannelHeader:   MarshalOrPanic(ch),
 		SignatureHeader: MarshalOrPanic(sh),
@@ -238,7 +240,7 @@ func MakePayloadHeader(ch *cb.ChannelHeader, sh *cb.SignatureHeader) *cb.Header 
 
 // NewSignatureHeaderOrPanic returns a signature header and panics on error.
 func NewSignatureHeaderOrPanic(signer crypto.LocalSigner) *cb.SignatureHeader {
-	utilsLogger.Info("===========NewSignatureHeaderOrPanic========")
+	logger.Info("===========NewSignatureHeaderOrPanic========")
 	if signer == nil {
 		panic(errors.New("invalid signer. cannot be nil"))
 	}
@@ -252,7 +254,7 @@ func NewSignatureHeaderOrPanic(signer crypto.LocalSigner) *cb.SignatureHeader {
 
 // SignOrPanic signs a message and panics on error.
 func SignOrPanic(signer crypto.LocalSigner, msg []byte) []byte {
-	utilsLogger.Info("===========SignOrPanic========")
+	logger.Info("===========SignOrPanic========")
 	if signer == nil {
 		panic(errors.New("invalid signer. cannot be nil"))
 	}
@@ -266,7 +268,7 @@ func SignOrPanic(signer crypto.LocalSigner, msg []byte) []byte {
 
 // UnmarshalChannelHeader returns a ChannelHeader from bytes
 func UnmarshalChannelHeader(bytes []byte) (*cb.ChannelHeader, error) {
-	utilsLogger.Info("===========UnmarshalChannelHeader========")
+	logger.Info("===========UnmarshalChannelHeader========")
 	chdr := &cb.ChannelHeader{}
 	err := proto.Unmarshal(bytes, chdr)
 	return chdr, errors.Wrap(err, "error unmarshaling ChannelHeader")
@@ -275,7 +277,7 @@ func UnmarshalChannelHeader(bytes []byte) (*cb.ChannelHeader, error) {
 // UnmarshalChannelHeaderOrPanic unmarshals bytes to a ChannelHeader or panics
 // on error
 func UnmarshalChannelHeaderOrPanic(bytes []byte) *cb.ChannelHeader {
-	utilsLogger.Info("===========UnmarshalChannelHeaderOrPanic========")
+	logger.Info("===========UnmarshalChannelHeaderOrPanic========")
 	chdr, err := UnmarshalChannelHeader(bytes)
 	if err != nil {
 		panic(err)
@@ -285,7 +287,7 @@ func UnmarshalChannelHeaderOrPanic(bytes []byte) *cb.ChannelHeader {
 
 // UnmarshalChaincodeID returns a ChaincodeID from bytes
 func UnmarshalChaincodeID(bytes []byte) (*pb.ChaincodeID, error) {
-	utilsLogger.Info("===========UnmarshalChaincodeID========")
+	logger.Info("===========UnmarshalChaincodeID========")
 	ccid := &pb.ChaincodeID{}
 	err := proto.Unmarshal(bytes, ccid)
 	if err != nil {
@@ -298,7 +300,7 @@ func UnmarshalChaincodeID(bytes []byte) (*pb.ChaincodeID, error) {
 // IsConfigBlock validates whenever given block contains configuration
 // update transaction
 func IsConfigBlock(block *cb.Block) bool {
-	utilsLogger.Info("===========IsConfigBlock========")
+	logger.Info("===========IsConfigBlock========")
 	envelope, err := ExtractEnvelope(block, 0)
 	if err != nil {
 		return false
@@ -323,7 +325,7 @@ func IsConfigBlock(block *cb.Block) bool {
 
 // ChannelHeader returns the *cb.ChannelHeader for a given *cb.Envelope.
 func ChannelHeader(env *cb.Envelope) (*cb.ChannelHeader, error) {
-	utilsLogger.Info("===========ChannelHeader========")
+	logger.Info("===========ChannelHeader========")
 	envPayload, err := UnmarshalPayload(env.Payload)
 	if err != nil {
 		return nil, err
@@ -347,7 +349,7 @@ func ChannelHeader(env *cb.Envelope) (*cb.ChannelHeader, error) {
 
 // ChannelID returns the Channel ID for a given *cb.Envelope.
 func ChannelID(env *cb.Envelope) (string, error) {
-	utilsLogger.Info("===========ChannelID========")
+	logger.Info("===========ChannelID========")
 	chdr, err := ChannelHeader(env)
 	if err != nil {
 		return "", errors.WithMessage(err, "error retrieving channel header")
@@ -359,7 +361,7 @@ func ChannelID(env *cb.Envelope) (string, error) {
 // EnvelopeToConfigUpdate is used to extract a ConfigUpdateEnvelope from an envelope of
 // type CONFIG_UPDATE
 func EnvelopeToConfigUpdate(configtx *cb.Envelope) (*cb.ConfigUpdateEnvelope, error) {
-	utilsLogger.Info("===========EnvelopeToConfigUpdate========")
+	logger.Info("===========EnvelopeToConfigUpdate========")
 	configUpdateEnv := &cb.ConfigUpdateEnvelope{}
 	_, err := UnmarshalEnvelopeOfType(configtx, cb.HeaderType_CONFIG_UPDATE, configUpdateEnv)
 	if err != nil {

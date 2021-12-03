@@ -62,6 +62,10 @@ func (s *broadcastClient) getAck() error {
 //Send data to orderer
 func (s *broadcastClient) Send(env *cb.Envelope) error {
 	logger.Info("====broadcastClient==Send==")
+	logger.Infof("======send envelope",*env)
+	/*
+	create Channel
+	 */
 	if err := s.client.Send(env); err != nil {
 		return errors.WithMessage(err, "could not send")
 	}

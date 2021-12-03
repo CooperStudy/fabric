@@ -115,8 +115,10 @@ func (d *deliverServiceImpl) UpdateEndpoints(chainID string, endpoints []string)
 	logger.Info("==deliverServiceImpl===UpdateEndpoints==")
 	// Use chainID to obtain blocks provider and pass endpoints
 	// for update
-	if bp, ok := d.blockProviders[chainID]; ok {
-		logger.Info("=========bp",bp)
+	logger.Infof("=======bp, ok := d.blockProviders[%v]===", chainID)
+	bp, ok := d.blockProviders[chainID]
+	if ok {
+		logger.Info("=========bp", bp)
 		// We have found specified channel so we can safely update it
 		bp.UpdateOrderingEndpoints(endpoints)
 		return nil
@@ -164,7 +166,7 @@ func (d *deliverServiceImpl) StartDeliverForChannel(chainID string, ledgerInfo b
 		return errors.New(errMsg)
 	} else {
 		client := d.newClient(chainID, ledgerInfo)
-		logger.Debug("This peer will pass blocks from orderer service to other peers for channel", chainID)
+		logger.Info("This peer will pass blocks from orderer service to other peers for channel", chainID)
 		d.blockProviders[chainID] = blocksprovider.NewBlocksProvider(chainID, client, d.conf.Gossip, d.conf.CryptoSvc)
 		go d.launchBlockProvider(chainID, finalizer)
 	}

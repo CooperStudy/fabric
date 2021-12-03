@@ -7,6 +7,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"os"
 
 	genesisconfig "github.com/hyperledger/fabric/common/tools/configtxgen/localconfig"
@@ -16,7 +17,7 @@ import (
 	ab "github.com/hyperledger/fabric/protos/orderer"
 	"google.golang.org/grpc"
 )
-
+var logger = flogging.MustGetLogger("orderer.sample_clients.broadcast_cononfig")
 type broadcastClient struct {
 	ab.AtomicBroadcast_BroadcastClient
 }

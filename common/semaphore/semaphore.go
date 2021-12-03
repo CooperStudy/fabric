@@ -8,13 +8,11 @@ package semaphore
 
 import (
 	"context"
-	"fmt"
 )
 
 type Semaphore chan struct{}
 
 func New(count int) Semaphore {
-	logger.Info("===New===")
 	if count <= 0 {
 		panic("count must be greater than 0")
 	}
@@ -22,7 +20,6 @@ func New(count int) Semaphore {
 }
 
 func (s Semaphore) Acquire(ctx context.Context) error {
-	logger.Info("===Semaphore==Acquire=")
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -32,7 +29,6 @@ func (s Semaphore) Acquire(ctx context.Context) error {
 }
 
 func (s Semaphore) Release() {
-	logger.Info("===Semaphore==Release=")
 	select {
 	case <-s:
 	default:

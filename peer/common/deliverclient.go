@@ -55,29 +55,34 @@ func (d *DeliverClient) seekSpecified(blockNumber uint64) error {
 }
 
 func (d *DeliverClient) seekOldest() error {
-	//logger.Info("====DeliverClient==seekOldest==")
+	logger.Info("====DeliverClient==seekOldest==")
 	env := seekHelper(d.ChannelID, seekOldest, d.TLSCertHash)
 	return d.Service.Send(env)
 }
 
 func (d *DeliverClient) seekNewest() error {
-	//logger.Info("====DeliverClient==seekNewest==")
+	logger.Info("====DeliverClient==seekNewest==")
 	env := seekHelper(d.ChannelID, seekNewest, d.TLSCertHash)
 	return d.Service.Send(env)
 }
 
 func (d *DeliverClient) readBlock() (*cb.Block, error) {
-	//logger.Info("====DeliverClient==readBlock==")
+	logger.Info("====DeliverClient==readBlock==")
 	msg, err := d.Service.Recv()
 	if err != nil {
 		return nil, errors.Wrap(err, "error receiving")
 	}
 	switch t := msg.Type.(type) {
 	case *ab.DeliverResponse_Status:
-		//logger.Infof("Got status: %v", t)
+		logger.Infof("Got status: %v", t)
 		return nil, errors.Errorf("can't read the block: %v", t)
 	case *ab.DeliverResponse_Block:
-		//logger.Infof("Received block: %v", t.Block.Header.Number)
+		/*
+		createChannel
+		 */
+		logger.Infof("Received block: %v", t.Block.Header.Number)
+		//Received block: 0
+
 		d.Service.Recv() // Flush the success message
 		return t.Block, nil
 	default:
@@ -88,7 +93,10 @@ func (d *DeliverClient) readBlock() (*cb.Block, error) {
 // GetSpecifiedBlock gets the specified block from a peer/orderer's deliver
 // service
 func (d *DeliverClient) GetSpecifiedBlock(num uint64) (*cb.Block, error) {
-	logger.Info("====DeliverClient==GetSpecifiedBlock==")
+	//logger.Info("====DeliverClient==GetSpecifiedBlock==")
+	/*
+	create Channel
+	 */
 	err := d.seekSpecified(num)
 	if err != nil {
 		return nil, errors.WithMessage(err, "error getting specified block")
@@ -99,7 +107,7 @@ func (d *DeliverClient) GetSpecifiedBlock(num uint64) (*cb.Block, error) {
 
 // GetOldestBlock gets the oldest block from a peer/orderer's deliver service
 func (d *DeliverClient) GetOldestBlock() (*cb.Block, error) {
-	logger.Info("====DeliverClient==GetOldestBlock==")
+	//logger.Info("====DeliverClient==GetOldestBlock==")
 	err := d.seekOldest()
 	if err != nil {
 		return nil, errors.WithMessage(err, "error getting oldest block")
@@ -126,7 +134,10 @@ func (d *DeliverClient) Close() error {
 }
 
 func seekHelper(channelID string, position *ab.SeekPosition, tlsCertHash []byte) *cb.Envelope {
-	logger.Info("===seekHelper==")
+	//logger.Info("===seekHelper==")
+	/*
+	creat Channel
+	 */
 	seekInfo := &ab.SeekInfo{
 		Start:    position,
 		Stop:     position,

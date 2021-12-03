@@ -77,6 +77,12 @@ func newIdentity(cert *x509.Certificate, pk bccsp.Key, msp *bccspmsp) (Identity,
 	logger.Info("===identity{id: id., cert: cert, pk: pk, msp: msp}==")
 	logger.Infof("===Mspid: msp.name:%v,Id:string(digest):%v====",id.Mspid,id.Id)
 	//Org1MSP  aee1cbab6109e686a7408a38e25b0c654cbf964866a2f1fe50a0222404a1a547
+
+	/*
+	instantiated:
+	===Mspid: msp.name:OrdererMSP,Id:string(digest):8f9f84274b7d6dd622820c3284d5c643a11134c2c6e7b6babf3ce22f1465b31e====
+	===Mspid: msp.name:Org1MSP,Id:string(digest):91f7f30c098da6ae3d8923a74b23b3e5ad40352c871f62b5c4bf94a0dddcd010====
+	 */
 	return &identity{id: id, cert: cert, pk: pk, msp: msp}, nil
 }
 

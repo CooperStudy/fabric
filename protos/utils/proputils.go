@@ -9,8 +9,6 @@ package utils
 import (
 	"encoding/binary"
 	"encoding/hex"
-	"github.com/hyperledger/fabric/common/flogging"
-
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric/bccsp/factory"
@@ -21,10 +19,9 @@ import (
 	"github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
 )
-var utilsLogger = flogging.MustGetLogger("protos.utils")
 // GetChaincodeInvocationSpec get the ChaincodeInvocationSpec from the proposal
 func GetChaincodeInvocationSpec(prop *peer.Proposal) (*peer.ChaincodeInvocationSpec, error) {
-	utilsLogger.Info("===========GetChaincodeInvocationSpec========")
+	logger.Info("===========GetChaincodeInvocationSpec========")
 	if prop == nil {
 		return nil, errors.New("proposal is nil")
 	}
@@ -43,7 +40,7 @@ func GetChaincodeInvocationSpec(prop *peer.Proposal) (*peer.ChaincodeInvocationS
 
 // GetChaincodeProposalContext returns creator and transient
 func GetChaincodeProposalContext(prop *peer.Proposal) ([]byte, map[string][]byte, error) {
-	utilsLogger.Info("===========GetChaincodeProposalContext========")
+	logger.Info("===========GetChaincodeProposalContext========")
 	if prop == nil {
 		return nil, nil, errors.New("proposal is nil")
 	}
@@ -85,7 +82,7 @@ func GetChaincodeProposalContext(prop *peer.Proposal) ([]byte, map[string][]byte
 }
 
 func validateChannelHeaderType(chdr *common.ChannelHeader, expectedTypes []common.HeaderType) error {
-	utilsLogger.Info("===========validateChannelHeaderType========")
+	logger.Info("===========validateChannelHeaderType========")
 	for _, t := range expectedTypes {
 		if common.HeaderType(chdr.Type) == t {
 			return nil
@@ -96,7 +93,7 @@ func validateChannelHeaderType(chdr *common.ChannelHeader, expectedTypes []commo
 
 // GetHeader Get Header from bytes
 func GetHeader(bytes []byte) (*common.Header, error) {
-	utilsLogger.Info("===========GetHeader========")
+	logger.Info("===========GetHeader========")
 	hdr := &common.Header{}
 	err := proto.Unmarshal(bytes, hdr)
 	return hdr, errors.Wrap(err, "error unmarshaling Header")
@@ -104,7 +101,7 @@ func GetHeader(bytes []byte) (*common.Header, error) {
 
 // GetNonce returns the nonce used in Proposal
 func GetNonce(prop *peer.Proposal) ([]byte, error) {
-	utilsLogger.Info("===========GetNonce========")
+	logger.Info("===========GetNonce========")
 	if prop == nil {
 		return nil, errors.New("proposal is nil")
 	}
@@ -138,7 +135,7 @@ func GetNonce(prop *peer.Proposal) ([]byte, error) {
 
 // GetChaincodeHeaderExtension get chaincode header extension given header
 func GetChaincodeHeaderExtension(hdr *common.Header) (*peer.ChaincodeHeaderExtension, error) {
-	utilsLogger.Info("===========GetChaincodeHeaderExtension========")
+	logger.Info("===========GetChaincodeHeaderExtension========")
 	chdr, err := UnmarshalChannelHeader(hdr.ChannelHeader)
 	if err != nil {
 		return nil, err
@@ -151,7 +148,7 @@ func GetChaincodeHeaderExtension(hdr *common.Header) (*peer.ChaincodeHeaderExten
 
 // GetProposalResponse given proposal in bytes
 func GetProposalResponse(prBytes []byte) (*peer.ProposalResponse, error) {
-	utilsLogger.Info("===========GetProposalResponse========")
+	logger.Info("===========GetProposalResponse========")
 	proposalResponse := &peer.ProposalResponse{}
 	err := proto.Unmarshal(prBytes, proposalResponse)
 	return proposalResponse, errors.Wrap(err, "error unmarshaling ProposalResponse")
@@ -159,7 +156,7 @@ func GetProposalResponse(prBytes []byte) (*peer.ProposalResponse, error) {
 
 // GetChaincodeDeploymentSpec returns a ChaincodeDeploymentSpec given args
 func GetChaincodeDeploymentSpec(code []byte, pr *platforms.Registry) (*peer.ChaincodeDeploymentSpec, error) {
-	utilsLogger.Info("===========GetChaincodeDeploymentSpec========")
+	logger.Info("===========GetChaincodeDeploymentSpec========")
 	cds := &peer.ChaincodeDeploymentSpec{}
 	err := proto.Unmarshal(code, cds)
 	if err != nil {
@@ -172,7 +169,7 @@ func GetChaincodeDeploymentSpec(code []byte, pr *platforms.Registry) (*peer.Chai
 
 // GetChaincodeAction gets the ChaincodeAction given chaicnode action bytes
 func GetChaincodeAction(caBytes []byte) (*peer.ChaincodeAction, error) {
-	utilsLogger.Info("===========GetChaincodeAction========")
+	logger.Info("===========GetChaincodeAction========")
 	chaincodeAction := &peer.ChaincodeAction{}
 	err := proto.Unmarshal(caBytes, chaincodeAction)
 	return chaincodeAction, errors.Wrap(err, "error unmarshaling ChaincodeAction")
@@ -180,7 +177,7 @@ func GetChaincodeAction(caBytes []byte) (*peer.ChaincodeAction, error) {
 
 // GetResponse gets the Response given response bytes
 func GetResponse(resBytes []byte) (*peer.Response, error) {
-	utilsLogger.Info("===========GetResponse========")
+	logger.Info("===========GetResponse========")
 	response := &peer.Response{}
 	err := proto.Unmarshal(resBytes, response)
 	return response, errors.Wrap(err, "error unmarshaling Response")
@@ -188,7 +185,7 @@ func GetResponse(resBytes []byte) (*peer.Response, error) {
 
 // GetChaincodeEvents gets the ChaincodeEvents given chaincode event bytes
 func GetChaincodeEvents(eBytes []byte) (*peer.ChaincodeEvent, error) {
-	utilsLogger.Info("===========GetChaincodeEvents========")
+	logger.Info("===========GetChaincodeEvents========")
 	chaincodeEvent := &peer.ChaincodeEvent{}
 	err := proto.Unmarshal(eBytes, chaincodeEvent)
 	return chaincodeEvent, errors.Wrap(err, "error unmarshaling ChaicnodeEvent")
@@ -196,7 +193,7 @@ func GetChaincodeEvents(eBytes []byte) (*peer.ChaincodeEvent, error) {
 
 // GetProposalResponsePayload gets the proposal response payload
 func GetProposalResponsePayload(prpBytes []byte) (*peer.ProposalResponsePayload, error) {
-	utilsLogger.Info("===========GetProposalResponsePayload========")
+	logger.Info("===========GetProposalResponsePayload========")
 	prp := &peer.ProposalResponsePayload{}
 	err := proto.Unmarshal(prpBytes, prp)
 	return prp, errors.Wrap(err, "error unmarshaling ProposalResponsePayload")
@@ -204,7 +201,7 @@ func GetProposalResponsePayload(prpBytes []byte) (*peer.ProposalResponsePayload,
 
 // GetProposal returns a Proposal message from its bytes
 func GetProposal(propBytes []byte) (*peer.Proposal, error) {
-	utilsLogger.Info("===========GetProposal========")
+	logger.Info("===========GetProposal========")
 	prop := &peer.Proposal{}
 	err := proto.Unmarshal(propBytes, prop)
 	return prop, errors.Wrap(err, "error unmarshaling Proposal")
@@ -212,7 +209,7 @@ func GetProposal(propBytes []byte) (*peer.Proposal, error) {
 
 // GetPayload Get Payload from Envelope message
 func GetPayload(e *common.Envelope) (*common.Payload, error) {
-	utilsLogger.Info("===========GetPayload========")
+	logger.Info("===========GetPayload========")
 	payload := &common.Payload{}
 	err := proto.Unmarshal(e.Payload, payload)
 	return payload, errors.Wrap(err, "error unmarshaling Payload")
@@ -220,7 +217,7 @@ func GetPayload(e *common.Envelope) (*common.Payload, error) {
 
 // GetTransaction Get Transaction from bytes
 func GetTransaction(txBytes []byte) (*peer.Transaction, error) {
-	utilsLogger.Info("===========GetTransaction========")
+	logger.Info("===========GetTransaction========")
 	tx := &peer.Transaction{}
 	err := proto.Unmarshal(txBytes, tx)
 	return tx, errors.Wrap(err, "error unmarshaling Transaction")
@@ -229,7 +226,7 @@ func GetTransaction(txBytes []byte) (*peer.Transaction, error) {
 
 // GetChaincodeActionPayload Get ChaincodeActionPayload from bytes
 func GetChaincodeActionPayload(capBytes []byte) (*peer.ChaincodeActionPayload, error) {
-	utilsLogger.Info("===========GetChaincodeActionPayload========")
+	logger.Info("===========GetChaincodeActionPayload========")
 	cap := &peer.ChaincodeActionPayload{}
 	err := proto.Unmarshal(capBytes, cap)
 	return cap, errors.Wrap(err, "error unmarshaling ChaincodeActionPayload")
@@ -237,7 +234,7 @@ func GetChaincodeActionPayload(capBytes []byte) (*peer.ChaincodeActionPayload, e
 
 // GetChaincodeProposalPayload Get ChaincodeProposalPayload from bytes
 func GetChaincodeProposalPayload(bytes []byte) (*peer.ChaincodeProposalPayload, error) {
-	utilsLogger.Info("===========GetChaincodeProposalPayload========")
+	logger.Info("===========GetChaincodeProposalPayload========")
 	cpp := &peer.ChaincodeProposalPayload{}
 	err := proto.Unmarshal(bytes, cpp)
 	return cpp, errors.Wrap(err, "error unmarshaling ChaincodeProposalPayload")
@@ -245,7 +242,7 @@ func GetChaincodeProposalPayload(bytes []byte) (*peer.ChaincodeProposalPayload, 
 var CreatorName string
 // GetSignatureHeader Get SignatureHeader from bytes
 func GetSignatureHeader(bytes []byte) (*common.SignatureHeader, error) {
-	utilsLogger.Info("===========GetSignatureHeader========")
+	logger.Info("===========GetSignatureHeader========")
 	sh := &common.SignatureHeader{}
 	err := proto.Unmarshal(bytes, sh)
 	return sh, errors.Wrap(err, "error unmarshaling SignatureHeader")
@@ -254,14 +251,14 @@ func GetSignatureHeader(bytes []byte) (*common.SignatureHeader, error) {
 // CreateChaincodeProposal creates a proposal from given input.
 // It returns the proposal and the transaction id associated to the proposal
 func CreateChaincodeProposal(typ common.HeaderType, chainID string, cis *peer.ChaincodeInvocationSpec, creator []byte) (*peer.Proposal, string, error) {
-	utilsLogger.Info("===========CreateChaincodeProposal========")
+	logger.Info("===========CreateChaincodeProposal========")
 	return CreateChaincodeProposalWithTransient(typ, chainID, cis, creator, nil)
 }
 
 // CreateChaincodeProposalWithTransient creates a proposal from given input
 // It returns the proposal and the transaction id associated to the proposal
 func CreateChaincodeProposalWithTransient(typ common.HeaderType, chainID string, cis *peer.ChaincodeInvocationSpec, creator []byte, transientMap map[string][]byte) (*peer.Proposal, string, error) {
-	utilsLogger.Info("===========CreateChaincodeProposalWithTransient========")
+	logger.Info("===========CreateChaincodeProposalWithTransient========")
 	// generate a random nonce
 	nonce, err := crypto.GetRandomNonce()
 	if err != nil {
@@ -281,7 +278,7 @@ func CreateChaincodeProposalWithTransient(typ common.HeaderType, chainID string,
 // input. It returns the proposal and the transaction id associated with the
 // proposal
 func CreateChaincodeProposalWithTxIDAndTransient(typ common.HeaderType, chainID string, cis *peer.ChaincodeInvocationSpec, creator []byte, txid string, transientMap map[string][]byte) (*peer.Proposal, string, error) {
-	utilsLogger.Info("===========CreateChaincodeProposalWithTxIDAndTransient========")
+	logger.Info("===========CreateChaincodeProposalWithTxIDAndTransient========")
 	// generate a random nonce
 	nonce, err := crypto.GetRandomNonce()
 	if err != nil {
@@ -302,26 +299,26 @@ func CreateChaincodeProposalWithTxIDAndTransient(typ common.HeaderType, chainID 
 // CreateChaincodeProposalWithTxIDNonceAndTransient creates a proposal from
 // given input
 func CreateChaincodeProposalWithTxIDNonceAndTransient(txid string, typ common.HeaderType, chainID string, cis *peer.ChaincodeInvocationSpec, nonce, creator []byte, transientMap map[string][]byte) (*peer.Proposal, string, error) {
-	utilsLogger.Info("==func CreateChaincodeProposalWithTxIDNonceAndTransient(txid string, typ common.HeaderType, chainID string, cis *peer.ChaincodeInvocationSpec, nonce, creator []byte, transientMap map[string][]byte) (*peer.Proposal, string, error) {==")
-	//utilsLogger.Info("==创建提案Proposal：join block===")
-	//utilsLogger.Info("==txid",txid)
-	//utilsLogger.Info("==HeaderType",typ)
-	//utilsLogger.Info("==chainID",chainID)//""
+	logger.Info("==func CreateChaincodeProposalWithTxIDNonceAndTransient(txid string, typ common.HeaderType, chainID string, cis *peer.ChaincodeInvocationSpec, nonce, creator []byte, transientMap map[string][]byte) (*peer.Proposal, string, error) {==")
+	//logger.Info("==创建提案Proposal：join block===")
+	//logger.Info("==txid",txid)
+	//logger.Info("==HeaderType",typ)
+	//logger.Info("==chainID",chainID)//""
 	//chaincodeId: name:"cscc"
-	//utilsLogger.Info("==cis：ChaincodeInvocationSpec",cis.ChaincodeSpec.Type,cis.ChaincodeSpec.ChaincodeId,cis.ChaincodeSpec.Input.Args,cis.ChaincodeSpec.Input.Decorations,cis.ChaincodeSpec.Timeout)
-	//utilsLogger.Info("=======nonce:",nonce)//[33 129 51 71 105 32 251 100 212 211 113 233 206 122 124 140 223 248 66 139 25 11 74 9]
-	//utilsLogger.Info("=======creator:",creator)
-	//utilsLogger.Info("=======transientMap:",transientMap)//map[]
+	//logger.Info("==cis：ChaincodeInvocationSpec",cis.ChaincodeSpec.Type,cis.ChaincodeSpec.ChaincodeId,cis.ChaincodeSpec.Input.Args,cis.ChaincodeSpec.Input.Decorations,cis.ChaincodeSpec.Timeout)
+	//logger.Info("=======nonce:",nonce)//[33 129 51 71 105 32 251 100 212 211 113 233 206 122 124 140 223 248 66 139 25 11 74 9]
+	//logger.Info("=======creator:",creator)
+	//logger.Info("=======transientMap:",transientMap)//map[]
 
-	utilsLogger.Info("==创建提案Proposal：instantiated===")
-	utilsLogger.Info("==txid",txid)
-	utilsLogger.Info("==HeaderType",typ)
-	utilsLogger.Info("==chainID",chainID)//""
+	logger.Info("==创建提案Proposal：instantiated===")
+	logger.Info("==txid",txid)
+	logger.Info("==HeaderType",typ)
+	logger.Info("==chainID",chainID)//""
 	//chaincodeId: name:"cscc"
-	utilsLogger.Info("==cis：ChaincodeInvocationSpec",cis.ChaincodeSpec.Type,cis.ChaincodeSpec.ChaincodeId,cis.ChaincodeSpec.Input.Args,cis.ChaincodeSpec.Input.Decorations,cis.ChaincodeSpec.Timeout)
-	utilsLogger.Info("=======nonce:",nonce)//[33 129 51 71 105 32 251 100 212 211 113 233 206 122 124 140 223 248 66 139 25 11 74 9]
-	utilsLogger.Info("=======creator:",creator)
-	utilsLogger.Info("=======transientMap:",transientMap)//map[]
+	logger.Info("==cis：ChaincodeInvocationSpec",cis.ChaincodeSpec.Type,cis.ChaincodeSpec.ChaincodeId,cis.ChaincodeSpec.Input.Args,cis.ChaincodeSpec.Input.Decorations,cis.ChaincodeSpec.Timeout)
+	logger.Info("=======nonce:",nonce)//[33 129 51 71 105 32 251 100 212 211 113 233 206 122 124 140 223 248 66 139 25 11 74 9]
+	logger.Info("=======creator:",creator)
+	logger.Info("=======transientMap:",transientMap)//map[]
 
 	ccHdrExt := &peer.ChaincodeHeaderExtension{ChaincodeId: cis.ChaincodeSpec.ChaincodeId}
 	ccHdrExtBytes, err := proto.Marshal(ccHdrExt)
@@ -379,7 +376,7 @@ func CreateChaincodeProposalWithTxIDNonceAndTransient(txid string, typ common.He
 
 // GetBytesProposalResponsePayload gets proposal response payload
 func GetBytesProposalResponsePayload(hash []byte, response *peer.Response, result []byte, event []byte, ccid *peer.ChaincodeID) ([]byte, error) {
-	utilsLogger.Info("===========GetBytesProposalResponsePayload========")
+	logger.Info("===========GetBytesProposalResponsePayload========")
 	cAct := &peer.ChaincodeAction{
 		Events: event, Results: result,
 		Response:    response,
@@ -400,21 +397,21 @@ func GetBytesProposalResponsePayload(hash []byte, response *peer.Response, resul
 
 // GetBytesChaincodeProposalPayload gets the chaincode proposal payload
 func GetBytesChaincodeProposalPayload(cpp *peer.ChaincodeProposalPayload) ([]byte, error) {
-	utilsLogger.Info("===========GetBytesChaincodeProposalPayload========")
+	logger.Info("===========GetBytesChaincodeProposalPayload========")
 	cppBytes, err := proto.Marshal(cpp)
 	return cppBytes, errors.Wrap(err, "error marshaling ChaincodeProposalPayload")
 }
 
 // GetBytesResponse gets the bytes of Response
 func GetBytesResponse(res *peer.Response) ([]byte, error) {
-	utilsLogger.Info("===========GetBytesResponse========")
+	logger.Info("===========GetBytesResponse========")
 	resBytes, err := proto.Marshal(res)
 	return resBytes, errors.Wrap(err, "error marshaling Response")
 }
 
 // GetBytesChaincodeEvent gets the bytes of ChaincodeEvent
 func GetBytesChaincodeEvent(event *peer.ChaincodeEvent) ([]byte, error) {
-	utilsLogger.Info("===========GetBytesChaincodeEvent========")
+	logger.Info("===========GetBytesChaincodeEvent========")
 	eventBytes, err := proto.Marshal(event)
 	return eventBytes, errors.Wrap(err, "error marshaling ChaincodeEvent")
 }
@@ -422,56 +419,56 @@ func GetBytesChaincodeEvent(event *peer.ChaincodeEvent) ([]byte, error) {
 // GetBytesChaincodeActionPayload get the bytes of ChaincodeActionPayload from
 // the message
 func GetBytesChaincodeActionPayload(cap *peer.ChaincodeActionPayload) ([]byte, error) {
-	utilsLogger.Info("===========GetBytesChaincodeActionPayload========")
+	logger.Info("===========GetBytesChaincodeActionPayload========")
 	capBytes, err := proto.Marshal(cap)
 	return capBytes, errors.Wrap(err, "error marshaling ChaincodeActionPayload")
 }
 
 // GetBytesProposalResponse gets proposal bytes response
 func GetBytesProposalResponse(pr *peer.ProposalResponse) ([]byte, error) {
-	utilsLogger.Info("===========GetBytesProposalResponse========")
+	logger.Info("===========GetBytesProposalResponse========")
 	respBytes, err := proto.Marshal(pr)
 	return respBytes, errors.Wrap(err, "error marshaling ProposalResponse")
 }
 
 // GetBytesProposal returns the bytes of a proposal message
 func GetBytesProposal(prop *peer.Proposal) ([]byte, error) {
-	utilsLogger.Info("===========GetBytesProposal========")
+	logger.Info("===========GetBytesProposal========")
 	propBytes, err := proto.Marshal(prop)
 	return propBytes, errors.Wrap(err, "error marshaling Proposal")
 }
 
 // GetBytesHeader get the bytes of Header from the message
 func GetBytesHeader(hdr *common.Header) ([]byte, error) {
-	utilsLogger.Info("===========GetBytesHeader========")
+	logger.Info("===========GetBytesHeader========")
 	bytes, err := proto.Marshal(hdr)
 	return bytes, errors.Wrap(err, "error marshaling Header")
 }
 
 // GetBytesSignatureHeader get the bytes of SignatureHeader from the message
 func GetBytesSignatureHeader(hdr *common.SignatureHeader) ([]byte, error) {
-	utilsLogger.Info("===========GetBytesSignatureHeader========")
+	logger.Info("===========GetBytesSignatureHeader========")
 	bytes, err := proto.Marshal(hdr)
 	return bytes, errors.Wrap(err, "error marshaling SignatureHeader")
 }
 
 // GetBytesTransaction get the bytes of Transaction from the message
 func GetBytesTransaction(tx *peer.Transaction) ([]byte, error) {
-	utilsLogger.Info("===========GetBytesTransaction========")
+	logger.Info("===========GetBytesTransaction========")
 	bytes, err := proto.Marshal(tx)
 	return bytes, errors.Wrap(err, "error unmarshaling Transaction")
 }
 
 // GetBytesPayload get the bytes of Payload from the message
 func GetBytesPayload(payl *common.Payload) ([]byte, error) {
-	utilsLogger.Info("===========GetBytesPayload========")
+	logger.Info("===========GetBytesPayload========")
 	bytes, err := proto.Marshal(payl)
 	return bytes, errors.Wrap(err, "error marshaling Payload")
 }
 
 // GetBytesEnvelope get the bytes of Envelope from the message
 func GetBytesEnvelope(env *common.Envelope) ([]byte, error) {
-	utilsLogger.Info("===========GetBytesEnvelope========")
+	logger.Info("===========GetBytesEnvelope========")
 	bytes, err := proto.Marshal(env)
 	return bytes, errors.Wrap(err, "error marshaling Envelope")
 }
@@ -480,7 +477,7 @@ func GetBytesEnvelope(env *common.Envelope) ([]byte, error) {
 // serialized Envelope
 // TODO: fix function name as per FAB-11831
 func GetActionFromEnvelope(envBytes []byte) (*peer.ChaincodeAction, error) {
-	utilsLogger.Info("===========GetActionFromEnvelope========")
+	logger.Info("===========GetActionFromEnvelope========")
 	env, err := GetEnvelopeFromBlock(envBytes)
 	if err != nil {
 		return nil, err
@@ -489,7 +486,7 @@ func GetActionFromEnvelope(envBytes []byte) (*peer.ChaincodeAction, error) {
 }
 
 func GetActionFromEnvelopeMsg(env *common.Envelope) (*peer.ChaincodeAction, error) {
-	utilsLogger.Info("===========GetActionFromEnvelopeMsg========")
+	logger.Info("===========GetActionFromEnvelopeMsg========")
 	payl, err := GetPayload(env)
 	if err != nil {
 		return nil, err
@@ -511,7 +508,7 @@ func GetActionFromEnvelopeMsg(env *common.Envelope) (*peer.ChaincodeAction, erro
 // CreateProposalFromCISAndTxid returns a proposal given a serialized identity
 // and a ChaincodeInvocationSpec
 func CreateProposalFromCISAndTxid(txid string, typ common.HeaderType, chainID string, cis *peer.ChaincodeInvocationSpec, creator []byte) (*peer.Proposal, string, error) {
-	utilsLogger.Info("===========CreateProposalFromCISAndTxid========")
+	logger.Info("===========CreateProposalFromCISAndTxid========")
 	nonce, err := crypto.GetRandomNonce()
 	if err != nil {
 		return nil, "", err
@@ -522,14 +519,14 @@ func CreateProposalFromCISAndTxid(txid string, typ common.HeaderType, chainID st
 // CreateProposalFromCIS returns a proposal given a serialized identity and a
 // ChaincodeInvocationSpec
 func CreateProposalFromCIS(typ common.HeaderType, chainID string, cis *peer.ChaincodeInvocationSpec, creator []byte) (*peer.Proposal, string, error) {
-	utilsLogger.Info("===========CreateProposalFromCIS========")
+	logger.Info("===========CreateProposalFromCIS========")
 	return CreateChaincodeProposal(typ, chainID, cis, creator)
 }
 
 // CreateGetChaincodesProposal returns a GETCHAINCODES proposal given a
 // serialized identity
 func CreateGetChaincodesProposal(chainID string, creator []byte) (*peer.Proposal, string, error) {
-	utilsLogger.Info("===========CreateGetChaincodesProposal========")
+	logger.Info("===========CreateGetChaincodesProposal========")
 	ccinp := &peer.ChaincodeInput{Args: [][]byte{[]byte("getchaincodes")}}
 	lsccSpec := &peer.ChaincodeInvocationSpec{
 		ChaincodeSpec: &peer.ChaincodeSpec{
@@ -544,7 +541,7 @@ func CreateGetChaincodesProposal(chainID string, creator []byte) (*peer.Proposal
 // CreateGetInstalledChaincodesProposal returns a GETINSTALLEDCHAINCODES
 // proposal given a serialized identity
 func CreateGetInstalledChaincodesProposal(creator []byte) (*peer.Proposal, string, error) {
-	utilsLogger.Info("===========CreateGetInstalledChaincodesProposal========")
+	logger.Info("===========CreateGetInstalledChaincodesProposal========")
 	ccinp := &peer.ChaincodeInput{Args: [][]byte{[]byte("getinstalledchaincodes")}}
 	lsccSpec := &peer.ChaincodeInvocationSpec{
 		ChaincodeSpec: &peer.ChaincodeSpec{
@@ -559,7 +556,7 @@ func CreateGetInstalledChaincodesProposal(creator []byte) (*peer.Proposal, strin
 // CreateInstallProposalFromCDS returns a install proposal given a serialized
 // identity and a ChaincodeDeploymentSpec
 func CreateInstallProposalFromCDS(ccpack proto.Message, creator []byte) (*peer.Proposal, string, error) {
-	utilsLogger.Info("===========CreateInstallProposalFromCDS========")
+	logger.Info("===========CreateInstallProposalFromCDS========")
 	return createProposalFromCDS("", ccpack, creator, "install")
 }
 
@@ -573,8 +570,8 @@ func CreateDeployProposalFromCDS(
 	escc []byte,
 	vscc []byte,
 	collectionConfig []byte) (*peer.Proposal, string, error) {
-	utilsLogger.Info("===========CreateDeployProposalFromCDS========")
-	utilsLogger.Info("===========collectionConfig========",collectionConfig)
+	logger.Info("===========CreateDeployProposalFromCDS========")
+	logger.Info("===========collectionConfig========",collectionConfig)
 	if collectionConfig == nil {
 		return createProposalFromCDS(chainID, cds, creator, "deploy", policy, escc, vscc)
 	}
@@ -591,7 +588,7 @@ func CreateUpgradeProposalFromCDS(
 	escc []byte,
 	vscc []byte,
 	collectionConfig []byte) (*peer.Proposal, string, error) {
-	utilsLogger.Info("===========CreateUpgradeProposalFromCDS========")
+	logger.Info("===========CreateUpgradeProposalFromCDS========")
 	if collectionConfig == nil {
 		return createProposalFromCDS(chainID, cds, creator, "upgrade", policy, escc, vscc)
 	}
@@ -601,7 +598,7 @@ func CreateUpgradeProposalFromCDS(
 // createProposalFromCDS returns a deploy or upgrade proposal given a
 // serialized identity and a ChaincodeDeploymentSpec
 func createProposalFromCDS(chainID string, msg proto.Message, creator []byte, propType string, args ...[]byte) (*peer.Proposal, string, error) {
-	utilsLogger.Info("===========func createProposalFromCDS(chainID string, msg proto.Message, creator []byte, propType string, args ...[]byte) (*peer.Proposal, string, error)========")
+	logger.Info("===========func createProposalFromCDS(chainID string, msg proto.Message, creator []byte, propType string, args ...[]byte) (*peer.Proposal, string, error)========")
 	// in the new mode, cds will be nil, "deploy" and "upgrade" are instantiates.
 	var ccinp *peer.ChaincodeInput
 	var b []byte
@@ -614,22 +611,22 @@ func createProposalFromCDS(chainID string, msg proto.Message, creator []byte, pr
 	}
 	switch propType {
 	case "deploy":
-		utilsLogger.Info("==========case \"deploy\":==========")
+		logger.Info("==========case \"deploy\":==========")
 		fallthrough
 	case "upgrade":
-		utilsLogger.Info("=========case \"upgrade\":=========")
+		logger.Info("=========case \"upgrade\":=========")
 		cds, ok := msg.(*peer.ChaincodeDeploymentSpec)
 		if !ok || cds == nil {
 			return nil, "", errors.New("invalid message for creating lifecycle chaincode proposal")
 		}
 
 		Args := [][]byte{[]byte(propType), []byte(chainID), b}
-		utilsLogger.Info("======Args========",Args)
+		logger.Info("======Args========",Args)
 		Args = append(Args, args...)
-		utilsLogger.Info("======Args========",Args)
+		logger.Info("======Args========",Args)
 		ccinp = &peer.ChaincodeInput{Args: Args}
 	case "install":
-		utilsLogger.Info("======case \"install\":========")
+		logger.Info("======case \"install\":========")
 		ccinp = &peer.ChaincodeInput{Args: [][]byte{[]byte(propType), b}}
 	}
 
@@ -649,7 +646,7 @@ func createProposalFromCDS(chainID string, msg proto.Message, creator []byte, pr
 // ComputeTxID computes TxID as the Hash computed
 // over the concatenation of nonce and creator.
 func ComputeTxID(nonce, creator []byte) (string, error) {
-	utilsLogger.Info("===========ComputeTxID========")
+	logger.Info("===========ComputeTxID========")
 	// TODO: Get the Hash function to be used from
 	// channel configuration
 	digest, err := factory.GetDefault().Hash(
@@ -664,7 +661,7 @@ func ComputeTxID(nonce, creator []byte) (string, error) {
 // CheckTxID checks that txid is equal to the Hash computed
 // over the concatenation of nonce and creator.
 func CheckTxID(txid string, nonce, creator []byte) error {
-	utilsLogger.Info("===========CheckTxID========")
+	logger.Info("===========CheckTxID========")
 	computedTxID, err := ComputeTxID(nonce, creator)
 	if err != nil {
 		return errors.WithMessage(err, "error computing target txid")
@@ -679,7 +676,7 @@ func CheckTxID(txid string, nonce, creator []byte) error {
 
 // ComputeProposalBinding computes the binding of a proposal
 func ComputeProposalBinding(proposal *peer.Proposal) ([]byte, error) {
-	utilsLogger.Info("===========ComputeProposalBinding========")
+	logger.Info("===========ComputeProposalBinding========")
 	if proposal == nil {
 		return nil, errors.New("proposal is nil")
 	}
@@ -706,7 +703,7 @@ func ComputeProposalBinding(proposal *peer.Proposal) ([]byte, error) {
 
 func computeProposalBindingInternal(nonce, creator []byte, epoch uint64) ([]byte, error) {
 
-	utilsLogger.Info("===========computeProposalBindingInternal========")
+	logger.Info("===========computeProposalBindingInternal========")
 	epochBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(epochBytes, epoch)
 

@@ -29,6 +29,9 @@ var logger = flogging.MustGetLogger("protos.common")
 // NewBlock construct a block with no data and no metadata.
 func NewBlock(seqNum uint64, previousHash []byte) *Block {
 	logger.Info("============NewBlock===========")
+	/*
+	create Channel
+	 */
 	block := &Block{}
 	block.Header = &BlockHeader{}
 	block.Header.Number = seqNum

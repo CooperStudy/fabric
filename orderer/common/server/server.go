@@ -139,7 +139,7 @@ type deliverMsgTracer struct {
 func (dmt *deliverMsgTracer) Recv() (*cb.Envelope, error) {
 	logger.Info("==deliverMsgTracer==trace==")
 	msg, err := dmt.Receiver.Recv()
-	logger.Info("====msg===========",msg)
+	logger.Info("====msg===========",msg)//nil
 	 traceDir := dmt.debug.DeliverTraceDir
 	 logger.Info("=======traceDir=========",traceDir)
 	 if traceDir != "" {
