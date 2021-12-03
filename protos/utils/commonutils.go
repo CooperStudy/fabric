@@ -179,32 +179,6 @@ func ExtractPayloadOrPanic(envelope *cb.Envelope) *cb.Payload {
 	return payload
 }
 
-// ExtractPayload retrieves the payload of a given envelope and unmarshals it.
-func ExtractPayload(envelope *cb.Envelope) (*cb.Payload, error) {
-	logger.Info("===========ExtractPayload========")
-	payload := &cb.Payload{}
-	err := proto.Unmarshal(envelope.Payload, payload)
-	err = errors.Wrap(err, "no payload in envelope")
-	return payload, err
-}
-
-// MakeChannelHeader creates a ChannelHeader.
-func MakeChannelHeader(headerType cb.HeaderType, version int32, chainID string, epoch uint64,orgName string,orgPki string) *cb.ChannelHeader {
-	logger.Info("===========MakeChannelHeader========")
-	return &cb.ChannelHeader{
-		Type:    int32(headerType),
-		Version: version,
-		Timestamp: &timestamp.Timestamp{
-			Seconds: time.Now().Unix(),
-			Nanos:   0,
-		},
-		ChannelId: chainID,
-		Epoch:     epoch,
-		OrgName: orgName,
-		OrgPki: orgPki,
-	}
-}
-
 // MakeSignatureHeader creates a SignatureHeader.
 func MakeSignatureHeader(serializedCreatorCertChain []byte, nonce []byte) *cb.SignatureHeader {
 	logger.Info("===========MakeSignatureHeader========")
@@ -264,6 +238,32 @@ func SignOrPanic(signer crypto.LocalSigner, msg []byte) []byte {
 		panic(fmt.Errorf("failed generating signature: %s", err))
 	}
 	return sigma
+}
+
+// ExtractPayload retrieves the payload of a given envelope and unmarshals it.
+func ExtractPayload(envelope *cb.Envelope) (*cb.Payload, error) {
+	logger.Info("===========ExtractPayload========")
+	payload := &cb.Payload{}
+	err := proto.Unmarshal(envelope.Payload, payload)
+	err = errors.Wrap(err, "no payload in envelope")
+	return payload, err
+}
+
+// MakeChannelHeader creates a ChannelHeader.
+func MakeChannelHeader(headerType cb.HeaderType, version int32, chainID string, epoch uint64,orgName string,orgPki string) *cb.ChannelHeader {
+	logger.Info("===========MakeChannelHeader========")
+	return &cb.ChannelHeader{
+		Type:    int32(headerType),
+		Version: version,
+		Timestamp: &timestamp.Timestamp{
+			Seconds: time.Now().Unix(),
+			Nanos:   0,
+		},
+		ChannelId: chainID,
+		Epoch:     epoch,
+		OrgName: orgName,
+		OrgPki: orgPki,
+	}
 }
 
 // UnmarshalChannelHeader returns a ChannelHeader from bytes

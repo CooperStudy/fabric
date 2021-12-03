@@ -84,6 +84,10 @@ func (itr *blocksItr) Next() (ledger.QueryResult, error) {
 		return nil, nil
 	}
 	if itr.stream == nil {
+		logger.Info("======itr.stream == nil=======")
+		/*
+		create Channel
+		 */
 		logger.Debugf("Initializing block stream for iterator. itr.maxBlockNumAvailable=%d", itr.maxBlockNumAvailable)
 		if err := itr.initStream(); err != nil {
 			return nil, err

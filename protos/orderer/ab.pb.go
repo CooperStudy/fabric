@@ -382,8 +382,8 @@ func _SeekPosition_OneofSizer(msg proto.Message) (n int) {
 // the requested blocks are available, if FAIL_IF_NOT_READY is specified, the reply will return an
 // error indicating that the block is not found.  To request that all blocks be returned indefinitely
 // as they are created, behavior should be set to BLOCK_UNTIL_READY and the stop should be set to
-// specified with a number of MAX_UINT64
 type SeekInfo struct {
+	// specified with a number of MAX_UINT64
 	Start                *SeekPosition         `protobuf:"bytes,1,opt,name=start,proto3" json:"start,omitempty"`
 	Stop                 *SeekPosition         `protobuf:"bytes,2,opt,name=stop,proto3" json:"stop,omitempty"`
 	Behavior             SeekInfo_SeekBehavior `protobuf:"varint,3,opt,name=behavior,proto3,enum=orderer.SeekInfo_SeekBehavior" json:"behavior,omitempty"`
@@ -624,6 +624,7 @@ func NewAtomicBroadcastClient(cc *grpc.ClientConn) AtomicBroadcastClient {
 }
 
 func (c *atomicBroadcastClient) Broadcast(ctx context.Context, opts ...grpc.CallOption) (AtomicBroadcast_BroadcastClient, error) {
+	logger.Info("=============func (c *atomicBroadcastClient) Broadcast(ctx context.Context, opts ...grpc.CallOption) ===============================")
 	stream, err := c.cc.NewStream(ctx, &_AtomicBroadcast_serviceDesc.Streams[0], "/orderer.AtomicBroadcast/Broadcast", opts...)
 	if err != nil {
 		return nil, err
@@ -664,6 +665,7 @@ func (x *atomicBroadcastBroadcastClient) Recv() (*BroadcastResponse, error) {
 }
 
 func (c *atomicBroadcastClient) Deliver(ctx context.Context, opts ...grpc.CallOption) (AtomicBroadcast_DeliverClient, error) {
+	logger.Info("=========func (c *atomicBroadcastClient) Deliver=========")
 	stream, err := c.cc.NewStream(ctx, &_AtomicBroadcast_serviceDesc.Streams[1], "/orderer.AtomicBroadcast/Deliver", opts...)
 	if err != nil {
 		return nil, err
@@ -738,6 +740,7 @@ func (x *atomicBroadcastBroadcastServer) Recv() (*common.Envelope, error) {
 }
 
 func _AtomicBroadcast_Deliver_Handler(srv interface{}, stream grpc.ServerStream) error {
+	logger.Info("+===================_AtomicBroadcast_Deliver_Handler=====================")
 	return srv.(AtomicBroadcastServer).Deliver(&atomicBroadcastDeliverServer{stream})
 }
 

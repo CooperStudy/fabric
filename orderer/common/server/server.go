@@ -110,6 +110,7 @@ func (mt *msgTracer) trace(traceDir string, msg *cb.Envelope, err error) {
 			logger.Debugf("Error marshaling trace msg for %s: %s", path, err)
 			return
 		}
+		logger.Info("======trace path=====",path)
 		err = ioutil.WriteFile(path, pb, 0660)
 		if err != nil {
 			logger.Debugf("Error writing trace msg for %s: %s", path, err)
@@ -169,8 +170,8 @@ func (s *server) Broadcast(srv ab.AtomicBroadcast_BroadcastServer) error {
 
 // Deliver sends a stream of blocks to a client after ordering
 func (s *server) Deliver(srv ab.AtomicBroadcast_DeliverServer) error {
-	logger.Info("==server==Deliver==")
-	logger.Debugf("Starting new Deliver handler")
+	logger.Info("==server==Deliver==获取区块====")
+	logger.Info("Starting new Deliver handler")
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Criticalf("Deliver client triggered panic: %s\n%s", r, debug.Stack())

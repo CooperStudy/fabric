@@ -69,6 +69,7 @@ func (bh *Handler) Handle(srv ab.AtomicBroadcast_BroadcastServer) error {
 	logger.Debugf("Starting new broadcast loop for %s", addr)
 	for {
 		msg, err := srv.Recv()
+		logger.Info("=========1=msg========",msg)
 		if err == io.EOF {
 			logger.Debugf("Received EOF from %s, hangup", addr)
 			return nil

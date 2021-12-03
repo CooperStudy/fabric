@@ -609,12 +609,12 @@ type deliverDeliverServer struct {
 }
 
 func (x *deliverDeliverServer) Send(m *DeliverResponse) error {
-	logger.Info("==========================func (x *deliverDeliverServer) Send(m *DeliverResponse) error========================")
+	//logger.Info("==========================func (x *deliverDeliverServer) Send(m *DeliverResponse) error========================")
 	return x.ServerStream.SendMsg(m)
 }
 
 func (x *deliverDeliverServer) Recv() (*common.Envelope, error) {
-	logger.Info("========================func (x *deliverDeliverServer) Recv() (*common.Envelope, error)========================")
+	//logger.Info("========================func (x *deliverDeliverServer) Recv() (*common.Envelope, error)========================")
 	m := new(common.Envelope)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err

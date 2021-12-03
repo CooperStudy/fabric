@@ -279,7 +279,7 @@ func (r *Registrar) newLedgerResources(configTx *cb.Envelope) *ledgerResources {
 
 	checkResourcesOrPanic(bundle)
 
-	logger.Info("=================chdr.ChannelId=====",chdr.ChannelId)
+	logger.Info("=================chdr.ChannelId=====",chdr.ChannelId)//mychannel
 	ledger, err := r.ledgerFactory.GetOrCreate(chdr.ChannelId)
 	logger.Info("=================ledger=====",ledger)
 	if err != nil {
@@ -305,6 +305,8 @@ func (r *Registrar) newChain(configtx *cb.Envelope) {
 	// Copy the map to allow concurrent reads from broadcast/deliver while the new chainSupport is
 	newChains := make(map[string]*ChainSupport)
 	for key, value := range r.chains {
+		logger.Info("=============key",key)
+		logger.Info("==========channel",value)
 		newChains[key] = value
 	}
 

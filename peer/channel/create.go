@@ -82,7 +82,7 @@ func createChannelFromDefaults(cf *ChannelCmdFactory) (*cb.Envelope, error) {
 }
 
 func createChannelFromConfigTx(configTxFileName string) (*cb.Envelope, error) {
-	//logger.Info("=====createChannelFromConfigTx============")
+	logger.Info("=====createChannelFromConfigTx============")
 	cftx, err := ioutil.ReadFile(configTxFileName)
 	if err != nil {
 		return nil, ConfigTxFileNotFound(err.Error())
@@ -92,7 +92,7 @@ func createChannelFromConfigTx(configTxFileName string) (*cb.Envelope, error) {
 }
 
 func sanityCheckAndSignConfigTx(envConfigUpdate *cb.Envelope) (*cb.Envelope, error) {
-	//logger.Info("=====sanityCheckAndSignConfigTx============")
+	logger.Info("=====sanityCheckAndSignConfigTx============")
 	payload, err := utils.ExtractPayload(envConfigUpdate)
 	if err != nil {
 		return nil, InvalidCreateTx("bad payload")
@@ -148,7 +148,7 @@ func sanityCheckAndSignConfigTx(envConfigUpdate *cb.Envelope) (*cb.Envelope, err
 }
 
 func sendCreateChainTransaction(cf *ChannelCmdFactory) error {
-	//logger.Info("=====sendCreateChainTransaction============")
+	logger.Info("=====sendCreateChainTransaction============")
 	var err error
 	var chCrtEnv *cb.Envelope
 
@@ -179,7 +179,7 @@ func sendCreateChainTransaction(cf *ChannelCmdFactory) error {
 }
 
 func executeCreate(cf *ChannelCmdFactory) error {
-	//logger.Info("=====executeCreate============")
+	logger.Info("=====executeCreate============")
 	err := sendCreateChainTransaction(cf)
 	if err != nil {
 		return err
@@ -208,7 +208,7 @@ func executeCreate(cf *ChannelCmdFactory) error {
 }
 
 func getGenesisBlock(cf *ChannelCmdFactory) (*cb.Block, error) {
-	//logger.Info("=====getGenesisBlock============")
+	logger.Info("=====getGenesisBlock============")
 	timer := time.NewTimer(timeout)
 	defer timer.Stop()
 

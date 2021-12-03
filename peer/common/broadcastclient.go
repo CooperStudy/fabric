@@ -50,6 +50,7 @@ func GetBroadcastClient() (BroadcastClient, error) {
 func (s *broadcastClient) getAck() error {
 	logger.Info("====broadcastClient==getAck==")
 	msg, err := s.client.Recv()
+	logger.Info("========msg===========",msg)
 	if err != nil {
 		return err
 	}
@@ -61,8 +62,12 @@ func (s *broadcastClient) getAck() error {
 
 //Send data to orderer
 func (s *broadcastClient) Send(env *cb.Envelope) error {
+	/*
+	1.create channel
+	cong here
+	 */
 	logger.Info("====broadcastClient==Send==")
-	logger.Infof("======send envelope",*env)
+	logger.Infof("======send envelope:%v",*env)
 	/*
 	create Channel
 	 */

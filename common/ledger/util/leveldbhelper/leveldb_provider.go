@@ -47,7 +47,11 @@ func (p *Provider) GetDBHandle(dbName string) *DBHandle {
 	logger.Info("====Provider==GetDBHandle==")
 	p.mux.Lock()
 	defer p.mux.Unlock()
-	logger.Info("======dbName====",dbName)
+	logger.Info("======dbName====",dbName)//
+	/*
+	1.create channel
+	mychannel
+	 */
 	//mychannel
 	//mychannel/0
 	dbHandle := p.dbHandles[dbName]

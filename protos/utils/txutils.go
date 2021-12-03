@@ -77,7 +77,7 @@ func CreateSignedEnvelopeWithTLSBinding(txType common.HeaderType, channelID stri
 	/*
 	create Channel
 	 */
-	logger.Info("=======================payloadChannelHeader := MakeChannelHeader(txType:%v, msgVersion:%v, channelID:%v, epoch:%v,orgName:%v,orgPki:%v)==",txType,msgVersion,channelID,epoch,orgName,orgPki)
+	logger.Infof("=======================payloadChannelHeader := MakeChannelHeader(txType:%v, msgVersion:%v, channelID:%v, epoch:%v,orgName:%v,orgPki:%v)==",txType,msgVersion,channelID,epoch,orgName,orgPki)
 	payloadChannelHeader := MakeChannelHeader(txType, msgVersion, channelID, epoch,orgName,orgPki)
 	payloadChannelHeader.TlsCertHash = tlsCertHash
 	var err error
@@ -90,7 +90,9 @@ func CreateSignedEnvelopeWithTLSBinding(txType common.HeaderType, channelID stri
 		}
 	}
 
+	logger.Info("===========dataMsg=======",dataMsg)
 	data, err := proto.Marshal(dataMsg)
+	logger.Infof("======data:%v====",data)
 	if err != nil {
 		return nil, errors.Wrap(err, "error marshaling")
 	}

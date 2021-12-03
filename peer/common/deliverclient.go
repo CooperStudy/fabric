@@ -42,7 +42,7 @@ type DeliverClient struct {
 }
 
 func (d *DeliverClient) seekSpecified(blockNumber uint64) error {
-	//logger.Info("====DeliverClient==seekSpecified==")
+	logger.Info("====DeliverClient==seekSpecified==")
 	seekPosition := &ab.SeekPosition{
 		Type: &ab.SeekPosition_Specified{
 			Specified: &ab.SeekSpecified{
@@ -93,7 +93,7 @@ func (d *DeliverClient) readBlock() (*cb.Block, error) {
 // GetSpecifiedBlock gets the specified block from a peer/orderer's deliver
 // service
 func (d *DeliverClient) GetSpecifiedBlock(num uint64) (*cb.Block, error) {
-	//logger.Info("====DeliverClient==GetSpecifiedBlock==")
+	logger.Info("====DeliverClient==GetSpecifiedBlock==")
 	/*
 	create Channel
 	 */

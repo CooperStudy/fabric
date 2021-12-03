@@ -155,7 +155,15 @@ func (h *Handler) Handle(ctx context.Context, srv *Server) error {
 	for {
 		logger.Infof("Attempting to read seek info message from %s", addr)
 		envelope, err := srv.Recv()
-		logger.Infof("======srv.Recv=envelope:%v===========",envelope.Payload,envelope.Signature)
+		logger.Info("=========envelope===================",*envelope)
+		p,_:= utils.ExtractPayload(envelope)
+		logger.Info("==============envelope.Payload===============",p.Data)
+		//logger.Infof("======srv.Recv=envelope=envelope.Payload:%v,envelope.Signature:%v===========",envelope.Payload,envelope.Signature)
+		/*
+		create Channel
+		//收到请求
+		[10 237 6 10 21 8 5 26 6 8 147 160 167 141 6 34 9 109 121 99 104 97 110 110 101 108 18 211 6 10 182 6 10 7 79 114 103 49 77 83 80 18 170 6 45 45 45 45 45 66 69 71 73 78 32 67 69 82 84 73 70 73 67 65 84 69 45 45 45 45 45 10 77 73 73 67 75 84 67 67 65 100 67 103 65 119 73 66 65 103 73 81 100 111 77 116 88 99 82 109 114 56 88 100 107 104 84 88 71 65 119 70 122 68 65 75 66 103 103 113 104 107 106 79 80 81 81 68 65 106 66 122 77 81 115 119 10 67 81 89 68 86 81 81 71 69 119 74 86 85 122 69 84 77 66 69 71 65 49 85 69 67 66 77 75 81 50 70 115 97 87 90 118 99 109 53 112 89 84 69 87 77 66 81 71 65 49 85 69 66 120 77 78 85 50 70 117 73 69 90 121 10 89 87 53 106 97 88 78 106 98 122 69 90 77 66 99 71 65 49 85 69 67 104 77 81 98 51 74 110 77 83 53 108 101 71 70 116 99 71 120 108 76 109 78 118 98 84 69 99 77 66 111 71 65 49 85 69 65 120 77 84 89 50 69 117 10 98 51 74 110 77 83 53 108 101 71 70 116 99 71 120 108 76 109 78 118 98 84 65 101 70 119 48 121 77 84 69 121 77 68 73 119 78 122 85 119 77 68 66 97 70 119 48 122 77 84 69 120 77 122 65 119 78 122 85 119 77 68 66 97 10 77 71 119 120 67 122 65 74 66 103 78 86 66 65 89 84 65 108 86 84 77 82 77 119 69 81 89 68 86 81 81 73 69 119 112 68 89 87 120 112 90 109 57 121 98 109 108 104 77 82 89 119 70 65 89 68 86 81 81 72 69 119 49 84 10 89 87 52 103 82 110 74 104 98 109 78 112 99 50 78 118 77 81 56 119 68 81 89 68 86 81 81 76 69 119 90 106 98 71 108 108 98 110 81 120 72 122 65 100 66 103 78 86 66 65 77 77 70 107 70 107 98 87 108 117 81 71 57 121 10 90 122 69 117 90 88 104 104 98 88 66 115 90 83 53 106 98 50 48 119 87 84 65 84 66 103 99 113 104 107 106 79 80 81 73 66 66 103 103 113 104 107 106 79 80 81 77 66 66 119 78 67 65 65 82 52 108 84 79 99 69 119 72 47 10 55 66 65 48 80 74 72 88 120 88 67 81 87 84 118 85 72 113 76 114 119 47 109 49 110 111 105 70 106 71 90 97 55 119 81 87 90 49 78 81 43 65 98 79 74 56 116 121 100 87 83 51 120 117 53 89 86 119 51 75 101 103 102 90 10 97 88 99 81 50 86 77 65 65 89 115 73 111 48 48 119 83 122 65 79 66 103 78 86 72 81 56 66 65 102 56 69 66 65 77 67 66 52 65 119 68 65 89 68 86 82 48 84 65 81 72 47 66 65 73 119 65 68 65 114 66 103 78 86 10 72 83 77 69 74 68 65 105 103 67 66 99 112 108 100 103 69 73 105 97 65 76 50 76 53 117 47 100 88 84 55 55 84 82 85 70 119 52 99 52 120 118 103 108 51 51 81 48 90 77 85 87 53 106 65 75 66 103 103 113 104 107 106 79 10 80 81 81 68 65 103 78 72 65 68 66 69 65 105 66 75 90 65 69 79 111 77 48 48 118 109 84 73 82 48 112 80 55 88 70 66 112 52 49 104 118 86 76 52 80 71 119 73 83 113 105 48 118 52 65 119 84 103 73 103 85 66 53 84 10 54 103 97 86 86 111 103 118 97 85 101 77 109 67 113 108 106 78 71 78 117 112 121 66 106 49 105 89 48 106 120 68 108 118 71 116 101 78 65 61 10 45 45 45 45 45 69 78 68 32 67 69 82 84 73 70 73 67 65 84 69 45 45 45 45 45 10 18 24 7 110 33 36 234 142 118 218 122 16 126 119 42 66 87 80 87 213 93 115 163 71 126 59 18 8 10 2 26 0 18 2 26 0]===========%!(EXTRA []uint8=[48 69 2 33 0 234 248 50 95 89 162 190 224 58 91 31 229 225 76 130 147 43 60 174 32 118 187 246 188 181 15 159 158 185 238 195 223 2 32 106 67 47 27 63 232 222 136 217 12 45 114 152 188 103 57 16 179 126 4 94 234 53 54 129 75 100 199 170 214 198 252])
+		*/
 		if err == io.EOF {
 			logger.Debugf("Received EOF from %s, hangup", addr)
 			return nil
@@ -195,7 +203,9 @@ func isFiltered(srv *Server) bool {
 func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.Envelope) (status cb.Status, err error) {
 	logger.Info("==Handler==deliverBlocks==")
 	addr := util.ExtractRemoteAddress(ctx)
-	logger.Info("=======addr============",addr)//172.20.0.7:41574
+	logger.Info("=======addr============",addr)
+	//172.20.0.7:41574
+	//172.19.0.7:51014
 	payload, err := utils.UnmarshalPayload(envelope.Payload)
 	if err != nil {
 		logger.Infof("Received an envelope from %s with no payload: %s", addr, err)
@@ -221,7 +231,7 @@ func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.E
 		return cb.Status_BAD_REQUEST, nil
 	}
 
-	logger.Info("======chdr.ChannelId=============",chdr.ChannelId)
+	//logger.Info("======chdr.ChannelId=============",chdr.ChannelId)
 	/*
 	1.query
 	mychannel
@@ -266,6 +276,7 @@ func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.E
 
 	seekInfo := &ab.SeekInfo{}
 	err = proto.Unmarshal(payload.Data, seekInfo)
+	logger.Info("===============payload.Data========================",payload.Data)
 	//createChannel
 	//logger.Info("==================seekInfo==============")
 	//logger.Info("==================seekInfo.Start==============",seekInfo.Start)//<>
@@ -277,22 +288,36 @@ func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.E
 	}
 
 	if seekInfo.Start == nil || seekInfo.Stop == nil {
-		logger.Warningf("[channel: %s] Received seekInfo message from %s with missing start or stop %v, %v", chdr.ChannelId, addr, seekInfo.Start, seekInfo.Stop)
+		logger.Info("[channel: %s] Received seekInfo message from %s with missing start or stop %v, %v", chdr.ChannelId, addr, seekInfo.Start, seekInfo.Stop)
 		// [channel: mychannel] Received seekInfo (0xc00058e240) start:<specified:<> > stop:<specified:<> >  from 172.19.0.7:51014
 		return cb.Status_BAD_REQUEST, nil
 	}
 
 	logger.Infof("[channel: %s] Received seekInfo (%p) %v from %s", chdr.ChannelId, seekInfo, seekInfo, addr)
 
+	logger.Info("==========chain.Reader().Iterator(seekInfo.Start)=======================")
 	cursor, number := chain.Reader().Iterator(seekInfo.Start)
+	logger.Infof("==========cursor, %v := chain.Reader().Iterator(%v)=======================",number,seekInfo.Start)
+	/*
+	==========cursor, 0 := chain.Reader().Iterator(specified:<> )
+	 */
 	defer cursor.Close()
 	var stopNum uint64
 	switch stop := seekInfo.Stop.Type.(type) {
 	case *ab.SeekPosition_Oldest:
+		logger.Info("=====case *ab.SeekPosition_Oldest:=========")
 		stopNum = number
+		logger.Info("========stopNum=========",stopNum)
 	case *ab.SeekPosition_Newest:
+		logger.Info("=====case *ab.SeekPosition_Newest:=========")
 		stopNum = chain.Reader().Height() - 1
+		logger.Info("========stopNum=========",stopNum)
 	case *ab.SeekPosition_Specified:
+		logger.Info("====case *ab.SeekPosition_Specified:=========")
+		logger.Info("===========stop.Specified.Number============",stop.Specified.Number)//0
+		/*
+		create channel
+		 */
 		stopNum = stop.Specified.Number
 		if stopNum < number {
 			logger.Warningf("[channel: %s] Received invalid seekInfo message from %s: start number %d greater than stop number %d", chdr.ChannelId, addr, number, stopNum)
@@ -302,8 +327,8 @@ func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.E
 
 	for {
 		if seekInfo.Behavior == ab.SeekInfo_FAIL_IF_NOT_READY {
-			logger.Info("=====number====",number)
-			logger.Info("=====chain.Reader().Height()-1 ====",chain.Reader().Height()-1 )
+			//logger.Info("=====number====",number)
+			//logger.Info("=====chain.Reader().Height()-1 ====",chain.Reader().Height()-1 )
 			if number > chain.Reader().Height()-1 {
 				return cb.Status_NOT_FOUND, nil
 			}
@@ -312,9 +337,12 @@ func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.E
 		var block *cb.Block
 		var status cb.Status
 
+		logger.Info("====================")
 		iterCh := make(chan struct{})
 		go func() {
+			logger.Info("====1.获取区块====")
 			block, status = cursor.Next()
+			logger.Info("====2.获取区块====",block)
 			close(iterCh)
 		}()
 
@@ -353,12 +381,18 @@ func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.E
 
 		h.Metrics.BlocksSent.With(labels...).Add(1)
 
+		 logger.Info("=======stopNum=========",stopNum)//0
+		 logger.Info("=======block.Header.Number=========",block.Header.Number)//0
+
 		if stopNum == block.Header.Number {
 			break
 		}
 	}
 
-	logger.Debugf("[channel: %s] Done delivering to %s for (%p)", chdr.ChannelId, addr, seekInfo)
+	logger.Infof("[channel: %s] Done delivering to %s for (%p)", chdr.ChannelId, addr, seekInfo)
+	/*
+	 [channel: mychannel] Done delivering to 172.21.0.7:37216 for (0xc000b92340)
+	 */
 
 	return cb.Status_SUCCESS, nil
 }

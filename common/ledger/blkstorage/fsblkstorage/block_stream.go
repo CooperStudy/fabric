@@ -89,26 +89,38 @@ func (s *blockfileStream) nextBlockBytesAndPlacementInfo() ([]byte, *blockPlacem
 	var fileInfo os.FileInfo
 	moreContentAvailable := true
 
-	if fileInfo, err = s.file.Stat(); err != nil {
+	fileInfo, err = s.file.Stat()
+	logger.Info("====fileInfo=====",fileInfo)
+	if err != nil {
 		return nil, nil, errors.Wrapf(err, "error getting block file stat")
 	}
+	logger.Info("====s.currentOffset=========",s.currentOffset)
+	logger.Info("====fileInfo.Size()=========",fileInfo.Size())
 	if s.currentOffset == fileInfo.Size() {
-		logger.Debugf("Finished reading file number [%d]", s.fileNum)
+		logger.Info("Finished reading file number [%d]", s.fileNum)
 		return nil, nil, nil
 	}
+
+
 	remainingBytes := fileInfo.Size() - s.currentOffset
+	logger.Infof("==========remainingBytes:%v := fileInfo.Size():%v - s.currentOffset:%v=====",remainingBytes,fileInfo.Size(),s.currentOffset)
 	// Peek 8 or smaller number of bytes (if remaining bytes are less than 8)
 	// Assumption is that a block size would be small enough to be represented in 8 bytes varint
 	peekBytes := 8
+
 	if remainingBytes < int64(peekBytes) {
+		logger.Infof("===========remainingBytes < 0===========================")
 		peekBytes = int(remainingBytes)
 		moreContentAvailable = false
 	}
-	logger.Debugf("Remaining bytes=[%d], Going to peek [%d] bytes", remainingBytes, peekBytes)
-	if lenBytes, err = s.reader.Peek(peekBytes); err != nil {
+	logger.Info("Remaining bytes=[%d], Going to peek [%d] bytes", remainingBytes, peekBytes)
+	 lenBytes, err = s.reader.Peek(peekBytes)
+	 if err != nil {
 		return nil, nil, errors.Wrapf(err, "error peeking [%d] bytes from block file", peekBytes)
 	}
+	logger.Info("=========lenBytes===========",lenBytes)
 	length, n := proto.DecodeVarint(lenBytes)
+	logger.Info("=========length===========",length)
 	if n == 0 {
 		// proto.DecodeVarint did not consume any byte at all which means that the bytes
 		// representing the size of the block are partial bytes
@@ -118,17 +130,23 @@ func (s *blockfileStream) nextBlockBytesAndPlacementInfo() ([]byte, *blockPlacem
 		panic(errors.Errorf("Error in decoding varint bytes [%#v]", lenBytes))
 	}
 	bytesExpected := int64(n) + int64(length)
+	logger.Infof("=======bytesExpected:%v := int64(n):%v + int64(length):%v==========================",bytesExpected,n,length)
 	if bytesExpected > remainingBytes {
+		logger.Info("==========bytesExpected > remainingBytes========================")
 		logger.Debugf("At least [%d] bytes expected. Remaining bytes = [%d]. Returning with error [%s]",
 			bytesExpected, remainingBytes, ErrUnexpectedEndOfBlockfile)
 		return nil, nil, ErrUnexpectedEndOfBlockfile
 	}
 	// skip the bytes representing the block size
-	if _, err = s.reader.Discard(n); err != nil {
+	 _, err = s.reader.Discard(n)
+	 logger.Info("========= s.reader.Discard(n)=====",n)
+	 if err != nil {
 		return nil, nil, errors.Wrapf(err, "error discarding [%d] bytes", n)
 	}
 	blockBytes := make([]byte, length)
-	if _, err = io.ReadAtLeast(s.reader, blockBytes, int(length)); err != nil {
+	logger.Info("=================_, err = io.ReadAtLeast(s.reader, blockBytes, int(length))=======================")
+	_, err = io.ReadAtLeast(s.reader, blockBytes, int(length))
+	if err != nil {
 		logger.Errorf("Error reading [%d] bytes from file number [%d], error: %s", length, s.fileNum, err)
 		return nil, nil, errors.Wrapf(err, "error reading [%d] bytes from file number [%d]", length, s.fileNum)
 	}
@@ -136,8 +154,13 @@ func (s *blockfileStream) nextBlockBytesAndPlacementInfo() ([]byte, *blockPlacem
 		fileNum:          s.fileNum,
 		blockStartOffset: s.currentOffset,
 		blockBytesOffset: s.currentOffset + int64(n)}
+
+	logger.Info("+==========fileNum========",s.fileNum)
+	logger.Info("+==========blockStartOffset========",s.currentOffset)
+	logger.Info("+==========blockBytesOffset========",s.currentOffset + int64(n))
+
 	s.currentOffset += int64(n) + int64(length)
-	logger.Debugf("Returning blockbytes - length=[%d], placementInfo={%s}", len(blockBytes), blockPlacementInfo)
+	logger.Infof("Returning blockbytes - length=[%d], placementInfo={%s}", len(blockBytes), blockPlacementInfo)
 	return blockBytes, blockPlacementInfo, nil
 }
 
@@ -150,6 +173,7 @@ func (s *blockfileStream) close() error {
 ////////////////////////////////////
 func newBlockStream(rootDir string, startFileNum int, startOffset int64, endFileNum int) (*blockStream, error) {
 	logger.Info("===newBlockStream===")
+	logger.Infof("===============rootDir:%v,startFileNum:%v,startOffset:%v================",rootDir,startFileNum,startOffset)
 	startFileStream, err := newBlockfileStream(rootDir, startFileNum, startOffset)
 	if err != nil {
 		return nil, err

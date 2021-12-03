@@ -88,7 +88,7 @@ func NewOrdererConfig(ordererGroup *cb.ConfigGroup, mspConfig *MSPConfigHandler)
 func (oc *OrdererConfig) ConsensusType() string {
 	logger.Info("==OrdererConfig==ConsensusType==")
 	a :=oc.protos.ConsensusType.Type
-	logger.Info("==================a",a)
+	logger.Info("==================a",a)//solo
 	return a
 }
 

@@ -46,15 +46,16 @@ func (store *fsBlockStore) AddBlock(block *common.Block) error {
 
 // GetBlockchainInfo returns the current info about blockchain
 func (store *fsBlockStore) GetBlockchainInfo() (*common.BlockchainInfo, error) {
-	////logger.Info("=====fsBlockStore=GetBlockchainInfo==============")
+	logger.Info("=====fsBlockStore=GetBlockchainInfo==============")
 	return store.fileMgr.getBlockchainInfo(), nil
 }
 
 // RetrieveBlocks returns an iterator that can be used for iterating over a range of blocks
 func (store *fsBlockStore) RetrieveBlocks(startNum uint64) (ledger.ResultsIterator, error) {
-	//logger.Info("=====fsBlockStore=GetBlockchainInfo======RetrieveBlocks========")
+	logger.Info("=====fsBlockStore=GetBlockchainInfo======RetrieveBlocks========")
 	var itr *blocksItr
 	var err error
+	logger.Info("=======startNum=======",startNum)
 	if itr, err = store.fileMgr.retrieveBlocks(startNum); err != nil {
 		return nil, err
 	}

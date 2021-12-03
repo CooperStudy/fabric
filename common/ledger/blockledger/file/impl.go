@@ -44,7 +44,7 @@ type fileLedgerIterator struct {
 // Next blocks until there is a new block available, or until Close is called.
 // It returns an error if the next block is no longer retrievable.
 func (i *fileLedgerIterator) Next() (*cb.Block, cb.Status) {
-	//logger.Info("======fileLedgerIterator===Next======")
+	logger.Info("======fileLedgerIterator===Next======")
 	result, err := i.commonIterator.Next()
 	if err != nil {
 		logger.Error(err)
@@ -66,14 +66,15 @@ func (i *fileLedgerIterator) Close() {
 // Iterator returns an Iterator, as specified by an ab.SeekInfo message, and its
 // starting block number
 func (fl *FileLedger) Iterator(startPosition *ab.SeekPosition) (blockledger.Iterator, uint64) {
-	//logger.Info("======FileLedger===Iterator======")
+	logger.Info("======FileLedger===Iterator======")
 	var startingBlockNumber uint64
 	switch start := startPosition.Type.(type) {
 	case *ab.SeekPosition_Oldest:
-		//logger.Info("===========*ab.SeekPosition_Oldest===========")
+		logger.Info("===========*ab.SeekPosition_Oldest===========")
+		logger.Info("===========startingBlockNumber = 0==========")
 		startingBlockNumber = 0
 	case *ab.SeekPosition_Newest:
-		//logger.Info("===========*ab.SeekPosition_Newest===========")
+		logger.Info("===========*ab.SeekPosition_Newest===========")
 		info, err := fl.blockStore.GetBlockchainInfo()
 		if err != nil {
 			logger.Panic(err)
@@ -81,9 +82,11 @@ func (fl *FileLedger) Iterator(startPosition *ab.SeekPosition) (blockledger.Iter
 		newestBlockNumber := info.Height - 1
 		startingBlockNumber = newestBlockNumber
 	case *ab.SeekPosition_Specified:
-		//logger.Info("===========*ab.SeekPosition_Specified===========")
+		logger.Info("===========*ab.SeekPosition_Specified===========")
 		startingBlockNumber = start.Specified.Number
+		logger.Info("=============startingBlockNumber============",startingBlockNumber)
 		height := fl.Height()
+		logger.Info("========height==",height)
 		if startingBlockNumber > height {
 			return &blockledger.NotFoundErrorIterator{}, 0
 		}
@@ -91,8 +94,9 @@ func (fl *FileLedger) Iterator(startPosition *ab.SeekPosition) (blockledger.Iter
 		//logger.Info("===========default===========")
 		return &blockledger.NotFoundErrorIterator{}, 0
 	}
-
+	logger.Infof("===============iterator, err := fl.blockStore.RetrieveBlocks(%v)===获取区块==================================",startingBlockNumber)
 	iterator, err := fl.blockStore.RetrieveBlocks(startingBlockNumber)
+	logger.Info("=================获取到账本==iterator==================")
 	if err != nil {
 		return &blockledger.NotFoundErrorIterator{}, 0
 	}
@@ -102,8 +106,10 @@ func (fl *FileLedger) Iterator(startPosition *ab.SeekPosition) (blockledger.Iter
 
 // Height returns the number of blocks on the ledger
 func (fl *FileLedger) Height() uint64 {
-	//logger.Info("======FileLedger===Height======")
+	logger.Info("======FileLedger===Height======")
+	logger.Info("======= fl.blockStore.GetBlockchainInfo()==============")
 	info, err := fl.blockStore.GetBlockchainInfo()
+	logger.Info("==========info================",info)
 	if err != nil {
 		logger.Panic(err)
 	}

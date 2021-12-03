@@ -96,13 +96,16 @@ func NewChannelConfig(channelGroup *cb.ConfigGroup) (*ChannelConfig, error) {
 
 	var err error
 	for groupName, group := range channelGroup.Groups {
-		logger.Info("======groupName===========",groupName)
+		logger.Info("======groupName===========",groupName)//Orderer
 		switch groupName {
 		case ApplicationGroupKey:
 			logger.Info("======ApplicationGroupKey===========")
 			cc.appConfig, err = NewApplicationConfig(group, mspConfigHandler)
 		case OrdererGroupKey:
 			logger.Info("======OrdererGroupKey===========")
+			/*
+			create channel
+			 */
 			cc.ordererConfig, err = NewOrdererConfig(group, mspConfigHandler)
 		case ConsortiumsGroupKey:
 			logger.Info("======ConsortiumsGroupKey===========")

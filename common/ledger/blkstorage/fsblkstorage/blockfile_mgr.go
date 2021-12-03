@@ -447,7 +447,7 @@ func (mgr *blockfileMgr) syncIndex() error {
 }
 
 func (mgr *blockfileMgr) getBlockchainInfo() *common.BlockchainInfo {
-	////logger.Info("===blockfileMgr==getBlockchainInfo==")
+	logger.Info("===blockfileMgr==getBlockchainInfo==")
 	return mgr.bcInfo.Load().(*common.BlockchainInfo)
 }
 
@@ -534,7 +534,7 @@ func (mgr *blockfileMgr) retrieveBlockHeaderByNumber(blockNum uint64) (*common.B
 }
 
 func (mgr *blockfileMgr) retrieveBlocks(startNum uint64) (*blocksItr, error) {
-	//logger.Info("===blockfileMgr==retrieveBlocks==")
+	logger.Info("===blockfileMgr==retrieveBlocks==")
 	return newBlockItr(mgr, startNum), nil
 }
 
