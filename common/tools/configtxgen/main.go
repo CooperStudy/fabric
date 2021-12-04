@@ -239,8 +239,8 @@ func main() {
 		logger.Warningf("Omitting the channel ID for configtxgen for output operations is deprecated.  Explicitly passing the channel ID will be required in the future, defaulting to '%s'.", channelID)
 	}
 
-	if orgName== "" || orgPki == ""{
-		logger.Warn("==orgName,orgPki字段都为空，请注意后续可能出现问题，这个两个字段后续可能会用到===")
+	if orgName== "" {
+		logger.Warn("==orgName段都为空，请注意后续可能出现问题，这个两个字段后续可能会用到===")
 	}
 
 	// show version

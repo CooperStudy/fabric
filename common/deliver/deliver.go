@@ -8,8 +8,10 @@ package deliver
 
 import (
 	"context"
+	"github.com/hyperledger/fabric/protos/msp"
 	"io"
 	"math"
+	"os"
 	"strconv"
 	"time"
 
@@ -202,6 +204,12 @@ func isFiltered(srv *Server) bool {
 
 func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.Envelope) (status cb.Status, err error) {
 	logger.Info("==Handler==deliverBlocks==")
+	logger.Info("=============1.获取配置变量=======")
+	oname:=os.Getenv("CORE_PEER_LOCALMSPID")
+	logger.Info("=======2.CORE_PEER_LOCALMSPID===========",oname)
+	if oname == ""{
+		oname = "Org3MSP"
+	}
 	addr := util.ExtractRemoteAddress(ctx)
 	logger.Info("=======addr============",addr)
 	//172.20.0.7:41574
@@ -279,7 +287,7 @@ func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.E
 	logger.Info("===============payload.Data========================",payload.Data)
 	//createChannel
 	//logger.Info("==================seekInfo==============")
-	//logger.Info("==================seekInfo.Start==============",seekInfo.Start)//<>
+	//logger.Info("==================seekInfo.Start==============",seekInfo.Stare)//<>
 	//logger.Info("==================seekInfo.Stop==============",seekInfo.Stop)//<>
 	//logger.Info("==================seekInfo.Behavior==============",seekInfo.Behavior)//BLOCK_UNTIL_READY
 	if err != nil {
@@ -296,7 +304,46 @@ func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.E
 	logger.Infof("[channel: %s] Received seekInfo (%p) %v from %s", chdr.ChannelId, seekInfo, seekInfo, addr)
 
 	logger.Info("==========chain.Reader().Iterator(seekInfo.Start)=======================")
-	cursor, number := chain.Reader().Iterator(seekInfo.Start)
+	re := chain.Reader()
+	if re == nil{
+		return cb.Status_BAD_REQUEST, nil
+	}
+
+	logger.Info("=======1。获取该通道区块0=================")
+	a :=&ab.SeekPosition_Specified{}
+	a.Specified.Number = uint64(0)
+	si := &ab.SeekInfo{}
+	si.Start.Type = a
+	c,_ := re.Iterator(si.Start)
+
+	b, s := c.Next()
+	logger.Info("========s",s)
+	if s != cb.Status_SUCCESS{
+		return cb.Status_BAD_REQUEST, nil
+	}
+
+	logger.Info("=======2.获取配置文件的交易信息，提取envelop=================")
+	e,err := utils.ExtractEnvelope(b,0)
+	if err != nil{
+		return cb.Status_BAD_REQUEST, nil
+	}
+	p,err := utils.ExtractPayload(e)
+	if err != nil{
+		return
+	}
+
+
+	channelHearder, err := utils.UnmarshalChannelHeader(p.Header.ChannelHeader)
+	if err != nil {
+		return cb.Status_BAD_REQUEST, nil
+	}
+
+	orgName := channelHearder.OrgName
+	logger.Info("==========orgName==============",orgName)
+
+
+
+	cursor, number := re.Iterator(seekInfo.Start)
 	logger.Infof("==========cursor, %v := chain.Reader().Iterator(%v)=======================",number,seekInfo.Start)
 	/*
 	==========cursor, 0 := chain.Reader().Iterator(specified:<> )
@@ -342,7 +389,7 @@ func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.E
 		go func() {
 			logger.Info("====1.获取区块====")
 			block, status = cursor.Next()
-			logger.Info("====2.获取区块====",block)
+			logger.Info("====2.获取区块====")
 			close(iterCh)
 		}()
 
@@ -373,6 +420,48 @@ func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.E
 		logger.Debugf("[channel: %s] Delivering block for (%p) for %s", chdr.ChannelId, seekInfo, addr)
 
 		logger.Info("============err := srv.SendBlockResponse(block)=========================")
+		logger.Info("===========1.block.Data.Data====================",block.Data.Data)
+		if block != nil{
+			if orgName != ""{
+				var bd cb.BlockData
+				//遵循规则
+				for index,envelopBytes := range block.Data.Data{
+					en,err := utils.ExtractEnvelope(block,index)
+					if err != nil{
+						return cb.Status_BAD_REQUEST, nil
+					}
+					pa,err := utils.ExtractPayload(en)
+					if err != nil{
+						return cb.Status_FORBIDDEN, nil
+					}
+
+					payloadSignatureHeader := &cb.SignatureHeader{}
+					err = proto.Unmarshal(pa.Header.SignatureHeader,payloadSignatureHeader)
+					creator := payloadSignatureHeader.Creator
+
+					sid := &msp.SerializedIdentity{}
+					err = proto.Unmarshal(creator, sid)
+					logger.Info("==========creator.OrgName",sid.Mspid)
+					if orgName != oname {
+
+					}
+					logger.Info("=======oname=======",oname)
+					logger.Info("=======sid.Mspid=======",sid.Mspid)
+					if oname != sid.Mspid{
+						if oname != orgName{
+							logger.Info("===========3.区块交易没有获取权限==================")
+							continue
+						}
+					}
+					bd.Data = append(bd.Data,envelopBytes)
+				}
+				//为了保持块的高度一致，交易为空，但是区块头需要
+				logger.Info("=========2.block.Data.Data=============",block.Data.Data)
+				logger.Info("=========bd.Data=============",bd.Data)
+				copy(block.Data.Data,bd.Data)
+			}
+		}
+		logger.Info("===========3.block.Data.Data====================",block.Data.Data)
 		 err := srv.SendBlockResponse(block)
 		 if err != nil{
 			logger.Warningf("[channel: %s] Error sending to %s: %s", chdr.ChannelId, addr, err)
