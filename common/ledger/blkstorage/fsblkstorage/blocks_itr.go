@@ -36,6 +36,8 @@ func newBlockItr(mgr *blockfileMgr, startBlockNum uint64) *blocksItr {
 	logger.Info("===newBlockItr==")
 	mgr.cpInfoCond.L.Lock()
 	defer mgr.cpInfoCond.L.Unlock()
+	logger.Info("============mgr.cpInfo.lastBlockNumber==============",mgr.cpInfo.lastBlockNumber)
+	logger.Info("============startBlockNum==============",startBlockNum)
 	return &blocksItr{mgr, mgr.cpInfo.lastBlockNumber, startBlockNum, nil, false, &sync.Mutex{}}
 }
 
@@ -44,11 +46,12 @@ func (itr *blocksItr) waitForBlock(blockNum uint64) uint64 {
 	itr.mgr.cpInfoCond.L.Lock()
 	defer itr.mgr.cpInfoCond.L.Unlock()
 	for itr.mgr.cpInfo.lastBlockNumber < blockNum && !itr.shouldClose() {
-		logger.Debugf("Going to wait for newer blocks. maxAvailaBlockNumber=[%d], waitForBlockNum=[%d]",
+		logger.Info("Going to wait for newer blocks. maxAvailaBlockNumber=[%d], waitForBlockNum=[%d]",
 			itr.mgr.cpInfo.lastBlockNumber, blockNum)
 		itr.mgr.cpInfoCond.Wait()
-		logger.Debugf("Came out of wait. maxAvailaBlockNumber=[%d]", itr.mgr.cpInfo.lastBlockNumber)
+		logger.Info("Came out of wait. maxAvailaBlockNumber=[%d]", itr.mgr.cpInfo.lastBlockNumber)
 	}
+	logger.Info("==========itr.mgr.cpInfo.lastBlockNumber===========",itr.mgr.cpInfo.lastBlockNumber)
 	return itr.mgr.cpInfo.lastBlockNumber
 }
 
@@ -75,7 +78,10 @@ func (itr *blocksItr) shouldClose() bool {
 // Next moves the cursor to next block and returns true iff the iterator is not exhausted
 func (itr *blocksItr) Next() (ledger.QueryResult, error) {
 	logger.Info("==blocksItr=Next==")
+	logger.Info("===========itr.maxBlockNumAvailable==============",itr.maxBlockNumAvailable)
+	logger.Info("===========itr.blockNumToRetrieve==============",itr.blockNumToRetrieve)
 	if itr.maxBlockNumAvailable < itr.blockNumToRetrieve {
+		logger.Info("=============wait block number===",itr.blockNumToRetrieve)
 		itr.maxBlockNumAvailable = itr.waitForBlock(itr.blockNumToRetrieve)
 	}
 	itr.closeMarkerLock.Lock()

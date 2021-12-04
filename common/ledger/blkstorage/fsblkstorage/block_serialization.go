@@ -60,13 +60,19 @@ func deserializeBlock(serializedBlockBytes []byte) (*common.Block, error) {
 	block := &common.Block{}
 	var err error
 	b := ledgerutil.NewBuffer(serializedBlockBytes)
-	if block.Header, err = extractHeader(b); err != nil {
+	logger.Info("========block.Header, err = extractHeader(b)==")
+	block.Header, err = extractHeader(b)
+	if err != nil {
 		return nil, err
 	}
+	logger.Info("=====block.Data, _, err = extractData(b)==")
 	if block.Data, _, err = extractData(b); err != nil {
 		return nil, err
 	}
-	if block.Metadata, err = extractMetadata(b); err != nil {
+	logger.Info("=====block.Metadata, err = extractMetadata(b)==")
+	block.Metadata, err = extractMetadata(b)
+	logger.Info("============block.Metadata=========",block.Metadata)
+	if err != nil {
 		return nil, err
 	}
 	return block, nil
@@ -173,7 +179,8 @@ func extractData(buf *ledgerutil.Buffer) (*common.BlockData, []*txindexInfo, err
 	var numItems uint64
 	var err error
 
-	if numItems, err = buf.DecodeVarint(); err != nil {
+	numItems, err = buf.DecodeVarint()
+	if err != nil {
 		return nil, nil, err
 	}
 	for i := uint64(0); i < numItems; i++ {

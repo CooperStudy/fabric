@@ -31,6 +31,7 @@ import (
 func EncodeOrderPreservingVarUint64(number uint64) []byte {
 	logger.Info("====EncodeOrderPreservingVarUint64====")
 	bytes := make([]byte, 8)
+	logger.Info("====number====",number)
 	binary.BigEndian.PutUint64(bytes, number)
 	startingIndex := 0
 	size := 0
@@ -41,6 +42,7 @@ func EncodeOrderPreservingVarUint64(number uint64) []byte {
 			break
 		}
 	}
+	logger.Info("=============uint64(size)============",uint64(size))
 	sizeBytes := proto.EncodeVarint(uint64(size))
 	if len(sizeBytes) > 1 {
 		panic(fmt.Errorf("[]sizeBytes should not be more than one byte because the max number it needs to hold is 8. size=%d", size))

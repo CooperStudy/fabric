@@ -221,7 +221,7 @@ func syncCPInfoFromFS(rootDir string, cpInfo *checkpointInfo) {
 func deriveBlockfilePath(rootDir string, suffixNum int) string {
 	//logger.Info("===deriveBlockfilePath==")
 	a:= rootDir + "/" + blockfilePrefix + fmt.Sprintf("%06d", suffixNum)
-	//logger.Info("==============deriveBlockfilePath=========",a)
+	logger.Info("==============deriveBlockfilePath=========",a)
 	// /var/hyperledger/production/ledgersData/chains/chains/mychannel/blockfile_000000
 	//
 	return a
@@ -559,7 +559,7 @@ func (mgr *blockfileMgr) retrieveTransactionByBlockNumTranNum(blockNum uint64, t
 }
 
 func (mgr *blockfileMgr) fetchBlock(lp *fileLocPointer) (*common.Block, error) {
-	//logger.Info("===blockfileMgr==fetchBlock==")
+	logger.Info("===blockfileMgr==fetchBlock==")
 	blockBytes, err := mgr.fetchBlockBytes(lp)
 	if err != nil {
 		return nil, err
@@ -584,6 +584,9 @@ func (mgr *blockfileMgr) fetchTransactionEnvelope(lp *fileLocPointer) (*common.E
 }
 
 func (mgr *blockfileMgr) fetchBlockBytes(lp *fileLocPointer) ([]byte, error) {
+	logger.Info("================mgr.rootDir============================",mgr.rootDir)
+	logger.Info("================lp.fileSuffixNum============================",lp.fileSuffixNum)
+	logger.Info("================ int64(lp.offset)============================",int64(lp.offset))
 	stream, err := newBlockfileStream(mgr.rootDir, lp.fileSuffixNum, int64(lp.offset))
 	if err != nil {
 		return nil, err

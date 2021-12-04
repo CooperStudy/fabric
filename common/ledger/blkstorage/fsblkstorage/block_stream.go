@@ -53,21 +53,30 @@ type blockPlacementInfo struct {
 ////////////////////////////////////
 func newBlockfileStream(rootDir string, fileNum int, startOffset int64) (*blockfileStream, error) {
 	logger.Info("===newBlockfileStream===")
+	logger.Info("================rootDir=====================",rootDir)
+	logger.Info("================fileNum=====================",fileNum)
+	logger.Info("=================startOffset================",startOffset)
 	filePath := deriveBlockfilePath(rootDir, fileNum)
-	logger.Debugf("newBlockfileStream(): filePath=[%s], startOffset=[%d]", filePath, startOffset)
+	logger.Info("newBlockfileStream(): filePath=[%s], startOffset=[%d]", filePath, startOffset)
 	var file *os.File
 	var err error
-	if file, err = os.OpenFile(filePath, os.O_RDONLY, 0600); err != nil {
+	file, err = os.OpenFile(filePath, os.O_RDONLY, 0600)
+	if err != nil {
 		return nil, errors.Wrapf(err, "error opening block file %s", filePath)
 	}
 	var newPosition int64
-	if newPosition, err = file.Seek(startOffset, 0); err != nil {
+	 newPosition, err = file.Seek(startOffset, 0)
+	 logger.Infof("============newPosition:%v, err = file.Seek(startOffset:%v, 0)=",newPosition,startOffset)
+	if err != nil {
 		return nil, errors.Wrapf(err, "error seeking block file [%s] to startOffset [%d]", filePath, startOffset)
 	}
+	logger.Info("=========newPosition===========",newPosition)
+	logger.Info("=========startOffset===========",startOffset)
 	if newPosition != startOffset {
 		panic(fmt.Sprintf("Could not seek block file [%s] to startOffset [%d]. New position = [%d]",
 			filePath, startOffset, newPosition))
 	}
+	logger.Info("&blockfileStream{fileNum, file, bufio.NewReader(file), startOffset}")
 	s := &blockfileStream{fileNum, file, bufio.NewReader(file), startOffset}
 	return s, nil
 }
@@ -188,7 +197,13 @@ func (s *blockStream) moveToNextBlockfileStream() error {
 		return err
 	}
 	s.currentFileNum++
-	if s.currentFileStream, err = newBlockfileStream(s.rootDir, s.currentFileNum, 0); err != nil {
+	logger.Info("=========s.currentFileNum++===========",s.currentFileNum)
+
+	logger.Info("========s.rootDir=================",s.rootDir)
+	logger.Info("=======s.currentFileNum================",s.currentFileNum)
+	s.currentFileStream, err = newBlockfileStream(s.rootDir, s.currentFileNum, 0)
+
+	if err != nil {
 		return err
 	}
 	return nil
@@ -205,13 +220,16 @@ func (s *blockStream) nextBlockBytesAndPlacementInfo() ([]byte, *blockPlacementI
 	var blockBytes []byte
 	var blockPlacementInfo *blockPlacementInfo
 	var err error
-	if blockBytes, blockPlacementInfo, err = s.currentFileStream.nextBlockBytesAndPlacementInfo(); err != nil {
+	blockBytes, blockPlacementInfo, err = s.currentFileStream.nextBlockBytesAndPlacementInfo()
+	logger.Info("==========blockBytes===========",blockBytes)
+
+	if err != nil {
 		logger.Errorf("Error reading next block bytes from file number [%d]: %s", s.currentFileNum, err)
 		return nil, nil, err
 	}
-	logger.Debugf("blockbytes [%d] read from file [%d]", len(blockBytes), s.currentFileNum)
+	logger.Info("blockbytes [%d] read from file [%d]", len(blockBytes), s.currentFileNum)
 	if blockBytes == nil && (s.currentFileNum < s.endFileNum || s.endFileNum < 0) {
-		logger.Debugf("current file [%d] exhausted. Moving to next file", s.currentFileNum)
+		logger.Info("current file [%d] exhausted. Moving to next file", s.currentFileNum)
 		if err = s.moveToNextBlockfileStream(); err != nil {
 			return nil, nil, err
 		}

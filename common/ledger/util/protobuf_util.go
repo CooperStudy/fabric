@@ -38,8 +38,13 @@ func NewBuffer(b []byte) *Buffer {
 func (b *Buffer) DecodeVarint() (uint64, error) {
 	logger.Info("===Buffer=DecodeVarint====")
 	val, err := b.buf.DecodeVarint()
+	logger.Info("======val==========",val)
 	if err == nil {
+		logger.Info("=========b.position===============",b.position)
 		b.position += proto.SizeVarint(val)
+		logger.Info("=========proto.SizeVarint(val)===============", proto.SizeVarint(val))
+		logger.Info("=========b.position===============", b.position)
+
 	} else {
 		err = errors.Wrap(err, "error decoding varint with proto.Buffer")
 	}
@@ -51,10 +56,14 @@ func (b *Buffer) DecodeRawBytes(alloc bool) ([]byte, error) {
 	logger.Info("===Buffer=DecodeRawBytes====")
 	val, err := b.buf.DecodeRawBytes(alloc)
 	if err == nil {
+		logger.Info("===b.position==========",b.position)
 		b.position += proto.SizeVarint(uint64(len(val))) + len(val)
+		logger.Infof("==============b.position:%v += proto.SizeVarint(%v)) + %v=========================",b.position,uint64(len(val)),len(val))
+
 	} else {
 		err = errors.Wrap(err, "error decoding raw bytes with proto.Buffer")
 	}
+	logger.Info("=========val",val)
 	return val, err
 }
 
