@@ -63,7 +63,7 @@ func (b *Buffer) DecodeRawBytes(alloc bool) ([]byte, error) {
 	} else {
 		err = errors.Wrap(err, "error decoding raw bytes with proto.Buffer")
 	}
-	logger.Info("=========val",val)
+	//logger.Info("=========val",val)
 	return val, err
 }
 

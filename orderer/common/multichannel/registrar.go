@@ -146,6 +146,9 @@ func (r *Registrar) Initialize(consenters map[string]consensus.Consenter) {
 	r.consenters = consenters
 	existingChains := r.ledgerFactory.ChainIDs()
 	logger.Info("=========existingChains===========",existingChains)
+	/*
+	[byfn-sys-channel]
+	*/
 	for _, chainID := range existingChains {
 		logger.Info("====chainID====",chainID)
 		rl, err := r.ledgerFactory.GetOrCreate(chainID)
@@ -232,8 +235,10 @@ func (r *Registrar) BroadcastChannelSupport(msg *cb.Envelope) (*cb.ChannelHeader
 	isConfig := false
 	switch cs.ClassifyMsg(chdr) {
 	case msgprocessor.ConfigUpdateMsg:
+		logger.Info("=============case msgprocessor.ConfigUpdateMsg==============")
 		isConfig = true
 	case msgprocessor.ConfigMsg:
+		logger.Info("===========case msgprocessor.ConfigMsg==============")
 		return chdr, false, nil, errors.New("message is of type that cannot be processed directly")
 	default:
 	}

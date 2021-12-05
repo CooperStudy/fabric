@@ -7,7 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 package crypto
 
 import (
+	"github.com/golang/protobuf/proto"
 	cb "github.com/hyperledger/fabric/protos/common"
+	"github.com/hyperledger/fabric/protos/msp"
 )
 
 // LocalSigner is a temporary stub interface which will be implemented by the local MSP
@@ -62,6 +64,11 @@ func (bs *SignatureHeaderCreator) NewSignatureHeader() (*cb.SignatureHeader, err
 	if err != nil {
 		return nil, err
 	}
+
+
+	sid := &msp.SerializedIdentity{}
+	err = proto.Unmarshal(creator, sid)
+	logger.Info("==========creator===",sid.Mspid)
 
 	return &cb.SignatureHeader{
 		Creator: creator,

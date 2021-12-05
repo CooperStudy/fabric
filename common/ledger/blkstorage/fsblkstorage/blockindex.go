@@ -93,6 +93,10 @@ func (index *blockIndex) indexBlock(blockIdxInfo *blockIdxInfo) error {
 	logger.Info("====blockIndex===indexBlock==")
 	// do not index anything
 	logger.Info("=====len(index.indexItemsMap) ===========",len(index.indexItemsMap) )
+	/*
+	1.docker
+	len(index.indexItemsMap) 1
+	 */
 	if len(index.indexItemsMap) == 0 {
 		logger.Debug("Not indexing block... as nothing to index")
 		return nil
@@ -101,6 +105,7 @@ func (index *blockIndex) indexBlock(blockIdxInfo *blockIdxInfo) error {
 	flp := blockIdxInfo.flp
 	txOffsets := blockIdxInfo.txOffsets
 	logger.Info("======txOffsets=================",txOffsets)
+	//[0xc000227320]
 	txsfltr := ledgerUtil.TxValidationFlags(blockIdxInfo.metadata.Metadata[common.BlockMetadataIndex_TRANSACTIONS_FILTER])
 	batch := leveldbhelper.NewUpdateBatch()
 	flpBytes, err := flp.marshal()
@@ -363,6 +368,10 @@ func (lp *locPointer) String() string {
 	logger.Info("====func (lp *locPointer) String() string=")
 	a :=  fmt.Sprintf("offset=%d, bytesLength=%d", lp.offset, lp.bytesLength)
 	logger.Info("=======a========",a)
+	/*
+	1.offset=38, bytesLength=12918
+
+	*/
 	return a
 }
 
@@ -387,12 +396,13 @@ func newFileLocationPointer(fileSuffixNum int, beginningOffset int, relativeLP *
 func (flp *fileLocPointer) marshal() ([]byte, error) {
 	logger.Info("===fileLocPointer=marshal=")
 	buffer := proto.NewBuffer([]byte{})
-	logger.Info("=========e := buffer.EncodeVarint(uint64(flp.fileSuffixNum))============",uint64(flp.fileSuffixNum))
+	logger.Info("=========e := buffer.EncodeVarint(uint64(flp.fileSuffixNum))============",uint64(flp.fileSuffixNum))//0
 	e := buffer.EncodeVarint(uint64(flp.fileSuffixNum))
 	if e != nil {
 		return nil, e
 	}
 	logger.Info("===================buffer.EncodeVarint(uint64(flp.offset))=======================",uint64(flp.offset))
+	//0
 	e = buffer.EncodeVarint(uint64(flp.offset))
 	if e != nil {
 		return nil, e
@@ -401,9 +411,10 @@ func (flp *fileLocPointer) marshal() ([]byte, error) {
 	if e != nil {
 		return nil, e
 	}
-	logger.Info("==================e = buffer.EncodeVarint(uint64(flp.bytesLength))=======================",uint64(flp.bytesLength))
+	logger.Info("==================e = buffer.EncodeVarint(uint64(flp.bytesLength))=======================",uint64(flp.bytesLength))//0
 
-	logger.Info("=======================buffer.Bytes()=======",buffer.Bytes())
+	logger.Info("=======================buffer.Bytes()=======",buffer.Bytes())//[0 0 0]
+
 
 	return buffer.Bytes(), nil
 }
@@ -455,15 +466,23 @@ func (blockIdxInfo *blockIdxInfo) String() string {
 	for _, txOffset := range blockIdxInfo.txOffsets {
 		buffer.WriteString("txId=")
 		logger.Info("==========txId=txOffset.txID=============",txOffset.txID)
+		//e691f573514613025eee38ccdaa28bd8ed8858015ae52968031c2388bfae7be5
 		buffer.WriteString(txOffset.txID)
 		buffer.WriteString(" locPointer=")
 		buffer.WriteString(txOffset.loc.String())
 		buffer.WriteString("\n")
 		logger.Infof("=============txId=txOffset.txID:%v locPointer=txOffset.loc.String():%v===================================",txOffset.txID,txOffset.loc.String())
+	   //txId=txOffset.txID:e691f573514613025eee38ccdaa28bd8ed8858015ae52968031c2388bfae7be5 locPointer=txOffset.loc.String():offset=38, bytesLength=12918=
 	}
 	txOffsetsString := buffer.String()
 
-	a  := fmt.Sprintf("blockNum=%d, blockHash=%#v txOffsets=\n%s", blockIdxInfo.blockNum, blockIdxInfo.blockHash, txOffsetsString)
+	a  := fmt.Sprintf("blockNum=%d, blockHash=%#v txOffsets=%s", blockIdxInfo.blockNum, blockIdxInfo.blockHash, txOffsetsString)
 	logger.Info("=====================a=====",a)
+	/*
+	blockNum=0,
+	blockHash=[]byte{0x4c, 0x1e, 0xcc, 0x9f, 0x9d, 0xb7, 0xe6, 0xad, 0xf3, 0xd3, 0x3e, 0xad, 0xda, 0x7e, 0x24, 0xbc, 0xc8, 0x9f, 0xab, 0x15, 0xec, 0x24, 0x25, 0xbe, 0x3d, 0x11, 0x8e, 0xa9, 0xd0, 0x87, 0xb4, 0xe4}
+	txOffsets=txId=e691f573514613025eee38ccdaa28bd8ed8858015ae52968031c2388bfae7be5 locPointer=offset=38, bytesLength=12918
+
+	*/
 	return a
 }

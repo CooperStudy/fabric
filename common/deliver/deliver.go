@@ -11,7 +11,6 @@ import (
 	"github.com/hyperledger/fabric/protos/msp"
 	"io"
 	"math"
-	"os"
 	"strconv"
 	"time"
 
@@ -157,9 +156,89 @@ func (h *Handler) Handle(ctx context.Context, srv *Server) error {
 	for {
 		logger.Infof("Attempting to read seek info message from %s", addr)
 		envelope, err := srv.Recv()
-		logger.Info("=========envelope===================",*envelope)
-		p,_:= utils.ExtractPayload(envelope)
-		logger.Info("==============envelope.Payload===============",p.Data)
+		if envelope != nil{
+			logger.Info("=========2 envelope===================")
+			pa,_:= utils.ExtractPayload(envelope)
+			logger.Info("==============envelope.Payload===============")
+			a,err := utils.UnmarshalChannelHeader(pa.Header.ChannelHeader)
+			logger.Info("====err",err)
+			logger.Infof("=================channelHeader:%v",*a)
+			//channelHeader:{5 0 seconds:1638659036  mychannel  0 [] []   {} [] 0}
+			logger.Infof("=================发送者:%v",a.OrgName)
+			/*
+			type= 5是请求者的creator
+			 */
+			logger.Infof("=================a.OrgPki:%v",a.OrgPki)
+			logger.Infof("=================a.Type:%v",a.Type)//
+			logger.Infof("=================a.Type:%T",a.Type)//
+			logger.Infof("=================a.Version:%v",a.Version)//0
+			logger.Infof("=================a.ChannelId:%v",a.ChannelId)//mychannel
+			logger.Infof("=================a.Extension:%v",a.Extension)//[]
+			logger.Infof("=================a.TxId",a.TxId)
+
+
+
+			payloadSignatureHeader := &cb.SignatureHeader{}
+			err = proto.Unmarshal(pa.Header.SignatureHeader,payloadSignatureHeader)
+			creator := payloadSignatureHeader.Creator
+
+			sid := &msp.SerializedIdentity{}
+			err = proto.Unmarshal(creator, sid)
+			/*
+			请求消息的组织名id.Mspid，跟交易中的签名的组织名进行比较，如果一致就获取块
+			 */
+			logger.Info("==========creator.OrgName",sid.Mspid)//Org1MSP
+
+			logger.Info("==============envelope.Payload===============",pa.Data)
+
+
+
+			/*
+			[10 2 26 0 18 2 26 0]
+			 */
+			//ee,err := utils.UnmarshalEnvelope(pa.Data)
+			//eee,err := utils.ExtractPayload(ee)
+			//eeee,err := utils.UnmarshalChannelHeader(eee.Header.ChannelHeader)
+			//
+			//logger.Infof("=================channelHeader:%v",*eeee)
+			//logger.Infof("=================eeee.OrgName:%v",eeee.OrgName)
+			//logger.Infof("=================eeee.OrgPki:%v",eeee.OrgPki)
+			//logger.Infof("=================eeee.Type:%v",eeee.Type)//2
+			//logger.Infof("=================eeee.Type:%T",eeee.Type)//
+			//logger.Infof("=================eeee.Version:%v",eeee.Version)//0
+			//logger.Infof("=================eeee.ChannelId:%v",eeee.ChannelId)//mychannel
+			//logger.Infof("================eeee.Extension:%v",eeee.Extension)//[]
+			//logger.Infof("=================eeee.TxId",eeee.TxId)
+
+
+			//ppp := &cb.SignatureHeader{}
+			//err = proto.Unmarshal(eee.Header.SignatureHeader,ppp)
+			//creator1 := ppp.Creator
+			//
+			//sss:= &msp.SerializedIdentity{}
+			//err = proto.Unmarshal(creator1, sss)
+			//logger.Infof("==========creator.OrgName:%v===",sss.Mspid)//Org1MSP
+		}
+
+		/*
+			HeaderType_MESSAGE              HeaderType = 0
+			HeaderType_CONFIG               HeaderType = 1
+			HeaderType_CONFIG_UPDATE        HeaderType = 2
+			HeaderType_ENDORSER_TRANSACTION HeaderType = 3
+			HeaderType_ORDERER_TRANSACTION  HeaderType = 4
+			HeaderType_DELIVER_SEEK_INFO    HeaderType = 5
+			HeaderType_CHAINCODE_PACKAGE    HeaderType = 6
+			HeaderType_PEER_ADMIN_OPERATION HeaderType = 8
+			HeaderType_TOKEN_TRANSACTION    HeaderType = 9
+		 */
+
+
+
+
+
+
+
+
 		//logger.Infof("======srv.Recv=envelope=envelope.Payload:%v,envelope.Signature:%v===========",envelope.Payload,envelope.Signature)
 		/*
 		create Channel
@@ -204,12 +283,103 @@ func isFiltered(srv *Server) bool {
 
 func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.Envelope) (status cb.Status, err error) {
 	logger.Info("==Handler==deliverBlocks==")
-	logger.Info("=============1.获取配置变量=======")
-	oname:=os.Getenv("CORE_PEER_LOCALMSPID")
-	logger.Info("=======2.CORE_PEER_LOCALMSPID===========",oname)
-	if oname == ""{
-		oname = "Org3MSP"
+
+
+	request_singer := ""
+	txid_order := ""
+	txid_signed := ""
+
+	if envelope != nil{
+		logger.Info("=========2 envelope===================")
+		pa,_:= utils.ExtractPayload(envelope)
+		logger.Info("==============envelope.Payload===============")
+		a,err := utils.UnmarshalChannelHeader(pa.Header.ChannelHeader)
+		logger.Info("====err",err)
+		logger.Infof("=================channelHeader:%v",*a)
+		//channelHeader:{5 0 seconds:1638659036  mychannel  0 [] []   {} [] 0}
+		logger.Infof("=================a.OrgName:%v",a.OrgName)
+		logger.Infof("=================a.OrgPki:%v",a.OrgPki)//
+		logger.Infof("=================a.Type:%v",a.Type)//2
+		logger.Infof("=================a.Type:%T",a.Type)//
+		logger.Infof("=================a.Version:%v",a.Version)//0
+		logger.Infof("=================a.ChannelId:%v",a.ChannelId)//mychannel
+		logger.Infof("=================a.Extension:%v",a.Extension)//[]
+		logger.Infof("=================a.TxId",a.TxId)
+
+
+
+
+		payloadSignatureHeader := &cb.SignatureHeader{}
+		err = proto.Unmarshal(pa.Header.SignatureHeader,payloadSignatureHeader)
+		creator := payloadSignatureHeader.Creator
+
+		sid := &msp.SerializedIdentity{}
+		err = proto.Unmarshal(creator, sid)
+		/*
+			请求消息的组织名id.Mspid，跟交易中的签名的组织名进行比较，如果一致就获取块
+		*/
+		//logger.Info("==========creator.OrgName",sid.Mspid)//Org1MSP
+
+		//logger.Info("==============envelope.Payload===============",pa.Data)
+
+
+		if a.Type == 5{
+			request_singer = sid.Mspid
+		}
+		logger.Info("=============request_singer=================",request_singer)
+
+		/*
+			[10 2 26 0 18 2 26 0]
+		*/
+		//ee,err := utils.UnmarshalEnvelope(pa.Data)
+		//eee,err := utils.ExtractPayload(ee)
+		//eeee,err := utils.UnmarshalChannelHeader(eee.Header.ChannelHeader)
+		//
+		//logger.Infof("=================channelHeader:%v",*eeee)
+		//logger.Infof("=================eeee.OrgName:%v",eeee.OrgName)
+		//logger.Infof("=================eeee.OrgPki:%v",eeee.OrgPki)
+		//logger.Infof("=================eeee.Type:%v",eeee.Type)//2
+		//logger.Infof("=================eeee.Type:%T",eeee.Type)//
+		//logger.Infof("=================eeee.Version:%v",eeee.Version)//0
+		//logger.Infof("=================eeee.ChannelId:%v",eeee.ChannelId)//mychannel
+		//logger.Infof("================eeee.Extension:%v",eeee.Extension)//[]
+		//logger.Infof("=================eeee.TxId",eeee.TxId)
+
+
+		//ppp := &cb.SignatureHeader{}
+		//err = proto.Unmarshal(eee.Header.SignatureHeader,ppp)
+		//creator1 := ppp.Creator
+		//
+		//sss:= &msp.SerializedIdentity{}
+		//err = proto.Unmarshal(creator1, sss)
+		//logger.Infof("==========creator.OrgName:%v===",sss.Mspid)//Org1MSP
 	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+	//logger.Info("=============1.获取配置变量=======")
+	//运行在order上的不能获取具体的用户，以下变量是在cli下的
+	//oname:=os.Getenv("CORE_PEER_LOCALMSPID")/
+	//logger.Info("=======2.CORE_PEER_LOCALMSPID===========",oname)
+	//
+	//oname1 := viper.GetString("CORE.peer.LOCALMSPID")
+	//logger.Info("=======3.CORE_PEER_LOCALMSPID===========",oname1)
+	//oname2 := viper.GetString("core.peer.localmspid")
+	//logger.Info("=======5.CORE_PEER_LOCALMSPID===========",oname2)
+	//if oname == "" && oname1=="" && oname2 == ""{
+	//	oname = "Org3MSP"
+	//}
+	//logger.Info("=======6.CORE_PEER_LOCALMSPID===========",oname)
 	addr := util.ExtractRemoteAddress(ctx)
 	logger.Info("=======addr============",addr)
 	//172.20.0.7:41574
@@ -309,21 +479,28 @@ func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.E
 		return cb.Status_BAD_REQUEST, nil
 	}
 
-	logger.Info("=======1。获取该通道区块0=================")
-	a :=&ab.SeekPosition_Specified{}
-	a.Specified.Number = uint64(0)
-	si := &ab.SeekInfo{}
-	si.Start.Type = a
+	logger.Info("=======1.获取该通道区块0=================")
+	var s =&ab.SeekSpecified{Number: 0}
+	a :=&ab.SeekPosition_Specified{Specified: s}
+
+	dd := &ab.SeekPosition{Type: a}
+	si := &ab.SeekInfo{Start: dd}
+
 	c,_ := re.Iterator(si.Start)
 
-	b, s := c.Next()
-	logger.Info("========s",s)
-	if s != cb.Status_SUCCESS{
+	blo,st := c.Next()
+	//logger.Info("====blo=======",blo)
+	/*
+	====blo======= header:<data_hash:"x\234qo\323\271l\026\215\\\231\245i\355\031\230 \010\007\013\2223D\026\037`\226\376\347u\\\264" > data:<data:"\n\350{\n\307\006\n\025\010\001\032\006\010\204\252\255\215\006\"\tmychannel\022\255\006\n\220\006\n\nOrdererMSP\022\201\006-----BEGIN CERTIFICATE-----\nMIICDDCCAbKgAwIBAgIQO7f5H/GNWl4bCFrav0m09TAKBggqhkjOPQQDAjBpMQsw\nCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMNU2FuIEZy\nYW5jaXNjbzEUMBIGA1UEChMLZXhhbXBsZS5jb20xFzAVBgNVBAMTDmNhLmV4YW1w\nbGUuY29tMB4XDTIxMTIwMjA3NTAwMFoXDTMxMTEzMDA3NTAwMFowWDELMAkGA1UE\nBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBGcmFuY2lz\nY28xHDAaBgNVBAMTE29yZGVyZXIuZXhhbXBsZS5jb20wWTATBgcqhkjOPQIBBggq\nhkjOPQMBBwNCAAQ50oX9JKkYpZg+CKMMHRBR9nWjdOLgD9yHfpiM01f+L64b1eEg\nBpwz0ci6KItxvX+j81Q4dRjV0/Tw/eSI7fllo00wSzAOBgNVHQ8BAf8EBAMCB4Aw\nDAYDVR0TAQH/BAIwADArBgNVHSMEJDAigCAiKUD447X2wODjavJYziGH+yguMn94\nPA285AcRrKlxzzAKBggqhkjOPQQDAgNIADBFAiEAvBTKhKJ1q9+Tto05f7a01B0V\n3hORQui4xrriz0G5Z1MCID6i4ksld0Nzhr+45XgZRcMxC+Q8SzEpbXWJDTTo+tIl\n-----END CERTIFICATE-----\n\022\030\244\270\341\260rg\361T\"\327\206\177\3066\264\234D\034\252s\241Eq\256\022\233u\n\372c\010\001\022\365c\022\351\027\n\007Orderer\022\335\027\022\214\025\n\nOrdererOrg\022\375\024\032\322\023\n\003MSP\022\312\023\022\277\023\022\274\023\n\nOrdererMSP\022\307\006-----BEGIN CERTIFICATE-----\nMIICPjCCAeSgAwIBAgIRAIjw5hgPtAkO5lYCXaEaMLUwCgYIKoZIzj0EAwIwaTEL\nMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG\ncmFuY2lzY28xFDASBgNVBAoTC2V4YW1wbGUuY29tMRcwFQYDVQQDEw5jYS5leGFt\ncGxlLmNvbTAeFw0yMTEyMDIwNzUwMDBaFw0zMTExMzAwNzUwMDBaMGkxCzAJBgNV\nBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1TYW4gRnJhbmNp\nc2NvMRQwEgYDVQQKEwtleGFtcGxlLmNvbTEXMBUGA1UEAxMOY2EuZXhhbXBsZS5j\nb20wWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAARSnHvISLMxgSMdtZf+YbyVAY7s\nYbw4FSguR2FZcmIIwghcF5ILwpLhqL11TWhrCAFBGzECp6IkMZbkGphCi6plo20w\nazAOBgNVHQ8BAf8EBAMCAaYwHQYDVR0lBBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMB\nMA8GA1UdEwEB/wQFMAMBAf8wKQYDVR0OBCIEICIpQPjjtfbA4ONq8ljOIYf7KC4y\nf3g8DbzkBxGsqXHPMAoGCCqGSM49BAMCA0gAMEUCIQCUHJm1/UtxamrMcj2YCa2S\nyddnoNtvnJXMVkJkrBdzvAIgKIMjLNuN1nNpILYI0K9OEMTW5Ty9oe5xZixGWNy5\nGRE=\n-----END CERTIFICATE-----\n\"\201\006-----BEGIN CERTIFICATE-----\nMIICCjCCAbGgAwIBAgIRAPGa4DAlJWzSR0M+g2HlvIgwCgYIKoZIzj0EAwIwaTEL\nMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG\ncmFuY2lzY28xFDASBgNVBAoTC2V4YW1wbGUuY29tMRcwFQYDVQQDEw5jYS5leGFt\ncGxlLmNvbTAeFw0yMTEyMDIwNzUwMDBaFw0zMTExMzAwNzUwMDBaMFYxCzAJBgNV\nBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1TYW4gRnJhbmNp\nc2NvMRowGAYDVQQDDBFBZG1pbkBleGFtcGxlLmNvbTBZMBMGByqGSM49AgEGCCqG\nSM49AwEHA0IABNttJVHFgo5jzOfKKr+CZ5swd0qD3SlzqJSyXnP9xxGMKvRDbtuT\nZ/iDvSRTXHLmnuCTaZlm/jywYHC+nzWiPcOjTTBLMA4GA1UdDwEB/wQEAwIHgDAM\nBgNVHRMBAf8EAjAAMCsGA1UdIwQkMCKAICIpQPjjtfbA4ONq8ljOIYf7KC4yf3g8\nDbzkBxGsqXHPMAoGCCqGSM49BAMCA0cAMEQCIGOptxqHKGK8Jx8/9e51v5uR7LrC\nddbj+fNM9+qkBmUlAiAvFmNDoA4h7kMKFdUrZd4k6jmHevxQtoN4ZSaSWW/1uw==\n-----END CERTIFICATE-----\nB\016\n\004SHA2\022\006SHA256J\317\006-----BEGIN CERTIFICATE-----\nMIICRDCCAeqgAwIBAgIRAOf9IIw7LUq0FAGT1hV84N0wCgYIKoZIzj0EAwIwbDEL\nMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG\ncmFuY2lzY28xFDASBgNVBAoTC2V4YW1wbGUuY29tMRowGAYDVQQDExF0bHNjYS5l\neGFtcGxlLmNvbTAeFw0yMTEyMDIwNzUwMDBaFw0zMTExMzAwNzUwMDBaMGwxCzAJ\nBgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1TYW4gRnJh\nbmNpc2NvMRQwEgYDVQQKEwtleGFtcGxlLmNvbTEaMBgGA1UEAxMRdGxzY2EuZXhh\nbXBsZS5jb20wWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAARZ8WTu9AoXBdvT7BYL\n2pvIVzsDR3vmsT5u89mjCtVdb88r5kupGJnOOGfZQis2pzrF4wJ0o18Yt9fdjzxZ\nICsVo20wazAOBgNVHQ8BAf8EBAMCAaYwHQYDVR0lBBYwFAYIKwYBBQUHAwIGCCsG\nAQUFBwMBMA8GA1UdEwEB/wQFMAMBAf8wKQYDVR0OBCIEIP+UJHfeNf6dBDc3gTWV\nReWye1cL41Spr1BkNX8GROuFMAoGCCqGSM49BAMCA0gAMEUCIQDSEr3H/yRfYj32\n0n3xOgwTnuhgiiP4C7w3LmWzF93xswIgIaagjKl5bCjUT2G21/PGvzKLH0+CQxln\nQ4i41pFddCc=\n-----END CERTIFICATE-----\n\032\006Admins\"4\n\006Admins\022*\022 \010\001\022\034\022\010\022\006\010\001\022\002\010\000\032\020\022\016\n\nOrdererMSP\020\001\032\006Admins\"3\n\007Readers\022(\022\036\010\001\022\032\022\010\022\006\010\001\022\002\010\000\032\016\022\014\n\nOrdererMSP\032\006Admins\"3\n\007Writers\022(\022\036\010\001\022\032\022\010\022\006\010\001\022\002\010\000\032\016\022\014\n\nOrdererMSP\032\006Admins*\006Admins\032\037\n\023ChannelRestrictions\022\010\032\006Admins\032$\n\014Capabilities\022\024\022\n\n\010\n\004V1_1\022\000\032\006Admins\032!\n\rConsensusType\022\020\022\006\n\004solo\032\006Admins\032\"\n\tBatchSize\022\025\022\013\010\n\020\200\200\3001\030\200\200 \032\006Admins\032\036\n\014BatchTimeout\022\016\022\004\n\0022s\032\006Admins\"\"\n\007Readers\022\027\022\r\010\003\022\t\n\007Readers\032\006Admins\"\"\n\007Writers\022\027\022\r\010\003\022\t\n\007Writers\032\006Admins\"\"\n\006Admins\022\030\022\016\010\003\022\n\n\006Admins\020\002\032\006Admins\"*\n\017BlockValidation\022\027\022\r\010\003\022\t\n\007Writers\032\006Admins*\006Admins\022\236I\n\013Application\022\216I\010\001\022\374#\n\007Org2MSP\022\360#\032\221\"\n\003MSP\022\211\"\022\376!\022\373!\n\007Org2MSP\022\343\006-----BEGIN CERTIFICATE-----\nMIICUjCCAfigAwIBAgIRAIfgoJC0Df7eMV4lqQemX0kwCgYIKoZIzj0EAwIwczEL\nMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG\ncmFuY2lzY28xGTAXBgNVBAoTEG9yZzIuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh\nLm9yZzIuZXhhbXBsZS5jb20wHhcNMjExMjAyMDc1MDAwWhcNMzExMTMwMDc1MDAw\nWjBzMQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMN\nU2FuIEZyYW5jaXNjbzEZMBcGA1UEChMQb3JnMi5leGFtcGxlLmNvbTEcMBoGA1UE\nAxMTY2Eub3JnMi5leGFtcGxlLmNvbTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IA\nBLAZQE8DcMvRZPlkqySmSoitv7Lfz6pT8W7QA//PjKnk8nEqr/yECkTkFVUV2dF3\nMxqxgneiLngAdnyV8z9KnGujbTBrMA4GA1UdDwEB/wQEAwIBpjAdBgNVHSUEFjAU\nBggrBgEFBQcDAgYIKwYBBQUHAwEwDwYDVR0TAQH/BAUwAwEB/zApBgNVHQ4EIgQg\nsbNOCtP+b8NXOrQNEZbQ8HSuvUvMMM6VPQZOVuAR4wswCgYIKoZIzj0EAwIDSAAw\nRQIhAOBO1HY1Wr0IHqnatm7PiR6SDpfyn5k86sIVUedxYJN3AiBlcomKBybUeYyV\neDgzidbY7VsDyn/GiFNGGmE+qyhX8g==\n-----END CERTIFICATE-----\n\"\252\006-----BEGIN CERTIFICATE-----\nMIICKjCCAdGgAwIBAgIRAJboIErw+IB46bNF6Xbw1FAwCgYIKoZIzj0EAwIwczEL\nMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG\ncmFuY2lzY28xGTAXBgNVBAoTEG9yZzIuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh\nLm9yZzIuZXhhbXBsZS5jb20wHhcNMjExMjAyMDc1MDAwWhcNMzExMTMwMDc1MDAw\nWjBsMQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMN\nU2FuIEZyYW5jaXNjbzEPMA0GA1UECxMGY2xpZW50MR8wHQYDVQQDDBZBZG1pbkBv\ncmcyLmV4YW1wbGUuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEzaHgcN4f\npClunjfoJiv9SlX144pk2pTRVkDVdOxnSewu09NSnr0er1f3Ro6VUuSxNtj8t9ne\neya8Bb9tvocGbaNNMEswDgYDVR0PAQH/BAQDAgeAMAwGA1UdEwEB/wQCMAAwKwYD\nVR0jBCQwIoAgsbNOCtP+b8NXOrQNEZbQ8HSuvUvMMM6VPQZOVuAR4wswCgYIKoZI\nzj0EAwIDRwAwRAIgaXs4/mABuf6WEAftlK9yjyZ+1mdvRkBHqni4jEy5lS4CID6W\nwD2GOZaiM82phTDNRW0HSjgj7rGMP3aWSG5I9AdC\n-----END CERTIFICATE-----\nB\016\n\004SHA2\022\006SHA256J\347\006-----BEGIN CERTIFICATE-----\nMIICVjCCAf2gAwIBAgIQUhxZJYzGqzE5nyITMC9zLjAKBggqhkjOPQQDAjB2MQsw\nCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMNU2FuIEZy\nYW5jaXNjbzEZMBcGA1UEChMQb3JnMi5leGFtcGxlLmNvbTEfMB0GA1UEAxMWdGxz\nY2Eub3JnMi5leGFtcGxlLmNvbTAeFw0yMTEyMDIwNzUwMDBaFw0zMTExMzAwNzUw\nMDBaMHYxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQH\nEw1TYW4gRnJhbmNpc2NvMRkwFwYDVQQKExBvcmcyLmV4YW1wbGUuY29tMR8wHQYD\nVQQDExZ0bHNjYS5vcmcyLmV4YW1wbGUuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAEn8ukwF5H4XKARUcET+ZFGK/cPt6asGFzVN8fOvRFKW51mzLSZ9Q5e8FW\nZdl9lwBQ3l1bMlOLtrI5aYqJ3E3TvqNtMGswDgYDVR0PAQH/BAQDAgGmMB0GA1Ud\nJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDATAPBgNVHRMBAf8EBTADAQH/MCkGA1Ud\nDgQiBCCmeUdJn2MdTwQa/yo0kzdFNfThCql71zir++OQk6PgnDAKBggqhkjOPQQD\nAgNHADBEAiBqPLft3f8gyeIucgxwXXyFP96ynn80yEiD+dH8MK5REwIgMwm4qBgq\nOFVPRino2DG0+DW1Z4T4VoCCwAbYg39RqFI=\n-----END CERTIFICATE-----\nZ\342\r\010\001\022\356\006\n\343\006-----BEGIN CERTIFICATE-----\nMIICUjCCAfigAwIBAgIRAIfgoJC0Df7eMV4lqQemX0kwCgYIKoZIzj0EAwIwczEL\nMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG\ncmFuY2lzY28xGTAXBgNVBAoTEG9yZzIuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh\nLm9yZzIuZXhhbXBsZS5jb20wHhcNMjExMjAyMDc1MDAwWhcNMzExMTMwMDc1MDAw\nWjBzMQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMN\nU2FuIEZyYW5jaXNjbzEZMBcGA1UEChMQb3JnMi5leGFtcGxlLmNvbTEcMBoGA1UE\nAxMTY2Eub3JnMi5leGFtcGxlLmNvbTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IA\nBLAZQE8DcMvRZPlkqySmSoitv7Lfz6pT8W7QA//PjKnk8nEqr/yECkTkFVUV2dF3\nMxqxgneiLngAdnyV8z9KnGujbTBrMA4GA1UdDwEB/wQEAwIBpjAdBgNVHSUEFjAU\nBggrBgEFBQcDAgYIKwYBBQUHAwEwDwYDVR0TAQH/BAUwAwEB/zApBgNVHQ4EIgQg\nsbNOCtP+b8NXOrQNEZbQ8HSuvUvMMM6VPQZOVuAR4wswCgYIKoZIzj0EAwIDSAAw\nRQIhAOBO1HY1Wr0IHqnatm7PiR6SDpfyn5k86sIVUedxYJN3AiBlcomKBybUeYyV\neDgzidbY7VsDyn/GiFNGGmE+qyhX8g==\n-----END CERTIFICATE-----\n\022\006client\032\354\006\n\343\006-----BEGIN CERTIFICATE-----\nMIICUjCCAfigAwIBAgIRAIfgoJC0Df7eMV4lqQemX0kwCgYIKoZIzj0EAwIwczEL\nMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG\ncmFuY2lzY28xGTAXBgNVBAoTEG9yZzIuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh\nLm9yZzIuZXhhbXBsZS5jb20wHhcNMjExMjAyMDc1MDAwWhcNMzExMTMwMDc1MDAw\nWjBzMQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMN\nU2FuIEZyYW5jaXNjbzEZMBcGA1UEChMQb3JnMi5leGFtcGxlLmNvbTEcMBoGA1UE\nAxMTY2Eub3JnMi5leGFtcGxlLmNvbTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IA\nBLAZQE8DcMvRZPlkqySmSoitv7Lfz6pT8W7QA//PjKnk8nEqr/yECkTkFVUV2dF3\nMxqxgneiLngAdnyV8z9KnGujbTBrMA4GA1UdDwEB/wQEAwIBpjAdBgNVHSUEFjAU\nBggrBgEFBQcDAgYIKwYBBQUHAwEwDwYDVR0TAQH/BAUwAwEB/zApBgNVHQ4EIgQg\nsbNOCtP+b8NXOrQNEZbQ8HSuvUvMMM6VPQZOVuAR4wswCgYIKoZIzj0EAwIDSAAw\nRQIhAOBO1HY1Wr0IHqnatm7PiR6SDpfyn5k86sIVUedxYJN3AiBlcomKBybUeYyV\neDgzidbY7VsDyn/GiFNGGmE+qyhX8g==\n-----END CERTIFICATE-----\n\022\004peer\032\006Admins\"X\n\007Readers\022M\022C\010\001\022?\022\020\022\016\010\001\022\002\010\000\022\002\010\001\022\002\010\002\032\r\022\013\n\007Org2MSP\020\001\032\r\022\013\n\007Org2MSP\020\003\032\r\022\013\n\007Org2MSP\020\002\032\006Admins\"E\n\007Writers\022:\0220\010\001\022,\022\014\022\n\010\001\022\002\010\000\022\002\010\001\032\r\022\013\n\007Org2MSP\020\001\032\r\022\013\n\007Org2MSP\020\002\032\006Admins\"1\n\006Admins\022'\022\035\010\001\022\031\022\010\022\006\010\001\022\002\010\000\032\r\022\013\n\007Org2MSP\020\001\032\006Admins*\006Admins\022\360#\n\007Org1MSP\022\344#\032\205\"\n\003MSP\022\375!\022\362!\022\357!\n\007Org1MSP\022\337\006-----BEGIN CERTIFICATE-----\nMIICUTCCAfegAwIBAgIQTDVrkQN1dC1Xkq0gNdWmNTAKBggqhkjOPQQDAjBzMQsw\nCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMNU2FuIEZy\nYW5jaXNjbzEZMBcGA1UEChMQb3JnMS5leGFtcGxlLmNvbTEcMBoGA1UEAxMTY2Eu\nb3JnMS5leGFtcGxlLmNvbTAeFw0yMTEyMDIwNzUwMDBaFw0zMTExMzAwNzUwMDBa\nMHMxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1T\nYW4gRnJhbmNpc2NvMRkwFwYDVQQKExBvcmcxLmV4YW1wbGUuY29tMRwwGgYDVQQD\nExNjYS5vcmcxLmV4YW1wbGUuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE\nhU1Xj6u7o8o3vTpBMx0XgaKCHYIfwWW4joguVanxY7l2FoRsdeMlbSLpIbGOVeq2\nrqy5H1C1m+d1lvV5eUjlZaNtMGswDgYDVR0PAQH/BAQDAgGmMB0GA1UdJQQWMBQG\nCCsGAQUFBwMCBggrBgEFBQcDATAPBgNVHRMBAf8EBTADAQH/MCkGA1UdDgQiBCBc\npldgEIiaAL2L5u/dXT77TRUFw4c4xvgl33Q0ZMUW5jAKBggqhkjOPQQDAgNIADBF\nAiEA1moRbtOf7FmKUBtnlbWOeKW1+Ou1gECRbRmk28u82qYCIHCl4liG91dRkZJV\ngHFQhMyFuyn1TBkuY3VdWoTMfntJ\n-----END CERTIFICATE-----\n\"\252\006-----BEGIN CERTIFICATE-----\nMIICKTCCAdCgAwIBAgIQdoMtXcRmr8XdkhTXGAwFzDAKBggqhkjOPQQDAjBzMQsw\nCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMNU2FuIEZy\nYW5jaXNjbzEZMBcGA1UEChMQb3JnMS5leGFtcGxlLmNvbTEcMBoGA1UEAxMTY2Eu\nb3JnMS5leGFtcGxlLmNvbTAeFw0yMTEyMDIwNzUwMDBaFw0zMTExMzAwNzUwMDBa\nMGwxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1T\nYW4gRnJhbmNpc2NvMQ8wDQYDVQQLEwZjbGllbnQxHzAdBgNVBAMMFkFkbWluQG9y\nZzEuZXhhbXBsZS5jb20wWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAR4lTOcEwH/\n7BA0PJHXxXCQWTvUHqLrw/m1noiFjGZa7wQWZ1NQ+AbOJ8tydWS3xu5YVw3KegfZ\naXcQ2VMAAYsIo00wSzAOBgNVHQ8BAf8EBAMCB4AwDAYDVR0TAQH/BAIwADArBgNV\nHSMEJDAigCBcpldgEIiaAL2L5u/dXT77TRUFw4c4xvgl33Q0ZMUW5jAKBggqhkjO\nPQQDAgNHADBEAiBKZAEOoM00vmTIR0pP7XFBp41hvVL4PGwISqi0v4AwTgIgUB5T\n6gaVVogvaUeMmCqljNGNupyBj1iY0jxDlvGteNA=\n-----END CERTIFICATE-----\nB\016\n\004SHA2\022\006SHA256J\347\006-----BEGIN CERTIFICATE-----\nMIICVzCCAf6gAwIBAgIRAIrP4xsYBvSOZyzAtxl2gV4wCgYIKoZIzj0EAwIwdjEL\nMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG\ncmFuY2lzY28xGTAXBgNVBAoTEG9yZzEuZXhhbXBsZS5jb20xHzAdBgNVBAMTFnRs\nc2NhLm9yZzEuZXhhbXBsZS5jb20wHhcNMjExMjAyMDc1MDAwWhcNMzExMTMwMDc1\nMDAwWjB2MQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UE\nBxMNU2FuIEZyYW5jaXNjbzEZMBcGA1UEChMQb3JnMS5leGFtcGxlLmNvbTEfMB0G\nA1UEAxMWdGxzY2Eub3JnMS5leGFtcGxlLmNvbTBZMBMGByqGSM49AgEGCCqGSM49\nAwEHA0IABCHAG6UlLVndKC68Ot/m6FZUP5gki9Kt630bQcJvQKlLm9aT1n+h1Zkq\ntE+cxCs7cnkD9k1Vmroyi4zcnVvD4J6jbTBrMA4GA1UdDwEB/wQEAwIBpjAdBgNV\nHSUEFjAUBggrBgEFBQcDAgYIKwYBBQUHAwEwDwYDVR0TAQH/BAUwAwEB/zApBgNV\nHQ4EIgQgDrK2cbW+BdW3uqYuSM8QYsCGsvyyFbskdXhzTBohIy4wCgYIKoZIzj0E\nAwIDRwAwRAIgVTFpaBTqyMxVfDACj3OIjwIS6fUZBDyl5w9x1iuD/JwCIHQ7/Azh\ncmuA1FJLOSMjVFCms/hPgatGAENmKoNhyeUV\n-----END CERTIFICATE-----\nZ\332\r\010\001\022\352\006\n\337\006-----BEGIN CERTIFICATE-----\nMIICUTCCAfegAwIBAgIQTDVrkQN1dC1Xkq0gNdWmNTAKBggqhkjOPQQDAjBzMQsw\nCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMNU2FuIEZy\nYW5jaXNjbzEZMBcGA1UEChMQb3JnMS5leGFtcGxlLmNvbTEcMBoGA1UEAxMTY2Eu\nb3JnMS5leGFtcGxlLmNvbTAeFw0yMTEyMDIwNzUwMDBaFw0zMTExMzAwNzUwMDBa\nMHMxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1T\nYW4gRnJhbmNpc2NvMRkwFwYDVQQKExBvcmcxLmV4YW1wbGUuY29tMRwwGgYDVQQD\nExNjYS5vcmcxLmV4YW1wbGUuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE\nhU1Xj6u7o8o3vTpBMx0XgaKCHYIfwWW4joguVanxY7l2FoRsdeMlbSLpIbGOVeq2\nrqy5H1C1m+d1lvV5eUjlZaNtMGswDgYDVR0PAQH/BAQDAgGmMB0GA1UdJQQWMBQG\nCCsGAQUFBwMCBggrBgEFBQcDATAPBgNVHRMBAf8EBTADAQH/MCkGA1UdDgQiBCBc\npldgEIiaAL2L5u/dXT77TRUFw4c4xvgl33Q0ZMUW5jAKBggqhkjOPQQDAgNIADBF\nAiEA1moRbtOf7FmKUBtnlbWOeKW1+Ou1gECRbRmk28u82qYCIHCl4liG91dRkZJV\ngHFQhMyFuyn1TBkuY3VdWoTMfntJ\n-----END CERTIFICATE-----\n\022\006client\032\350\006\n\337\006-----BEGIN CERTIFICATE-----\nMIICUTCCAfegAwIBAgIQTDVrkQN1dC1Xkq0gNdWmNTAKBggqhkjOPQQDAjBzMQsw\nCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMNU2FuIEZy\nYW5jaXNjbzEZMBcGA1UEChMQb3JnMS5leGFtcGxlLmNvbTEcMBoGA1UEAxMTY2Eu\nb3JnMS5leGFtcGxlLmNvbTAeFw0yMTEyMDIwNzUwMDBaFw0zMTExMzAwNzUwMDBa\nMHMxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1T\nYW4gRnJhbmNpc2NvMRkwFwYDVQQKExBvcmcxLmV4YW1wbGUuY29tMRwwGgYDVQQD\nExNjYS5vcmcxLmV4YW1wbGUuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE\nhU1Xj6u7o8o3vTpBMx0XgaKCHYIfwWW4joguVanxY7l2FoRsdeMlbSLpIbGOVeq2\nrqy5H1C1m+d1lvV5eUjlZaNtMGswDgYDVR0PAQH/BAQDAgGmMB0GA1UdJQQWMBQG\nCCsGAQUFBwMCBggrBgEFBQcDATAPBgNVHRMBAf8EBTADAQH/MCkGA1UdDgQiBCBc\npldgEIiaAL2L5u/dXT77TRUFw4c4xvgl33Q0ZMUW5jAKBggqhkjOPQQDAgNIADBF\nAiEA1moRbtOf7FmKUBtnlbWOeKW1+Ou1gECRbRmk28u82qYCIHCl4liG91dRkZJV\ngHFQhMyFuyn1TBkuY3VdWoTMfntJ\n-----END CERTIFICATE-----\n\022\004peer\032\006Admins\"1\n\006Admins\022'\022\035\010\001\022\031\022\010\022\006\010\001\022\002\010\000\032\r\022\013\n\007Org1MSP\020\001\032\006Admins\"X\n\007Readers\022M\022C\010\001\022?\022\020\022\016\010\001\022\002\010\000\022\002\010\001\022\002\010\002\032\r\022\013\n\007Org1MSP\020\001\032\r\022\013\n\007Org1MSP\020\003\032\r\022\013\n\007Org1MSP\020\002\032\006Admins\"E\n\007Writers\022:\0220\010\001\022,\022\014\022\n\010\001\022\002\010\000\022\002\010\001\032\r\022\013\n\007Org1MSP\020\001\032\r\022\013\n\007Org1MSP\020\002\032\006Admins*\006Admins\032$\n\014Capabilities\022\024\022\n\n\010\n\004V1_3\022\000\032\006Admins\"\"\n\006Admins\022\030\022\016\010\003\022\n\n\006Admins\020\002\032\006Admins\"\"\n\007Readers\022\027\022\r\010\003\022\t\n\007Readers\032\006Admins\"\"\n\007Writers\022\027\022\r\010\003\022\t\n\007Writers\032\006Admins*\006Admins\032$\n\014Capabilities\022\024\022\n\n\010\n\004V1_3\022\000\032\006Admins\032&\n\020HashingAlgorithm\022\022\022\010\n\006SHA256\032\006Admins\032*\n\nConsortium\022\034\022\022\n\020SampleConsortium\032\006Admins\032-\n\031BlockDataHashingStructure\022\020\022\006\010\377\377\377\377\017\032\006Admins\032I\n\020OrdererAddresses\0225\022\032\n\030orderer.example.com:7050\032\027/Channel/Orderer/Admins\"\"\n\006Admins\022\030\022\016\010\003\022\n\n\006Admins\020\002\032\006Admins\"\"\n\007Readers\022\027\022\r\010\003\022\t\n\007Readers\032\006Admins\"\"\n\007Writers\022\027\022\r\010\003\022\t\n\007Writers\032\006Admins*\006Admins\022\233\021\n\320\020\n\355\006\n\025\010\002\032\006\010\204\252\255\215\006\"\tmychannel\022\323\006\n\266\006\n\007Org1MSP\022\252\006-----BEGIN CERTIFICATE-----\nMIICKTCCAdCgAwIBAgIQdoMtXcRmr8XdkhTXGAwFzDAKBggqhkjOPQQDAjBzMQsw\nCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMNU2FuIEZy\nYW5jaXNjbzEZMBcGA1UEChMQb3JnMS5leGFtcGxlLmNvbTEcMBoGA1UEAxMTY2Eu\nb3JnMS5leGFtcGxlLmNvbTAeFw0yMTEyMDIwNzUwMDBaFw0zMTExMzAwNzUwMDBa\nMGwxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1T\nYW4gRnJhbmNpc2NvMQ8wDQYDVQQLEwZjbGllbnQxHzAdBgNVBAMMFkFkbWluQG9y\nZzEuZXhhbXBsZS5jb20wWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAR4lTOcEwH/\n7BA0PJHXxXCQWTvUHqLrw/m1noiFjGZa7wQWZ1NQ+AbOJ8tydWS3xu5YVw3KegfZ\naXcQ2VMAAYsIo00wSzAOBgNVHQ8BAf8EBAMCB4AwDAYDVR0TAQH/BAIwADArBgNV\nHSMEJDAigCBcpldgEIiaAL2L5u/dXT77TRUFw4c4xvgl33Q0ZMUW5jAKBggqhkjO\nPQQDAgNHADBEAiBKZAEOoM00vmTIR0pP7XFBp41hvVL4PGwISqi0v4AwTgIgUB5T\n6gaVVogvaUeMmCqljNGNupyBj1iY0jxDlvGteNA=\n-----END CERTIFICATE-----\n\022\030F\202\353\213h0\304\307\312d\240\320\304\236\034!\227\321\263\245\263&\374p\022\335\t\n\270\002\n\tmychannel\022;\022)\n\013Application\022\032\022\013\n\007Org2MSP\022\000\022\013\n\007Org1MSP\022\000\032\016\n\nConsortium\022\000\032\355\001\022\306\001\n\013Application\022\266\001\010\001\022\013\n\007Org2MSP\022\000\022\013\n\007Org1MSP\022\000\032$\n\014Capabilities\022\024\022\n\n\010\n\004V1_3\022\000\032\006Admins\"\"\n\006Admins\022\030\022\016\010\003\022\n\n\006Admins\020\002\032\006Admins\"\"\n\007Readers\022\027\022\r\010\003\022\t\n\007Readers\032\006Admins\"\"\n\007Writers\022\027\022\r\010\003\022\t\n\007Writers\032\006Admins*\006Admins\032\"\n\nConsortium\022\024\022\022\n\020SampleConsortium\022\237\007\n\323\006\n\266\006\n\007Org1MSP\022\252\006-----BEGIN CERTIFICATE-----\nMIICKTCCAdCgAwIBAgIQdoMtXcRmr8XdkhTXGAwFzDAKBggqhkjOPQQDAjBzMQsw\nCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMNU2FuIEZy\nYW5jaXNjbzEZMBcGA1UEChMQb3JnMS5leGFtcGxlLmNvbTEcMBoGA1UEAxMTY2Eu\nb3JnMS5leGFtcGxlLmNvbTAeFw0yMTEyMDIwNzUwMDBaFw0zMTExMzAwNzUwMDBa\nMGwxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1T\nYW4gRnJhbmNpc2NvMQ8wDQYDVQQLEwZjbGllbnQxHzAdBgNVBAMMFkFkbWluQG9y\nZzEuZXhhbXBsZS5jb20wWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAR4lTOcEwH/\n7BA0PJHXxXCQWTvUHqLrw/m1noiFjGZa7wQWZ1NQ+AbOJ8tydWS3xu5YVw3KegfZ\naXcQ2VMAAYsIo00wSzAOBgNVHQ8BAf8EBAMCB4AwDAYDVR0TAQH/BAIwADArBgNV\nHSMEJDAigCBcpldgEIiaAL2L5u/dXT77TRUFw4c4xvgl33Q0ZMUW5jAKBggqhkjO\nPQQDAgNHADBEAiBKZAEOoM00vmTIR0pP7XFBp41hvVL4PGwISqi0v4AwTgIgUB5T\n6gaVVogvaUeMmCqljNGNupyBj1iY0jxDlvGteNA=\n-----END CERTIFICATE-----\n\022\030\210i\2341\177\235\023\021_\366\001\231\356\3764\224\"\010\257Dy\344\206\275\022G0E\002!\000\341\337X\250S\026\021W\001^&J%\302\016\342\"yuX@\361\200r\216F\23518\253\254\237\002 b\210\346\320\026{\021\334\321\373M\315\237\320JN\030<\227Y\004\307M\005l3\3012\\\024_`\022F0D\002 v*\260k\213\360r\355\313\256\355s\000/&\347\210G`\311B\252\325\347\363\327\004j\216\216\026\350\002 J\2514Ee\206M\236\014o\3664Q\010|Bl&\325'Pl\347\024\360\332S:\021@\003c\022G0E\002!\000\313dx\010\217Qh:Z\353\026\212?\315w*g\333}\262\323+|\221\037Tg\323\260\274\201\277\002 +!\022\232\265k\221T{l\207|g\232\272\373M\361\355\371Ok:\366'W\2769\325z@\302" > metadata:<metadata:"" metadata:"" metadata:"" metadata:"" >
+
+	*/
+	logger.Info("========st",st)//SUCCESS
+	if st != cb.Status_SUCCESS{
 		return cb.Status_BAD_REQUEST, nil
 	}
-
+	//
 	logger.Info("=======2.获取配置文件的交易信息，提取envelop=================")
-	e,err := utils.ExtractEnvelope(b,0)
+	e,err := utils.ExtractEnvelope(blo,0)
 	if err != nil{
 		return cb.Status_BAD_REQUEST, nil
 	}
@@ -333,11 +510,13 @@ func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.E
 	}
 
 
+
 	channelHearder, err := utils.UnmarshalChannelHeader(p.Header.ChannelHeader)
 	if err != nil {
 		return cb.Status_BAD_REQUEST, nil
 	}
 
+	logger.Info("===============channelHearder=================",*channelHearder)
 	orgName := channelHearder.OrgName
 	logger.Info("==========orgName==============",orgName)
 
@@ -420,9 +599,10 @@ func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.E
 		logger.Debugf("[channel: %s] Delivering block for (%p) for %s", chdr.ChannelId, seekInfo, addr)
 
 		logger.Info("============err := srv.SendBlockResponse(block)=========================")
-		logger.Info("===========1.block.Data.Data====================",block.Data.Data)
+		//logger.Info("===========1.block.Data.Data====================",block.Data.Data)
 		if block != nil{
-			if orgName != ""{
+			if cb.PolicyOrgName[chdr.ChannelId] != ""{
+				logger.Info("=============5.cb.PolicyOrgName[chdr.ChannelId] != \"\"==================")
 				var bd cb.BlockData
 				//遵循规则
 				for index,envelopBytes := range block.Data.Data{
@@ -435,6 +615,16 @@ func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.E
 						return cb.Status_FORBIDDEN, nil
 					}
 
+					a,err := utils.UnmarshalChannelHeader(pa.Header.ChannelHeader)
+					logger.Info("=================channelHeader",*a)
+
+					logger.Info("===========主节点名===========",a.OrgName)
+					txid_signed = a.OrgPki
+					logger.Info("===========交易发送者============",txid_signed)
+					/*
+					{1 0 seconds:1638665094  mychannel  0 [] [] Org1MSP 1234 {} [] 0}
+					 */
+
 					payloadSignatureHeader := &cb.SignatureHeader{}
 					err = proto.Unmarshal(pa.Header.SignatureHeader,payloadSignatureHeader)
 					creator := payloadSignatureHeader.Creator
@@ -442,22 +632,30 @@ func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.E
 					sid := &msp.SerializedIdentity{}
 					err = proto.Unmarshal(creator, sid)
 					logger.Info("==========creator.OrgName",sid.Mspid)
-					if orgName != oname {
 
-					}
-					logger.Info("=======oname=======",oname)
-					logger.Info("=======sid.Mspid=======",sid.Mspid)
-					if oname != sid.Mspid{
-						if oname != orgName{
-							logger.Info("===========3.区块交易没有获取权限==================")
+					txid_order= sid.Mspid
+					logger.Info("==============交易打包者=========================",txid_order)
+					//OrdererMSP
+
+
+
+                   //ee := pa.Data utils.EnvelopeToConfigUpdate()
+
+                   logger.Info("==========request_singer==========",request_singer)
+                   logger.Info("==========orgName==========",orgName)
+                   logger.Info("==========txid_signed==========",txid_signed)
+
+					if request_singer != orgName{
+						if  request_singer!= txid_signed{
+							logger.Infof("===========3.%v区块交易没有获取权限==================",request_singer)
 							continue
 						}
 					}
 					bd.Data = append(bd.Data,envelopBytes)
 				}
 				//为了保持块的高度一致，交易为空，但是区块头需要
-				logger.Info("=========2.block.Data.Data=============",block.Data.Data)
-				logger.Info("=========bd.Data=============",bd.Data)
+				//logger.Info("=========2.block.Data.Data=============",block.Data.Data)
+				//logger.Info("=========bd.Data=============",bd.Data)
 				copy(block.Data.Data,bd.Data)
 			}
 		}

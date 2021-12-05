@@ -94,7 +94,7 @@ func (fl *FileLedger) Iterator(startPosition *ab.SeekPosition) (blockledger.Iter
 		//logger.Info("===========default===========")
 		return &blockledger.NotFoundErrorIterator{}, 0
 	}
-	logger.Infof("===============iterator, err := fl.blockStore.RetrieveBlocks(%v)===获取区块==================================",startingBlockNumber)
+	logger.Infof("===============iterator, err := fl.blockStore.RetrieveBlocks(%v)===获取区块==================================",startingBlockNumber)//0
 	iterator, err := fl.blockStore.RetrieveBlocks(startingBlockNumber)
 	logger.Info("=================获取到账本==iterator==================")
 	if err != nil {
@@ -110,6 +110,9 @@ func (fl *FileLedger) Height() uint64 {
 	logger.Info("======= fl.blockStore.GetBlockchainInfo()==============")
 	info, err := fl.blockStore.GetBlockchainInfo()
 	logger.Info("==========info================",info)
+	/*
+	height:1 currentBlockHash:"L\036\314\237\235\267\346\255\363\323>\255\332~$\274\310\237\253\025\354$%\276=\021\216\251\320\207\264\344"
+	 */
 	if err != nil {
 		logger.Panic(err)
 	}

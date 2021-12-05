@@ -103,6 +103,13 @@ func sanityCheckAndSignConfigTx(envConfigUpdate *cb.Envelope) (*cb.Envelope, err
 	}
 
 	ch, err := utils.UnmarshalChannelHeader(payload.Header.ChannelHeader)
+
+	if ch != nil {
+		logger.Infof("==========OrgName:%v===========", ch.OrgName)
+		logger.Infof("==========OrgPki:%v==========", ch.OrgPki)
+		logger.Infof("==========Type:%v=========", ch.Type)
+	}
+
 	if err != nil {
 		return nil, InvalidCreateTx("could not unmarshall channel header")
 	}
@@ -144,7 +151,7 @@ func sanityCheckAndSignConfigTx(envConfigUpdate *cb.Envelope) (*cb.Envelope, err
 
 	configUpdateEnv.Signatures = append(configUpdateEnv.Signatures, configSig)
 
-	return utils.CreateSignedEnvelope(cb.HeaderType_CONFIG_UPDATE, channelID, signer, configUpdateEnv, 0, 0,"","")
+	return utils.CreateSignedEnvelope(cb.HeaderType_CONFIG_UPDATE, channelID, signer, configUpdateEnv, 0, 0,ch.OrgName,ch.OrgPki)
 }
 
 func sendCreateChainTransaction(cf *ChannelCmdFactory) error {

@@ -7,6 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 package broadcast
 
 import (
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/protos/msp"
+	"github.com/hyperledger/fabric/protos/utils"
 	"io"
 	"time"
 
@@ -17,6 +20,8 @@ import (
 	ab "github.com/hyperledger/fabric/protos/orderer"
 	"github.com/pkg/errors"
 )
+
+
 
 var logger = flogging.MustGetLogger("orderer.common.broadcast")
 
@@ -65,11 +70,98 @@ type Handler struct {
 // Handle reads requests from a Broadcast stream, processes them, and returns the responses to the stream
 func (bh *Handler) Handle(srv ab.AtomicBroadcast_BroadcastServer) error {
 	logger.Info("=======Handler=====Handle===============")
+	/*
+	cli -＞
+	 */
 	addr := util.ExtractRemoteAddress(srv.Context())
 	logger.Debugf("Starting new broadcast loop for %s", addr)
 	for {
 		msg, err := srv.Recv()
-		logger.Info("=========1=msg========",msg)
+		logger.Info("=========1=msg========")
+		if msg != nil{
+			pa,err := utils.ExtractPayload(msg)
+			logger.Info("======err",err)
+			a,err := utils.UnmarshalChannelHeader(pa.Header.ChannelHeader)
+			logger.Infof("=================channelHeader:%v",*a)
+			/*
+			channelHeader:{2 0 seconds:1638657982  mychannel  0 [] [] org1MSP 1234 {} [] 0}
+			channelHeader:{5 0 seconds:1638657983  mychannel  0 [] []   {} [] 0}
+			 */
+			logger.Infof("=================a.OrgName:%v===",a.OrgName)
+			logger.Infof("=================a.OrgPki:%v===",a.OrgPki)
+			logger.Infof("=================a.Type:%v==",a.Type)
+
+			logger.Infof("=================a.Version:%v====",a.Version)
+			logger.Infof("=================a.ChannelId:%v=====",a.ChannelId)
+			logger.Infof("=================a.Extension:%v======",a.Extension)
+			logger.Infof("=================a.TxId:%v=========",a.TxId)
+			payloadSignatureHeader := &cb.SignatureHeader{}
+			err = proto.Unmarshal(pa.Header.SignatureHeader,payloadSignatureHeader)
+			creator := payloadSignatureHeader.Creator
+
+			sid := &msp.SerializedIdentity{}
+			err = proto.Unmarshal(creator, sid)
+
+
+			//type==2过来的master
+			logger.Info("==========a.OrgName",a.OrgName)//Org1MSP
+			if a.Type == 2 && a.OrgName == sid.Mspid{
+				logger.Info("========master标记=====")
+				//configUpdate
+				cb.PolicyOrgName[a.ChannelId] = a.OrgName
+				cb.PolicyOrgPKI[a.ChannelId] = a.OrgPki
+				//pki
+			}
+
+
+
+
+			//type ==5 区块请求者
+
+			if a.Type == 5 {
+				//请求获取区块者
+				logger.Info("========请求获取区块者标记=====")
+				logger.Info("=========请求获取区块者=======",sid.Mspid)
+			}else{
+				logger.Info("==========交易发送者名字===",sid.Mspid)
+			}
+
+
+			logger.Infof("====cb.PolicyOrgName:%v==========",cb.PolicyOrgName)
+
+
+			//logger.Info("==============envelope.Payload===============",pa.Data)
+			//ee,err := utils.UnmarshalEnvelope(pa.Data)
+			//eee,err := utils.ExtractPayload(ee)
+			//eeee,err := utils.UnmarshalChannelHeader(eee.Header.ChannelHeader)
+			//
+			//logger.Infof("=================channelHeader:%v",*eeee)
+			//logger.Infof("=================eeee.OrgName:%v",eeee.OrgName)
+			//logger.Infof("=================eeee.OrgPki:%v",eeee.OrgPki)
+			//logger.Infof("=================eeee.Type:%v",eeee.Type)//2
+			//logger.Infof("=================eeee.Type:%T",eeee.Type)//
+			//logger.Infof("=================eeee.Version:%v",eeee.Version)//0
+			//logger.Infof("=================eeee.ChannelId:%v",eeee.ChannelId)//mychannel
+			//logger.Infof("================eeee.Extension:%v",eeee.Extension)//[]
+			//logger.Infof("=================eeee.TxId:%v",eeee.TxId)
+		}
+
+		/*
+			HeaderType_MESSAGE              HeaderType = 0
+			HeaderType_CONFIG               HeaderType = 1
+			HeaderType_CONFIG_UPDATE        HeaderType = 2
+			HeaderType_ENDORSER_TRANSACTION HeaderType = 3
+			HeaderType_ORDERER_TRANSACTION  HeaderType = 4
+			HeaderType_DELIVER_SEEK_INFO    HeaderType = 5
+			HeaderType_CHAINCODE_PACKAGE    HeaderType = 6
+			HeaderType_PEER_ADMIN_OPERATION HeaderType = 8
+			HeaderType_TOKEN_TRANSACTION    HeaderType = 9
+		*/
+
+
+
+
+
 		if err == io.EOF {
 			logger.Debugf("Received EOF from %s, hangup", addr)
 			return nil
@@ -154,7 +246,12 @@ func (bh *Handler) ProcessMessage(msg *cb.Envelope, addr string) (resp *ab.Broad
 	}()
 	tracker.BeginValidate()
 
+
+
+
 	chdr, isConfig, processor, err := bh.SupportRegistrar.BroadcastChannelSupport(msg)
+
+
 	if chdr != nil {
 		tracker.ChannelID = chdr.ChannelId
 		tracker.TxType = cb.HeaderType(chdr.Type).String()
@@ -165,6 +262,7 @@ func (bh *Handler) ProcessMessage(msg *cb.Envelope, addr string) (resp *ab.Broad
 	}
 
 	if !isConfig {
+		logger.Info("=============if !isConfig=================")
 		logger.Debugf("[channel: %s] Broadcast is processing normal message from %s with txid '%s' of type %s", chdr.ChannelId, addr, chdr.TxId, cb.HeaderType_name[chdr.Type])
 
 		configSeq, err := processor.ProcessNormalMsg(msg)
@@ -179,20 +277,59 @@ func (bh *Handler) ProcessMessage(msg *cb.Envelope, addr string) (resp *ab.Broad
 			logger.Warningf("[channel: %s] Rejecting broadcast of message from %s with SERVICE_UNAVAILABLE: rejected by Consenter: %s", chdr.ChannelId, addr, err)
 			return &ab.BroadcastResponse{Status: cb.Status_SERVICE_UNAVAILABLE, Info: err.Error()}
 		}
+		//收到包的人知道这个是mas
+		for channel,_:= range cb.PolicyOrgName{
+			if channel == chdr.ChannelId {
+				pa,err := utils.ExtractPayload(msg)
+				logger.Info("======err",err)
+				a,err := utils.UnmarshalChannelHeader(pa.Header.ChannelHeader)
+				if a == nil{
+					return &ab.BroadcastResponse{Status: ClassifyError(err), Info: err.Error()}
+				}
 
+
+				payloadSignatureHeader := &cb.SignatureHeader{}
+				err = proto.Unmarshal(pa.Header.SignatureHeader,payloadSignatureHeader)
+				creator := payloadSignatureHeader.Creator
+
+				sid := &msp.SerializedIdentity{}
+				err = proto.Unmarshal(creator, sid)
+				logger.Info("==========creator.OrgName",sid.Mspid)//Org1MSP
+				a.OrgName = sid.Mspid
+				logger.Info("============交易发送者组织名===========================",a.OrgName)
+
+				channelChannelBytes,err := utils.Marshal(a)
+				copy(pa.Header.ChannelHeader,channelChannelBytes)
+				payloadBytes,err := utils.Marshal(pa)
+				copy(msg.Payload,payloadBytes)
+
+				pa,err = utils.ExtractPayload(msg)
+				logger.Info("======err",err)
+				a,err = utils.UnmarshalChannelHeader(pa.Header.ChannelHeader)
+				if a != nil{
+					logger.Infof("=================channelHeader",*a)
+					logger.Infof("==========a.OrgName:%v=====",a.OrgName)
+					logger.Infof("==========a.OrgPki:%v=====",a.OrgPki)//空
+				}
+			}
+		}
+		//共识
 		err = processor.Order(msg, configSeq)
 		if err != nil {
 			logger.Warningf("[channel: %s] Rejecting broadcast of normal message from %s with SERVICE_UNAVAILABLE: rejected by Order: %s", chdr.ChannelId, addr, err)
 			return &ab.BroadcastResponse{Status: cb.Status_SERVICE_UNAVAILABLE, Info: err.Error()}
 		}
 	} else { // isConfig
-		logger.Debugf("[channel: %s] Broadcast is processing config update message from %s", chdr.ChannelId, addr)
+		logger.Info("=============configUpdate=====")
+		logger.Info("[channel: %s] Broadcast is processing config update message from %s", chdr.ChannelId, addr)
 
 		config, configSeq, err := processor.ProcessConfigUpdateMsg(msg)
 		if err != nil {
 			logger.Warningf("[channel: %s] Rejecting broadcast of config message from %s because of error: %s", chdr.ChannelId, addr, err)
 			return &ab.BroadcastResponse{Status: ClassifyError(err), Info: err.Error()}
 		}
+
+
 		tracker.EndValidate()
 
 		tracker.BeginEnqueue()

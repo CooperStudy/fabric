@@ -90,8 +90,9 @@ func CreateSignedEnvelopeWithTLSBinding(txType common.HeaderType, channelID stri
 		}
 	}
 
-	logger.Info("===========dataMsg=======",dataMsg)
+	//logger.Info("===========dataMsg=======",dataMsg)
 	data, err := proto.Marshal(dataMsg)
+	logger.Info("===txType==",txType)
 	logger.Infof("======data:%v====",data)
 	if err != nil {
 		return nil, errors.Wrap(err, "error marshaling")

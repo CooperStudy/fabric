@@ -253,6 +253,7 @@ func initMSP() {
 	// Init the MSP
 	var mspMgrConfigDir = config2.GetPath("peer.mspConfigPath")
 	var mspID = viper.GetString("peer.localMspId")
+	logger.Info("=============mspID==================",mspID)
 	var mspType = viper.GetString("peer.localMspType")
 	if mspType == "" {
 		mspType = msp.ProviderTypeToString(msp.FABRIC)

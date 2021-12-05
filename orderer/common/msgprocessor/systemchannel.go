@@ -8,13 +8,13 @@ package msgprocessor
 
 import (
 	"fmt"
-
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/common/channelconfig"
 	"github.com/hyperledger/fabric/common/configtx"
 	"github.com/hyperledger/fabric/common/crypto"
 	"github.com/hyperledger/fabric/common/policies"
 	cb "github.com/hyperledger/fabric/protos/common"
+	"github.com/hyperledger/fabric/protos/msp"
 	"github.com/hyperledger/fabric/protos/utils"
 )
 
@@ -108,12 +108,67 @@ func (s *SystemChannel) ProcessConfigUpdateMsg(envConfigUpdate *cb.Envelope) (co
 		return nil, 0, err
 	}
 
-	newChannelEnvConfig, err := utils.CreateSignedEnvelope(cb.HeaderType_CONFIG, channelID, s.support.Signer(), newChannelConfigEnv, msgVersion, epoch,"","")
+
+
+
+	txid_send := ""
+	pa,err := utils.ExtractPayload(envConfigUpdate)
+	logger.Info("======err",err)
+
+	cc,err := utils.UnmarshalChannelHeader(pa.Header.ChannelHeader)
+	logger.Info("========eer",err)
+
+	payloadSignatureHeader := &cb.SignatureHeader{}
+	err = proto.Unmarshal(pa.Header.SignatureHeader,payloadSignatureHeader)
+	creator := payloadSignatureHeader.Creator
+	sid := &msp.SerializedIdentity{}
+	err = proto.Unmarshal(creator, sid)
+
+	logger.Info("===============cc.Type===",cc.Type)//区块的请求者
+	if cc.Type != 5 {
+		txid_send = sid.Mspid
+	}
+
+
+
+
+
+
+	//logger.Infof("===========cb.PolicyOrgPKI[%v]:%v============",channelID,cb.PolicyOrgPKI[channelID])
+	logger.Infof("============cb.PolicyOrgPKI[%v]:%v===========",channelID,cb.PolicyOrgName[channelID])
+
+	//ok := cb.PolicyOrgPKI[channelID]
+	on := cb.PolicyOrgName[channelID]
+
+	logger.Info("===newChannelEnvConfig, err := utils.CreateSignedEnvelope(cb.HeaderType_CONFIG, channelID, s.support.Signer(), newChannelConfigEnv, msgVersion, epoch,on,ok)==================================")
+	logger.Info("=======txid_send======",txid_send)
+	newChannelEnvConfig, err := utils.CreateSignedEnvelope(cb.HeaderType_CONFIG, channelID, s.support.Signer(), newChannelConfigEnv, msgVersion, epoch,on,txid_send)
+
 	if err != nil {
 		return nil, 0, err
 	}
 
-	wrappedOrdererTransaction, err := utils.CreateSignedEnvelope(cb.HeaderType_ORDERER_TRANSACTION, s.support.ChainID(), s.support.Signer(), newChannelEnvConfig, msgVersion, epoch,"","")
+
+	//pa,err := utils.ExtractPayload(envConfigUpdate)
+	//logger.Info("======err",err)
+	//a,err := utils.UnmarshalChannelHeader(pa.Header.ChannelHeader)
+	//on := ""
+	//ok := ""
+	//
+	//if a != nil{
+	//	logger.Infof("=================channelHeader",*a)
+	//	logger.Infof("=================a.OrgName:%v===",a.OrgName)
+	//	rand.Seed(time.Now().Unix())
+	//	a.OrgPki = strconv.FormatInt(int64(rand.Intn(1000000)),10)
+	//}
+
+	logger.Info("==============wrappedOrdererTransaction, err := utils.CreateSignedEnvelope(cb.HeaderType_ORDERER_TRANSACTION, s.support.ChainID(), s.support.Signer(), newChannelEnvConfig, msgVersion, epoch======================================")
+	/*
+	打包交易，組裝交易
+	交易的头包含了channel master
+	交易里面的数据头包含了交易发送者名
+	 */
+	wrappedOrdererTransaction, err := utils.CreateSignedEnvelope(cb.HeaderType_ORDERER_TRANSACTION, s.support.ChainID(), s.support.Signer(), newChannelEnvConfig, msgVersion, epoch,on,txid_send)
 	if err != nil {
 		return nil, 0, err
 	}

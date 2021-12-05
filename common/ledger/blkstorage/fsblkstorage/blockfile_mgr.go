@@ -222,6 +222,11 @@ func deriveBlockfilePath(rootDir string, suffixNum int) string {
 	//logger.Info("===deriveBlockfilePath==")
 	a:= rootDir + "/" + blockfilePrefix + fmt.Sprintf("%06d", suffixNum)
 	logger.Info("==============deriveBlockfilePath=========",a)
+	/*
+	1.docker-compose启动的时候
+	/var/hyperledger/production/orderer/chains/byfn-sys-channel/blockfile_000000
+
+	*/
 	// /var/hyperledger/production/ledgersData/chains/chains/mychannel/blockfile_000000
 	//
 	return a
