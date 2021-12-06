@@ -65,14 +65,18 @@ func (s *StandardChannel) ClassifyMsg(chdr *cb.ChannelHeader) Classification {
 	logger.Info("==StandardChannel=ClassifyMsg==")
 	switch chdr.Type {
 	case int32(cb.HeaderType_CONFIG_UPDATE):
+		logger.Info("================cb.HeaderType_CONFIG_UPDATE->ConfigUpdateMsg==================")
 		return ConfigUpdateMsg
 	case int32(cb.HeaderType_ORDERER_TRANSACTION):
 		// In order to maintain backwards compatibility, we must classify these messages
+		logger.Info("=======cb.HeaderType_ORDERER_TRANSACTION->ConfigMsg=======")
 		return ConfigMsg
 	case int32(cb.HeaderType_CONFIG):
+		logger.Info("=======cb.HeaderType_CONFIG-> ConfigMsg=======")
 		// In order to maintain backwards compatibility, we must classify these messages
 		return ConfigMsg
 	default:
+		logger.Info("======NormalMsg=======")
 		return NormalMsg
 	}
 }
