@@ -690,6 +690,10 @@ func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.E
 					err = proto.Unmarshal(creator, sid)
 					txid_order = sid.Mspid
 					logger.Info("==============交易打包者=========================", txid_order)
+					/*
+					typt=5 交易打包者OrdererMSP，configUpdate不走共识算法
+					type=3 交易打包者Org1MSP错误的，这个走共识算法
+					 */
 					//OrdererMSP
 
 					//ee := pa.Data utils.EnvelopeToConfigUpdate()

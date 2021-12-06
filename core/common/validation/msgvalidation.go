@@ -176,6 +176,7 @@ func checkSignatureFromCreator(creatorBytes []byte, sig []byte,            msg [
 	}
 
 	validationLogger.Infof("creator is %s", creator.GetIdentifier())
+	//creator is &{Org1MSP 99d51951bac2db53658eb54f2a08536a70f85e11056774e95faca1d79c9fa2d3}
 
 	// ensure that creator is a valid certificate
 	err = creator.Validate()

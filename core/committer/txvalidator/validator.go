@@ -167,7 +167,7 @@ func (v *TxValidator) Validate(block *common.Block) error {
 		}
 	}()
 
-	logger.Debugf("expecting %d block validation responses", len(block.Data.Data))
+	logger.Infof("expecting %d block validation responses", len(block.Data.Data))
 
 	// now we read responses in the order in which they come back
 	for i := 0; i < len(block.Data.Data); i++ {
@@ -186,7 +186,7 @@ func (v *TxValidator) Validate(block *common.Block) error {
 		} else {
 			// if there was no error, we set the txsfltr and we set the
 			// txsChaincodeNames and txsUpgradedChaincodes maps
-			logger.Debugf("got result for idx %d, code %d", res.tIdx, res.validationCode)
+			//logger.Infof("got result for idx %d, code %d", res.tIdx, res.validationCode)
 
 			txsfltr.SetFlag(res.tIdx, res.validationCode)
 

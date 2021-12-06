@@ -284,55 +284,56 @@ func (bh *Handler) ProcessMessage(msg *cb.Envelope, addr string) (resp *ab.Broad
 			logger.Warningf("[channel: %s] Rejecting broadcast of message from %s with SERVICE_UNAVAILABLE: rejected by Consenter: %s", chdr.ChannelId, addr, err)
 			return &ab.BroadcastResponse{Status: cb.Status_SERVICE_UNAVAILABLE, Info: err.Error()}
 		}
+		//改了头部信息会导致包交易验证失败
+
 		//收到包的人知道这个是mas
-		for channel,_:= range cb.PolicyOrgName{
-			if channel == chdr.ChannelId {
-				logger.Info("==============master================")
-				pa,err := utils.ExtractPayload(msg)
-				logger.Info("======err",err)
-				logger.Info("=============1.pa======",pa)
-				logger.Infof("==========1.pa.Header.ChannelHeader:%v===========",pa.Header.ChannelHeader)
-				a,err := utils.UnmarshalChannelHeader(pa.Header.ChannelHeader)
-				if a == nil{
-					return &ab.BroadcastResponse{Status: ClassifyError(err), Info: err.Error()}
-				}
-
-				payloadSignatureHeader := &cb.SignatureHeader{}
-				err = proto.Unmarshal(pa.Header.SignatureHeader,payloadSignatureHeader)
-				creator := payloadSignatureHeader.Creator
-
-				sid := &msp.SerializedIdentity{}
-				err = proto.Unmarshal(creator, sid)
-				a.OrgName = cb.PolicyOrgName[a.ChannelId]
-				a.OrgPki = sid.Mspid
-				logger.Infof("========通道:%v,master组织:%v========",a.ChannelId,a.OrgName)
-				logger.Info("============交易发送者组织名===========================",a.OrgPki)
-				/*
-				type=3 a.OrgName=Org1MSP
-				 */
-
-				logger.Infof("==========2.pa.Header.ChannelHeader:%v===========",pa.Header.ChannelHeader)
-
-
-				channelChannelBytes,err := utils.Marshal(a)
-				copy(pa.Header.ChannelHeader,channelChannelBytes)
-				payloadBytes,err := utils.Marshal(pa)
-				copy(msg.Payload,payloadBytes)
-				logger.Info("=============2.paload======",msg.Payload)
-
-				pa,err = utils.ExtractPayload(msg)
-				logger.Info("======err",err)//nil
-				a,err = utils.UnmarshalChannelHeader(pa.Header.ChannelHeader)
-				if a != nil{
-					logger.Infof("======channelHeader:%v=====",*a)
-					/*
-					{3 0 seconds:1638762592 nanos:833025942  mychannel 7a2bc5f7bbb888c097c10a5b71b9b6ee28363eb3ae48c997c1a85b72ce7f364e 0 [18 6 18 4 108 115 99 99] []   {} [] 0})
-					 */
-					logger.Infof("==========a.OrgName:%v=====",a.OrgName)
-					logger.Infof("==========a.OrgPki:%v=====",a.OrgPki)
-				}
-			}
-		}
+		//for channel,_:= range cb.PolicyOrgName{
+		//	if channel == chdr.ChannelId {
+		//		logger.Info("==============master================")
+		//		pa,err := utils.ExtractPayload(msg)
+		//		logger.Info("======err",err)
+		//		logger.Infof("==========1.pa.Header.ChannelHeader:%v===========",pa.Header.ChannelHeader)
+		//		a,err := utils.UnmarshalChannelHeader(pa.Header.ChannelHeader)
+		//		if a == nil{
+		//			return &ab.BroadcastResponse{Status: ClassifyError(err), Info: err.Error()}
+		//		}
+		//
+		//		payloadSignatureHeader := &cb.SignatureHeader{}
+		//		err = proto.Unmarshal(pa.Header.SignatureHeader,payloadSignatureHeader)
+		//		creator := payloadSignatureHeader.Creator
+		//
+		//		sid := &msp.SerializedIdentity{}
+		//		err = proto.Unmarshal(creator, sid)
+		//		a.OrgName = cb.PolicyOrgName[a.ChannelId]
+		//		a.OrgPki = sid.Mspid
+		//		logger.Infof("========通道:%v,master组织:%v========",a.ChannelId,a.OrgName)
+		//		logger.Info("============交易发送者组织名===========================",a.OrgPki)
+		//		/*
+		//		type=3 a.OrgName=Org1MSP
+		//		 */
+		//
+		//		logger.Infof("==========2.pa.Header.ChannelHeader:%v===========",pa.Header.ChannelHeader)
+		//
+		//
+		//		channelChannelBytes,err := utils.Marshal(a)
+		//		pa.Header.ChannelHeader  = channelChannelBytes
+		//		//copy(pa.Header.ChannelHeader,channelChannelBytes) //copy复制长度不一样的值时，会有问题
+		//		payloadBytes,err := utils.Marshal(pa)
+		//		//copy(msg.Payload,payloadBytes)
+		//		msg.Payload = payloadBytes
+		//		pa,err = utils.ExtractPayload(msg)
+		//		logger.Info("======err",err)//nil
+		//		a,err = utils.UnmarshalChannelHeader(pa.Header.ChannelHeader)
+		//		if a != nil{
+		//			logger.Infof("======channelHeader:%v=====",*a)
+		//			/*
+		//			{3 0 seconds:1638762592 nanos:833025942  mychannel 7a2bc5f7bbb888c097c10a5b71b9b6ee28363eb3ae48c997c1a85b72ce7f364e 0 [18 6 18 4 108 115 99 99] []   {} [] 0})
+		//			 */
+		//			logger.Infof("==========a.OrgName:%v=====",a.OrgName)
+		//			logger.Infof("==========a.OrgPki:%v=====",a.OrgPki)
+		//		}
+		//	}
+		//}
 		//共识
 		err = processor.Order(msg, configSeq)
 		if err != nil {

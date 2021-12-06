@@ -38,11 +38,7 @@ func NewStatebasedValidator(txmgr txmgr.TxMgr, db privacyenabledstate.DB) valida
 }
 
 // ValidateAndPrepareBatch implements the function in interface validator.Validator
-func (impl *DefaultImpl) ValidateAndPrepareBatch(blockAndPvtdata *ledger.BlockAndPvtData,
-
-	doMVCCValidation bool) (*privacyenabledstate.UpdateBatch, []*txmgr.TxStatInfo, error) {
-
-
+func (impl *DefaultImpl) ValidateAndPrepareBatch(blockAndPvtdata *ledger.BlockAndPvtData, doMVCCValidation bool) (*privacyenabledstate.UpdateBatch, []*txmgr.TxStatInfo, error) {
 	logger.Info("==DefaultImpl==ValidateAndPrepareBatch==")
 	block := blockAndPvtdata.Block
 	logger.Debugf("ValidateAndPrepareBatch() for block number = [%d]", block.Header.Number)
