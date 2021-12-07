@@ -87,8 +87,14 @@ func (bh *Handler) Handle(srv ab.AtomicBroadcast_BroadcastServer) error {
 			channelHeader:{2 0 seconds:1638657982  mychannel  0 [] [] org1MSP 1234 {} [] 0}
 			channelHeader:{5 0 seconds:1638657983  mychannel  0 [] []   {} [] 0}
 
+
+			instantiate
 			channelHeader:{3 0 seconds:1638762592 nanos:833025942  mychannel 7a2bc5f7bbb888c097c10a5b71b9b6ee28363eb3ae48c997c1a85b72ce7f364e 0 [18 6 18 4 108 115 99 99] []   {} [] 0}
 			a.Extension:[18 6 18 4 108 115 99 99] //lscc
+
+			invoke
+			channelHeader:{3 0 seconds:1638781713 nanos:452879663  mychannel d163869c74290c78e41e665abbc00153f735f0eceb01e45c9147b378eabfb54c 0 [18 6 18 4 109 121 99 99] []   {} [] 0}
+			a.Extension [18 6 18 4 109 121 99 99] //mycc
 			*/
 			logger.Infof("=================a.OrgName:%v===",a.OrgName)
 			logger.Infof("=================a.OrgPki:%v===",a.OrgPki)
@@ -128,6 +134,7 @@ func (bh *Handler) Handle(srv ab.AtomicBroadcast_BroadcastServer) error {
 			}else{
 				logger.Info("==========交易发送者名字===",sid.Mspid)
 				//Org1MSP
+				//Org2MSP
 			}
 
 

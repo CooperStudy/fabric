@@ -690,7 +690,7 @@ func (x *atomicBroadcastDeliverClient) Send(m *common.Envelope) error {
 }
 
 func (x *atomicBroadcastDeliverClient) Recv() (*DeliverResponse, error) {
-	//logger.Info("===============func (x *atomicBroadcastDeliverClient) Recv() (*DeliverResponse, error) ==============================")
+	logger.Info("===============func (x *atomicBroadcastDeliverClient) Recv() (*DeliverResponse, error) ==============================")
 	/*
 	createChannel
 	 */
