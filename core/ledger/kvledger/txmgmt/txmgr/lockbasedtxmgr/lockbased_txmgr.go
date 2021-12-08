@@ -129,7 +129,7 @@ func (txmgr *LockBasedTxMgr) ValidateAndPrepare(blockAndPvtdata *ledger.BlockAnd
 
 	block := blockAndPvtdata.Block
 	logger.Infof("Validating new block with num trans = [%d]", len(block.Data.Data))
-	batch, txstatsInfo, err := txmgr.validator.ValidateAndPrepareBatch(blockAndPvtdata, 付到)
+	batch, txstatsInfo, err := txmgr.validator.ValidateAndPrepareBatch(blockAndPvtdata, doMVCCValidation)
 	if err != nil {
 		txmgr.reset()
 		return nil, err
