@@ -284,7 +284,7 @@ func (b *blocksProviderImpl) DeliverBlocks() {
 
 					sid := &msp.SerializedIdentity{}
 					err = proto.Unmarshal(creator, sid)
-					logger.Infof("==============发送者组织名:=========================", sid.Mspid)
+					logger.Infof("==============发送者组织名:%v=========================",sid.Mspid)
 
 					master := common.PolicyOrgName[a.ChannelId]
 					request_singer := mspId
