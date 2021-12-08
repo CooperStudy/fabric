@@ -101,6 +101,7 @@ func (v *Validator) ValidateAndPrepareBatch(block *internal.Block, doMVCCValidat
 
 	updates := internal.NewPubAndHashUpdates()
 	for _, tx := range block.Txs {
+
 		var validationCode peer.TxValidationCode
 		var err error
 		if validationCode, err = v.validateEndorserTX(tx.RWSet, doMVCCValidation, updates); err != nil {
@@ -113,6 +114,9 @@ func (v *Validator) ValidateAndPrepareBatch(block *internal.Block, doMVCCValidat
 			committingTxHeight := version.NewHeight(block.Num, uint64(tx.IndexInBlock))
 			updates.ApplyWriteSet(tx.RWSet, committingTxHeight, v.db)
 		} else {
+			/*
+			 Block [3] Transaction index [0] TxId [28d30bd4a0d40033b8b748da8cafc728deee7d87fda54b6a87879ca230cb4f2b] marked as invalid by state validator. Reason code [MVCC_READ_CONFLICT]
+			*/
 			logger.Warningf("Block [%d] Transaction index [%d] TxId [%s] marked as invalid by state validator. Reason code [%s]",
 				block.Num, tx.IndexInBlock, tx.ID, validationCode.String())
 		}
@@ -121,10 +125,7 @@ func (v *Validator) ValidateAndPrepareBatch(block *internal.Block, doMVCCValidat
 }
 
 // validateEndorserTX validates endorser transaction
-func (v *Validator) validateEndorserTX(
-	txRWSet *rwsetutil.TxRwSet,
-	doMVCCValidation bool,
-	updates *internal.PubAndHashUpdates) (peer.TxValidationCode, error) {
+func (v *Validator) validateEndorserTX(txRWSet *rwsetutil.TxRwSet, doMVCCValidation bool, updates *internal.PubAndHashUpdates) (peer.TxValidationCode, error) {
 	logger.Info("==Validator==validateEndorserTX==")
 	var validationCode = peer.TxValidationCode_VALID
 	var err error

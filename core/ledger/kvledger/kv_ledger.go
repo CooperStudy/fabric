@@ -319,7 +319,8 @@ func (l *kvLedger) CommitWithPvtData(pvtdataAndBlock *ledger.BlockAndPvtData) er
 
 	startBlockProcessing := time.Now()
 	logger.Debugf("[%s] Validating state for block [%d]", l.ledgerID, blockNo)
-	txstatsInfo, err := l.txtmgmt.ValidateAndPrepare(pvtdataAndBlock, true)
+	txstatsInfo, err := l.txtmgmt.ValidateAndPrepare(pvtdataAndBlock, false)
+	//txstatsInfo, err := l.txtmgmt.ValidateAndPrepare(pvtdataAndBlock, true)
 	if err != nil {
 		return err
 	}

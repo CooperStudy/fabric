@@ -109,9 +109,7 @@ func (txmgr *LockBasedTxMgr) NewTxSimulator(txid string) (ledger.TxSimulator, er
 }
 
 // ValidateAndPrepare implements method in interface `txmgmt.TxMgr`
-func (txmgr *LockBasedTxMgr) ValidateAndPrepare(blockAndPvtdata *ledger.BlockAndPvtData, doMVCCValidation bool) (
-	[]*txmgr.TxStatInfo, error,
-) {
+func (txmgr *LockBasedTxMgr) ValidateAndPrepare(blockAndPvtdata *ledger.BlockAndPvtData, doMVCCValidation bool) ([]*txmgr.TxStatInfo, error) {
 	logger.Info("==LockBasedTxMgr==ValidateAndPrepare=")
 	// Among ValidateAndPrepare(), PrepareExpiringKeys(), and
 	// RemoveStaleAndCommitPvtDataOfOldBlocks(), we can allow only one

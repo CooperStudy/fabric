@@ -345,11 +345,7 @@ func createChain(cid string, ledger ledger.PeerLedger, cb *common.Block, ccp ccp
 			// TODO, handle a missing ApplicationConfig more gracefully
 			ac = nil
 		}
-		gossipEventer.ProcessConfigUpdate(&gossipSupport{
-			Validator:   bundle.ConfigtxValidator(),
-			Application: ac,
-			Channel:     bundle.ChannelConfig(),
-		})
+		gossipEventer.ProcessConfigUpdate(&gossipSupport{Validator:   bundle.ConfigtxValidator(), Application: ac, Channel:     bundle.ChannelConfig()})
 		service.GetGossipService().SuspectPeers(func(identity api.PeerIdentityType) bool {
 			// TODO: this is a place-holder that would somehow make the MSP layer suspect
 			// that a given certificate is revoked, or its intermediate CA is revoked.
