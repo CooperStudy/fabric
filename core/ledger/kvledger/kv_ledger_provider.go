@@ -275,6 +275,7 @@ type idStore struct {
 
 func openIDStore(path string) *idStore {
 	logger.Info("===openIDStore==")
+	logger.Infof("================path:%v===============",path)
 	db := leveldbhelper.CreateDB(&leveldbhelper.Conf{DBPath: path})
 	db.Open()
 	return &idStore{db}

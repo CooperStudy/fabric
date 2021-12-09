@@ -129,8 +129,8 @@ func (b *blocksProviderImpl) DeliverBlocks() {
 	logger.Infof("=============mspId:%v==========================", mspId)
 	//=============mspId:Org1MSP==========================
 
-	logger.Info("===========b.chainID==========",b.chainID)
-	logger.Info("=================common.PolicyOrgName[b.chainID]====================",common.PolicyOrgName[b.chainID])
+	logger.Info("===========b.chainID==========", b.chainID)
+	logger.Info("=================common.PolicyOrgName[b.chainID]====================", common.PolicyOrgName[b.chainID])
 
 	//logger.Info("==blocksProviderImpl==DeliverBlocks==")
 	/*
@@ -182,6 +182,56 @@ func (b *blocksProviderImpl) DeliverBlocks() {
 			continue
 		case *orderer.DeliverResponse_Block:
 			logger.Info("=========case *orderer.DeliverResponse_Block========================")
+
+			if common.Block0Bytes[b.chainID] == nil {
+				logger.Info("=============Block0Bytes nil,get block0===================")
+
+
+				//logger.Info("===============chain=================", chain)
+				//if chain == nil {
+				//	return
+				//}
+				//
+				//re := chain.Reader()
+				//var s = &orderer.SeekSpecified{Number: 0}
+				//a := &orderer.SeekPosition_Specified{Specified: s}
+				//
+				//dd := &orderer.SeekPosition{Type: a}
+				//si := &orderer.SeekInfo{Start: dd}
+				//
+				//c, _ := re.Iterator(si.Start)
+				//
+				//blo, _ := c.Next()
+				//logger.Info("=======2.获取配置文件的交易信息，提取envelop=================")
+				//e, err := utils.ExtractEnvelope(blo, 0)
+				//if err != nil {
+				//	return
+				//}
+				//p, err := utils.ExtractPayload(e)
+				//if err != nil {
+				//	return
+				//}
+				//
+				//channelHearder, err := utils.UnmarshalChannelHeader(p.Header.ChannelHeader)
+				//if err != nil {
+				//	return
+				//}
+				//
+				//logger.Info("===============channelHearder=================", *channelHearder)
+				//orgName := channelHearder.OrgName
+				//logger.Info("==orgName==============", orgName)
+				//
+				//common.PolicyOrgName[channelHearder.ChannelId] = orgName
+				//logger.Info("==common.PolicyOrgName======================", common.PolicyOrgName)
+				//common.Block0Bytes, err = utils.Marshal(blo)
+				//logger.Error(err)
+				//if err != nil {
+				//	return
+				//}
+			}
+
+			logger.Infof("======b.channelId:%v========", b.chainID)
+
 			errorStatusCounter = 0
 			statusCounter = 0
 			blockNum := t.Block.Header.Number
@@ -198,8 +248,8 @@ func (b *blocksProviderImpl) DeliverBlocks() {
 			}
 
 			/*
-			number = 1
-			 */
+				number = 1
+			*/
 
 			//if blockNum == 0 {
 			//	logger.Info("============blockNum==0==================")
@@ -241,8 +291,8 @@ func (b *blocksProviderImpl) DeliverBlocks() {
 			//	//block.Data.Data = bd.Data
 			//}
 
-			logger.Info("================len(t.Block.Data.Data):%v=============",len(t.Block.Data.Data))
-			logger.Infof("======common.PolicyOrgName:%v==========",common.PolicyOrgName)//map[]
+			logger.Info("================len(t.Block.Data.Data):%v=============", len(t.Block.Data.Data))
+			logger.Infof("======common.PolicyOrgName:%v==========", common.PolicyOrgName) //map[]
 
 			if blockNum > 1 {
 				logger.Infof("=================blockNun:%v==================", blockNum)
@@ -284,7 +334,7 @@ func (b *blocksProviderImpl) DeliverBlocks() {
 
 					sid := &msp.SerializedIdentity{}
 					err = proto.Unmarshal(creator, sid)
-					logger.Infof("==============发送者组织名:%v=========================",sid.Mspid)
+					logger.Infof("==============发送者组织名:%v=========================", sid.Mspid)
 
 					master := common.PolicyOrgName[a.ChannelId]
 					request_singer := mspId
@@ -303,7 +353,7 @@ func (b *blocksProviderImpl) DeliverBlocks() {
 				}
 				t.Block.Data.Data = bd.Data
 			}
-			logger.Infof("================len(t.Block.Data.Data):%v=============",len(t.Block.Data.Data))//0
+			logger.Infof("================len(t.Block.Data.Data):%v=============", len(t.Block.Data.Data)) //0
 
 			/*
 				遍历区块，比较creator.MSP和mspId的关系
@@ -314,11 +364,10 @@ func (b *blocksProviderImpl) DeliverBlocks() {
 			// Create payload with a block received
 
 			newBlockBytes, err := proto.Marshal(t.Block)
-			if err != nil{
+			if err != nil {
 				return
 			}
 			payload := createPayload(blockNum, newBlockBytes)
-
 
 			//payload := createPayload(blockNum, marshaledBlock)
 			// Use payload to create gossip message

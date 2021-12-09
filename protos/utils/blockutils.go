@@ -53,6 +53,32 @@ func GetChainIDFromBlock(block *cb.Block) (string, error) {
 	return chdr.ChannelId, nil
 }
 
+func GetChannelHeaderFromBlock(block *cb.Block) (*cb.ChannelHeader, error) {
+	logger.Info("===========GetChainIDFromBlock========")
+	if block == nil || block.Data == nil || block.Data.Data == nil || len(block.Data.Data) == 0 {
+		return nil, errors.Errorf("failed to retrieve channel id - block is empty")
+	}
+	var err error
+	envelope, err := GetEnvelopeFromBlock(block.Data.Data[0])
+	if err != nil {
+		return nil, err
+	}
+	payload, err := GetPayload(envelope)
+	if err != nil {
+		return nil, err
+	}
+
+	if payload.Header == nil {
+		return nil, errors.Errorf("failed to retrieve channel id - payload header is empty")
+	}
+	chdr, err := UnmarshalChannelHeader(payload.Header.ChannelHeader)
+	if err != nil {
+		return nil, err
+	}
+
+	return chdr, nil
+}
+
 // GetMetadataFromBlock retrieves metadata at the specified index.
 func GetMetadataFromBlock(block *cb.Block, index cb.BlockMetadataIndex) (*cb.Metadata, error) {
 	logger.Info("===========GetMetadataFromBlock========")

@@ -271,7 +271,7 @@ func validateCommonHeader(hdr *common.Header) (*common.ChannelHeader, *common.Si
 
 	cc := &msp.SerializedIdentity{}
 	err = proto.Unmarshal(shdr.Creator,cc)
-	validationLogger.Infof("============获取创建者.Name:%v==========",cc.Mspid)//Org1MSP
+	validationLogger.Infof("==============获取创建者.Name:%v==========",cc.Mspid)//Org1MSP
 	utils.CreatorName = cc.Mspid
 
 	err = validateChannelHeader(chdr)

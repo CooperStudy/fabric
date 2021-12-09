@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package chaincode
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 
@@ -49,9 +48,10 @@ func (r *RuntimeLauncher) Launch(ccci *ccprovider.ChaincodeContainerInfo) error 
 		startFailCh = make(chan error, 1)
 		timeoutCh = time.NewTimer(r.StartupTimeout).C
 
-		fmt.Printf("=========1.codePackage, err := r.getCodePackage(%v)=========",ccci)
+		//&{lscc 1.4.0 github.com/hyperledger/fabric/core/scc/lscc GOLANG [] SYSTEM
+		logger.Infof("=========1.codePackage, err := r.getCodePackage(%v)=========",ccci)
 		codePackage, err := r.getCodePackage(ccci)
-		fmt.Printf("=========2.codePackage, err := r.getCodePackage(%v)=========",ccci)
+		logger.Infof("=========2.codePackage, err := r.getCodePackage(%v)=========",ccci)
 		if err != nil {
 			return err
 		}

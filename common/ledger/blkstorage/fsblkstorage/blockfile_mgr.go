@@ -229,6 +229,11 @@ func deriveBlockfilePath(rootDir string, suffixNum int) string {
 	*/
 	// /var/hyperledger/production/ledgersData/chains/chains/mychannel/blockfile_000000
 	//
+
+	/*
+	join
+	==============deriveBlockfilePath========= /var/hyperledger/production/ledgersData/chains/chains/mychannel/blockfile_000000
+	*/
 	return a
 }
 
@@ -237,7 +242,7 @@ func (mgr *blockfileMgr) close() {
 	mgr.currentFileWriter.close()
 }
 
-func (mgr *blockfileMgr) moveToNextFile() {
+	func (mgr *blockfileMgr) moveToNextFile() {
 	//logger.Info("===blockfileMgr==moveToNextFile==")
 	cpInfo := &checkpointInfo{
 		latestFileChunkSuffixNum: mgr.cpInfo.latestFileChunkSuffixNum + 1,

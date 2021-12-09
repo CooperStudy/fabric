@@ -37,7 +37,8 @@ func fetchCmd(cf *ChannelCmdFactory) *cobra.Command {
 }
 
 func fetch(cmd *cobra.Command, args []string, cf *ChannelCmdFactory) error {
-	//logger.Info("=====fetch============")
+	logger.Info("=====fetch============")
+	logger.Info("=====cf============",cf)
 	if len(args) == 0 {
 		return fmt.Errorf("fetch target required, oldest, newest, config, or a number")
 	}
@@ -57,6 +58,7 @@ func fetch(cmd *cobra.Command, args []string, cf *ChannelCmdFactory) error {
 	}
 	var err error
 	if cf == nil {
+		logger.Info("=========================================")
 		cf, err = InitCmdFactory(EndorserNotRequired, peerDeliverRequired, ordererRequired)
 		if err != nil {
 			return err
@@ -71,6 +73,7 @@ func fetch(cmd *cobra.Command, args []string, cf *ChannelCmdFactory) error {
 	case "newest":
 		block, err = cf.DeliverClient.GetNewestBlock()
 	case "config":
+		logger.Info("===============case \"config\":===================")
 		iBlock, err2 := cf.DeliverClient.GetNewestBlock()
 		if err2 != nil {
 			return err2
@@ -81,6 +84,7 @@ func fetch(cmd *cobra.Command, args []string, cf *ChannelCmdFactory) error {
 		}
 		block, err = cf.DeliverClient.GetSpecifiedBlock(lc)
 	default:
+		logger.Info("=========default:=================")
 		num, err2 := strconv.Atoi(args[0])
 		if err2 != nil {
 			return fmt.Errorf("fetch target illegal: %s", args[0])

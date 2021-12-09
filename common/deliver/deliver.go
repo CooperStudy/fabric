@@ -450,7 +450,7 @@ func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.E
 	}
 
 	logger.Info("=======1.获取该通道区块0=================")
-	if cb.Block0Bytes == nil{
+	if cb.Block0Bytes[chdr.ChannelId] == nil{
 		logger.Info("============blockBytes == nil===========")
 		var s = &ab.SeekSpecified{Number: 0}
 		a := &ab.SeekPosition_Specified{Specified: s}
@@ -492,35 +492,35 @@ func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.E
 
 		cb.PolicyOrgName[channelHearder.ChannelId] = orgName
 		logger.Info("=============cb.PolicyOrgName======================",cb.PolicyOrgName)
-		cb.Block0Bytes,err = utils.Marshal(blo)
+		cb.Block0Bytes[chdr.ChannelId],err = utils.Marshal(blo)
 		logger.Error(err)
 		if err != nil{
 			return cb.Status_BAD_REQUEST, nil
 		}
-	}else{
-		logger.Info("============blockBytes != nil===========")
-		if cb.PolicyOrgName[chdr.ChannelId] == ""{
-			blo := utils.UnmarshalBlockOrPanic(cb.Block0Bytes)
-			e, err := utils.ExtractEnvelope(blo, 0)
-			if err != nil {
-				return cb.Status_BAD_REQUEST, nil
-			}
-			p, err := utils.ExtractPayload(e)
-			if err != nil {
-				return cb.Status_BAD_REQUEST, nil
-			}
-
-			channelHearder, err := utils.UnmarshalChannelHeader(p.Header.ChannelHeader)
-			if err != nil {
-				return cb.Status_BAD_REQUEST, nil
-			}
-
-			if chdr.ChannelId != channelHearder.ChannelId {
-				return cb.Status_BAD_REQUEST, nil
-			}
-			cb.PolicyOrgName[chdr.ChannelId] = channelHearder.OrgName
-		}
-	}
+	} //else{
+	//	logger.Info("============blockBytes != nil===========")
+	//	if cb.PolicyOrgName[chdr.ChannelId] == ""{
+	//		blo := utils.UnmarshalBlockOrPanic(cb.Block0Bytes[chdr.ChannelId])
+	//		e, err := utils.ExtractEnvelope(blo, 0)
+	//		if err != nil {
+	//			return cb.Status_BAD_REQUEST, nil
+	//		}
+	//		p, err := utils.ExtractPayload(e)
+	//		if err != nil {
+	//			return cb.Status_BAD_REQUEST, nil
+	//		}
+	//
+	//		channelHearder, err := utils.UnmarshalChannelHeader(p.Header.ChannelHeader)
+	//		if err != nil {
+	//			return cb.Status_BAD_REQUEST, nil
+	//		}
+	//
+	//		if chdr.ChannelId != channelHearder.ChannelId {
+	//			return cb.Status_BAD_REQUEST, nil
+	//		}
+	//		cb.PolicyOrgName[chdr.ChannelId] = channelHearder.OrgName
+	//	}
+	//}
 
 
 	logger.Info("=================master=========================",cb.PolicyOrgName[chdr.ChannelId])

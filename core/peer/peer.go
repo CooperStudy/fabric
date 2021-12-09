@@ -435,8 +435,26 @@ func createChain(cid string, ledger ledger.PeerLedger, cb *common.Block, ccp ccp
 		committer: c,
 	}
 
+	channelHeader,err := utils.GetChannelHeaderFromBlock(cb)
+	if err !=nil{
+		return err
+	}
+	b,err :=  utils.Marshal(cb)
+	if err != nil{
+		return err
+	}
+	logger.Info("=======channelHeader=========",*channelHeader)
+	common.Block0Bytes[channelHeader.ChannelId] = b
+	common.PolicyOrgName[channelHeader.ChannelId] = channelHeader.OrgName
+	/*
+	TODO 数据持久化，需要把数据保存到数据库中
+	*/
+	logger.Info("===========master========================",channelHeader.OrgName)
 	return nil
 }
+
+
+
 
 // CreateChainFromBlock creates a new chain from config block
 func CreateChainFromBlock(cb *common.Block, ccp ccprovider.ChaincodeProvider, sccp sysccprovider.SystemChaincodeProvider) error {

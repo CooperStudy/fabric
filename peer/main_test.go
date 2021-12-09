@@ -21,6 +21,7 @@ import (
 )
 
 func TestPluginLoadingFailure(t *testing.T) {
+
 	gt := NewGomegaWithT(t)
 	peer, err := gexec.Build("github.com/hyperledger/fabric/peer")
 	gt.Expect(err).NotTo(HaveOccurred())

@@ -126,6 +126,10 @@ func (r *HandlerRegistry) Handler(cname string) *Handler {
 	chaincodeLogger.Info("=====HandlerRegistry====Handler=============")
 	r.mutex.Lock()
 	chaincodeLogger.Infof("========cname=======",cname)
+	/*
+	join
+	cscc:1.4.0
+	 */
 	//========cname======= acb:0
 	/*
 	1.query

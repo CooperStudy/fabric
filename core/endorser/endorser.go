@@ -395,7 +395,7 @@ func (e *Endorser) preProcess(signedProp *pb.SignedProposal) (*validateResult, e
 
 	cc := &msp.SerializedIdentity{}
 	err = proto.Unmarshal(hdr.SignatureHeader, cc)
-	logger.Infof("============获取创建者.Name:%v==========", cc.Mspid) //Org1MSP
+	logger.Infof("=================获取创建者.Name:%v==========", cc.Mspid) //Org1MSP
 
 	chdr, err := putils.UnmarshalChannelHeader(hdr.ChannelHeader)
 	if err != nil {

@@ -92,8 +92,10 @@ func (index *blockIndex) getLastBlockIndexed() (uint64, error) {
 func (index *blockIndex) indexBlock(blockIdxInfo *blockIdxInfo) error {
 	logger.Info("====blockIndex===indexBlock==")
 	// do not index anything
-	logger.Info("=====len(index.indexItemsMap) ===========",len(index.indexItemsMap) )
+	logger.Info("=====index.indexItemsMap ===========",index.indexItemsMap)//
 	/*
+	1.join
+	index.indexItemsMap =6
 	1.docker
 	len(index.indexItemsMap) 1
 	 */

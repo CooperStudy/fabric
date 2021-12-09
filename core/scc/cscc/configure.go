@@ -127,6 +127,10 @@ func (e *PeerConfiger) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		logger.Info("=====v",v)
 		logger.Info("=====v",string(v))
 	}
+	/*
+	JoinChain
+
+	*/
 
 	if len(args) < 1 {
 		return shim.Error(fmt.Sprintf("Incorrect number of arguments, %d", len(args)))

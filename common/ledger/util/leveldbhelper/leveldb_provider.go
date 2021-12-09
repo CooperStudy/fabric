@@ -51,6 +51,9 @@ func (p *Provider) GetDBHandle(dbName string) *DBHandle {
 	/*
 	1.create channel
 	mychannel
+
+	join
+	mychannel/0
 	 */
 	//mychannel
 	//mychannel/0

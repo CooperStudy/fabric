@@ -202,6 +202,21 @@ func executeCreate(cf *ChannelCmdFactory) error {
 		return err
 	}
 
+
+   //
+	//channelHeader,err := utils.GetChannelHeaderFromBlock(block)
+	//if err !=nil{
+	//	return err
+	//}
+	//logger.Info("=======channelHeader=========",*channelHeader)
+	//cb.Block0Bytes[channelHeader.ChannelId] = b
+	//cb.PolicyOrgName[channelHeader.ChannelId] = channelHeader.OrgName
+	///*
+	//TODO 数据持久化，需要把数据保存到数据库中
+	// */
+   //logger.Info("===========master========================",channelHeader.OrgName)
+
+
 	file := channelID + ".block"
 	if outputBlock != common.UndefinedParamValue {
 		file = outputBlock

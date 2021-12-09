@@ -79,6 +79,8 @@ func CacheConfiguration() (err error) {
 
 	}
 
+
+
 	// getPeerEndpoint returns the PeerEndpoint for this Peer instance.  Affected by env:peer.addressAutoDetect
 	getPeerEndpoint := func() (*pb.PeerEndpoint, error) {
 		var peerAddress string
