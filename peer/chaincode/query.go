@@ -53,6 +53,7 @@ func chaincodeQuery(cmd *cobra.Command, cf *ChaincodeCmdFactory) error {
 	// Parsing of the command line is done so silence cmd usage
 	cmd.SilenceUsage = true
 
+	logger.Info("====================================cf",cf)
 	var err error
 	if cf == nil {
 		cf, err = InitCmdFactory(cmd.Name(), true, false)
@@ -63,3 +64,5 @@ func chaincodeQuery(cmd *cobra.Command, cf *ChaincodeCmdFactory) error {
 
 	return chaincodeInvokeOrQuery(cmd, false, cf)
 }
+
+

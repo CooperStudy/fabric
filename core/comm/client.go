@@ -168,9 +168,7 @@ func (client *GRPCClient) SetServerRootCAs(serverRoots [][]byte) error {
 // NewConnection returns a grpc.ClientConn for the target address and
 // overrides the server name used to verify the hostname on the
 // certificate returned by a server when using TLS
-func (client *GRPCClient) NewConnection(address string, serverNameOverride string) (
-	*grpc.ClientConn, error) {
-
+func (client *GRPCClient) NewConnection(address string, serverNameOverride string) (*grpc.ClientConn, error) {
 	logger.Info("======GRPCClient=======NewConnection===========")
 	var dialOpts []grpc.DialOption
 	dialOpts = append(dialOpts, client.dialOpts...)

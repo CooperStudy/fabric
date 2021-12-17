@@ -26,7 +26,7 @@ type PeerClient struct {
 // NewPeerClientFromEnv creates an instance of a PeerClient from the global
 // Viper instance
 func NewPeerClientFromEnv() (*PeerClient, error) {
-	//logger.Info("==NewPeerClientFromEnv===")
+	logger.Info("==NewPeerClientFromEnv===")
 	address, override, clientConfig, err := configFromEnv("peer")
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to load config for PeerClient")
@@ -124,9 +124,10 @@ func (pc *PeerClient) Certificate() tls.Certificate {
 // from the configuration settings for "peer.address" and
 // "peer.tls.rootcert.file"
 func GetEndorserClient(address, tlsRootCertFile string) (pb.EndorserClient, error) {
-	//logger.Info("==GetEndorserClient==")
+	logger.Info("=====func GetEndorserClient(address, tlsRootCertFile string) (pb.EndorserClient, error)==")
 	var peerClient *PeerClient
 	var err error
+	logger.Infof("===address:%v===",address)
 	if address != "" {
 		peerClient, err = NewPeerClientForAddress(address, tlsRootCertFile)
 	} else {

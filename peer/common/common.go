@@ -84,6 +84,8 @@ type commonClient struct {
 	sn      string
 }
 
+
+
 func init() {
 	GetEndorserClientFnc = GetEndorserClient
 	GetDefaultSignerFnc = GetDefaultSigner
@@ -236,15 +238,21 @@ func CheckLogLevel(level string) error {
 }
 
 func configFromEnv(prefix string) (address, override string, clientConfig comm.ClientConfig, err error) {
-	//logger.Info("====configFromEnv==")
+	logger.Info("====configFromEnv==")
+	logger.Infof("====prefix:%v========",prefix)
 	address = viper.GetString(prefix + ".address")
+	logger.Infof("====address:%v========",address)
 	override = viper.GetString(prefix + ".tls.serverhostoverride")
+	logger.Infof("====override:%v========",override)
 	clientConfig = comm.ClientConfig{}
 	connTimeout := viper.GetDuration(prefix + ".client.connTimeout")
+	logger.Infof("====connTimeout:%v========",connTimeout)
 	if connTimeout == time.Duration(0) {
 		connTimeout = defaultConnTimeout
 	}
 	clientConfig.Timeout = connTimeout
+	logger.Infof("====clientConfig.Timeout:%v========",clientConfig.Timeout)
+
 	secOpts := &comm.SecureOptions{
 		UseTLS:            viper.GetBool(prefix + ".tls.enabled"),
 		RequireClientCert: viper.GetBool(prefix + ".tls.clientAuthRequired")}
@@ -257,6 +265,7 @@ func configFromEnv(prefix string) (address, override string, clientConfig comm.C
 		}
 		secOpts.ServerRootCAs = [][]byte{caPEM}
 	}
+	logger.Infof("====cconfig.GetPath(prefix + \".tls.clientKey.file\"):%v========",config.GetPath(prefix + ".tls.clientKey.file"))
 	if secOpts.RequireClientCert {
 		keyPEM, res := ioutil.ReadFile(config.GetPath(prefix + ".tls.clientKey.file"))
 		if res != nil {
@@ -265,6 +274,8 @@ func configFromEnv(prefix string) (address, override string, clientConfig comm.C
 			return
 		}
 		secOpts.Key = keyPEM
+		logger.Infof("====config.GetPath(prefix + \".tls.clientCert.file\"):%v========",config.GetPath(prefix + ".tls.clientCert.file"))
+
 		certPEM, res := ioutil.ReadFile(config.GetPath(prefix + ".tls.clientCert.file"))
 		if res != nil {
 			err = errors.WithMessage(res,

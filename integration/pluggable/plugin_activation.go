@@ -8,6 +8,7 @@ package pluggable
 
 import (
 	"fmt"
+	"github.com/hyperledger/fabric/common/flogging"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -23,6 +24,7 @@ const (
 // EndorsementPluginActivationFolder returns the name of the folder that if
 // the file of the peer's id in it exists - it indicates that the endorsement plugin was activated
 // for that peer
+var logger = flogging.MustGetLogger("integration.pluggable")
 func EndorsementPluginActivationFolder() string {
 	logger.Info("=====EndorsementPluginActivationFolder==========")
 	return os.Getenv(EndorsementPluginEnvVar)

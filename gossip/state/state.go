@@ -482,10 +482,10 @@ func (s *GossipStateProviderImpl) handleStateResponse(msg proto.ReceivedMessage)
 		return uint64(0), errors.New("Received state transfer response without payload")
 	}
 	for _, payload := range response.GetPayloads() {
-		logger.Debugf("Received payload with sequence number %d.", payload.SeqNum)
+		logger.Infof("Received payload with sequence number %d.", payload.SeqNum)
 		if err := s.mediator.VerifyBlock(common2.ChainID(s.chainID), payload.SeqNum, payload.Data); err != nil {
 			err = errors.WithStack(err)
-			logger.Warningf("Error verifying block with sequence number %d, due to %+v", payload.SeqNum, err)
+			logger.Infof("Error verifying block with sequence number %d, due to %+v", payload.SeqNum, err)
 			return uint64(0), err
 		}
 		if max < payload.SeqNum {
@@ -673,11 +673,15 @@ func (s *GossipStateProviderImpl) requestBlocksInRange(start uint64, end uint64)
 			// Wait until timeout or response arrival
 			select {
 			case msg := <-s.stateResponseCh:
+				logger.Info("============msg==========",msg)
 				if msg.GetGossipMessage().Nonce != gossipMsg.Nonce {
 					continue
 				}
 				// Got corresponding response for state request, can continue
+				logger.Info("==========index, err := s.handleStateResponse(msg)=======")
 				index, err := s.handleStateResponse(msg)
+				logger.Info("=============index======",index)
+				logger.Info("=======err=======",err)
 				if err != nil {
 					logger.Warningf("Wasn't able to process state response for "+
 						"blocks [%d...%d], due to %+v", prev, next, errors.WithStack(err))

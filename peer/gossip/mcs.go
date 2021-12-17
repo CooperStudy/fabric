@@ -111,7 +111,8 @@ func (s *MSPMessageCryptoService) GetPKIidOfCert(peerIdentity api.PeerIdentityTy
 // sequence number that the block's header contains.
 // else returns error
 func (s *MSPMessageCryptoService) VerifyBlock(chainID common.ChainID, seqNum uint64, signedBlock []byte) error {
-	////logger.Info("======MSPMessageCryptoService====VerifyBlock=======")
+	logger.Info("======MSPMessageCryptoService====VerifyBlock=======")
+	logger.Info("================master=============", pcommon.PolicyOrgName[string(chainID)])
 	// - Convert signedBlock to common.Block.
 	block, err := utils.GetBlockFromBlockBytes(signedBlock)
 	if err != nil {
@@ -127,12 +128,18 @@ func (s *MSPMessageCryptoService) VerifyBlock(chainID common.ChainID, seqNum uin
 		return fmt.Errorf("Claimed seqNum is [%d] but actual seqNum inside block is [%d]", seqNum, blockSeqNum)
 	}
 
+	//TODO Cooper
+	var channelID = ""
+	logger.Info("=====================mcs changed========================")
+	logger.Info("=================master=======================", pcommon.PolicyOrgName[string(chainID)])
+	if pcommon.PolicyOrgName[string(chainID)] != "" {
+		return nil
+	}
 	// - Extract channelID and compare with chainID
-	channelID, err := utils.GetChainIDFromBlock(block)
+	channelID, err = utils.GetChainIDFromBlock(block)
 	if err != nil {
 		return fmt.Errorf("Failed getting channel id from block with id [%d] on channel [%s]: [%s]", block.Header.Number, chainID, err)
 	}
-
 	if channelID != string(chainID) {
 		return fmt.Errorf("Invalid block's channel id. Expected [%s]. Given [%s]", chainID, channelID)
 	}
@@ -187,6 +194,7 @@ func (s *MSPMessageCryptoService) VerifyBlock(chainID common.ChainID, seqNum uin
 
 	// - Evaluate policy
 	return policy.Evaluate(signatureSet)
+
 }
 
 // Sign signs msg with this peer's signing key and outputs

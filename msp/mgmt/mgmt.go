@@ -178,14 +178,14 @@ func loadLocaMSP() msp.MSP {
 	}
 	switch mspType {
 	case msp.ProviderTypeToString(msp.FABRIC):
-		//logger.Info("===========msp.ProviderTypeToString(msp.FABRIC)===========")
+		logger.Info("===========msp.ProviderTypeToString(msp.FABRIC)===========")
 		mspInst, err = cache.New(mspInst)
 		if err != nil {
 			logger.Fatalf("Failed to initialize local MSP, received err %+v", err)
 		}
 	case msp.ProviderTypeToString(msp.IDEMIX):
-		//logger.Info("===========msp.ProviderTypeToString(msp.IDEMIX)==========")
-		// Do nothing
+		logger.Info("===========msp.ProviderTypeToString(msp.IDEMIX)==========")
+		//Do nothing
 	default:
 		panic("msp type " + mspType + " unknown")
 	}

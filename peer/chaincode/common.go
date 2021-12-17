@@ -51,8 +51,8 @@ func checkSpec(spec *pb.ChaincodeSpec) error {
 func getChaincodeDeploymentSpec(spec *pb.ChaincodeSpec, crtPkg bool) (*pb.ChaincodeDeploymentSpec, error) {
 	logger.Info("=========func getChaincodeDeploymentSpec(spec *pb.ChaincodeSpec, crtPkg bool) (*pb.ChaincodeDeploymentSpec, error)=========")
 	var codePackageBytes []byte
-	logger.Info("======chaincode.IsDevMode() ===========",chaincode.IsDevMode())//false
-	logger.Info("======crtPkg ===========",crtPkg)//false
+	logger.Info("======chaincode.IsDevMode() ===========", chaincode.IsDevMode()) //false
+	logger.Info("======crtPkg ===========", crtPkg)                               //false
 	if chaincode.IsDevMode() == false && crtPkg {
 		var err error
 		if err = checkSpec(spec); err != nil {
@@ -61,7 +61,7 @@ func getChaincodeDeploymentSpec(spec *pb.ChaincodeSpec, crtPkg bool) (*pb.Chainc
 
 		//开始有策略信息
 		codePackageBytes, err = container.GetChaincodePackageBytes(platformRegistry, spec)
-		logger.Info("=========codePackageBytes=============",codePackageBytes)
+		logger.Info("=========codePackageBytes=============", codePackageBytes)
 		if err != nil {
 			err = errors.WithMessage(err, "error getting chaincode package bytes")
 			return nil, err
@@ -78,12 +78,11 @@ func getChaincodeSpec(cmd *cobra.Command) (*pb.ChaincodeSpec, error) {
 	logger.Info("============ checkChaincodeCmdParams(cmd)======================")
 
 	//policy
-	logger.Infof("========policy:%v====================================",policy)
+	logger.Infof("========policy:%v====================================", policy)
 	/*
-	1.query
-	policy ""
-	 */
-
+		1.query
+		policy ""
+	*/
 
 	err := checkChaincodeCmdParams(cmd)
 	if err != nil {
@@ -94,26 +93,118 @@ func getChaincodeSpec(cmd *cobra.Command) (*pb.ChaincodeSpec, error) {
 
 	// Build the spec
 	input := &pb.ChaincodeInput{}
-	logger.Info("============chaincodeCtorJSON============",chaincodeCtorJSON)
+	logger.Info("============chaincodeCtorJSON============", chaincodeCtorJSON)
 	/*
-	1.instantiate
-	{"Args":["init","a","100","b","200"]}
+		1.instantiate
+		{"Args":["init","a","100","b","200"]}
 
-	2.query
-	{"Args":["query","a"]}
+		2.query
+		{"Args":["query","a"]}
 	*/
 	err = json.Unmarshal([]byte(chaincodeCtorJSON), &input)
-	logger.Info("============input============",input)
+	logger.Info("============input============", input)
 	/*
-	1.instantiate
-	args:"init" args:"a" args:"100" args:"b" args:"200"
-	2.query
-	args:"query" args:"a"
+		1.instantiate
+		args:"init" args:"a" args:"100" args:"b" args:"200"
+		2.query
+		args:"query" args:"a"
 	*/
 	if err != nil {
 		return spec, errors.Wrap(err, "chaincode argument error")
 	}
 
+	chaincodeLang = strings.ToUpper(chaincodeLang)
+	spec = &pb.ChaincodeSpec{
+		Type:        pb.ChaincodeSpec_Type(pb.ChaincodeSpec_Type_value[chaincodeLang]),
+		ChaincodeId: &pb.ChaincodeID{Path: chaincodePath, Name: chaincodeName, Version: chaincodeVersion},
+		Input:       input,
+	}
+	return spec, nil
+}
+
+func GetChaincodeSpec() (*pb.ChaincodeSpec, error) {
+	logger.Info("============func getChaincodeSpec(cmd *cobra.Command) (*pb.ChaincodeSpec, error)============")
+	spec := &pb.ChaincodeSpec{}
+	logger.Info("============ checkChaincodeCmdParams(cmd)======================")
+
+	//policy
+	logger.Infof("========policy:%v====================================", policy)
+	/*
+		1.query
+		policy ""
+	*/
+
+	// Build the spec
+	input := &pb.ChaincodeInput{}
+	logger.Info("============chaincodeCtorJSON============", chaincodeCtorJSON)
+	/*
+		1.instantiate
+		{"Args":["init","a","100","b","200"]}
+
+		2.query
+		{"Args":["query","a"]}
+	*/
+	err := json.Unmarshal([]byte(chaincodeCtorJSON), &input)
+	logger.Info("============input============", input)
+	/*
+		1.instantiate
+		args:"init" args:"a" args:"100" args:"b" args:"200"
+		2.query
+		args:"query" args:"a"
+	*/
+	if err != nil {
+		return spec, errors.Wrap(err, "chaincode argument error")
+	}
+
+	chaincodeLang = strings.ToUpper(chaincodeLang)
+	spec = &pb.ChaincodeSpec{
+		Type:        pb.ChaincodeSpec_Type(pb.ChaincodeSpec_Type_value[chaincodeLang]),
+		ChaincodeId: &pb.ChaincodeID{Path: chaincodePath, Name: chaincodeName, Version: chaincodeVersion},
+		Input:       input,
+	}
+	return spec, nil
+}
+func GetChaincodeSpecQuery() (*pb.ChaincodeSpec, error) {
+	logger.Info("============func getChaincodeSpec(cmd *cobra.Command) (*pb.ChaincodeSpec, error)============")
+	spec := &pb.ChaincodeSpec{}
+	logger.Info("============ checkChaincodeCmdParams(cmd)======================")
+
+	//policy
+	logger.Infof("========policy:%v====================================", policy)
+	/*
+		1.query
+		policy ""
+	*/
+
+	// Build the spec
+	input := &pb.ChaincodeInput{}
+
+	logger.Info("============chaincodeCtorJSON============", chaincodeCtorJSON)
+	/*
+		1.instantiate
+		{"Args":["init","a","100","b","200"]}
+
+		2.query
+		{"Args":["query","a"]}
+	*/
+
+	chaincodeCtorJSON := "{\"Args\":[\"getData\",\"87298cc2f31fba73181ea2a9e6ef10dce21ed95e98bdac9c4e1504ea16f486e4\"]}\n"
+	err := json.Unmarshal([]byte(chaincodeCtorJSON), &input)
+	logger.Info("============input============", input)
+	/*
+		1.instantiate
+		args:"init" args:"a" args:"100" args:"b" args:"200"
+		2.query
+		args:"query" args:"a"
+	*/
+	if err != nil {
+		return spec, errors.Wrap(err, "chaincode argument error")
+	}
+
+	chaincodeLang = "golang"
+	chaincodePath = "/home/cooper/go/src/github.com/hyperledger/fabric-samples/chaincode/chaincode_example02/go"
+	chaincodeName = "acb"
+	chaincodeVersion = "0"
 	chaincodeLang = strings.ToUpper(chaincodeLang)
 	spec = &pb.ChaincodeSpec{
 		Type:        pb.ChaincodeSpec_Type(pb.ChaincodeSpec_Type_value[chaincodeLang]),
@@ -133,6 +224,7 @@ func chaincodeInvokeOrQuery(cmd *cobra.Command, invoke bool, cf *ChaincodeCmdFac
 	// call with empty txid to ensure production code generates a txid.
 	// otherwise, tests can explicitly set their own txid
 	txID := ""
+
 
 	proposalResp, err := ChaincodeInvokeOrQuery(
 		spec,
@@ -178,15 +270,66 @@ func chaincodeInvokeOrQuery(cmd *cobra.Command, invoke bool, cf *ChaincodeCmdFac
 		}
 
 		if chaincodeQueryRaw {
-			logger.Info("===",proposalResp.Response.Payload)
+			logger.Info("===", proposalResp.Response.Payload)
 			return nil
 		}
 		if chaincodeQueryHex {
 			logger.Infof("%x\n", proposalResp.Response.Payload)
 			return nil
 		}
-		logger.Infof("=========查询结果:%v========",string(proposalResp.Response.Payload))
+		logger.Infof("=========查询结果:%v========", string(proposalResp.Response.Payload))
 	}
+	return nil
+}
+
+func ChaincodeInvokeOrQuery1(cf *ChaincodeCmdFactory) (err error) {
+	logger.Info("=============chaincodeInvokeOrQuery==================")
+	spec, err := GetChaincodeSpecQuery()
+	if err != nil {
+		return err
+	}
+
+	// call with empty txid to ensure production code generates a txid.
+	// otherwise, tests can explicitly set their own txid
+	txID := ""
+	channelID = "mychannel"
+	proposalResp, err := ChaincodeInvokeOrQuery(
+		spec,
+		channelID,
+		txID,
+		false,
+		cf.Signer,
+		cf.Certificate,
+		cf.EndorserClients,
+		cf.DeliverClients,
+		cf.BroadcastClient)
+
+	if err != nil {
+		return errors.Errorf("%s - proposal response: %v", err, proposalResp)
+	}
+
+	logger.Info("===================else===========================")
+	if proposalResp == nil {
+		return errors.New("error during query: received nil proposal response")
+	}
+	if proposalResp.Endorsement == nil {
+		return errors.Errorf("endorsement failure during query. response: %v", proposalResp.Response)
+	}
+
+	if chaincodeQueryRaw && chaincodeQueryHex {
+		return fmt.Errorf("options --raw (-r) and --hex (-x) are not compatible")
+	}
+
+	if chaincodeQueryRaw {
+		logger.Info("===", proposalResp.Response.Payload)
+		return nil
+	}
+	if chaincodeQueryHex {
+		logger.Infof("%x\n", proposalResp.Response.Payload)
+		return nil
+	}
+	logger.Infof("=========查询结果:%v========", string(proposalResp.Response.Payload))
+
 	return nil
 }
 
@@ -204,7 +347,7 @@ type collectionConfigJson struct {
 // json-formatted array of collectionConfigJson elements
 func getCollectionConfigFromFile(ccFile string) ([]byte, error) {
 	logger.Info("============func getCollectionConfigFromFile(ccFile string) ([]byte, error)=================")
-	logger.Info("===========ccFile=========",ccFile)
+	logger.Info("===========ccFile=========", ccFile)
 	fileBytes, err := ioutil.ReadFile(ccFile)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not read file '%s'", ccFile)
@@ -224,21 +367,21 @@ func getCollectionConfigFromBytes(cconfBytes []byte) ([]byte, error) {
 		return nil, errors.Wrap(err, "could not parse the collection configuration")
 	}
 	logger.Info("===============cconf := &[]collectionConfigJson{}==================")
-	for k,v := range *cconf{
-		logger.Info("==========k",k)
-		logger.Info("====name",v.Name)
-		logger.Info("====BlockToLive",v.BlockToLive)
-		logger.Info("====MaxPeerCount",v.MaxPeerCount)
-		logger.Info("====MemberOnlyRead",v.MemberOnlyRead)
-		logger.Info("====Policy",v.Policy)
-		logger.Info("====RequiredCount",v.RequiredCount)
+	for k, v := range *cconf {
+		logger.Info("==========k", k)
+		logger.Info("====name", v.Name)
+		logger.Info("====BlockToLive", v.BlockToLive)
+		logger.Info("====MaxPeerCount", v.MaxPeerCount)
+		logger.Info("====MemberOnlyRead", v.MemberOnlyRead)
+		logger.Info("====Policy", v.Policy)
+		logger.Info("====RequiredCount", v.RequiredCount)
 	}
 
 	ccarray := make([]*pcommon.CollectionConfig, 0, len(*cconf))
 	for _, cconfitem := range *cconf {
-		logger.Info("=====cconfitem====",cconfitem)
+		logger.Info("=====cconfitem====", cconfitem)
 		p, err := cauthdsl.FromString(cconfitem.Policy)
-		logger.Infof("========%v, %v := cauthdsl.FromString(%v)===================",p,err,cconfitem.Policy)
+		logger.Infof("========%v, %v := cauthdsl.FromString(%v)===================", p, err, cconfitem.Policy)
 		if err != nil {
 			return nil, errors.WithMessage(err, fmt.Sprintf("invalid policy %s", cconfitem.Policy))
 		}
@@ -308,7 +451,7 @@ func checkChaincodeCmdParams(cmd *cobra.Command) error {
 
 		if collectionsConfigFile != common.UndefinedParamValue {
 			var err error
-			logger.Info("=======collectionsConfigFile=====",collectionsConfigFile)
+			logger.Info("=======collectionsConfigFile=====", collectionsConfigFile)
 			collectionConfigBytes, err = getCollectionConfigFromFile(collectionsConfigFile)
 			if err != nil {
 				return errors.WithMessage(err, fmt.Sprintf("invalid collection configuration in file %s", collectionsConfigFile))
@@ -348,14 +491,14 @@ func checkChaincodeCmdParams(cmd *cobra.Command) error {
 
 func validatePeerConnectionParameters(cmdName string) error {
 	logger.Info("============func validatePeerConnectionParameters(cmdName string) error ==================")
-	logger.Info("==========connectionProfile====================",connectionProfile)//""
+	logger.Info("==========connectionProfile====================", connectionProfile) //""
 	if connectionProfile != common.UndefinedParamValue {
 		logger.Info("=============connectionProfile != common.UndefinedParamValue ========================")
 		networkConfig, err := common.GetConfig(connectionProfile)
 		if err != nil {
 			return err
 		}
-		logger.Info("=======================networkConfig.Channels[channelID].Peers========================",networkConfig.Channels[channelID].Peers)
+		logger.Info("=======================networkConfig.Channels[channelID].Peers========================", networkConfig.Channels[channelID].Peers)
 		if len(networkConfig.Channels[channelID].Peers) != 0 {
 			logger.Info("==============if len(networkConfig.Channels[channelID].Peers) != 0 ==============")
 			peerAddresses = []string{}
@@ -368,7 +511,7 @@ func validatePeerConnectionParameters(cmdName string) error {
 					}
 					logger.Info("===================== peerConfig.URL============", peerConfig.URL)
 					peerAddresses = append(peerAddresses, peerConfig.URL)
-					logger.Info("=======================tlsRootCertFiles==========",peerConfig.TLSCACerts.Path)
+					logger.Info("=======================tlsRootCertFiles==========", peerConfig.TLSCACerts.Path)
 					tlsRootCertFiles = append(tlsRootCertFiles, peerConfig.TLSCACerts.Path)
 				}
 			}
@@ -406,65 +549,79 @@ type ChaincodeCmdFactory struct {
 
 // InitCmdFactory init the ChaincodeCmdFactory with default clients
 func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) (*ChaincodeCmdFactory, error) {
+	//cmdName = query
 	logger.Info("====func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) (*ChaincodeCmdFactory, error)====")
 	var err error
 	var endorserClients []pb.EndorserClient
 	var deliverClients []api.PeerDeliverClient
-	logger.Info("====isEndorserRequired====",isEndorserRequired)//true
-	logger.Info("====isOrdererRequired====",isOrdererRequired)//true
+	logger.Info("====isEndorserRequired====", isEndorserRequired) //true
+	logger.Info("====isOrdererRequired====", isOrdererRequired)   //true
+
+	/*
+		query
+		isEndorserRequired  true
+		isOrdererRequired   false
+	*/
 	if isEndorserRequired {
-		logger.Infof("====validatePeerConnectionParameters(%v)====",cmdName)
-		 err = validatePeerConnectionParameters(cmdName)
+		logger.Infof("====validatePeerConnectionParameters(%v)====", cmdName) //query
+		err = validatePeerConnectionParameters(cmdName)
 
 		if err != nil {
 			return nil, errors.WithMessage(err, "error validating peer connection parameters")
 		}
-		logger.Infof("====peerAddresses:%v====",peerAddresses)
+		logger.Infof("====peerAddresses:%v====", peerAddresses) //[]
 		/*
-		1.initiate
-		peerAddresses []
+			1.initiate
+			peerAddresses []
 
-		2.invoke
-		 [peer0.org1.example.com:7051 peer0.org2.example.com:7051]
+			2.invoke
+			 [peer0.org1.example.com:7051 peer0.org2.example.com:7051]
+
+			3.query
+			====peerAddresses:[]====
 		*/
 		for i, address := range peerAddresses {
-			logger.Info("====i",i)
+			logger.Info("====i", i) //0
 			//0
 			//1
-			logger.Info("====address",address)
+			logger.Info("====address", address) //""
 			//peer0.org1.example.com:7051
 			//peer0.org2.example.com:7051
 			var tlsRootCertFile string
-			logger.Info("====tlsRootCertFiles",tlsRootCertFiles)
+			logger.Info("====tlsRootCertFiles", tlsRootCertFiles) //[]
 			/*
-			[/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
-			 /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt]
-			 */
+				[/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
+				 /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt]
+			*/
 			//
 			if tlsRootCertFiles != nil {
 				tlsRootCertFile = tlsRootCertFiles[i]
-				logger.Info("==============================tlsRootCertFile",tlsRootCertFile)
+				logger.Info("==============================tlsRootCertFile", tlsRootCertFile)
 				// /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
 				// /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt
 			}
 			endorserClient, err := common.GetEndorserClientFnc(address, tlsRootCertFile)
-			logger.Info("==================endorserClient========================",endorserClient)//&{0xc0000d2000}
+			logger.Info("==================endorserClient========================", endorserClient) //&{0xc0000d2000}
 
 			if err != nil {
 				return nil, errors.WithMessage(err, fmt.Sprintf("error getting endorser client for %s", cmdName))
 			}
 			endorserClients = append(endorserClients, endorserClient)
-			logger.Info("==================endorserClients========================",endorserClients)//[0xc00014e038]
+			logger.Info("==================endorserClients========================", endorserClients) //[0xc00014e038]
 			deliverClient, err := common.GetPeerDeliverClientFnc(address, tlsRootCertFile)
-			logger.Info("==================deliverClient========================",deliverClient)
+			logger.Info("==================deliverClient========================", deliverClient)
 			if err != nil {
 				return nil, errors.WithMessage(err, fmt.Sprintf("error getting deliver client for %s", cmdName))
 			}
 			deliverClients = append(deliverClients, deliverClient)
-			logger.Info("==================deliverClients========================",deliverClients)//[0xc00013c690 0xc000267ad0]
+			logger.Info("==================deliverClients========================", deliverClients) //[0xc00013c690 0xc000267ad0]
 		}
 
-		logger.Infof("====len(endorserClients):%v====",len(endorserClients))
+		logger.Infof("====len(endorserClients):%v====", len(endorserClients))
+		/*
+			query
+			len(endorserClients):1
+		*/
 		if len(endorserClients) == 0 {
 			return nil, errors.New("no endorser clients retrieved - this might indicate a bug")
 		}
@@ -482,8 +639,8 @@ func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) 
 
 	if isOrdererRequired {
 		//isOrdererRequired true
-		logger.Infof("====len(common.OrderingEndpoint):%v====",len(common.OrderingEndpoint))//true
-		logger.Infof("====common.OrderingEndpoint:%v====",common.OrderingEndpoint)//true
+		logger.Infof("====len(common.OrderingEndpoint):%v====", len(common.OrderingEndpoint)) //true
+		logger.Infof("====common.OrderingEndpoint:%v====", common.OrderingEndpoint)           //true
 		if len(common.OrderingEndpoint) == 0 {
 			if len(endorserClients) == 0 {
 				return nil, errors.New("orderer is required, but no ordering endpoint or endorser client supplied")
@@ -507,6 +664,78 @@ func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) 
 			return nil, errors.WithMessage(err, "error getting broadcast client")
 		}
 	}
+
+
+	return &ChaincodeCmdFactory{
+		EndorserClients: endorserClients,
+		DeliverClients:  deliverClients,
+		Signer:          signer,
+		BroadcastClient: broadcastClient,
+		Certificate:     certificate,
+	}, nil
+}
+func InitCmdFactoryQuery(cmdName string, isEndorserRequired, isOrdererRequired bool) (*ChaincodeCmdFactory, error) {
+	//cmdName = query
+	logger.Info("====func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) (*ChaincodeCmdFactory, error)====")
+	var err error
+	var endorserClients []pb.EndorserClient
+	var deliverClients []api.PeerDeliverClient
+
+	if isEndorserRequired {
+		logger.Infof("====validatePeerConnectionParameters(%v)====", cmdName) //query
+		err = validatePeerConnectionParameters(cmdName)
+
+		if err != nil {
+			return nil, errors.WithMessage(err, "error validating peer connection parameters")
+		}
+		logger.Infof("====peerAddresses:%v====", peerAddresses) //[]
+		for i, address := range peerAddresses {
+			var tlsRootCertFile string
+			logger.Info("====tlsRootCertFiles", tlsRootCertFiles) //[]
+			if tlsRootCertFiles != nil {
+				tlsRootCertFile = tlsRootCertFiles[i]
+				logger.Info("==============================tlsRootCertFile", tlsRootCertFile)
+				// /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
+				// /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt
+			}
+			endorserClient, err := common.GetEndorserClientFnc(address, tlsRootCertFile)
+			logger.Info("==================endorserClient========================", endorserClient) //&{0xc0000d2000}
+
+			if err != nil {
+				return nil, errors.WithMessage(err, fmt.Sprintf("error getting endorser client for %s", cmdName))
+			}
+			endorserClients = append(endorserClients, endorserClient)
+			logger.Info("==================endorserClients========================", endorserClients) //[0xc00014e038]
+			deliverClient, err := common.GetPeerDeliverClientFnc(address, tlsRootCertFile)
+			logger.Info("==================deliverClient========================", deliverClient)
+			if err != nil {
+				return nil, errors.WithMessage(err, fmt.Sprintf("error getting deliver client for %s", cmdName))
+			}
+			deliverClients = append(deliverClients, deliverClient)
+			logger.Info("==================deliverClients========================", deliverClients) //[0xc00013c690 0xc000267ad0]
+		}
+
+		logger.Infof("====len(endorserClients):%v====", len(endorserClients))
+		if len(endorserClients) == 0 {
+			return nil, errors.New("no endorser clients retrieved - this might indicate a bug")
+		}
+	}
+	certificate, err := common.GetCertificateFnc()
+	if err != nil {
+		return nil, errors.WithMessage(err, "error getting client cerificate")
+	}
+
+	signer, err := common.GetDefaultSignerFnc()
+	if err != nil {
+		return nil, errors.WithMessage(err, "error getting default signer")
+	}
+	var broadcastClient common.BroadcastClient
+
+	logger.Info("=============endorserClients===========",endorserClients)
+	logger.Info("=============deliverClients===========",deliverClients)
+	logger.Info("=============signer===========",signer)
+	logger.Info("=============broadcastClient===========",broadcastClient)
+	logger.Info("=============certificate===========",certificate)
 	return &ChaincodeCmdFactory{
 		EndorserClients: endorserClients,
 		DeliverClients:  deliverClients,
@@ -525,17 +754,7 @@ func InitCmdFactory(cmdName string, isEndorserRequired, isOrdererRequired bool) 
 //
 // NOTE - Query will likely go away as all interactions with the endorser are
 // Proposal and ProposalResponses
-func ChaincodeInvokeOrQuery(
-	spec *pb.ChaincodeSpec,
-	cID string,
-	txID string,
-	invoke bool,
-	signer msp.SigningIdentity,
-	certificate tls.Certificate,
-	endorserClients []pb.EndorserClient,
-	deliverClients []api.PeerDeliverClient,
-	bc common.BroadcastClient,
-) (*pb.ProposalResponse, error) {
+func ChaincodeInvokeOrQuery(spec *pb.ChaincodeSpec, cID string, txID string, invoke bool, signer msp.SigningIdentity, certificate tls.Certificate, endorserClients []pb.EndorserClient, deliverClients []api.PeerDeliverClient, bc common.BroadcastClient) (*pb.ProposalResponse, error) {
 	logger.Info("=============ChaincodeInvokeOrQuery==================")
 	// Build the ChaincodeInvocationSpec message
 
@@ -570,17 +789,17 @@ func ChaincodeInvokeOrQuery(
 	}
 	var responses []*pb.ProposalResponse
 	for k, endorser := range endorserClients {
-		logger.Info("================k======================",k)//0
+		logger.Info("================k======================", k) //0
 		//1
-		logger.Info("================endorser======================",endorser)//&{0xc0000d2000}
-		logger.Info("====================signedProp==============================",signedProp)
+		logger.Info("================endorser======================", endorser) //&{0xc0000d2000}
+		logger.Info("====================signedProp==============================", signedProp)
 		//proposal_bytes:"\n\303\007\ng\010\003\032\014\010\200\352\361\214\006\020\276\347\376\207\002\"\tmychannel*@38ec6dc6617d415b856aa186fd67959c6273ed9529f38a88e83387dc6007cd44:\010\022\006\022\004mycc\022\327\006\n\272\006\n\007Org1MSP\022\256\006-----BEGIN CERTIFICATE-----\nMIICKzCCAdGgAwIBAgIRAJH5pT6oad0DwaoVpYvsnRYwCgYIKoZIzj0EAwIwczEL\nMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG\ncmFuY2lzY28xGTAXBgNVBAoTEG9yZzEuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh\nLm9yZzEuZXhhbXBsZS5jb20wHhcNMjExMTIzMDQ1MzAwWhcNMzExMTIxMDQ1MzAw\nWjBsMQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMN\nU2FuIEZyYW5jaXNjbzEPMA0GA1UECxMGY2xpZW50MR8wHQYDVQQDDBZBZG1pbkBv\ncmcxLmV4YW1wbGUuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEjkNw8fd0\nUNWAxVB9ge/V7yX7fuBWB7PLfcs3ir421JImYSDW0BwYxQMNNtaJzbrVh31Rp5fD\nsGg4CIs8RjR25aNNMEswDgYDVR0PAQH/BAQDAgeAMAwGA1UdEwEB/wQCMAAwKwYD\nVR0jBCQwIoAgwYCJKZTdr1gamBudkhq1imTZeKfgEKqV/J1R6+ojSpwwCgYIKoZI\nzj0EAwIDSAAwRQIhAIRBayA7nrL35q2p0IlcwuhQlgKQDVFySzrJSUtoHwQcAiA/\nr9pz6m5TGsbebgKgl3HqadC50EmPB18HHHCEtrs3dA==\n-----END CERTIFICATE-----\n\022\030j\377\250\006%%\3138\307\251\014\275\033\331\353FgD&w\020K\022z\022\"\n \n\036\010\001\022\006\022\004mycc\032\022\n\006invoke\n\001a\n\001b\n\00210" signature:"0E\002!\000\334\032K\332%\021nXnb\313\351gW\275\246)\026\034\010\"ot\"\3613j \241\342\0348\002 P\335\261(w\265K\255\325\350t\273\262\247\220\265K\220\367\257\013S\204\000\323\202\376\034\277R:\217"
 		//proposal_bytes:"\n\303\007\ng\010\003\032\014\010\203\352\361\214\006\020\265\246\304\324\003\"\tmychannel*@2b68f779a01681b47885d1f4a4fe51c731653ba1a7f2b9230cd87f880354ea85:\010\022\006\022\004mycc\022\327\006\n\272\006\n\007Org2MSP\022\256\006-----BEGIN CERTIFICATE-----\nMIICKzCCAdGgAwIBAgIRAPwS3GA4sA8r4Hqq6/4/GeswCgYIKoZIzj0EAwIwczEL\nMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG\ncmFuY2lzY28xGTAXBgNVBAoTEG9yZzIuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh\nLm9yZzIuZXhhbXBsZS5jb20wHhcNMjExMTIzMDQ1MzAwWhcNMzExMTIxMDQ1MzAw\nWjBsMQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMN\nU2FuIEZyYW5jaXNjbzEPMA0GA1UECxMGY2xpZW50MR8wHQYDVQQDDBZBZG1pbkBv\ncmcyLmV4YW1wbGUuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEzjlPS5pg\nrDY4tthuQtUuXVt/N2BooFJpWmGmXAZGv0EtMqzicD93phVjeaPWWETQtYMUi1BD\n0dHxC3hbZ1SCbqNNMEswDgYDVR0PAQH/BAQDAgeAMAwGA1UdEwEB/wQCMAAwKwYD\nVR0jBCQwIoAg2LmIkR1Yf1jrjdib6ItgOUE2vQONqeem9DrA1sP+494wCgYIKoZI\nzj0EAwIDSAAwRQIhANdAeQCEJ2KA3h1VmL/GYgwS/KlaeN92pZQ9Fi9YHdV2AiA5\nGPh/sDkJc1IBZc7yolZzyoS1fMIkXwFYj0/l/NtGPg==\n-----END CERTIFICATE-----\n\022\030q\271\216\334\317aw\367\232|V\007\rN*R\244&)\343\371D\365\253\022\032\n\030\n\026\010\001\022\006\022\004mycc\032\n\n\005query\n\001a" signature:"0D\002 z\306\247_\352\014\240\222\032\274\021\024a\341\335m\275\337\255\016k\007\246\223\316^\007L\366\031\302\354\002 X\362\0018\005\325\250Z\350|\226(\r\257\0063\367\275\024\307/\014\325\023\311\014\357\021#>D,"
 		proposalResp, err := endorser.ProcessProposal(context.Background(), signedProp)
-		logger.Info("===============proposalResp============================",proposalResp)
+		logger.Info("===============proposalResp============================", proposalResp)
 		/*
-		version:1 response:<status:200 > payload:"\n q\036\365ac\233\364\2769\247\\\026\014\371\003\374\342\377E\320\260\341\365\250\311&`\202\032\245\310\007\022Y\nE\022\024\n\004lscc\022\014\n\n\n\004mycc\022\002\010\003\022-\n\004mycc\022%\n\007\n\001a\022\002\010\003\n\007\n\001b\022\002\010\003\032\007\n\001a\032\00290\032\010\n\001b\032\003210\032\003\010\310\001\"\013\022\004mycc\032\0031.0" endorsement:<endorser:"\n\007Org1MSP\022\252\006-----BEGIN CERTIFICATE-----\nMIICKDCCAc6gAwIBAgIQai9GfSR87xVbQ7+iETmmgjAKBggqhkjOPQQDAjBzMQsw\nCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMNU2FuIEZy\nYW5jaXNjbzEZMBcGA1UEChMQb3JnMS5leGFtcGxlLmNvbTEcMBoGA1UEAxMTY2Eu\nb3JnMS5leGFtcGxlLmNvbTAeFw0yMTExMjMwNDUzMDBaFw0zMTExMjEwNDUzMDBa\nMGoxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1T\nYW4gRnJhbmNpc2NvMQ0wCwYDVQQLEwRwZWVyMR8wHQYDVQQDExZwZWVyMC5vcmcx\nLmV4YW1wbGUuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEkPw4F4lx8qnd\n57OOCU9xTPpmQGXl6REwFrWY45WWFFgQHzHixWSnkjNNrjJ8Oq2X1KrsMT2xzLkv\njMiP9ArnIKNNMEswDgYDVR0PAQH/BAQDAgeAMAwGA1UdEwEB/wQCMAAwKwYDVR0j\nBCQwIoAgwYCJKZTdr1gamBudkhq1imTZeKfgEKqV/J1R6+ojSpwwCgYIKoZIzj0E\nAwIDSAAwRQIhAJ13cTfnCzUqeeYSnGvzJpt2Q6nN5gIsiU1pOs09oVChAiA5Maru\nXLPk9dKIa9xdD9X8HWn2is9JOesbCk+XiWJjpA==\n-----END CERTIFICATE-----\n" signature:"0D\002 \017\231\316\330\347\374\372\213Z\034\344\214\273M\246\002\275Q\225\364\226\262\370\005m\031%\005\253u\216\267\002 H\254~\354).I\\\3255\2455\212\254\321\013\030\241\343\300\216\333C\320\360\330\357\365\231\323\031\271" >
-		version:1 response:<status:200 payload:"90" > payload:"\n dT\312\355RT\306@\202\223\301\030NINk\217\301\034\332(\326\304\016\207\370\004\307H\312\353\036\022A\n)\022\024\n\004lscc\022\014\n\n\n\004mycc\022\002\010\003\022\021\n\004mycc\022\t\n\007\n\001a\022\002\010\004\032\007\010\310\001\032\00290\"\013\022\004mycc\032\0031.0" endorsement:<endorser:"\n\007Org2MSP\022\252\006-----BEGIN CERTIFICATE-----\nMIICKTCCAc+gAwIBAgIRAMM1T1QcvJxfWBgIn/lmubEwCgYIKoZIzj0EAwIwczEL\nMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG\ncmFuY2lzY28xGTAXBgNVBAoTEG9yZzIuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh\nLm9yZzIuZXhhbXBsZS5jb20wHhcNMjExMTIzMDQ1MzAwWhcNMzExMTIxMDQ1MzAw\nWjBqMQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMN\nU2FuIEZyYW5jaXNjbzENMAsGA1UECxMEcGVlcjEfMB0GA1UEAxMWcGVlcjEub3Jn\nMi5leGFtcGxlLmNvbTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABL/fGOhHLYjL\n/v0eZnwkGjCiEJ1GZ9HSxrrH2YFO7u3qglZ6Q3AF0+wIBmJb/Elx5g/7AtH2YfZQ\nWg/OgPbe5KCjTTBLMA4GA1UdDwEB/wQEAwIHgDAMBgNVHRMBAf8EAjAAMCsGA1Ud\nIwQkMCKAINi5iJEdWH9Y643Ym+iLYDlBNr0DjannpvQ6wNbD/uPeMAoGCCqGSM49\nBAMCA0gAMEUCIQDFAcKtsGJX9dYJ+UBTcqybNUx5Q/krI8NtLDhEP3wryAIgHgEw\nyXrcyHsSnHY9fGtopF2uRrdFAnUPno99gnRhOM4=\n-----END CERTIFICATE-----\n" signature:"0D\002 \021\2342\"\002\265\037\036\2114+uJ\305_;\324\241\266ZL\200\362\355\362\337.\352p\014\242\025\002 t!a\257\250\345V^\257\363\325\326\213:M\206\032\226JV\247\023+\327u\354\023\373\327['u" >
+			version:1 response:<status:200 > payload:"\n q\036\365ac\233\364\2769\247\\\026\014\371\003\374\342\377E\320\260\341\365\250\311&`\202\032\245\310\007\022Y\nE\022\024\n\004lscc\022\014\n\n\n\004mycc\022\002\010\003\022-\n\004mycc\022%\n\007\n\001a\022\002\010\003\n\007\n\001b\022\002\010\003\032\007\n\001a\032\00290\032\010\n\001b\032\003210\032\003\010\310\001\"\013\022\004mycc\032\0031.0" endorsement:<endorser:"\n\007Org1MSP\022\252\006-----BEGIN CERTIFICATE-----\nMIICKDCCAc6gAwIBAgIQai9GfSR87xVbQ7+iETmmgjAKBggqhkjOPQQDAjBzMQsw\nCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMNU2FuIEZy\nYW5jaXNjbzEZMBcGA1UEChMQb3JnMS5leGFtcGxlLmNvbTEcMBoGA1UEAxMTY2Eu\nb3JnMS5leGFtcGxlLmNvbTAeFw0yMTExMjMwNDUzMDBaFw0zMTExMjEwNDUzMDBa\nMGoxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1T\nYW4gRnJhbmNpc2NvMQ0wCwYDVQQLEwRwZWVyMR8wHQYDVQQDExZwZWVyMC5vcmcx\nLmV4YW1wbGUuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEkPw4F4lx8qnd\n57OOCU9xTPpmQGXl6REwFrWY45WWFFgQHzHixWSnkjNNrjJ8Oq2X1KrsMT2xzLkv\njMiP9ArnIKNNMEswDgYDVR0PAQH/BAQDAgeAMAwGA1UdEwEB/wQCMAAwKwYDVR0j\nBCQwIoAgwYCJKZTdr1gamBudkhq1imTZeKfgEKqV/J1R6+ojSpwwCgYIKoZIzj0E\nAwIDSAAwRQIhAJ13cTfnCzUqeeYSnGvzJpt2Q6nN5gIsiU1pOs09oVChAiA5Maru\nXLPk9dKIa9xdD9X8HWn2is9JOesbCk+XiWJjpA==\n-----END CERTIFICATE-----\n" signature:"0D\002 \017\231\316\330\347\374\372\213Z\034\344\214\273M\246\002\275Q\225\364\226\262\370\005m\031%\005\253u\216\267\002 H\254~\354).I\\\3255\2455\212\254\321\013\030\241\343\300\216\333C\320\360\330\357\365\231\323\031\271" >
+			version:1 response:<status:200 payload:"90" > payload:"\n dT\312\355RT\306@\202\223\301\030NINk\217\301\034\332(\326\304\016\207\370\004\307H\312\353\036\022A\n)\022\024\n\004lscc\022\014\n\n\n\004mycc\022\002\010\003\022\021\n\004mycc\022\t\n\007\n\001a\022\002\010\004\032\007\010\310\001\032\00290\"\013\022\004mycc\032\0031.0" endorsement:<endorser:"\n\007Org2MSP\022\252\006-----BEGIN CERTIFICATE-----\nMIICKTCCAc+gAwIBAgIRAMM1T1QcvJxfWBgIn/lmubEwCgYIKoZIzj0EAwIwczEL\nMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG\ncmFuY2lzY28xGTAXBgNVBAoTEG9yZzIuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh\nLm9yZzIuZXhhbXBsZS5jb20wHhcNMjExMTIzMDQ1MzAwWhcNMzExMTIxMDQ1MzAw\nWjBqMQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMN\nU2FuIEZyYW5jaXNjbzENMAsGA1UECxMEcGVlcjEfMB0GA1UEAxMWcGVlcjEub3Jn\nMi5leGFtcGxlLmNvbTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABL/fGOhHLYjL\n/v0eZnwkGjCiEJ1GZ9HSxrrH2YFO7u3qglZ6Q3AF0+wIBmJb/Elx5g/7AtH2YfZQ\nWg/OgPbe5KCjTTBLMA4GA1UdDwEB/wQEAwIHgDAMBgNVHRMBAf8EAjAAMCsGA1Ud\nIwQkMCKAINi5iJEdWH9Y643Ym+iLYDlBNr0DjannpvQ6wNbD/uPeMAoGCCqGSM49\nBAMCA0gAMEUCIQDFAcKtsGJX9dYJ+UBTcqybNUx5Q/krI8NtLDhEP3wryAIgHgEw\nyXrcyHsSnHY9fGtopF2uRrdFAnUPno99gnRhOM4=\n-----END CERTIFICATE-----\n" signature:"0D\002 \021\2342\"\002\265\037\036\2114+uJ\305_;\324\241\266ZL\200\362\355\362\337.\352p\014\242\025\002 t!a\257\250\345V^\257\363\325\326\213:M\206\032\226JV\247\023+\327u\354\023\373\327['u" >
 		*/
 		if err != nil {
 			return nil, errors.WithMessage(err, fmt.Sprintf("error endorsing %s", funcName))
@@ -611,8 +830,8 @@ func ChaincodeInvokeOrQuery(
 			}
 			var dg *deliverGroup
 			var ctx context.Context
-			logger.Info("======================waitForEvent==============================",waitForEvent)
-			if waitForEvent {//false
+			logger.Info("======================waitForEvent==============================", waitForEvent)
+			if waitForEvent { //false
 				logger.Info("======================waitForEvent==============================")
 
 				var cancelFunc context.CancelFunc
@@ -629,8 +848,8 @@ func ChaincodeInvokeOrQuery(
 
 			// send the envelope for ordering
 			logger.Info("===================1.err = bc.Send(env)=============================")
-			 err = bc.Send(env)
-			 logger.Info("===================2.err = bc.Send(env)=============================")
+			err = bc.Send(env)
+			logger.Info("===================2.err = bc.Send(env)=============================")
 			if err != nil {
 				return proposalResp, errors.WithMessage(err, fmt.Sprintf("error sending transaction for %s", funcName))
 			}
@@ -854,7 +1073,7 @@ func createDeliverEnvelope(channelID string, certificate tls.Certificate) *pcomm
 
 	env, err := putils.CreateSignedEnvelopeWithTLSBinding(
 		pcommon.HeaderType_DELIVER_SEEK_INFO, channelID, localmsp.NewSigner(),
-		seekInfo, int32(0), uint64(0), tlsCertHash,"","")
+		seekInfo, int32(0), uint64(0), tlsCertHash, "", "")
 	if err != nil {
 		logger.Errorf("Error signing envelope: %s", err)
 		return nil
