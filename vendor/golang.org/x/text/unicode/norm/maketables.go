@@ -804,7 +804,7 @@ func printChars() {
 			if !c.isValid() || c.state == SMissing {
 				continue
 			}
-			logger.Info(c)
+			fmt.Println(c)
 		}
 	}
 }

@@ -24,14 +24,6 @@
   revision = "d6e3b3328b783f23731bc4d058875b0371ff8109"
 
 [[projects]]
-  digest = "1:5d72bbcc9c8667b11c3dc3cbe681c5a6f71e5096744c0bf7726ab5c6425d5dc4"
-  name = "github.com/BurntSushi/toml"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "3012a1dbe2e4bd1391d42b32f0577cb7bbc7f005"
-  version = "v0.3.1"
-
-[[projects]]
   digest = "1:a8bc08e25d94bdcbf8ea54ee8e4b2a00a8c3b6957501b4fdb1a6d303e5292f6d"
   name = "github.com/Knetic/govaluate"
   packages = ["."]
@@ -222,6 +214,14 @@
   version = "v1.1.0"
 
 [[projects]]
+  digest = "1:51bf65f8162cfbe4eeab63b729c3c210b2cd48b1e2e6cda14e9023dd7c3038a3"
+  name = "github.com/fsnotify/fsnotify"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "466b39d216616549a37ee93c7c47775f6a010790"
+  version = "v1.5.1"
+
+[[projects]]
   digest = "1:d0a3e7afbdc348a36faa023b59faf86a60404037f101bb4b8cc4ae63d8b94be1"
   name = "github.com/fsouza/go-dockerclient"
   packages = [
@@ -347,6 +347,25 @@
   packages = ["."]
   pruneopts = "NUT"
   revision = "b5a281d3160aa11950a6182bd9a9dc2cb1e02d50"
+  version = "v1.0.0"
+
+[[projects]]
+  digest = "1:11c6c696067d3127ecf332b10f89394d386d9083f82baf71f40f2da31841a009"
+  name = "github.com/hashicorp/hcl"
+  packages = [
+    ".",
+    "hcl/ast",
+    "hcl/parser",
+    "hcl/printer",
+    "hcl/scanner",
+    "hcl/strconv",
+    "hcl/token",
+    "json/parser",
+    "json/scanner",
+    "json/token",
+  ]
+  pruneopts = "NUT"
+  revision = "8cb6e5b959231cc1119e43259c4a608f9c51a241"
   version = "v1.0.0"
 
 [[projects]]
@@ -535,6 +554,14 @@
   version = "v0.1.1"
 
 [[projects]]
+  digest = "1:c32efcc01a7dd7a17095bf3b7a3458850fb30f8ed7e2bc72de97cf3a9a617f8e"
+  name = "github.com/pelletier/go-toml"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "b8ba995eaaba4be30c8a8090bdfb4aa61af52054"
+  version = "v1.9.4"
+
+[[projects]]
   digest = "1:a5e7d4191d0ff352792f9250b9bf4f1ce673915bb5c5830afa0b18700da53dda"
   name = "github.com/pierrec/lz4"
   packages = [
@@ -622,6 +649,17 @@
   version = "v1.1.0"
 
 [[projects]]
+  digest = "1:c1840264c01bf72c05fe3e6187a99e57a8ffd8b9f87caaff03fba18b74f054a8"
+  name = "github.com/spf13/afero"
+  packages = [
+    ".",
+    "mem",
+  ]
+  pruneopts = "NUT"
+  revision = "cd35605009e0f43ac1123133549379e6143bcb42"
+  version = "v1.8.0"
+
+[[projects]]
   digest = "1:3fa7947ca83b98ae553590d993886e845a4bff19b7b007e869c6e0dd3b9da9cd"
   name = "github.com/spf13/cast"
   packages = ["."]
@@ -654,11 +692,18 @@
   version = "v1.0.3"
 
 [[projects]]
-  digest = "1:2f8a827e6131252b60222e5ff18ddd6e825bf73ed39fcfec152ef60a11750068"
+  digest = "1:21d38fb4d0b5062a403928685d24f02b6304514a96c6ba85c5cb4953e2839f61"
   name = "github.com/spf13/viper"
-  packages = ["."]
+  packages = [
+    ".",
+    "internal/encoding",
+    "internal/encoding/hcl",
+    "internal/encoding/json",
+    "internal/encoding/toml",
+    "internal/encoding/yaml",
+  ]
   pruneopts = "NUT"
-  revision = "1967d93db724f4a5c0e101307e96d82ff520a067"
+  revision = "f646c50b184a0bec644dd1147d6b0e57be17c7aa"
 
 [[projects]]
   digest = "1:60a46e2410edbf02b419f833372dd1d24d7aa1b916a990a7370e792fada1eadd"
@@ -679,6 +724,14 @@
   pruneopts = "NUT"
   revision = "f35b8ab0b5a2cef36673838d662e249dd9c94686"
   version = "v1.2.2"
+
+[[projects]]
+  digest = "1:f60e4a8af6b6f3940cbdd28b1262221d28b4eb4d31b87bdb7b219f5fc0f278bf"
+  name = "github.com/subosito/gotenv"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "2ef7124db659d49edac6aa459693a15ae36c671a"
+  version = "v1.2.0"
 
 [[projects]]
   branch = "master"
@@ -925,6 +978,14 @@
   pruneopts = "NUT"
   revision = "2af8bbdea9e99e83b3ac400d8f6b6d1b8cbbf338"
   version = "v1.0.25"
+
+[[projects]]
+  digest = "1:401816726f4395dd752476d9b1d337fa533ede8f3be65b541ec438084a466bc3"
+  name = "gopkg.in/ini.v1"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "c71eccd557feacd4fcd29f322a99e98870f908b7"
+  version = "v1.66.2"
 
 [[projects]]
   digest = "1:7c95b35057a0ff2e19f707173cc1a947fa43a6eb5c4d300d196ece0334046082"

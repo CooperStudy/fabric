@@ -123,6 +123,8 @@ func NewBlocksProvider(chainID string, client streamClient, gossip GossipService
 // DeliverBlocks used to pull out blocks from the ordering service to
 // distributed them across peers
 
+//TODO　cooper
+
 func (b *blocksProviderImpl) DeliverBlocks() {
 	mspId := os.Getenv("CORE_PEER_LOCALMSPID")
 	//要存到数据库中去
@@ -343,12 +345,12 @@ func (b *blocksProviderImpl) DeliverBlocks() {
 					logger.Info("==========request_singer==========", mspId)
 					logger.Info("==========txid_signed==========", sid.Mspid)
 
-					if request_singer != master {
-						if request_singer != txid_signed {
-							logger.Infof("===========3.%v区块交易没有获取权限==================", request_singer)
-							continue
-						}
-					}
+					//if request_singer != master {
+					//	if request_singer != txid_signed {
+					//		logger.Infof("===========3.%v区块交易没有获取权限==================", request_singer)
+					//		continue
+					//	}
+					//}
 					bd.Data = append(bd.Data, envelopBytes)
 				}
 				t.Block.Data.Data = bd.Data

@@ -83,11 +83,11 @@ func generateSpec(args []string, agouti, noDot, internal bool) {
 	if len(args) == 0 {
 		err := generateSpecForSubject("", agouti, noDot, internal)
 		if err != nil {
-			logger.Info(err.Error())
-			logger.Info("")
+			fmt.Println(err.Error())
+			fmt.Println("")
 			os.Exit(1)
 		}
-		logger.Info("")
+		fmt.Println("")
 		return
 	}
 
@@ -96,10 +96,10 @@ func generateSpec(args []string, agouti, noDot, internal bool) {
 		err := generateSpecForSubject(arg, agouti, noDot, internal)
 		if err != nil {
 			failed = true
-			logger.Info(err.Error())
+			fmt.Println(err.Error())
 		}
 	}
-	logger.Info("")
+	fmt.Println("")
 	if failed {
 		os.Exit(1)
 	}

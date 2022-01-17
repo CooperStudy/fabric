@@ -128,7 +128,7 @@
 // is that the error handler function must exit after handling the error.
 //
 //   properties.ErrorHandler = func(err error) {
-//	     logger.Info(err)
+//	     fmt.Println(err)
 //       os.Exit(1)
 //   }
 //

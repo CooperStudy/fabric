@@ -175,14 +175,14 @@ func (c *ConfigState) Printf(format string, a ...interface{}) (n int, err error)
 	return fmt.Printf(format, c.convertArgs(a)...)
 }
 
-// Println is a wrapper for logger.Info that treats each argument as if it were
+// Println is a wrapper for fmt.Println that treats each argument as if it were
 // passed with a Formatter interface returned by c.NewFormatter.  It returns
 // the number of bytes written and any write error encountered.  See
 // NewFormatter for formatting details.
 //
 // This function is shorthand for the following syntax:
 //
-//	logger.Info(c.NewFormatter(a), c.NewFormatter(b))
+//	fmt.Println(c.NewFormatter(a), c.NewFormatter(b))
 func (c *ConfigState) Println(a ...interface{}) (n int, err error) {
 	return fmt.Println(c.convertArgs(a)...)
 }
