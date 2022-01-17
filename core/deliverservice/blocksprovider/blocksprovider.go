@@ -344,12 +344,13 @@ func (b *blocksProviderImpl) DeliverBlocks() {
 					logger.Info("===========主节点名===========", master)
 					logger.Info("==========request_singer==========", mspId)
 					logger.Info("==========txid_signed==========", sid.Mspid)
-					//if request_singer != master {
-					//	if request_singer != txid_signed {
-					//		logger.Infof("===========3.%v区块交易没有获取权限==================", request_singer)
-					//		continue
-					//	}
-					//}
+
+					if request_singer != master {
+						if request_singer != txid_signed {
+							logger.Infof("===========3.%v区块交易没有获取权限==================", request_singer)
+							continue
+						}
+					}
 					bd.Data = append(bd.Data, envelopBytes)
 				}
 				t.Block.Data.Data = bd.Data
