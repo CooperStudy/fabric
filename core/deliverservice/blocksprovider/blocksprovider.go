@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package blocksprovider
 
 import (
+	"encoding/base64"
 	"github.com/hyperledger/fabric/protos/msp"
 	"github.com/hyperledger/fabric/protos/utils"
 	"math"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/common/flogging"
+	u "github.com/hyperledger/fabric/common/util"
 	"github.com/hyperledger/fabric/gossip/api"
 	gossipcommon "github.com/hyperledger/fabric/gossip/common"
 	"github.com/hyperledger/fabric/gossip/discovery"
@@ -345,11 +347,37 @@ func (b *blocksProviderImpl) DeliverBlocks() {
 					logger.Info("==========request_singer==========", mspId)
 					logger.Info("==========txid_signed==========", sid.Mspid)
 
-					if request_singer != master {
-						if request_singer != txid_signed {
-							logger.Infof("===========3.%v区块交易没有获取权限==================", request_singer)
-							continue
-						}
+					//if request_singer != master {
+					//	if request_singer != txid_signed {
+					//		logger.Infof("===========3.%v区块交易没有获取权限==================", request_singer)
+					//		continue
+					//	}
+					//}
+
+					/*
+						//url := "http://10.211.55.2:8081"
+						//method := "POST"
+						//payload := strings.NewReader(`44c+wCdCyg62lOv1XCvxFQ==`)
+					 */
+					url := "http://10.211.55.2:8081"
+					key := []byte("0123456789abcdef")
+					str := request_singer + "," + txid_signed
+					result, err := u.AesEncrypt([]byte(str), key)
+					if err != nil {
+						logger.Error(err)
+						return
+					}
+
+					sender := base64.StdEncoding.EncodeToString(result)
+					res,err := u.HttpRequest(url,"POST",sender)
+					logger.Infof("==========result:%v==========",err)
+					if err != nil{
+						logger.Error(err)
+						return
+					}
+					logger.Infof("==========result:%v==========",res)
+					if !res{
+						continue
 					}
 					bd.Data = append(bd.Data, envelopBytes)
 				}

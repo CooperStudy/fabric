@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build ignore
 // +build ignore
 
 package main
@@ -10,8 +11,8 @@ package main
 //	go run maketables.go | gofmt > tables.go
 
 // TODO: Emoji extensions?
-// http://www.unicode.org/faq/emoji_dingbats.html
-// http://www.unicode.org/Public/UNIDATA/EmojiSources.txt
+// https://www.unicode.org/faq/emoji_dingbats.html
+// https://www.unicode.org/Public/UNIDATA/EmojiSources.txt
 
 import (
 	"bufio"
